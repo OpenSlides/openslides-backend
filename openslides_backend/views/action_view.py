@@ -1,22 +1,22 @@
-import logging
 from typing import Dict, Iterable, List
 
 from fastjsonschema import JsonSchemaException  # type: ignore
 from werkzeug.exceptions import BadRequest
 from werkzeug.wrappers import Response
 
-from ..services.auth import AuthAdapter
-from ..services.database import Database
-from ..services.event_store import EventStoreAdapter
-from ..utils.types import Environment, Event
-from ..utils.wrappers import Request
-from ..actions import action_map
+from .. import logging
+from ..actions.action_map import action_map
 from ..exceptions import (
     ActionException,
     BackendBaseException,
     EventStoreException,
     MediaTypeException,
 )
+from ..services.auth import AuthAdapter
+from ..services.database import Database
+from ..services.event_store import EventStoreAdapter
+from ..utils.types import Environment, Event
+from ..utils.wrappers import Request
 from .schema import action_view_schema
 
 logger = logging.getLogger(__name__)
@@ -82,11 +82,13 @@ class ActionView:
         """
         events = []
         for element in action_requests:
+            logger.debug(f"Action map contains the following actions: {action_map}")
             action = action_map.get(element["action"])
             if action is None:
                 raise BadRequest(f"Action {element['action']} does not exist.")
             logger.debug(f"Perform action {element['action']}")
             event = action().perform(element["data"], self.user_id)
+            logger.debug(f"Prepared event {event}")
             events.append(event)
         return events
 

@@ -1,7 +1,10 @@
 from typing import List, Optional
 
+from fastjsonschema import JsonSchemaException  # type: ignore
+
+from ...exceptions import ActionException
 from ...utils.types import Event
-from .. import register_action
+from ..action_map import register_action
 from ..base import DatabaseAction
 from ..types import Payload
 from .schema import is_valid_new_topic
@@ -10,7 +13,10 @@ from .schema import is_valid_new_topic
 @register_action("topic.create")
 class TopicCreate(DatabaseAction):
     def validate(self, payload: Payload) -> None:
-        is_valid_new_topic(payload)
+        try:
+            is_valid_new_topic(payload)
+        except JsonSchemaException as exception:
+            raise ActionException(exception.message)
 
     def read_database(self, payload: Payload) -> List[str]:
         return []
