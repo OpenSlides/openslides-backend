@@ -8,3 +8,4 @@ script:
   - isort --check --recursive openslides_backend/ tests/ start.py
   - flake8 openslides_backend/ tests/ start.py
   - mypy openslides_backend/ tests/ start.py
+  - pytest

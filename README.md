@@ -1,6 +1,7 @@
 # OpenSlides backend service
 
-Backend service for OpenSlides which accepts incomming requests to add, change or delete data, checks and parses them and writes them to the event stream.
+Backend service for OpenSlides which accepts incomming requests to add, change
+or delete data, checks and parses them and writes them to the event stream.
 
 It is also responsible for ...
 
@@ -17,4 +18,4 @@ To start run
 
 or
 
-    $ gunicorn --config=python:gunicorn_conf openslides_write_service.wsgi:application
+    $ gunicorn --config=python:gunicorn_conf openslides_backend.wsgi:application
