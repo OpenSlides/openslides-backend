@@ -1,0 +1,10 @@
+language: python
+python:
+  - 3.6
+  - 3.7
+  - 3.8
+script:
+  - black --check openslides_backend/ tests/ start.py
+  - isort --check --recursive openslides_backend/ tests/ start.py
+  - flake8 openslides_backend/ tests/ start.py
+  - mypy openslides_backend/ tests/ start.py
