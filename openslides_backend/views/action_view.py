@@ -1,24 +1,23 @@
 import logging
 from typing import Dict, Iterable, List
 
-import simplejson as json
 from fastjsonschema import JsonSchemaException  # type: ignore
 from werkzeug.exceptions import BadRequest
 from werkzeug.wrappers import Response
 
-from .actions import action_map
-from .exceptions import (
+from ..services.auth import AuthAdapter
+from ..services.database import Database
+from ..services.event_store import EventStoreAdapter
+from ..utils.types import Environment, Event
+from ..utils.wrappers import Request
+from ..actions import action_map
+from ..exceptions import (
     ActionException,
     BackendBaseException,
     EventStoreException,
     MediaTypeException,
 )
-from .services.auth import AuthAdapter
-from .services.database import Database
-from .services.event_store import EventStoreAdapter
-from .utils.schema import action_view_schema
-from .utils.types import Environment, Event
-from .utils.wrappers import Request
+from .schema import action_view_schema
 
 logger = logging.getLogger(__name__)
 

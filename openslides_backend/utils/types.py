@@ -18,6 +18,4 @@ StartResponse = Callable
 
 WSGIEnvironment = Dict[Text, Any]
 
-Schema = Dict  # TODO
-
 Event = TypedDict("Event", {"foo": str})

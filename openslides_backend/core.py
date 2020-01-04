@@ -9,7 +9,7 @@ from werkzeug.wrappers import Response
 
 from .utils.types import ApplicationConfig, Environment, StartResponse, WSGIEnvironment
 from .utils.wrappers import Request
-from .views import ActionView
+from .views.action_view import ActionView
 
 logger = logging.getLogger(__name__)
 
