@@ -1,3 +1,3 @@
-# OpenSlides ... service
+# OpenSlides backend service
 
 Service for OpenSlides which ...
