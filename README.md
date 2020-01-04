@@ -5,17 +5,17 @@ or delete data, checks and parses them and writes them to the event stream.
 
 It is also responsible for ...
 
-To setup run
+To setup development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
     $ pip install --upgrade pip
     $ pip install --requirement requirements.txt
 
-To start run
+To start it run
 
-    $ python start.py
+    $ python start.py  # Stars Werkzeug's development server
 
 or
 
-    $ gunicorn --config=python:gunicorn_conf openslides_backend.wsgi:application
+    $ OPENSLIDES_BACKEND_DEBUG=1 gunicorn --config=python:gunicorn_conf openslides_backend.wsgi:application

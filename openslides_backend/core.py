@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import Iterable, Union
 
@@ -7,9 +6,10 @@ from werkzeug.routing import Map, Rule
 from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
 from werkzeug.wrappers import Response
 
+from . import logging
 from .utils.types import ApplicationConfig, Environment, StartResponse, WSGIEnvironment
 from .utils.wrappers import Request
-from .views import ActionView
+from .views.action_view import ActionView
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +104,8 @@ def create_application() -> Application:
     Parses services configuration from environment variables.
     """
     # Setup global loglevel.
-    logging.basicConfig(
-        level=os.environ.get("OPENSLIDES_BACKEND_DEBUG", logging.WARNING)
-    )
+    if os.environ.get("OPENSLIDES_BACKEND_DEBUG"):
+        logging.basicConfig(level=logging.DEBUG)
 
     logger.debug("Create application")
 
