@@ -1,4 +1,4 @@
-from ..utils.wrappers import Request
+from ..utils.types import Headers
 
 
 class AuthAdapter:
@@ -9,5 +9,5 @@ class AuthAdapter:
     def __init__(self, auth_url: str) -> None:
         self.url = auth_url
 
-    def get_user(self, request: Request) -> int:
+    def get_user(self, headers: Headers) -> int:
         return 0

@@ -1,43 +1,54 @@
-from typing import List, Optional
+from typing import Iterable
 
+from ..services.providers import DatabaseProvider
 from ..utils.types import Event
-from .types import Payload
+from .types import DataSet, Payload
 
 
 class Action:
-    def perform(self, payload: Payload, user_id: int) -> Event:
+    """
+    Base class for actions.
+    """
+
+    position = 0
+
+    def __init__(self, database_adapter: DatabaseProvider) -> None:
+        self.database_adapter = database_adapter
+
+    def perform(self, payload: Payload, user_id: int) -> Iterable[Event]:
         """
-        ...
+        Entrypoint to perform the action.
         """
         self.user_id = user_id
         self.validate(payload)
-        return self.create_event(payload)
+        dataset = self.prepare_dataset(payload)
+        return self.create_events(dataset)
 
     def validate(self, payload: Payload) -> None:
         """
-        ...
+        Validates payload. Raises ActionException if payload is invalid.
         """
         raise NotImplementedError
 
-    def create_event(self, payload: Payload, keys: Optional[List] = None) -> Event:
+    def prepare_dataset(self, payload: Payload) -> DataSet:
         """
-        ...
+        Prepares dataset from payload. Also fires all necessary database
+        queries.
         """
         raise NotImplementedError
 
+    def create_events(self, dataset: DataSet) -> Iterable[Event]:
+        """
+        Takes dataset and creates events that can be sent to event store.
+        """
+        raise NotImplementedError
 
-class DatabaseAction(Action):
-    def perform(self, payload: Payload, user_id: int) -> Event:
+    def set_min_position(self, position: int) -> None:
         """
-        ...
+        Sets self.position to the new value position if this value is smaller
+        than the old one. Sets it if it is the first call.
         """
-        self.user_id = user_id
-        self.validate(payload)
-        keys = self.read_database(payload)
-        return self.create_event(payload, keys)
-
-    def read_database(self, payload: Payload) -> List[str]:
-        """
-        ...
-        """
-        raise NotImplementedError  # TODO zweites Protocol
+        if self.position == 0:
+            self.position = position
+        else:
+            self.position = min(position, self.position)

@@ -8,16 +8,17 @@ from .. import logging
 from ..actions.action_map import action_map
 from ..exceptions import (
     ActionException,
+    AuthException,
     BackendBaseException,
     EventStoreException,
     MediaTypeException,
 )
 from ..services.auth import AuthAdapter
-from ..services.database import Database
+from ..services.database import DatabaseAdapter
 from ..services.event_store import EventStoreAdapter
 from ..utils.types import Environment, Event
-from ..utils.wrappers import Request
 from .schema import action_view_schema
+from .wrappers import Request
 
 logger = logging.getLogger(__name__)
 
@@ -28,18 +29,21 @@ class ActionView:
     """
 
     def __init__(self, environment: Environment) -> None:
-        self.database = Database(environment["database_url"])
-        self.event_store = EventStoreAdapter(environment["event_store_url"])
+        self.database_adapter = DatabaseAdapter(environment["database_url"])
+        self.event_store_adapter = EventStoreAdapter(environment["event_store_url"])
         self.auth_adapter = AuthAdapter(environment["auth_url"])
 
     def dispatch(self, request: Request, **kwargs: dict) -> Response:
         """
         Dispatches request to the viewpoint.
         """
-        logger.debug("Start dispatching request")
+        logger.debug("Start dispatching request.")
 
         # Get request user id
-        self.user_id = self.auth_adapter.get_user(request)
+        try:
+            self.user_id = self.auth_adapter.get_user(request)
+        except AuthException as exception:
+            self.handle_error(exception)
 
         # Validate payload of request
         if not request.is_json:
@@ -62,39 +66,44 @@ class ActionView:
 
         # Send events to database
         try:
-            self.event_store.send(events)
+            self.event_store_adapter.send(events)
         except EventStoreException as exception:
             self.handle_error(exception)
 
+        logger.debug("Request was successful. Send response now.")
         return Response()
 
     def validate(self, action_requests: List[Dict]) -> None:
         """
-        Validates action_requests sent by client.
-
-        Raises JsonSchemaException if input is invalid.
+        Validates action requests sent by client. Raises JsonSchemaException if
+        input is invalid.
         """
+        logger.debug("Validate action request.")
         action_view_schema(action_requests)
 
     def parse_actions(self, action_requests: List[Dict]) -> Iterable[Event]:
         """
-        Parses action requests send by client
+        Parses action requests send by client. Raises ActionException if
+        something went wrong.
         """
-        events = []
+        all_events: List[Event] = []
         for element in action_requests:
-            logger.debug(f"Action map contains the following actions: {action_map}")
+            logger.debug(f"Action map contains the following actions: {action_map}.")
             action = action_map.get(element["action"])
             if action is None:
                 raise BadRequest(f"Action {element['action']} does not exist.")
-            logger.debug(f"Perform action {element['action']}")
-            event = action().perform(element["data"], self.user_id)
-            logger.debug(f"Prepared event {event}")
-            events.append(event)
+            logger.debug(f"Perform action {element['action']}.")
+            events = action(self.database_adapter).perform(
+                element["data"], self.user_id
+            )
+            logger.debug(f"Prepared events {events}.")
+            all_events.extend(events)
+        logger.debug("All events ready.")
         return events
 
     def handle_error(self, exception: BackendBaseException) -> None:
         """
         Handles some exceptions during dispatch of request. Raises HTTP 400.
         """
-        logger.debug(f"Error in view. Exception message is {exception.message}")
+        logger.debug(f"Error in view. Exception message: {exception.message}")
         raise BadRequest(exception.message)

@@ -12,5 +12,6 @@ __pycache__/
 # Mypy (static type checker) cache
 .mypy_cache/
 
-# Test coverage cache
+# Pytest and Pytest-Cov cache
+.pytest_cache/
 .coverage

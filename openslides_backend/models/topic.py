@@ -7,7 +7,10 @@ class Topic(Model):
     Model for simple topics that can be shown in agenda.
     """
 
-    id = fields.IdField(description="A string. The id of the topic.")
+    id = fields.IdField(description="An integer. The id of the topic.")
+    meeting_id = fields.ForeignKeyField(
+        description="An integer. The id of the meeting of the topic."
+    )
     title = fields.RequiredCharField(
         description="A string. The title or headline of the topic."
     )

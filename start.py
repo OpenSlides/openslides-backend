@@ -11,7 +11,7 @@ def main() -> None:
     """
     Main entry point for this start script.
     """
-    # Log "Start Werkzeug's development server."
+    # Log: "Start Werkzeug's development server."
     os.environ.setdefault("OPENSLIDES_BACKEND_DEBUG", "1")
     run_simple("localhost", 8000, application, use_reloader=True)
 
