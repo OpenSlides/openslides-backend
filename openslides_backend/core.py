@@ -1,25 +1,27 @@
 import os
 from typing import Iterable, Union
 
-from werkzeug.exceptions import BadRequest, HTTPException
+from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
 from werkzeug.wrappers import Response
 
 from . import logging
 from .utils.types import ApplicationConfig, Environment, StartResponse, WSGIEnvironment
-from .utils.wrappers import Request
 from .views.action_view import ActionView
+from .views.wrappers import Request
 
 logger = logging.getLogger(__name__)
 
 
 class RuleFactory(WerkzeugRuleFactory):
     """
+    Rule factory for the application.
     """
 
     def get_rules(self, map: Map) -> Iterable[Rule]:
         """
+        Returns all rules that this application listens for.
         """
         return [
             Rule("/system/api/actions", endpoint="actions", methods=("POST",),),
@@ -35,25 +37,23 @@ class Application:
     """
 
     def __init__(self, config: ApplicationConfig) -> None:
-        self.config = config
         self.environment = config["environment"]
         self.url_map = Map()
         self.url_map.add(RuleFactory())
 
     def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
         """
-        Dispatches request to single apps according to URL rules. Returns a
-        Response object or a HTTPException (both are WSGI applications
-        themselves).
+        Dispatches request to route according to URL rules. Returns a Response
+        object or a HTTPException. Both are WSGI applications themselves.
         """
         adapter = self.url_map.bind_to_environ(request.environ)
         try:
             rule, arguments = adapter.match(return_rule=True)
-            logger.debug(f"Found rule {rule} with arguments {arguments}")
+            logger.debug(f"Found rule {rule} with arguments {arguments}.")
             if rule.endpoint == "actions":
                 response = ActionView(self.environment).dispatch(request, **arguments)
-            else:
-                raise BadRequest(".............")  # TODO
+            else:  # pragma: no cover
+                raise RuntimeError("This exception should not be raised. FIXME")  # TODO
         except HTTPException as exception:
             return exception
         return response
@@ -107,10 +107,10 @@ def create_application() -> Application:
     if os.environ.get("OPENSLIDES_BACKEND_DEBUG"):
         logging.basicConfig(level=logging.DEBUG)
 
-    logger.debug("Create application")
+    logger.debug("Create application.")
 
     environment = get_environment()
-    logger.debug(f"Using environment: {environment}")
+    logger.debug(f"Using environment: {environment}.")
 
     # Create application instance.
     application = Application(ApplicationConfig(environment=environment))

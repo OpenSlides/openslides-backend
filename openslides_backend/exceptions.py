@@ -3,6 +3,10 @@ class BackendBaseException(Exception):
         self.message = message
 
 
+class AuthException(BackendBaseException):
+    pass
+
+
 class MediaTypeException(BackendBaseException):
     pass
 

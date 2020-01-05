@@ -35,6 +35,10 @@ class TextField(Field):
         return dict(description=self.description, type="string",)
 
 
+class ForeignKeyField(IdField):
+    pass
+
+
 class ManyToManyArrayField(Field):
     def get_schema(self) -> Schema:
         return dict(

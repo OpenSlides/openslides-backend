@@ -14,7 +14,9 @@ is_valid_new_topic = fastjsonschema.compile(
             "properties": {
                 "title": Topic().get_schema("title"),
                 "text": Topic().get_schema("text"),
-                "attachments": Topic().get_schema("attachments"),
+                "mediafile_attachment_ids": Topic().get_schema(
+                    "mediafile_attachment_ids"
+                ),
             },
             "required": ["title"],
         },
