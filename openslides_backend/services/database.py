@@ -40,7 +40,7 @@ class DatabaseAdapter:
 
     def getMany(
         self, collection: Collection, ids: List[int], mapped_fields: List[str] = None
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
         data = {
             "command": "getMany",
             "parameters": {
@@ -52,7 +52,7 @@ class DatabaseAdapter:
         logger.debug(f"Start request to database with the following data: {data}")
         response = requests.get(self.url, data=json.dumps(data), headers=self.headers)
         print(response)  # TODO: Use response
-        return ([{"id": 42, "fields": {"foo": "bar"}}], 0)
+        return ({42: {"foo": "bar"}}, 0)
 
     def getId(self, collection: Collection) -> Tuple[int, int]:
         data = {"command": "getId", "parameters": {"collection": str(collection)}}

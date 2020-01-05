@@ -15,6 +15,6 @@ class Topic(Model):
         description="A string. The title or headline of the topic."
     )
     text = fields.TextField(description="A string containing HTML formatted text.")
-    attachments = fields.ManyToManyArrayField(
+    mediafile_attachment_ids = fields.ManyToManyArrayField(
         description="An array of attachment ids that should be referenced with this topic."
     )

@@ -52,7 +52,7 @@ class Application:
             logger.debug(f"Found rule {rule} with arguments {arguments}.")
             if rule.endpoint == "actions":
                 response = ActionView(self.environment).dispatch(request, **arguments)
-            else:
+            else:  # pragma: no cover
                 raise RuntimeError("This exception should not be raised. FIXME")  # TODO
         except HTTPException as exception:
             return exception

@@ -1,9 +1,9 @@
-from typing import Iterable
+from typing import Any, Iterable
 
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...exceptions import ActionException
-from ...utils.types import Collection, Event
+from ...utils.types import Collection, Event, FullQualifiedField
 from ..action_map import register_action
 from ..base import Action
 from ..types import DataSet, Payload
@@ -16,6 +16,8 @@ class TopicCreate(Action):
     Action to create simple topics that can be shown in the agenda.
     """
 
+    collection = Collection("topic")
+
     def validate(self, payload: Payload) -> None:
         try:
             is_valid_new_topic(payload)
@@ -25,21 +27,83 @@ class TopicCreate(Action):
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
         for topic in payload:
-            id, position = self.database_adapter.getId(collection=Collection("topic"))
+            id, position = self.database_adapter.getId(collection=self.collection)
             self.set_min_position(position)
-            if topic.get("attachments"):
-                mediafiles, positon = self.database_adapter.getMany(
-                    collection=Collection("mediafile.attachment"),
-                    ids=topic["attachments"],
+            if topic.get("mediafile_attachment_ids"):
+                mediafile_attachment, position = self.database_adapter.getMany(
+                    collection=Collection("mediafile_attachment"),
+                    ids=topic["mediafile_attachment_ids"],
                     mapped_fields=["topic_ids"],
                 )
                 self.set_min_position(position)
             else:
-                mediafiles = []
+                mediafile_attachment = {}
             data.append(
-                {"topic": topic, "new_id": id, "mediafile.attachment": mediafiles}
+                {
+                    "topic": topic,
+                    "new_id": id,
+                    "mediafile_attachment": mediafile_attachment,
+                }
             )
         return {"position": self.position, "data": data}
 
     def create_events(self, dataset: DataSet) -> Iterable[Event]:
-        return []
+        position = dataset["position"]
+        for element in dataset["data"]:
+            yield self.create_topic_event(position, element)
+            for mediafile_attachment_id in element["topic"].get(
+                "mediafile_attachment_ids", []
+            ):
+                information = {
+                    "user_id": self.user_id,
+                    "text": "Topic created. Updated reference.",  # TODO: Change to "Mediafile attached to new topic"
+                }
+                fields = {}
+
+                # Topic Ids
+                topic_ids = element["mediafile_attachment"][mediafile_attachment_id][
+                    "topic_ids"
+                ] + [element["new_id"]]
+                fields[
+                    FullQualifiedField(
+                        Collection("mediafile_attachment"),
+                        mediafile_attachment_id,
+                        "topic_ids",
+                    )
+                ] = topic_ids
+
+                yield Event(
+                    type="update",
+                    position=position,
+                    information=information,
+                    fields=fields,
+                )
+
+    def create_topic_event(self, position: int, element: Any) -> Event:
+        information = {"user_id": self.user_id, "text": "Topic created"}
+        fields = {}
+
+        # Title
+        fields[
+            FullQualifiedField(self.collection, element["new_id"], "title")
+        ] = element["topic"]["title"]
+
+        # Text
+        text = element["topic"].get("text")
+        if text is not None:
+            fields[
+                FullQualifiedField(self.collection, element["new_id"], "text")
+            ] = text
+
+        # Mediafile attachments
+        mediafile_attachment_ids = element["topic"].get("mediafile_attachment_ids")
+        if mediafile_attachment_ids:
+            fields[
+                FullQualifiedField(
+                    self.collection, element["new_id"], "mediafile_attachment_ids"
+                )
+            ] = mediafile_attachment_ids
+
+        return Event(
+            type="create", position=position, information=information, fields=fields,
+        )
