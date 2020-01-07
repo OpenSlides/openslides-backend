@@ -13,4 +13,4 @@ class EventStoreAdapter:
         # self.headers = {"Content-Type": "application/json"}
 
     def send(self, events: Iterable[Event]) -> None:
-        pass
+        raise

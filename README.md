@@ -1,4 +1,4 @@
-# OpenSlides backend service
+# OpenSlides Backend Service
 
 Backend service for OpenSlides which accepts incomming requests to add, change
 or delete data, checks and parses them and writes them to the event stream.

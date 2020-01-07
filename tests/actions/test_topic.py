@@ -3,17 +3,22 @@ from unittest.mock import patch
 
 from openslides_backend.actions.topic.actions import TopicCreate
 from openslides_backend.actions.types import Payload
-from openslides_backend.exceptions import ActionException
-from openslides_backend.wsgi import application
+from openslides_backend.core import create_application
+from openslides_backend.exceptions import ActionException, PermissionDenied
 
-from ..database import TESTDATA, DatabaseTestAdapter
+from ..adapters.authentication import AuthenticationTestAdapter
+from ..adapters.database import TESTDATA, DatabaseTestAdapter
+from ..adapters.event_store import EventStoreTestAdapter
+from ..adapters.permission import PermissionTestAdapter
 from ..utils import Client, ResponseWrapper, get_fqfield
 
 
-class TopicCreateActionTester(TestCase):
+class BaseTopicCreateActionTester(TestCase):
+    """
+    Tests the topic create action.
+    """
+
     def setUp(self) -> None:
-        self.action = TopicCreate(DatabaseTestAdapter())
-        self.user_id = 5968705978
         self.valid_payload_1 = [
             {"title": "title_ooPhi9ZohC", "text": "text_eeKoosahh4"}
         ]
@@ -29,6 +34,12 @@ class TopicCreateActionTester(TestCase):
             }
         ]
         self.valid_payload_3 = [{"title": "title_eivaey2Aeg"}]
+
+
+class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
 
     def test_validation_empty(self) -> None:
         payload: Payload = []
@@ -99,6 +110,17 @@ class TopicCreateActionTester(TestCase):
             ],
         )
 
+
+class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
+    @patch(
+        "openslides_backend.views.action_view.PermissionAdapter", PermissionTestAdapter
+    )
+    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.user_id = 5968705978  # This user has perm "topic.can_manage", see patch decorator above.
+
     def test_perform_empty(self) -> None:
         payload: Payload = []
         with self.assertRaises(ActionException):
@@ -153,7 +175,7 @@ class TopicCreateActionTester(TestCase):
                     "position": 1,
                     "information": {
                         "user_id": self.user_id,
-                        "text": "Topic created. Updated reference.",
+                        "text": "Mediafile attached to new topic.",
                     },
                     "fields": {
                         get_fqfield(
@@ -166,7 +188,7 @@ class TopicCreateActionTester(TestCase):
                     "position": 1,
                     "information": {
                         "user_id": self.user_id,
-                        "text": "Topic created. Updated reference.",
+                        "text": "Mediafile attached to new topic.",
                     },
                     "fields": {
                         get_fqfield(
@@ -191,8 +213,42 @@ class TopicCreateActionTester(TestCase):
             ],
         )
 
+    def test_perform_no_permission_1(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.valid_payload_1, user_id=4796568680)
+
+    def test_perform_no_permission_2(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.valid_payload_2, user_id=4796568680)
+
+    def test_perform_no_permission_3(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.valid_payload_3, user_id=4796568680)
+
+
+class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
+    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
+    @patch(
+        "openslides_backend.views.action_view.PermissionAdapter", PermissionTestAdapter,
+    )
+    @patch(
+        "openslides_backend.views.action_view.EventStoreAdapter", EventStoreTestAdapter
+    )
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = 5968705978  # This user has perm "topic.can_manage", see patch decorator above.
+        self.authentication_patcher = patch(
+            "openslides_backend.views.action_view.AuthenticationAdapter",
+            AuthenticationTestAdapter(self.user_id),
+        )
+        self.authentication_patcher.start()
+        self.application = create_application()
+
+    def tearDown(self) -> None:
+        self.authentication_patcher.stop()
+
     def test_wsgi_request_empty(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions", json=[{"action": "topic.create", "data": [{}]}]
         )
@@ -202,11 +258,14 @@ class TopicCreateActionTester(TestCase):
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[
-                {"action": "topic.create", "data": [{"wrong_field": "text_Hoh3quoos9"}]}
+                {
+                    "action": "topic.create",
+                    "data": [{"wrong_field": "text_Hoh3quoos9"}],
+                }
             ],
         )
         self.assertEqual(response.status_code, 400)
@@ -214,29 +273,66 @@ class TopicCreateActionTester(TestCase):
             "data[0] must contain [\\'title\\'] properties", str(response.data)
         )
 
-    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_1(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_2(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "topic.create", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_3(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "topic.create", "data": self.valid_payload_3}],
         )
         self.assertEqual(response.status_code, 200)
+
+
+class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
+    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
+    @patch(
+        "openslides_backend.views.action_view.PermissionAdapter", PermissionTestAdapter,
+    )
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id_no_permission = 9707919439
+        self.authentication_patcher = patch(
+            "openslides_backend.views.action_view.AuthenticationAdapter",
+            AuthenticationTestAdapter(self.user_id_no_permission),
+        )
+        self.authentication_patcher.start()
+        self.application = create_application()
+
+    def test_wsgi_request_no_permission_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.create", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.create", "data": self.valid_payload_2}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_3(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.create", "data": self.valid_payload_3}],
+        )
+        self.assertEqual(response.status_code, 403)

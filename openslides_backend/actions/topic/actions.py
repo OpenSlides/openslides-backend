@@ -2,7 +2,7 @@ from typing import Any, Iterable
 
 from fastjsonschema import JsonSchemaException  # type: ignore
 
-from ...exceptions import ActionException
+from ...exceptions import ActionException, PermissionDenied
 from ...utils.types import Collection, Event, FullQualifiedField
 from ..action_map import register_action
 from ..base import Action
@@ -17,6 +17,10 @@ class TopicCreate(Action):
     """
 
     collection = Collection("topic")
+
+    def check_permission_on_entry(self) -> None:
+        if not self.permission_adapter.has_perm(self.user_id, "topic.can_manage"):
+            raise PermissionDenied("User does not have topic.can_manage permission.")
 
     def validate(self, payload: Payload) -> None:
         try:
@@ -56,7 +60,7 @@ class TopicCreate(Action):
             ):
                 information = {
                     "user_id": self.user_id,
-                    "text": "Topic created. Updated reference.",  # TODO: Change to "Mediafile attached to new topic"
+                    "text": "Mediafile attached to new topic.",
                 }
                 fields = {}
 

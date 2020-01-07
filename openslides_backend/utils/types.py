@@ -5,9 +5,10 @@ from mypy_extensions import TypedDict
 Environment = TypedDict(
     "Environment",
     {
+        "authentication_url": str,
+        "permission_url": str,
         "database_url": str,
         "event_store_url": str,
-        "auth_url": str,
         "worker_timeout": int,
     },
 )
@@ -81,8 +82,6 @@ class FullQualifiedField:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullQualifiedField):
             return NotImplemented
-        print(self.collection, self.field)
-        print(self.collection == other.collection)
         return (
             self.collection == other.collection
             and self.id == other.id

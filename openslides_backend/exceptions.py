@@ -11,6 +11,10 @@ class MediaTypeException(BackendBaseException):
     pass
 
 
+class PermissionDenied(BackendBaseException):
+    pass
+
+
 class ActionException(BackendBaseException):
     pass
 

@@ -32,12 +32,14 @@ class Application:
     """
     Central application container for this service.
 
-    During initialization we bind configuration to the instance and also map
-    rule factory's urls.
+    During initialization we bind configuration and action view to the instance
+    and also map rule factory's urls.
     """
 
     def __init__(self, config: ApplicationConfig) -> None:
         self.environment = config["environment"]
+        self.views = {}
+        self.views["actions"] = ActionView(self.environment)
         self.url_map = Map()
         self.url_map.add(RuleFactory())
 
@@ -50,10 +52,7 @@ class Application:
         try:
             rule, arguments = adapter.match(return_rule=True)
             logger.debug(f"Found rule {rule} with arguments {arguments}.")
-            if rule.endpoint == "actions":
-                response = ActionView(self.environment).dispatch(request, **arguments)
-            else:  # pragma: no cover
-                raise RuntimeError("This exception should not be raised. FIXME")  # TODO
+            response = self.views[rule.endpoint].dispatch(request, **arguments)
         except HTTPException as exception:
             return exception
         return response
@@ -84,15 +83,18 @@ def get_environment() -> Environment:
     Parses environment variables and sets their defaults if they do not exist.
     """
 
-    database_url = event_store_url = auth_url = os.environ.get(
+    authentication_url = (
+        permission_url
+    ) = database_url = event_store_url = os.environ.get(
         "OPENSLIDES_BACKEND_DATA_STORE_URL",
         "http://localhost:9000/",  # TODO: Use correct variables here.
     )
     worker_timeout = int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30"))
     return Environment(
+        authentication_url=authentication_url,
+        permission_url=permission_url,
         database_url=database_url,
         event_store_url=event_store_url,
-        auth_url=auth_url,
         worker_timeout=worker_timeout,
     )
 
