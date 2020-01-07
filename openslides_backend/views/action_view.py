@@ -9,7 +9,12 @@ from ..actions.action_map import action_map
 from ..adapters.authentication import AuthenticationAdapter
 from ..adapters.database import DatabaseAdapter
 from ..adapters.event_store import EventStoreAdapter
-from ..adapters.providers import AuthenticationProvider, DatabaseProvider
+from ..adapters.permission import PermissionAdapter
+from ..adapters.providers import (
+    AuthenticationProvider,
+    DatabaseProvider,
+    PermissionProvier,
+)
 from ..exceptions import (
     ActionException,
     AuthException,
@@ -30,13 +35,16 @@ class ActionView:
     """
 
     def __init__(self, environment: Environment) -> None:
+        self.authentication_adapter: AuthenticationProvider = AuthenticationAdapter(
+            environment["authentication_url"]
+        )
+        self.permission_adapter: PermissionProvier = PermissionAdapter(
+            environment["permission_url"]
+        )
         self.database_adapter: DatabaseProvider = DatabaseAdapter(
             environment["database_url"]
         )
         self.event_store_adapter = EventStoreAdapter(environment["event_store_url"])
-        self.authentication_adapter: AuthenticationProvider = AuthenticationAdapter(
-            environment["auth_url"]
-        )
 
     def dispatch(self, request: Request, **kwargs: dict) -> Response:
         """
