@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from ..services.providers import DatabaseProvider
+from ..adapters.providers import DatabaseProvider
 from ..utils.types import Event
 from .types import DataSet, Payload
 

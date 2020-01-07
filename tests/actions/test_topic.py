@@ -6,7 +6,8 @@ from openslides_backend.actions.types import Payload
 from openslides_backend.exceptions import ActionException
 from openslides_backend.wsgi import application
 
-from ..database import TESTDATA, DatabaseTestAdapter
+from ..adapters.authentication import AuthenticationTestAdapter
+from ..adapters.database import TESTDATA, DatabaseTestAdapter
 from ..utils import Client, ResponseWrapper, get_fqfield
 
 
@@ -191,6 +192,10 @@ class TopicCreateActionTester(TestCase):
             ],
         )
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_empty(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post(
@@ -201,6 +206,10 @@ class TopicCreateActionTester(TestCase):
             "data[0] must contain [\\'title\\'] properties", str(response.data)
         )
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post(
@@ -214,6 +223,10 @@ class TopicCreateActionTester(TestCase):
             "data[0] must contain [\\'title\\'] properties", str(response.data)
         )
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(application, ResponseWrapper)
@@ -223,6 +236,10 @@ class TopicCreateActionTester(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_2(self) -> None:
         client = Client(application, ResponseWrapper)
@@ -232,6 +249,10 @@ class TopicCreateActionTester(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_3(self) -> None:
         client = Client(application, ResponseWrapper)

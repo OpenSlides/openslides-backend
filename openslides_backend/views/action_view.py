@@ -6,6 +6,10 @@ from werkzeug.wrappers import Response
 
 from .. import logging
 from ..actions.action_map import action_map
+from ..adapters.authentication import AuthenticationAdapter
+from ..adapters.database import DatabaseAdapter
+from ..adapters.event_store import EventStoreAdapter
+from ..adapters.providers import AuthenticationProvider, DatabaseProvider
 from ..exceptions import (
     ActionException,
     AuthException,
@@ -13,9 +17,6 @@ from ..exceptions import (
     EventStoreException,
     MediaTypeException,
 )
-from ..services.auth import AuthAdapter
-from ..services.database import DatabaseAdapter
-from ..services.event_store import EventStoreAdapter
 from ..utils.types import Environment, Event
 from .schema import action_view_schema
 from .wrappers import Request
@@ -29,9 +30,13 @@ class ActionView:
     """
 
     def __init__(self, environment: Environment) -> None:
-        self.database_adapter = DatabaseAdapter(environment["database_url"])
+        self.database_adapter: DatabaseProvider = DatabaseAdapter(
+            environment["database_url"]
+        )
         self.event_store_adapter = EventStoreAdapter(environment["event_store_url"])
-        self.auth_adapter = AuthAdapter(environment["auth_url"])
+        self.authentication_adapter: AuthenticationProvider = AuthenticationAdapter(
+            environment["auth_url"]
+        )
 
     def dispatch(self, request: Request, **kwargs: dict) -> Response:
         """
@@ -41,7 +46,7 @@ class ActionView:
 
         # Get request user id
         try:
-            self.user_id = self.auth_adapter.get_user(request)
+            self.user_id = self.authentication_adapter.get_user(request)
         except AuthException as exception:
             self.handle_error(exception)
 

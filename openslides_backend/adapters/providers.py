@@ -26,7 +26,7 @@ class DatabaseProvider(Protocol):  # pragma: no cover
     # getAll, filter, count, min, max, ...some with deleted or only deleted
 
 
-class AuthProvider(Protocol):  # pragma: no cover
+class AuthenticationProvider(Protocol):  # pragma: no cover
     """
     Interface for authentication adapter used in views.
     """

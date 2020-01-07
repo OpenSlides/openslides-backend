@@ -1,7 +1,7 @@
 from ..utils.types import Headers
 
 
-class AuthAdapter:
+class AuthenticationAdapter:
     """
     Adapter to connect to auth service.
     """
@@ -10,4 +10,4 @@ class AuthAdapter:
         self.url = auth_url
 
     def get_user(self, headers: Headers) -> int:
-        return 0
+        raise

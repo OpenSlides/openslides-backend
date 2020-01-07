@@ -1,5 +1,6 @@
 import os
 from unittest import TestCase
+from unittest.mock import patch
 
 from openslides_backend.core import Application, create_application
 from openslides_backend.utils.types import (
@@ -9,6 +10,7 @@ from openslides_backend.utils.types import (
 )
 from openslides_backend.wsgi import application
 
+from .adapters.authentication import AuthenticationTestAdapter
 from .utils import Client, ResponseWrapper
 
 
@@ -61,18 +63,30 @@ class WSGIApplicationTester(TestCase):
         response = client.get("/system/api/actions")
         self.assertEqual(response.status_code, 405)
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_wrong_media_type(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post("/system/api/actions")
         self.assertEqual(response.status_code, 400)
         self.assertIn("Wrong media type.", str(response.data))
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_missing_body(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post("/system/api/actions", content_type="application/json")
         self.assertEqual(response.status_code, 400)
         self.assertIn("Failed to decode JSON object", str(response.data))
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_fuzzy_body(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post(
@@ -82,6 +96,10 @@ class WSGIApplicationTester(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("data must be array", str(response.data))
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_fuzzy_body_2(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post(
@@ -94,6 +112,10 @@ class WSGIApplicationTester(TestCase):
             str(response.data),
         )
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
     def test_wsgi_request_no_existing_action(self) -> None:
         client = Client(application, ResponseWrapper)
         response = client.post(
