@@ -19,7 +19,7 @@ class PermissionProvier(Protocol):  # pragma: no cover
     Interface for permission service used in views and actions.
     """
 
-    def has_perm(self, user_id: int, permission: str) -> None:
+    def has_perm(self, user_id: int, permission: str) -> bool:
         ...
 
 

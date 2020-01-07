@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from ..adapters.providers import DatabaseProvider
+from ..adapters.providers import DatabaseProvider, PermissionProvier
 from ..utils.types import Event
 from .types import DataSet, Payload
 
@@ -12,7 +12,10 @@ class Action:
 
     position = 0
 
-    def __init__(self, database_adapter: DatabaseProvider) -> None:
+    def __init__(
+        self, permission_adapter: PermissionProvier, database_adapter: DatabaseProvider
+    ) -> None:
+        self.permission_adapter = permission_adapter
         self.database_adapter = database_adapter
 
     def perform(self, payload: Payload, user_id: int) -> Iterable[Event]:
@@ -20,9 +23,17 @@ class Action:
         Entrypoint to perform the action.
         """
         self.user_id = user_id
+        self.check_permission_on_entry()
         self.validate(payload)
         dataset = self.prepare_dataset(payload)
+        self.check_permission_on_dataset(dataset)
         return self.create_events(dataset)
+
+    def check_permission_on_entry(self) -> None:
+        """
+        Checks permission at the beginning of the action.
+        """
+        raise NotImplementedError
 
     def validate(self, payload: Payload) -> None:
         """
@@ -36,6 +47,13 @@ class Action:
         queries.
         """
         raise NotImplementedError
+
+    def check_permission_on_dataset(self, dataset: DataSet) -> None:
+        """
+        Checks permission in the middle of the action according to dataset. Can
+        be used for extra checks. Just passes at default.
+        """
+        pass
 
     def create_events(self, dataset: DataSet) -> Iterable[Event]:
         """

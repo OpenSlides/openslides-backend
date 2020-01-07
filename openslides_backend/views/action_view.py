@@ -1,7 +1,7 @@
 from typing import Dict, Iterable, List
 
 from fastjsonschema import JsonSchemaException  # type: ignore
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Forbidden
 from werkzeug.wrappers import Response
 
 from .. import logging
@@ -21,6 +21,7 @@ from ..exceptions import (
     BackendBaseException,
     EventStoreException,
     MediaTypeException,
+    PermissionDenied,
 )
 from ..utils.types import Environment, Event
 from .schema import action_view_schema
@@ -56,32 +57,35 @@ class ActionView:
         try:
             self.user_id = self.authentication_adapter.get_user(request)
         except AuthException as exception:
-            self.handle_error(exception)
+            self.handle_error(exception, 400)
 
         # Validate payload of request
         if not request.is_json:
             self.handle_error(
                 MediaTypeException(
                     "Wrong media type. Use 'Content-Type: application/json' instead."
-                )
+                ),
+                400,
             )
         action_requests = request.json
         try:
             self.validate(action_requests)
         except JsonSchemaException as exception:
-            self.handle_error(exception)
+            self.handle_error(exception, 400)
 
         # Parse actions and creates events
         try:
             events = self.parse_actions(action_requests)
+        except PermissionDenied as exception:
+            self.handle_error(exception, 403)
         except ActionException as exception:
-            self.handle_error(exception)
+            self.handle_error(exception, 400)
 
         # Send events to database
         try:
             self.event_store_adapter.send(events)
         except EventStoreException as exception:
-            self.handle_error(exception)
+            self.handle_error(exception, 400)
 
         logger.debug("Request was successful. Send response now.")
         return Response()
@@ -106,7 +110,7 @@ class ActionView:
             if action is None:
                 raise BadRequest(f"Action {element['action']} does not exist.")
             logger.debug(f"Perform action {element['action']}.")
-            events = action(self.database_adapter).perform(
+            events = action(self.permission_adapter, self.database_adapter).perform(
                 element["data"], self.user_id
             )
             logger.debug(f"Prepared events {events}.")
@@ -114,9 +118,16 @@ class ActionView:
         logger.debug("All events ready.")
         return events
 
-    def handle_error(self, exception: BackendBaseException) -> None:
+    def handle_error(self, exception: BackendBaseException, status_code: int) -> None:
         """
-        Handles some exceptions during dispatch of request. Raises HTTP 400.
+        Handles some exceptions during dispatch of request. Raises HTTP 400 or
+        HTTP 403.
         """
-        logger.debug(f"Error in view. Exception message: {exception.message}")
-        raise BadRequest(exception.message)
+        logger.debug(
+            f"Error in view. Status code: {status_code}. Exception message: {exception.message}"
+        )
+        if status_code == 400:
+            raise BadRequest(exception.message)
+        elif status_code == 403:
+            raise Forbidden(exception.message)
+        raise RuntimeError("This line should never be reached.")

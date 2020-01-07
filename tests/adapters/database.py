@@ -27,7 +27,7 @@ class DatabaseTestAdapter:
     implementation.
     """
 
-    def __init__(*args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def get(self, fqid: FullQualifiedId, mapped_fields: List[str] = None) -> None:

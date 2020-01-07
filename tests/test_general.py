@@ -20,7 +20,7 @@ class WSGIApplicationTester(TestCase):
 
     @patch(
         "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
+        AuthenticationTestAdapter(0),  # User is anonymous
     )
     def setUp(self) -> None:
         self.application = create_application()
