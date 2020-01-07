@@ -25,6 +25,11 @@ class WSGIApplicationTester(TestCase):
     def setUp(self) -> None:
         self.application = create_application()
 
+    def test_wsgi_file(self) -> None:
+        from openslides_backend.wsgi import application
+
+        self.assertTrue(isinstance(application, Application))
+
     def test_create_application(self) -> None:
         self.assertTrue(isinstance(self.application, Application))
 

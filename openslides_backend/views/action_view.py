@@ -13,6 +13,7 @@ from ..adapters.permission import PermissionAdapter
 from ..adapters.providers import (
     AuthenticationProvider,
     DatabaseProvider,
+    EventStoreProvider,
     PermissionProvier,
 )
 from ..exceptions import (
@@ -45,7 +46,9 @@ class ActionView:
         self.database_adapter: DatabaseProvider = DatabaseAdapter(
             environment["database_url"]
         )
-        self.event_store_adapter = EventStoreAdapter(environment["event_store_url"])
+        self.event_store_adapter: EventStoreProvider = EventStoreAdapter(
+            environment["event_store_url"]
+        )
 
     def dispatch(self, request: Request, **kwargs: dict) -> Response:
         """

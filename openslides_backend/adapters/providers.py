@@ -1,8 +1,8 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Iterable, List, Tuple
 
 from typing_extensions import Protocol
 
-from ..utils.types import Collection, FullQualifiedId, Headers
+from ..utils.types import Collection, Event, FullQualifiedId, Headers
 
 
 class AuthenticationProvider(Protocol):  # pragma: no cover
@@ -42,3 +42,12 @@ class DatabaseProvider(Protocol):  # pragma: no cover
     # def exists(self, collection: Collection, ids: List[int]) -> None: ...
 
     # getAll, filter, count, min, max, ...some with deleted or only deleted
+
+
+class EventStoreProvider(Protocol):  # pragma: no cover
+    """
+    Interface for event store adapter used in views and actions.
+    """
+
+    def send(self, events: Iterable[Event]) -> None:
+        ...
