@@ -32,12 +32,14 @@ class Application:
     """
     Central application container for this service.
 
-    During initialization we bind configuration to the instance and also map
-    rule factory's urls.
+    During initialization we bind configuration and action view to the instance
+    and also map rule factory's urls.
     """
 
     def __init__(self, config: ApplicationConfig) -> None:
         self.environment = config["environment"]
+        self.views = {}
+        self.views["actions"] = ActionView(self.environment)
         self.url_map = Map()
         self.url_map.add(RuleFactory())
 
@@ -50,10 +52,7 @@ class Application:
         try:
             rule, arguments = adapter.match(return_rule=True)
             logger.debug(f"Found rule {rule} with arguments {arguments}.")
-            if rule.endpoint == "actions":
-                response = ActionView(self.environment).dispatch(request, **arguments)
-            else:  # pragma: no cover
-                raise RuntimeError("This exception should not be raised. FIXME")  # TODO
+            response = self.views[rule.endpoint].dispatch(request, **arguments)
         except HTTPException as exception:
             return exception
         return response

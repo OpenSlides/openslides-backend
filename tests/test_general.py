@@ -8,7 +8,6 @@ from openslides_backend.utils.types import (
     FullQualifiedField,
     FullQualifiedId,
 )
-from openslides_backend.wsgi import application
 
 from .adapters.authentication import AuthenticationTestAdapter
 from .utils import Client, ResponseWrapper
@@ -19,9 +18,15 @@ class WSGIApplicationTester(TestCase):
     Tests the WSGI application in general.
     """
 
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
+    def setUp(self) -> None:
+        self.application = create_application()
+
     def test_create_application(self) -> None:
-        app = create_application()
-        self.assertTrue(isinstance(app, Application))
+        self.assertTrue(isinstance(self.application, Application))
 
     def test_create_application_2(self) -> None:
         os.environ["OPENSLIDES_BACKEND_DEBUG"] = "1"
@@ -29,66 +34,54 @@ class WSGIApplicationTester(TestCase):
         self.assertTrue(isinstance(app, Application))
 
     def test_wsgi_request_root(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.get("/")
         self.assertEqual(response.status_code, 404)
 
     def test_wsgi_request_root_2(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post("/")
         self.assertEqual(response.status_code, 404)
 
     def test_wsgi_request_fuzzy_path(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.get("/unknown_path")
         self.assertEqual(response.status_code, 404)
 
     def test_wsgi_request_fuzzy_path_2(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post("/unknown_path")
         self.assertEqual(response.status_code, 404)
 
     def test_wsgi_request_correct_path_with_slash(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.get("/system/api/actions/")
         self.assertEqual(response.status_code, 404)
 
     def test_wsgi_request_correct_path_with_slash_2(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post("/system/api/actions/")
         self.assertEqual(response.status_code, 404)
 
     def test_wsgi_request_wrong_method(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.get("/system/api/actions")
         self.assertEqual(response.status_code, 405)
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_wrong_media_type(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post("/system/api/actions")
         self.assertEqual(response.status_code, 400)
         self.assertIn("Wrong media type.", str(response.data))
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_missing_body(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post("/system/api/actions", content_type="application/json")
         self.assertEqual(response.status_code, 400)
         self.assertIn("Failed to decode JSON object", str(response.data))
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_fuzzy_body(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json={"fuzzy_key_Eeng7pha3a": "fuzzy_value_eez3Ko6quu"},
@@ -96,12 +89,8 @@ class WSGIApplicationTester(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("data must be array", str(response.data))
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_fuzzy_body_2(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"fuzzy_key_Voh8in7aec": "fuzzy_value_phae3iew4W"}],
@@ -112,12 +101,8 @@ class WSGIApplicationTester(TestCase):
             str(response.data),
         )
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_no_existing_action(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "fuzzy_action_hamzaeNg4a", "data": [{}]}],

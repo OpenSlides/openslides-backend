@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 from openslides_backend.actions.topic.actions import TopicCreate
 from openslides_backend.actions.types import Payload
+from openslides_backend.core import create_application
 from openslides_backend.exceptions import ActionException
-from openslides_backend.wsgi import application
 
 from ..adapters.authentication import AuthenticationTestAdapter
 from ..adapters.database import TESTDATA, DatabaseTestAdapter
@@ -12,7 +12,17 @@ from ..utils import Client, ResponseWrapper, get_fqfield
 
 
 class TopicCreateActionTester(TestCase):
+    """
+    Tests the topic create action.
+    """
+
+    @patch(
+        "openslides_backend.views.action_view.AuthenticationAdapter",
+        AuthenticationTestAdapter,
+    )
+    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def setUp(self) -> None:
+        self.application = create_application()
         self.action = TopicCreate(DatabaseTestAdapter())
         self.user_id = 5968705978
         self.valid_payload_1 = [
@@ -192,12 +202,8 @@ class TopicCreateActionTester(TestCase):
             ],
         )
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_empty(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions", json=[{"action": "topic.create", "data": [{}]}]
         )
@@ -206,12 +212,8 @@ class TopicCreateActionTester(TestCase):
             "data[0] must contain [\\'title\\'] properties", str(response.data)
         )
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
     def test_wsgi_request_fuzzy(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[
@@ -223,39 +225,24 @@ class TopicCreateActionTester(TestCase):
             "data[0] must contain [\\'title\\'] properties", str(response.data)
         )
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
-    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_1(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
-    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_2(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "topic.create", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 200)
 
-    @patch(
-        "openslides_backend.views.action_view.AuthenticationAdapter",
-        AuthenticationTestAdapter,
-    )
-    @patch("openslides_backend.views.action_view.DatabaseAdapter", DatabaseTestAdapter)
     def test_wsgi_request_correct_3(self) -> None:
-        client = Client(application, ResponseWrapper)
+        client = Client(self.application, ResponseWrapper)
         response = client.post(
             "/system/api/actions",
             json=[{"action": "topic.create", "data": self.valid_payload_3}],
