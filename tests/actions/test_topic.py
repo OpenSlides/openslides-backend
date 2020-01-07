@@ -153,7 +153,7 @@ class TopicCreateActionTester(TestCase):
                     "position": 1,
                     "information": {
                         "user_id": self.user_id,
-                        "text": "Topic created. Updated reference.",
+                        "text": "Mediafile attached to new topic.",
                     },
                     "fields": {
                         get_fqfield(
@@ -166,7 +166,7 @@ class TopicCreateActionTester(TestCase):
                     "position": 1,
                     "information": {
                         "user_id": self.user_id,
-                        "text": "Topic created. Updated reference.",
+                        "text": "Mediafile attached to new topic.",
                     },
                     "fields": {
                         get_fqfield(

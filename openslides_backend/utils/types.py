@@ -81,8 +81,6 @@ class FullQualifiedField:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullQualifiedField):
             return NotImplemented
-        print(self.collection, self.field)
-        print(self.collection == other.collection)
         return (
             self.collection == other.collection
             and self.id == other.id

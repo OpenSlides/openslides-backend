@@ -56,7 +56,7 @@ class TopicCreate(Action):
             ):
                 information = {
                     "user_id": self.user_id,
-                    "text": "Topic created. Updated reference.",  # TODO: Change to "Mediafile attached to new topic"
+                    "text": "Mediafile attached to new topic.",
                 }
                 fields = {}
 
