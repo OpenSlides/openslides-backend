@@ -19,8 +19,6 @@ StartResponse = Callable
 
 WSGIEnvironment = Dict[Text, Any]
 
-Headers = Any  # TODO
-
 KEYSEPARATOR = "/"
 
 

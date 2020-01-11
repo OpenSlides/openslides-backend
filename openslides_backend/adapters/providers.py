@@ -1,8 +1,9 @@
 from typing import Any, Dict, Iterable, List, Tuple
 
 from typing_extensions import Protocol
+from werkzeug.datastructures import Headers
 
-from ..utils.types import Collection, Event, FullQualifiedId, Headers
+from ..utils.types import Collection, Event, FullQualifiedId
 
 
 class AuthenticationProvider(Protocol):  # pragma: no cover

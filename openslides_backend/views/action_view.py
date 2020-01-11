@@ -58,7 +58,7 @@ class ActionView:
 
         # Get request user id
         try:
-            self.user_id = self.authentication_adapter.get_user(request)
+            self.user_id = self.authentication_adapter.get_user(request.headers)
         except AuthException as exception:
             self.handle_error(exception, 400)
 

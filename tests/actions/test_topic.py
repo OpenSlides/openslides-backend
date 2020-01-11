@@ -6,10 +6,10 @@ from openslides_backend.actions.types import Payload
 from openslides_backend.core import create_application
 from openslides_backend.exceptions import ActionException, PermissionDenied
 
-from ..adapters.authentication import AuthenticationTestAdapter
-from ..adapters.database import TESTDATA, DatabaseTestAdapter
-from ..adapters.event_store import EventStoreTestAdapter
-from ..adapters.permission import PermissionTestAdapter
+from ..fake_adapters.authentication import AuthenticationTestAdapter
+from ..fake_adapters.database import TESTDATA, DatabaseTestAdapter
+from ..fake_adapters.event_store import EventStoreTestAdapter
+from ..fake_adapters.permission import PermissionTestAdapter
 from ..utils import Client, ResponseWrapper, get_fqfield
 
 

@@ -9,7 +9,7 @@ from openslides_backend.utils.types import (
     FullQualifiedId,
 )
 
-from .adapters.authentication import AuthenticationTestAdapter
+from .fake_adapters.authentication import AuthenticationTestAdapter
 from .utils import Client, ResponseWrapper
 
 

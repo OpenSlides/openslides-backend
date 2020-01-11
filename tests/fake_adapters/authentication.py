@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.utils.types import Headers
+from werkzeug.datastructures import Headers
 
 
 class AuthenticationTestAdapter:
