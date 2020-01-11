@@ -236,7 +236,9 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     )
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = 5968705978  # This user has perm "topic.can_manage", see patch decorator above.
+        self.user_id = (
+            5968705978  # This user has perm "topic.can_manage", see patch call below.
+        )
         self.authentication_patcher = patch(
             "openslides_backend.views.action_view.AuthenticationAdapter",
             AuthenticationTestAdapter(self.user_id),
@@ -312,6 +314,9 @@ class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
         )
         self.authentication_patcher.start()
         self.application = create_application()
+
+    def tearDown(self) -> None:
+        self.authentication_patcher.stop()
 
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
