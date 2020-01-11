@@ -2,10 +2,10 @@ from typing import Any, Iterable
 
 from fastjsonschema import JsonSchemaException  # type: ignore
 
-from ...exceptions import ActionException, PermissionDenied
-from ...utils.types import Collection, Event, FullQualifiedField
+from ...adapters.protocols import Event
+from ...general.patterns import Collection, FullQualifiedField
 from ..action_map import register_action
-from ..base import Action
+from ..base import Action, ActionException, PermissionDenied
 from ..types import DataSet, Payload
 from .schema import is_valid_new_topic
 

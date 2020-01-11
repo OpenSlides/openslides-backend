@@ -1,6 +1,6 @@
 import fastjsonschema  # type: ignore
 
-from ..utils.schema import schema_version
+from ..general.schema import schema_version
 
 action_view_schema = fastjsonschema.compile(
     {

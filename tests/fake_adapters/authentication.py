@@ -1,6 +1,15 @@
-from typing import Any
+from typing import Any, List
 
-from werkzeug.datastructures import Headers
+from openslides_backend.adapters.protocols import Headers
+
+
+class TestHeaders:
+    """
+    Headers object for testing.
+    """
+
+    def to_wsgi_list(self) -> List:
+        return []
 
 
 class AuthenticationTestAdapter:

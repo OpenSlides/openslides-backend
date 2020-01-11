@@ -1,7 +1,7 @@
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
-from openslides_backend.utils.types import Collection, FullQualifiedField
+from openslides_backend.general.patterns import Collection, FullQualifiedField
 
 
 class ResponseWrapper(BaseResponse):

@@ -4,12 +4,14 @@ from typing import Any
 from unittest import TestCase
 
 import simplejson as json
-from werkzeug.datastructures import Headers
 
-from openslides_backend.adapters.authentication import AuthenticationAdapter
+from openslides_backend.adapters.authentication import (
+    AuthenticationException,
+    AuthenticationHTTPAdapter,
+)
 from openslides_backend.core import create_application
-from openslides_backend.exceptions import AuthException
 
+from ..fake_adapters.authentication import TestHeaders
 from ..utils import Client, ResponseWrapper
 
 
@@ -87,31 +89,31 @@ class FakeServer:
         self.httpd.shutdown()
 
 
-class AuthenticationAdapterTester(TestCase):
+class AuthenticationHTTPAdapterTester(TestCase):
     def setUp(self) -> None:
         self.host = "localhost"
         self.port = 9000
 
     def test_get_anonymous(self) -> None:
         with FakeServer(self.host, self.port, 0):
-            auth = AuthenticationAdapter(f"http://{self.host}:{self.port}")
-            headers = Headers()
+            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
+            headers = TestHeaders()
             user_id = auth.get_user(headers)
             self.assertEqual(user_id, 0)
 
     def test_some_user(self) -> None:
         expected_user_id = 5262746456
         with FakeServer(self.host, self.port, expected_user_id):
-            auth = AuthenticationAdapter(f"http://{self.host}:{self.port}")
-            headers = Headers()
+            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
+            headers = TestHeaders()
             user_id = auth.get_user(headers)
             self.assertEqual(user_id, expected_user_id)
 
     def test_http_500(self) -> None:
         with FakeServer(self.host, self.port, 3238429704, "500"):
-            auth = AuthenticationAdapter(f"http://{self.host}:{self.port}")
-            headers = Headers()
-            with self.assertRaises(AuthException) as context_manager:
+            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
+            headers = TestHeaders()
+            with self.assertRaises(AuthenticationException) as context_manager:
                 auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
@@ -120,9 +122,9 @@ class AuthenticationAdapterTester(TestCase):
 
     def test_empty_payload(self) -> None:
         with FakeServer(self.host, self.port, 2896946348, "empty"):
-            auth = AuthenticationAdapter(f"http://{self.host}:{self.port}")
-            headers = Headers()
-            with self.assertRaises(AuthException) as context_manager:
+            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
+            headers = TestHeaders()
+            with self.assertRaises(AuthenticationException) as context_manager:
                 auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
@@ -131,9 +133,9 @@ class AuthenticationAdapterTester(TestCase):
 
     def test_bad_payload_1(self) -> None:
         with FakeServer(self.host, self.port, 9198030928, "bad_missing_key"):
-            auth = AuthenticationAdapter(f"http://{self.host}:{self.port}")
-            headers = Headers()
-            with self.assertRaises(AuthException) as context_manager:
+            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
+            headers = TestHeaders()
+            with self.assertRaises(AuthenticationException) as context_manager:
                 auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
@@ -142,9 +144,9 @@ class AuthenticationAdapterTester(TestCase):
 
     def test_bad_payload_2(self) -> None:
         with FakeServer(self.host, self.port, 4765864300, "bad_wrong_key"):
-            auth = AuthenticationAdapter(f"http://{self.host}:{self.port}")
-            headers = Headers()
-            with self.assertRaises(AuthException) as context_manager:
+            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
+            headers = TestHeaders()
+            with self.assertRaises(AuthenticationException) as context_manager:
                 auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,

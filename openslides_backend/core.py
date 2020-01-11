@@ -1,7 +1,8 @@
 import os
-from typing import Iterable, Union
+from typing import Any, Callable, Dict, Iterable, Text, Union
 
-from werkzeug.exceptions import HTTPException
+from mypy_extensions import TypedDict
+from werkzeug.exceptions import BadRequest, Forbidden, HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
 from werkzeug.wrappers import Request as WerkzeugRequest
@@ -9,10 +10,16 @@ from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
 from . import logging
-from .utils.types import ApplicationConfig, Environment, StartResponse, WSGIEnvironment
-from .views.action_view import ActionView
+from .general.environment import Environment, get_environment
+from .views.action_view import ActionView, PermissionDenied, ViewsException
 
 logger = logging.getLogger(__name__)
+
+ApplicationConfig = TypedDict("ApplicationConfig", {"environment": Environment})
+
+StartResponse = Callable
+
+WSGIEnvironment = Dict[Text, Any]
 
 
 class Request(JSONMixin, WerkzeugRequest):
@@ -55,16 +62,32 @@ class Application:
     def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
         """
         Dispatches request to route according to URL rules. Returns a Response
-        object or a HTTPException. Both are WSGI applications themselves.
+        object or a HTTPException (or a subclass of it). Both are WSGI
+        applications themselves.
         """
+        # Find rule.
         adapter = self.url_map.bind_to_environ(request.environ)
         try:
             rule, arguments = adapter.match(return_rule=True)
-            logger.debug(f"Found rule {rule} with arguments {arguments}.")
-            response = self.views[rule.endpoint].dispatch(request, **arguments)
         except HTTPException as exception:
             return exception
-        return response
+        logger.debug(f"Found rule {rule} with arguments {arguments}.")
+
+        # Parse JSON body. The result is cached in request.json.
+        try:
+            json = request.get_json()
+        except BadRequest as exception:
+            return exception
+        logger.debug(f"Request contains JSON: {json}.")
+
+        # Dispatch view and return response.
+        try:
+            self.views[rule.endpoint].dispatch(request, **arguments)
+        except ViewsException as exception:
+            return BadRequest(exception.message)
+        except PermissionDenied as exception:
+            return Forbidden(exception.message)
+        return Response()
 
     def wsgi_application(
         self, environ: WSGIEnvironment, start_response: StartResponse
@@ -85,27 +108,6 @@ class Application:
         custom middlewares to the application.
         """
         return self.wsgi_application(environ, start_response)
-
-
-def get_environment() -> Environment:
-    """
-    Parses environment variables and sets their defaults if they do not exist.
-    """
-
-    authentication_url = (
-        permission_url
-    ) = database_url = event_store_url = os.environ.get(
-        "OPENSLIDES_BACKEND_DATA_STORE_URL",
-        "http://localhost:9000/",  # TODO: Use correct variables here.
-    )
-    worker_timeout = int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30"))
-    return Environment(
-        authentication_url=authentication_url,
-        permission_url=permission_url,
-        database_url=database_url,
-        event_store_url=event_store_url,
-        worker_timeout=worker_timeout,
-    )
 
 
 def create_application() -> Application:

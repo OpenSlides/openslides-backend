@@ -1,11 +1,12 @@
 from typing import Any, Dict, Iterable, List, Tuple
 
+from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..utils.types import Collection, Event, FullQualifiedId
+from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
 
 
-class HeadersProvider(Protocol):
+class Headers(Protocol):
     """
     Interface for headers used in authentication adapter.
     """
@@ -14,16 +15,16 @@ class HeadersProvider(Protocol):
         ...
 
 
-class AuthenticationProvider(Protocol):  # pragma: no cover
+class AuthenticationAdapter(Protocol):  # pragma: no cover
     """
     Interface for authentication adapter used in views.
     """
 
-    def get_user(self, headers: HeadersProvider) -> int:
+    def get_user(self, headers: Headers) -> int:
         ...
 
 
-class PermissionProvier(Protocol):  # pragma: no cover
+class PermissionAdapter(Protocol):  # pragma: no cover
     """
     Interface for permission service used in views and actions.
     """
@@ -32,7 +33,7 @@ class PermissionProvier(Protocol):  # pragma: no cover
         ...
 
 
-class DatabaseProvider(Protocol):  # pragma: no cover
+class DatabaseAdapter(Protocol):  # pragma: no cover
     """
     Interface for database adapter used in views and actions.
     """
@@ -53,7 +54,18 @@ class DatabaseProvider(Protocol):  # pragma: no cover
     # getAll, filter, count, min, max, ...some with deleted or only deleted
 
 
-class EventStoreProvider(Protocol):  # pragma: no cover
+class Event(TypedDict):
+    """
+    Event that can be sent to the event store.
+    """
+
+    type: str
+    position: int
+    information: Dict[str, Any]
+    fields: Dict[FullQualifiedField, Any]
+
+
+class EventStoreAdapter(Protocol):  # pragma: no cover
     """
     Interface for event store adapter used in views and actions.
     """

@@ -2,15 +2,19 @@ from typing import Any, Dict, List, Tuple
 
 import requests
 import simplejson as json
-from werkzeug.exceptions import InternalServerError
 
 from .. import logging
-from ..utils.types import Collection, FullQualifiedId
+from ..general.exception import BackendBaseException
+from ..general.patterns import Collection, FullQualifiedId
 
 logger = logging.getLogger(__name__)
 
 
-class DatabaseAdapter:
+class DatabaseException(BackendBaseException):
+    pass
+
+
+class DatabaseHTTPAdapter:
     """
     Adapter to connect to (read-only) database.
     """
@@ -28,7 +32,7 @@ class DatabaseAdapter:
         response = requests.get(self.url, data=json.dumps(data), headers=self.headers)
         if not response.ok:
             if response.status_code >= 500:
-                raise InternalServerError("Connection to database failed.")
+                raise DatabaseException("Connection to database failed.")
             if response.json().get("error") == "ModelDoesNotExist":
                 pass
             else:
