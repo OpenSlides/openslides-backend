@@ -1,8 +1,16 @@
 from typing import Iterable
 
-from ..adapters.providers import DatabaseProvider, PermissionProvier
-from ..utils.types import Event
+from ..adapters.protocols import DatabaseAdapter, Event, PermissionAdapter
+from ..general.exception import BackendBaseException
 from .types import DataSet, Payload
+
+
+class ActionException(BackendBaseException):
+    pass
+
+
+class PermissionDenied(BackendBaseException):
+    pass
 
 
 class Action:
@@ -13,7 +21,7 @@ class Action:
     position = 0
 
     def __init__(
-        self, permission_adapter: PermissionProvier, database_adapter: DatabaseProvider
+        self, permission_adapter: PermissionAdapter, database_adapter: DatabaseAdapter
     ) -> None:
         self.permission_adapter = permission_adapter
         self.database_adapter = database_adapter

@@ -1,9 +1,14 @@
 from typing import Iterable
 
-from ..utils.types import Event
+from ..general.exception import BackendBaseException
+from .protocols import Event
 
 
-class EventStoreAdapter:
+class EventStoreException(BackendBaseException):
+    pass
+
+
+class EventStoreHTTPAdapter:
     """
     Adapter to connect to event store.
     """

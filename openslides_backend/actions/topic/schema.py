@@ -1,7 +1,7 @@
 import fastjsonschema  # type: ignore
 
+from ...general.schema import schema_version
 from ...models.topic import Topic
-from ...utils.schema import schema_version
 
 is_valid_new_topic = fastjsonschema.compile(
     {

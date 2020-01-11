@@ -1,4 +1,4 @@
-class PermissionAdapter:
+class PermissionHTTPAdapter:
     """
     Adapter to connect to permission service.
     """

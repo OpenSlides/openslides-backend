@@ -1,26 +1,3 @@
-from typing import Any, Callable, Dict, Text
-
-from mypy_extensions import TypedDict
-
-Environment = TypedDict(
-    "Environment",
-    {
-        "authentication_url": str,
-        "permission_url": str,
-        "database_url": str,
-        "event_store_url": str,
-        "worker_timeout": int,
-    },
-)
-
-ApplicationConfig = TypedDict("ApplicationConfig", {"environment": Environment})
-
-StartResponse = Callable
-
-WSGIEnvironment = Dict[Text, Any]
-
-Headers = Any  # TODO
-
 KEYSEPARATOR = "/"
 
 
@@ -90,14 +67,3 @@ class FullQualifiedField:
 
     def __hash__(self) -> int:
         return hash(str(self))
-
-
-class Event(TypedDict):
-    """
-    Event that can be sent to the event store.
-    """
-
-    type: str
-    position: int
-    information: Dict[str, Any]
-    fields: Dict[FullQualifiedField, Any]
