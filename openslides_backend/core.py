@@ -4,14 +4,23 @@ from typing import Iterable, Union
 from werkzeug.exceptions import HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
+from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
+from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
 from . import logging
 from .utils.types import ApplicationConfig, Environment, StartResponse, WSGIEnvironment
 from .views.action_view import ActionView
-from .views.wrappers import Request
 
 logger = logging.getLogger(__name__)
+
+
+class Request(JSONMixin, WerkzeugRequest):
+    """
+    Customized request object. We use the JSONMixin here.
+    """
+
+    pass
 
 
 class RuleFactory(WerkzeugRuleFactory):

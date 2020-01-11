@@ -1,9 +1,17 @@
 from typing import Any, Dict, Iterable, List, Tuple
 
 from typing_extensions import Protocol
-from werkzeug.datastructures import Headers
 
 from ..utils.types import Collection, Event, FullQualifiedId
+
+
+class HeadersProvider(Protocol):
+    """
+    Interface for headers used in authentication adapter.
+    """
+
+    def to_wsgi_list(self) -> List:
+        ...
 
 
 class AuthenticationProvider(Protocol):  # pragma: no cover
@@ -11,7 +19,7 @@ class AuthenticationProvider(Protocol):  # pragma: no cover
     Interface for authentication adapter used in views.
     """
 
-    def get_user(self, headers: Headers) -> int:
+    def get_user(self, headers: HeadersProvider) -> int:
         ...
 
 

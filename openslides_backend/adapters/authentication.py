@@ -1,9 +1,9 @@
 import requests
 import simplejson as json
-from werkzeug.datastructures import Headers
 
 from .. import logging
 from ..exceptions import AuthException
+from .providers import HeadersProvider
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class AuthenticationAdapter:
         self.url = authentication_url
         self.headers = {"Content-Type": "application/json"}
 
-    def get_user(self, headers: Headers) -> int:
+    def get_user(self, headers: HeadersProvider) -> int:
         logger.debug(
             f"Start request to authentication service with the following data: {headers}"
         )

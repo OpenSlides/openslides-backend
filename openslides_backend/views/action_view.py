@@ -25,8 +25,8 @@ from ..exceptions import (
     PermissionDenied,
 )
 from ..utils.types import Environment, Event
+from .providers import RequestProvider
 from .schema import action_view_schema
-from .wrappers import Request
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ class ActionView:
             environment["event_store_url"]
         )
 
-    def dispatch(self, request: Request, **kwargs: dict) -> Response:
+    def dispatch(self, request: RequestProvider, **kwargs: dict) -> Response:
         """
         Dispatches request to the viewpoint.
         """
