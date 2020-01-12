@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package restricter;
+
+service Restrict {
+  rpc restrict(RestrictRequest) returns (Restricted) {}
+  rpc ids(IDsRequest) returns (IDs) {}
+}
+
+message RestrictRequest {
+  int64 user = 1;
+  repeated string keys = 2;
+}
+
+message Restricted {
+  map<string, string> data = 1;
+}
+
+message IDsRequest {
+  int64 user = 1;
+  string key = 2;
+}
+
+message IDs {
+  repeated int64 ids = 1;
+}

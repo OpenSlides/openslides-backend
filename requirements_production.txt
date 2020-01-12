@@ -4,3 +4,6 @@ simplejson==3.17.0
 requests==2.22.0
 mypy-extensions==0.4.3
 gunicorn==20.0.4
+grpcio==1.26.0
+grpcio-tools==1.26.0
+grpcio-reflection==1.26.0
