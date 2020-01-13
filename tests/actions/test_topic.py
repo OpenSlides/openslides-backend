@@ -20,7 +20,11 @@ class BaseTopicCreateActionTester(TestCase):
 
     def setUp(self) -> None:
         self.valid_payload_1 = [
-            {"title": "title_ooPhi9ZohC", "text": "text_eeKoosahh4"}
+            {
+                "meeting_id": 2393342057,
+                "title": "title_ooPhi9ZohC",
+                "text": "text_eeKoosahh4",
+            }
         ]
         self.attachments = [
             TESTDATA[0]["id"],
@@ -28,12 +32,13 @@ class BaseTopicCreateActionTester(TestCase):
         ]
         self.valid_payload_2 = [
             {
+                "meeting_id": 4002059810,
                 "title": "title_pha2Eirohg",
                 "text": "text_CaekiiLai2",
                 "mediafile_attachment_ids": self.attachments,
             }
         ]
-        self.valid_payload_3 = [{"title": "title_eivaey2Aeg"}]
+        self.valid_payload_3 = [{"meeting_id": 3611987967, "title": "title_eivaey2Aeg"}]
 
 
 class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
@@ -73,6 +78,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             [
                 {
                     "topic": self.valid_payload_1[0],
+                    "meeting": {"topic_ids": []},
                     "new_id": 42,
                     "mediafile_attachment": {},
                 }
@@ -87,6 +93,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             [
                 {
                     "topic": self.valid_payload_2[0],
+                    "meeting": {"topic_ids": []},
                     "new_id": 42,
                     "mediafile_attachment": {
                         self.attachments[0]: {"topic_ids": []},
@@ -104,6 +111,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             [
                 {
                     "topic": self.valid_payload_3[0],
+                    "meeting": {"topic_ids": []},
                     "new_id": 42,
                     "mediafile_attachment": {},
                 }
@@ -145,7 +153,13 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                         get_fqfield("topic/42/title"): "title_ooPhi9ZohC",
                         get_fqfield("topic/42/text"): "text_eeKoosahh4",
                     },
-                }
+                },
+                {
+                    "type": "update",
+                    "position": 1,
+                    "information": {"user_id": self.user_id, "text": "Topic created"},
+                    "fields": {get_fqfield("meeting/2393342057/topic_ids"): [42]},
+                },
             ],
         )
 
@@ -165,6 +179,12 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                             "topic/42/mediafile_attachment_ids"
                         ): self.attachments,
                     },
+                },
+                {
+                    "type": "update",
+                    "position": 1,
+                    "information": {"user_id": self.user_id, "text": "Topic created"},
+                    "fields": {get_fqfield("meeting/4002059810/topic_ids"): [42]},
                 },
                 {
                     "type": "update",
@@ -205,7 +225,13 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     "position": 1,
                     "information": {"user_id": self.user_id, "text": "Topic created"},
                     "fields": {get_fqfield("topic/42/title"): "title_eivaey2Aeg"},
-                }
+                },
+                {
+                    "type": "update",
+                    "position": 1,
+                    "information": {"user_id": self.user_id, "text": "Topic created"},
+                    "fields": {get_fqfield("meeting/3611987967/topic_ids"): [42]},
+                },
             ],
         )
 
@@ -256,7 +282,8 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'title\\'] properties", str(response.data)
+            "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
+            str(response.data),
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
@@ -272,7 +299,8 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'title\\'] properties", str(response.data)
+            "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
+            str(response.data),
         )
 
     def test_wsgi_request_correct_1(self) -> None:

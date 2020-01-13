@@ -6,6 +6,7 @@ import simplejson as json
 from .. import logging
 from ..general.exception import BackendBaseException
 from ..general.patterns import Collection, FullQualifiedId
+from .filters import Filter
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,9 @@ class DatabaseHTTPAdapter:
         self.url = database_url
         self.headers = {"Content-Type": "application/json"}
 
-    def get(self, fqid: FullQualifiedId, mapped_fields: List[str] = None) -> None:
+    def get(
+        self, fqid: FullQualifiedId, mapped_fields: List[str] = None
+    ) -> Tuple[Dict[str, Any], int]:
         data = {
             "command": "get",
             "parameters": {"fqid": str(fqid), "mapped_fields": mapped_fields},
@@ -41,6 +44,7 @@ class DatabaseHTTPAdapter:
         else:
             pass
             # Get data and position from db
+        return ({"foo": "bar"}, 0)
 
     def getMany(
         self, collection: Collection, ids: List[int], mapped_fields: List[str] = None
@@ -64,3 +68,12 @@ class DatabaseHTTPAdapter:
         response = requests.get(self.url, data=json.dumps(data), headers=self.headers)
         print(response)  # TODO: Use response
         return (0, 0)
+
+    def filter(
+        self,
+        collection: Collection,
+        filter: Filter,
+        meeting_id: int = None,
+        mapped_fields: List[str] = None,
+    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
+        raise

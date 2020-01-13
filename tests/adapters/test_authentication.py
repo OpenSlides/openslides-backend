@@ -1,8 +1,10 @@
+import os
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 from unittest import TestCase
 
+import pytest  # type: ignore
 import simplejson as json
 
 from openslides_backend.adapters.authentication import (
@@ -89,6 +91,9 @@ class FakeServer:
         self.httpd.shutdown()
 
 
+@pytest.mark.skipif(
+    not os.environ.get("OPENSLIDES_BACKEND_RUN_ALL_TESTS"), reason="Test is very slow."
+)
 class AuthenticationHTTPAdapterTester(TestCase):
     def setUp(self) -> None:
         self.host = "localhost"

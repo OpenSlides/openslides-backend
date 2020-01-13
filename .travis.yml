@@ -3,6 +3,8 @@ python:
   - 3.6
   - 3.7
   - 3.8
+env:
+  - OPENSLIDES_BACKEND_RUN_ALL_TESTS=1
 script:
   - black --check openslides_backend/ tests/ start.py
   - isort --check --recursive openslides_backend/ tests/ start.py

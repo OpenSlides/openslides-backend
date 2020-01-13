@@ -1,3 +1,5 @@
+from typing import Any
+
 from .types import Schema
 
 
@@ -35,11 +37,18 @@ class TextField(Field):
         return dict(description=self.description, type="string",)
 
 
-class ForeignKeyField(IdField):
+class RelationMixin:
+    def __init__(self, to: str, related_name: str, **kwargs: Any) -> None:
+        self.to = to
+        self.related_name = related_name
+        super().__init__(**kwargs)  # type: ignore
+
+
+class ForeignKeyField(RelationMixin, IdField):
     pass
 
 
-class ManyToManyArrayField(Field):
+class ManyToManyArrayField(RelationMixin, Field):
     def get_schema(self) -> Schema:
         return dict(
             description=self.description,

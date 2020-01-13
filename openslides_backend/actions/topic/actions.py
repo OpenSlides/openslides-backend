@@ -3,7 +3,7 @@ from typing import Any, Iterable
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...adapters.protocols import Event
-from ...general.patterns import Collection, FullQualifiedField
+from ...general.patterns import Collection, FullQualifiedField, FullQualifiedId
 from ..action_map import register_action
 from ..base import Action, ActionException, PermissionDenied
 from ..types import DataSet, Payload
@@ -33,6 +33,11 @@ class TopicCreate(Action):
         for topic in payload:
             id, position = self.database_adapter.getId(collection=self.collection)
             self.set_min_position(position)
+            meeting, position = self.database_adapter.get(
+                fqid=FullQualifiedId(Collection("meeting"), topic["meeting_id"]),
+                mapped_fields=["topic_ids"],
+            )
+            self.set_min_position(position)
             if topic.get("mediafile_attachment_ids"):
                 mediafile_attachment, position = self.database_adapter.getMany(
                     collection=Collection("mediafile_attachment"),
@@ -46,6 +51,7 @@ class TopicCreate(Action):
                 {
                     "topic": topic,
                     "new_id": id,
+                    "meeting": meeting,
                     "mediafile_attachment": mediafile_attachment,
                 }
             )
@@ -55,6 +61,7 @@ class TopicCreate(Action):
         position = dataset["position"]
         for element in dataset["data"]:
             yield self.create_topic_event(position, element)
+            yield self.update_meeting_event(position, element)
             for mediafile_attachment_id in element["topic"].get(
                 "mediafile_attachment_ids", []
             ):
@@ -110,4 +117,20 @@ class TopicCreate(Action):
 
         return Event(
             type="create", position=position, information=information, fields=fields,
+        )
+
+    def update_meeting_event(self, position: int, element: Any) -> Event:
+        information = {"user_id": self.user_id, "text": "Topic created"}
+        fields = {}
+
+        # Topic Ids
+        topic_ids = element["meeting"]["topic_ids"] + [element["new_id"]]
+        fields[
+            FullQualifiedField(
+                Collection("meeting"), element["topic"]["meeting_id"], "topic_ids",
+            )
+        ] = topic_ids
+
+        return Event(
+            type="update", position=position, information=information, fields=fields,
         )

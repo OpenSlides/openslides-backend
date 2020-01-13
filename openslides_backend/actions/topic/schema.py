@@ -12,16 +12,16 @@ is_valid_new_topic = fastjsonschema.compile(
         "items": {
             "type": "object",
             "properties": {
+                "meeting_id": Topic().get_schema("meeting_id"),
                 "title": Topic().get_schema("title"),
                 "text": Topic().get_schema("text"),
                 "mediafile_attachment_ids": Topic().get_schema(
                     "mediafile_attachment_ids"
                 ),
             },
-            "required": ["title"],
+            "required": ["meeting_id", "title"],
         },
         "minItems": 1,
-        "uniqueItems": True,
     }
 )
 

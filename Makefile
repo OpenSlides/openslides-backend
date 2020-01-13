@@ -14,3 +14,6 @@ mypy:
 
 test:
 	pytest
+
+test_all:
+	OPENSLIDES_BACKEND_RUN_ALL_TESTS=1 pytest
