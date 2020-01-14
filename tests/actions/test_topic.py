@@ -78,9 +78,8 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             [
                 {
                     "topic": self.valid_payload_1[0],
-                    "meeting": {"topic_ids": []},
                     "new_id": 42,
-                    "mediafile_attachment": {},
+                    "references": {get_fqfield("meeting/2393342057/topic_ids"): [42]},
                 }
             ],
         )
@@ -93,11 +92,15 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             [
                 {
                     "topic": self.valid_payload_2[0],
-                    "meeting": {"topic_ids": []},
                     "new_id": 42,
-                    "mediafile_attachment": {
-                        self.attachments[0]: {"topic_ids": []},
-                        self.attachments[1]: {"topic_ids": []},
+                    "references": {
+                        get_fqfield("meeting/4002059810/topic_ids"): [42],
+                        get_fqfield(
+                            f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                        ): [42],
+                        get_fqfield(
+                            f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                        ): [42],
                     },
                 }
             ],
@@ -111,9 +114,10 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             [
                 {
                     "topic": self.valid_payload_3[0],
-                    "meeting": {"topic_ids": []},
                     "new_id": 42,
-                    "mediafile_attachment": {},
+                    "references": {
+                        get_fqfield("meeting/3611987967/topic_ids"): [6375863023, 42]
+                    },
                 }
             ],
         )
@@ -157,7 +161,10 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                 {
                     "type": "update",
                     "position": 1,
-                    "information": {"user_id": self.user_id, "text": "Topic created"},
+                    "information": {
+                        "user_id": self.user_id,
+                        "text": "Object attached to new topic",
+                    },
                     "fields": {get_fqfield("meeting/2393342057/topic_ids"): [42]},
                 },
             ],
@@ -183,7 +190,10 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                 {
                     "type": "update",
                     "position": 1,
-                    "information": {"user_id": self.user_id, "text": "Topic created"},
+                    "information": {
+                        "user_id": self.user_id,
+                        "text": "Object attached to new topic",
+                    },
                     "fields": {get_fqfield("meeting/4002059810/topic_ids"): [42]},
                 },
                 {
@@ -191,7 +201,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     "position": 1,
                     "information": {
                         "user_id": self.user_id,
-                        "text": "Mediafile attached to new topic.",
+                        "text": "Object attached to new topic",
                     },
                     "fields": {
                         get_fqfield(
@@ -204,7 +214,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     "position": 1,
                     "information": {
                         "user_id": self.user_id,
-                        "text": "Mediafile attached to new topic.",
+                        "text": "Object attached to new topic",
                     },
                     "fields": {
                         get_fqfield(
@@ -217,23 +227,27 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
 
     def test_perform_correct_3(self) -> None:
         events = self.action.perform(self.valid_payload_3, user_id=self.user_id)
-        self.assertEqual(
-            list(events),
-            [
-                {
-                    "type": "create",
-                    "position": 1,
-                    "information": {"user_id": self.user_id, "text": "Topic created"},
-                    "fields": {get_fqfield("topic/42/title"): "title_eivaey2Aeg"},
+        e = list(events)
+        expected = [
+            {
+                "type": "create",
+                "position": 1,
+                "information": {"user_id": self.user_id, "text": "Topic created"},
+                "fields": {get_fqfield("topic/42/title"): "title_eivaey2Aeg"},
+            },
+            {
+                "type": "update",
+                "position": 1,
+                "information": {
+                    "user_id": self.user_id,
+                    "text": "Object attached to new topic",
                 },
-                {
-                    "type": "update",
-                    "position": 1,
-                    "information": {"user_id": self.user_id, "text": "Topic created"},
-                    "fields": {get_fqfield("meeting/3611987967/topic_ids"): [42]},
+                "fields": {
+                    get_fqfield("meeting/3611987967/topic_ids"): [6375863023, 42]
                 },
-            ],
-        )
+            },
+        ]
+        self.assertEqual(e, expected)
 
     def test_perform_no_permission_1(self) -> None:
         with self.assertRaises(PermissionDenied):

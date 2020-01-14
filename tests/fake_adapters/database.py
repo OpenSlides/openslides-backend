@@ -38,7 +38,12 @@ TESTDATA = [
     {
         "collection": "meeting",
         "id": 3611987967,
-        "fields": {"topic_ids": [], "user_ids": [5968705978]},
+        "fields": {"topic_ids": [6375863023], "user_ids": [5968705978]},
+    },
+    {
+        "collection": "topic",
+        "id": 6375863023,
+        "fields": {"meeting": 3611987967, "title": "title_Aevoozu3ua"},
     },
 ]  # type: List[Dict[str, Any]]
 

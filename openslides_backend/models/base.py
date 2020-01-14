@@ -1,3 +1,4 @@
+from .fields import Field
 from .types import Schema
 
 
@@ -5,6 +6,14 @@ class Model:
     """
     Base class for models in OpenSlides.
     """
+
+    def get_field(self, field: str) -> Field:
+        for attr_name in dir(self):
+            attr = getattr(self, attr_name)
+            if attr_name == field and isinstance(attr, Field):
+                return attr
+        else:
+            raise ValueError(f"Model {self} has no field {field}.")
 
     def get_schema(self, field: str) -> Schema:
         """

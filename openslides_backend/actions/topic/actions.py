@@ -1,9 +1,11 @@
-from typing import Any, Iterable
+from typing import Any, Dict, Iterable, List, Union
 
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...adapters.protocols import Event
-from ...general.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ...general.patterns import Collection, FullQualifiedField
+from ...models.fields import RelationMixin
+from ...models.topic import Topic
 from ..action_map import register_action
 from ..base import Action, ActionException, PermissionDenied
 from ..types import DataSet, Payload
@@ -33,62 +35,71 @@ class TopicCreate(Action):
         for topic in payload:
             id, position = self.database_adapter.getId(collection=self.collection)
             self.set_min_position(position)
-            meeting, position = self.database_adapter.get(
-                fqid=FullQualifiedId(Collection("meeting"), topic["meeting_id"]),
-                mapped_fields=["topic_ids"],
+            # meeting, position = self.database_adapter.get(
+            #     fqid=FullQualifiedId(Collection("meeting"), topic["meeting_id"]),
+            #     mapped_fields=["topic_ids"],
+            # )
+            # self.set_min_position(position)
+            # if topic.get("mediafile_attachment_ids"):
+            #     mediafile_attachment, position = self.database_adapter.getMany(
+            #         collection=Collection("mediafile_attachment"),
+            #         ids=topic["mediafile_attachment_ids"],
+            #         mapped_fields=["topic_ids"],
+            #     )
+            #     self.set_min_position(position)
+            # else:
+            #     mediafile_attachment = {}
+            references = self.get_references(
+                collection=self.collection,
+                id=id,
+                obj=topic,
+                fields=["meeting_id", "mediafile_attachment_ids"],
             )
-            self.set_min_position(position)
-            if topic.get("mediafile_attachment_ids"):
-                mediafile_attachment, position = self.database_adapter.getMany(
-                    collection=Collection("mediafile_attachment"),
-                    ids=topic["mediafile_attachment_ids"],
-                    mapped_fields=["topic_ids"],
+            data.append({"topic": topic, "new_id": id, "references": references})
+        return {"position": self.position, "data": data}
+
+    def get_references(
+        self, collection: Collection, id: int, obj: Dict[str, Any], fields: List[str]
+    ) -> Dict[FullQualifiedField, Union[int, List[int]]]:
+        references = {}  # type: Dict[FullQualifiedField, Union[int, List[int]]]
+        for field in fields:
+            model_field = Topic().get_field(field)
+            if not isinstance(model_field, RelationMixin):
+                raise ValueError(f"Field {field} is not a relation field.")
+            if model_field.is_single_reference():
+                ref_id = obj.get(field)
+                if ref_id is None:
+                    continue
+                fqfield = FullQualifiedField(
+                    Collection(model_field.to), ref_id, model_field.related_name
+                )
+                ref, position = self.database_adapter.get(
+                    fqid=fqfield.fqid, mapped_fields=["topic_ids"],
                 )
                 self.set_min_position(position)
+                references[fqfield] = ref["topic_ids"] + [id]
             else:
-                mediafile_attachment = {}
-            data.append(
-                {
-                    "topic": topic,
-                    "new_id": id,
-                    "meeting": meeting,
-                    "mediafile_attachment": mediafile_attachment,
-                }
-            )
-        return {"position": self.position, "data": data}
+                # model_field.is_multiple_reference()
+                # TODO: Solve delete case.
+                for ref_id in obj.get(field, []):
+                    fqfield = FullQualifiedField(
+                        Collection(model_field.to), ref_id, model_field.related_name
+                    )
+                    (
+                        ref,
+                        position,
+                    ) = self.database_adapter.get(  # TODO: Use getMany here.
+                        fqid=fqfield.fqid, mapped_fields=["topic_ids"],
+                    )
+                    self.set_min_position(position)
+                    references[fqfield] = ref["topic_ids"] + [id]
+        return references
 
     def create_events(self, dataset: DataSet) -> Iterable[Event]:
         position = dataset["position"]
         for element in dataset["data"]:
             yield self.create_topic_event(position, element)
-            yield self.update_meeting_event(position, element)
-            for mediafile_attachment_id in element["topic"].get(
-                "mediafile_attachment_ids", []
-            ):
-                information = {
-                    "user_id": self.user_id,
-                    "text": "Mediafile attached to new topic.",
-                }
-                fields = {}
-
-                # Topic Ids
-                topic_ids = element["mediafile_attachment"][mediafile_attachment_id][
-                    "topic_ids"
-                ] + [element["new_id"]]
-                fields[
-                    FullQualifiedField(
-                        Collection("mediafile_attachment"),
-                        mediafile_attachment_id,
-                        "topic_ids",
-                    )
-                ] = topic_ids
-
-                yield Event(
-                    type="update",
-                    position=position,
-                    information=information,
-                    fields=fields,
-                )
+            yield from self.get_references_updates(position, element)
 
     def create_topic_event(self, position: int, element: Any) -> Event:
         information = {"user_id": self.user_id, "text": "Topic created"}
@@ -119,18 +130,16 @@ class TopicCreate(Action):
             type="create", position=position, information=information, fields=fields,
         )
 
-    def update_meeting_event(self, position: int, element: Any) -> Event:
-        information = {"user_id": self.user_id, "text": "Topic created"}
-        fields = {}
-
-        # Topic Ids
-        topic_ids = element["meeting"]["topic_ids"] + [element["new_id"]]
-        fields[
-            FullQualifiedField(
-                Collection("meeting"), element["topic"]["meeting_id"], "topic_ids",
+    def get_references_updates(self, position: int, element: Any) -> Iterable[Event]:
+        for fqfield, data in element["references"].items():
+            information = {
+                "user_id": self.user_id,
+                "text": "Object attached to new topic",
+            }
+            fields = {fqfield: data}
+            yield Event(
+                type="update",
+                position=position,
+                information=information,
+                fields=fields,
             )
-        ] = topic_ids
-
-        return Event(
-            type="update", position=position, information=information, fields=fields,
-        )

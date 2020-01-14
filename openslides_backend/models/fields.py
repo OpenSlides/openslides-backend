@@ -14,6 +14,12 @@ class Field:
     def get_schema(self) -> Schema:
         raise NotImplementedError
 
+    def is_single_reference(self) -> bool:
+        return False
+
+    def is_multiple_reference(self) -> bool:
+        return False
+
 
 class IdField(Field):
     def get_schema(self) -> Schema:
@@ -45,7 +51,8 @@ class RelationMixin:
 
 
 class ForeignKeyField(RelationMixin, IdField):
-    pass
+    def is_single_reference(self) -> bool:
+        return True
 
 
 class ManyToManyArrayField(RelationMixin, Field):
@@ -56,3 +63,6 @@ class ManyToManyArrayField(RelationMixin, Field):
             items={"type": "integer"},
             uniqueItems=True,
         )
+
+    def is_multiple_reference(self) -> bool:
+        return True
