@@ -1,7 +1,10 @@
-from typing import Iterable
+from typing import Any, Dict, Iterable, List, Type, Union
 
 from ..adapters.protocols import DatabaseAdapter, Event, PermissionAdapter
 from ..general.exception import BackendBaseException
+from ..general.patterns import Collection, FullQualifiedField
+from ..models.base import Model
+from ..models.fields import RelationMixin
 from .types import DataSet, Payload
 
 
@@ -78,3 +81,38 @@ class Action:
             self.position = position
         else:
             self.position = min(position, self.position)
+
+    def get_references(
+        self, model_class: Type[Model], id: int, obj: Dict[str, Any], fields: List[str]
+    ) -> Dict[FullQualifiedField, Union[int, List[int]]]:
+        """
+        Updates references of the given model for the given fields. Use it in
+        prepare_dataset method.
+        """
+        references = {}  # type: Dict[FullQualifiedField, Union[int, List[int]]]
+        for field in fields:
+            model_field = model_class().get_field(field)
+            if not isinstance(model_field, RelationMixin):
+                raise ValueError(f"Field {field} is not a relation field.")
+            if model_field.is_single_reference():
+                ref_id = obj.get(field)
+                if ref_id is None:
+                    # TODO: Solve delete case.
+                    continue
+                ref_ids = [ref_id]
+            else:
+                # model_field.is_multiple_reference()
+                ref_ids = obj.get(field, [])
+            # TODO: Solve delete case.
+            refs, position = self.database_adapter.getMany(
+                Collection(model_field.to),
+                ref_ids,
+                mapped_fields=[model_field.related_name],
+            )
+            self.set_min_position(position)
+            for ref_id, ref in refs.items():
+                fqfield = FullQualifiedField(
+                    Collection(model_field.to), ref_id, model_field.related_name
+                )
+                references[fqfield] = ref[model_field.related_name] + [id]
+        return references
