@@ -3,13 +3,13 @@ from typing import Any, Iterable
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...adapters.protocols import Event
-from ...general.patterns import Collection, FullQualifiedField
+from ...general.patterns import FullQualifiedField
 from ...models.topic import Topic
 from ...permissions.topic import TOPIC_CAN_MANAGE
 from ..action_map import register_action
 from ..base import Action, ActionException, PermissionDenied
 from ..types import DataSet, Payload
-from .schema import is_valid_new_topic
+from .schema import is_valid_new_topic, is_valid_update_topic
 
 
 @register_action("topic.create")
@@ -18,7 +18,7 @@ class TopicCreate(Action):
     Action to create simple topics that can be shown in the agenda.
     """
 
-    collection = Collection("topic")
+    model = Topic()
 
     def check_permission_on_entry(self) -> None:
         if not self.permission_adapter.has_perm(self.user_id, TOPIC_CAN_MANAGE):
@@ -33,10 +33,10 @@ class TopicCreate(Action):
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
         for topic in payload:
-            id, position = self.database_adapter.getId(collection=self.collection)
+            id, position = self.database_adapter.getId(collection=self.model.collection)
             self.set_min_position(position)
             references = self.get_references(
-                model_class=Topic,
+                model=self.model,
                 id=id,
                 obj=topic,
                 fields=["meeting_id", "mediafile_attachment_ids"],
@@ -56,14 +56,14 @@ class TopicCreate(Action):
 
         # Title
         fields[
-            FullQualifiedField(self.collection, element["new_id"], "title")
+            FullQualifiedField(self.model.collection, element["new_id"], "title")
         ] = element["topic"]["title"]
 
         # Text
         text = element["topic"].get("text")
         if text is not None:
             fields[
-                FullQualifiedField(self.collection, element["new_id"], "text")
+                FullQualifiedField(self.model.collection, element["new_id"], "text")
             ] = text
 
         # Mediafile attachments
@@ -71,7 +71,7 @@ class TopicCreate(Action):
         if mediafile_attachment_ids:
             fields[
                 FullQualifiedField(
-                    self.collection, element["new_id"], "mediafile_attachment_ids"
+                    self.model.collection, element["new_id"], "mediafile_attachment_ids"
                 )
             ] = mediafile_attachment_ids
 
@@ -92,3 +92,34 @@ class TopicCreate(Action):
                 information=information,
                 fields=fields,
             )
+
+
+class TopicUpdate(Action):
+    """
+    Action to update simple topics that can be shown in the agenda.
+    """
+
+    model = Topic()
+
+    def validate(self, payload: Payload) -> None:
+        try:
+            is_valid_update_topic(payload)
+        except JsonSchemaException as exception:
+            raise ActionException(exception.message)
+
+    def prepare_dataset(self, payload: Payload) -> DataSet:
+        data = []
+        for topic in payload:
+            exists, position = self.database_adapter.exists(
+                collection=self.model.collection, ids=[topic["id"]]
+            )
+            self.set_min_position(position)
+            references = self.get_references(
+                model=self.model,
+                id=topic["id"],
+                obj=topic,
+                fields=["mediafile_attachment_ids"],
+                deletion_possible=True,
+            )
+            data.append({"topic": topic, "references": references})
+        return {"position": self.position, "data": data}

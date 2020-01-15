@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
 from openslides_backend.adapters.filters import Filter, FilterOperator
@@ -8,7 +9,7 @@ TESTDATA = [
     {
         "collection": "mediafile_attachment",
         "id": 3549387598,
-        "fields": {"meeting_ids": [], "topic_ids": []},
+        "fields": {"meeting_ids": [3611987967], "topic_ids": [6259289755]},
     },
     {
         "collection": "mediafile_attachment",
@@ -38,12 +39,22 @@ TESTDATA = [
     {
         "collection": "meeting",
         "id": 3611987967,
-        "fields": {"topic_ids": [6375863023], "user_ids": [5968705978]},
+        "fields": {"topic_ids": [6375863023, 6259289755], "user_ids": [5968705978]},
+        "mediafile_attachment_ids": [3549387598],
     },
     {
         "collection": "topic",
         "id": 6375863023,
-        "fields": {"meeting": 3611987967, "title": "title_Aevoozu3ua"},
+        "fields": {"meeting": 3611987967, "title": "title_ahpout2aFa"},
+    },
+    {
+        "collection": "topic",
+        "id": 6259289755,
+        "fields": {
+            "meeting": 3611987967,
+            "title": "title_ub0eeYushu",
+            "mediafile_attachment_ids": [3549387598],
+        },
     },
 ]  # type: List[Dict[str, Any]]
 
@@ -69,7 +80,7 @@ class DatabaseTestAdapter:
         self, collection: Collection, ids: List[int], mapped_fields: List[str] = None
     ) -> Tuple[Dict[int, Dict[str, Any]], int]:
         result = {}
-        for data in TESTDATA:
+        for data in deepcopy(TESTDATA):
             if data["collection"] == str(collection) and data["id"] in ids:
                 element = {}
                 if mapped_fields is None:
@@ -87,6 +98,15 @@ class DatabaseTestAdapter:
     def getId(self, collection: Collection) -> Tuple[int, int]:
         return (42, 1)
 
+    def exists(self, collection: Collection, ids: List[int]) -> Tuple[bool, int]:
+        for id in ids:
+            for data in TESTDATA:
+                if data["id"] == id:
+                    break
+            else:
+                return (False, 1)
+        return (True, 1)
+
     def filter(
         self,
         collection: Collection,
@@ -95,7 +115,7 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
     ) -> Tuple[Dict[int, Dict[str, Any]], int]:
         result = {}
-        for data in TESTDATA:
+        for data in deepcopy(TESTDATA):
             data_meeting_id = data["fields"].get("meeting_id")
             if meeting_id is not None and (
                 data_meeting_id is None or data_meeting_id != meeting_id

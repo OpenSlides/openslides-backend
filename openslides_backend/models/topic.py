@@ -1,3 +1,4 @@
+from ..general.patterns import Collection
 from . import fields
 from .base import Model
 
@@ -6,6 +7,8 @@ class Topic(Model):
     """
     Model for simple topics that can be shown in agenda.
     """
+
+    collection = Collection("topic")
 
     # TODO: Make to and related_name in relation fields optional.
 

@@ -69,6 +69,9 @@ class DatabaseHTTPAdapter:
         print(response)  # TODO: Use response
         return (0, 0)
 
+    def exists(self, collection: Collection, ids: List[int]) -> Tuple[bool, int]:
+        raise
+
     def filter(
         self,
         collection: Collection,

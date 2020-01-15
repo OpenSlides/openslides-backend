@@ -1,8 +1,8 @@
-from typing import Any, Dict, Iterable, List, Type, Union
+from typing import Any, Dict, Iterable, List, Set, Tuple, Union
 
 from ..adapters.protocols import DatabaseAdapter, Event, PermissionAdapter
 from ..general.exception import BackendBaseException
-from ..general.patterns import Collection, FullQualifiedField
+from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
 from ..models.base import Model
 from ..models.fields import RelationMixin
 from .types import DataSet, Payload
@@ -83,36 +83,71 @@ class Action:
             self.position = min(position, self.position)
 
     def get_references(
-        self, model_class: Type[Model], id: int, obj: Dict[str, Any], fields: List[str]
+        self,
+        model: Model,
+        id: int,
+        obj: Dict[str, Any],
+        fields: List[str],
+        deletion_possible: bool = False,
     ) -> Dict[FullQualifiedField, Union[int, List[int]]]:
         """
         Updates references of the given model for the given fields. Use it in
         prepare_dataset method.
         """
         references = {}  # type: Dict[FullQualifiedField, Union[int, List[int]]]
+
         for field in fields:
-            model_field = model_class().get_field(field)
+            model_field = model.get_field(field)
             if not isinstance(model_field, RelationMixin):
                 raise ValueError(f"Field {field} is not a relation field.")
-            if model_field.is_single_reference():
-                ref_id = obj.get(field)
-                if ref_id is None:
-                    # TODO: Solve delete case.
-                    continue
-                ref_ids = [ref_id]
+
+            value = obj.get(field)
+            if value is None:
+                ref_ids = []
             else:
-                # model_field.is_multiple_reference()
-                ref_ids = obj.get(field, [])
-            # TODO: Solve delete case.
+                if model_field.is_single_reference():
+                    ref_ids = [value]
+                else:
+                    # model_field.is_multiple_reference()
+                    ref_ids = value
+            if deletion_possible:
+                add, remove = self.reference_diff(model, id, field, ref_ids)
+            else:
+                add = set(ref_ids)
+                remove = set()
             refs, position = self.database_adapter.getMany(
                 Collection(model_field.to),
-                ref_ids,
+                list(add | remove),
                 mapped_fields=[model_field.related_name],
             )
             self.set_min_position(position)
             for ref_id, ref in refs.items():
+                if ref_id in add:
+                    new_value = ref[model_field.related_name] + [id]
+                else:
+                    # ref_id in remove
+                    new_value = ref[model_field.related_name]
+                    new_value.remove(id)
                 fqfield = FullQualifiedField(
                     Collection(model_field.to), ref_id, model_field.related_name
                 )
-                references[fqfield] = ref[model_field.related_name] + [id]
+                references[fqfield] = new_value
         return references
+
+    def reference_diff(
+        self, model: Model, id: int, field: str, ref_ids: List[int]
+    ) -> Tuple[Set[int], Set[int]]:
+        """
+        Returns two sets of reference object ids. One with reference objects
+        where the given object (represented by model and id) should be added
+        and one with reference objects where it should be removed.
+        """
+        current_obj, position = self.database_adapter.get(
+            FullQualifiedId(model.collection, id), mapped_fields=[field]
+        )
+        self.set_min_position(position)
+        current_ids = set(current_obj.get(field, []))
+        new_ids = set(ref_ids)
+        add = new_ids - current_ids
+        remove = current_ids - new_ids
+        return (add, remove)

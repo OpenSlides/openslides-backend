@@ -52,6 +52,9 @@ class DatabaseAdapter(Protocol):  # pragma: no cover
     def getId(self, collection: Collection) -> Tuple[int, int]:
         ...
 
+    def exists(self, collection: Collection, ids: List[int]) -> Tuple[bool, int]:
+        ...
+
     def filter(
         self,
         collection: Collection,
@@ -60,8 +63,6 @@ class DatabaseAdapter(Protocol):  # pragma: no cover
         mapped_fields: List[str] = None,
     ) -> Tuple[Dict[int, Dict[str, Any]], int]:
         ...
-
-    # def exists(self, collection: Collection, ids: List[int]) -> None: ...
 
     # getAll, filter, count, min, max, ...some with deleted or only deleted
 

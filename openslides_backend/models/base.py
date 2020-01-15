@@ -1,3 +1,4 @@
+from ..general.patterns import Collection
 from .fields import Field
 from .types import Schema
 
@@ -6,6 +7,8 @@ class Model:
     """
     Base class for models in OpenSlides.
     """
+
+    collection: Collection
 
     def get_field(self, field: str) -> Field:
         for attr_name in dir(self):
