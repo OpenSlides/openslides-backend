@@ -6,6 +6,7 @@ from ...adapters.protocols import Event
 from ...general.patterns import Collection, FullQualifiedField
 from ...models.fields import RelationMixin
 from ...models.topic import Topic
+from ...permissions.topic import TOPIC_CAN_MANAGE
 from ..action_map import register_action
 from ..base import Action, ActionException, PermissionDenied
 from ..types import DataSet, Payload
@@ -21,8 +22,8 @@ class TopicCreate(Action):
     collection = Collection("topic")
 
     def check_permission_on_entry(self) -> None:
-        if not self.permission_adapter.has_perm(self.user_id, "topic.can_manage"):
-            raise PermissionDenied("User does not have topic.can_manage permission.")
+        if not self.permission_adapter.has_perm(self.user_id, TOPIC_CAN_MANAGE):
+            raise PermissionDenied(f"User does not have {TOPIC_CAN_MANAGE} permission.")
 
     def validate(self, payload: Payload) -> None:
         try:

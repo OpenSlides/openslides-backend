@@ -127,7 +127,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
-        self.user_id = 5968705978  # This user has perm "topic.can_manage"
+        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
 
     def test_perform_empty(self) -> None:
         payload: Payload = []
@@ -277,7 +277,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = (
-            5968705978  # This user has perm "topic.can_manage", see patch call below.
+            5968705978  # This user has perm TOPIC_CAN_MANAGE see patch call below.
         )
         self.authentication_patcher = patch(
             "openslides_backend.views.action_view.AuthenticationHTTPAdapter",
