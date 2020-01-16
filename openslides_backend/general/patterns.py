@@ -15,6 +15,7 @@ class Collection:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Collection):
             return NotImplemented
+
         return self.collection == other.collection
 
     def __hash__(self) -> int:
@@ -67,3 +68,7 @@ class FullQualifiedField:
 
     def __hash__(self) -> int:
         return hash(str(self))
+
+    @property
+    def fqid(self) -> FullQualifiedId:
+        return FullQualifiedId(collection=self.collection, id=self.id)

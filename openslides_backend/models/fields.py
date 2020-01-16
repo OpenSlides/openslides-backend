@@ -1,3 +1,5 @@
+from typing import Any
+
 from .types import Schema
 
 
@@ -11,6 +13,12 @@ class Field:
 
     def get_schema(self) -> Schema:
         raise NotImplementedError
+
+    def is_single_reference(self) -> bool:
+        return False
+
+    def is_multiple_reference(self) -> bool:
+        return False
 
 
 class IdField(Field):
@@ -35,11 +43,19 @@ class TextField(Field):
         return dict(description=self.description, type="string",)
 
 
-class ForeignKeyField(IdField):
-    pass
+class RelationMixin:
+    def __init__(self, to: str, related_name: str, **kwargs: Any) -> None:
+        self.to = to
+        self.related_name = related_name
+        super().__init__(**kwargs)  # type: ignore
 
 
-class ManyToManyArrayField(Field):
+class ForeignKeyField(RelationMixin, IdField):
+    def is_single_reference(self) -> bool:
+        return True
+
+
+class ManyToManyArrayField(RelationMixin, Field):
     def get_schema(self) -> Schema:
         return dict(
             description=self.description,
@@ -47,3 +63,6 @@ class ManyToManyArrayField(Field):
             items={"type": "integer"},
             uniqueItems=True,
         )
+
+    def is_multiple_reference(self) -> bool:
+        return True

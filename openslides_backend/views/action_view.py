@@ -115,7 +115,7 @@ class ActionView:
             logger.debug(f"Prepared events {events}.")
             all_events.extend(events)
         logger.debug("All events ready.")
-        return events
+        return all_events
 
     def handle_error(self, exception: CustomException, status_code: int) -> None:
         """

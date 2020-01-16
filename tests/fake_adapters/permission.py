@@ -1,6 +1,8 @@
 from typing import Any
 
-TESTDATA = {5968705978: ["topic.can_manage"]}
+from openslides_backend.permissions.topic import TOPIC_CAN_MANAGE
+
+TESTDATA = {5968705978: [TOPIC_CAN_MANAGE]}
 
 
 class PermissionTestAdapter:

@@ -4,9 +4,10 @@ from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
 from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
+from .filters import Filter
 
 
-class Headers(Protocol):
+class Headers(Protocol):  # pragma: no cover
     """
     Interface for headers used in authentication adapter.
     """
@@ -38,7 +39,9 @@ class DatabaseAdapter(Protocol):  # pragma: no cover
     Interface for database adapter used in views and actions.
     """
 
-    def get(self, fqid: FullQualifiedId, mapped_fields: List[str] = None) -> None:
+    def get(
+        self, fqid: FullQualifiedId, mapped_fields: List[str] = None
+    ) -> Tuple[Dict[str, Any], int]:
         ...
 
     def getMany(
@@ -49,7 +52,17 @@ class DatabaseAdapter(Protocol):  # pragma: no cover
     def getId(self, collection: Collection) -> Tuple[int, int]:
         ...
 
-    # def exists(self, collection: Collection, ids: List[int]) -> None: ...
+    def exists(self, collection: Collection, ids: List[int]) -> Tuple[bool, int]:
+        ...
+
+    def filter(
+        self,
+        collection: Collection,
+        filter: Filter,
+        meeting_id: int = None,
+        mapped_fields: List[str] = None,
+    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
+        ...
 
     # getAll, filter, count, min, max, ...some with deleted or only deleted
 
