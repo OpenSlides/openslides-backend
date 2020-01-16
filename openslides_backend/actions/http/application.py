@@ -11,7 +11,8 @@ from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
 from .. import logging
 from ..general.environment import Environment, get_environment
-from ..views.action_view import ActionView, PermissionDenied, ViewsException
+from ..views.action_view import PermissionDenied, ViewsException
+from ..views.view_map import view_map
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class RuleFactory(WerkzeugRuleFactory):
         Returns all rules that this application listens for.
         """
         return [
-            Rule("/system/api/actions", endpoint="actions", methods=("POST",),),
+            Rule("/system/api/actions", endpoint="ActionView", methods=("POST",),),
         ]
 
 
@@ -54,8 +55,6 @@ class Application:
 
     def __init__(self, config: ApplicationConfig) -> None:
         self.environment = config["environment"]
-        self.views = {}
-        self.views["actions"] = ActionView(self.environment)
         self.url_map = Map()
         self.url_map.add(RuleFactory())
 
@@ -81,8 +80,9 @@ class Application:
         logger.debug(f"Request contains JSON: {json}.")
 
         # Dispatch view and return response.
+        view = view_map[rule.endpoint]
         try:
-            self.views[rule.endpoint].dispatch(request, **arguments)
+            view(self.environment).dispatch(request, **arguments)
         except ViewsException as exception:
             return BadRequest(exception.message)
         except PermissionDenied as exception:

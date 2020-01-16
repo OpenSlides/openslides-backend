@@ -18,12 +18,16 @@ class WSGIApplicationTester(TestCase):
     Tests the WSGI application in general.
     """
 
-    @patch(
-        "openslides_backend.actions.views.action_view.AuthenticationHTTPAdapter",
-        AuthenticationTestAdapter(0),  # User is anonymous
-    )
     def setUp(self) -> None:
+        self.authentication_patcher = patch(
+            "openslides_backend.actions.views.base.AuthenticationHTTPAdapter",
+            AuthenticationTestAdapter(0),  # User is anonymous
+        )
+        self.authentication_patcher.start()
         self.application = create_application()
+
+    def tearDown(self) -> None:
+        self.authentication_patcher.stop()
 
     def test_wsgi_file(self) -> None:
         from openslides_backend.wsgi import application

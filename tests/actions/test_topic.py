@@ -272,32 +272,38 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
 
 
 class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
-    @patch(
-        "openslides_backend.actions.views.action_view.DatabaseHTTPAdapter",
-        DatabaseTestAdapter,
-    )
-    @patch(
-        "openslides_backend.actions.views.action_view.PermissionHTTPAdapter",
-        PermissionTestAdapter,
-    )
-    @patch(
-        "openslides_backend.actions.views.action_view.EventStoreHTTPAdapter",
-        EventStoreTestAdapter,
-    )
     def setUp(self) -> None:
         super().setUp()
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE see patch call below.
         )
         self.authentication_patcher = patch(
-            "openslides_backend.actions.views.action_view.AuthenticationHTTPAdapter",
+            "openslides_backend.actions.views.base.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(self.user_id),
         )
         self.authentication_patcher.start()
+        self.permission_patcher = patch(
+            "openslides_backend.actions.views.base.PermissionHTTPAdapter",
+            PermissionTestAdapter,
+        )
+        self.permission_patcher.start()
+        self.database_patcher = patch(
+            "openslides_backend.actions.views.base.DatabaseHTTPAdapter",
+            DatabaseTestAdapter,
+        )
+        self.database_patcher.start()
+        self.event_store_patcher = patch(
+            "openslides_backend.actions.views.base.EventStoreHTTPAdapter",
+            EventStoreTestAdapter,
+        )
+        self.event_store_patcher.start()
         self.application = create_application()
 
     def tearDown(self) -> None:
         self.authentication_patcher.stop()
+        self.permission_patcher.stop()
+        self.database_patcher.stop()
+        self.event_store_patcher.stop()
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -353,26 +359,30 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
 
 
 class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
-    @patch(
-        "openslides_backend.actions.views.action_view.DatabaseHTTPAdapter",
-        DatabaseTestAdapter,
-    )
-    @patch(
-        "openslides_backend.actions.views.action_view.PermissionHTTPAdapter",
-        PermissionTestAdapter,
-    )
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
         self.authentication_patcher = patch(
-            "openslides_backend.actions.views.action_view.AuthenticationHTTPAdapter",
+            "openslides_backend.actions.views.base.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(self.user_id_no_permission),
         )
         self.authentication_patcher.start()
+        self.permission_patcher = patch(
+            "openslides_backend.actions.views.base.PermissionHTTPAdapter",
+            PermissionTestAdapter,
+        )
+        self.permission_patcher.start()
+        self.database_patcher = patch(
+            "openslides_backend.actions.views.base.DatabaseHTTPAdapter",
+            DatabaseTestAdapter,
+        )
+        self.database_patcher.start()
         self.application = create_application()
 
     def tearDown(self) -> None:
         self.authentication_patcher.stop()
+        self.permission_patcher.stop()
+        self.database_patcher.stop()
 
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
