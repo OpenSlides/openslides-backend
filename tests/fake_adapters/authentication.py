@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from openslides_backend.adapters.protocols import Headers
+from openslides_backend.actions.adapters.protocols import Headers
 
 
 class TestHeaders:

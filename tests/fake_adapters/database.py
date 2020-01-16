@@ -1,8 +1,8 @@
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
-from openslides_backend.adapters.filters import Filter, FilterOperator
-from openslides_backend.general.patterns import Collection, FullQualifiedId
+from openslides_backend.actions.adapters.filters import Filter, FilterOperator
+from openslides_backend.actions.general.patterns import Collection, FullQualifiedId
 
 # Do not change order of this entries. Just append new ones.
 TESTDATA = [

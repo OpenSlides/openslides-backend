@@ -1,6 +1,6 @@
 from typing import Any
 
-from openslides_backend.permissions.topic import TOPIC_CAN_MANAGE
+from openslides_backend.actions.permissions.topic import TOPIC_CAN_MANAGE
 
 TESTDATA = {5968705978: [TOPIC_CAN_MANAGE]}
 

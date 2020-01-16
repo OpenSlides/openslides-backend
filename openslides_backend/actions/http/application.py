@@ -9,9 +9,9 @@ from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
-from . import logging
-from .general.environment import Environment, get_environment
-from .views.action_view import ActionView, PermissionDenied, ViewsException
+from .. import logging
+from ..general.environment import Environment, get_environment
+from ..views.action_view import ActionView, PermissionDenied, ViewsException
 
 logger = logging.getLogger(__name__)
 

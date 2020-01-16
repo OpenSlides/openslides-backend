@@ -1,10 +1,11 @@
 from unittest import TestCase
 from unittest.mock import patch
 
-from openslides_backend.actions.base import ActionException, PermissionDenied
-from openslides_backend.actions.topic.actions import TopicCreate, TopicUpdate
-from openslides_backend.actions.types import Payload
-from openslides_backend.core import create_application
+from openslides_backend.actions.actions.base import ActionException, PermissionDenied
+from openslides_backend.actions.actions.topic.create import TopicCreate
+from openslides_backend.actions.actions.topic.update import TopicUpdate
+from openslides_backend.actions.actions.types import Payload
+from openslides_backend.actions.http.application import create_application
 
 from ..fake_adapters.authentication import AuthenticationTestAdapter
 from ..fake_adapters.database import TESTDATA, DatabaseTestAdapter
@@ -272,14 +273,15 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
 
 class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     @patch(
-        "openslides_backend.views.action_view.DatabaseHTTPAdapter", DatabaseTestAdapter
+        "openslides_backend.actions.views.action_view.DatabaseHTTPAdapter",
+        DatabaseTestAdapter,
     )
     @patch(
-        "openslides_backend.views.action_view.PermissionHTTPAdapter",
+        "openslides_backend.actions.views.action_view.PermissionHTTPAdapter",
         PermissionTestAdapter,
     )
     @patch(
-        "openslides_backend.views.action_view.EventStoreHTTPAdapter",
+        "openslides_backend.actions.views.action_view.EventStoreHTTPAdapter",
         EventStoreTestAdapter,
     )
     def setUp(self) -> None:
@@ -288,7 +290,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             5968705978  # This user has perm TOPIC_CAN_MANAGE see patch call below.
         )
         self.authentication_patcher = patch(
-            "openslides_backend.views.action_view.AuthenticationHTTPAdapter",
+            "openslides_backend.actions.views.action_view.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(self.user_id),
         )
         self.authentication_patcher.start()
@@ -352,17 +354,18 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
 
 class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
     @patch(
-        "openslides_backend.views.action_view.DatabaseHTTPAdapter", DatabaseTestAdapter
+        "openslides_backend.actions.views.action_view.DatabaseHTTPAdapter",
+        DatabaseTestAdapter,
     )
     @patch(
-        "openslides_backend.views.action_view.PermissionHTTPAdapter",
+        "openslides_backend.actions.views.action_view.PermissionHTTPAdapter",
         PermissionTestAdapter,
     )
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
         self.authentication_patcher = patch(
-            "openslides_backend.views.action_view.AuthenticationHTTPAdapter",
+            "openslides_backend.actions.views.action_view.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(self.user_id_no_permission),
         )
         self.authentication_patcher.start()

@@ -1,15 +1,38 @@
 from typing import Any, Iterable
 
+import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...adapters.protocols import Event
 from ...general.patterns import FullQualifiedField
+from ...general.schema import schema_version
 from ...models.topic import Topic
 from ...permissions.topic import TOPIC_CAN_MANAGE
 from ..action_map import register_action
 from ..base import Action, ActionException, PermissionDenied
 from ..types import DataSet, Payload
-from .schema import is_valid_new_topic, is_valid_update_topic
+
+is_valid_new_topic = fastjsonschema.compile(
+    {
+        "$schema": schema_version,
+        "title": "New topics schema",
+        "description": "An array of new topics.",
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {
+                "meeting_id": Topic().get_schema("meeting_id"),
+                "title": Topic().get_schema("title"),
+                "text": Topic().get_schema("text"),
+                "mediafile_attachment_ids": Topic().get_schema(
+                    "mediafile_attachment_ids"
+                ),
+            },
+            "required": ["meeting_id", "title"],
+        },
+        "minItems": 1,
+    }
+)
 
 
 @register_action("topic.create")
@@ -92,34 +115,3 @@ class TopicCreate(Action):
                 information=information,
                 fields=fields,
             )
-
-
-class TopicUpdate(Action):
-    """
-    Action to update simple topics that can be shown in the agenda.
-    """
-
-    model = Topic()
-
-    def validate(self, payload: Payload) -> None:
-        try:
-            is_valid_update_topic(payload)
-        except JsonSchemaException as exception:
-            raise ActionException(exception.message)
-
-    def prepare_dataset(self, payload: Payload) -> DataSet:
-        data = []
-        for topic in payload:
-            exists, position = self.database_adapter.exists(
-                collection=self.model.collection, ids=[topic["id"]]
-            )
-            self.set_min_position(position)
-            references = self.get_references(
-                model=self.model,
-                id=topic["id"],
-                obj=topic,
-                fields=["mediafile_attachment_ids"],
-                deletion_possible=True,
-            )
-            data.append({"topic": topic, "references": references})
-        return {"position": self.position, "data": data}

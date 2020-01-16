@@ -1,6 +1,6 @@
 from typing import Any, Iterable
 
-from openslides_backend.adapters.protocols import Event
+from openslides_backend.actions.adapters.protocols import Event
 
 
 class EventStoreTestAdapter:

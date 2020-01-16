@@ -7,11 +7,11 @@ from unittest import TestCase
 import pytest  # type: ignore
 import simplejson as json
 
-from openslides_backend.adapters.authentication import (
+from openslides_backend.actions.adapters.authentication import (
     AuthenticationException,
     AuthenticationHTTPAdapter,
 )
-from openslides_backend.core import create_application
+from openslides_backend.actions.http.application import create_application
 
 from ..fake_adapters.authentication import TestHeaders
 from ..utils import Client, ResponseWrapper
