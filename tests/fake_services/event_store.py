@@ -1,13 +1,13 @@
 from typing import Any, Iterable
 
-from openslides_backend.actions.adapters.protocols import Event
+from openslides_backend.shared.interfaces import Event
 
 
 class EventStoreTestAdapter:
     """
     Test adapter for event store.
 
-    See openslides_backend.services.providers.EventStoreProvider for
+    See openslides_backend.adapters.protocols.EventStoreProvider for
     implementation.
     """
 

@@ -2,14 +2,14 @@ import os
 from unittest import TestCase
 from unittest.mock import patch
 
-from openslides_backend.actions.general.patterns import (
+from openslides_backend.http.application import Application, create_application
+from openslides_backend.shared.patterns import (
     Collection,
     FullQualifiedField,
     FullQualifiedId,
 )
-from openslides_backend.actions.http.application import Application, create_application
 
-from .fake_adapters.authentication import AuthenticationTestAdapter
+from .fake_services.authentication import AuthenticationTestAdapter
 from .utils import Client, ResponseWrapper
 
 
@@ -20,7 +20,7 @@ class WSGIApplicationTester(TestCase):
 
     def setUp(self) -> None:
         self.authentication_patcher = patch(
-            "openslides_backend.actions.views.base.AuthenticationHTTPAdapter",
+            "openslides_backend.http.views.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(0),  # User is anonymous
         )
         self.authentication_patcher.start()

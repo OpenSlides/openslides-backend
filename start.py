@@ -2,7 +2,7 @@ import os
 
 from werkzeug.serving import run_simple
 
-from openslides_backend.actions.http.application import create_application
+from openslides_backend.http.application import create_application
 
 application = create_application()
 

@@ -3,14 +3,15 @@ from typing import Any, Iterable
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
-from ...adapters.protocols import Event
-from ...general.patterns import FullQualifiedField
-from ...general.schema import schema_version
 from ...models.topic import Topic
-from ...permissions.topic import TOPIC_CAN_MANAGE
-from ..action_map import register_action
-from ..base import Action, ActionException, PermissionDenied
-from ..types import DataSet, Payload
+from ...shared.exceptions import ActionException, PermissionDenied
+from ...shared.interfaces import Event
+from ...shared.patterns import FullQualifiedField
+from ...shared.permissions.topic import TOPIC_CAN_MANAGE
+from ...shared.schema import schema_version
+from ..actions import register_action
+from ..actions_interface import Payload
+from ..base import Action, DataSet
 
 is_valid_new_topic = fastjsonschema.compile(
     {

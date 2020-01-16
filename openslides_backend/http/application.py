@@ -10,9 +10,12 @@ from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
 from .. import logging
-from ..general.environment import Environment, get_environment
-from ..views.action_view import PermissionDenied, ViewsException
-from ..views.view_map import view_map
+from ..shared.exceptions import (  # TODO: Remove PermissionDenied!!!
+    PermissionDenied,
+    ViewException,
+)
+from .environment import Environment, get_environment
+from .views import view_map
 
 logger = logging.getLogger(__name__)
 
@@ -72,18 +75,22 @@ class Application:
             return exception
         logger.debug(f"Found rule {rule} with arguments {arguments}.")
 
-        # Parse JSON body. The result is cached in request.json.
+        # Check mimetype and arse JSON body. The result is cached in request.json.
+        if not request.is_json:
+            return BadRequest(
+                "Wrong media type. Use 'Content-Type: application/json' instead."
+            )
         try:
-            json = request.get_json()
+            payload = request.get_json()
         except BadRequest as exception:
             return exception
-        logger.debug(f"Request contains JSON: {json}.")
+        logger.debug(f"Request contains JSON: {payload}.")
 
         # Dispatch view and return response.
         view = view_map[rule.endpoint]
         try:
-            view(self.environment).dispatch(request, **arguments)
-        except ViewsException as exception:
+            view(self.environment).dispatch(payload, request.headers, **arguments)
+        except ViewException as exception:
             return BadRequest(exception.message)
         except PermissionDenied as exception:
             return Forbidden(exception.message)

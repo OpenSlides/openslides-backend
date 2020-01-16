@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .filters import Filter
 
 

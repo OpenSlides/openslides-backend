@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from openslides_backend.actions.adapters.protocols import Headers
+from openslides_backend.shared.interfaces import Headers
 
 
 class TestHeaders:
@@ -16,7 +16,7 @@ class AuthenticationTestAdapter:
     """
     Test adapter for authentication queries.
 
-    See openslides_backend.services.providers.AuthenticationProvider for
+    See openslides_backend.adapters.protocols.AuthenticationProvider for
     implementation.
 
     It returns always the user id given at initialization.

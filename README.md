@@ -19,16 +19,3 @@ To start it run
 or
 
     $ OPENSLIDES_BACKEND_DEBUG=1 gunicorn --config=python:gunicorn_conf openslides_backend.wsgi:application
-
-
-## Architecture
-
-Module import path:
-
-    wsgi.py -> core.py -> views -> adapters
-                                -> actions -> adapters
-                                           -> models
-
-For all parts the following modules are available:
-
-    general, logging

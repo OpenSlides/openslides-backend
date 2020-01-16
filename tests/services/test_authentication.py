@@ -7,13 +7,13 @@ from unittest import TestCase
 import pytest  # type: ignore
 import simplejson as json
 
-from openslides_backend.actions.adapters.authentication import (
+from openslides_backend.http.application import create_application
+from openslides_backend.services.authentication import (
     AuthenticationException,
     AuthenticationHTTPAdapter,
 )
-from openslides_backend.actions.http.application import create_application
 
-from ..fake_adapters.authentication import TestHeaders
+from ..fake_services.authentication import TestHeaders
 from ..utils import Client, ResponseWrapper
 
 
@@ -170,6 +170,6 @@ class AuthenticationHTTPAdapterTester(TestCase):
     def test_wsgi_request_error(self) -> None:
         with FakeServer(self.host, self.port, 7824698278, "500"):
             client = Client(create_application(), ResponseWrapper)
-            response = client.post("/system/api/actions")
+            response = client.post("/system/api/actions", json=[])
             self.assertEqual(response.status_code, 400)
             self.assertIn("Authentication service sends HTTP 500.", str(response.data))

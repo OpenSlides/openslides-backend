@@ -1,10 +1,11 @@
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
-from ...general.schema import schema_version
 from ...models.topic import Topic
-from ..base import Action, ActionException
-from ..types import DataSet, Payload
+from ...shared.exceptions import ActionException
+from ...shared.schema import schema_version
+from ..actions_interface import Payload
+from ..base import Action, DataSet
 
 is_valid_update_topic = fastjsonschema.compile(
     {

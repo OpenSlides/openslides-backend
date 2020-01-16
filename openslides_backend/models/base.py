@@ -1,4 +1,4 @@
-from ..general.patterns import Collection
+from ..shared.patterns import Collection
 from .fields import Field
 from .types import Schema
 

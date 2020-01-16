@@ -1,16 +1,16 @@
 from unittest import TestCase
 from unittest.mock import patch
 
-from openslides_backend.actions.actions.base import ActionException, PermissionDenied
-from openslides_backend.actions.actions.topic.create import TopicCreate
-from openslides_backend.actions.actions.topic.update import TopicUpdate
-from openslides_backend.actions.actions.types import Payload
-from openslides_backend.actions.http.application import create_application
+from openslides_backend.actions import Payload
+from openslides_backend.actions.topic.create import TopicCreate
+from openslides_backend.actions.topic.update import TopicUpdate
+from openslides_backend.http.application import create_application
+from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
-from ..fake_adapters.authentication import AuthenticationTestAdapter
-from ..fake_adapters.database import TESTDATA, DatabaseTestAdapter
-from ..fake_adapters.event_store import EventStoreTestAdapter
-from ..fake_adapters.permission import PermissionTestAdapter
+from ..fake_services.authentication import AuthenticationTestAdapter
+from ..fake_services.database import TESTDATA, DatabaseTestAdapter
+from ..fake_services.event_store import EventStoreTestAdapter
+from ..fake_services.permission import PermissionTestAdapter
 from ..utils import Client, ResponseWrapper, get_fqfield
 
 
@@ -278,22 +278,21 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             5968705978  # This user has perm TOPIC_CAN_MANAGE see patch call below.
         )
         self.authentication_patcher = patch(
-            "openslides_backend.actions.views.base.AuthenticationHTTPAdapter",
+            "openslides_backend.http.views.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(self.user_id),
         )
         self.authentication_patcher.start()
         self.permission_patcher = patch(
-            "openslides_backend.actions.views.base.PermissionHTTPAdapter",
+            "openslides_backend.http.views.PermissionHTTPAdapter",
             PermissionTestAdapter,
         )
         self.permission_patcher.start()
         self.database_patcher = patch(
-            "openslides_backend.actions.views.base.DatabaseHTTPAdapter",
-            DatabaseTestAdapter,
+            "openslides_backend.http.views.DatabaseHTTPAdapter", DatabaseTestAdapter,
         )
         self.database_patcher.start()
         self.event_store_patcher = patch(
-            "openslides_backend.actions.views.base.EventStoreHTTPAdapter",
+            "openslides_backend.http.views.EventStoreHTTPAdapter",
             EventStoreTestAdapter,
         )
         self.event_store_patcher.start()
@@ -363,18 +362,17 @@ class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
         super().setUp()
         self.user_id_no_permission = 9707919439
         self.authentication_patcher = patch(
-            "openslides_backend.actions.views.base.AuthenticationHTTPAdapter",
+            "openslides_backend.http.views.AuthenticationHTTPAdapter",
             AuthenticationTestAdapter(self.user_id_no_permission),
         )
         self.authentication_patcher.start()
         self.permission_patcher = patch(
-            "openslides_backend.actions.views.base.PermissionHTTPAdapter",
+            "openslides_backend.http.views.PermissionHTTPAdapter",
             PermissionTestAdapter,
         )
         self.permission_patcher.start()
         self.database_patcher = patch(
-            "openslides_backend.actions.views.base.DatabaseHTTPAdapter",
-            DatabaseTestAdapter,
+            "openslides_backend.http.views.DatabaseHTTPAdapter", DatabaseTestAdapter,
         )
         self.database_patcher.start()
         self.application = create_application()

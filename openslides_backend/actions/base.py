@@ -1,19 +1,14 @@
 from typing import Any, Dict, Iterable, List, Set, Tuple, Union
 
-from ..adapters.protocols import DatabaseAdapter, Event, PermissionAdapter
-from ..general.exception import BackendBaseException
-from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
+from mypy_extensions import TypedDict
+
 from ..models.base import Model
 from ..models.fields import RelationMixin
-from .types import DataSet, Payload
+from ..shared.interfaces import DatabaseAdapter, Event, PermissionAdapter
+from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from .actions_interface import Payload
 
-
-class ActionException(BackendBaseException):
-    pass
-
-
-class PermissionDenied(BackendBaseException):
-    pass
+DataSet = TypedDict("DataSet", {"position": int, "data": Any})
 
 
 class Action:

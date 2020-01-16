@@ -4,15 +4,11 @@ import requests
 import simplejson as json
 
 from .. import logging
-from ..general.exception import BackendBaseException
-from ..general.patterns import Collection, FullQualifiedId
-from .filters import Filter
+from ..shared.exceptions import DatabaseException
+from ..shared.interfaces import Filter
+from ..shared.patterns import Collection, FullQualifiedId
 
 logger = logging.getLogger(__name__)
-
-
-class DatabaseException(BackendBaseException):
-    pass
 
 
 class DatabaseHTTPAdapter:

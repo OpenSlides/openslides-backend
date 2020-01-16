@@ -3,14 +3,10 @@ import simplejson as json
 from simplejson.errors import JSONDecodeError  # type: ignore
 
 from .. import logging
-from ..general.exception import BackendBaseException
-from .protocols import Headers
+from ..shared.exceptions import AuthenticationException
+from ..shared.interfaces import Headers
 
 logger = logging.getLogger(__name__)
-
-
-class AuthenticationException(BackendBaseException):
-    pass
 
 
 class AuthenticationHTTPAdapter:
