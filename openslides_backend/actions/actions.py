@@ -1,16 +1,13 @@
-from typing import Any, Callable, Dict, Iterable, List, Type
+from typing import Callable, Dict, Iterable, List, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
-from .. import logging
 from ..shared.exceptions import ActionException, EventStoreException
-from ..shared.interfaces import Event
+from ..shared.interfaces import Event, LoggingModule, Services
 from ..shared.schema import schema_version
 from .actions_interface import Payload
 from .base import Action
-
-logger = logging.getLogger(__name__)
 
 
 def prepare_action_map() -> None:
@@ -78,14 +75,17 @@ class ActionsHandler:
     """
 
     def handle_request(
-        self, payload: Payload, user_id: int, services: Dict[str, Any]
+        self, payload: Payload, user_id: int, logging: LoggingModule, services: Services
     ) -> None:
         """
         Takes payload and user id and handles this request by validating and
         parsing all actions. In the end it sends everything to the event store.
         """
         self.user_id = user_id
-        self.services = services  # TODO: Remove it an use DI.
+        self.logging = logging
+        self.logger = logging.getLogger(__name__)
+        self.permission = services.permission
+        self.database = services.database
 
         # Validate payload of request
         try:
@@ -98,18 +98,18 @@ class ActionsHandler:
 
         # Send events to database
         try:
-            self.services["event_store_adapter"].send(events)
+            services.event_store().send(events)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
-        logger.debug("Request was successful. Send response now.")
+        self.logger.debug("Request was successful. Send response now.")
 
     def validate(self, payload: Payload) -> None:
         """
         Validates action requests sent by client. Raises JsonSchemaException if
         input is invalid.
         """
-        logger.debug("Validate action request.")
+        self.logger.debug("Validate action request.")
         payload_schema(payload)
 
     def parse_actions(self, payload: Payload) -> Iterable[Event]:
@@ -119,15 +119,17 @@ class ActionsHandler:
         """
         all_events: List[Event] = []
         for element in payload:
-            logger.debug(f"Action map contains the following actions: {action_map}.")
+            self.logger.debug(
+                f"Action map contains the following actions: {action_map}."
+            )
             action = action_map.get(element["action"])
             if action is None:
                 raise ActionException(f"Action {element['action']} does not exist.")
-            logger.debug(f"Perform action {element['action']}.")
-            events = action(
-                self.services["permission_adapter"], self.services["database_adapter"]
-            ).perform(element["data"], self.user_id)
-            logger.debug(f"Prepared events {events}.")
+            self.logger.debug(f"Perform action {element['action']}.")
+            events = action(self.permission(), self.database()).perform(
+                element["data"], self.user_id
+            )
+            self.logger.debug(f"Prepared events {events}.")
             all_events.extend(events)
-        logger.debug("All events ready.")
+        self.logger.debug("All events ready.")
         return all_events

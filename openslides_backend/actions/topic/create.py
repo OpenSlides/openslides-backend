@@ -45,7 +45,7 @@ class TopicCreate(Action):
     model = Topic()
 
     def check_permission_on_entry(self) -> None:
-        if not self.permission_adapter.has_perm(self.user_id, TOPIC_CAN_MANAGE):
+        if not self.permission.has_perm(self.user_id, TOPIC_CAN_MANAGE):
             raise PermissionDenied(f"User does not have {TOPIC_CAN_MANAGE} permission.")
 
     def validate(self, payload: Payload) -> None:
@@ -57,7 +57,7 @@ class TopicCreate(Action):
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
         for topic in payload:
-            id, position = self.database_adapter.getId(collection=self.model.collection)
+            id, position = self.database.getId(collection=self.model.collection)
             self.set_min_position(position)
             references = self.get_references(
                 model=self.model,

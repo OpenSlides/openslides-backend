@@ -1,50 +1,27 @@
 from typing import Callable, Dict, Type
 
-from .. import logging
 from ..actions import Actions, Payload
 from ..actions.actions import ActionsHandler
-from ..services.authentication import AuthenticationHTTPAdapter
-from ..services.database import DatabaseHTTPAdapter
-from ..services.event_store import EventStoreHTTPAdapter
-from ..services.permission import PermissionHTTPAdapter
 from ..shared.exceptions import (
     ActionException,
     AuthenticationException,
     PermissionDenied,
     ViewException,
 )
-from ..shared.interfaces import (
-    AuthenticationAdapter,
-    DatabaseAdapter,
-    EventStoreAdapter,
-    Headers,
-    PermissionAdapter,
-)
-from .environment import Environment
-
-logger = logging.getLogger(__name__)
+from ..shared.interfaces import Headers, LoggingModule, Services
 
 
 class View:
     """
-    Base class for view of this service.
+    Base class for views of this service.
 
-    During initialization we bind the services to the instance.
+    During initialization we bind the dependencies to the instance.
     """
 
-    def __init__(self, environment: Environment) -> None:
-        self.authentication_adapter: AuthenticationAdapter = AuthenticationHTTPAdapter(
-            environment["authentication_url"]
-        )
-        self.permission_adapter: PermissionAdapter = PermissionHTTPAdapter(
-            environment["permission_url"]
-        )
-        self.database_adapter: DatabaseAdapter = DatabaseHTTPAdapter(
-            environment["database_url"]
-        )
-        self.event_store_adapter: EventStoreAdapter = EventStoreHTTPAdapter(
-            environment["event_store_url"]
-        )
+    def __init__(self, logging: LoggingModule, services: Services) -> None:
+        self.services = services
+        self.logging = logging
+        self.logger = logging.getLogger(__name__)
 
     def dispatch(self, payload: Payload, headers: Headers, **kwargs: dict) -> None:
         """
@@ -71,27 +48,30 @@ def register_view(name: str) -> Callable[[Type[View]], Type[View]]:
 
 @register_view("ActionView")
 class ActionView(View):
+    """
+    The ActionView receives a bundle of actions via HTTP and handles it to the
+    ActionsHandler after retrieving request user id.
+    """
+
     def dispatch(self, payload: Payload, headers: Headers, **kwargs: dict) -> None:
         """
         Dispatches request to the viewpoint.
         """
-        logger.debug("Start dispatching action request.")
+        self.logger.debug("Start dispatching action request.")
 
-        # Get request user id
+        # Get request user id.
         try:
-            self.user_id = self.authentication_adapter.get_user(headers)
+            self.user_id = self.services.authentication().get_user(headers)
         except AuthenticationException as exception:
             raise ViewException(exception.message)
 
-        services = {
-            "permission_adapter": self.permission_adapter,
-            "database_adapter": self.database_adapter,
-            "event_store_adapter": self.event_store_adapter,
-        }
+        # Handle request.
         handler: Actions = ActionsHandler()
         try:
-            handler.handle_request(payload, self.user_id, services)
+            handler.handle_request(payload, self.user_id, self.logging, self.services)
         except ActionException as exception:
             raise ViewException(exception.message)
         except PermissionDenied:  # TODO: Do not use different exceptions here.
             raise
+
+        self.logger.debug("Action request finished successfully.")

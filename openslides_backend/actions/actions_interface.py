@@ -2,10 +2,12 @@ from typing import Any, Dict, List
 
 from typing_extensions import Protocol
 
+from ..shared.interfaces import LoggingModule, Services
+
 Payload = List[Dict[str, Any]]
 
 
-class Actions(Protocol):
+class Actions(Protocol):  # pragma: no cover
     """
     Interface for actions (sub)service.
 
@@ -14,6 +16,10 @@ class Actions(Protocol):
     """
 
     def handle_request(
-        self, payload: Payload, user_id: int, services: Any
-    ) -> None:  # TODO: Remove services
+        self,
+        payload: Payload,
+        user_id: int,
+        logging: LoggingModule,
+        services: Services,
+    ) -> None:
         ...

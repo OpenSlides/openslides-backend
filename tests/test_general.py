@@ -1,16 +1,14 @@
 import os
 from unittest import TestCase
-from unittest.mock import patch
 
-from openslides_backend.http.application import Application, create_application
+from openslides_backend.http.application import OpenSlidesBackendApplication
 from openslides_backend.shared.patterns import (
     Collection,
     FullQualifiedField,
     FullQualifiedId,
 )
 
-from .fake_services.authentication import AuthenticationTestAdapter
-from .utils import Client, ResponseWrapper
+from .utils import Client, ResponseWrapper, create_test_application
 
 
 class WSGIApplicationTester(TestCase):
@@ -19,28 +17,21 @@ class WSGIApplicationTester(TestCase):
     """
 
     def setUp(self) -> None:
-        self.authentication_patcher = patch(
-            "openslides_backend.http.views.AuthenticationHTTPAdapter",
-            AuthenticationTestAdapter(0),  # User is anonymous
-        )
-        self.authentication_patcher.start()
-        self.application = create_application()
-
-    def tearDown(self) -> None:
-        self.authentication_patcher.stop()
-
-    def test_wsgi_file(self) -> None:
-        from openslides_backend.wsgi import application
-
-        self.assertTrue(isinstance(application, Application))
+        self.application = create_test_application(user_id=0)  # User is anonymous
 
     def test_create_application(self) -> None:
-        self.assertTrue(isinstance(self.application, Application))
+        # This test does not use our test application but the real one.
+        from openslides_backend.main import application
+
+        self.assertTrue(isinstance(application, OpenSlidesBackendApplication))
 
     def test_create_application_2(self) -> None:
+        # This test does not use our test application but the real one.
+        from openslides_backend.main import create_application
+
         os.environ["OPENSLIDES_BACKEND_DEBUG"] = "1"
         app = create_application()
-        self.assertTrue(isinstance(app, Application))
+        self.assertTrue(isinstance(app, OpenSlidesBackendApplication))
 
     def test_wsgi_request_root(self) -> None:
         client = Client(self.application, ResponseWrapper)

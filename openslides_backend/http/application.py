@@ -1,7 +1,5 @@
-import os
-from typing import Any, Callable, Dict, Iterable, Text, Union
+from typing import Any, Iterable, Union
 
-from mypy_extensions import TypedDict
 from werkzeug.exceptions import BadRequest, Forbidden, HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
@@ -9,21 +7,12 @@ from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
-from .. import logging
 from ..shared.exceptions import (  # TODO: Remove PermissionDenied!!!
     PermissionDenied,
     ViewException,
 )
-from .environment import Environment, get_environment
+from ..shared.interfaces import StartResponse, WSGIEnvironment
 from .views import view_map
-
-logger = logging.getLogger(__name__)
-
-ApplicationConfig = TypedDict("ApplicationConfig", {"environment": Environment})
-
-StartResponse = Callable
-
-WSGIEnvironment = Dict[Text, Any]
 
 
 class Request(JSONMixin, WerkzeugRequest):
@@ -48,16 +37,19 @@ class RuleFactory(WerkzeugRuleFactory):
         ]
 
 
-class Application:
+class OpenSlidesBackendApplication:
     """
-    Central application container for this service.
+    Central application class for this service.
 
-    During initialization we bind configuration and action view to the instance
-    and also map rule factory's urls.
+    During initialization we bind injected dependencies to the instance and also
+    map rule factory's urls.
     """
 
-    def __init__(self, config: ApplicationConfig) -> None:
-        self.environment = config["environment"]
+    def __init__(self, logging: Any, services: Any,) -> None:
+        self.logging = logging
+        self.logger = logging.getLogger(__name__)
+        self.logger.debug("Initialize OpenSlides Backend application.")
+        self.services = services
         self.url_map = Map()
         self.url_map.add(RuleFactory())
 
@@ -73,7 +65,7 @@ class Application:
             rule, arguments = adapter.match(return_rule=True)
         except HTTPException as exception:
             return exception
-        logger.debug(f"Found rule {rule} with arguments {arguments}.")
+        self.logger.debug(f"Found rule {rule} with arguments {arguments}.")
 
         # Check mimetype and arse JSON body. The result is cached in request.json.
         if not request.is_json:
@@ -84,16 +76,18 @@ class Application:
             payload = request.get_json()
         except BadRequest as exception:
             return exception
-        logger.debug(f"Request contains JSON: {payload}.")
+        self.logger.debug(f"Request contains JSON: {payload}.")
 
         # Dispatch view and return response.
-        view = view_map[rule.endpoint]
+        view_class = view_map[rule.endpoint]
+        view = view_class(self.logging, self.services)
         try:
-            view(self.environment).dispatch(payload, request.headers, **arguments)
+            view.dispatch(payload, request.headers, **arguments)
         except ViewException as exception:
             return BadRequest(exception.message)
-        except PermissionDenied as exception:
+        except PermissionDenied as exception:  # TODO: Do not use this here.
             return Forbidden(exception.message)
+        self.logger.debug("All done. Application sends HTTP 200.")
         return Response()
 
     def wsgi_application(
@@ -115,23 +109,3 @@ class Application:
         custom middlewares to the application.
         """
         return self.wsgi_application(environ, start_response)
-
-
-def create_application() -> Application:
-    """
-    Application factory function to create a new instance of the application.
-
-    Parses services configuration from environment variables.
-    """
-    # Setup global loglevel.
-    if os.environ.get("OPENSLIDES_BACKEND_DEBUG"):
-        logging.basicConfig(level=logging.DEBUG)
-
-    logger.debug("Create application.")
-
-    environment = get_environment()
-    logger.debug(f"Using environment: {environment}.")
-
-    # Create application instance.
-    application = Application(ApplicationConfig(environment=environment))
-    return application

@@ -48,7 +48,7 @@ class TopicUpdate(Action):
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
         for topic in payload:
-            exists, position = self.database_adapter.exists(
+            exists, position = self.database.exists(
                 collection=self.model.collection, ids=[topic["id"]]
             )
             self.set_min_position(position)

@@ -3,11 +3,12 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 from unittest import TestCase
+from unittest.mock import MagicMock
 
 import pytest  # type: ignore
 import simplejson as json
 
-from openslides_backend.http.application import create_application
+from openslides_backend.main import create_application
 from openslides_backend.services.authentication import (
     AuthenticationException,
     AuthenticationHTTPAdapter,
@@ -98,28 +99,28 @@ class AuthenticationHTTPAdapterTester(TestCase):
     def setUp(self) -> None:
         self.host = "localhost"
         self.port = 9000
+        self.auth = AuthenticationHTTPAdapter(
+            authentication_url=f"http://{self.host}:{self.port}", logging=MagicMock()
+        )
 
     def test_get_anonymous(self) -> None:
         with FakeServer(self.host, self.port, 0):
-            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
             headers = TestHeaders()
-            user_id = auth.get_user(headers)
+            user_id = self.auth.get_user(headers)
             self.assertEqual(user_id, 0)
 
     def test_some_user(self) -> None:
         expected_user_id = 5262746456
         with FakeServer(self.host, self.port, expected_user_id):
-            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
             headers = TestHeaders()
-            user_id = auth.get_user(headers)
+            user_id = self.auth.get_user(headers)
             self.assertEqual(user_id, expected_user_id)
 
     def test_http_500(self) -> None:
         with FakeServer(self.host, self.port, 3238429704, "500"):
-            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
             headers = TestHeaders()
             with self.assertRaises(AuthenticationException) as context_manager:
-                auth.get_user(headers)
+                self.auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
                 "Authentication service sends HTTP 500.",
@@ -127,10 +128,9 @@ class AuthenticationHTTPAdapterTester(TestCase):
 
     def test_empty_payload(self) -> None:
         with FakeServer(self.host, self.port, 2896946348, "empty"):
-            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
             headers = TestHeaders()
             with self.assertRaises(AuthenticationException) as context_manager:
-                auth.get_user(headers)
+                self.auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
                 "Bad response from authentication service. Body does not contain JSON.",
@@ -138,10 +138,9 @@ class AuthenticationHTTPAdapterTester(TestCase):
 
     def test_bad_payload_1(self) -> None:
         with FakeServer(self.host, self.port, 9198030928, "bad_missing_key"):
-            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
             headers = TestHeaders()
             with self.assertRaises(AuthenticationException) as context_manager:
-                auth.get_user(headers)
+                self.auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
                 "Empty or bad response from authentication service.",
@@ -149,10 +148,9 @@ class AuthenticationHTTPAdapterTester(TestCase):
 
     def test_bad_payload_2(self) -> None:
         with FakeServer(self.host, self.port, 4765864300, "bad_wrong_key"):
-            auth = AuthenticationHTTPAdapter(f"http://{self.host}:{self.port}")
             headers = TestHeaders()
             with self.assertRaises(AuthenticationException) as context_manager:
-                auth.get_user(headers)
+                self.auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
                 "Empty or bad response from authentication service.",
