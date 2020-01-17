@@ -2,15 +2,8 @@ import requests
 import simplejson as json
 from simplejson.errors import JSONDecodeError  # type: ignore
 
-from .. import logging
-from ..general.exception import BackendBaseException
-from .protocols import Headers
-
-logger = logging.getLogger(__name__)
-
-
-class AuthenticationException(BackendBaseException):
-    pass
+from ..shared.exceptions import AuthenticationException
+from ..shared.interfaces import Headers, LoggingModule
 
 
 class AuthenticationHTTPAdapter:
@@ -18,15 +11,16 @@ class AuthenticationHTTPAdapter:
     Adapter to connect to authentication service.
     """
 
-    def __init__(self, authentication_url: str) -> None:
+    def __init__(self, authentication_url: str, logging: LoggingModule) -> None:
         self.url = authentication_url
+        self.logger = logging.getLogger(__name__)
         self.headers = {"Content-Type": "application/json"}
 
     def get_user(self, headers: Headers) -> int:
         """
         Fetches user id from authentication service using request headers.
         """
-        logger.debug(
+        self.logger.debug(
             f"Start request to authentication service with the following data: {headers}"
         )
         response = requests.post(
@@ -42,7 +36,7 @@ class AuthenticationHTTPAdapter:
             raise AuthenticationException(
                 "Bad response from authentication service. Body does not contain JSON."
             )
-        logger.debug(f"Get repsonse: {body}")
+        self.logger.debug(f"Get repsonse: {body}")
         try:
             user_id = body["user_id"]
         except (TypeError, KeyError):

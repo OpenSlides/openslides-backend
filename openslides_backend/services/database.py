@@ -3,16 +3,9 @@ from typing import Any, Dict, List, Tuple
 import requests
 import simplejson as json
 
-from .. import logging
-from ..general.exception import BackendBaseException
-from ..general.patterns import Collection, FullQualifiedId
-from .filters import Filter
-
-logger = logging.getLogger(__name__)
-
-
-class DatabaseException(BackendBaseException):
-    pass
+from ..shared.exceptions import DatabaseException
+from ..shared.interfaces import Filter, LoggingModule
+from ..shared.patterns import Collection, FullQualifiedId
 
 
 class DatabaseHTTPAdapter:
@@ -20,8 +13,9 @@ class DatabaseHTTPAdapter:
     Adapter to connect to (read-only) database.
     """
 
-    def __init__(self, database_url: str) -> None:
+    def __init__(self, database_url: str, logging: LoggingModule) -> None:
         self.url = database_url
+        self.logger = logging.getLogger(__name__)
         self.headers = {"Content-Type": "application/json"}
 
     def get(
@@ -31,7 +25,7 @@ class DatabaseHTTPAdapter:
             "command": "get",
             "parameters": {"fqid": str(fqid), "mapped_fields": mapped_fields},
         }
-        logger.debug(f"Start request to database with the following data: {data}")
+        self.logger.debug(f"Start request to database with the following data: {data}")
         response = requests.get(self.url, data=json.dumps(data), headers=self.headers)
         if not response.ok:
             if response.status_code >= 500:
@@ -57,14 +51,14 @@ class DatabaseHTTPAdapter:
                 "mapped_fields": mapped_fields,
             },
         }
-        logger.debug(f"Start request to database with the following data: {data}")
+        self.logger.debug(f"Start request to database with the following data: {data}")
         response = requests.get(self.url, data=json.dumps(data), headers=self.headers)
         print(response)  # TODO: Use response
         return ({42: {"foo": "bar"}}, 0)
 
     def getId(self, collection: Collection) -> Tuple[int, int]:
         data = {"command": "getId", "parameters": {"collection": str(collection)}}
-        logger.debug(f"Start request to database with the following data: {data}")
+        self.logger.debug(f"Start request to database with the following data: {data}")
         response = requests.get(self.url, data=json.dumps(data), headers=self.headers)
         print(response)  # TODO: Use response
         return (0, 0)

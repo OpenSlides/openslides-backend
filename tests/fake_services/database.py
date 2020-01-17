@@ -1,8 +1,8 @@
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
 
-from openslides_backend.adapters.filters import Filter, FilterOperator
-from openslides_backend.general.patterns import Collection, FullQualifiedId
+from openslides_backend.shared.filters import Filter, FilterOperator
+from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 # Do not change order of this entries. Just append new ones.
 TESTDATA = [
@@ -63,7 +63,7 @@ class DatabaseTestAdapter:
     """
     Test adapter for database (read) queries.
 
-    See openslides_backend.services.providers.DatabaseProvider for
+    See openslides_backend.adapters.protocols.DatabaseProvider for
     implementation.
     """
 

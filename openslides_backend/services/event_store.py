@@ -1,11 +1,6 @@
 from typing import Iterable
 
-from ..general.exception import BackendBaseException
-from .protocols import Event
-
-
-class EventStoreException(BackendBaseException):
-    pass
+from ..shared.interfaces import Event
 
 
 class EventStoreHTTPAdapter:

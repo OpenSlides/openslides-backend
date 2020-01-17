@@ -1,10 +1,42 @@
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Text, Tuple
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .filters import Filter
+
+LoggingModule = Any  # TODO: Use correct type here.
+
+StartResponse = Callable
+
+WSGIEnvironment = Dict[Text, Any]
+
+
+class Services(Protocol):  # pragma: no cover
+    """
+    Interface for service container used for dependency injection.
+    """
+
+    # TODO: Use correct type here. Fitting together dependency_injector and our services seams difficult for mypy.
+    authentication: Any
+    permission: Any
+    database: Any
+    event_store: Any
+
+
+class Application(Protocol):  # pragma: no cover
+    """
+    Interface for main application class.
+    """
+
+    def __init__(self, logging: LoggingModule, services: Services) -> None:
+        ...
+
+    def __call__(
+        self, environ: WSGIEnvironment, start_response: StartResponse
+    ) -> Iterable[bytes]:
+        ...
 
 
 class Headers(Protocol):  # pragma: no cover
@@ -16,16 +48,19 @@ class Headers(Protocol):  # pragma: no cover
         ...
 
 
-class AuthenticationAdapter(Protocol):  # pragma: no cover
+class Authentication(Protocol):  # pragma: no cover
     """
     Interface for authentication adapter used in views.
     """
+
+    def __init__(self, authentication_url: str, logging: LoggingModule) -> None:
+        ...
 
     def get_user(self, headers: Headers) -> int:
         ...
 
 
-class PermissionAdapter(Protocol):  # pragma: no cover
+class Permission(Protocol):  # pragma: no cover
     """
     Interface for permission service used in views and actions.
     """
@@ -34,7 +69,7 @@ class PermissionAdapter(Protocol):  # pragma: no cover
         ...
 
 
-class DatabaseAdapter(Protocol):  # pragma: no cover
+class Database(Protocol):  # pragma: no cover
     """
     Interface for database adapter used in views and actions.
     """
@@ -78,7 +113,7 @@ class Event(TypedDict):
     fields: Dict[FullQualifiedField, Any]
 
 
-class EventStoreAdapter(Protocol):  # pragma: no cover
+class EventStore(Protocol):  # pragma: no cover
     """
     Interface for event store adapter used in views and actions.
     """

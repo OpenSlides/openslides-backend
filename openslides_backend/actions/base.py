@@ -1,19 +1,14 @@
 from typing import Any, Dict, Iterable, List, Set, Tuple, Union
 
-from ..adapters.protocols import DatabaseAdapter, Event, PermissionAdapter
-from ..general.exception import BackendBaseException
-from ..general.patterns import Collection, FullQualifiedField, FullQualifiedId
+from mypy_extensions import TypedDict
+
 from ..models.base import Model
 from ..models.fields import RelationMixin
-from .types import DataSet, Payload
+from ..shared.interfaces import Database, Event, Permission
+from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from .actions_interface import Payload
 
-
-class ActionException(BackendBaseException):
-    pass
-
-
-class PermissionDenied(BackendBaseException):
-    pass
+DataSet = TypedDict("DataSet", {"position": int, "data": Any})
 
 
 class Action:
@@ -23,11 +18,9 @@ class Action:
 
     position = 0
 
-    def __init__(
-        self, permission_adapter: PermissionAdapter, database_adapter: DatabaseAdapter
-    ) -> None:
-        self.permission_adapter = permission_adapter
-        self.database_adapter = database_adapter
+    def __init__(self, permission: Permission, database: Database) -> None:
+        self.permission = permission
+        self.database = database
 
     def perform(self, payload: Payload, user_id: int) -> Iterable[Event]:
         """
@@ -115,7 +108,7 @@ class Action:
             else:
                 add = set(ref_ids)
                 remove = set()
-            refs, position = self.database_adapter.getMany(
+            refs, position = self.database.getMany(
                 Collection(model_field.to),
                 list(add | remove),
                 mapped_fields=[model_field.related_name],
@@ -142,7 +135,7 @@ class Action:
         where the given object (represented by model and id) should be added
         and one with reference objects where it should be removed.
         """
-        current_obj, position = self.database_adapter.get(
+        current_obj, position = self.database.get(
             FullQualifiedId(model.collection, id), mapped_fields=[field]
         )
         self.set_min_position(position)
