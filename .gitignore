@@ -16,3 +16,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Include when developing application packages.
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tasks.json
+.vimrc
