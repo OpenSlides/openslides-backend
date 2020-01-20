@@ -560,3 +560,25 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
         payload = [{"wrong_field": "text_gaiThupu6a"}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
+
+    def test_perform_correct_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_1, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("topic/1312354708/title"): "title_ahbuQu9ooz",
+                            get_fqfield("topic/1312354708/text"): "text_thuF7Ahxee",
+                        },
+                    },
+                ],
+                "information": {get_fqid("topic/1312354708"): ["Topic updated"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("topic/1312354708/deleted"): 1},
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)

@@ -1,8 +1,12 @@
+from typing import Any, Iterable
+
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...models.topic import Topic
 from ...shared.exceptions import ActionException, PermissionDenied
+from ...shared.interfaces import Event, WriteRequestElement
+from ...shared.patterns import FullQualifiedField, FullQualifiedId
 from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions_interface import Payload
@@ -66,3 +70,60 @@ class TopicUpdate(Action):
             )
             data.append({"topic": topic, "references": references})
         return {"position": self.position, "data": data}
+
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        position = dataset["position"]
+        for element in dataset["data"]:
+            topic_write_request_element = self.create_topic_write_request_element(
+                position, element
+            )
+            # for reference in self.get_references_updates(position, element):
+            #     topic_write_request_element = merge_write_request_elements(
+            #         (topic_write_request_element, reference)
+            #     )
+            yield topic_write_request_element
+
+    def create_topic_write_request_element(
+        self, position: int, element: Any
+    ) -> WriteRequestElement:
+        fqfields = {}
+        for field in element["topic"].keys():
+            if field == "id":
+                continue
+            fqfields[
+                FullQualifiedField(self.model.collection, element["topic"]["id"], field)
+            ] = element["topic"][field]
+        information = {
+            FullQualifiedId(self.model.collection, element["topic"]["id"]): [
+                "Topic updated"
+            ]
+        }
+        event = Event(type="update", fqfields=fqfields)
+        return WriteRequestElement(
+            events=[event],
+            information=information,
+            user_id=self.user_id,
+            locked_fields={
+                FullQualifiedField(
+                    self.model.collection, element["topic"]["id"], "deleted"
+                ): position
+            },
+        )
+
+    # def get_references_updates(
+    #     self, position: int, element: Any
+    # ) -> Iterable[WriteRequestElement]:
+    #     for fqfield, data in element["references"].items():
+    #         event = Event(type="update", fqfields={fqfield: data})
+    #         yield WriteRequestElement(
+    #             events=[event],
+    #             information={
+    #                 FullQualifiedId(fqfield.collection, fqfield.id): [
+    #                     "Object attached to new topic"
+    #                 ]
+    #             },
+    #             user_id=self.user_id,
+    #             locked_fields={fqfield: position},
+    #         )
