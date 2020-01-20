@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from ..shared.interfaces import Event
+from ..shared.interfaces import WriteRequestElement
 
 
 class EventStoreHTTPAdapter:
@@ -12,5 +12,5 @@ class EventStoreHTTPAdapter:
         self.url = event_store_url
         # self.headers = {"Content-Type": "application/json"}
 
-    def send(self, events: Iterable[Event]) -> None:
+    def send(self, events: Iterable[WriteRequestElement]) -> None:
         raise

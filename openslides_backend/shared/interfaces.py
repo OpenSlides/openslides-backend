@@ -104,13 +104,22 @@ class Database(Protocol):  # pragma: no cover
 
 class Event(TypedDict):
     """
-    Event that can be sent to the event store.
+    Event as part of a write request element.
     """
 
     type: str
-    position: int
-    information: Dict[str, Any]
-    fields: Dict[FullQualifiedField, Any]
+    fqfields: Dict[FullQualifiedField, Any]
+
+
+class WriteRequestElement(TypedDict):
+    """
+    Write request element that can be sent to the event store.
+    """
+
+    events: List[Event]
+    information: Dict[FullQualifiedId, List[str]]
+    user_id: int
+    locked_fields: Dict[Any, int]  # TODO
 
 
 class EventStore(Protocol):  # pragma: no cover
@@ -118,5 +127,5 @@ class EventStore(Protocol):  # pragma: no cover
     Interface for event store adapter used in views and actions.
     """
 
-    def send(self, events: Iterable[Event]) -> None:
+    def send(self, events: Iterable[WriteRequestElement]) -> None:
         ...

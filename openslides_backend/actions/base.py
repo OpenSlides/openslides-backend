@@ -1,10 +1,10 @@
-from typing import Any, Dict, Iterable, List, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
-from ..shared.interfaces import Database, Event, Permission
+from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .actions_interface import Payload
 
@@ -22,7 +22,7 @@ class Action:
         self.permission = permission
         self.database = database
 
-    def perform(self, payload: Payload, user_id: int) -> Iterable[Event]:
+    def perform(self, payload: Payload, user_id: int) -> Iterable[WriteRequestElement]:
         """
         Entrypoint to perform the action.
         """
@@ -31,7 +31,7 @@ class Action:
         self.validate(payload)
         dataset = self.prepare_dataset(payload)
         self.check_permission_on_dataset(dataset)
-        return self.create_events(dataset)
+        return self.create_write_request_elements(dataset)
 
     def check_permission_on_entry(self) -> None:
         """
@@ -59,9 +59,12 @@ class Action:
         """
         pass
 
-    def create_events(self, dataset: DataSet) -> Iterable[Event]:
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
         """
-        Takes dataset and creates events that can be sent to event store.
+        Takes dataset and creates write request elements that can be sent to event
+        store.
         """
         raise NotImplementedError
 
@@ -144,3 +147,42 @@ class Action:
         add = new_ids - current_ids
         remove = current_ids - new_ids
         return (add, remove)
+
+
+def merge_write_request_elements(
+    write_request_elements: Iterable[WriteRequestElement],
+) -> WriteRequestElement:
+    """
+    Merges the given write request elements to one big write request element.
+    """
+    events: List[Event] = []
+    information: Dict[FullQualifiedId, List[str]] = {}
+    user_id: Optional[int] = None
+    locked_fields: Dict[Any, int] = {}
+    for element in write_request_elements:
+        events.extend(element["events"])
+        for fqid, info_text in element["information"].items():
+            if information.get(fqid) is None:
+                information[fqid] = info_text
+            else:
+                information[fqid].extend(info_text)
+        if user_id is None:
+            user_id = element["user_id"]
+        else:
+            if user_id != element["user_id"]:
+                raise ValueError(
+                    "You can not merge two write request elements of different users."
+                )
+        for key, position in element["locked_fields"].items():
+            if locked_fields.get(key) is None:
+                locked_fields[key] = position
+            else:
+                locked_fields[key] = min(position, locked_fields[key])
+    if user_id is None:
+        raise
+    return WriteRequestElement(
+        events=events,
+        information=information,
+        user_id=user_id,
+        locked_fields=locked_fields,
+    )

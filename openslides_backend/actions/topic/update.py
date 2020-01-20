@@ -2,7 +2,8 @@ import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...models.topic import Topic
-from ...shared.exceptions import ActionException
+from ...shared.exceptions import ActionException, PermissionDenied
+from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions_interface import Payload
 from ..base import Action, DataSet
@@ -38,6 +39,10 @@ class TopicUpdate(Action):
     """
 
     model = Topic()
+
+    def check_permission_on_entry(self) -> None:
+        if not self.permission.has_perm(self.user_id, TOPIC_CAN_MANAGE):
+            raise PermissionDenied(f"User does not have {TOPIC_CAN_MANAGE} permission.")
 
     def validate(self, payload: Payload) -> None:
         try:

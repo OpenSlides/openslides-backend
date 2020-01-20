@@ -3,7 +3,8 @@ KEYSEPARATOR = "/"
 
 class Collection:
     """
-    The first part of a full qualified field (also known as "key")
+    The first part of a full qualified field (also known as "key"), e. g.
+    motion_change_recommendation.
     """
 
     def __init__(self, collection: str) -> None:
@@ -12,10 +13,12 @@ class Collection:
     def __str__(self) -> str:
         return self.collection
 
+    def __repr__(self) -> str:
+        return f"Collection {str(self)}"
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Collection):
             return NotImplemented
-
         return self.collection == other.collection
 
     def __hash__(self) -> int:
@@ -25,7 +28,7 @@ class Collection:
 class FullQualifiedId:
     """
     Part of a full qualified field (also known as "key"),
-    e. g. motions.change_recommendation/42
+    e. g. motion_change_recommendation/42
     """
 
     def __init__(self, collection: Collection, id: int) -> None:
@@ -34,6 +37,9 @@ class FullQualifiedId:
 
     def __str__(self) -> str:
         return KEYSEPARATOR.join((str(self.collection), str(self.id)))
+
+    def __repr__(self) -> str:
+        return f"FQId {str(self)}"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullQualifiedId):
@@ -46,7 +52,8 @@ class FullQualifiedId:
 
 class FullQualifiedField:
     """
-    The key used in the key-value store i. e. the event store.
+    The key used in the key-value store i. e. the event store, e. g.
+    motion_change_recommendation/42/text
     """
 
     def __init__(self, collection: Collection, id: int, field: str) -> None:
@@ -56,6 +63,9 @@ class FullQualifiedField:
 
     def __str__(self) -> str:
         return KEYSEPARATOR.join((str(self.collection), str(self.id), self.field))
+
+    def __repr__(self) -> str:
+        return f"FQField {str(self)}"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullQualifiedField):

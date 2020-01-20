@@ -5,13 +5,13 @@ from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...models.topic import Topic
 from ...shared.exceptions import ActionException, PermissionDenied
-from ...shared.interfaces import Event
-from ...shared.patterns import FullQualifiedField
+from ...shared.interfaces import Event, WriteRequestElement
+from ...shared.patterns import FullQualifiedField, FullQualifiedId
 from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..actions_interface import Payload
-from ..base import Action, DataSet
+from ..base import Action, DataSet, merge_write_request_elements
 
 is_valid_new_topic = fastjsonschema.compile(
     {
@@ -68,51 +68,69 @@ class TopicCreate(Action):
             data.append({"topic": topic, "new_id": id, "references": references})
         return {"position": self.position, "data": data}
 
-    def create_events(self, dataset: DataSet) -> Iterable[Event]:
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
         position = dataset["position"]
         for element in dataset["data"]:
-            yield self.create_topic_event(position, element)
-            yield from self.get_references_updates(position, element)
+            topic_write_request_element = self.create_topic_write_request_element(
+                position, element
+            )
+            for reference in self.get_references_updates(position, element):
+                topic_write_request_element = merge_write_request_elements(
+                    (topic_write_request_element, reference)
+                )
+            yield topic_write_request_element
 
-    def create_topic_event(self, position: int, element: Any) -> Event:
-        information = {"user_id": self.user_id, "text": "Topic created"}
-        fields = {}
+    def create_topic_write_request_element(
+        self, position: int, element: Any
+    ) -> WriteRequestElement:
+        fqfields = {}
 
         # Title
-        fields[
+        fqfields[
             FullQualifiedField(self.model.collection, element["new_id"], "title")
         ] = element["topic"]["title"]
 
         # Text
         text = element["topic"].get("text")
         if text is not None:
-            fields[
+            fqfields[
                 FullQualifiedField(self.model.collection, element["new_id"], "text")
             ] = text
 
         # Mediafile attachments
         mediafile_attachment_ids = element["topic"].get("mediafile_attachment_ids")
         if mediafile_attachment_ids:
-            fields[
+            fqfields[
                 FullQualifiedField(
                     self.model.collection, element["new_id"], "mediafile_attachment_ids"
                 )
             ] = mediafile_attachment_ids
 
-        return Event(
-            type="create", position=position, information=information, fields=fields,
+        information = {
+            FullQualifiedId(self.model.collection, element["new_id"]): ["Topic created"]
+        }
+        event = Event(type="create", fqfields=fqfields)
+        return WriteRequestElement(
+            events=[event],
+            information=information,
+            user_id=self.user_id,
+            locked_fields={},
         )
 
-    def get_references_updates(self, position: int, element: Any) -> Iterable[Event]:
+    def get_references_updates(
+        self, position: int, element: Any
+    ) -> Iterable[WriteRequestElement]:
         for fqfield, data in element["references"].items():
-            information = {
-                "user_id": self.user_id,
-                "text": "Object attached to new topic",
-            }
-            fields = {fqfield: data}
-            yield Event(
-                type="update",
-                position=position,
-                information=information,
-                fields=fields,
+            event = Event(type="update", fqfields={fqfield: data})
+            yield WriteRequestElement(
+                events=[event],
+                information={
+                    FullQualifiedId(fqfield.collection, fqfield.id): [
+                        "Object attached to new topic"
+                    ]
+                },
+                user_id=self.user_id,
+                locked_fields={fqfield: position},
             )
