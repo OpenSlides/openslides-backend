@@ -9,8 +9,9 @@ from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedField, FullQualifiedId
 from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
+from ..actions import register_action
 from ..actions_interface import Payload
-from ..base import Action, DataSet
+from ..base import Action, DataSet, merge_write_request_elements
 
 is_valid_update_topic = fastjsonschema.compile(
     {
@@ -36,7 +37,7 @@ is_valid_update_topic = fastjsonschema.compile(
 )
 
 
-# @register_action("topic.update")  # Tests still missing
+@register_action("topic.update")
 class TopicUpdate(Action):
     """
     Action to update simple topics that can be shown in the agenda.
@@ -79,10 +80,10 @@ class TopicUpdate(Action):
             topic_write_request_element = self.create_topic_write_request_element(
                 position, element
             )
-            # for reference in self.get_references_updates(position, element):
-            #     topic_write_request_element = merge_write_request_elements(
-            #         (topic_write_request_element, reference)
-            #     )
+            for reference in self.get_references_updates(position, element):
+                topic_write_request_element = merge_write_request_elements(
+                    (topic_write_request_element, reference)
+                )
             yield topic_write_request_element
 
     def create_topic_write_request_element(
@@ -112,18 +113,21 @@ class TopicUpdate(Action):
             },
         )
 
-    # def get_references_updates(
-    #     self, position: int, element: Any
-    # ) -> Iterable[WriteRequestElement]:
-    #     for fqfield, data in element["references"].items():
-    #         event = Event(type="update", fqfields={fqfield: data})
-    #         yield WriteRequestElement(
-    #             events=[event],
-    #             information={
-    #                 FullQualifiedId(fqfield.collection, fqfield.id): [
-    #                     "Object attached to new topic"
-    #                 ]
-    #             },
-    #             user_id=self.user_id,
-    #             locked_fields={fqfield: position},
-    #         )
+    def get_references_updates(
+        self, position: int, element: Any
+    ) -> Iterable[WriteRequestElement]:
+        for fqfield, data in element["references"].items():
+            event = Event(type="update", fqfields={fqfield: data["value"]})
+            if data["type"] == "add":
+                info_text = "Object attached to topic"
+            else:
+                # data["type"] == "remove"
+                info_text = "Object attachment to topic reset"
+            yield WriteRequestElement(
+                events=[event],
+                information={
+                    FullQualifiedId(fqfield.collection, fqfield.id): [info_text]
+                },
+                user_id=self.user_id,
+                locked_fields={fqfield: position},
+            )

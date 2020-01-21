@@ -82,7 +82,12 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                 {
                     "topic": self.valid_payload_1[0],
                     "new_id": 42,
-                    "references": {get_fqfield("meeting/2393342057/topic_ids"): [42]},
+                    "references": {
+                        get_fqfield("meeting/2393342057/topic_ids"): {
+                            "type": "add",
+                            "value": [42],
+                        },
+                    },
                 }
             ],
         )
@@ -97,13 +102,16 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                     "topic": self.valid_payload_2[0],
                     "new_id": 42,
                     "references": {
-                        get_fqfield("meeting/4002059810/topic_ids"): [42],
+                        get_fqfield("meeting/4002059810/topic_ids"): {
+                            "type": "add",
+                            "value": [42],
+                        },
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): [6259289755, 42],
+                        ): {"type": "add", "value": [6259289755, 42]},
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): [42],
+                        ): {"type": "add", "value": [42]},
                     },
                 }
             ],
@@ -119,11 +127,10 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                     "topic": self.valid_payload_3[0],
                     "new_id": 42,
                     "references": {
-                        get_fqfield("meeting/3611987967/topic_ids"): [
-                            6375863023,
-                            6259289755,
-                            42,
-                        ]
+                        get_fqfield("meeting/3611987967/topic_ids"): {
+                            "type": "add",
+                            "value": [6375863023, 6259289755, 42],
+                        },
                     },
                 }
             ],
@@ -304,9 +311,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
 class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            5968705978  # This user has perm TOPIC_CAN_MANAGE see patch call below.
-        )
+        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE.
         self.application = create_test_application(user_id=self.user_id)
 
     def test_wsgi_request_empty(self) -> None:
@@ -476,10 +481,10 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): [6259289755, 1312354708],
+                        ): {"type": "add", "value": [6259289755, 1312354708]},
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): [1312354708],
+                        ): {"type": "add", "value": [1312354708]},
                     },
                 }
             ],
@@ -496,7 +501,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): [],
+                        ): {"type": "remove", "value": []},
                     },
                 }
             ],
@@ -513,7 +518,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): [6259289755],
+                        ): {"type": "add", "value": [6259289755]},
                     },
                 }
             ],
@@ -530,10 +535,10 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): [],
+                        ): {"type": "remove", "value": []},
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): [6259289755],
+                        ): {"type": "add", "value": [6259289755]},
                     },
                 }
             ],
@@ -582,3 +587,316 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
             },
         ]
         self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_correct_2(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_2, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("topic/1312354708/title"): "title_pai9oN2aec",
+                            get_fqfield("topic/1312354708/text"): "text_oon2lai3Ie",
+                            get_fqfield(
+                                "topic/1312354708/mediafile_attachment_ids"
+                            ): self.attachments,
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                            ): [6259289755, 1312354708],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                            ): [1312354708],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/1312354708"): ["Topic updated"],
+                    get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
+                        "Object attached to topic"
+                    ],
+                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                        "Object attached to topic"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/1312354708/deleted"): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                    ): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                    ): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_correct_3(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_3, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("topic/6259289755/title"): "title_Ashae0quei",
+                            get_fqfield(
+                                "topic/6259289755/mediafile_attachment_ids"
+                            ): [],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                "mediafile_attachment/3549387598/topic_ids"
+                            ): [],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("mediafile_attachment/3549387598"): [
+                        "Object attachment to topic reset"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/6259289755/deleted"): 1,
+                    get_fqfield("mediafile_attachment/3549387598/topic_ids"): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_correct_4(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_4, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                "topic/6259289755/mediafile_attachment_ids"
+                            ): self.attachments,
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                            ): [6259289755],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                        "Object attached to topic"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/6259289755/deleted"): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                    ): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_correct_5(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_5, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("topic/6259289755/mediafile_attachment_ids"): [
+                                self.attachments[1]
+                            ],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                            ): [],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                            ): [6259289755],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
+                        "Object attachment to topic reset"
+                    ],
+                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                        "Object attached to topic"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/6259289755/deleted"): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                    ): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                    ): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+
+class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
+        self.application = create_test_application(user_id=self.user_id)
+
+    def test_wsgi_request_empty(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions", json=[{"action": "topic.update", "data": [{}]}]
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "data[0] must contain [\\'id\\'] properties", str(response.data),
+        )
+
+    def test_wsgi_request_fuzzy(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[
+                {
+                    "action": "topic.update",
+                    "data": [{"wrong_field": "text_Hoh3quoos9"}],
+                }
+            ],
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "data[0] must contain [\\'id\\'] properties", str(response.data),
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_wsgi_request_correct_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_2}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_wsgi_request_correct_3(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_3}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_wsgi_request_correct_4(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_4}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_wsgi_request_correct_5(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_5}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+
+class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id_no_permission = 9707919439
+        self.application = create_test_application(user_id=self.user_id_no_permission)
+
+    def test_wsgi_request_no_permission_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_2}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_3(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_3}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_4(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_4}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_5(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.update", "data": self.valid_payload_5}],
+        )
+        self.assertEqual(response.status_code, 403)

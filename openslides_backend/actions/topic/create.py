@@ -123,7 +123,7 @@ class TopicCreate(Action):
         self, position: int, element: Any
     ) -> Iterable[WriteRequestElement]:
         for fqfield, data in element["references"].items():
-            event = Event(type="update", fqfields={fqfield: data})
+            event = Event(type="update", fqfields={fqfield: data["value"]})
             yield WriteRequestElement(
                 events=[event],
                 information={

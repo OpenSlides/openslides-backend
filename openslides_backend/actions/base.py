@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from mypy_extensions import TypedDict
 
@@ -85,12 +85,13 @@ class Action:
         obj: Dict[str, Any],
         fields: List[str],
         deletion_possible: bool = False,
-    ) -> Dict[FullQualifiedField, Union[int, List[int]]]:
+    ) -> Dict[FullQualifiedField, Dict[str, Any]]:
         """
         Updates references of the given model for the given fields. Use it in
         prepare_dataset method.
         """
-        references = {}  # type: Dict[FullQualifiedField, Union[int, List[int]]]
+        # TODO: Use proper typing here.
+        references = {}  # type: Dict[FullQualifiedField, Dict[str, Any]]
 
         for field in fields:
             model_field = model.get_field(field)
@@ -119,15 +120,22 @@ class Action:
             self.set_min_position(position)
             for ref_id, ref in refs.items():
                 if ref_id in add:
-                    new_value = ref[model_field.related_name] + [id]
+                    ref_value = {
+                        "type": "add",
+                        "value": ref[model_field.related_name] + [id],
+                    }
                 else:
                     # ref_id in remove
                     new_value = ref[model_field.related_name]
                     new_value.remove(id)
+                    ref_value = {
+                        "type": "remove",
+                        "value": new_value,
+                    }
                 fqfield = FullQualifiedField(
                     Collection(model_field.to), ref_id, model_field.related_name
                 )
-                references[fqfield] = new_value
+                references[fqfield] = ref_value
         return references
 
     def reference_diff(
