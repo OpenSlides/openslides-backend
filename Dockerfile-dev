@@ -8,9 +8,10 @@ EXPOSE 8000
 
 COPY requirements.txt .
 COPY requirements_production.txt .
-RUN pip install -U -r requirements.txt
+RUN pip install --no-cache-dir --requirement requirements.txt
 
 COPY gunicorn_conf.py .
-COPY openslides_backend/ ./openslides_backend/
 
-CMD [ "gunicorn", "--config=python:gunicorn_conf", "--reload", "openslides_backend.wsgi:application" ]
+CMD [ "gunicorn", "--config=python:gunicorn_conf", "--reload", "openslides_backend.main:application" ]
+
+COPY openslides_backend/ ./openslides_backend/

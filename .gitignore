@@ -17,7 +17,7 @@ __pycache__/
 .coverage
 htmlcov/
 
-# Include when developing application packages.
+# Specific editor files
 .vscode/launch.json
 .vscode/settings.json
 .vscode/tasks.json

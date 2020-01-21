@@ -1,7 +1,8 @@
 Werkzeug==0.16.0
-fastjsonschema==2.14.2
+dependency_injector==3.14.12
 simplejson==3.17.0
+fastjsonschema==2.14.2
 requests==2.22.0
 mypy-extensions==0.4.3
-dependency_injector==3.14.12
+typing-extensions==3.7.4.1
 gunicorn==20.0.4
