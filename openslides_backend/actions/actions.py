@@ -4,7 +4,7 @@ import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import ActionException, EventStoreException
-from ..shared.interfaces import Event, LoggingModule, Services
+from ..shared.interfaces import LoggingModule, Services, WriteRequestElement
 from ..shared.schema import schema_version
 from .actions_interface import Payload
 from .base import Action
@@ -94,11 +94,11 @@ class ActionsHandler:
             raise ActionException(exception.message)
 
         # Parse actions and creates events
-        events = self.parse_actions(payload)
+        write_request_elements = self.parse_actions(payload)
 
         # Send events to database
         try:
-            services.event_store().send(events)
+            services.event_store().send(write_request_elements)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
@@ -112,12 +112,12 @@ class ActionsHandler:
         self.logger.debug("Validate action request.")
         payload_schema(payload)
 
-    def parse_actions(self, payload: Payload) -> Iterable[Event]:
+    def parse_actions(self, payload: Payload) -> Iterable[WriteRequestElement]:
         """
         Parses action requests send by client. Raises ActionException or
         PermissionDenied if something went wrong.
         """
-        all_events: List[Event] = []
+        all_write_request_elements: List[WriteRequestElement] = []
         for element in payload:
             self.logger.debug(
                 f"Action map contains the following actions: {action_map}."
@@ -126,10 +126,12 @@ class ActionsHandler:
             if action is None:
                 raise ActionException(f"Action {element['action']} does not exist.")
             self.logger.debug(f"Perform action {element['action']}.")
-            events = action(self.permission(), self.database()).perform(
+            write_request_elements = action(self.permission(), self.database()).perform(
                 element["data"], self.user_id
             )
-            self.logger.debug(f"Prepared events {events}.")
-            all_events.extend(events)
-        self.logger.debug("All events ready.")
-        return all_events
+            self.logger.debug(
+                f"Prepared write request element {write_request_elements}."
+            )
+            all_write_request_elements.extend(write_request_elements)
+        self.logger.debug("All write request elements ready.")
+        return all_write_request_elements

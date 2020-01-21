@@ -5,7 +5,11 @@ from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
 from openslides_backend.main import Application, OpenSlidesBackend
-from openslides_backend.shared.patterns import Collection, FullQualifiedField
+from openslides_backend.shared.patterns import (
+    Collection,
+    FullQualifiedField,
+    FullQualifiedId,
+)
 
 from .fake_services.authentication import AuthenticationTestAdapter
 from .fake_services.database import DatabaseTestAdapter
@@ -45,6 +49,17 @@ def create_test_application(user_id: int) -> Application:
     return application
 
 
-def get_fqfield(key: str) -> FullQualifiedField:
-    collection, id, field = key.split("/")
+def get_fqid(value: str) -> FullQualifiedId:
+    """
+    Returns a FullQualifiedId parsed from the given value.
+    """
+    collection, id = value.split("/")
+    return FullQualifiedId(Collection(collection), int(id))
+
+
+def get_fqfield(value: str) -> FullQualifiedField:
+    """
+    Returns a FullQualifiedField parsed from the given value.
+    """
+    collection, id, field = value.split("/")
     return FullQualifiedField(Collection(collection), int(id), field)
