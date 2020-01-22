@@ -19,12 +19,12 @@ TESTDATA = [
     {
         "collection": "topic",
         "id": 1312354708,
-        "fields": {"meeting": 7816466305, "title": "title_Aevoozu3ua"},
+        "fields": {"meeting_id": 7816466305, "title": "title_Aevoozu3ua"},
     },
     {
         "collection": "mediafile_pubilc_file",
         "id": 9283748294,
-        "fields": {"meeting": 4256427454},
+        "fields": {"meeting_id": 4256427454},
     },
     {
         "collection": "meeting",
@@ -45,17 +45,18 @@ TESTDATA = [
     {
         "collection": "topic",
         "id": 6375863023,
-        "fields": {"meeting": 3611987967, "title": "title_ahpout2aFa"},
+        "fields": {"meeting_id": 3611987967, "title": "title_ahpout2aFa"},
     },
     {
         "collection": "topic",
         "id": 6259289755,
         "fields": {
-            "meeting": 3611987967,
+            "meeting_id": 3611987967,
             "title": "title_ub0eeYushu",
             "mediafile_attachment_ids": [3549387598],
         },
     },
+    {"collection": "meeting", "id": 7816466305, "fields": {"topic_ids": [1312354708]}},
 ]  # type: List[Dict[str, Any]]
 
 

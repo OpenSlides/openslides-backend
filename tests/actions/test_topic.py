@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from openslides_backend.actions import Payload
 from openslides_backend.actions.topic.create import TopicCreate
+from openslides_backend.actions.topic.delete import TopicDelete
 from openslides_backend.actions.topic.update import TopicUpdate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
@@ -900,3 +901,104 @@ class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
             json=[{"action": "topic.update", "data": self.valid_payload_5}],
         )
         self.assertEqual(response.status_code, 403)
+
+
+class BaseTopicDeleteActionTester(TestCase):
+    """
+    Tests the topic delete action.
+    """
+
+    def setUp(self) -> None:
+        self.valid_payload_1 = [{"id": 1312354708}]
+        self.valid_payload_2 = [
+            {"id": 1312354708},
+            {"id": 6259289755},
+        ]
+
+
+class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = TopicDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+
+    def test_validation_empty(self) -> None:
+        payload: Payload = []
+        with self.assertRaises(ActionException):
+            self.action.validate(payload)
+
+    def test_validation_empty_2(self) -> None:
+        payload: Payload = [{}]
+        with self.assertRaises(ActionException):
+            self.action.validate(payload)
+
+    def test_validation_fuzzy(self) -> None:
+        payload = [{"wrong_field": "text_Kiofee1ieV"}]
+        with self.assertRaises(ActionException):
+            self.action.validate(payload)
+
+    def test_validation_correct_1(self) -> None:
+        self.action.validate(self.valid_payload_1)
+
+    def test_validation_correct_2(self) -> None:
+        self.action.validate(self.valid_payload_2)
+
+    def test_prepare_dataset_1(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_1)
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(
+            dataset["data"],
+            [
+                {
+                    "topic": {
+                        "id": self.valid_payload_1[0]["id"],
+                        "meeting_id": None,
+                        "mediafile_attachment_ids": [],
+                    },
+                    "references": {
+                        get_fqfield("meeting/7816466305/topic_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        },
+                    },
+                }
+            ],
+        )
+
+    def test_prepare_dataset_2(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_2)
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(
+            dataset["data"],
+            [
+                {
+                    "topic": {
+                        "id": self.valid_payload_2[0]["id"],
+                        "meeting_id": None,
+                        "mediafile_attachment_ids": [],
+                    },
+                    "references": {
+                        get_fqfield("meeting/7816466305/topic_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        },
+                    },
+                },
+                {
+                    "topic": {
+                        "id": self.valid_payload_2[1]["id"],
+                        "meeting_id": None,
+                        "mediafile_attachment_ids": [],
+                    },
+                    "references": {
+                        get_fqfield("meeting/3611987967/topic_ids"): {
+                            "type": "remove",
+                            "value": [6375863023],
+                        },
+                        get_fqfield("mediafile_attachment/3549387598/topic_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        },
+                    },
+                },
+            ],
+        )

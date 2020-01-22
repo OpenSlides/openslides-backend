@@ -1,9 +1,11 @@
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+from fastjsonschema import JsonSchemaException  # type: ignore
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
+from ..shared.exceptions import ActionException
 from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .actions_interface import Payload
@@ -15,6 +17,8 @@ class Action:
     """
     Base class for actions.
     """
+
+    schema: Optional[Callable] = None
 
     position = 0
 
@@ -40,10 +44,12 @@ class Action:
         raise NotImplementedError
 
     def validate(self, payload: Payload) -> None:
-        """
-        Validates payload. Raises ActionException if payload is invalid.
-        """
-        raise NotImplementedError
+        if type(self).schema is None:
+            raise NotImplementedError
+        try:
+            type(self).schema(payload)
+        except JsonSchemaException as exception:
+            raise ActionException(exception.message)
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         """
@@ -150,7 +156,16 @@ class Action:
             FullQualifiedId(model.collection, id), mapped_fields=[field]
         )
         self.set_min_position(position)
-        current_ids = set(current_obj.get(field, []))
+        model_field = model.get_field(field)
+        if model_field.is_single_reference():
+            current_id = current_obj.get(field)
+            if current_id is None:
+                current_ids = set()
+            else:
+                current_ids = set([current_id])
+        else:
+            # model_field.is_multiple_reference()
+            current_ids = set(current_obj.get(field, []))
         new_ids = set(ref_ids)
         add = new_ids - current_ids
         remove = current_ids - new_ids

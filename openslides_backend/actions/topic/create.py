@@ -1,10 +1,9 @@
 from typing import Any, Iterable
 
 import fastjsonschema  # type: ignore
-from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...models.topic import Topic
-from ...shared.exceptions import ActionException, PermissionDenied
+from ...shared.exceptions import PermissionDenied
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedField, FullQualifiedId
 from ...shared.permissions.topic import TOPIC_CAN_MANAGE
@@ -13,7 +12,7 @@ from ..actions import register_action
 from ..actions_interface import Payload
 from ..base import Action, DataSet, merge_write_request_elements
 
-is_valid_new_topic = fastjsonschema.compile(
+create_topic_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
         "title": "New topics schema",
@@ -43,16 +42,11 @@ class TopicCreate(Action):
     """
 
     model = Topic()
+    schema = create_topic_schema
 
     def check_permission_on_entry(self) -> None:
         if not self.permission.has_perm(self.user_id, TOPIC_CAN_MANAGE):
             raise PermissionDenied(f"User does not have {TOPIC_CAN_MANAGE} permission.")
-
-    def validate(self, payload: Payload) -> None:
-        try:
-            is_valid_new_topic(payload)
-        except JsonSchemaException as exception:
-            raise ActionException(exception.message)
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
