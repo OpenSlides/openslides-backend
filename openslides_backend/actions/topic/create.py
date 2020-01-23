@@ -44,13 +44,17 @@ class TopicCreate(Action):
     model = Topic()
     schema = create_topic_schema
 
-    def check_permission_on_entry(self) -> None:
-        if not self.permission.has_perm(self.user_id, TOPIC_CAN_MANAGE):
-            raise PermissionDenied(f"User does not have {TOPIC_CAN_MANAGE} permission.")
+    def check_permission(self, meeting_id: int) -> None:
+        required_permission = f"{meeting_id}/{TOPIC_CAN_MANAGE}"
+        if not self.permission.has_perm(self.user_id, required_permission):
+            raise PermissionDenied(
+                f"User does not have {TOPIC_CAN_MANAGE} permission for meeting {meeting_id}."
+            )
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
         for topic in payload:
+            self.check_permission(topic["meeting_id"])
             id, position = self.database.getId(collection=self.model.collection)
             self.set_min_position(position)
             references = self.get_references(
