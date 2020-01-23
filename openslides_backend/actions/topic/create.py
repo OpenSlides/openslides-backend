@@ -31,6 +31,7 @@ create_topic_schema = fastjsonschema.compile(
             "required": ["meeting_id", "title"],
         },
         "minItems": 1,
+        "uniqueItems": False,
     }
 )
 
@@ -70,6 +71,11 @@ class TopicCreate(Action):
         self, position: int, element: Any
     ) -> WriteRequestElement:
         fqfields = {}
+
+        # Meeting id
+        fqfields[
+            FullQualifiedField(self.model.collection, element["new_id"], "meeting_id")
+        ] = element["topic"]["meeting_id"]
 
         # Title
         fqfields[

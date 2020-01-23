@@ -17,7 +17,7 @@ def prepare_action_map() -> None:
 
     New modules have to be added here.
     """
-    from . import mediafile, topic  # type: ignore # noqa
+    from . import meeting, topic  # type: ignore # noqa
 
 
 action_map: Dict[str, Type[Action]] = {}

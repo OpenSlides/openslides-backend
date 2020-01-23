@@ -1,5 +1,6 @@
 from typing import Any
 
+from openslides_backend.shared.permissions.meeting import MEETING_CAN_MANAGE
 from openslides_backend.shared.permissions.topic import TOPIC_CAN_MANAGE
 
 TESTDATA = {
@@ -9,6 +10,7 @@ TESTDATA = {
         f"4002059810/{TOPIC_CAN_MANAGE}",
         f"7816466305/{TOPIC_CAN_MANAGE}",
     ],
+    7121641734: [f"5914213969/{MEETING_CAN_MANAGE}"],
 }
 
 
