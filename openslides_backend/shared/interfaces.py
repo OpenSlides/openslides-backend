@@ -102,13 +102,14 @@ class Database(Protocol):  # pragma: no cover
     # getAll, filter, count, min, max, ...some with deleted or only deleted
 
 
-class Event(TypedDict):
+class Event(TypedDict, total=False):
     """
     Event as part of a write request element.
     """
 
     type: str
     fqfields: Dict[FullQualifiedField, Any]
+    fqid: FullQualifiedId
 
 
 class WriteRequestElement(TypedDict):

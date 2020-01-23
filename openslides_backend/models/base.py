@@ -9,6 +9,10 @@ class Model:
     """
 
     collection: Collection
+    verbose_name: str
+
+    def __str__(self) -> str:
+        return self.verbose_name
 
     def get_field(self, field: str) -> Field:
         for attr_name in dir(self):

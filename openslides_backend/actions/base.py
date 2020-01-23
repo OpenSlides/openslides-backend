@@ -18,7 +18,9 @@ class Action:
     Base class for actions.
     """
 
-    schema: Optional[Callable] = None
+    model: Model
+
+    schema: Callable[[Payload], None]
 
     position = 0
 
@@ -44,8 +46,6 @@ class Action:
         raise NotImplementedError
 
     def validate(self, payload: Payload) -> None:
-        if type(self).schema is None:
-            raise NotImplementedError
         try:
             type(self).schema(payload)
         except JsonSchemaException as exception:
@@ -71,8 +71,50 @@ class Action:
         """
         Takes dataset and creates write request elements that can be sent to event
         store.
+
+        By default it calls self.create_element_write_request_element and uses
+        get_references_updates() for references.
+        """
+        position = dataset["position"]
+        for element in dataset["data"]:
+            element_write_request_element = self.create_instance_write_request_element(
+                position, element
+            )
+            for reference in self.get_references_updates(position, element):
+                element_write_request_element = merge_write_request_elements(
+                    (element_write_request_element, reference)
+                )
+            yield element_write_request_element
+
+    def create_instance_write_request_element(
+        self, position: int, element: Any
+    ) -> WriteRequestElement:
+        """
+        Creates a write request element for one instance of the current model.
         """
         raise NotImplementedError
+
+    def get_references_updates(
+        self, position: int, element: Any
+    ) -> Iterable[WriteRequestElement]:
+        """
+        Creates write request elements (with update events) for all references.
+        """
+        for fqfield, data in element["references"].items():
+            event = Event(type="update", fqfields={fqfield: data["value"]})
+            if data["type"] == "add":
+                info_text = f"Object attached to {self.model}"
+            else:
+                # data["type"] == "remove"
+                info_text = f"Object attachment to {self.model} reset"
+            yield WriteRequestElement(
+                events=[event],
+                information={
+                    FullQualifiedId(fqfield.collection, fqfield.id): [info_text]
+                },
+                user_id=self.user_id,
+                locked_fields={fqfield: position},
+            )
 
     def set_min_position(self, position: int) -> None:
         """

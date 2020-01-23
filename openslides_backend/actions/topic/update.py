@@ -1,4 +1,4 @@
-from typing import Any, Iterable
+from typing import Any
 
 import fastjsonschema  # type: ignore
 
@@ -10,7 +10,7 @@ from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..actions_interface import Payload
-from ..base import Action, DataSet, merge_write_request_elements
+from ..base import Action, DataSet
 
 update_topic_schema = fastjsonschema.compile(
     {
@@ -66,21 +66,7 @@ class TopicUpdate(Action):
             data.append({"topic": topic, "references": references})
         return {"position": self.position, "data": data}
 
-    def create_write_request_elements(
-        self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
-        position = dataset["position"]
-        for element in dataset["data"]:
-            topic_write_request_element = self.create_topic_write_request_element(
-                position, element
-            )
-            for reference in self.get_references_updates(position, element):
-                topic_write_request_element = merge_write_request_elements(
-                    (topic_write_request_element, reference)
-                )
-            yield topic_write_request_element
-
-    def create_topic_write_request_element(
+    def create_instance_write_request_element(
         self, position: int, element: Any
     ) -> WriteRequestElement:
         fqfields = {}
@@ -106,22 +92,3 @@ class TopicUpdate(Action):
                 ): position
             },
         )
-
-    def get_references_updates(
-        self, position: int, element: Any
-    ) -> Iterable[WriteRequestElement]:
-        for fqfield, data in element["references"].items():
-            event = Event(type="update", fqfields={fqfield: data["value"]})
-            if data["type"] == "add":
-                info_text = "Object attached to topic"
-            else:
-                # data["type"] == "remove"
-                info_text = "Object attachment to topic reset"
-            yield WriteRequestElement(
-                events=[event],
-                information={
-                    FullQualifiedId(fqfield.collection, fqfield.id): [info_text]
-                },
-                user_id=self.user_id,
-                locked_fields={fqfield: position},
-            )

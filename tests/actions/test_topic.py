@@ -155,7 +155,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_fuzzy(self) -> None:
-        payload = [{"wrong_field": "text_Kiofee1ieV"}]
+        payload = [{"wrong_field": "text_Ieh5aiwora"}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -184,9 +184,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     ],
                     "information": {
                         get_fqid("topic/42"): ["Topic created"],
-                        get_fqid("meeting/2393342057"): [
-                            "Object attached to new topic"
-                        ],
+                        get_fqid("meeting/2393342057"): ["Object attached to topic"],
                     },
                     "user_id": self.user_id,
                     "locked_fields": {get_fqfield("meeting/2393342057/topic_ids"): 1},
@@ -239,14 +237,12 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     ],
                     "information": {
                         get_fqid("topic/42"): ["Topic created"],
-                        get_fqid("meeting/4002059810"): [
-                            "Object attached to new topic"
-                        ],
+                        get_fqid("meeting/4002059810"): ["Object attached to topic"],
                         get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
-                            "Object attached to new topic"
+                            "Object attached to topic"
                         ],
                         get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
-                            "Object attached to new topic"
+                            "Object attached to topic"
                         ],
                     },
                     "user_id": self.user_id,
@@ -288,7 +284,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                 ],
                 "information": {
                     get_fqid("topic/42"): ["Topic created"],
-                    get_fqid("meeting/3611987967"): ["Object attached to new topic"],
+                    get_fqid("meeting/3611987967"): ["Object attached to topic"],
                 },
                 "user_id": self.user_id,
                 "locked_fields": {get_fqfield("meeting/3611987967/topic_ids"): 1},
@@ -333,7 +329,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             json=[
                 {
                     "action": "topic.create",
-                    "data": [{"wrong_field": "text_Hoh3quoos9"}],
+                    "data": [{"wrong_field": "text_TaenePha0e"}],
                 }
             ],
         )
@@ -451,7 +447,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             self.action.validate(payload)
 
     def test_validation_fuzzy(self) -> None:
-        payload = [{"wrong_field": "text_Kiofee1ieV"}]
+        payload = [{"wrong_field": "text_guaPee0goh"}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -932,7 +928,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
             self.action.validate(payload)
 
     def test_validation_fuzzy(self) -> None:
-        payload = [{"wrong_field": "text_Kiofee1ieV"}]
+        payload = [{"wrong_field": "text_Eichielao7"}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -1002,3 +998,195 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                 },
             ],
         )
+
+
+class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = TopicDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
+
+    def test_perform_empty(self) -> None:
+        payload: Payload = []
+        with self.assertRaises(ActionException):
+            self.action.perform(payload, user_id=self.user_id)
+
+    def test_perform_empty_2(self) -> None:
+        payload: Payload = [{}]
+        with self.assertRaises(ActionException):
+            self.action.perform(payload, user_id=self.user_id)
+
+    def test_perform_fuzzy(self) -> None:
+        payload = [{"wrong_field": "text_aizaeMai7E"}]
+        with self.assertRaises(ActionException):
+            self.action.perform(payload, user_id=self.user_id)
+
+    def test_perform_correct_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_1, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {"type": "delete", "fqid": get_fqid("topic/1312354708")},
+                    {
+                        "type": "update",
+                        "fqfields": {get_fqfield("meeting/7816466305/topic_ids"): []},
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/1312354708"): ["Topic deleted"],
+                    get_fqid("meeting/7816466305"): [
+                        "Object attachment to topic reset"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/1312354708/deleted"): 1,
+                    get_fqfield("meeting/7816466305/topic_ids"): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_correct_2(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_2, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {"type": "delete", "fqid": get_fqid("topic/1312354708")},
+                    {
+                        "type": "update",
+                        "fqfields": {get_fqfield("meeting/7816466305/topic_ids"): []},
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/1312354708"): ["Topic deleted"],
+                    get_fqid("meeting/7816466305"): [
+                        "Object attachment to topic reset"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/1312354708/deleted"): 1,
+                    get_fqfield("meeting/7816466305/topic_ids"): 1,
+                },
+            },
+            {
+                "events": [
+                    {"type": "delete", "fqid": get_fqid("topic/6259289755")},
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("meeting/3611987967/topic_ids"): [6375863023],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                "mediafile_attachment/3549387598/topic_ids"
+                            ): [],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/6259289755"): ["Topic deleted"],
+                    get_fqid("meeting/3611987967"): [
+                        "Object attachment to topic reset"
+                    ],
+                    get_fqid("mediafile_attachment/3549387598"): [
+                        "Object attachment to topic reset"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("topic/6259289755/deleted"): 1,
+                    get_fqfield("meeting/3611987967/topic_ids"): 1,
+                    get_fqfield("mediafile_attachment/3549387598/topic_ids"): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_no_permission_1(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.valid_payload_1, user_id=4796568680)
+
+    def test_perform_no_permission_2(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.valid_payload_2, user_id=4796568680)
+
+
+class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE.
+        self.application = create_test_application(user_id=self.user_id)
+
+    def test_wsgi_request_empty(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions", json=[{"action": "topic.delete", "data": [{}]}]
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "data[0] must contain [\\'id\\'] properties", str(response.data),
+        )
+
+    def test_wsgi_request_fuzzy(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[
+                {
+                    "action": "topic.delete",
+                    "data": [{"wrong_field": "text_path4phahN"}],
+                }
+            ],
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "data[0] must contain [\\'id\\'] properties", str(response.data),
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.delete", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_wsgi_request_correct_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.delete", "data": self.valid_payload_2}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+
+class TopicDeleteActionWSGITesterNoPermission(BaseTopicDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id_no_permission = 9707919439
+        self.application = create_test_application(user_id=self.user_id_no_permission)
+
+    def test_wsgi_request_no_permission_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.delete", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "topic.delete", "data": self.valid_payload_2}],
+        )
+        self.assertEqual(response.status_code, 403)
