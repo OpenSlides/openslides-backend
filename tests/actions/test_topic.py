@@ -49,6 +49,9 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
 
     def test_validation_empty(self) -> None:
         payload: Payload = []
@@ -137,12 +140,24 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             ],
         )
 
+    def test_prepare_dataset_no_permission(self) -> None:
+        unknown_meeting = 1730810210
+        payload = [{"meeting_id": unknown_meeting, "title": "title_ieB2ohveec"}]
+        with self.assertRaises(PermissionDenied) as context_manager:
+            self.action.prepare_dataset(payload)
+        self.assertEqual(
+            context_manager.exception.message,
+            f"User does not have topic.can_manage permission for meeting {unknown_meeting}.",
+        )
+
 
 class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
-        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
+        self.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
 
     def test_perform_empty(self) -> None:
         payload: Payload = []
@@ -308,7 +323,9 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
 class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE.
+        self.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
         self.application = create_test_application(user_id=self.user_id)
 
     def test_wsgi_request_empty(self) -> None:
@@ -435,6 +452,9 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
 
     def test_validation_empty(self) -> None:
         payload: Payload = []
@@ -546,7 +566,9 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
-        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
+        self.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
 
     def test_perform_empty(self) -> None:
         payload: Payload = []
@@ -782,7 +804,9 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
 class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
+        self.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
         self.application = create_test_application(user_id=self.user_id)
 
     def test_wsgi_request_empty(self) -> None:
@@ -916,6 +940,9 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
 
     def test_validation_empty(self) -> None:
         payload: Payload = []
@@ -1004,7 +1031,9 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.action = TopicDelete(PermissionTestAdapter(), DatabaseTestAdapter())
-        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE
+        self.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
 
     def test_perform_empty(self) -> None:
         payload: Payload = []
@@ -1123,7 +1152,9 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
 class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = 5968705978  # This user has perm TOPIC_CAN_MANAGE.
+        self.user_id = (
+            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
+        )
         self.application = create_test_application(user_id=self.user_id)
 
     def test_wsgi_request_empty(self) -> None:

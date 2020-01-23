@@ -33,17 +33,10 @@ class Action:
         Entrypoint to perform the action.
         """
         self.user_id = user_id
-        self.check_permission_on_entry()
         self.validate(payload)
         dataset = self.prepare_dataset(payload)
         self.check_permission_on_dataset(dataset)
         return self.create_write_request_elements(dataset)
-
-    def check_permission_on_entry(self) -> None:
-        """
-        Checks permission at the beginning of the action.
-        """
-        raise NotImplementedError
 
     def validate(self, payload: Payload) -> None:
         try:
