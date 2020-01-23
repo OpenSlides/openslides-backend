@@ -9,6 +9,7 @@ class Topic(Model):
     """
 
     collection = Collection("topic")
+    verbose_name = "topic"
 
     # TODO: Make to and related_name in relation fields optional.
 

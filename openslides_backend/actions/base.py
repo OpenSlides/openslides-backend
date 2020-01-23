@@ -1,9 +1,11 @@
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
+from fastjsonschema import JsonSchemaException  # type: ignore
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
+from ..shared.exceptions import ActionException
 from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .actions_interface import Payload
@@ -15,6 +17,10 @@ class Action:
     """
     Base class for actions.
     """
+
+    model: Model
+
+    schema: Callable[[Payload], None]
 
     position = 0
 
@@ -40,10 +46,10 @@ class Action:
         raise NotImplementedError
 
     def validate(self, payload: Payload) -> None:
-        """
-        Validates payload. Raises ActionException if payload is invalid.
-        """
-        raise NotImplementedError
+        try:
+            type(self).schema(payload)
+        except JsonSchemaException as exception:
+            raise ActionException(exception.message)
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         """
@@ -65,8 +71,50 @@ class Action:
         """
         Takes dataset and creates write request elements that can be sent to event
         store.
+
+        By default it calls self.create_element_write_request_element and uses
+        get_references_updates() for references.
+        """
+        position = dataset["position"]
+        for element in dataset["data"]:
+            element_write_request_element = self.create_instance_write_request_element(
+                position, element
+            )
+            for reference in self.get_references_updates(position, element):
+                element_write_request_element = merge_write_request_elements(
+                    (element_write_request_element, reference)
+                )
+            yield element_write_request_element
+
+    def create_instance_write_request_element(
+        self, position: int, element: Any
+    ) -> WriteRequestElement:
+        """
+        Creates a write request element for one instance of the current model.
         """
         raise NotImplementedError
+
+    def get_references_updates(
+        self, position: int, element: Any
+    ) -> Iterable[WriteRequestElement]:
+        """
+        Creates write request elements (with update events) for all references.
+        """
+        for fqfield, data in element["references"].items():
+            event = Event(type="update", fqfields={fqfield: data["value"]})
+            if data["type"] == "add":
+                info_text = f"Object attached to {self.model}"
+            else:
+                # data["type"] == "remove"
+                info_text = f"Object attachment to {self.model} reset"
+            yield WriteRequestElement(
+                events=[event],
+                information={
+                    FullQualifiedId(fqfield.collection, fqfield.id): [info_text]
+                },
+                user_id=self.user_id,
+                locked_fields={fqfield: position},
+            )
 
     def set_min_position(self, position: int) -> None:
         """
@@ -150,7 +198,16 @@ class Action:
             FullQualifiedId(model.collection, id), mapped_fields=[field]
         )
         self.set_min_position(position)
-        current_ids = set(current_obj.get(field, []))
+        model_field = model.get_field(field)
+        if model_field.is_single_reference():
+            current_id = current_obj.get(field)
+            if current_id is None:
+                current_ids = set()
+            else:
+                current_ids = set([current_id])
+        else:
+            # model_field.is_multiple_reference()
+            current_ids = set(current_obj.get(field, []))
         new_ids = set(ref_ids)
         add = new_ids - current_ids
         remove = current_ids - new_ids

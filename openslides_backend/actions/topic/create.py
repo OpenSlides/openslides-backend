@@ -1,19 +1,18 @@
-from typing import Any, Iterable
+from typing import Any
 
 import fastjsonschema  # type: ignore
-from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ...models.topic import Topic
-from ...shared.exceptions import ActionException, PermissionDenied
+from ...shared.exceptions import PermissionDenied
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedField, FullQualifiedId
 from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..actions_interface import Payload
-from ..base import Action, DataSet, merge_write_request_elements
+from ..base import Action, DataSet
 
-is_valid_new_topic = fastjsonschema.compile(
+create_topic_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
         "title": "New topics schema",
@@ -43,16 +42,11 @@ class TopicCreate(Action):
     """
 
     model = Topic()
+    schema = create_topic_schema
 
     def check_permission_on_entry(self) -> None:
         if not self.permission.has_perm(self.user_id, TOPIC_CAN_MANAGE):
             raise PermissionDenied(f"User does not have {TOPIC_CAN_MANAGE} permission.")
-
-    def validate(self, payload: Payload) -> None:
-        try:
-            is_valid_new_topic(payload)
-        except JsonSchemaException as exception:
-            raise ActionException(exception.message)
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         data = []
@@ -68,21 +62,7 @@ class TopicCreate(Action):
             data.append({"topic": topic, "new_id": id, "references": references})
         return {"position": self.position, "data": data}
 
-    def create_write_request_elements(
-        self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
-        position = dataset["position"]
-        for element in dataset["data"]:
-            topic_write_request_element = self.create_topic_write_request_element(
-                position, element
-            )
-            for reference in self.get_references_updates(position, element):
-                topic_write_request_element = merge_write_request_elements(
-                    (topic_write_request_element, reference)
-                )
-            yield topic_write_request_element
-
-    def create_topic_write_request_element(
+    def create_instance_write_request_element(
         self, position: int, element: Any
     ) -> WriteRequestElement:
         fqfields = {}
@@ -118,19 +98,3 @@ class TopicCreate(Action):
             user_id=self.user_id,
             locked_fields={},
         )
-
-    def get_references_updates(
-        self, position: int, element: Any
-    ) -> Iterable[WriteRequestElement]:
-        for fqfield, data in element["references"].items():
-            event = Event(type="update", fqfields={fqfield: data["value"]})
-            yield WriteRequestElement(
-                events=[event],
-                information={
-                    FullQualifiedId(fqfield.collection, fqfield.id): [
-                        "Object attached to new topic"
-                    ]
-                },
-                user_id=self.user_id,
-                locked_fields={fqfield: position},
-            )
