@@ -186,6 +186,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                         {
                             "type": "create",
                             "fqfields": {
+                                get_fqfield("topic/42/meeting_id"): 2393342057,
                                 get_fqfield("topic/42/title"): "title_ooPhi9ZohC",
                                 get_fqfield("topic/42/text"): "text_eeKoosahh4",
                             },
@@ -220,6 +221,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                         {
                             "type": "create",
                             "fqfields": {
+                                get_fqfield("topic/42/meeting_id"): 4002059810,
                                 get_fqfield("topic/42/title"): "title_pha2Eirohg",
                                 get_fqfield("topic/42/text"): "text_CaekiiLai2",
                                 get_fqfield(
@@ -283,6 +285,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     {
                         "type": "create",
                         "fqfields": {
+                            get_fqfield("topic/42/meeting_id"): 3611987967,
                             get_fqfield("topic/42/title"): "title_eivaey2Aeg",
                         },
                     },

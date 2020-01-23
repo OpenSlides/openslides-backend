@@ -180,3 +180,18 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
             json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
+
+
+class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id_no_permission = 9707919439
+        self.application = create_test_application(user_id=self.user_id_no_permission)
+
+    def test_wsgi_request_no_permission_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/system/api/actions",
+            json=[{"action": "meeting.create", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)

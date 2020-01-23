@@ -72,6 +72,11 @@ class TopicCreate(Action):
     ) -> WriteRequestElement:
         fqfields = {}
 
+        # Meeting id
+        fqfields[
+            FullQualifiedField(self.model.collection, element["new_id"], "meeting_id")
+        ] = element["topic"]["meeting_id"]
+
         # Title
         fqfields[
             FullQualifiedField(self.model.collection, element["new_id"], "title")
