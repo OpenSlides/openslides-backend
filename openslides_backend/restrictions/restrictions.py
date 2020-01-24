@@ -55,7 +55,7 @@ payload_schema = fastjsonschema.compile(
             "properties": {
                 "user_id": {
                     "description": "Id of the user the given fields should be restricted for.",
-                    "type": "number",
+                    "type": "integer",
                     "mininmum": 0,
                 },
                 "fqfields": {

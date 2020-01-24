@@ -1,6 +1,5 @@
 from ..shared.patterns import Collection
-from .fields import Field
-from .types import Schema
+from .fields import Field, Schema
 
 
 class Model:
