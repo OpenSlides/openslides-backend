@@ -1,6 +1,6 @@
-from typing import Any
+from typing import Any, Dict
 
-from .types import Schema
+Schema = Dict[str, Any]
 
 
 class Field:
@@ -12,6 +12,9 @@ class Field:
         self.description = description
 
     def get_schema(self) -> Schema:
+        """
+        Returns a JSON schema for this field.
+        """
         raise NotImplementedError
 
     def is_single_reference(self) -> bool:
@@ -60,7 +63,7 @@ class ManyToManyArrayField(RelationMixin, Field):
         return dict(
             description=self.description,
             type="array",
-            items={"type": "integer"},
+            items={"type": "integer", "minimum": 1},
             uniqueItems=True,
         )
 
