@@ -68,6 +68,9 @@ class Permission(Protocol):  # pragma: no cover
     def has_perm(self, user_id: int, permission: str) -> bool:
         ...
 
+    def get_all(self, user_id: int) -> List[str]:
+        ...
+
 
 class Database(Protocol):  # pragma: no cover
     """

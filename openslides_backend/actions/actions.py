@@ -10,9 +10,9 @@ from .actions_interface import Payload
 from .base import Action
 
 
-def prepare_action_map() -> None:
+def prepare_actions_map() -> None:
     """
-    This function just imports all action modules so that the actions are
+    This function just imports all actions modules so that the actions are
     recognized by the system and the register decorator can do its work.
 
     New modules have to be added here.
@@ -20,23 +20,23 @@ def prepare_action_map() -> None:
     from . import meeting, topic  # type: ignore # noqa
 
 
-action_map: Dict[str, Type[Action]] = {}
+actions_map: Dict[str, Type[Action]] = {}
 
 
 def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
     """
     Decorator to be used for action classes. Registers the class so that it can
-    be found by the view.
+    be found by the handler.
     """
 
     def wrapper(action: Type[Action]) -> Type[Action]:
-        action_map[name] = action
+        actions_map[name] = action
         return action
 
     return wrapper
 
 
-prepare_action_map()
+prepare_actions_map()
 
 
 payload_schema = fastjsonschema.compile(
@@ -106,23 +106,23 @@ class ActionsHandler:
 
     def validate(self, payload: Payload) -> None:
         """
-        Validates action requests sent by client. Raises JsonSchemaException if
+        Validates actions requests sent by client. Raises JsonSchemaException if
         input is invalid.
         """
-        self.logger.debug("Validate action request.")
+        self.logger.debug("Validate actions request.")
         payload_schema(payload)
 
     def parse_actions(self, payload: Payload) -> Iterable[WriteRequestElement]:
         """
-        Parses action requests send by client. Raises ActionException or
+        Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
         """
         all_write_request_elements: List[WriteRequestElement] = []
         for element in payload:
             self.logger.debug(
-                f"Action map contains the following actions: {action_map}."
+                f"Actions map contains the following actions: {actions_map}."
             )
-            action = action_map.get(element["action"])
+            action = actions_map.get(element["action"])
             if action is None:
                 raise ActionException(f"Action {element['action']} does not exist.")
             self.logger.debug(f"Perform action {element['action']}.")
