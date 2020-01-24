@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 from openslides_backend.shared.permissions.meeting import MEETING_CAN_MANAGE
 from openslides_backend.shared.permissions.topic import TOPIC_CAN_MANAGE
@@ -27,3 +27,6 @@ class PermissionTestAdapter:
 
     def has_perm(self, user_id: int, permission: str) -> bool:
         return permission in TESTDATA.get(user_id, [])
+
+    def get_all(self, user_id: int) -> List[str]:
+        return TESTDATA.get(user_id, [])

@@ -1,5 +1,6 @@
 from typing import Any, Iterable, Union
 
+import simplejson as json
 from werkzeug.exceptions import BadRequest, Forbidden, HTTPException
 from werkzeug.routing import Map, Rule
 from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
@@ -34,6 +35,11 @@ class RuleFactory(WerkzeugRuleFactory):
         """
         return [
             Rule("/system/api/actions", endpoint="ActionView", methods=("POST",),),
+            Rule(
+                "/system/api/restrictions",
+                endpoint="RestrictionView",
+                methods=("POST",),
+            ),
         ]
 
 
@@ -73,22 +79,24 @@ class OpenSlidesBackendApplication:
                 "Wrong media type. Use 'Content-Type: application/json' instead."
             )
         try:
-            payload = request.get_json()
+            request_body = request.get_json()
         except BadRequest as exception:
             return exception
-        self.logger.debug(f"Request contains JSON: {payload}.")
+        self.logger.debug(f"Request contains JSON: {request_body}.")
 
         # Dispatch view and return response.
         view_class = view_map[rule.endpoint]
         view = view_class(self.logging, self.services)
         try:
-            view.dispatch(payload, request.headers, **arguments)
+            response_body = view.dispatch(request_body, request.headers, **arguments)
         except ViewException as exception:
             return BadRequest(exception.message)
         except PermissionDenied as exception:  # TODO: Do not use this here.
             return Forbidden(exception.message)
-        self.logger.debug("All done. Application sends HTTP 200.")
-        return Response()
+        self.logger.debug(
+            f"All done. Application sends HTTP 200 with body {response_body}."
+        )
+        return Response(json.dumps(response_body), content_type="application/json")
 
     def wsgi_application(
         self, environ: WSGIEnvironment, start_response: StartResponse

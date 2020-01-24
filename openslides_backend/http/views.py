@@ -1,14 +1,23 @@
-from typing import Callable, Dict, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
-from ..actions import Actions, Payload
+from ..actions import Actions
+from ..actions import Payload as ActionsPayload
 from ..actions.actions import ActionsHandler
+from ..restrictions import Payload as RestrictionsPayload
+from ..restrictions import RestrictionResponse, Restrictions
+from ..restrictions.restrictions import RestrictionsHandler
 from ..shared.exceptions import (
     ActionException,
     AuthenticationException,
     PermissionDenied,
+    RestrictionException,
     ViewException,
 )
 from ..shared.interfaces import Headers, LoggingModule, Services
+
+# TODO Use proper type here.
+RequestBody = Any
+ResponseBody = Optional[List[Any]]
 
 
 class View:
@@ -23,7 +32,9 @@ class View:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 
-    def dispatch(self, payload: Payload, headers: Headers, **kwargs: dict) -> None:
+    def dispatch(
+        self, body: RequestBody, headers: Headers, **kwargs: dict
+    ) -> ResponseBody:
         """
         Main entrypoint for a view.
         """
@@ -53,17 +64,22 @@ class ActionView(View):
     ActionsHandler after retrieving request user id.
     """
 
-    def dispatch(self, payload: Payload, headers: Headers, **kwargs: dict) -> None:
+    def dispatch(
+        self, body: RequestBody, headers: Headers, **kwargs: dict
+    ) -> ResponseBody:
         """
         Dispatches request to the viewpoint.
         """
-        self.logger.debug("Start dispatching action request.")
+        self.logger.debug("Start dispatching actions request.")
 
         # Get request user id.
         try:
             self.user_id = self.services.authentication().get_user(headers)
         except AuthenticationException as exception:
             raise ViewException(exception.message)
+
+        # Setup payload
+        payload: ActionsPayload = body
 
         # Handle request.
         handler: Actions = ActionsHandler()
@@ -75,3 +91,48 @@ class ActionView(View):
             raise
 
         self.logger.debug("Action request finished successfully.")
+        return None
+
+
+@register_view("RestrictionView")
+class RestrictionView(View):
+    """
+    The RestrictionView receives a bundle of restrictions via HTTP and handles
+    it to the RestrictionsHandler.
+    """
+
+    def dispatch(
+        self, body: RequestBody, headers: Headers, **kwargs: dict
+    ) -> ResponseBody:
+        """
+        Dispatches request to the viewpoint.
+        """
+        self.logger.debug("Start dispatching restrictions request.")
+
+        # Setup payload
+        payload: RestrictionsPayload = body
+
+        # Handle request.
+        handler: Restrictions = RestrictionsHandler()
+        try:
+            restriction_response = handler.handle_request(
+                payload, self.logging, self.services
+            )
+        except RestrictionException as exception:
+            raise ViewException(exception.message)
+        response = self.parse_restriction_response(restriction_response)
+        self.logger.debug(
+            "Restrictions request finished successfully. Send response now."
+        )
+        return response
+
+    def parse_restriction_response(
+        self, restriction_response: RestrictionResponse
+    ) -> List[Dict[str, Any]]:
+        result = []
+        for blob in restriction_response:
+            blob_result = {}
+            for fqfield, value in blob.items():
+                blob_result[str(fqfield)] = value
+            result.append(blob_result)
+        return result

@@ -29,3 +29,7 @@ class DatabaseException(BackendBaseException):
 
 class EventStoreException(BackendBaseException):
     pass
+
+
+class RestrictionException(BackendBaseException):
+    pass
