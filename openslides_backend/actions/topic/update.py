@@ -65,7 +65,7 @@ class TopicUpdate(Action):
                 model=self.model,
                 id=topic["id"],
                 obj=topic,
-                fields=["mediafile_attachment_ids"],
+                field_names=["mediafile_attachment_ids"],
                 deletion_possible=True,
             )
             data.append({"topic": topic, "references": references})

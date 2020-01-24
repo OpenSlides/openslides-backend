@@ -60,7 +60,7 @@ class TopicDelete(Action):
                 model=self.model,
                 id=topic["id"],
                 obj=topic,
-                fields=["meeting_id", "mediafile_attachment_ids"],
+                field_names=["meeting_id", "mediafile_attachment_ids"],
                 deletion_possible=True,
             )
             data.append({"topic": topic, "references": references})
