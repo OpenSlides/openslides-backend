@@ -18,4 +18,4 @@ To start it run
 
 or
 
-    $ OPENSLIDES_BACKEND_DEBUG=1 gunicorn --config=python:gunicorn_conf openslides_backend.wsgi:application
+    $ OPENSLIDES_BACKEND_DEBUG=1 gunicorn --config=python:gunicorn_conf openslides_backend.main:application
