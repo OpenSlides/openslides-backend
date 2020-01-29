@@ -59,7 +59,7 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
             dataset["data"],
             [
                 {
-                    "meeting": self.valid_payload_1[0],
+                    "instance": self.valid_payload_1[0],
                     "new_id": 42,
                     "references": {
                         get_fqfield("committee/5914213969/meeting_ids"): {
@@ -119,7 +119,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
                         },
                     ],
                     "information": {
-                        get_fqid("meeting/42"): ["Meeting created"],
+                        get_fqid("meeting/42"): ["Object created"],
                         get_fqid("committee/5914213969"): [
                             "Object attached to meeting"
                         ],

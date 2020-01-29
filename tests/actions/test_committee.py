@@ -55,7 +55,7 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
             dataset["data"],
             [
                 {
-                    "committee": self.valid_payload_1[0],
+                    "instance": self.valid_payload_1[0],
                     "new_id": 42,
                     "references": {
                         get_fqfield("organisation/1/committee_ids"): {
@@ -116,7 +116,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                         },
                     ],
                     "information": {
-                        get_fqid("committee/42"): ["Committee created"],
+                        get_fqid("committee/42"): ["Object created"],
                         get_fqid("organisation/1"): ["Object attached to committee"],
                     },
                     "user_id": self.user_id,

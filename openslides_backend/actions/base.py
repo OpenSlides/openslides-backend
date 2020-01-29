@@ -11,6 +11,8 @@ from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .actions_interface import Payload
 
 DataSet = TypedDict("DataSet", {"position": int, "data": Any})
+ReferencesElement = TypedDict("ReferencesElement", {"type": str, "value": List[int]})
+References = Dict[FullQualifiedField, ReferencesElement]
 
 
 class Action:
@@ -39,6 +41,9 @@ class Action:
         return self.create_write_request_elements(dataset)
 
     def validate(self, payload: Payload) -> None:
+        """
+        Validates action payload according to schema class attribute.
+        """
         try:
             type(self).schema(payload)
         except JsonSchemaException as exception:
@@ -124,22 +129,23 @@ class Action:
         model: Model,
         id: int,
         obj: Dict[str, Any],
-        fields: List[str],
+        field_names: Iterable[str],
         deletion_possible: bool = False,
-    ) -> Dict[FullQualifiedField, Dict[str, Any]]:
+    ) -> References:
         """
         Updates references of the given model for the given fields. Use it in
         prepare_dataset method.
         """
-        # TODO: Use proper typing here.
-        references = {}  # type: Dict[FullQualifiedField, Dict[str, Any]]
+        references: References = {}
 
-        for field in fields:
-            model_field = model.get_field(field)
+        for field_name in field_names:
+            # Fetch and check model field
+            model_field = model.get_field(field_name)
             if not isinstance(model_field, RelationMixin):
-                raise ValueError(f"Field {field} is not a relation field.")
+                raise ValueError(f"Field {field_name} is not a relation field.")
 
-            value = obj.get(field)
+            # Prepare new reference ids
+            value = obj.get(field_name)
             if value is None:
                 ref_ids = []
             else:
@@ -148,35 +154,37 @@ class Action:
                 else:
                     # model_field.is_multiple_reference()
                     ref_ids = value
+
+            # Parse which reference ids should be added and which should be removed in reference model
             if deletion_possible:
-                add, remove = self.reference_diff(model, id, field, ref_ids)
+                add, remove = self.reference_diff(model, id, field_name, ref_ids)
             else:
                 add = set(ref_ids)
                 remove = set()
+
+            # Get reference models from database
             refs, position = self.database.getMany(
                 Collection(model_field.to),
                 list(add | remove),
                 mapped_fields=[model_field.related_name],
             )
             self.set_min_position(position)
+
+            # Prepare result which contains reference elements for add case and remove case
             for ref_id, ref in refs.items():
                 if ref_id in add:
-                    ref_value = {
-                        "type": "add",
-                        "value": ref[model_field.related_name] + [id],
-                    }
+                    ref_element = ReferencesElement(
+                        type="add", value=ref[model_field.related_name] + [id],
+                    )
                 else:
                     # ref_id in remove
                     new_value = ref[model_field.related_name]
                     new_value.remove(id)
-                    ref_value = {
-                        "type": "remove",
-                        "value": new_value,
-                    }
+                    ref_element = ReferencesElement(type="remove", value=new_value,)
                 fqfield = FullQualifiedField(
                     Collection(model_field.to), ref_id, model_field.related_name
                 )
-                references[fqfield] = ref_value
+                references[fqfield] = ref_element
         return references
 
     def reference_diff(
@@ -187,10 +195,13 @@ class Action:
         where the given object (represented by model and id) should be added
         and one with reference objects where it should be removed.
         """
+        # Fetch current object from database
         current_obj, position = self.database.get(
             FullQualifiedId(model.collection, id), mapped_fields=[field]
         )
         self.set_min_position(position)
+
+        # Fetch current ids from reference field
         model_field = model.get_field(field)
         if model_field.is_single_reference():
             current_id = current_obj.get(field)
@@ -201,6 +212,8 @@ class Action:
         else:
             # model_field.is_multiple_reference()
             current_ids = set(current_obj.get(field, []))
+
+        # Calculate and return add set and remove set
         new_ids = set(ref_ids)
         add = new_ids - current_ids
         remove = current_ids - new_ids

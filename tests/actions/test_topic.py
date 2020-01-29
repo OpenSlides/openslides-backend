@@ -84,7 +84,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_1[0],
+                    "instance": self.valid_payload_1[0],
                     "new_id": 42,
                     "references": {
                         get_fqfield("meeting/2393342057/topic_ids"): {
@@ -103,7 +103,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_2[0],
+                    "instance": self.valid_payload_2[0],
                     "new_id": 42,
                     "references": {
                         get_fqfield("meeting/4002059810/topic_ids"): {
@@ -128,7 +128,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_3[0],
+                    "instance": self.valid_payload_3[0],
                     "new_id": 42,
                     "references": {
                         get_fqfield("meeting/3611987967/topic_ids"): {
@@ -147,7 +147,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             self.action.prepare_dataset(payload)
         self.assertEqual(
             context_manager.exception.message,
-            f"User does not have topic.can_manage permission for meeting {unknown_meeting}.",
+            f"User does not have topic.can_manage permission for meeting_id {unknown_meeting}.",
         )
 
 
@@ -199,7 +199,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                         },
                     ],
                     "information": {
-                        get_fqid("topic/42"): ["Topic created"],
+                        get_fqid("topic/42"): ["Object created"],
                         get_fqid("meeting/2393342057"): ["Object attached to topic"],
                     },
                     "user_id": self.user_id,
@@ -212,73 +212,73 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         write_request_elements = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
-
-        self.assertEqual(
-            list(write_request_elements),
-            [
-                {
-                    "events": [
-                        {
-                            "type": "create",
-                            "fqfields": {
-                                get_fqfield("topic/42/meeting_id"): 4002059810,
-                                get_fqfield("topic/42/title"): "title_pha2Eirohg",
-                                get_fqfield("topic/42/text"): "text_CaekiiLai2",
-                                get_fqfield(
-                                    "topic/42/mediafile_attachment_ids"
-                                ): self.attachments,
-                            },
+        result = list(write_request_elements)
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqfields": {
+                            get_fqfield("topic/42/meeting_id"): 4002059810,
+                            get_fqfield("topic/42/title"): "title_pha2Eirohg",
+                            get_fqfield("topic/42/text"): "text_CaekiiLai2",
+                            get_fqfield(
+                                "topic/42/mediafile_attachment_ids"
+                            ): self.attachments,
                         },
-                        {
-                            "type": "update",
-                            "fqfields": {
-                                get_fqfield("meeting/4002059810/topic_ids"): [42],
-                            },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                            ): [6259289755, 42],
                         },
-                        {
-                            "type": "update",
-                            "fqfields": {
-                                get_fqfield(
-                                    f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                                ): [6259289755, 42],
-                            },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                            ): [42],
                         },
-                        {
-                            "type": "update",
-                            "fqfields": {
-                                get_fqfield(
-                                    f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                                ): [42],
-                            },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("meeting/4002059810/topic_ids"): [42],
                         },
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/42"): ["Object created"],
+                    get_fqid("meeting/4002059810"): ["Object attached to topic"],
+                    get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
+                        "Object attached to topic"
                     ],
-                    "information": {
-                        get_fqid("topic/42"): ["Topic created"],
-                        get_fqid("meeting/4002059810"): ["Object attached to topic"],
-                        get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
-                            "Object attached to topic"
-                        ],
-                        get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
-                            "Object attached to topic"
-                        ],
-                    },
-                    "user_id": self.user_id,
-                    "locked_fields": {
-                        get_fqfield("meeting/4002059810/topic_ids"): 1,
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): 1,
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): 1,
-                    },
-                }
-            ],
-        )
+                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                        "Object attached to topic"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("meeting/4002059810/topic_ids"): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[0]}/topic_ids"
+                    ): 1,
+                    get_fqfield(
+                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
+                    ): 1,
+                },
+            }
+        ]
+        self.assertEqual(result, expected)
 
     def test_perform_correct_3(self) -> None:
-        events = self.action.perform(self.valid_payload_3, user_id=self.user_id)
-        e = list(events)
+        write_request_elements = self.action.perform(
+            self.valid_payload_3, user_id=self.user_id
+        )
+        e = list(write_request_elements)
         expected = [
             {
                 "events": [
@@ -301,7 +301,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/42"): ["Topic created"],
+                    get_fqid("topic/42"): ["Object created"],
                     get_fqid("meeting/3611987967"): ["Object attached to topic"],
                 },
                 "user_id": self.user_id,
