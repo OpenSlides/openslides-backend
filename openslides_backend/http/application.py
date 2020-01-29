@@ -1,9 +1,7 @@
 from typing import Any, Iterable, Union
 
 import simplejson as json
-from werkzeug.exceptions import BadRequest, Forbidden, HTTPException
-from werkzeug.routing import Map, Rule
-from werkzeug.routing import RuleFactory as WerkzeugRuleFactory
+from werkzeug.exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
 from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin  # type: ignore
@@ -13,7 +11,6 @@ from ..shared.exceptions import (  # TODO: Remove PermissionDenied!!!
     ViewException,
 )
 from ..shared.interfaces import StartResponse, WSGIEnvironment
-from .views import view_map
 
 
 class Request(JSONMixin, WerkzeugRequest):
@@ -24,26 +21,7 @@ class Request(JSONMixin, WerkzeugRequest):
     pass
 
 
-class RuleFactory(WerkzeugRuleFactory):
-    """
-    Rule factory for the application.
-    """
-
-    def get_rules(self, map: Map) -> Iterable[Rule]:
-        """
-        Returns all rules that this application listens for.
-        """
-        return [
-            Rule("/system/api/actions", endpoint="ActionView", methods=("POST",),),
-            Rule(
-                "/system/api/restrictions",
-                endpoint="RestrictionView",
-                methods=("POST",),
-            ),
-        ]
-
-
-class OpenSlidesBackendApplication:
+class OpenSlidesBackendWSGIApplication:
     """
     Central application class for this service.
 
@@ -51,13 +29,12 @@ class OpenSlidesBackendApplication:
     map rule factory's urls.
     """
 
-    def __init__(self, logging: Any, services: Any,) -> None:
+    def __init__(self, logging: Any, view: Any, services: Any) -> None:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-        self.logger.debug("Initialize OpenSlides Backend application.")
+        self.logger.debug("Initialize OpenSlides Backend WSGI application.")
+        self.view = view
         self.services = services
-        self.url_map = Map()
-        self.url_map.add(RuleFactory())
 
     def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
         """
@@ -65,13 +42,10 @@ class OpenSlidesBackendApplication:
         object or a HTTPException (or a subclass of it). Both are WSGI
         applications themselves.
         """
-        # Find rule.
-        adapter = self.url_map.bind_to_environ(request.environ)
-        try:
-            rule, arguments = adapter.match(return_rule=True)
-        except HTTPException as exception:
-            return exception
-        self.logger.debug(f"Found rule {rule} with arguments {arguments}.")
+        # Check request method
+        if request.method != self.view.method:
+            return MethodNotAllowed()  # TODO: Add nice message.
+        self.logger.debug(f"Request method is {request.method}.")
 
         # Check mimetype and arse JSON body. The result is cached in request.json.
         if not request.is_json:
@@ -85,10 +59,9 @@ class OpenSlidesBackendApplication:
         self.logger.debug(f"Request contains JSON: {request_body}.")
 
         # Dispatch view and return response.
-        view_class = view_map[rule.endpoint]
-        view = view_class(self.logging, self.services)
+        view_instance = self.view(self.logging, self.services)
         try:
-            response_body = view.dispatch(request_body, request.headers, **arguments)
+            response_body = view_instance.dispatch(request_body, request.headers)
         except ViewException as exception:
             return BadRequest(exception.message)
         except PermissionDenied as exception:  # TODO: Do not use this here.

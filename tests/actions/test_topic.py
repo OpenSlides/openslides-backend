@@ -329,7 +329,9 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
-        self.application = create_test_application(user_id=self.user_id)
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -388,7 +390,9 @@ class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
-        self.application = create_test_application(user_id=self.user_id_no_permission)
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionsView"
+        )
 
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -810,7 +814,9 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
-        self.application = create_test_application(user_id=self.user_id)
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -883,7 +889,9 @@ class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
-        self.application = create_test_application(user_id=self.user_id_no_permission)
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionsView"
+        )
 
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -1158,7 +1166,9 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
-        self.application = create_test_application(user_id=self.user_id)
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -1207,7 +1217,9 @@ class TopicDeleteActionWSGITesterNoPermission(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
-        self.application = create_test_application(user_id=self.user_id_no_permission)
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionsView"
+        )
 
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)

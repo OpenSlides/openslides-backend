@@ -1,10 +1,13 @@
+from typing import Type
 from unittest.mock import MagicMock
 
 from dependency_injector import containers, providers  # type: ignore
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
-from openslides_backend.main import Application, OpenSlidesBackend
+from openslides_backend.http.views import ActionsView, RestrictionsView
+from openslides_backend.main import OpenSlidesBackendWSGI
+from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     Collection,
@@ -34,18 +37,27 @@ class FakeServices(containers.DeclarativeContainer):
     event_store = providers.Singleton(EventStoreTestAdapter)
 
 
-def create_test_application(user_id: int) -> Application:
+def create_test_application(user_id: int, view_name: str) -> WSGIApplication:
     """
     Application factory function to create a new instance of the application.
 
     Uses test (fake) services.
     """
+    # Get view class
+    view: Type[View]
+    if view_name == "ActionsView":
+        view = ActionsView
+    else:
+        # view_name == "RestrictionsView"
+        view = RestrictionsView
 
     # Setup services
     services = FakeServices(config={"user_id": user_id})
 
     # Create application instance. Inject services.
-    application_factory = OpenSlidesBackend(logging=MagicMock(), services=services)
+    application_factory = OpenSlidesBackendWSGI(
+        logging=MagicMock(), view=view, services=services
+    )
     application = application_factory.setup()
     return application
 

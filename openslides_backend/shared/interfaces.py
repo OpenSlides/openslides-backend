@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, List, Text, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
@@ -25,26 +25,46 @@ class Services(Protocol):  # pragma: no cover
     event_store: Any
 
 
-class Application(Protocol):  # pragma: no cover
-    """
-    Interface for main application class.
-    """
-
-    def __init__(self, logging: LoggingModule, services: Services) -> None:
-        ...
-
-    def __call__(
-        self, environ: WSGIEnvironment, start_response: StartResponse
-    ) -> Iterable[bytes]:
-        ...
-
-
 class Headers(Protocol):  # pragma: no cover
     """
     Interface for headers used in authentication adapter.
     """
 
     def to_wsgi_list(self) -> List:
+        ...
+
+
+# TODO Use proper type here.
+RequestBody = Any
+ResponseBody = Optional[List[Any]]
+# End TODO
+
+
+class View(Protocol):  # pragma: no cover
+    """
+    Interface for views of this service.
+    """
+
+    method: str
+
+    def __init__(self, logging: LoggingModule, services: Services) -> None:
+        ...
+
+    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
+        ...
+
+
+class WSGIApplication(Protocol):  # pragma: no cover
+    """
+    Interface for main WSGI application class.
+    """
+
+    def __init__(self, logging: LoggingModule, view: View, services: Services) -> None:
+        ...
+
+    def __call__(
+        self, environ: WSGIEnvironment, start_response: StartResponse
+    ) -> Iterable[bytes]:
         ...
 
 

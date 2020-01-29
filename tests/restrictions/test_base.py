@@ -53,13 +53,13 @@ class RestrictionsBaseUnitTester(TestCase):
 class RestrictionBaseWSGITester(TestCase):
     def setUp(self) -> None:
         self.user_id = 0
-        self.application = create_test_application(user_id=self.user_id)
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="RestrictionsView"
+        )
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/restrictions", json=[{"user_id": self.user_id, "fqfields": []}]
-        )
+        response = client.get("/", json=[{"user_id": self.user_id, "fqfields": []}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "data[0].fqfields must contain at least 1 items", str(response.data),
@@ -67,8 +67,8 @@ class RestrictionBaseWSGITester(TestCase):
 
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/restrictions",
+        response = client.get(
+            "/",
             json=[{"user_id": self.user_id, "fqfields": ["0rg4n12a710n/1/bad_field"]}],
         )
         self.assertEqual(response.status_code, 400)
@@ -79,8 +79,8 @@ class RestrictionBaseWSGITester(TestCase):
 
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/restrictions",
+        response = client.get(
+            "/",
             json=[
                 {"user_id": self.user_id, "fqfields": ["organisation/1/committee_ids"]}
             ],

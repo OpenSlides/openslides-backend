@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest  # type: ignore
 import simplejson as json
 
-from openslides_backend.main import create_application
+from openslides_backend.main import create_wsgi_application
 from openslides_backend.services.authentication import (
     AuthenticationException,
     AuthenticationHTTPAdapter,
@@ -158,7 +158,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
 
     def test_wsgi_request_missing_body(self) -> None:
         with FakeServer(self.host, self.port, 6052759165):
-            client = Client(create_application(), ResponseWrapper)
+            client = Client(create_wsgi_application("ActionsView"), ResponseWrapper)
             response = client.post(
                 "/system/api/actions", content_type="application/json"
             )
@@ -167,7 +167,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
 
     def test_wsgi_request_error(self) -> None:
         with FakeServer(self.host, self.port, 7824698278, "500"):
-            client = Client(create_application(), ResponseWrapper)
+            client = Client(create_wsgi_application("ActionsView"), ResponseWrapper)
             response = client.post("/system/api/actions", json=[])
             self.assertEqual(response.status_code, 400)
             self.assertIn("Authentication service sends HTTP 500.", str(response.data))

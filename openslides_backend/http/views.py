@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Dict, List
 
 from ..actions import Actions
 from ..actions import Payload as ActionsPayload
@@ -13,14 +13,16 @@ from ..shared.exceptions import (
     RestrictionException,
     ViewException,
 )
-from ..shared.interfaces import Headers, LoggingModule, Services
+from ..shared.interfaces import (
+    Headers,
+    LoggingModule,
+    RequestBody,
+    ResponseBody,
+    Services,
+)
 
-# TODO Use proper type here.
-RequestBody = Any
-ResponseBody = Optional[List[Any]]
 
-
-class View:
+class BaseView:
     """
     Base class for views of this service.
 
@@ -32,41 +34,16 @@ class View:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, **kwargs: dict
-    ) -> ResponseBody:
-        """
-        Main entrypoint for a view.
-        """
-        raise NotImplementedError
 
-
-view_map: Dict[str, Type[View]] = {}
-
-
-def register_view(name: str) -> Callable[[Type[View]], Type[View]]:
+class ActionsView(BaseView):
     """
-    Decorator to be used for view classes. Registers the class so that it can
-    be found by the WSGI application.
-    """
-
-    def wrapper(view: Type[View]) -> Type[View]:
-        view_map[name] = view
-        return view
-
-    return wrapper
-
-
-@register_view("ActionView")
-class ActionView(View):
-    """
-    The ActionView receives a bundle of actions via HTTP and handles it to the
+    The ActionsView receives a bundle of actions via HTTP and handles it to the
     ActionsHandler after retrieving request user id.
     """
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, **kwargs: dict
-    ) -> ResponseBody:
+    method = "POST"
+
+    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
         """
         Dispatches request to the viewpoint.
         """
@@ -94,16 +71,15 @@ class ActionView(View):
         return None
 
 
-@register_view("RestrictionView")
-class RestrictionView(View):
+class RestrictionsView(BaseView):
     """
-    The RestrictionView receives a bundle of restrictions via HTTP and handles
+    The RestrictionsView receives a bundle of restrictions via HTTP and handles
     it to the RestrictionsHandler.
     """
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, **kwargs: dict
-    ) -> ResponseBody:
+    method = "GET"
+
+    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
         """
         Dispatches request to the viewpoint.
         """

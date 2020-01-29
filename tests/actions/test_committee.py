@@ -134,7 +134,9 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
-        self.application = create_test_application(user_id=self.user_id)
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -177,7 +179,9 @@ class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTeste
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
-        self.application = create_test_application(user_id=self.user_id_no_permission)
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionsView"
+        )
 
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
