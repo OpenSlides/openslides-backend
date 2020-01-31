@@ -329,7 +329,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
             dataset["data"],
             [
                 {
-                    "meeting": {
+                    "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "committee_id": None,
                     },
@@ -379,7 +379,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("meeting/3908439961"): ["Meeting deleted"],
+                    get_fqid("meeting/3908439961"): ["Object deleted"],
                     get_fqid("committee/5914213969"): [
                         "Object attachment to meeting reset"
                     ],

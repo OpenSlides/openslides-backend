@@ -963,10 +963,10 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
             dataset["data"],
             [
                 {
-                    "topic": {
+                    "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": [],
+                        "mediafile_attachment_ids": None,
                     },
                     "references": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
@@ -974,6 +974,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
+                    "cascade_delete": {},
                 }
             ],
         )
@@ -985,10 +986,10 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
             dataset["data"],
             [
                 {
-                    "topic": {
+                    "instance": {
                         "id": self.valid_payload_2[0]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": [],
+                        "mediafile_attachment_ids": None,
                     },
                     "references": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
@@ -996,12 +997,13 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
+                    "cascade_delete": {},
                 },
                 {
-                    "topic": {
+                    "instance": {
                         "id": self.valid_payload_2[1]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": [],
+                        "mediafile_attachment_ids": None,
                     },
                     "references": {
                         get_fqfield("meeting/3611987967/topic_ids"): {
@@ -1013,6 +1015,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
+                    "cascade_delete": {},
                 },
             ],
         )
@@ -1055,7 +1058,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/1312354708"): ["Topic deleted"],
+                    get_fqid("topic/1312354708"): ["Object deleted"],
                     get_fqid("meeting/7816466305"): [
                         "Object attachment to topic reset"
                     ],
@@ -1083,7 +1086,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/1312354708"): ["Topic deleted"],
+                    get_fqid("topic/1312354708"): ["Object deleted"],
                     get_fqid("meeting/7816466305"): [
                         "Object attachment to topic reset"
                     ],
@@ -1100,20 +1103,20 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     {
                         "type": "update",
                         "fqfields": {
-                            get_fqfield("meeting/3611987967/topic_ids"): [6375863023],
-                        },
-                    },
-                    {
-                        "type": "update",
-                        "fqfields": {
                             get_fqfield(
                                 "mediafile_attachment/3549387598/topic_ids"
                             ): [],
                         },
                     },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("meeting/3611987967/topic_ids"): [6375863023],
+                        },
+                    },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic deleted"],
+                    get_fqid("topic/6259289755"): ["Object deleted"],
                     get_fqid("meeting/3611987967"): [
                         "Object attachment to topic reset"
                     ],
