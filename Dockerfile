@@ -1,16 +1,15 @@
-FROM python:3.8-alpine
+FROM python:3.8.1-alpine3.11
 
 RUN apk add build-base
 
 WORKDIR /srv/code
 
 EXPOSE 8000
+EXPOSE 8001
 
 COPY requirements_production.txt .
 RUN pip install --no-cache-dir --requirement requirements_production.txt
 
-COPY gunicorn_conf.py .
-
-CMD [ "gunicorn", "--config=python:gunicorn_conf", "openslides_backend.main:application" ]
-
 COPY openslides_backend/ ./openslides_backend/
+
+CMD [ "python", "-m", "openslides_backend" ]

@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from typing import Any, Type
 
 from dependency_injector import containers, providers  # type: ignore
@@ -93,8 +94,13 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
     Standalone application class for Gunicorn. It prepares Gunicorn for using
     OpenSlidesBackendWSGIApplication via OpenSlidesBackendWSGIContainer either
-    with actions (sub)service or with restrictions (sub)service.
+    with actions component or with restrictions component.
     """
+
+    ports = {
+        "ActionsView": 8000,
+        "RestrictionsView": 8001,
+    }
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
         # Setup global loglevel.
@@ -112,7 +118,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     def load_config(self) -> None:
         loglevel = "debug" if os.environ.get("OPENSLIDES_BACKEND_DEBUG") else "info"
         options = {
-            "bind": "0.0.0.0:8000",
+            "bind": f"0.0.0.0:{self.ports[self.view_name]}",
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
             "timeout": int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30")),
             "loglevel": loglevel,
@@ -134,5 +140,18 @@ def start_restictions_server() -> None:  # pragma: no cover
 
 
 def main() -> None:  # pragma: no cover
-    start_actions_server()
-    # start_restictions_server()
+    component = os.environ.get("OPENSLIDES_BACKEND_COMPONENT", "all")
+    if component == "actions":
+        start_actions_server()
+    elif component == "restrictions":
+        start_restictions_server()
+    elif component == "all":
+        print("Start all of them in subprocesses. TODO: THIS IS NOT READY.")
+    else:
+        print(
+            f"Error: OPENSLIDES_BACKEND_COMPONENT must not be {component}.",
+            file=sys.stderr,
+        )
+        sys.stderr.flush()
+        sys.exit(1)
+    sys.exit(0)
