@@ -65,7 +65,12 @@ TESTDATA = [
     {
         "collection": "committee",
         "id": 5914213969,
-        "fields": {"organisation_id": 1, "meeting_ids": [7816466305]},
+        "fields": {"organisation_id": 1, "meeting_ids": [7816466305, 3908439961]},
+    },
+    {
+        "collection": "meeting",
+        "id": 3908439961,
+        "fields": {"committee_id": 5914213969, "topic_ids": []},
     },
 ]  # type: List[Dict[str, Any]]
 

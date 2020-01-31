@@ -1,4 +1,7 @@
-from typing import Any, Dict
+from collections import defaultdict
+from typing import Any, Dict, List
+
+from ..shared.patterns import Collection
 
 Schema = Dict[str, Any]
 
@@ -50,7 +53,12 @@ class RelationMixin:
     def __init__(self, to: str, related_name: str, **kwargs: Any) -> None:
         self.to = to
         self.related_name = related_name
+        self.on_delete = "protect"  # TODO: Enable cascade
+        BackReferences[Collection(self.to)].append(self)
         super().__init__(**kwargs)  # type: ignore
+
+
+BackReferences: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
 class ForeignKeyField(RelationMixin, IdField):
