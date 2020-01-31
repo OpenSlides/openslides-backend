@@ -56,9 +56,22 @@ TESTDATA = [
             "mediafile_attachment_ids": [3549387598],
         },
     },
-    {"collection": "meeting", "id": 7816466305, "fields": {"topic_ids": [1312354708]}},
+    {
+        "collection": "meeting",
+        "id": 7816466305,
+        "fields": {"committee_id": 5914213969, "topic_ids": [1312354708]},
+    },
     {"collection": "organisation", "id": 1, "fields": {"committee_ids": [5914213969]}},
-    {"collection": "committee", "id": 5914213969, "fields": {"meeting_ids": []}},
+    {
+        "collection": "committee",
+        "id": 5914213969,
+        "fields": {"organisation_id": 1, "meeting_ids": [7816466305, 3908439961]},
+    },
+    {
+        "collection": "meeting",
+        "id": 3908439961,
+        "fields": {"committee_id": 5914213969, "topic_ids": []},
+    },
 ]  # type: List[Dict[str, Any]]
 
 

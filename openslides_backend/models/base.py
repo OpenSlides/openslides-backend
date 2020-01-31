@@ -1,7 +1,7 @@
 from typing import Iterable, Tuple
 
 from ..shared.patterns import Collection
-from .fields import Field, RelationMixin, Schema
+from .fields import BackReferences, Field, RelationMixin, Schema
 
 
 class Model:
@@ -48,3 +48,11 @@ class Model:
         Returns JSON schema for the given field.
         """
         return getattr(self, field).get_schema()
+
+    def get_back_references(self) -> Iterable[Tuple[str, RelationMixin]]:
+        """
+        Yields all reference fields that are set by other models (using the
+        related_name argument).
+        """
+        for field in BackReferences.get(self.collection, []):
+            yield field.related_name, field

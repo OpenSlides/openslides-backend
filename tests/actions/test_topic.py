@@ -335,9 +335,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/actions", json=[{"action": "topic.create", "data": [{}]}]
-        )
+        response = client.post("/", json=[{"action": "topic.create", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
@@ -347,7 +345,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
+            "/",
             json=[
                 {
                     "action": "topic.create",
@@ -364,24 +362,21 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.create", "data": self.valid_payload_1}],
+            "/", json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.create", "data": self.valid_payload_2}],
+            "/", json=[{"action": "topic.create", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_3(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.create", "data": self.valid_payload_3}],
+            "/", json=[{"action": "topic.create", "data": self.valid_payload_3}],
         )
         self.assertEqual(response.status_code, 200)
 
@@ -397,24 +392,21 @@ class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.create", "data": self.valid_payload_1}],
+            "/", json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.create", "data": self.valid_payload_2}],
+            "/", json=[{"action": "topic.create", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_3(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.create", "data": self.valid_payload_3}],
+            "/", json=[{"action": "topic.create", "data": self.valid_payload_3}],
         )
         self.assertEqual(response.status_code, 403)
 
@@ -491,7 +483,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
         self.assertEqual(
-            dataset["data"], [{"topic": self.valid_payload_1[0], "references": {}}],
+            dataset["data"], [{"instance": self.valid_payload_1[0], "references": {}}],
         )
 
     def test_prepare_dataset_2(self) -> None:
@@ -501,7 +493,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_2[0],
+                    "instance": self.valid_payload_2[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
@@ -521,7 +513,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_3[0],
+                    "instance": self.valid_payload_3[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
@@ -538,7 +530,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_4[0],
+                    "instance": self.valid_payload_4[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
@@ -555,7 +547,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_5[0],
+                    "instance": self.valid_payload_5[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
@@ -607,7 +599,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                         },
                     },
                 ],
-                "information": {get_fqid("topic/1312354708"): ["Topic updated"]},
+                "information": {get_fqid("topic/1312354708"): ["Object updated"]},
                 "user_id": self.user_id,
                 "locked_fields": {get_fqfield("topic/1312354708/deleted"): 1},
             },
@@ -649,7 +641,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/1312354708"): ["Topic updated"],
+                    get_fqid("topic/1312354708"): ["Object updated"],
                     get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
                         "Object attached to topic"
                     ],
@@ -697,7 +689,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("topic/6259289755"): ["Object updated"],
                     get_fqid("mediafile_attachment/3549387598"): [
                         "Object attachment to topic reset"
                     ],
@@ -736,7 +728,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("topic/6259289755"): ["Object updated"],
                     get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
                         "Object attached to topic"
                     ],
@@ -785,7 +777,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("topic/6259289755"): ["Object updated"],
                     get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
                         "Object attachment to topic reset"
                     ],
@@ -820,9 +812,7 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/actions", json=[{"action": "topic.update", "data": [{}]}]
-        )
+        response = client.post("/", json=[{"action": "topic.update", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "data[0] must contain [\\'id\\'] properties", str(response.data),
@@ -831,7 +821,7 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
+            "/",
             json=[
                 {
                     "action": "topic.update",
@@ -847,40 +837,35 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_1}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_2}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_3(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_3}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_3}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_4(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_4}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_4}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_5(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_5}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_5}],
         )
         self.assertEqual(response.status_code, 200)
 
@@ -896,40 +881,35 @@ class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_1}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_2}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_3(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_3}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_3}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_4(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_4}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_4}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_5(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.update", "data": self.valid_payload_5}],
+            "/", json=[{"action": "topic.update", "data": self.valid_payload_5}],
         )
         self.assertEqual(response.status_code, 403)
 
@@ -983,10 +963,10 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
             dataset["data"],
             [
                 {
-                    "topic": {
+                    "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": [],
+                        "mediafile_attachment_ids": None,
                     },
                     "references": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
@@ -994,6 +974,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
+                    "cascade_delete": {},
                 }
             ],
         )
@@ -1005,10 +986,10 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
             dataset["data"],
             [
                 {
-                    "topic": {
+                    "instance": {
                         "id": self.valid_payload_2[0]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": [],
+                        "mediafile_attachment_ids": None,
                     },
                     "references": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
@@ -1016,12 +997,13 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
+                    "cascade_delete": {},
                 },
                 {
-                    "topic": {
+                    "instance": {
                         "id": self.valid_payload_2[1]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": [],
+                        "mediafile_attachment_ids": None,
                     },
                     "references": {
                         get_fqfield("meeting/3611987967/topic_ids"): {
@@ -1033,6 +1015,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
+                    "cascade_delete": {},
                 },
             ],
         )
@@ -1075,7 +1058,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/1312354708"): ["Topic deleted"],
+                    get_fqid("topic/1312354708"): ["Object deleted"],
                     get_fqid("meeting/7816466305"): [
                         "Object attachment to topic reset"
                     ],
@@ -1103,7 +1086,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/1312354708"): ["Topic deleted"],
+                    get_fqid("topic/1312354708"): ["Object deleted"],
                     get_fqid("meeting/7816466305"): [
                         "Object attachment to topic reset"
                     ],
@@ -1120,20 +1103,20 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     {
                         "type": "update",
                         "fqfields": {
-                            get_fqfield("meeting/3611987967/topic_ids"): [6375863023],
-                        },
-                    },
-                    {
-                        "type": "update",
-                        "fqfields": {
                             get_fqfield(
                                 "mediafile_attachment/3549387598/topic_ids"
                             ): [],
                         },
                     },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("meeting/3611987967/topic_ids"): [6375863023],
+                        },
+                    },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic deleted"],
+                    get_fqid("topic/6259289755"): ["Object deleted"],
                     get_fqid("meeting/3611987967"): [
                         "Object attachment to topic reset"
                     ],
@@ -1172,9 +1155,7 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/actions", json=[{"action": "topic.delete", "data": [{}]}]
-        )
+        response = client.post("/", json=[{"action": "topic.delete", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "data[0] must contain [\\'id\\'] properties", str(response.data),
@@ -1183,7 +1164,7 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
+            "/",
             json=[
                 {
                     "action": "topic.delete",
@@ -1199,16 +1180,14 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.delete", "data": self.valid_payload_1}],
+            "/", json=[{"action": "topic.delete", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
 
     def test_wsgi_request_correct_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.delete", "data": self.valid_payload_2}],
+            "/", json=[{"action": "topic.delete", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 200)
 
@@ -1224,15 +1203,13 @@ class TopicDeleteActionWSGITesterNoPermission(BaseTopicDeleteActionTester):
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.delete", "data": self.valid_payload_1}],
+            "/", json=[{"action": "topic.delete", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "topic.delete", "data": self.valid_payload_2}],
+            "/", json=[{"action": "topic.delete", "data": self.valid_payload_2}],
         )
         self.assertEqual(response.status_code, 403)

@@ -2,6 +2,8 @@ from unittest import TestCase
 
 from openslides_backend.actions import Payload
 from openslides_backend.actions.meeting.create import MeetingCreate
+from openslides_backend.actions.meeting.delete import MeetingDelete
+from openslides_backend.actions.meeting.update import MeetingUpdate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
 from ..fake_services.database import DatabaseTestAdapter
@@ -64,7 +66,7 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
                     "references": {
                         get_fqfield("committee/5914213969/meeting_ids"): {
                             "type": "add",
-                            "value": [42],
+                            "value": [7816466305, 3908439961, 42],
                         },
                     },
                 }
@@ -114,7 +116,11 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
                         {
                             "type": "update",
                             "fqfields": {
-                                get_fqfield("committee/5914213969/meeting_ids"): [42]
+                                get_fqfield("committee/5914213969/meeting_ids"): [
+                                    7816466305,
+                                    3908439961,
+                                    42,
+                                ]
                             },
                         },
                     ],
@@ -149,9 +155,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
 
     def test_wsgi_request_empty(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.post(
-            "/system/api/actions", json=[{"action": "meeting.create", "data": [{}]}]
-        )
+        response = client.post("/", json=[{"action": "meeting.create", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "data[0] must contain [\\'committee_id\\', \\'title\\'] properties",
@@ -161,7 +165,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
+            "/",
             json=[
                 {
                     "action": "meeting.create",
@@ -178,8 +182,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "meeting.create", "data": self.valid_payload_1}],
+            "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
 
@@ -195,7 +198,265 @@ class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
     def test_wsgi_request_no_permission_1(self) -> None:
         client = Client(self.application, ResponseWrapper)
         response = client.post(
-            "/system/api/actions",
-            json=[{"action": "meeting.create", "data": self.valid_payload_1}],
+            "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class BaseMeetingUpdateActionTester(TestCase):
+    """
+    Tests the meeting update action.
+    """
+
+    def setUp(self) -> None:
+        self.valid_payload_1 = [{"id": 7816466305, "title": "title_GeiduDohx0"}]
+
+
+class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MeetingUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
+        )
+
+    def test_validation_correct_1(self) -> None:
+        self.action.validate(self.valid_payload_1)
+
+    def test_prepare_dataset_1(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_1)
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(
+            dataset["data"], [{"instance": self.valid_payload_1[0], "references": {}}],
+        )
+
+
+class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MeetingUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.user_id = (
+            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
+        )
+
+    def test_perform_correct_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_1, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("meeting/7816466305/title"): "title_GeiduDohx0",
+                        },
+                    },
+                ],
+                "information": {get_fqid("meeting/7816466305"): ["Object updated"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("meeting/7816466305/deleted"): 1},
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+
+class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = (
+            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
+        )
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+
+class MeetingUpdateActionWSGITesterNoPermission(BaseMeetingUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id_no_permission = 9707919439
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_no_permission_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class BaseMeetingDeleteActionTester(TestCase):
+    """
+    Tests the meeting delete action.
+    """
+
+    def setUp(self) -> None:
+        self.valid_payload_1 = [{"id": 3908439961}]
+        self.invalid_payload_1 = [
+            {"id": 3908439961},
+            {"id": 7816466305},
+        ]
+
+
+class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MeetingDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
+        )
+
+    def test_validation_correct_1(self) -> None:
+        self.action.validate(self.valid_payload_1)
+
+    def test_validation_correct_2(self) -> None:
+        self.action.validate(self.invalid_payload_1)
+
+    def test_prepare_dataset_1(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_1)
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(
+            dataset["data"],
+            [
+                {
+                    "instance": {
+                        "id": self.valid_payload_1[0]["id"],
+                        "committee_id": None,
+                    },
+                    "references": {
+                        get_fqfield("committee/5914213969/meeting_ids"): {
+                            "type": "remove",
+                            "value": [7816466305],
+                        },
+                    },
+                    "cascade_delete": {},
+                }
+            ],
+        )
+
+    def test_prepare_dataset_2(self) -> None:
+        with self.assertRaises(ActionException) as context_manager:
+            self.action.prepare_dataset(self.invalid_payload_1)
+        self.assertEqual(
+            context_manager.exception.message,
+            "You are not allowed to delete meeting 7816466305 as long as there are some referenced objects (see topic_ids).",
+        )
+
+
+class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MeetingDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.user_id = (
+            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
+        )
+
+    def test_perform_correct_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_1, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {"type": "delete", "fqid": get_fqid("meeting/3908439961")},
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("committee/5914213969/meeting_ids"): [
+                                7816466305
+                            ]
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("meeting/3908439961"): ["Object deleted"],
+                    get_fqid("committee/5914213969"): [
+                        "Object attachment to meeting reset"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("meeting/3908439961/deleted"): 1,
+                    get_fqfield("committee/5914213969/meeting_ids"): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+    def test_perform_incorrect_1(self) -> None:
+        with self.assertRaises(ActionException) as context_manager:
+            self.action.perform(self.invalid_payload_1, user_id=self.user_id)
+        self.assertEqual(
+            context_manager.exception.message,
+            "You are not allowed to delete meeting 7816466305 as long as there are some referenced objects (see topic_ids).",
+        )
+
+    def test_perform_no_permission_1(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.valid_payload_1, user_id=4796568680)
+
+    def test_perform_no_permission_2(self) -> None:
+        with self.assertRaises(PermissionDenied):
+            self.action.perform(self.invalid_payload_1, user_id=4796568680)
+
+
+class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = (
+            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
+        )
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_wsgi_request_incorrect_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn(
+            "You are not allowed to delete meeting 7816466305 as long as there are some referenced objects (see topic_ids).",
+            str(response.data),
+        )
+
+
+class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id_no_permission = 9707919439
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_no_permission_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wsgi_request_no_permission_2(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
         self.assertEqual(response.status_code, 403)
