@@ -7,9 +7,12 @@ WORKDIR /srv/code
 EXPOSE 8000
 EXPOSE 8001
 
+COPY requirements.txt .
 COPY requirements_production.txt .
-RUN pip install --no-cache-dir --requirement requirements_production.txt
+RUN pip install --no-cache-dir --requirement requirements.txt
 
-COPY openslides_backend/ ./openslides_backend/
+ENV OPENSLIDES_BACKEND_DEBUG 1
 
 CMD [ "python", "-m", "openslides_backend" ]
+
+COPY openslides_backend/ ./openslides_backend/

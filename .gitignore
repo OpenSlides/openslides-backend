@@ -16,3 +16,9 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Specific editor files
+.vscode/launch.json
+.vscode/settings.json
+.vscode/tasks.json
+.vimrc

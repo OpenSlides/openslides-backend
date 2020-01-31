@@ -9,7 +9,7 @@ Payload = List[Dict[str, Any]]
 
 class Actions(Protocol):  # pragma: no cover
     """
-    Interface for actions (sub)service.
+    Interface for actions component.
 
     The handle_request method raises ActionException or PermissionDenied if
     the request fails.

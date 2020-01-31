@@ -13,7 +13,7 @@ RestrictionResponse = List[Dict[FullQualifiedField, Any]]
 
 class Restrictions(Protocol):  # pragma: no cover
     """
-    Interface for restrictions (sub)service.
+    Interface for restrictions component.
 
     The handle_request method raises RestrictionException if the request fails.
     """
