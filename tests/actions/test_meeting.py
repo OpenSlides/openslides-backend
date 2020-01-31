@@ -225,7 +225,7 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
         self.assertEqual(
-            dataset["data"], [{"meeting": self.valid_payload_1[0], "references": {}}],
+            dataset["data"], [{"instance": self.valid_payload_1[0], "references": {}}],
         )
 
 
@@ -251,7 +251,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                         },
                     },
                 ],
-                "information": {get_fqid("meeting/7816466305"): ["Meeting updated"]},
+                "information": {get_fqid("meeting/7816466305"): ["Object updated"]},
                 "user_id": self.user_id,
                 "locked_fields": {get_fqfield("meeting/7816466305/deleted"): 1},
             },

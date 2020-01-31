@@ -483,7 +483,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
         self.assertEqual(
-            dataset["data"], [{"topic": self.valid_payload_1[0], "references": {}}],
+            dataset["data"], [{"instance": self.valid_payload_1[0], "references": {}}],
         )
 
     def test_prepare_dataset_2(self) -> None:
@@ -493,7 +493,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_2[0],
+                    "instance": self.valid_payload_2[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
@@ -513,7 +513,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_3[0],
+                    "instance": self.valid_payload_3[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
@@ -530,7 +530,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_4[0],
+                    "instance": self.valid_payload_4[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
@@ -547,7 +547,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             dataset["data"],
             [
                 {
-                    "topic": self.valid_payload_5[0],
+                    "instance": self.valid_payload_5[0],
                     "references": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
@@ -599,7 +599,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                         },
                     },
                 ],
-                "information": {get_fqid("topic/1312354708"): ["Topic updated"]},
+                "information": {get_fqid("topic/1312354708"): ["Object updated"]},
                 "user_id": self.user_id,
                 "locked_fields": {get_fqfield("topic/1312354708/deleted"): 1},
             },
@@ -641,7 +641,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/1312354708"): ["Topic updated"],
+                    get_fqid("topic/1312354708"): ["Object updated"],
                     get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
                         "Object attached to topic"
                     ],
@@ -689,7 +689,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("topic/6259289755"): ["Object updated"],
                     get_fqid("mediafile_attachment/3549387598"): [
                         "Object attachment to topic reset"
                     ],
@@ -728,7 +728,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("topic/6259289755"): ["Object updated"],
                     get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
                         "Object attached to topic"
                     ],
@@ -777,7 +777,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     },
                 ],
                 "information": {
-                    get_fqid("topic/6259289755"): ["Topic updated"],
+                    get_fqid("topic/6259289755"): ["Object updated"],
                     get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
                         "Object attachment to topic reset"
                     ],
