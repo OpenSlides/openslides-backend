@@ -32,6 +32,16 @@ class IdField(Field):
         return dict(description=self.description, type="integer", minimum=1,)
 
 
+class IntegerField(Field):
+    def get_schema(self) -> Schema:
+        return dict(description=self.description, type="integer",)
+
+
+class PositiveIntegerField(Field):
+    def get_schema(self) -> Schema:
+        return dict(description=self.description, type="integer", minimum=1,)
+
+
 class CharField(Field):
     def get_schema(self) -> Schema:
         return dict(description=self.description, type="string", maxLength=256,)
@@ -47,6 +57,11 @@ class RequiredCharField(CharField):
 class TextField(Field):
     def get_schema(self) -> Schema:
         return dict(description=self.description, type="string",)
+
+
+class TimestampField(Field):
+    def get_schema(self) -> Schema:
+        return dict(description=self.description, type="integer", minimum=1,)
 
 
 class RelationMixin:
