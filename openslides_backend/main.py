@@ -154,9 +154,10 @@ def start_them_all() -> None:  # pragma: no cover
         process.start()
 
     def sigterm_handler(signalnum: int, current_stack_frame: Any) -> None:
+        strsignal = signal.strsignal  # type: ignore
         print(
-            f"Parent process {os.getpid()} received {signal.strsignal(signalnum)} "
-             "signal. Terminate all child processes first."
+            f"Parent process {os.getpid()} received {strsignal(signalnum)} "
+            "signal. Terminate all child processes first."
         )
         for child in multiprocessing.active_children():
             child.terminate()

@@ -16,7 +16,7 @@ class Topic(Model):
     id = fields.IdField(description="An integer. The id of the topic.")
     meeting_id = fields.ForeignKeyField(
         description="An integer. The id of the meeting of the topic.",
-        to="meeting",
+        to=Collection("meeting"),
         related_name="topic_ids",
     )
     title = fields.RequiredCharField(
@@ -25,6 +25,6 @@ class Topic(Model):
     text = fields.TextField(description="A string containing HTML formatted text.")
     mediafile_attachment_ids = fields.ManyToManyArrayField(
         description="An array of attachment ids that should be referenced with this topic.",
-        to="mediafile_attachment",
+        to=Collection("mediafile_attachment"),
         related_name="topic_ids",
     )
