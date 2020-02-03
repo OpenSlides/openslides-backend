@@ -21,7 +21,7 @@ To start it run
 
 * OPENSLIDES_BACKEND_COMPONENT
 
-  Use one of the following values to start only one component of this service: `actions` (listening to port 8000) and `restictions` (listening to port 8001). Defaults to all of them using different processes.
+  Use one of the following values to start only one component of this service: `actions` (listening to port 8000) and `restictions` (listening to port 8001). Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
 
 * OPENSLIDES_BACKEND_DEBUG
 

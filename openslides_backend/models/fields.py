@@ -50,11 +50,11 @@ class TextField(Field):
 
 
 class RelationMixin:
-    def __init__(self, to: str, related_name: str, **kwargs: Any) -> None:
+    def __init__(self, to: Collection, related_name: str, **kwargs: Any) -> None:
         self.to = to
         self.related_name = related_name
         self.on_delete = "protect"  # TODO: Enable cascade
-        BackReferences[Collection(self.to)].append(self)
+        BackReferences[self.to].append(self)
         super().__init__(**kwargs)  # type: ignore
 
 

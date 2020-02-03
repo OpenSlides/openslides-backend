@@ -1,6 +1,9 @@
 import logging
+import multiprocessing
 import os
+import signal
 import sys
+import time
 from typing import Any, Type
 
 from dependency_injector import containers, providers  # type: ignore
@@ -139,6 +142,48 @@ def start_restictions_server() -> None:  # pragma: no cover
     OpenSlidesBackendGunicornApplication(view_name="RestrictionsView").run()
 
 
+def start_them_all() -> None:  # pragma: no cover
+    print(
+        f"Start all components in child processes. Parent process id is {os.getpid()}."
+    )
+    processes = {
+        "actions": multiprocessing.Process(target=start_actions_server),
+        "restrictions": multiprocessing.Process(target=start_restictions_server),
+    }
+    for process in processes.values():
+        process.start()
+
+    def sigterm_handler(signalnum: int, current_stack_frame: Any) -> None:
+        strsignal = signal.strsignal  # type: ignore
+        print(
+            f"Parent process {os.getpid()} received {strsignal(signalnum)} "
+            "signal. Terminate all child processes first."
+        )
+        for child in multiprocessing.active_children():
+            child.terminate()
+            child.join()
+        print(f"Parent process {os.getpid()} terminated successfully.")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, sigterm_handler)
+    signal.signal(signal.SIGINT, sigterm_handler)
+
+    while True:
+        for name, process in processes.items():
+            if not process.is_alive():
+                process.join()
+                print(
+                    f"Component {name} terminated. Terminate all other components now."
+                )
+                for other_name, other_process in processes.items():
+                    if name != other_name:
+                        other_process.terminate()
+                        other_process.join()
+                print("Parent process terminated.")
+                sys.exit(1)
+        time.sleep(0.1)
+
+
 def main() -> None:  # pragma: no cover
     component = os.environ.get("OPENSLIDES_BACKEND_COMPONENT", "all")
     if component == "actions":
@@ -146,7 +191,7 @@ def main() -> None:  # pragma: no cover
     elif component == "restrictions":
         start_restictions_server()
     elif component == "all":
-        print("Start all of them in subprocesses. TODO: THIS IS NOT READY.")
+        start_them_all()
     else:
         print(
             f"Error: OPENSLIDES_BACKEND_COMPONENT must not be {component}.",

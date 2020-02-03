@@ -28,7 +28,7 @@ class Committee(Model):
     id = fields.IdField(description="An integer. The id of the committee.")
     organisation_id = OrganisationField(
         description="An integer. The id of the organisation of the committee.",
-        to="organisation",
+        to=Collection("organisation"),
         related_name="committee_ids",
     )
     title = fields.RequiredCharField(

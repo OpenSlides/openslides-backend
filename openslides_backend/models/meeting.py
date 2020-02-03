@@ -16,7 +16,7 @@ class Meeting(Model):
     id = fields.IdField(description="An integer. The id of the meeting.")
     committee_id = fields.ForeignKeyField(
         description="An integer. The id of the committee of the meeting.",
-        to="committee",
+        to=Collection("committee"),
         related_name="meeting_ids",
     )
     title = fields.RequiredCharField(

@@ -7,7 +7,7 @@ from ..models.base import Model
 from ..models.fields import RelationMixin
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
-from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from .actions_interface import Payload
 
 DataSet = TypedDict("DataSet", {"position": int, "data": Any})
@@ -164,7 +164,7 @@ class Action:
 
             # Get reference models from database
             refs, position = self.database.getMany(
-                Collection(model_field.to),
+                model_field.to,
                 list(add | remove),
                 mapped_fields=[model_field.related_name],
             )
@@ -182,7 +182,7 @@ class Action:
                     new_value.remove(id)
                     ref_element = ReferencesElement(type="remove", value=new_value,)
                 fqfield = FullQualifiedField(
-                    Collection(model_field.to), ref_id, model_field.related_name
+                    model_field.to, ref_id, model_field.related_name
                 )
                 references[fqfield] = ref_element
         return references

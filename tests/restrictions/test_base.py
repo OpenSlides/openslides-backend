@@ -27,7 +27,7 @@ class RestrictionsBaseUnitTester(TestCase):
             )
         self.assertEqual(
             context_manager.exception.message,
-            f"data[0].fqfields[0] must match pattern ^[a-z_]+{KEYSEPARATOR}[1-9]\\d*{KEYSEPARATOR}[a-z_]+$",
+            f"data[0].fqfields[0] must match pattern ^[a-z][a-z0-9_]*{KEYSEPARATOR}[1-9][0-9]*{KEYSEPARATOR}[a-z][a-z0-9_]*$",
         )
 
     def test_restrictions_handler(self) -> None:
@@ -73,7 +73,7 @@ class RestrictionBaseWSGITester(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            f"data[0].fqfields[0] must match pattern ^[a-z_]+{KEYSEPARATOR}[1-9]\\\\d*{KEYSEPARATOR}[a-z_]+$",
+            f"data[0].fqfields[0] must match pattern ^[a-z][a-z0-9_]*{KEYSEPARATOR}[1-9][0-9]*{KEYSEPARATOR}[a-z][a-z0-9_]*$",
             str(response.data),
         )
 
