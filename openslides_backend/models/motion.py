@@ -11,8 +11,6 @@ class Motion(Model):
     collection = Collection("motion")
     verbose_name = "motion"
 
-    # TODO: Make to and related_name in relation fields optional.
-
     # Identifers
     id = fields.IdField(description="The id of this motion.")
     meeting_id = fields.ForeignKeyField(
@@ -39,7 +37,7 @@ class Motion(Model):
     reason = fields.TextField(
         description="The HTML formatted reason text of this motion."
     )
-    statute_paragraph_id = field.ForeignKeyField(
+    motion_statute_paragraph_id = fields.ForeignKeyField(
         description="The statute paragraph this motions refers to.",
         to=Collection("motion_statute_paragraph"),
         related_name="motion_ids",
@@ -59,7 +57,7 @@ class Motion(Model):
         to=Collection("motion"),
         related_name="amendment_ids",
     )
-    category_id = fields.ForeignKeyField(
+    motion_category_id = fields.ForeignKeyField(
         description="The category of this motion.",
         to=Collection("motion_category"),
         related_name="motion_ids",
@@ -117,7 +115,7 @@ class Motion(Model):
         to=Collection("mediafile_attachment"),
         related_name="motion_ids",
     )
-    tag_ids: fields.ManyToManyArrayField(
+    tag_ids = fields.ManyToManyArrayField(
         description="The tags that should be referenced with this motion.",
         to=Collection("tag"),
         related_name="motion_ids",

@@ -200,7 +200,7 @@ class DeleteAction(Action):
             cascade_delete = {}
             for back_reference_name, back_reference in self.model.get_back_references():
                 if back_reference.on_delete == "protect":
-                    if db_instance[back_reference_name]:
+                    if db_instance.get(back_reference_name):
                         text = (
                             f"You are not allowed to delete {self.model.verbose_name} "
                             f"{instance['id']} as long as there are some referenced "

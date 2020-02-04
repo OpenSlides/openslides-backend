@@ -61,7 +61,11 @@ TESTDATA = [
         "id": 7816466305,
         "fields": {"committee_id": 5914213969, "topic_ids": [1312354708]},
     },
-    {"collection": "organisation", "id": 1, "fields": {"committee_ids": [5914213969]}},
+    {
+        "collection": "organisation",
+        "id": 1,
+        "fields": {"committee_ids": [5914213969, 7826715669]},
+    },
     {
         "collection": "committee",
         "id": 5914213969,
@@ -71,6 +75,48 @@ TESTDATA = [
         "collection": "meeting",
         "id": 3908439961,
         "fields": {"committee_id": 5914213969, "topic_ids": []},
+    },
+    # Motion test:
+    {
+        "collection": "committee",
+        "id": 7826715669,
+        "fields": {"organisation_id": 1, "meeting_ids": [5562405520]},
+    },
+    {
+        "collection": "meeting",
+        "id": 5562405520,
+        "fields": {"committee_id": 7826715669, "motion_ids": [2995885358]},
+    },
+    {
+        "collection": "motion",
+        "id": 2995885358,
+        "fields": {
+            "title": "title_ruZ9nu3yee",
+            "meeting_id": 5562405520,
+            "state_id": 5205893377,
+            "recommendation_id": 5205893377,
+            "motion_category_id": 8734727380,
+            "motion_block_id": 4116433002,
+        },
+    },
+    {
+        "collection": "motion_state",
+        "id": 5205893377,
+        "fields": {
+            "meeting_id": 5562405520,
+            "motion_active_ids": [2995885358],
+            "motion_recommended_ids": [2995885358],
+        },
+    },
+    {
+        "collection": "motion_category",
+        "id": 8734727380,
+        "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
+    },
+    {
+        "collection": "motion_block",
+        "id": 4116433002,
+        "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
     },
 ]  # type: List[Dict[str, Any]]
 
@@ -108,6 +154,7 @@ class DatabaseTestAdapter:
                 result[data["id"]] = element
         if len(ids) != len(result):
             # Something was not found.
+            print(collection, ids, result)
             raise RuntimeError
         return (result, 1)
 

@@ -2,6 +2,7 @@ from typing import Any, List
 
 from openslides_backend.shared.permissions.committee import COMMITTEE_CAN_MANAGE
 from openslides_backend.shared.permissions.meeting import MEETING_CAN_MANAGE
+from openslides_backend.shared.permissions.motion import MOTION_CAN_MANAGE
 from openslides_backend.shared.permissions.topic import TOPIC_CAN_MANAGE
 
 TESTDATA = {
@@ -13,6 +14,7 @@ TESTDATA = {
     ],
     7121641734: [f"5914213969/{MEETING_CAN_MANAGE}"],
     7668157706: [f"1/{COMMITTEE_CAN_MANAGE}"],
+    7826715669: [f"5562405520/{MOTION_CAN_MANAGE}"],
 }
 
 

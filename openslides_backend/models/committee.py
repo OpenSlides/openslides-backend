@@ -23,14 +23,12 @@ class Committee(Model):
     collection = Collection("committee")
     verbose_name = "committee"
 
-    # TODO: Make to and related_name in relation fields optional.
-
-    id = fields.IdField(description="An integer. The id of the committee.")
+    id = fields.IdField(description="The id of this committee.")
     organisation_id = OrganisationField(
-        description="An integer. The id of the organisation of the committee.",
+        description="The id of the organisation of this committee.",
         to=Collection("organisation"),
         related_name="committee_ids",
     )
     title = fields.RequiredCharField(
-        description="A string. The title or headline of the committee."
+        description="The title or headline of this committee."
     )

@@ -60,7 +60,7 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
                     "references": {
                         get_fqfield("organisation/1/committee_ids"): {
                             "type": "add",
-                            "value": [5914213969, 42],
+                            "value": [5914213969, 7826715669, 42],
                         },
                     },
                 }
@@ -110,6 +110,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                             "fqfields": {
                                 get_fqfield("organisation/1/committee_ids"): [
                                     5914213969,
+                                    7826715669,
                                     42,
                                 ]
                             },

@@ -63,7 +63,7 @@ payload_schema = fastjsonschema.compile(
                     "type": "array",
                     "items": {
                         "type": "string",
-                        "pattern": f"^[a-z][a-z0-9_]*{KEYSEPARATOR}[1-9][0-9]*{KEYSEPARATOR}[a-z][a-z0-9_]*$",
+                        "pattern": f"^[a-z][a-z_]*{KEYSEPARATOR}[1-9][0-9]*{KEYSEPARATOR}[a-z][a-z0-9_]*$",
                     },
                     "minItems": 1,
                     "uniqueItems": True,

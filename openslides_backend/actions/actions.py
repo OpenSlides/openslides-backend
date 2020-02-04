@@ -17,7 +17,7 @@ def prepare_actions_map() -> None:
 
     New modules have to be added here.
     """
-    from . import committee, meeting, topic  # type: ignore # noqa
+    from . import committee, meeting, topic, motion  # type: ignore # noqa
 
 
 actions_map: Dict[str, Type[Action]] = {}
