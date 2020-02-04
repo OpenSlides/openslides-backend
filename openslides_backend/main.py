@@ -11,7 +11,7 @@ from gunicorn.app.base import BaseApplication  # type: ignore
 
 from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication
-from .http.views import ActionsView, RestrictionsView
+from .http.views import ActionsView, PresenterView, RestrictionsView
 from .services.authentication import AuthenticationHTTPAdapter
 from .services.database import DatabaseHTTPAdapter
 from .services.event_store import EventStoreHTTPAdapter
@@ -69,9 +69,11 @@ def create_wsgi_application(view_name: str) -> WSGIApplication:
     view: Type[View]
     if view_name == "ActionsView":
         view = ActionsView
-    else:
-        # view_name == "RestrictionsView"
+    elif view_name == "RestrictionsView":
         view = RestrictionsView
+    else:
+        # view_name == "PresenterView"
+        view = PresenterView
 
     # Setup services
     services = OpenSlidesBackendServices(
@@ -97,12 +99,14 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
     Standalone application class for Gunicorn. It prepares Gunicorn for using
     OpenSlidesBackendWSGIApplication via OpenSlidesBackendWSGIContainer either
-    with actions component or with restrictions component.
+    with actions component or with restrictions component or with presenter
+    component.
     """
 
     ports = {
         "ActionsView": 8000,
         "RestrictionsView": 8001,
+        "PresenterView": 8002,
     }
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
@@ -111,9 +115,9 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
         self.view_name = view_name
-        if self.view_name not in ("ActionsView", "RestrictionsView"):
+        if self.view_name not in ("ActionsView", "RestrictionsView", "PresenterView"):
             raise RuntimeError(
-                f"View name has to be ActionsView or RestrictionsView, not {self.view_name}."
+                f"View name has to be ActionsView or RestrictionsView or PresenterView, not {self.view_name}."
             )
         logger.debug(f"Create gunicorn application for {self.view_name}.")
         super().__init__(*args, **kwargs)
@@ -138,8 +142,12 @@ def start_actions_server() -> None:  # pragma: no cover
     OpenSlidesBackendGunicornApplication(view_name="ActionsView").run()
 
 
-def start_restictions_server() -> None:  # pragma: no cover
+def start_restrictions_server() -> None:  # pragma: no cover
     OpenSlidesBackendGunicornApplication(view_name="RestrictionsView").run()
+
+
+def start_presenter_server() -> None:  # pragma: no cover
+    OpenSlidesBackendGunicornApplication(view_name="PresenterView").run()
 
 
 def start_them_all() -> None:  # pragma: no cover
@@ -148,7 +156,8 @@ def start_them_all() -> None:  # pragma: no cover
     )
     processes = {
         "actions": multiprocessing.Process(target=start_actions_server),
-        "restrictions": multiprocessing.Process(target=start_restictions_server),
+        "restrictions": multiprocessing.Process(target=start_restrictions_server),
+        "presenter": multiprocessing.Process(target=start_presenter_server),
     }
     for process in processes.values():
         process.start()
@@ -189,7 +198,9 @@ def main() -> None:  # pragma: no cover
     if component == "actions":
         start_actions_server()
     elif component == "restrictions":
-        start_restictions_server()
+        start_restrictions_server()
+    elif component == "presenter":
+        start_presenter_server()
     elif component == "all":
         start_them_all()
     else:

@@ -33,3 +33,7 @@ class EventStoreException(BackendBaseException):
 
 class RestrictionException(BackendBaseException):
     pass
+
+
+class PresenterException(BackendBaseException):
+    pass

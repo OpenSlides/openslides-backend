@@ -27,4 +27,4 @@ docker-build-dev:
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 
 docker-run-dev:
-	docker run -it -v $(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend -p 8000:8000 -p 8001:8001 --rm openslides_backend
+	docker run -it -v $(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend -p 8000:8000 -p 8001:8001 -p 8002:8002 --rm openslides_backend
