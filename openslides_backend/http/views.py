@@ -3,6 +3,9 @@ from typing import Any, Dict, List
 from ..actions import Actions
 from ..actions import Payload as ActionsPayload
 from ..actions.actions import ActionsHandler
+from ..presenter import Payload as PresenterPayload
+from ..presenter import Presenter
+from ..presenter.presenter import PresenterHandler
 from ..restrictions import Payload as RestrictionsPayload
 from ..restrictions import RestrictionResponse, Restrictions
 from ..restrictions.restrictions import RestrictionsHandler
@@ -10,6 +13,7 @@ from ..shared.exceptions import (
     ActionException,
     AuthenticationException,
     PermissionDenied,
+    PresenterException,
     RestrictionException,
     ViewException,
 )
@@ -112,3 +116,32 @@ class RestrictionsView(BaseView):
                 blob_result[str(fqfield)] = value
             result.append(blob_result)
         return result
+
+
+class PresenterView(BaseView):
+    """
+    The PresenterView receives a bundle of presentations via HTTP and handles
+    it to the PresenterHandler.
+    """
+
+    method = "GET"
+
+    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
+        """
+        Dispatches request to the viewpoint.
+        """
+        self.logger.debug("Start dispatching presenter request.")
+
+        # Setup payload
+        payload: PresenterPayload = body
+
+        # Handle request.
+        handler: Presenter = PresenterHandler()
+        try:
+            presenter_response = handler.handle_request(
+                payload, self.logging, self.services
+            )
+        except PresenterException as exception:
+            raise ViewException(exception.message)
+        self.logger.debug("Presenter request finished successfully. Send response now.")
+        return presenter_response

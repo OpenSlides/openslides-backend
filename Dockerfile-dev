@@ -6,6 +6,7 @@ WORKDIR /srv/code
 
 EXPOSE 8000
 EXPOSE 8001
+EXPOSE 8002
 
 COPY requirements.txt .
 COPY requirements_production.txt .
