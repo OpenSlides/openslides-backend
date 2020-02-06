@@ -23,6 +23,7 @@ create_topic_schema = fastjsonschema.compile(
                 ),
             },
             "required": ["meeting_id", "title"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": False,

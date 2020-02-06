@@ -19,6 +19,7 @@ update_meeting_schema = fastjsonschema.compile(
                 "title": Meeting().get_schema("title"),
             },
             "required": ["id"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,

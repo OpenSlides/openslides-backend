@@ -19,6 +19,7 @@ create_committee_schema = fastjsonschema.compile(
                 "title": Committee().get_schema("title"),
             },
             "required": ["organisation_id", "title"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,

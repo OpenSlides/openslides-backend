@@ -23,6 +23,7 @@ update_topic_schema = fastjsonschema.compile(
                 ),
             },
             "required": ["id"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,

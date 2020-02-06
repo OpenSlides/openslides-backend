@@ -76,9 +76,16 @@ class RelationMixin:
 BackReferences: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
-class ForeignKeyField(RelationMixin, IdField):
+class RequiredForeignKeyField(RelationMixin, IdField):
     def is_single_reference(self) -> bool:
         return True
+
+
+class ForeignKeyField(RequiredForeignKeyField):
+    def get_schema(self) -> Schema:
+        schema = super().get_schema()
+        schema["type"] = ["integer", "null"]
+        return schema
 
 
 class ManyToManyArrayField(RelationMixin, Field):

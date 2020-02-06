@@ -2,16 +2,121 @@ from unittest import TestCase
 
 # from openslides_backend.actions import Payload
 from openslides_backend.actions.motion.delete import MotionDelete
+from openslides_backend.actions.motion.update import MotionUpdate
 
 from ..fake_services.database import DatabaseTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
-
-from ..utils import (  # Client,; ResponseWrapper,; create_test_application,;
+from ..utils import (
+    Client,
+    ResponseWrapper,
+    create_test_application,
     get_fqfield,
     get_fqid,
 )
 
-# from openslides_backend.shared.exceptions import ActionException, PermissionDenied
+
+class BaseMotionUpdateActionTester(TestCase):
+    """
+    Tests the motion update action.
+    """
+
+    def setUp(self) -> None:
+        self.valid_payload_1 = [
+            {"id": 2995885358, "title": "title_pheK0Ja3ai", "motion_category_id": None}
+        ]
+
+
+class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MotionUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+
+    def test_validation_correct_1(self) -> None:
+        self.action.validate(self.valid_payload_1)
+
+    def test_prepare_dataset_1(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_1)
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(
+            dataset["data"],
+            [
+                {
+                    "instance": self.valid_payload_1[0],
+                    "references": {
+                        get_fqfield("motion_category/8734727380/motion_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        }
+                    },
+                }
+            ],
+        )
+
+
+class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MotionUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+
+    def test_perform_correct_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_1, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2995885358/title"): "title_pheK0Ja3ai",
+                            get_fqfield("motion/2995885358/motion_category_id"): None,
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion_category/8734727380/motion_ids"): [],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("motion/2995885358"): ["Object updated"],
+                    get_fqid("motion_category/8734727380"): [
+                        "Object attachment to motion reset"
+                    ],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {
+                    get_fqfield("motion/2995885358/deleted"): 1,
+                    get_fqfield("motion_category/8734727380/motion_ids"): 1,
+                },
+            },
+        ]
+        self.assertEqual(list(write_request_elements), expected)
+
+
+class MotionUpdateActionWSGITester(BaseMotionUpdateActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "motion.update", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 200)
 
 
 class BaseMotionDeleteActionTester(TestCase):
@@ -159,10 +264,27 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
                 },
             },
         ]
-        self.maxDiff = None
         self.assertEqual(
             list(write_request_elements), expected,
         )
+
+
+class MotionDeleteActionWSGITester(BaseMotionDeleteActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "motion.delete", "data": self.valid_payload_1}],
+        )
+        self.assertEqual(response.status_code, 200)
 
 
 # 8264607531
@@ -179,6 +301,6 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
 # 5411457713
 # 3878502438
 # 2833375327
-# pheK0Ja3ai ohXa5Joo2e ohcae9AhTa eiQua7iem1 ahPheiG8fu zu0oaBeeba
+# ohXa5Joo2e ohcae9AhTa eiQua7iem1 ahPheiG8fu zu0oaBeeba
 # ilieJa3fou iph3ia9Ahr voh1zeid1Y aa0Aok4the eib8Ne6aif beek5Veexu Cheexi4see
 # vaeb1AiPei HohN8googa Pha7Dei7oe Re2Aazei0O agh8eiM4ul paX6aigeem

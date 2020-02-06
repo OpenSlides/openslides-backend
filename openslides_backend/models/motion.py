@@ -13,7 +13,7 @@ class Motion(Model):
 
     # Identifers
     id = fields.IdField(description="The id of this motion.")
-    meeting_id = fields.ForeignKeyField(
+    meeting_id = fields.RequiredForeignKeyField(
         description="The id of the meeting of this motion.",
         to=Collection("meeting"),
         related_name="motion_ids",
@@ -78,7 +78,7 @@ class Motion(Model):
 
     # State and recommendation
     # (TODO: Do we really need workflow_id.)
-    state_id = fields.ForeignKeyField(
+    state_id = fields.RequiredForeignKeyField(
         description="The state of this motion.",
         to=Collection("motion_state"),
         related_name="motion_active_ids",

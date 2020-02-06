@@ -12,7 +12,7 @@ class Meeting(Model):
     verbose_name = "meeting"
 
     id = fields.IdField(description="The id of this meeting.")
-    committee_id = fields.ForeignKeyField(
+    committee_id = fields.RequiredForeignKeyField(
         description="The id of the committee of this meeting.",
         to=Collection("committee"),
         related_name="meeting_ids",

@@ -3,7 +3,7 @@ from . import fields
 from .base import Model
 
 
-class OrganisationField(fields.ForeignKeyField):
+class OrganisationField(fields.RequiredForeignKeyField):
     """
     Special field for foreign key to organisation model. We support only one
     organisation (with id 1) at the moment.

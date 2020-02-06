@@ -16,6 +16,7 @@ delete_topic_schema = fastjsonschema.compile(
             "type": "object",
             "properties": {"id": Topic().get_schema("id")},
             "required": ["id"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,

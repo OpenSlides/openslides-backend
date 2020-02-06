@@ -16,6 +16,7 @@ delete_meeting_schema = fastjsonschema.compile(
             "type": "object",
             "properties": {"id": Meeting().get_schema("id")},
             "required": ["id"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,
