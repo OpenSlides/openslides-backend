@@ -150,6 +150,14 @@ def start_presenter_server() -> None:  # pragma: no cover
     OpenSlidesBackendGunicornApplication(view_name="PresenterView").run()
 
 
+def start_addendum_server() -> None:  # pragma: no cover
+    # TODO: Start a permanent running process that listens to event stream and
+    # pushes additional fqfields that might be new for some users.
+    print("Start addendum server ...")
+    while True:
+        pass
+
+
 def start_them_all() -> None:  # pragma: no cover
     print(
         f"Start all components in child processes. Parent process id is {os.getpid()}."
@@ -158,6 +166,7 @@ def start_them_all() -> None:  # pragma: no cover
         "actions": multiprocessing.Process(target=start_actions_server),
         "restrictions": multiprocessing.Process(target=start_restrictions_server),
         "presenter": multiprocessing.Process(target=start_presenter_server),
+        "addendum": multiprocessing.Process(target=start_addendum_server),
     }
     for process in processes.values():
         process.start()
@@ -201,6 +210,8 @@ def main() -> None:  # pragma: no cover
         start_restrictions_server()
     elif component == "presenter":
         start_presenter_server()
+    elif component == "addendum":
+        start_addendum_server()
     elif component == "all":
         start_them_all()
     else:

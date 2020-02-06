@@ -65,6 +65,7 @@ payload_schema = fastjsonschema.compile(
                 },
             },
             "required": ["user_id", "presentation"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,

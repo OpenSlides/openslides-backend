@@ -70,6 +70,7 @@ payload_schema = fastjsonschema.compile(
                 },
             },
             "required": ["user_id", "fqfields"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,
