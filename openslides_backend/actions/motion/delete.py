@@ -14,7 +14,7 @@ delete_motion_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {"id": Motion().get_schema("id")},
+            "properties": Motion().get_properties("id"),
             "required": ["id"],
             "additionalProperties": False,
         },

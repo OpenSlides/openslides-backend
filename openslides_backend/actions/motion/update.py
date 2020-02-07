@@ -18,14 +18,9 @@ update_motion_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "id": Motion().get_schema("id"),
-                "title": Motion().get_schema("title"),
-                "motion_statute_paragraph_id": Motion().get_schema(
-                    "motion_statute_paragraph_id"
-                ),
-                # TODO identifier, modified_final_version, reason, text, amendmend_paragraphs, parent_id, mediafile_attachment
-            },
+            "properties": Motion().get_properties(
+                "id", "title", "motion_statute_paragraph_id",
+            ),  # TODO identifier, modified_final_version, reason, text, amendmend_paragraphs, parent_id, mediafile_attachment
             "required": ["id"],
             "additionalProperties": False,
         },
@@ -59,21 +54,18 @@ update_motion_metadata_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "id": Motion().get_schema("id"),
-                "motion_category_id": Motion().get_schema("motion_category_id"),
-                "motion_block_id": Motion().get_schema("motion_block_id"),
-                "origin_id": Motion().get_schema("origin_id"),
-                "state_id": Motion().get_schema("state_id"),
-                "state_extension": Motion().get_schema("state_extension"),
-                "recommendation_id": Motion().get_schema("recommendation_id"),
-                "recommendation_extension": Motion().get_schema(
-                    "recommendation_extension"
-                ),
-                "supporter_ids": Motion().get_schema("supporter_ids"),
-                "tag_ids": Motion().get_schema("tag_ids"),
-                # TODO submitters
-            },
+            "properties": Motion().get_properties(
+                "id",
+                "motion_category_id",
+                "motion_block_id",
+                "origin_id",
+                "state_id",
+                "state_extension",
+                "recommendation_id",
+                "recommendation_extension",
+                "supporter_ids",
+                "tag_ids",
+            ),  # TODO submitters
             "required": ["id"],
             "additionalProperties": False,
         },

@@ -14,14 +14,9 @@ update_topic_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "id": Topic().get_schema("id"),
-                "title": Topic().get_schema("title"),
-                "text": Topic().get_schema("text"),
-                "mediafile_attachment_ids": Topic().get_schema(
-                    "mediafile_attachment_ids"
-                ),
-            },
+            "properties": Topic().get_properties(
+                "id", "title", "text", "mediafile_attachment_ids",
+            ),
             "required": ["id"],
             "additionalProperties": False,
         },
