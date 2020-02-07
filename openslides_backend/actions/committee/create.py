@@ -14,11 +14,9 @@ create_committee_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "organisation_id": Committee().get_schema("organisation_id"),
-                "title": Committee().get_schema("title"),
-            },
+            "properties": Committee().get_properties("organisation_id", "title"),
             "required": ["organisation_id", "title"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,
@@ -35,4 +33,4 @@ class CommitteeCreate(CreateAction):
     model = Committee()
     schema = create_committee_schema
     permission_reference = "organisation_id"
-    manage_permission = COMMITTEE_CAN_MANAGE
+    permissions = [COMMITTEE_CAN_MANAGE]

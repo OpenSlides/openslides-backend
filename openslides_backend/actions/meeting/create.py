@@ -14,11 +14,9 @@ create_meeting_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "committee_id": Meeting().get_schema("committee_id"),
-                "title": Meeting().get_schema("title"),
-            },
+            "properties": Meeting().get_properties("committee_id", "title"),
             "required": ["committee_id", "title"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,
@@ -35,4 +33,4 @@ class MeetingCreate(CreateAction):
     model = Meeting()
     schema = create_meeting_schema
     permission_reference = "committee_id"
-    manage_permission = MEETING_CAN_MANAGE
+    permissions = [MEETING_CAN_MANAGE]

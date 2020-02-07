@@ -77,6 +77,17 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
     def test_validation_correct_3(self) -> None:
         self.action.validate(self.valid_payload_3)
 
+    def test_validation_invalid_1(self) -> None:
+        invalid_payload = [
+            {
+                "meeting_id": 3611987967,
+                "title": "title_yae0Ohph4e",
+                "unknown_property_aiseCah6ah": "unknown_property_iagh4paoWi",
+            }
+        ]
+        with self.assertRaises(ActionException):
+            self.action.validate(invalid_payload)
+
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
@@ -147,7 +158,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             self.action.prepare_dataset(payload)
         self.assertEqual(
             context_manager.exception.message,
-            f"User does not have topic.can_manage permission for meeting_id {unknown_meeting}.",
+            f"User must have topic.can_manage permission for meeting_id {unknown_meeting}.",
         )
 
 

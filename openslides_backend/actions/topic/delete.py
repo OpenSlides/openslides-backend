@@ -14,8 +14,9 @@ delete_topic_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {"id": Topic().get_schema("id")},
+            "properties": Topic().get_properties("id"),
             "required": ["id"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,
@@ -31,4 +32,4 @@ class TopicDelete(DeleteAction):
 
     model = Topic()
     schema = delete_topic_schema
-    manage_permission = TOPIC_CAN_MANAGE
+    permissions = [TOPIC_CAN_MANAGE]

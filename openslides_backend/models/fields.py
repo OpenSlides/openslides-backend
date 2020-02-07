@@ -32,6 +32,16 @@ class IdField(Field):
         return dict(description=self.description, type="integer", minimum=1,)
 
 
+class IntegerField(Field):
+    def get_schema(self) -> Schema:
+        return dict(description=self.description, type="integer",)
+
+
+class PositiveIntegerField(Field):
+    def get_schema(self) -> Schema:
+        return dict(description=self.description, type="integer", minimum=1,)
+
+
 class CharField(Field):
     def get_schema(self) -> Schema:
         return dict(description=self.description, type="string", maxLength=256,)
@@ -49,6 +59,11 @@ class TextField(Field):
         return dict(description=self.description, type="string",)
 
 
+class TimestampField(Field):
+    def get_schema(self) -> Schema:
+        return dict(description=self.description, type="integer", minimum=1,)
+
+
 class RelationMixin:
     def __init__(self, to: Collection, related_name: str, **kwargs: Any) -> None:
         self.to = to
@@ -61,9 +76,16 @@ class RelationMixin:
 BackReferences: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
-class ForeignKeyField(RelationMixin, IdField):
+class RequiredForeignKeyField(RelationMixin, IdField):
     def is_single_reference(self) -> bool:
         return True
+
+
+class ForeignKeyField(RequiredForeignKeyField):
+    def get_schema(self) -> Schema:
+        schema = super().get_schema()
+        schema["type"] = ["integer", "null"]
+        return schema
 
 
 class ManyToManyArrayField(RelationMixin, Field):

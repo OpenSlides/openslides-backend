@@ -11,20 +11,16 @@ class Topic(Model):
     collection = Collection("topic")
     verbose_name = "topic"
 
-    # TODO: Make to and related_name in relation fields optional.
-
-    id = fields.IdField(description="An integer. The id of the topic.")
-    meeting_id = fields.ForeignKeyField(
-        description="An integer. The id of the meeting of the topic.",
+    id = fields.IdField(description="The id of this topic.")
+    meeting_id = fields.RequiredForeignKeyField(
+        description="The id of the meeting of this topic.",
         to=Collection("meeting"),
         related_name="topic_ids",
     )
-    title = fields.RequiredCharField(
-        description="A string. The title or headline of the topic."
-    )
-    text = fields.TextField(description="A string containing HTML formatted text.")
+    title = fields.RequiredCharField(description="The title or headline of this topic.")
+    text = fields.TextField(description="The HTML formatted text of this topic.")
     mediafile_attachment_ids = fields.ManyToManyArrayField(
-        description="An array of attachment ids that should be referenced with this topic.",
+        description="The attachments that should be referenced with this topic.",
         to=Collection("mediafile_attachment"),
         related_name="topic_ids",
     )

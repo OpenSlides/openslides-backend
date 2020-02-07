@@ -14,8 +14,9 @@ delete_meeting_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {"id": Meeting().get_schema("id")},
+            "properties": Meeting().get_properties("id"),
             "required": ["id"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": True,
@@ -32,4 +33,4 @@ class MeetingDelete(DeleteAction):
     model = Meeting()
     schema = delete_meeting_schema
     permission_reference = "committee_id"
-    manage_permission = MEETING_CAN_MANAGE
+    permissions = [MEETING_CAN_MANAGE]

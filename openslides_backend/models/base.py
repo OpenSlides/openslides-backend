@@ -1,4 +1,4 @@
-from typing import Iterable, Tuple
+from typing import Dict, Iterable, Tuple
 
 from ..shared.patterns import Collection
 from .fields import BackReferences, Field, RelationMixin, Schema
@@ -48,6 +48,19 @@ class Model:
         Returns JSON schema for the given field.
         """
         return getattr(self, field).get_schema()
+
+    def get_properties(self, *fields: str) -> Dict[str, Schema]:
+        """
+        Returns a dictionary of field schemas used for the properties keyword in
+        an action schema.
+        """
+        properties = {}
+        for field in fields:
+            try:
+                properties[field] = self.get_schema(field)
+            except AttributeError:
+                raise TypeError(f"{field} is not a field of {self}")
+        return properties
 
     def get_back_references(self) -> Iterable[Tuple[str, RelationMixin]]:
         """

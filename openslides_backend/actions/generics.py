@@ -1,35 +1,46 @@
-from typing import Any
+from typing import Any, List
 
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
-from .actions_interface import Payload
-from .base import Action, DataSet
+from .base import Action, ActionPayload, BaseAction, DataSet
 
 
-class CreateAction(Action):
+class PermissionMixin(BaseAction):
+    """
+    Mixin to enable permission check for list of permissions. The permissions
+    are concated with OR logic.
+    """
+
+    permission_reference = "meeting_id"
+    permissions: List[str]
+
+    def check_permission(self, permission_reference_id: int) -> None:
+        for manage_permission in self.permissions:
+            if self.permission.has_perm(
+                self.user_id, f"{permission_reference_id}/{manage_permission}"
+            ):
+                break
+        else:
+            raise PermissionDenied(
+                f"User must have {' or '.join(self.permissions)} permission for "
+                f"{self.permission_reference} {permission_reference_id}."
+            )
+
+
+class CreateAction(PermissionMixin, Action):
     """
     Generic create action.
     """
 
-    permission_reference = "meeting_id"
-    manage_permission: str
-
-    def check_permission(self, permission_reference_id: int) -> None:
-        if not self.permission.has_perm(
-            self.user_id, f"{permission_reference_id}/{self.manage_permission}"
-        ):
-            raise PermissionDenied(
-                f"User does not have {self.manage_permission} permission for "
-                f"{self.permission_reference} {permission_reference_id}."
-            )
-
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
         Just fetches new id, uses given instance and calculated references.
         """
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         data = []
         for instance in payload:
             self.check_permission(instance[self.permission_reference])
@@ -75,30 +86,20 @@ class CreateAction(Action):
         )
 
 
-class UpdateAction(Action):
+class UpdateAction(PermissionMixin, Action):
     """
     Generic update action.
     """
 
-    permission_reference = "meeting_id"
-    manage_permission: str
-
-    def check_permission(self, permission_reference_id: int) -> None:
-        if not self.permission.has_perm(
-            self.user_id, f"{permission_reference_id}/{self.manage_permission}"
-        ):
-            raise PermissionDenied(
-                f"User does not have {self.manage_permission} permission for "
-                f"{self.permission_reference} {permission_reference_id}."
-            )
-
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
         Fetches current db instance to get the correct permission. Then uses the
         input and calculated references.
         """
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         data = []
         for instance in payload:
             db_instance, position = self.database.get(
@@ -157,24 +158,12 @@ class UpdateAction(Action):
         )
 
 
-class DeleteAction(Action):
+class DeleteAction(PermissionMixin, Action):
     """
     Generic delete action.
     """
 
-    permission_reference = "meeting_id"
-    manage_permission: str
-
-    def check_permission(self, permission_reference_id: int) -> None:
-        if not self.permission.has_perm(
-            self.user_id, f"{permission_reference_id}/{self.manage_permission}"
-        ):
-            raise PermissionDenied(
-                f"User does not have {self.manage_permission} permission for "
-                f"{self.permission_reference} {permission_reference_id}."
-            )
-
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
@@ -183,6 +172,8 @@ class DeleteAction(Action):
         ActionException. Else uses the input and calculated references and
         back references that should be removed because on_delete is "cascade".
         """
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         data = []
         for instance in payload:
             mapped_fields = [self.permission_reference] + [
@@ -200,7 +191,7 @@ class DeleteAction(Action):
             cascade_delete = {}
             for back_reference_name, back_reference in self.model.get_back_references():
                 if back_reference.on_delete == "protect":
-                    if db_instance[back_reference_name]:
+                    if db_instance.get(back_reference_name):
                         text = (
                             f"You are not allowed to delete {self.model.verbose_name} "
                             f"{instance['id']} as long as there are some referenced "

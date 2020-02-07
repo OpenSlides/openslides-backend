@@ -11,14 +11,12 @@ class Meeting(Model):
     collection = Collection("meeting")
     verbose_name = "meeting"
 
-    # TODO: Make to and related_name in relation fields optional.
-
-    id = fields.IdField(description="An integer. The id of the meeting.")
-    committee_id = fields.ForeignKeyField(
-        description="An integer. The id of the committee of the meeting.",
+    id = fields.IdField(description="The id of this meeting.")
+    committee_id = fields.RequiredForeignKeyField(
+        description="The id of the committee of this meeting.",
         to=Collection("committee"),
         related_name="meeting_ids",
     )
     title = fields.RequiredCharField(
-        description="A string. The title or headline of the meeting."
+        description="The title or headline of this meeting."
     )

@@ -14,15 +14,11 @@ create_topic_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": {
-                "meeting_id": Topic().get_schema("meeting_id"),
-                "title": Topic().get_schema("title"),
-                "text": Topic().get_schema("text"),
-                "mediafile_attachment_ids": Topic().get_schema(
-                    "mediafile_attachment_ids"
-                ),
-            },
+            "properties": Topic().get_properties(
+                "meeting_id", "title", "text", "mediafile_attachment_ids"
+            ),
             "required": ["meeting_id", "title"],
+            "additionalProperties": False,
         },
         "minItems": 1,
         "uniqueItems": False,
@@ -38,4 +34,4 @@ class TopicCreate(CreateAction):
 
     model = Topic()
     schema = create_topic_schema
-    manage_permission = TOPIC_CAN_MANAGE
+    permissions = [TOPIC_CAN_MANAGE]

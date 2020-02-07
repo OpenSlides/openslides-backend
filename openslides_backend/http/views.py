@@ -1,8 +1,8 @@
 from typing import Any, Dict, List
 
 from ..actions import Actions
-from ..actions import Payload as ActionsPayload
 from ..actions.actions import ActionsHandler
+from ..actions.actions import Payload as ActionsPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
