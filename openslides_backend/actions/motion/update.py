@@ -6,8 +6,7 @@ from ...models.motion import Motion
 from ...shared.permissions.motion import MOTION_CAN_MANAGE, MOTION_CAN_MANAGE_METADATA
 from ...shared.schema import schema_version
 from ..actions import register_action
-from ..actions_interface import Payload
-from ..base import DataSet
+from ..base import ActionPayload, DataSet
 from ..generics import UpdateAction
 
 update_motion_schema = fastjsonschema.compile(
@@ -40,7 +39,9 @@ class MotionUpdate(UpdateAction):
     schema = update_motion_schema
     permissions = [MOTION_CAN_MANAGE]
 
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         for instance in payload:
             instance["last_modified"] = round(time.time())
         return super().prepare_dataset(payload)
@@ -85,15 +86,23 @@ class MotionUpdateMetadata(UpdateAction):
     schema = update_motion_metadata_schema
     permissions = [MOTION_CAN_MANAGE, MOTION_CAN_MANAGE_METADATA]
 
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    # TODO: Check removal of supporters and maybe remove them in some state.
+
+    # TODO: Enable set_state without any given state to reset to first state
+
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         for instance in payload:
             instance["last_modified"] = round(time.time())
         return super().prepare_dataset(payload)
 
 
-# TODO: Cateogry weight is extra
+# TODO: Support and unsupport
 
-# TODO: Sort (sort_weight, sort_parent_id)
+# TODO: follow_recommendation
+
+# TODO: Cateogry weight is extra
 
 # TODO: comments
 

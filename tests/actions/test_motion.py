@@ -1,10 +1,12 @@
 import time
 from copy import deepcopy
+from typing import Any, Dict
 from unittest import TestCase
 
 from openslides_backend.actions.motion.delete import MotionDelete
+from openslides_backend.actions.motion.sort import MotionSort
 from openslides_backend.actions.motion.update import MotionUpdate, MotionUpdateMetadata
-from openslides_backend.shared.exceptions import PermissionDenied
+from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
 from ..fake_services.database import DatabaseTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
@@ -518,12 +520,338 @@ class MotionDeleteActionWSGITester(BaseMotionDeleteActionTester):
         self.assertEqual(response.status_code, 200)
 
 
-#
-#
-# 3265963568
-# 2279328478
-# 1082050467
-# 8000824551
+class BaseMotionSortActionTester(TestCase):
+    """
+    Tests the motion sort action.
+    """
+
+    def setUp(self) -> None:
+        self.meeting_id = 5562405520
+        self.valid_payload_1 = {
+            "meeting_id": self.meeting_id,
+            "nodes": [
+                {"id": 3265963568},
+                {"id": 2279328478},
+                {"id": 1082050467},
+                {"id": 8000824551},
+                {"id": 2995885358},
+            ],
+        }
+        self.valid_payload_2 = {
+            "meeting_id": self.meeting_id,
+            "nodes": [
+                {
+                    "id": 3265963568,
+                    "children": [
+                        {
+                            "id": 2279328478,
+                            "children": [{"id": 8000824551}, {"id": 1082050467}],
+                        }
+                    ],
+                },
+                {"id": 2995885358},
+            ],
+        }
+        self.circular_payload = {
+            "meeting_id": self.meeting_id,
+            "nodes": [
+                {
+                    "id": 3265963568,
+                    "children": [{"id": 2279328478, "children": [{"id": 3265963568}]}],
+                },
+            ],
+        }
+
+
+class MotionSortActionUnitTester(BaseMotionSortActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MotionSort(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+
+    def test_validation_correct_1(self) -> None:
+        self.action.validate(self.valid_payload_1)
+
+    def test_validation_correct_2(self) -> None:
+        self.action.validate(self.valid_payload_2)
+
+    def test_prepare_dataset_1(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_1)
+        expected: Dict[int, Dict[str, Any]] = {
+            3265963568: {
+                "sort_parent_id": None,
+                "sort_weight": 2,
+                "sort_children_ids": [],
+            },
+            2279328478: {
+                "sort_parent_id": None,
+                "sort_weight": 4,
+                "sort_children_ids": [],
+            },
+            1082050467: {
+                "sort_parent_id": None,
+                "sort_weight": 6,
+                "sort_children_ids": [],
+            },
+            8000824551: {
+                "sort_parent_id": None,
+                "sort_weight": 8,
+                "sort_children_ids": [],
+            },
+            2995885358: {
+                "sort_parent_id": None,
+                "sort_weight": 10,
+                "sort_children_ids": [],
+            },
+        }
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(dataset["data"], expected)
+
+    def test_prepare_dataset_2(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_2)
+        expected = {
+            3265963568: {
+                "sort_parent_id": None,
+                "sort_weight": 2,
+                "sort_children_ids": [2279328478],
+            },
+            2279328478: {
+                "sort_parent_id": 3265963568,
+                "sort_weight": 4,
+                "sort_children_ids": [8000824551, 1082050467],
+            },
+            1082050467: {
+                "sort_parent_id": 2279328478,
+                "sort_weight": 8,
+                "sort_children_ids": [],
+            },
+            8000824551: {
+                "sort_parent_id": 2279328478,
+                "sort_weight": 6,
+                "sort_children_ids": [],
+            },
+            2995885358: {
+                "sort_parent_id": None,
+                "sort_weight": 10,
+                "sort_children_ids": [],
+            },
+        }
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(dataset["data"], expected)
+
+    def test_circular_dataset(self) -> None:
+        with self.assertRaises(ActionException) as context_manager:
+            self.action.prepare_dataset(self.circular_payload)
+        self.assertEqual(
+            context_manager.exception.message, "Duplicate id in sort tree: 3265963568"
+        )
+
+
+class MotionSortActionPerformTester(BaseMotionSortActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.action = MotionSort(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+
+    def test_perform_correct_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_1, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/3265963568/sort_parent_id"): None,
+                            get_fqfield("motion/3265963568/sort_children_ids"): [],
+                            get_fqfield("motion/3265963568/sort_weight"): 2,
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/3265963568"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/3265963568/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2279328478/sort_parent_id"): None,
+                            get_fqfield("motion/2279328478/sort_weight"): 4,
+                            get_fqfield("motion/2279328478/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/2279328478"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/2279328478/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/1082050467/sort_weight"): 6,
+                            get_fqfield("motion/1082050467/sort_parent_id"): None,
+                            get_fqfield("motion/1082050467/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/1082050467"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/1082050467/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/8000824551/sort_parent_id"): None,
+                            get_fqfield("motion/8000824551/sort_weight"): 8,
+                            get_fqfield("motion/8000824551/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/8000824551"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/8000824551/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2995885358/sort_parent_id"): None,
+                            get_fqfield("motion/2995885358/sort_weight"): 10,
+                            get_fqfield("motion/2995885358/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/2995885358"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/2995885358/deleted"): 1},
+            },
+        ]
+        self.assertEqual(
+            list(write_request_elements), expected,
+        )
+
+    def test_perform_correct_2(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_2, user_id=self.user_id
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/3265963568/sort_parent_id"): None,
+                            get_fqfield("motion/3265963568/sort_children_ids"): [
+                                2279328478
+                            ],
+                            get_fqfield("motion/3265963568/sort_weight"): 2,
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/3265963568"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/3265963568/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2279328478/sort_parent_id"): 3265963568,
+                            get_fqfield("motion/2279328478/sort_weight"): 4,
+                            get_fqfield("motion/2279328478/sort_children_ids"): [
+                                8000824551,
+                                1082050467,
+                            ],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/2279328478"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/2279328478/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/8000824551/sort_parent_id"): 2279328478,
+                            get_fqfield("motion/8000824551/sort_weight"): 6,
+                            get_fqfield("motion/8000824551/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/8000824551"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/8000824551/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/1082050467/sort_weight"): 8,
+                            get_fqfield("motion/1082050467/sort_parent_id"): 2279328478,
+                            get_fqfield("motion/1082050467/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/1082050467"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/1082050467/deleted"): 1},
+            },
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2995885358/sort_parent_id"): None,
+                            get_fqfield("motion/2995885358/sort_weight"): 10,
+                            get_fqfield("motion/2995885358/sort_children_ids"): [],
+                        },
+                    }
+                ],
+                "information": {get_fqid("motion/2995885358"): ["Object sorted"]},
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("motion/2995885358/deleted"): 1},
+            },
+        ]
+        self.assertEqual(
+            list(write_request_elements), expected,
+        )
+
+
+class MotionSortActionWSGITester(BaseMotionSortActionTester):
+    def setUp(self) -> None:
+        super().setUp()
+        self.user_id = (
+            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+        )
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionsView"
+        )
+
+    def test_wsgi_request_correct_1(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.post(
+            "/", json=[{"action": "motion.sort", "data": self.valid_payload_1}],
+        )
+        print(response.data)
+        self.assertEqual(response.status_code, 200)
+
+
 # 7268025091
 # 2704380002
 # 5265142974

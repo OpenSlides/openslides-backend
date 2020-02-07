@@ -54,11 +54,19 @@ payload_schema = fastjsonschema.compile(
                     "minLength": 1,
                 },
                 "data": {
-                    "description": "Data for the action",
-                    "type": "array",
-                    "items": {"type": "object"},
-                    "minItems": 1,
-                    "uniqueItems": True,
+                    "oneOf": [
+                        {
+                            "description": "Data for the action (array)",
+                            "type": "array",
+                            "items": {"type": "object"},
+                            "minItems": 1,
+                            "uniqueItems": True,
+                        },
+                        {
+                            "description": "Data for the action (object)",
+                            "type": "object",
+                        },
+                    ],
                 },
             },
             "required": ["action", "data"],

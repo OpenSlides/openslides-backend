@@ -129,6 +129,27 @@ TESTDATA = [
         "id": 8264607531,
         "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
     },
+    # Sort motions (not fully referenced)
+    {
+        "collection": "motion",
+        "id": 3265963568,
+        "fields": {"meeting_id": 5562405520, "sort_children_ids": []},
+    },
+    {
+        "collection": "motion",
+        "id": 2279328478,
+        "fields": {"meeting_id": 5562405520, "sort_children_ids": []},
+    },
+    {
+        "collection": "motion",
+        "id": 1082050467,
+        "fields": {"meeting_id": 5562405520, "sort_children_ids": [8000824551]},
+    },
+    {
+        "collection": "motion",
+        "id": 8000824551,
+        "fields": {"meeting_id": 5562405520, "sort_parent_id": 1082050467},
+    },
 ]  # type: List[Dict[str, Any]]
 
 

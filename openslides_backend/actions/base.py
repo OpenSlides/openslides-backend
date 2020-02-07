@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union
 
 from fastjsonschema import JsonSchemaException  # type: ignore
 from mypy_extensions import TypedDict
@@ -8,8 +8,8 @@ from ..models.fields import RelationMixin
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
-from .actions_interface import Payload
 
+ActionPayload = Union[List[Dict[str, Any]], Dict[str, Any]]
 DataSet = TypedDict("DataSet", {"position": int, "data": Any})
 ReferencesElement = TypedDict("ReferencesElement", {"type": str, "value": List[int]})
 References = Dict[FullQualifiedField, ReferencesElement]
@@ -23,6 +23,10 @@ class BaseAction:
     permission: Permission
     database: Database
     user_id: int
+    position: int
+
+    def set_min_position(self, position: int) -> None:
+        ...
 
 
 class Action(BaseAction):
@@ -32,7 +36,7 @@ class Action(BaseAction):
 
     model: Model
 
-    schema: Callable[[Payload], None]
+    schema: Callable[[ActionPayload], None]
 
     position = 0
 
@@ -40,7 +44,9 @@ class Action(BaseAction):
         self.permission = permission
         self.database = database
 
-    def perform(self, payload: Payload, user_id: int) -> Iterable[WriteRequestElement]:
+    def perform(
+        self, payload: ActionPayload, user_id: int
+    ) -> Iterable[WriteRequestElement]:
         """
         Entrypoint to perform the action.
         """
@@ -50,7 +56,7 @@ class Action(BaseAction):
         self.check_permission_on_dataset(dataset)
         return self.create_write_request_elements(dataset)
 
-    def validate(self, payload: Payload) -> None:
+    def validate(self, payload: ActionPayload) -> None:
         """
         Validates action payload according to schema class attribute.
         """
@@ -59,7 +65,7 @@ class Action(BaseAction):
         except JsonSchemaException as exception:
             raise ActionException(exception.message)
 
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload. Also fires all necessary database
         queries.

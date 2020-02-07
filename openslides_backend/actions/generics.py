@@ -3,8 +3,7 @@ from typing import Any, List
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
-from .actions_interface import Payload
-from .base import Action, BaseAction, DataSet
+from .base import Action, ActionPayload, BaseAction, DataSet
 
 
 class PermissionMixin(BaseAction):
@@ -34,12 +33,14 @@ class CreateAction(PermissionMixin, Action):
     Generic create action.
     """
 
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
         Just fetches new id, uses given instance and calculated references.
         """
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         data = []
         for instance in payload:
             self.check_permission(instance[self.permission_reference])
@@ -90,13 +91,15 @@ class UpdateAction(PermissionMixin, Action):
     Generic update action.
     """
 
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
         Fetches current db instance to get the correct permission. Then uses the
         input and calculated references.
         """
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         data = []
         for instance in payload:
             db_instance, position = self.database.get(
@@ -160,7 +163,7 @@ class DeleteAction(PermissionMixin, Action):
     Generic delete action.
     """
 
-    def prepare_dataset(self, payload: Payload) -> DataSet:
+    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
@@ -169,6 +172,8 @@ class DeleteAction(PermissionMixin, Action):
         ActionException. Else uses the input and calculated references and
         back references that should be removed because on_delete is "cascade".
         """
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         data = []
         for instance in payload:
             mapped_fields = [self.permission_reference] + [
