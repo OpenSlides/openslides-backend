@@ -36,4 +36,4 @@ class MeetingCreate(CreateAction):
     model = Meeting()
     schema = create_meeting_schema
     permission_reference = "committee_id"
-    manage_permission = MEETING_CAN_MANAGE
+    permissions = [MEETING_CAN_MANAGE]

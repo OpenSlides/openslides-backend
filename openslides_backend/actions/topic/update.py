@@ -39,4 +39,4 @@ class TopicUpdate(UpdateAction):
 
     model = Topic()
     schema = update_topic_schema
-    manage_permission = TOPIC_CAN_MANAGE
+    permissions = [TOPIC_CAN_MANAGE]

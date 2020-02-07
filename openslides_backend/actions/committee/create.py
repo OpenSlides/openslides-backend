@@ -36,4 +36,4 @@ class CommitteeCreate(CreateAction):
     model = Committee()
     schema = create_committee_schema
     permission_reference = "organisation_id"
-    manage_permission = COMMITTEE_CAN_MANAGE
+    permissions = [COMMITTEE_CAN_MANAGE]

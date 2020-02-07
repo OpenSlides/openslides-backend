@@ -15,7 +15,17 @@ ReferencesElement = TypedDict("ReferencesElement", {"type": str, "value": List[i
 References = Dict[FullQualifiedField, ReferencesElement]
 
 
-class Action:
+class BaseAction:
+    """
+    Abstract base class for actions.
+    """
+
+    permission: Permission
+    database: Database
+    user_id: int
+
+
+class Action(BaseAction):
     """
     Base class for actions.
     """

@@ -97,6 +97,7 @@ TESTDATA = [
             "recommendation_id": 5205893377,
             "motion_category_id": 8734727380,
             "motion_block_id": 4116433002,
+            "motion_statute_paragraph_id": 8264607531,
         },
     },
     {
@@ -116,6 +117,16 @@ TESTDATA = [
     {
         "collection": "motion_block",
         "id": 4116433002,
+        "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
+    },
+    {
+        "collection": "motion_block",
+        "id": 4740630442,
+        "fields": {"meeting_id": 5562405520, "motion_ids": []},
+    },
+    {
+        "collection": "motion_statute_paragraph",
+        "id": 8264607531,
         "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
     },
 ]  # type: List[Dict[str, Any]]

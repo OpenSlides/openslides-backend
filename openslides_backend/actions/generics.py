@@ -1,28 +1,38 @@
-from typing import Any
+from typing import Any, List
 
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from .actions_interface import Payload
-from .base import Action, DataSet
+from .base import Action, BaseAction, DataSet
 
 
-class CreateAction(Action):
+class PermissionMixin(BaseAction):
     """
-    Generic create action.
+    Mixin to enable permission check for list of permissions. The permissions
+    are concated with OR logic.
     """
 
     permission_reference = "meeting_id"
-    manage_permission: str
+    permissions: List[str]
 
     def check_permission(self, permission_reference_id: int) -> None:
-        if not self.permission.has_perm(
-            self.user_id, f"{permission_reference_id}/{self.manage_permission}"
-        ):
+        for manage_permission in self.permissions:
+            if self.permission.has_perm(
+                self.user_id, f"{permission_reference_id}/{manage_permission}"
+            ):
+                break
+        else:
             raise PermissionDenied(
-                f"User does not have {self.manage_permission} permission for "
+                f"User must have {' or '.join(self.permissions)} permission for "
                 f"{self.permission_reference} {permission_reference_id}."
             )
+
+
+class CreateAction(PermissionMixin, Action):
+    """
+    Generic create action.
+    """
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         """
@@ -75,22 +85,10 @@ class CreateAction(Action):
         )
 
 
-class UpdateAction(Action):
+class UpdateAction(PermissionMixin, Action):
     """
     Generic update action.
     """
-
-    permission_reference = "meeting_id"
-    manage_permission: str
-
-    def check_permission(self, permission_reference_id: int) -> None:
-        if not self.permission.has_perm(
-            self.user_id, f"{permission_reference_id}/{self.manage_permission}"
-        ):
-            raise PermissionDenied(
-                f"User does not have {self.manage_permission} permission for "
-                f"{self.permission_reference} {permission_reference_id}."
-            )
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         """
@@ -157,22 +155,10 @@ class UpdateAction(Action):
         )
 
 
-class DeleteAction(Action):
+class DeleteAction(PermissionMixin, Action):
     """
     Generic delete action.
     """
-
-    permission_reference = "meeting_id"
-    manage_permission: str
-
-    def check_permission(self, permission_reference_id: int) -> None:
-        if not self.permission.has_perm(
-            self.user_id, f"{permission_reference_id}/{self.manage_permission}"
-        ):
-            raise PermissionDenied(
-                f"User does not have {self.manage_permission} permission for "
-                f"{self.permission_reference} {permission_reference_id}."
-            )
 
     def prepare_dataset(self, payload: Payload) -> DataSet:
         """

@@ -32,4 +32,4 @@ class TopicDelete(DeleteAction):
 
     model = Topic()
     schema = delete_topic_schema
-    manage_permission = TOPIC_CAN_MANAGE
+    permissions = [TOPIC_CAN_MANAGE]

@@ -22,7 +22,7 @@ class Motion(Model):
         description="The customizable human readable identifier of this motion."
     )
     serial_number = fields.PositiveIntegerField(
-        description="The (positive) serial number of this motion."
+        description="The (positive) serial number of this motion. This number is auto-generated and read-only."
     )
 
     # Content
@@ -102,6 +102,7 @@ class Motion(Model):
         related_name="motion_supported_ids",
     )
 
+    # Timestamps
     created = fields.TimestampField(
         description="Unix timestamp when this motion was created."
     )

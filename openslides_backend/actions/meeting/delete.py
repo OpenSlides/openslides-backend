@@ -33,4 +33,4 @@ class MeetingDelete(DeleteAction):
     model = Meeting()
     schema = delete_meeting_schema
     permission_reference = "committee_id"
-    manage_permission = MEETING_CAN_MANAGE
+    permissions = [MEETING_CAN_MANAGE]

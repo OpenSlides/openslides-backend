@@ -158,7 +158,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
             self.action.prepare_dataset(payload)
         self.assertEqual(
             context_manager.exception.message,
-            f"User does not have topic.can_manage permission for meeting_id {unknown_meeting}.",
+            f"User must have topic.can_manage permission for meeting_id {unknown_meeting}.",
         )
 
 

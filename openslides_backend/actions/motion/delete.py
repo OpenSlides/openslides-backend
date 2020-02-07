@@ -30,6 +30,8 @@ class MotionDelete(DeleteAction):
     Action to delete motions.
     """
 
+    # TODO: Allow deleting for managers and for submitters (but only in some states)
+
     model = Motion()
     schema = delete_motion_schema
-    manage_permission = MOTION_CAN_MANAGE
+    permissions = [MOTION_CAN_MANAGE]

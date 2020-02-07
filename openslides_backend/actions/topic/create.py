@@ -39,4 +39,4 @@ class TopicCreate(CreateAction):
 
     model = Topic()
     schema = create_topic_schema
-    manage_permission = TOPIC_CAN_MANAGE
+    permissions = [TOPIC_CAN_MANAGE]
