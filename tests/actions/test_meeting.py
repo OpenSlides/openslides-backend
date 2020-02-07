@@ -63,7 +63,7 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
                 {
                     "instance": self.valid_payload_1[0],
                     "new_id": 42,
-                    "references": {
+                    "relations": {
                         get_fqfield("committee/5914213969/meeting_ids"): {
                             "type": "add",
                             "value": [7816466305, 3908439961, 42],
@@ -227,7 +227,7 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
         self.assertEqual(
-            dataset["data"], [{"instance": self.valid_payload_1[0], "references": {}}],
+            dataset["data"], [{"instance": self.valid_payload_1[0], "relations": {}}],
         )
 
 
@@ -332,14 +332,15 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "committee_id": None,
+                        "motion_ids": None,
+                        "topic_ids": None,
                     },
-                    "references": {
+                    "relations": {
                         get_fqfield("committee/5914213969/meeting_ids"): {
                             "type": "remove",
                             "value": [7816466305],
                         },
                     },
-                    "cascade_delete": {},
                 }
             ],
         )
@@ -349,7 +350,8 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
             self.action.prepare_dataset(self.invalid_payload_1)
         self.assertEqual(
             context_manager.exception.message,
-            "You are not allowed to delete meeting 7816466305 as long as there are some referenced objects (see topic_ids).",
+            "You are not allowed to delete meeting 7816466305 as long as there are "
+            "some required related objects (see topic_ids).",
         )
 
 
@@ -398,7 +400,8 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
             self.action.perform(self.invalid_payload_1, user_id=self.user_id)
         self.assertEqual(
             context_manager.exception.message,
-            "You are not allowed to delete meeting 7816466305 as long as there are some referenced objects (see topic_ids).",
+            "You are not allowed to delete meeting 7816466305 as long as there are "
+            "some required related objects (see topic_ids).",
         )
 
     def test_perform_no_permission_1(self) -> None:
@@ -434,7 +437,8 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "You are not allowed to delete meeting 7816466305 as long as there are some referenced objects (see topic_ids).",
+            "You are not allowed to delete meeting 7816466305 as long as there are "
+            "some required related objects (see topic_ids).",
             str(response.data),
         )
 

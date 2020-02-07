@@ -6,10 +6,7 @@ from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
-from ..shared.exceptions import (  # TODO: Remove PermissionDenied!!!
-    PermissionDenied,
-    ViewException,
-)
+from ..shared.exceptions import ViewException
 from ..shared.interfaces import StartResponse, WSGIEnvironment
 
 
@@ -44,7 +41,7 @@ class OpenSlidesBackendWSGIApplication:
         """
         # Check request method
         if request.method != self.view.method:
-            return MethodNotAllowed()  # TODO: Add nice message.
+            return MethodNotAllowed(valid_methods=[self.view.method])
         self.logger.debug(f"Request method is {request.method}.")
 
         # Check mimetype and arse JSON body. The result is cached in request.json.
@@ -63,9 +60,17 @@ class OpenSlidesBackendWSGIApplication:
         try:
             response_body = view_instance.dispatch(request_body, request.headers)
         except ViewException as exception:
-            return BadRequest(exception.message)
-        except PermissionDenied as exception:  # TODO: Do not use this here.
-            return Forbidden(exception.message)
+            if exception.status_code == 400:
+                return BadRequest(exception.message)
+            elif exception.status_code == 403:
+                return Forbidden(exception.message)
+            else:
+                text = (
+                    f"Unknown ViewException with status_code {exception.status_code} "
+                    f"raised: {exception.message}"
+                )
+                self.logger.error(text)
+                raise
         self.logger.debug(
             f"All done. Application sends HTTP 200 with body {response_body}."
         )

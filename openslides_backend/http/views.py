@@ -57,7 +57,7 @@ class ActionsView(BaseView):
         try:
             self.user_id = self.services.authentication().get_user(headers)
         except AuthenticationException as exception:
-            raise ViewException(exception.message)
+            raise ViewException(exception.message, status_code=400)
 
         # Setup payload
         payload: ActionsPayload = body
@@ -67,9 +67,9 @@ class ActionsView(BaseView):
         try:
             handler.handle_request(payload, self.user_id, self.logging, self.services)
         except ActionException as exception:
-            raise ViewException(exception.message)
-        except PermissionDenied:  # TODO: Do not use different exceptions here.
-            raise
+            raise ViewException(exception.message, status_code=400)
+        except PermissionDenied as exception:
+            raise ViewException(exception.message, status_code=403)
 
         self.logger.debug("Action request finished successfully.")
         return None
@@ -99,7 +99,7 @@ class RestrictionsView(BaseView):
                 payload, self.logging, self.services
             )
         except RestrictionException as exception:
-            raise ViewException(exception.message)
+            raise ViewException(exception.message, status_code=400)
         response = self.parse_restriction_response(restriction_response)
         self.logger.debug(
             "Restrictions request finished successfully. Send response now."
@@ -142,6 +142,6 @@ class PresenterView(BaseView):
                 payload, self.logging, self.services
             )
         except PresenterException as exception:
-            raise ViewException(exception.message)
+            raise ViewException(exception.message, status_code=400)
         self.logger.debug("Presenter request finished successfully. Send response now.")
         return presenter_response

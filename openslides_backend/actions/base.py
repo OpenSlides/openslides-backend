@@ -11,11 +11,13 @@ from ..shared.patterns import FullQualifiedField, FullQualifiedId
 
 ActionPayload = Union[List[Dict[str, Any]], Dict[str, Any]]
 DataSet = TypedDict("DataSet", {"position": int, "data": Any})
-ReferencesElement = TypedDict("ReferencesElement", {"type": str, "value": List[int]})
-References = Dict[FullQualifiedField, ReferencesElement]
+RelationsElement = TypedDict(
+    "RelationsElement", {"type": str, "value": Union[Optional[int], List[int]]}
+)
+Relations = Dict[FullQualifiedField, RelationsElement]
 
 
-class BaseAction:
+class BaseAction:  # pragma: no cover
     """
     Abstract base class for actions.
     """
@@ -87,16 +89,16 @@ class Action(BaseAction):
         store.
 
         By default it calls self.create_element_write_request_element and uses
-        get_references_updates() for references.
+        get_relations_updates() for relations.
         """
         position = dataset["position"]
         for element in dataset["data"]:
             element_write_request_element = self.create_instance_write_request_element(
                 position, element
             )
-            for reference in self.get_references_updates(position, element):
+            for relation in self.get_relations_updates(position, element):
                 element_write_request_element = merge_write_request_elements(
-                    (element_write_request_element, reference)
+                    (element_write_request_element, relation)
                 )
             yield element_write_request_element
 
@@ -108,13 +110,13 @@ class Action(BaseAction):
         """
         raise NotImplementedError
 
-    def get_references_updates(
+    def get_relations_updates(
         self, position: int, element: Any
     ) -> Iterable[WriteRequestElement]:
         """
-        Creates write request elements (with update events) for all references.
+        Creates write request elements (with update events) for all relations.
         """
-        for fqfield, data in element["references"].items():
+        for fqfield, data in element["relations"].items():
             event = Event(type="update", fqfields={fqfield: data["value"]})
             if data["type"] == "add":
                 info_text = f"Object attached to {self.model}"
@@ -140,97 +142,255 @@ class Action(BaseAction):
         else:
             self.position = min(position, self.position)
 
-    def get_references(
+    def get_relations(
         self,
         model: Model,
         id: int,
         obj: Dict[str, Any],
-        field_names: Iterable[str],
-        deletion_possible: bool = False,
-    ) -> References:
+        relation_fields: Iterable[Tuple[str, RelationMixin, bool]],
+        shortcut: bool = False,
+    ) -> Relations:
         """
-        Updates references of the given model for the given fields. Use it in
-        prepare_dataset method.
+        Updates (reverse) relations of the given model for the given fields. Use
+        this method in prepare_dataset method.
+
+        If shortcut is True, we assume a create case. That means that all
+        relations are added.
         """
-        references: References = {}
+        add: Set[int]
+        remove: Set[int]
+        relations: Relations = {}
 
-        for field_name in field_names:
-            # Fetch and check model field
-            model_field = model.get_field(field_name)
-            if not isinstance(model_field, RelationMixin):
-                raise ValueError(f"Field {field_name} is not a relation field.")
+        for field_name, field, is_generic in relation_fields:
+            if is_generic:
+                # Generic relation case: 1:n or m:n
 
-            # Prepare new reference ids
-            value = obj.get(field_name)
-            if value is None:
-                ref_ids = []
-            else:
-                if model_field.is_single_reference():
-                    ref_ids = [value]
+                # Prepare new relation ids
+                value = obj.get(field_name)
+                if value is None:
+                    rel_ids = []
                 else:
-                    # model_field.is_multiple_reference()
-                    ref_ids = value
+                    if field.is_single_relation():
+                        rel_ids = [value]
+                    else:
+                        # field.is_multiple_relation()
+                        rel_ids = value
 
-            # Parse which reference ids should be added and which should be removed in reference model
-            if deletion_possible:
-                add, remove = self.reference_diff(model, id, field_name, ref_ids)
-            else:
-                add = set(ref_ids)
-                remove = set()
-
-            # Get reference models from database
-            refs, position = self.database.getMany(
-                model_field.to,
-                list(add | remove),
-                mapped_fields=[model_field.related_name],
-            )
-            self.set_min_position(position)
-
-            # Prepare result which contains reference elements for add case and remove case
-            for ref_id, ref in refs.items():
-                if ref_id in add:
-                    ref_element = ReferencesElement(
-                        type="add", value=ref[model_field.related_name] + [id],
+                # Parse which relation ids should be added and which should be
+                # removed in related model.
+                if shortcut:
+                    add = set(rel_ids)
+                    remove = set()
+                else:
+                    add, remove = self.relation_diff_to_n(
+                        model, id, field_name, field, rel_ids
                     )
+                if field.specific_relation is None:
+                    related_name = field.related_name
                 else:
-                    # ref_id in remove
-                    new_value = ref[model_field.related_name]
-                    new_value.remove(id)
-                    ref_element = ReferencesElement(type="remove", value=new_value,)
-                fqfield = FullQualifiedField(
-                    model_field.to, ref_id, model_field.related_name
-                )
-                references[fqfield] = ref_element
-        return references
+                    # Fetch current db instance with specific_relation field.
+                    db_instance, position = self.database.get(
+                        fqid=FullQualifiedId(model.collection, id=obj["id"]),
+                        mapped_fields=[field.specific_relation],
+                    )
+                    self.set_min_position(position)
+                    if db_instance.get(field.specific_relation) is None:
+                        raise ValueError(
+                            f"The field {field.specific_relation} must not be empty in database."
+                        )
+                    related_name = field.related_name.replace(
+                        "$", str(db_instance.get(field.specific_relation))
+                    )
 
-    def reference_diff(
-        self, model: Model, id: int, field: str, ref_ids: List[int]
+                # Get related models from database
+                rels, position = self.database.getMany(
+                    field.to, list(add | remove), mapped_fields=[related_name],
+                )
+                self.set_min_position(position)
+
+                # Prepare result which contains relations elements for add case and
+                # for remove case
+                for rel_id, rel in rels.items():
+                    if rel_id in add:
+                        rel_element = RelationsElement(
+                            type="add", value=rel.get(related_name, []) + [id],
+                        )
+                    else:
+                        # ref_id in remove
+                        new_value = rel[related_name]
+                        new_value.remove(id)
+                        rel_element = RelationsElement(type="remove", value=new_value,)
+                    fqfield = FullQualifiedField(field.to, rel_id, related_name)
+                    relations[fqfield] = rel_element
+
+            else:
+                # Reverse relation case: m:n or m:1
+
+                # Prepare new relation ids
+                value = obj.get(field_name)
+
+                if field.is_multiple_relation():
+                    # m:n case
+                    if value is None:
+                        rel_ids = []
+                    else:
+                        rel_ids = value
+
+                    # Parse which relation ids should be added and which should be
+                    # removed in related model.
+                    if shortcut:
+                        add = set(rel_ids)
+                        remove = set()
+                    else:
+                        add, remove = self.relation_diff_to_n(
+                            model, id, field_name, field, rel_ids
+                        )
+
+                    # Get related models from database
+                    rels, position = self.database.getMany(
+                        field.own_collection,
+                        list(add | remove),
+                        mapped_fields=[field.own_field_name],
+                    )
+                    self.set_min_position(position)
+
+                    # Prepare result which contains relations elements for add case and
+                    # for remove case
+                    for rel_id, rel in rels.items():
+                        if rel_id in add:
+                            rel_element = RelationsElement(
+                                type="add",
+                                value=rel.get(field.own_field_name, []) + [id],
+                            )
+                        else:
+                            # ref_id in remove
+                            new_value = rel[field.own_field_name]
+                            new_value.remove(id)
+                            rel_element = RelationsElement(
+                                type="remove", value=new_value,
+                            )
+                        fqfield = FullQualifiedField(
+                            field.own_collection, rel_id, field.own_field_name
+                        )
+                        relations[fqfield] = rel_element
+
+                else:
+                    # field.is_single_relation() that means m:1 case
+
+                    if value is None:
+                        rel_ids = []
+                    else:
+                        rel_ids = value
+
+                    # Parse which relation ids should be added and which should be
+                    # removed in related model.
+                    if shortcut:
+                        add = set(rel_ids)
+                        remove = set()
+                    else:
+                        add, remove = self.relation_diff_to_1(
+                            model, id, field_name, field, rel_ids
+                        )
+
+                    # Get related models from database
+                    rels, position = self.database.getMany(
+                        field.own_collection,
+                        list(add | remove),
+                        mapped_fields=[field.own_field_name],
+                    )
+                    self.set_min_position(position)
+
+                    # Prepare result which contains relations elements for add case and
+                    # for remove case
+                    for rel_id, rel in rels.items():
+                        if rel_id in add:
+                            if rel.get(field.own_field_name) is None:
+                                rel_element = RelationsElement(type="add", value=id,)
+                            else:
+                                raise ActionException(
+                                    f"You can not add {rel_id} to field {field_name} "
+                                    "because related field is not empty."
+                                )
+                        else:
+                            # ref_id in remove
+                            if field.on_delete == "protect":
+                                raise ActionException(
+                                    f"You are not allowed to delete {model} {id} as "
+                                    "long as there are some required related objects "
+                                    f"(see {field_name})."
+                                )
+                            # else: field.on_delete == "set_null"
+                            rel_element = RelationsElement(type="remove", value=None,)
+                        fqfield = FullQualifiedField(
+                            field.own_collection, rel_id, field.own_field_name
+                        )
+                        relations[fqfield] = rel_element
+
+        return relations
+
+    def relation_diff_to_n(
+        self,
+        model: Model,
+        id: int,
+        field_name: str,
+        field: RelationMixin,
+        rel_ids: List[int],
     ) -> Tuple[Set[int], Set[int]]:
         """
-        Returns two sets of reference object ids. One with reference objects
+        Returns two sets of relation object ids. One with relation objects
         where the given object (represented by model and id) should be added
-        and one with reference objects where it should be removed.
+        and one with relation objects where it should be removed.
+
+        This method is only for 1:n or m:n case.
         """
         # Fetch current object from database
         current_obj, position = self.database.get(
-            FullQualifiedId(model.collection, id), mapped_fields=[field]
+            FullQualifiedId(model.collection, id), mapped_fields=[field_name]
         )
         self.set_min_position(position)
 
-        # Fetch current ids from reference field
-        model_field = model.get_field(field)
-        if model_field.is_single_reference():
-            current_id = current_obj.get(field)
+        # Fetch current ids from relation field
+        if field.is_single_relation():
+            current_id = current_obj.get(field_name)
             if current_id is None:
                 current_ids = set()
             else:
                 current_ids = set([current_id])
         else:
-            # model_field.is_multiple_reference()
-            current_ids = set(current_obj.get(field, []))
+            # field.is_multiple_relation()
+            current_ids = set(current_obj.get(field_name, []))
 
         # Calculate and return add set and remove set
-        new_ids = set(ref_ids)
+        new_ids = set(rel_ids)
+        add = new_ids - current_ids
+        remove = current_ids - new_ids
+        return (add, remove)
+
+    def relation_diff_to_1(
+        self,
+        model: Model,
+        id: int,
+        field_name: str,
+        field: RelationMixin,
+        rel_ids: List[int],
+    ) -> Tuple[Set[int], Set[int]]:
+        """
+        Returns two sets of relation object ids. One with relation objects
+        where the given object (represented by model and id) should be added
+        and one with relation objects where it should be removed.
+
+        This method is only for m:1 case.
+        """
+        # Fetch current object from database
+        current_obj, position = self.database.get(
+            FullQualifiedId(model.collection, id), mapped_fields=[field_name]
+        )
+        self.set_min_position(position)
+
+        current_ids = set(current_obj.get(field_name, []))
+
+        # Calculate and return add set and remove set
+        new_ids = set(rel_ids)
         add = new_ids - current_ids
         remove = current_ids - new_ids
         return (add, remove)

@@ -57,7 +57,7 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
                 {
                     "instance": self.valid_payload_1[0],
                     "new_id": 42,
-                    "references": {
+                    "relations": {
                         get_fqfield("organisation/1/committee_ids"): {
                             "type": "add",
                             "value": [5914213969, 7826715669, 42],
