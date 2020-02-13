@@ -99,7 +99,11 @@ class Action:
         Creates write request elements (with update events) for all references.
         """
         for fqfield, data in element["references"].items():
-            event = Event(type="update", fqfields={fqfield: data["value"]})
+            event = Event(
+                type="update",
+                fqid=FullQualifiedId(fqfield.collection, fqfield.id),
+                fields={fqfield.field: data["value"]},
+            )
             if data["type"] == "add":
                 info_text = f"Object attached to {self.model}"
             else:

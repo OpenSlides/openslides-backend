@@ -79,22 +79,21 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
-        self.assertEqual(
-            dataset["data"],
-            [
-                {
-                    "instance": self.valid_payload_1[0],
-                    "new_id": 42,
-                    "references": {
-                        get_fqfield("meeting/2393342057/topic_ids"): {
-                            "type": "add",
-                            "value": [42],
-                        },
+        result = dataset["data"]
+        expected = [
+            {
+                "instance": self.valid_payload_1[0],
+                "new_id": 42,
+                "references": {
+                    get_fqfield("meeting/2393342057/topic_ids"): {
+                        "type": "add",
+                        "value": [42],
                     },
-                }
-            ],
-        )
+                },
+            }
+        ]
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(result, expected)
 
     def test_prepare_dataset_2(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_2)
@@ -178,35 +177,34 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         write_request_elements = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
-        self.assertEqual(
-            list(write_request_elements),
-            [
-                {
-                    "events": [
-                        {
-                            "type": "create",
-                            "fqfields": {
-                                get_fqfield("topic/42/meeting_id"): 2393342057,
-                                get_fqfield("topic/42/title"): "title_ooPhi9ZohC",
-                                get_fqfield("topic/42/text"): "text_eeKoosahh4",
-                            },
+        result = list(write_request_elements)
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqid": get_fqid("topic/42"),
+                        "fields": {
+                            "meeting_id": 2393342057,
+                            "title": "title_ooPhi9ZohC",
+                            "text": "text_eeKoosahh4",
                         },
-                        {
-                            "type": "update",
-                            "fqfields": {
-                                get_fqfield("meeting/2393342057/topic_ids"): [42]
-                            },
-                        },
-                    ],
-                    "information": {
-                        get_fqid("topic/42"): ["Object created"],
-                        get_fqid("meeting/2393342057"): ["Object attached to topic"],
                     },
-                    "user_id": self.user_id,
-                    "locked_fields": {get_fqfield("meeting/2393342057/topic_ids"): 1},
+                    {
+                        "type": "update",
+                        "fqid": get_fqid("meeting/2393342057/"),
+                        "fields": {"topic_ids": [42]},
+                    },
+                ],
+                "information": {
+                    get_fqid("topic/42"): ["Object created"],
+                    get_fqid("meeting/2393342057"): ["Object attached to topic"],
                 },
-            ],
-        )
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("meeting/2393342057/topic_ids"): 1},
+            },
+        ]
+        self.assertEqual(result, expected)
 
     def test_perform_correct_2(self) -> None:
         write_request_elements = self.action.perform(
@@ -218,36 +216,28 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                 "events": [
                     {
                         "type": "create",
-                        "fqfields": {
-                            get_fqfield("topic/42/meeting_id"): 4002059810,
-                            get_fqfield("topic/42/title"): "title_pha2Eirohg",
-                            get_fqfield("topic/42/text"): "text_CaekiiLai2",
-                            get_fqfield(
-                                "topic/42/mediafile_attachment_ids"
-                            ): self.attachments,
+                        "fqid": get_fqid("topic/42"),
+                        "fields": {
+                            "meeting_id": 4002059810,
+                            "title": "title_pha2Eirohg",
+                            "text": "text_CaekiiLai2",
+                            "mediafile_attachment_ids": self.attachments,
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                            ): [6259289755, 42],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
+                        "fields": {"topic_ids": [6259289755, 42],},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                            ): [42],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fields": {"topic_ids": [42],},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("meeting/4002059810/topic_ids"): [42],
-                        },
+                        "fqid": get_fqid("meeting/4002059810"),
+                        "fields": {"topic_ids": [42],},
                     },
                 ],
                 "information": {
@@ -284,20 +274,16 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                 "events": [
                     {
                         "type": "create",
-                        "fqfields": {
-                            get_fqfield("topic/42/meeting_id"): 3611987967,
-                            get_fqfield("topic/42/title"): "title_eivaey2Aeg",
+                        "fqid": get_fqid("topic/42"),
+                        "fields": {
+                            "meeting_id": 3611987967,
+                            "title": "title_eivaey2Aeg",
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("meeting/3611987967/topic_ids"): [
-                                6375863023,
-                                6259289755,
-                                42,
-                            ],
-                        },
+                        "fqid": get_fqid("meeting/3611987967"),
+                        "fields": {"topic_ids": [6375863023, 6259289755, 42,],},
                     },
                 ],
                 "information": {
@@ -593,9 +579,10 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("topic/1312354708/title"): "title_ahbuQu9ooz",
-                            get_fqfield("topic/1312354708/text"): "text_thuF7Ahxee",
+                        "fqid": get_fqid("topic/1312354708"),
+                        "fields": {
+                            "title": "title_ahbuQu9ooz",
+                            "text": "text_thuF7Ahxee",
                         },
                     },
                 ],
@@ -604,7 +591,8 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "locked_fields": {get_fqfield("topic/1312354708/deleted"): 1},
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_correct_2(self) -> None:
         write_request_elements = self.action.perform(
@@ -615,29 +603,22 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("topic/1312354708/title"): "title_pai9oN2aec",
-                            get_fqfield("topic/1312354708/text"): "text_oon2lai3Ie",
-                            get_fqfield(
-                                "topic/1312354708/mediafile_attachment_ids"
-                            ): self.attachments,
+                        "fqid": get_fqid("topic/1312354708"),
+                        "fields": {
+                            "title": "title_pai9oN2aec",
+                            "text": "text_oon2lai3Ie",
+                            "mediafile_attachment_ids": self.attachments,
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                            ): [6259289755, 1312354708],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
+                        "fields": {"topic_ids": [6259289755, 1312354708],},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                            ): [1312354708],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fields": {"topic_ids": [1312354708],},
                     },
                 ],
                 "information": {
@@ -661,7 +642,8 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_correct_3(self) -> None:
         write_request_elements = self.action.perform(
@@ -672,20 +654,16 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("topic/6259289755/title"): "title_Ashae0quei",
-                            get_fqfield(
-                                "topic/6259289755/mediafile_attachment_ids"
-                            ): [],
+                        "fqid": get_fqid("topic/6259289755"),
+                        "fields": {
+                            "title": "title_Ashae0quei",
+                            "mediafile_attachment_ids": [],
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "mediafile_attachment/3549387598/topic_ids"
-                            ): [],
-                        },
+                        "fqid": get_fqid("mediafile_attachment/3549387598"),
+                        "fields": {"topic_ids": [],},
                     },
                 ],
                 "information": {
@@ -701,7 +679,8 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_correct_4(self) -> None:
         write_request_elements = self.action.perform(
@@ -712,19 +691,13 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "topic/6259289755/mediafile_attachment_ids"
-                            ): self.attachments,
-                        },
+                        "fqid": get_fqid("topic/6259289755"),
+                        "fields": {"mediafile_attachment_ids": self.attachments,},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                            ): [6259289755],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fields": {"topic_ids": [6259289755],},
                     },
                 ],
                 "information": {
@@ -742,7 +715,8 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_correct_5(self) -> None:
         write_request_elements = self.action.perform(
@@ -753,27 +727,18 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("topic/6259289755/mediafile_attachment_ids"): [
-                                self.attachments[1]
-                            ],
-                        },
+                        "fqid": get_fqid("topic/6259289755"),
+                        "fields": {"mediafile_attachment_ids": [self.attachments[1]],},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                            ): [],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
+                        "fields": {"topic_ids": [],},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                            ): [6259289755],
-                        },
+                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fields": {"topic_ids": [6259289755],},
                     },
                 ],
                 "information": {
@@ -797,7 +762,8 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
 
 class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
@@ -1054,7 +1020,8 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     {"type": "delete", "fqid": get_fqid("topic/1312354708")},
                     {
                         "type": "update",
-                        "fqfields": {get_fqfield("meeting/7816466305/topic_ids"): []},
+                        "fqid": get_fqid("meeting/7816466305"),
+                        "fields": {"topic_ids": []},
                     },
                 ],
                 "information": {
@@ -1070,19 +1037,22 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_correct_2(self) -> None:
         write_request_elements = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
+        result = list(write_request_elements)
         expected = [
             {
                 "events": [
                     {"type": "delete", "fqid": get_fqid("topic/1312354708")},
                     {
                         "type": "update",
-                        "fqfields": {get_fqfield("meeting/7816466305/topic_ids"): []},
+                        "fqid": get_fqid("meeting/7816466305"),
+                        "fields": {"topic_ids": []},
                     },
                 ],
                 "information": {
@@ -1102,17 +1072,13 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     {"type": "delete", "fqid": get_fqid("topic/6259289755")},
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "mediafile_attachment/3549387598/topic_ids"
-                            ): [],
-                        },
+                        "fqid": get_fqid("mediafile_attachment/3549387598"),
+                        "fields": {"topic_ids": [],},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("meeting/3611987967/topic_ids"): [6375863023],
-                        },
+                        "fqid": get_fqid("meeting/3611987967"),
+                        "fields": {"topic_ids": [6375863023],},
                     },
                 ],
                 "information": {
@@ -1132,7 +1098,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        self.assertEqual(result, expected)
 
     def test_perform_no_permission_1(self) -> None:
         with self.assertRaises(PermissionDenied):

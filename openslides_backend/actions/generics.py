@@ -56,17 +56,9 @@ class CreateAction(Action):
         Just prepares a write request element with create event for the given
         instance.
         """
-        fqfields = {}
-        for field_name, value in element["instance"].items():
-            fqfields[
-                FullQualifiedField(self.model.collection, element["new_id"], field_name)
-            ] = value
-        information = {
-            FullQualifiedId(self.model.collection, element["new_id"]): [
-                "Object created"
-            ]
-        }
-        event = Event(type="create", fqfields=fqfields)
+        fqid = FullQualifiedId(self.model.collection, element["new_id"])
+        information = {fqid: ["Object created"]}
+        event = Event(type="create", fqid=fqid, fields=element["instance"])
         return WriteRequestElement(
             events=[event],
             information=information,
@@ -130,21 +122,10 @@ class UpdateAction(Action):
         Just prepares a write request element with update event for the given
         instance.
         """
-        fqfields = {}
-        for field_name, value in element["instance"].items():
-            if field_name == "id":
-                continue
-            fqfields[
-                FullQualifiedField(
-                    self.model.collection, element["instance"]["id"], field_name
-                )
-            ] = value
-        information = {
-            FullQualifiedId(self.model.collection, element["instance"]["id"]): [
-                "Object updated"
-            ]
-        }
-        event = Event(type="update", fqfields=fqfields)
+        fqid = FullQualifiedId(self.model.collection, element["instance"]["id"])
+        information = {fqid: ["Object updated"]}
+        fields = {k: v for k, v in element["instance"].items() if k != "id"}
+        event = Event(type="update", fqid=fqid, fields=fields)
         return WriteRequestElement(
             events=[event],
             information=information,
