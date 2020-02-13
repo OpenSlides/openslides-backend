@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ..shared.patterns import Collection, FullQualifiedId
 from .filters import Filter
 
 StartResponse = Callable
@@ -159,7 +159,7 @@ class Event(TypedDict, total=False):
     """
 
     type: str
-    fqfields: Dict[FullQualifiedField, Any]
+    fields: Dict[str, Any]
     fqid: FullQualifiedId
 
 
