@@ -101,42 +101,33 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
         write_request_elements = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
-        self.assertEqual(
-            list(write_request_elements),
-            [
-                {
-                    "events": [
-                        {
-                            "type": "create",
-                            "fqfields": {
-                                get_fqfield("meeting/42/committee_id"): 5914213969,
-                                get_fqfield("meeting/42/title"): "title_zusae6aD0a",
-                            },
+        result = list(write_request_elements)
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqid": get_fqid("meeting/42"),
+                        "fields": {
+                            "committee_id": 5914213969,
+                            "title": "title_zusae6aD0a",
                         },
-                        {
-                            "type": "update",
-                            "fqfields": {
-                                get_fqfield("committee/5914213969/meeting_ids"): [
-                                    7816466305,
-                                    3908439961,
-                                    42,
-                                ]
-                            },
-                        },
-                    ],
-                    "information": {
-                        get_fqid("meeting/42"): ["Object created"],
-                        get_fqid("committee/5914213969"): [
-                            "Object attached to meeting"
-                        ],
                     },
-                    "user_id": self.user_id,
-                    "locked_fields": {
-                        get_fqfield("committee/5914213969/meeting_ids"): 1
+                    {
+                        "type": "update",
+                        "fqid": get_fqid("committee/5914213969"),
+                        "fields": {"meeting_ids": [7816466305, 3908439961, 42]},
                     },
+                ],
+                "information": {
+                    get_fqid("meeting/42"): ["Object created"],
+                    get_fqid("committee/5914213969"): ["Object attached to meeting"],
                 },
-            ],
-        )
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("committee/5914213969/meeting_ids"): 1},
+            },
+        ]
+        self.assertEqual(result, expected)
 
     def test_perform_no_permission_1(self) -> None:
         with self.assertRaises(PermissionDenied):
@@ -248,9 +239,8 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("meeting/7816466305/title"): "title_GeiduDohx0",
-                        },
+                        "fqid": get_fqid("meeting/7816466305"),
+                        "fields": {"title": "title_GeiduDohx0"},
                     },
                 ],
                 "information": {get_fqid("meeting/7816466305"): ["Object updated"]},
@@ -258,7 +248,8 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                 "locked_fields": {get_fqfield("meeting/7816466305/deleted"): 1},
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
 
 class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
@@ -373,11 +364,8 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
                     {"type": "delete", "fqid": get_fqid("meeting/3908439961")},
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("committee/5914213969/meeting_ids"): [
-                                7816466305
-                            ]
-                        },
+                        "fqid": get_fqid("committee/5914213969"),
+                        "fields": {"meeting_ids": [7816466305]},
                     },
                 ],
                 "information": {
@@ -393,7 +381,8 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
                 },
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_incorrect_1(self) -> None:
         with self.assertRaises(ActionException) as context_manager:

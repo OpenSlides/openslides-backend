@@ -82,6 +82,14 @@ class ActionsBaseTester(TestCase):
         self.assertEqual(field_name, "fake_model_2_ids")
         self.assertEqual(str(field.own_collection), "fake_model_2")
 
+    def test_get_field_normal_field(self) -> None:
+        field = FakeModel().get_field("text")
+        self.assertEqual(field.description, "The text of this fake model.")
+
+    def test_get_field_unknown_field(self) -> None:
+        with self.assertRaises(ValueError):
+            FakeModel().get_field("Unknown field")
+
     def test_specific_relation_init(self) -> None:
         with self.assertRaises(ValueError):
             fields.ForeignKeyField(

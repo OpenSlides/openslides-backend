@@ -83,23 +83,17 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/title"): "title_pheK0Ja3ai",
-                            get_fqfield("motion/2995885358/last_modified"): round(
-                                time.time()
-                            ),
-                            get_fqfield(
-                                "motion/2995885358/motion_statute_paragraph_id"
-                            ): None,
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "title": "title_pheK0Ja3ai",
+                            "last_modified": round(time.time()),
+                            "motion_statute_paragraph_id": None,
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "motion_statute_paragraph/8264607531/motion_ids"
-                            ): [],
-                        },
+                        "fqid": get_fqid("motion_statute_paragraph/8264607531"),
+                        "fields": {"motion_ids": []},
                     },
                 ],
                 "information": {
@@ -233,35 +227,27 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/last_modified"): round(
-                                time.time()
-                            ),
-                            get_fqfield("motion/2995885358/motion_category_id"): None,
-                            get_fqfield(
-                                "motion/2995885358/motion_block_id"
-                            ): 4740630442,
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "last_modified": round(time.time()),
+                            "motion_category_id": None,
+                            "motion_block_id": 4740630442,
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_block/4116433002/motion_ids"): [],
-                        },
+                        "fqid": get_fqid("motion_block/4116433002"),
+                        "fields": {"motion_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_block/4740630442/motion_ids"): [
-                                2995885358
-                            ],
-                        },
+                        "fqid": get_fqid("motion_block/4740630442"),
+                        "fields": {"motion_ids": [2995885358]},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_category/8734727380/motion_ids"): [],
-                        },
+                        "fqid": get_fqid("motion_category/8734727380"),
+                        "fields": {"motion_ids": []},
                     },
                 ],
                 "information": {
@@ -296,35 +282,27 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/last_modified"): round(
-                                time.time()
-                            ),
-                            get_fqfield("motion/2995885358/motion_category_id"): None,
-                            get_fqfield(
-                                "motion/2995885358/motion_block_id"
-                            ): 4740630442,
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "last_modified": round(time.time()),
+                            "motion_category_id": None,
+                            "motion_block_id": 4740630442,
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_block/4116433002/motion_ids"): [],
-                        },
+                        "fqid": get_fqid("motion_block/4116433002"),
+                        "fields": {"motion_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_block/4740630442/motion_ids"): [
-                                2995885358
-                            ],
-                        },
+                        "fqid": get_fqid("motion_block/4740630442"),
+                        "fields": {"motion_ids": [2995885358]},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_category/8734727380/motion_ids"): [],
-                        },
+                        "fqid": get_fqid("motion_category/8734727380"),
+                        "fields": {"motion_ids": []},
                     },
                 ],
                 "information": {
@@ -359,22 +337,16 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/last_modified"): round(
-                                time.time()
-                            ),
-                            get_fqfield("motion/2995885358/supporter_ids"): [
-                                7268025091
-                            ],
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "last_modified": round(time.time()),
+                            "supporter_ids": [7268025091],
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "user/7268025091/motion_supported_5562405520_ids"
-                            ): [2995885358],
-                        },
+                        "fqid": get_fqid("user/7268025091"),
+                        "fields": {"motion_supported_5562405520_ids": [2995885358]},
                     },
                 ],
                 "information": {
@@ -401,22 +373,16 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/last_modified"): round(
-                                time.time()
-                            ),
-                            get_fqfield("motion/2995885358/supporter_ids"): [
-                                7268025091
-                            ],
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "last_modified": round(time.time()),
+                            "supporter_ids": [7268025091],
                         },
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "user/7268025091/motion_supported_5562405520_ids"
-                            ): [2995885358],
-                        },
+                        "fqid": get_fqid("user/7268025091"),
+                        "fields": {"motion_supported_5562405520_ids": [2995885358]},
                     },
                 ],
                 "information": {
@@ -536,41 +502,33 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
                     {"type": "delete", "fqid": get_fqid("motion/2995885358")},
                     {
                         "type": "update",
-                        "fqfields": {get_fqfield("meeting/5562405520/motion_ids"): []},
+                        "fqid": get_fqid("meeting/5562405520"),
+                        "fields": {"motion_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_block/4116433002/motion_ids"): []
-                        },
+                        "fqid": get_fqid("motion_block/4116433002"),
+                        "fields": {"motion_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_category/8734727380/motion_ids"): []
-                        },
+                        "fqid": get_fqid("motion_category/8734727380"),
+                        "fields": {"motion_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "motion_statute_paragraph/8264607531/motion_ids"
-                            ): []
-                        },
+                        "fqid": get_fqid("motion_statute_paragraph/8264607531"),
+                        "fields": {"motion_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield(
-                                "motion_state/5205893377/motion_recommended_ids"
-                            ): []
-                        },
+                        "fqid": get_fqid("motion_state/5205893377"),
+                        "fields": {"motion_recommended_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion_state/5205893377/motion_active_ids"): []
-                        },
+                        "fqid": get_fqid("motion_state/5205893377"),
+                        "fields": {"motion_active_ids": []},
                     },
                 ],
                 "information": {
@@ -773,10 +731,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/3265963568/sort_parent_id"): None,
-                            get_fqfield("motion/3265963568/sort_children_ids"): [],
-                            get_fqfield("motion/3265963568/sort_weight"): 2,
+                        "fqid": get_fqid("motion/3265963568"),
+                        "fields": {
+                            "sort_parent_id": None,
+                            "sort_children_ids": [],
+                            "sort_weight": 2,
                         },
                     }
                 ],
@@ -788,10 +747,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2279328478/sort_parent_id"): None,
-                            get_fqfield("motion/2279328478/sort_weight"): 4,
-                            get_fqfield("motion/2279328478/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/2279328478"),
+                        "fields": {
+                            "sort_parent_id": None,
+                            "sort_weight": 4,
+                            "sort_children_ids": [],
                         },
                     }
                 ],
@@ -803,10 +763,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/1082050467/sort_weight"): 6,
-                            get_fqfield("motion/1082050467/sort_parent_id"): None,
-                            get_fqfield("motion/1082050467/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/1082050467"),
+                        "fields": {
+                            "sort_weight": 6,
+                            "sort_parent_id": None,
+                            "sort_children_ids": [],
                         },
                     }
                 ],
@@ -818,10 +779,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/8000824551/sort_parent_id"): None,
-                            get_fqfield("motion/8000824551/sort_weight"): 8,
-                            get_fqfield("motion/8000824551/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/8000824551"),
+                        "fields": {
+                            "sort_parent_id": None,
+                            "sort_weight": 8,
+                            "sort_children_ids": [],
                         },
                     }
                 ],
@@ -833,10 +795,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/sort_parent_id"): None,
-                            get_fqfield("motion/2995885358/sort_weight"): 10,
-                            get_fqfield("motion/2995885358/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "sort_parent_id": None,
+                            "sort_weight": 10,
+                            "sort_children_ids": [],
                         },
                     }
                 ],
@@ -858,12 +821,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/3265963568/sort_parent_id"): None,
-                            get_fqfield("motion/3265963568/sort_children_ids"): [
-                                2279328478
-                            ],
-                            get_fqfield("motion/3265963568/sort_weight"): 2,
+                        "fqid": get_fqid("motion/3265963568"),
+                        "fields": {
+                            "sort_parent_id": None,
+                            "sort_children_ids": [2279328478],
+                            "sort_weight": 2,
                         },
                     }
                 ],
@@ -875,13 +837,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2279328478/sort_parent_id"): 3265963568,
-                            get_fqfield("motion/2279328478/sort_weight"): 4,
-                            get_fqfield("motion/2279328478/sort_children_ids"): [
-                                8000824551,
-                                1082050467,
-                            ],
+                        "fqid": get_fqid("motion/2279328478"),
+                        "fields": {
+                            "sort_parent_id": 3265963568,
+                            "sort_weight": 4,
+                            "sort_children_ids": [8000824551, 1082050467],
                         },
                     }
                 ],
@@ -893,10 +853,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/8000824551/sort_parent_id"): 2279328478,
-                            get_fqfield("motion/8000824551/sort_weight"): 6,
-                            get_fqfield("motion/8000824551/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/8000824551"),
+                        "fields": {
+                            "sort_parent_id": 2279328478,
+                            "sort_weight": 6,
+                            "sort_children_ids": [],
                         },
                     }
                 ],
@@ -908,10 +869,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/1082050467/sort_weight"): 8,
-                            get_fqfield("motion/1082050467/sort_parent_id"): 2279328478,
-                            get_fqfield("motion/1082050467/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/1082050467"),
+                        "fields": {
+                            "sort_weight": 8,
+                            "sort_parent_id": 2279328478,
+                            "sort_children_ids": [],
                         },
                     }
                 ],
@@ -923,10 +885,11 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 "events": [
                     {
                         "type": "update",
-                        "fqfields": {
-                            get_fqfield("motion/2995885358/sort_parent_id"): None,
-                            get_fqfield("motion/2995885358/sort_weight"): 10,
-                            get_fqfield("motion/2995885358/sort_children_ids"): [],
+                        "fqid": get_fqid("motion/2995885358"),
+                        "fields": {
+                            "sort_parent_id": None,
+                            "sort_weight": 10,
+                            "sort_children_ids": [],
                         },
                     }
                 ],

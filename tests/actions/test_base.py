@@ -16,11 +16,8 @@ class ActionsBaseTester(TestCase):
             events=[
                 {
                     "type": "create",
-                    "fqfields": {
-                        get_fqfield(
-                            "collection_Chebie1jie/42/field_aeXahloPh1"
-                        ): "test_value_lah8chiiLi"
-                    },
+                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fields": {"field_aeXahloPh1": "test_value_lah8chiiLi"},
                 }
             ],
             information={
@@ -33,11 +30,8 @@ class ActionsBaseTester(TestCase):
             events=[
                 {
                     "type": "update",
-                    "fqfields": {
-                        get_fqfield(
-                            "collection_Chebie1jie/42/field_ade8neipaiG"
-                        ): "test_value_zeeto6Aine"
-                    },
+                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fields": {"field_ade8neipaiG": "test_value_zeeto6Aine"},
                 }
             ],
             information={
@@ -55,19 +49,13 @@ class ActionsBaseTester(TestCase):
             events=[
                 {
                     "type": "create",
-                    "fqfields": {
-                        get_fqfield(
-                            "collection_Chebie1jie/42/field_aeXahloPh1"
-                        ): "test_value_lah8chiiLi"
-                    },
+                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fields": {"field_aeXahloPh1": "test_value_lah8chiiLi"},
                 },
                 {
                     "type": "update",
-                    "fqfields": {
-                        get_fqfield(
-                            "collection_Chebie1jie/42/field_ade8neipaiG"
-                        ): "test_value_zeeto6Aine"
-                    },
+                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fields": {"field_ade8neipaiG": "test_value_zeeto6Aine"},
                 },
             ],
             information={

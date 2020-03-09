@@ -90,41 +90,33 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_correct_1(self) -> None:
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqid": get_fqid("committee/42"),
+                        "fields": {"organisation_id": 1, "title": "title_ieth5Ha1th"},
+                    },
+                    {
+                        "type": "update",
+                        "fqid": get_fqid("organisation/1"),
+                        "fields": {"committee_ids": [5914213969, 7826715669, 42]},
+                    },
+                ],
+                "information": {
+                    get_fqid("committee/42"): ["Object created"],
+                    get_fqid("organisation/1"): ["Object attached to committee"],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {get_fqfield("organisation/1/committee_ids"): 1},
+            },
+        ]
         write_request_elements = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
-        self.assertEqual(
-            list(write_request_elements),
-            [
-                {
-                    "events": [
-                        {
-                            "type": "create",
-                            "fqfields": {
-                                get_fqfield("committee/42/organisation_id"): 1,
-                                get_fqfield("committee/42/title"): "title_ieth5Ha1th",
-                            },
-                        },
-                        {
-                            "type": "update",
-                            "fqfields": {
-                                get_fqfield("organisation/1/committee_ids"): [
-                                    5914213969,
-                                    7826715669,
-                                    42,
-                                ]
-                            },
-                        },
-                    ],
-                    "information": {
-                        get_fqid("committee/42"): ["Object created"],
-                        get_fqid("organisation/1"): ["Object attached to committee"],
-                    },
-                    "user_id": self.user_id,
-                    "locked_fields": {get_fqfield("organisation/1/committee_ids"): 1},
-                },
-            ],
-        )
+        result = list(write_request_elements)
+        self.assertEqual(result, expected)
 
     def test_perform_no_permission_1(self) -> None:
         with self.assertRaises(PermissionDenied):

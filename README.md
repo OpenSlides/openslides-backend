@@ -47,4 +47,3 @@ To start it run
 * OPENSLIDES_BACKEND_EVENT_STORE_URL
 
   URL of event store service. Default: http://localhost:9003/
-n
