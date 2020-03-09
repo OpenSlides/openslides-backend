@@ -9,7 +9,7 @@ from ..shared.patterns import KEYSEPARATOR, Collection, FullQualifiedField
 from ..shared.schema import schema_version
 from .restrictions_interface import Payload, RestrictionResponse
 
-Restriction = Any  # TODO
+Restriction = Any  # TODO: Add a base.py and implement a base Restriction class.
 
 
 def prepare_restrictions_map() -> None:

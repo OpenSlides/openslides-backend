@@ -20,12 +20,6 @@ class Field:
         """
         raise NotImplementedError
 
-    def is_single_reference(self) -> bool:
-        return False
-
-    def is_multiple_reference(self) -> bool:
-        return False
-
 
 class IdField(Field):
     def get_schema(self) -> Schema:
@@ -64,31 +58,82 @@ class TimestampField(Field):
         return dict(description=self.description, type="integer", minimum=1,)
 
 
-class RelationMixin:
-    def __init__(self, to: Collection, related_name: str, **kwargs: Any) -> None:
+class RelationMixin(Field):
+    """
+    Field that provides a relation to another Collection.
+
+    At the moment we only support 1:m and n:m relations but not 1:1 relations.
+
+    Args:
+        to: The collection this field is related to.
+        related_name: The name of the array field of the related model. This
+            string may contain a $ as special character. I this case the $ will
+            be replaced by an id of a specific field of this model e. g. the
+            meeting id. This is only possible if the specific_relation argument
+            is set. In the end there will be a lot of fields in the related
+            model.
+        specific_relation: The name of the foreign key field of this model where
+            we can find the id that should be used to replace the $ used in
+            related_name argument. Attention: If the value of this field
+            changes, all relations have to be adjusted. So don't use a
+            writable field at all.
+    """
+
+    on_delete: str
+
+    own_collection: Collection
+    own_field_name: str
+
+    def __init__(
+        self,
+        to: Collection,
+        related_name: str,
+        specific_relation: str = None,
+        **kwargs: Any
+    ) -> None:
+        if specific_relation is not None:
+            if "$" not in related_name:
+                raise ValueError("Setting specific name requires a $ in related_name.")
+        else:
+            if "$" in related_name:
+                raise ValueError(
+                    "A $ in related name requires setting specific_relation."
+                )
         self.to = to
         self.related_name = related_name
-        self.on_delete = "protect"  # TODO: Enable cascade
-        BackReferences[self.to].append(self)
+        self.specific_relation = specific_relation
+        ReverseRelations[self.to].append(self)
         super().__init__(**kwargs)  # type: ignore
 
+    def is_single_relation(self) -> bool:
+        raise NotImplementedError
 
-BackReferences: Dict[Collection, List[RelationMixin]] = defaultdict(list)
+    def is_multiple_relation(self) -> bool:
+        return not self.is_single_relation()
+
+
+ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
 class RequiredForeignKeyField(RelationMixin, IdField):
-    def is_single_reference(self) -> bool:
+
+    on_delete = "protect"  # TODO: Enable cascade
+
+    def is_single_relation(self) -> bool:
         return True
 
 
 class ForeignKeyField(RequiredForeignKeyField):
+
+    on_delete = "set_null"  # TODO: Enable cascade
+
     def get_schema(self) -> Schema:
         schema = super().get_schema()
         schema["type"] = ["integer", "null"]
         return schema
 
 
-class ManyToManyArrayField(RelationMixin, Field):
+class ManyToManyArrayField(RelationMixin):
     def get_schema(self) -> Schema:
         return dict(
             description=self.description,
@@ -97,5 +142,5 @@ class ManyToManyArrayField(RelationMixin, Field):
             uniqueItems=True,
         )
 
-    def is_multiple_reference(self) -> bool:
-        return True
+    def is_single_relation(self) -> bool:
+        return False

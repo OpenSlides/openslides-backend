@@ -97,7 +97,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                 {
                     "instance": self.valid_payload_1[0],
                     "new_id": 42,
-                    "references": {
+                    "relations": {
                         get_fqfield("meeting/2393342057/topic_ids"): {
                             "type": "add",
                             "value": [42],
@@ -116,7 +116,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                 {
                     "instance": self.valid_payload_2[0],
                     "new_id": 42,
-                    "references": {
+                    "relations": {
                         get_fqfield("meeting/4002059810/topic_ids"): {
                             "type": "add",
                             "value": [42],
@@ -141,7 +141,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                 {
                     "instance": self.valid_payload_3[0],
                     "new_id": 42,
-                    "references": {
+                    "relations": {
                         get_fqfield("meeting/3611987967/topic_ids"): {
                             "type": "add",
                             "value": [6375863023, 6259289755, 42],
@@ -494,7 +494,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
         self.assertEqual(
-            dataset["data"], [{"instance": self.valid_payload_1[0], "references": {}}],
+            dataset["data"], [{"instance": self.valid_payload_1[0], "relations": {}}],
         )
 
     def test_prepare_dataset_2(self) -> None:
@@ -505,7 +505,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             [
                 {
                     "instance": self.valid_payload_2[0],
-                    "references": {
+                    "relations": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
                         ): {"type": "add", "value": [6259289755, 1312354708]},
@@ -525,7 +525,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             [
                 {
                     "instance": self.valid_payload_3[0],
-                    "references": {
+                    "relations": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
                         ): {"type": "remove", "value": []},
@@ -542,7 +542,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             [
                 {
                     "instance": self.valid_payload_4[0],
-                    "references": {
+                    "relations": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[1]}/topic_ids"
                         ): {"type": "add", "value": [6259289755]},
@@ -559,7 +559,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
             [
                 {
                     "instance": self.valid_payload_5[0],
-                    "references": {
+                    "relations": {
                         get_fqfield(
                             f"mediafile_attachment/{self.attachments[0]}/topic_ids"
                         ): {"type": "remove", "value": []},
@@ -979,13 +979,12 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         "meeting_id": None,
                         "mediafile_attachment_ids": None,
                     },
-                    "references": {
+                    "relations": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
                             "type": "remove",
                             "value": [],
                         },
                     },
-                    "cascade_delete": {},
                 }
             ],
         )
@@ -1002,13 +1001,12 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         "meeting_id": None,
                         "mediafile_attachment_ids": None,
                     },
-                    "references": {
+                    "relations": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
                             "type": "remove",
                             "value": [],
                         },
                     },
-                    "cascade_delete": {},
                 },
                 {
                     "instance": {
@@ -1016,7 +1014,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         "meeting_id": None,
                         "mediafile_attachment_ids": None,
                     },
-                    "references": {
+                    "relations": {
                         get_fqfield("meeting/3611987967/topic_ids"): {
                             "type": "remove",
                             "value": [6375863023],
@@ -1026,7 +1024,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                             "value": [],
                         },
                     },
-                    "cascade_delete": {},
                 },
             ],
         )

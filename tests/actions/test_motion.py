@@ -55,7 +55,7 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
             [
                 {
                     "instance": instance,
-                    "references": {
+                    "relations": {
                         get_fqfield("motion_statute_paragraph/8264607531/motion_ids"): {
                             "type": "remove",
                             "value": [],
@@ -149,6 +149,7 @@ class BaseMotionUpdateMetadataActionTester(TestCase):
                 "motion_block_id": 4740630442,
             }
         ]
+        self.valid_payload_2 = [{"id": 2995885358, "supporter_ids": [7268025091]}]
 
 
 class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester):
@@ -164,6 +165,9 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
 
+    def test_validation_correct_2(self) -> None:
+        self.action.validate(self.valid_payload_2)
+
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
@@ -172,7 +176,7 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
         expected = [
             {
                 "instance": instance,
-                "references": {
+                "relations": {
                     get_fqfield("motion_category/8734727380/motion_ids"): {
                         "type": "remove",
                         "value": [],
@@ -182,6 +186,24 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
                         "value": [],
                     },
                     get_fqfield("motion_block/4740630442/motion_ids"): {
+                        "type": "add",
+                        "value": [2995885358],
+                    },
+                },
+            }
+        ]
+        self.assertEqual(dataset["data"], expected)
+
+    def test_prepare_dataset_2(self) -> None:
+        dataset = self.action.prepare_dataset(self.valid_payload_2)
+        self.assertEqual(dataset["position"], 1)
+        instance = deepcopy(self.valid_payload_2[0])
+        instance["last_modified"] = round(time.time())
+        expected = [
+            {
+                "instance": instance,
+                "relations": {
+                    get_fqfield("user/7268025091/motion_supported_5562405520_ids"): {
                         "type": "add",
                         "value": [2995885358],
                     },
@@ -328,6 +350,90 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
             list(write_request_elements), expected,
         )
 
+    def test_perform_correct_2_1(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_2, user_id=self.user_id_1
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2995885358/last_modified"): round(
+                                time.time()
+                            ),
+                            get_fqfield("motion/2995885358/supporter_ids"): [
+                                7268025091
+                            ],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                "user/7268025091/motion_supported_5562405520_ids"
+                            ): [2995885358],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("motion/2995885358"): ["Object updated"],
+                    get_fqid("user/7268025091"): ["Object attached to motion"],
+                },
+                "user_id": self.user_id_1,
+                "locked_fields": {
+                    get_fqfield("motion/2995885358/deleted"): 1,
+                    get_fqfield("user/7268025091/motion_supported_5562405520_ids"): 1,
+                },
+            }
+        ]
+        self.assertEqual(
+            list(write_request_elements), expected,
+        )
+
+    def test_perform_correct_2_2(self) -> None:
+        write_request_elements = self.action.perform(
+            self.valid_payload_2, user_id=self.user_id_2
+        )
+        expected = [
+            {
+                "events": [
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield("motion/2995885358/last_modified"): round(
+                                time.time()
+                            ),
+                            get_fqfield("motion/2995885358/supporter_ids"): [
+                                7268025091
+                            ],
+                        },
+                    },
+                    {
+                        "type": "update",
+                        "fqfields": {
+                            get_fqfield(
+                                "user/7268025091/motion_supported_5562405520_ids"
+                            ): [2995885358],
+                        },
+                    },
+                ],
+                "information": {
+                    get_fqid("motion/2995885358"): ["Object updated"],
+                    get_fqid("user/7268025091"): ["Object attached to motion"],
+                },
+                "user_id": self.user_id_2,
+                "locked_fields": {
+                    get_fqfield("motion/2995885358/deleted"): 1,
+                    get_fqfield("user/7268025091/motion_supported_5562405520_ids"): 1,
+                },
+            }
+        ]
+        self.assertEqual(
+            list(write_request_elements), expected,
+        )
+
     def test_perform_no_permission_1(self) -> None:
         with self.assertRaises(PermissionDenied) as context_manager:
             self.action.perform(self.valid_payload_1, user_id=4796568680)
@@ -360,55 +466,56 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(dataset["position"], 1)
-        self.assertEqual(
-            dataset["data"],
-            [
-                {
-                    "instance": {
-                        "id": self.valid_payload_1[0]["id"],
-                        "meeting_id": None,
-                        "motion_statute_paragraph_id": None,
-                        "sort_parent_id": None,
-                        "parent_id": None,
-                        "motion_category_id": None,
-                        "motion_block_id": None,
-                        "origin_id": None,
-                        "state_id": None,
-                        "recommendation_id": None,
-                        "supporter_ids": None,
-                        "mediafile_attachment_ids": None,
-                        "tag_ids": None,
+        expected = [
+            {
+                "instance": {
+                    "id": self.valid_payload_1[0]["id"],
+                    "meeting_id": None,
+                    "motion_statute_paragraph_id": None,
+                    "sort_parent_id": None,
+                    "parent_id": None,
+                    "motion_category_id": None,
+                    "motion_block_id": None,
+                    "origin_id": None,
+                    "state_id": None,
+                    "recommendation_id": None,
+                    "supporter_ids": None,
+                    "mediafile_attachment_ids": None,
+                    "tag_ids": None,
+                    "amendment_ids": None,
+                    "derived_motion_ids": None,
+                    "sort_children_ids": None,
+                },
+                "relations": {
+                    get_fqfield("meeting/5562405520/motion_ids"): {
+                        "type": "remove",
+                        "value": [],
                     },
-                    "references": {
-                        get_fqfield("meeting/5562405520/motion_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
-                        get_fqfield("motion_statute_paragraph/8264607531/motion_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
-                        get_fqfield("motion_state/5205893377/motion_active_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
-                        get_fqfield("motion_state/5205893377/motion_recommended_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
-                        get_fqfield("motion_category/8734727380/motion_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
-                        get_fqfield("motion_block/4116433002/motion_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
+                    get_fqfield("motion_statute_paragraph/8264607531/motion_ids"): {
+                        "type": "remove",
+                        "value": [],
                     },
-                    "cascade_delete": {},
-                }
-            ],
-        )
+                    get_fqfield("motion_state/5205893377/motion_active_ids"): {
+                        "type": "remove",
+                        "value": [],
+                    },
+                    get_fqfield("motion_state/5205893377/motion_recommended_ids"): {
+                        "type": "remove",
+                        "value": [],
+                    },
+                    get_fqfield("motion_category/8734727380/motion_ids"): {
+                        "type": "remove",
+                        "value": [],
+                    },
+                    get_fqfield("motion_block/4116433002/motion_ids"): {
+                        "type": "remove",
+                        "value": [],
+                    },
+                },
+            }
+        ]
+        self.maxDiff = None
+        self.assertEqual(dataset["data"], expected)
 
 
 class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
@@ -850,16 +957,3 @@ class MotionSortActionWSGITester(BaseMotionSortActionTester):
         )
         print(response.data)
         self.assertEqual(response.status_code, 200)
-
-
-# 7268025091
-# 2704380002
-# 5265142974
-# 4173926977
-# 2792847341
-# 5411457713
-# 3878502438
-# 2833375327
-# ohXa5Joo2e ohcae9AhTa eiQua7iem1 ahPheiG8fu zu0oaBeeba
-# ilieJa3fou iph3ia9Ahr voh1zeid1Y aa0Aok4the eib8Ne6aif beek5Veexu Cheexi4see
-# vaeb1AiPei HohN8googa Pha7Dei7oe Re2Aazei0O agh8eiM4ul paX6aigeem

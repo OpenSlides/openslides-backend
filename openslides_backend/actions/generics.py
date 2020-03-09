@@ -37,25 +37,49 @@ class CreateAction(PermissionMixin, Action):
         """
         Prepares dataset from payload.
 
-        Just fetches new id, uses given instance and calculated references.
+        Just fetches new id, uses given instance and calculates (reverse)
+        relations.
         """
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
+
         data = []
         for instance in payload:
+            # Check permission using permission_reference field.
             self.check_permission(instance[self.permission_reference])
+
+            # Collect relation fields and also check specific relation. Collect
+            # also reverse relation fields.
+            relation_fields = []
+            for field_name, field in self.model.get_relation_fields():
+                if field_name in instance.keys():
+                    if field.specific_relation:
+                        if instance.get(field.specific_relation) is None:
+                            raise ActionException(
+                                "You must give both a relation field "
+                                "with specific relation and its corresponding "
+                                "foreign key field."
+                            )
+                    relation_fields.append((field_name, field, True))
+            for field_name, field in self.model.get_reverse_relations():
+                if field_name in instance.keys():
+                    relation_fields.append((field_name, field, False))
+
+            # Get new id.
             id, position = self.database.getId(collection=self.model.collection)
             self.set_min_position(position)
-            references = self.get_references(
+
+            # Get relations.
+            relations = self.get_relations(
                 model=self.model,
                 id=id,
                 obj=instance,
-                field_names=(
-                    field_name
-                    for field_name, field in self.model.get_reference_fields()
-                ),
+                relation_fields=relation_fields,
+                shortcut=True,
             )
-            data.append({"instance": instance, "new_id": id, "references": references})
+
+            data.append({"instance": instance, "new_id": id, "relations": relations})
+
         return {"position": self.position, "data": data}
 
     def create_instance_write_request_element(
@@ -96,30 +120,50 @@ class UpdateAction(PermissionMixin, Action):
         Prepares dataset from payload.
 
         Fetches current db instance to get the correct permission. Then uses the
-        input and calculated references.
+        input and calculates (reverse) relations.
         """
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
+
         data = []
         for instance in payload:
+            # Fetch current db instance with permission_reference field.
             db_instance, position = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
                 mapped_fields=[self.permission_reference],
             )
             self.set_min_position(position)
+
+            # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
-            references = self.get_references(
+
+            # Collect relation fields and also check specific relation. Collect
+            # also reverse relation fields.
+            relation_fields = []
+            for field_name, field in self.model.get_relation_fields():
+                if field_name in instance.keys():
+                    if field.specific_relation:
+                        if instance.get(field.specific_relation) is not None:
+                            raise ActionException(
+                                "You must not try to update both a relation field "
+                                "with specific relation and its corresponding "
+                                "foreign key field."
+                            )
+                    relation_fields.append((field_name, field, True))
+            for field_name, field in self.model.get_reverse_relations():
+                if field_name in instance.keys():
+                    relation_fields.append((field_name, field, False))
+
+            # Get relations.
+            relations = self.get_relations(
                 model=self.model,
                 id=instance["id"],
                 obj=instance,
-                field_names=(
-                    field_name
-                    for field_name, field in self.model.get_reference_fields()
-                    if field_name in instance.keys()
-                ),
-                deletion_possible=True,
+                relation_fields=relation_fields,
             )
-            data.append({"instance": instance, "references": references})
+
+            data.append({"instance": instance, "relations": relations})
+
         return {"position": self.position, "data": data}
 
     def create_instance_write_request_element(
@@ -168,59 +212,47 @@ class DeleteAction(PermissionMixin, Action):
         Prepares dataset from payload.
 
         Fetches current db instance to get the correct permission and also all
-        back references. If protected back references are not empty, raises
-        ActionException. Else uses the input and calculated references and
-        back references that should be removed because on_delete is "cascade".
+        reverse relations. If protected reverse relations are not empty, raises
+        ActionException. Else uses the input and calculates (reverse) relations
+        and that should be removed because on_delete is "cascade".
         """
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
+
         data = []
         for instance in payload:
-            mapped_fields = [self.permission_reference] + [
-                back_reference_name
-                for back_reference_name, _ in self.model.get_back_references()
-            ]
+            # Fetch current db instance with permission_reference field
             db_instance, position = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
-                mapped_fields=mapped_fields,
+                mapped_fields=[self.permission_reference],
             )
             self.set_min_position(position)
+
+            # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
-            for field_name, _ in self.model.get_reference_fields():
+
+            # Collect relation fields and reverse relation fields and also
+            # update instance and set all relation fields and reverse relation
+            # fields to None.
+            relation_fields = []
+            for field_name, field in self.model.get_relation_fields():
                 instance[field_name] = None
-            cascade_delete = {}
-            for back_reference_name, back_reference in self.model.get_back_references():
-                if back_reference.on_delete == "protect":
-                    if db_instance.get(back_reference_name):
-                        text = (
-                            f"You are not allowed to delete {self.model.verbose_name} "
-                            f"{instance['id']} as long as there are some referenced "
-                            f"objects (see {back_reference_name})."
-                        )
-                        raise ActionException(text)
-                else:
-                    # back_reference.on_delete == "cascade"
-                    cascade_delete[back_reference_name] = db_instance[
-                        back_reference_name
-                    ]
-            references = self.get_references(
+                relation_fields.append((field_name, field, True))
+
+            for field_name, field in self.model.get_reverse_relations():
+                instance[field_name] = None
+                relation_fields.append((field_name, field, False))
+
+            # Get relations.
+            relations = self.get_relations(
                 model=self.model,
                 id=instance["id"],
                 obj=instance,
-                field_names=(
-                    field_name
-                    for field_name, field in self.model.get_reference_fields()
-                    if field_name in instance.keys()
-                ),
-                deletion_possible=True,
+                relation_fields=relation_fields,
             )
-            data.append(
-                {
-                    "instance": instance,
-                    "references": references,
-                    "cascade_delete": cascade_delete,
-                }
-            )
+
+            data.append({"instance": instance, "relations": relations})
+
         return {"position": self.position, "data": data}
 
     def create_instance_write_request_element(
@@ -232,8 +264,7 @@ class DeleteAction(PermissionMixin, Action):
         Just prepares a write request element with delete event for the given
         instance.
         """
-        # TODO: Delete also back references found in element["cascade_delete"]
-        assert element["cascade_delete"] == {}
+        # TODO: Find solution to delete relations with on_delete == "cascade"
         fqid = FullQualifiedId(self.model.collection, element["instance"]["id"])
         information = {fqid: ["Object deleted"]}
         event = Event(type="delete", fqid=fqid)

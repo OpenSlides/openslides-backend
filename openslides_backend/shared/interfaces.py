@@ -6,11 +6,39 @@ from typing_extensions import Protocol
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .filters import Filter
 
-LoggingModule = Any  # TODO: Use correct type here.
-
 StartResponse = Callable
 
 WSGIEnvironment = Dict[Text, Any]
+
+
+class Logger(Protocol):  # pragma: no cover
+    """
+    Interface for logger object provided by LoggingModule.
+    """
+
+    def debug(self, message: str) -> None:
+        ...
+
+    def info(self, message: str) -> None:
+        ...
+
+    def warning(self, message: str) -> None:
+        ...
+
+    def error(self, message: str) -> None:
+        ...
+
+    def critical(self, message: str) -> None:
+        ...
+
+
+class LoggingModule(Protocol):  # pragma: no cover
+    """
+    Interface for module to provide a hierarchical logger.
+    """
+
+    def getLogger(self, name: str) -> Logger:
+        ...
 
 
 class Services(Protocol):  # pragma: no cover
@@ -18,7 +46,8 @@ class Services(Protocol):  # pragma: no cover
     Interface for service container used for dependency injection.
     """
 
-    # TODO: Use correct type here. Fitting together dependency_injector and our services seams difficult for mypy.
+    # TODO: Use correct type here. Fitting together dependency_injector and our
+    #       services seems difficult for mypy.
     authentication: Any
     permission: Any
     database: Any
@@ -34,10 +63,9 @@ class Headers(Protocol):  # pragma: no cover
         ...
 
 
-# TODO Use proper type here.
+# TODO Use proper type here: Body is ActionsPayload, RestrictionsPayload or PresenterPayload
 RequestBody = Any
 ResponseBody = Optional[List[Any]]
-# End TODO
 
 
 class View(Protocol):  # pragma: no cover
@@ -122,7 +150,7 @@ class Database(Protocol):  # pragma: no cover
     ) -> Tuple[Dict[int, Dict[str, Any]], int]:
         ...
 
-    # getAll, filter, count, min, max, ...some with deleted or only deleted
+    # TODO: getAll, filter, count, min, max, ...some with deleted or only deleted
 
 
 class Event(TypedDict, total=False):
@@ -143,7 +171,9 @@ class WriteRequestElement(TypedDict):
     events: List[Event]
     information: Dict[FullQualifiedId, List[str]]
     user_id: int
-    locked_fields: Dict[Any, int]  # TODO
+    locked_fields: Dict[
+        Any, int
+    ]  # TODO: We have different possibilities to lock things in the DB.
 
 
 class EventStore(Protocol):  # pragma: no cover

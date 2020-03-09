@@ -9,7 +9,7 @@ from ..shared.patterns import Collection
 from ..shared.schema import schema_version
 from .presenter_interface import Payload, PresenterResponse
 
-Presentation = Any  # TODO
+Presentation = Any  # TODO: Add a base.py and implement a base Presenter class.
 
 
 def prepare_presentations_map() -> None:

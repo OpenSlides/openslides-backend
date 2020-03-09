@@ -77,6 +77,7 @@ TESTDATA = [
         "fields": {"committee_id": 5914213969, "topic_ids": []},
     },
     # Motion test:
+    {"collection": "user", "id": 7268025091, "fields": {}},
     {
         "collection": "committee",
         "id": 7826715669,
@@ -129,7 +130,7 @@ TESTDATA = [
         "id": 8264607531,
         "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
     },
-    # Sort motions (not fully referenced)
+    # Sort motions (not fully related)
     {
         "collection": "motion",
         "id": 3265963568,

@@ -99,7 +99,8 @@ class Motion(Model):
     supporter_ids = fields.ManyToManyArrayField(
         description="The users that are supportes of this motion.",
         to=Collection("user"),
-        related_name="motion_supported_ids",
+        related_name="motion_supported_$_ids",
+        specific_relation="meeting_id",
     )
 
     # Timestamps
@@ -112,12 +113,12 @@ class Motion(Model):
 
     # Miscellaneous
     mediafile_attachment_ids = fields.ManyToManyArrayField(
-        description="The attachments that should be referenced with this motion.",
+        description="The attachments that should be related with this motion.",
         to=Collection("mediafile_attachment"),
         related_name="motion_ids",
     )
     tag_ids = fields.ManyToManyArrayField(
-        description="The tags that should be referenced with this motion.",
+        description="The tags that should be related with this motion.",
         to=Collection("tag"),
         related_name="motion_ids",
     )
