@@ -163,15 +163,9 @@ class TreeSortMixin(BaseAction):
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:
         for id, instance in dataset["data"].items():
-            fqfields = {}
-            for field_name, value in instance.items():
-                fqfields[
-                    FullQualifiedField(self.model.collection, id, field_name)
-                ] = value
-            information = {
-                FullQualifiedId(self.model.collection, id): ["Object sorted"]
-            }
-            event = Event(type="update", fqfields=fqfields)
+            fqid = FullQualifiedId(self.model.collection, id)
+            information = {fqid: ["Object sorted"]}
+            event = Event(type="update", fqid=fqid, fields=instance)
             yield WriteRequestElement(
                 events=[event],
                 information=information,

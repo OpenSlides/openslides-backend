@@ -116,7 +116,7 @@ class Action(BaseAction):
         """
         Creates write request elements (with update events) for all relations.
         """
-        for fqfield, data in element["references"].items():
+        for fqfield, data in element["relations"].items():
             event = Event(
                 type="update",
                 fqid=FullQualifiedId(fqfield.collection, fqfield.id),

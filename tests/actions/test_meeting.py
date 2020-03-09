@@ -116,7 +116,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("committee/5914213969"),
-                        "fields": {"meeting_ids": [7816466305, 3908439961, 42,]},
+                        "fields": {"meeting_ids": [7816466305, 3908439961, 42]},
                     },
                 ],
                 "information": {
@@ -240,7 +240,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("meeting/7816466305"),
-                        "fields": {"title": "title_GeiduDohx0",},
+                        "fields": {"title": "title_GeiduDohx0"},
                     },
                 ],
                 "information": {get_fqid("meeting/7816466305"): ["Object updated"]},

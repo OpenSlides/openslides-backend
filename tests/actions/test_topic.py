@@ -203,7 +203,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid("meeting/2393342057/"),
+                        "fqid": get_fqid("meeting/2393342057"),
                         "fields": {"topic_ids": [42]},
                     },
                 ],
@@ -238,17 +238,17 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
-                        "fields": {"topic_ids": [6259289755, 42],},
+                        "fields": {"topic_ids": [6259289755, 42]},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
-                        "fields": {"topic_ids": [42],},
+                        "fields": {"topic_ids": [42]},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid("meeting/4002059810"),
-                        "fields": {"topic_ids": [42],},
+                        "fields": {"topic_ids": [42]},
                     },
                 ],
                 "information": {
@@ -294,7 +294,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("meeting/3611987967"),
-                        "fields": {"topic_ids": [6375863023, 6259289755, 42,],},
+                        "fields": {"topic_ids": [6375863023, 6259289755, 42]},
                     },
                 ],
                 "information": {
@@ -624,12 +624,12 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
-                        "fields": {"topic_ids": [6259289755, 1312354708],},
+                        "fields": {"topic_ids": [6259289755, 1312354708]},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
-                        "fields": {"topic_ids": [1312354708],},
+                        "fields": {"topic_ids": [1312354708]},
                     },
                 ],
                 "information": {
@@ -674,7 +674,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("mediafile_attachment/3549387598"),
-                        "fields": {"topic_ids": [],},
+                        "fields": {"topic_ids": []},
                     },
                 ],
                 "information": {
@@ -703,12 +703,12 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("topic/6259289755"),
-                        "fields": {"mediafile_attachment_ids": self.attachments,},
+                        "fields": {"mediafile_attachment_ids": self.attachments},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
-                        "fields": {"topic_ids": [6259289755],},
+                        "fields": {"topic_ids": [6259289755]},
                     },
                 ],
                 "information": {
@@ -739,17 +739,17 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("topic/6259289755"),
-                        "fields": {"mediafile_attachment_ids": [self.attachments[1]],},
+                        "fields": {"mediafile_attachment_ids": [self.attachments[1]]},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
-                        "fields": {"topic_ids": [],},
+                        "fields": {"topic_ids": []},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
-                        "fields": {"topic_ids": [6259289755],},
+                        "fields": {"topic_ids": [6259289755]},
                     },
                 ],
                 "information": {
@@ -1081,12 +1081,12 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("mediafile_attachment/3549387598"),
-                        "fields": {"topic_ids": [],},
+                        "fields": {"topic_ids": []},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid("meeting/3611987967"),
-                        "fields": {"topic_ids": [6375863023],},
+                        "fields": {"topic_ids": [6375863023]},
                     },
                 ],
                 "information": {

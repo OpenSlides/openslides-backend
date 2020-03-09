@@ -96,12 +96,12 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                     {
                         "type": "create",
                         "fqid": get_fqid("committee/42"),
-                        "fields": {"organisation_id": 1, "title": "title_ieth5Ha1th",},
+                        "fields": {"organisation_id": 1, "title": "title_ieth5Ha1th"},
                     },
                     {
                         "type": "update",
                         "fqid": get_fqid("organisation/1"),
-                        "fields": {"committee_ids": [5914213969, 7826715669, 42,]},
+                        "fields": {"committee_ids": [5914213969, 7826715669, 42]},
                     },
                 ],
                 "information": {
