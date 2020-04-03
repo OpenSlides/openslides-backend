@@ -100,7 +100,9 @@ class AuthenticationHTTPAdapterTester(TestCase):
         self.host = "localhost"
         self.port = 9000
         self.auth = AuthenticationHTTPAdapter(
-            authentication_url=f"http://{self.host}:{self.port}", logging=MagicMock()
+            # TODO: Use a function from environment.py. Don't declare host and port twice.
+            authentication_url=f"http://{self.host}:{self.port}",
+            logging=MagicMock(),
         )
 
     def test_get_anonymous(self) -> None:
