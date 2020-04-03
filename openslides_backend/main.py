@@ -131,7 +131,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "loglevel": loglevel,
             # TODO: This does not work. Changes will reload the application, but code changed do not reflect.
             "reload": loglevel == "debug",
-            "reload_engine": "auto",
+            "reload_engine": "auto",  # This is the default however.
         }
         for key, value in options.items():
             self.cfg.set(key, value)

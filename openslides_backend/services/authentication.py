@@ -5,8 +5,8 @@ from simplejson.errors import JSONDecodeError  # type: ignore
 from ..shared.exceptions import AuthenticationException
 from ..shared.interfaces import Headers, LoggingModule
 
-# TODO: something should tell this service what the correct user id of the guest is
-gusest_user_id = 0
+# TODO: Something should tell this service what the correct user id of the guest is.
+GUEST_USER_ID = 0
 
 
 class AuthenticationHTTPAdapter:
@@ -47,15 +47,20 @@ class AuthenticationHTTPAdapter:
                 raise AuthenticationException(
                     "Empty or bad response from authentication service."
                 )
-            return user_id
         else:
-            self.logger.debug(f"Auth cannot be reached. Fall back to guest mode")
-            return gusest_user_id
+            self.logger.debug(f"Auth cannot be reached. Fall back to guest mode.")
+            user_id = GUEST_USER_ID
+        return user_id
 
     def is_auth_accessible(self, url: str) -> bool:
+        """
+        Checks if authentication service is accessible.
+        """
         try:
-            r = requests.head(url)
-            return r.status_code == 200
+            response = requests.head(url)
         except requests.exceptions.ConnectionError as e:
-            self.logger.debug(f"Cannot reach the auth server on {url} Error: {e}")
+            self.logger.debug(
+                f"Cannot reach the authentication service on {url}. Error: {e}"
+            )
             return False
+        return response.status_code == 200
