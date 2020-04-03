@@ -129,7 +129,9 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
             "timeout": int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30")),
             "loglevel": loglevel,
+            # TODO: This does not work. Changes will reload the application, but code changed do not reflect.
             "reload": loglevel == "debug",
+            "reload_engine": "auto",  # This is the default however.
         }
         for key, value in options.items():
             self.cfg.set(key, value)

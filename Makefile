@@ -21,6 +21,9 @@ test_all:
 pip_check:
 	pip-check
 
+run-debug:
+	OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
+
 docker-build-dev:
 	docker build -f Dockerfile-dev . -t openslides_backend
 

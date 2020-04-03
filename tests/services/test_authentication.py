@@ -32,6 +32,10 @@ class FakeServerRequestHandler(BaseHTTPRequestHandler):
         self.error = error
         super().__init__(*args, **kwargs)
 
+    def do_HEAD(self) -> None:
+        self.send_response(200)
+        self.end_headers()
+
     def do_POST(self) -> None:
         if not self.error:
             self.send_response(200)
@@ -100,7 +104,9 @@ class AuthenticationHTTPAdapterTester(TestCase):
         self.host = "localhost"
         self.port = 9000
         self.auth = AuthenticationHTTPAdapter(
-            authentication_url=f"http://{self.host}:{self.port}", logging=MagicMock()
+            # TODO: Use a function from environment.py. Don't declare host and port twice.
+            authentication_url=f"http://{self.host}:{self.port}",
+            logging=MagicMock(),
         )
 
     def test_get_anonymous(self) -> None:
@@ -157,6 +163,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
             )
 
     def test_wsgi_request_missing_body(self) -> None:
+        # This this does not touch the fake auth server.
         with FakeServer(self.host, self.port, 6052759165):
             client = Client(create_wsgi_application("ActionsView"), ResponseWrapper)
             response = client.post(
