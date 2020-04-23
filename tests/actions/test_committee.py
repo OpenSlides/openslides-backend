@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from openslides_backend.actions import Payload
+from openslides_backend.actions import ActionPayload
 from openslides_backend.actions.committee.create import CommitteeCreate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
@@ -31,12 +31,12 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
         self.action.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -75,12 +75,12 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
         self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 

@@ -65,14 +65,16 @@ class ActionsView(BaseView):
         # Handle request.
         handler: Actions = ActionsHandler()
         try:
-            handler.handle_request(payload, self.user_id, self.logging, self.services)
+            result = handler.handle_request(
+                payload, self.user_id, self.logging, self.services
+            )
         except ActionException as exception:
             raise ViewException(exception.message, status_code=400)
         except PermissionDenied as exception:
             raise ViewException(exception.message, status_code=403)
 
         self.logger.debug("Action request finished successfully.")
-        return None
+        return result
 
 
 class RestrictionsView(BaseView):

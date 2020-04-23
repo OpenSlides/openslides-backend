@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from openslides_backend.actions import Payload
+from openslides_backend.actions import ActionPayload
 from openslides_backend.actions.topic.create import TopicCreate
 from openslides_backend.actions.topic.delete import TopicDelete
 from openslides_backend.actions.topic.update import TopicUpdate
@@ -54,12 +54,12 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
         )
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -170,12 +170,12 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         )
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -362,6 +362,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             "/", json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
+        self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_correct_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -453,12 +454,12 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
         )
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -567,12 +568,12 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
         )
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -913,12 +914,12 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
         )
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -1004,12 +1005,12 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
         )
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
