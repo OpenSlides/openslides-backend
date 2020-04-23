@@ -26,10 +26,15 @@ class AuthenticationHTTPAdapter:
         self.logger.debug(
             f"Start request to authentication service with the following data: {headers}"
         )
-
-        if self.is_auth_accessible(self.url):
-            request_data = json.dumps(headers.to_wsgi_list())
+        request_data = json.dumps(headers.to_wsgi_list())
+        try:
             response = requests.post(self.url, data=request_data, headers=self.headers)
+        except requests.exceptions.ConnectionError as e:
+            self.logger.debug(
+                f"Cannot reach the authentication service on {self.url}. Error: {e}"
+            )
+            user_id = self.auth_is_down()
+        else:
             if not response.ok:
                 raise AuthenticationException(
                     f"Authentication service sends HTTP {response.status_code}."
@@ -47,20 +52,11 @@ class AuthenticationHTTPAdapter:
                 raise AuthenticationException(
                     "Empty or bad response from authentication service."
                 )
-        else:
-            self.logger.debug(f"Auth cannot be reached. Fall back to guest mode.")
-            user_id = GUEST_USER_ID
         return user_id
 
-    def is_auth_accessible(self, url: str) -> bool:
+    def auth_is_down(self) -> int:
         """
-        Checks if authentication service is accessible.
+        Fallback to guest mode if auth is down
         """
-        try:
-            response = requests.head(url)
-        except requests.exceptions.ConnectionError as e:
-            self.logger.debug(
-                f"Cannot reach the authentication service on {url}. Error: {e}"
-            )
-            return False
-        return response.status_code == 200
+        self.logger.debug(f"Auth cannot be reached. Fall back to guest mode.")
+        return GUEST_USER_ID
