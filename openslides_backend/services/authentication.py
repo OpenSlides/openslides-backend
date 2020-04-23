@@ -26,10 +26,15 @@ class AuthenticationHTTPAdapter:
         self.logger.debug(
             f"Start request to authentication service with the following data: {headers}"
         )
-
+        request_data = json.dumps(headers.to_wsgi_list())
         try:
-            request_data = json.dumps(headers.to_wsgi_list())
             response = requests.post(self.url, data=request_data, headers=self.headers)
+        except requests.exceptions.ConnectionError as e:
+            self.logger.debug(
+                f"Cannot reach the authentication service on {self.url}. Error: {e}"
+            )
+            user_id = self.auth_is_down()
+        else:
             if not response.ok:
                 raise AuthenticationException(
                     f"Authentication service sends HTTP {response.status_code}."
@@ -42,16 +47,12 @@ class AuthenticationHTTPAdapter:
                 )
             self.logger.debug(f"Get repsonse: {body}")
             try:
-                return body["user_id"]
+                user_id = body["user_id"]
             except (TypeError, KeyError):
                 raise AuthenticationException(
                     "Empty or bad response from authentication service."
                 )
-        except requests.exceptions.ConnectionError as e:
-            self.logger.debug(
-                f"Cannot reach the authentication service on {self.url}. Error: {e}"
-            )
-            return self.auth_is_down()
+        return user_id
 
     def auth_is_down(self) -> int:
         """
