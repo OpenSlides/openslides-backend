@@ -21,7 +21,7 @@ class BaseCommitteeCreateActionTester(TestCase):
     """
 
     def setUp(self) -> None:
-        self.valid_payload_1 = [{"organisation_id": 1, "title": "title_ieth5Ha1th"}]
+        self.valid_payload_1 = [{"organisation_id": 1, "name": "name_ieth5Ha1th"}]
 
 
 class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
@@ -96,7 +96,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                     {
                         "type": "create",
                         "fqid": get_fqid("committee/42"),
-                        "fields": {"organisation_id": 1, "title": "title_ieth5Ha1th"},
+                        "fields": {"organisation_id": 1, "name": "name_ieth5Ha1th"},
                     },
                     {
                         "type": "update",
@@ -136,7 +136,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         response = client.post("/", json=[{"action": "committee.create", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'organisation_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
         )
 
@@ -153,7 +153,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'organisation_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
         )
 

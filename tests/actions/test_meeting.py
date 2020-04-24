@@ -23,9 +23,7 @@ class BaseMeetingCreateActionTester(TestCase):
     """
 
     def setUp(self) -> None:
-        self.valid_payload_1 = [
-            {"committee_id": 5914213969, "title": "title_zusae6aD0a"}
-        ]
+        self.valid_payload_1 = [{"committee_id": 5914213969, "name": "name_zusae6aD0a"}]
 
 
 class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
@@ -110,7 +108,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
                         "fqid": get_fqid("meeting/42"),
                         "fields": {
                             "committee_id": 5914213969,
-                            "title": "title_zusae6aD0a",
+                            "name": "name_zusae6aD0a",
                         },
                     },
                     {
@@ -149,7 +147,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         response = client.post("/", json=[{"action": "meeting.create", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'committee_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'committee_id\\', \\'name\\'] properties",
             str(response.data),
         )
 
@@ -166,7 +164,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'committee_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'committee_id\\', \\'name\\'] properties",
             str(response.data),
         )
 
@@ -200,7 +198,7 @@ class BaseMeetingUpdateActionTester(TestCase):
     """
 
     def setUp(self) -> None:
-        self.valid_payload_1 = [{"id": 7816466305, "title": "title_GeiduDohx0"}]
+        self.valid_payload_1 = [{"id": 7816466305, "name": "name_GeiduDohx0"}]
 
 
 class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
@@ -240,7 +238,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("meeting/7816466305"),
-                        "fields": {"title": "title_GeiduDohx0"},
+                        "fields": {"name": "name_GeiduDohx0"},
                     },
                 ],
                 "information": {get_fqid("meeting/7816466305"): ["Object updated"]},

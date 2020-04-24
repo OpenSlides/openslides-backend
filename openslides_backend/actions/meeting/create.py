@@ -14,8 +14,8 @@ create_meeting_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": Meeting().get_properties("committee_id", "title"),
-            "required": ["committee_id", "title"],
+            "properties": Meeting().get_properties("committee_id", "name"),
+            "required": ["committee_id", "name"],
             "additionalProperties": False,
         },
         "minItems": 1,

@@ -7,12 +7,12 @@ from openslides_backend.shared.patterns import Collection, FullQualifiedId
 # Do not change order of this entries. Just append new ones.
 TESTDATA = [
     {
-        "collection": "mediafile_attachment",
+        "collection": "mediafile",
         "id": 3549387598,
         "fields": {"meeting_ids": [3611987967], "topic_ids": [6259289755]},
     },
     {
-        "collection": "mediafile_attachment",
+        "collection": "mediafile",
         "id": 7583920032,
         "fields": {"meeting_ids": [], "topic_ids": []},
     },
@@ -40,7 +40,7 @@ TESTDATA = [
         "collection": "meeting",
         "id": 3611987967,
         "fields": {"topic_ids": [6375863023, 6259289755], "user_ids": [5968705978]},
-        "mediafile_attachment_ids": [3549387598],
+        "attachment_ids": [3549387598],
     },
     {
         "collection": "topic",
@@ -53,7 +53,7 @@ TESTDATA = [
         "fields": {
             "meeting_id": 3611987967,
             "title": "title_ub0eeYushu",
-            "mediafile_attachment_ids": [3549387598],
+            "attachment_ids": [3549387598],
         },
     },
     {
@@ -96,9 +96,9 @@ TESTDATA = [
             "meeting_id": 5562405520,
             "state_id": 5205893377,
             "recommendation_id": 5205893377,
-            "motion_category_id": 8734727380,
-            "motion_block_id": 4116433002,
-            "motion_statute_paragraph_id": 8264607531,
+            "category_id": 8734727380,
+            "block_id": 4116433002,
+            "statute_paragraph_id": 8264607531,
         },
     },
     {
@@ -106,8 +106,8 @@ TESTDATA = [
         "id": 5205893377,
         "fields": {
             "meeting_id": 5562405520,
-            "motion_active_ids": [2995885358],
-            "motion_recommended_ids": [2995885358],
+            "motion_ids": [2995885358],
+            "motion_recommendation_ids": [2995885358],
         },
     },
     {
@@ -134,17 +134,17 @@ TESTDATA = [
     {
         "collection": "motion",
         "id": 3265963568,
-        "fields": {"meeting_id": 5562405520, "sort_children_ids": []},
+        "fields": {"meeting_id": 5562405520, "sort_child_ids": []},
     },
     {
         "collection": "motion",
         "id": 2279328478,
-        "fields": {"meeting_id": 5562405520, "sort_children_ids": []},
+        "fields": {"meeting_id": 5562405520, "sort_child_ids": []},
     },
     {
         "collection": "motion",
         "id": 1082050467,
-        "fields": {"meeting_id": 5562405520, "sort_children_ids": [8000824551]},
+        "fields": {"meeting_id": 5562405520, "sort_child_ids": [8000824551]},
     },
     {
         "collection": "motion",

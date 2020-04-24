@@ -102,6 +102,9 @@ class ActionsHandler:
         except JsonSchemaException as exception:
             raise ActionException(exception.message)
 
+        # TODO: Start a loop here and retry parsing actions and writing to event
+        # store for some time if event store sends ModelLocked Exception
+
         # Parse actions and creates events
         write_request_elements = self.parse_actions(payload)
 
@@ -112,7 +115,7 @@ class ActionsHandler:
             raise ActionException(exception.message)
 
         # Return action result
-        # TODO: This is a fake result because in this place all acrtions were
+        # TODO: This is a fake result because in this place all actions were
         # always successful.
         self.logger.debug("Request was successful. Send response now.")
         return [

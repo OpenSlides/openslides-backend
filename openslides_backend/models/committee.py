@@ -29,6 +29,4 @@ class Committee(Model):
         to=Collection("organisation"),
         related_name="committee_ids",
     )
-    title = fields.RequiredCharField(
-        description="The title or headline of this committee."
-    )
+    name = fields.RequiredCharField(description="The name of this committee.")

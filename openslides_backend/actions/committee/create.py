@@ -14,8 +14,8 @@ create_committee_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": Committee().get_properties("organisation_id", "title"),
-            "required": ["organisation_id", "title"],
+            "properties": Committee().get_properties("organisation_id", "name"),
+            "required": ["organisation_id", "name"],
             "additionalProperties": False,
         },
         "minItems": 1,

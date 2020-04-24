@@ -6,8 +6,10 @@ from typing_extensions import Protocol
 from ..shared.interfaces import LoggingModule, Services
 
 ActionPayload = Union[List[Dict[str, Any]], Dict[str, Any]]
-ActionBlob = TypedDict("ActionBlob", {"action": str, "data": ActionPayload})
-Payload = List[ActionBlob]
+ActionPayloadWithLabel = TypedDict(
+    "ActionPayloadWithLabel", {"action": str, "data": ActionPayload}
+)
+Payload = List[ActionPayloadWithLabel]
 
 ActionResult = TypedDict("ActionResult", {"success": bool, "message": str})
 

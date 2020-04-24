@@ -15,7 +15,7 @@ create_topic_schema = fastjsonschema.compile(
         "items": {
             "type": "object",
             "properties": Topic().get_properties(
-                "meeting_id", "title", "text", "mediafile_attachment_ids"
+                "meeting_id", "title", "text", "attachment_ids"
             ),
             "required": ["meeting_id", "title"],
             "additionalProperties": False,

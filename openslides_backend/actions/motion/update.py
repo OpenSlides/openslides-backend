@@ -18,8 +18,8 @@ update_motion_schema = fastjsonschema.compile(
         "items": {
             "type": "object",
             "properties": Motion().get_properties(
-                "id", "title", "motion_statute_paragraph_id",
-            ),  # TODO identifier, modified_final_version, reason, text, amendmend_paragraphs, parent_id, mediafile_attachment
+                "id", "title", "statute_paragraph_id",
+            ),  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
             "required": ["id"],
             "additionalProperties": False,
         },
@@ -57,8 +57,8 @@ update_motion_metadata_schema = fastjsonschema.compile(
             "type": "object",
             "properties": Motion().get_properties(
                 "id",
-                "motion_category_id",
-                "motion_block_id",
+                "category_id",
+                "block_id",
                 "origin_id",
                 "state_id",
                 "state_extension",
