@@ -5,7 +5,7 @@ from dependency_injector import containers, providers  # type: ignore
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
-from openslides_backend.http.views import ActionsView, PresenterView, RestrictionsView
+from openslides_backend.http.views import ActionsView, PresenterView
 from openslides_backend.main import OpenSlidesBackendWSGI
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.shared.patterns import (
@@ -47,8 +47,6 @@ def create_test_application(user_id: int, view_name: str) -> WSGIApplication:
     view: Type[View]
     if view_name == "ActionsView":
         view = ActionsView
-    elif view_name == "RestrictionsView":
-        view = RestrictionsView
     elif view_name == "PresenterView":
         view = PresenterView
     else:

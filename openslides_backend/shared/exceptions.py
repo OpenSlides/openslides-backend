@@ -21,6 +21,10 @@ class ActionException(BackendBaseException):
     pass
 
 
+class PresenterException(BackendBaseException):
+    pass
+
+
 class PermissionDenied(BackendBaseException):
     pass
 
@@ -30,12 +34,4 @@ class DatabaseException(BackendBaseException):
 
 
 class EventStoreException(BackendBaseException):
-    pass
-
-
-class RestrictionException(BackendBaseException):
-    pass
-
-
-class PresenterException(BackendBaseException):
     pass

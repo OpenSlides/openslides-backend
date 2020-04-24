@@ -1,20 +1,14 @@
-from typing import Any, Dict, List
-
 from ..actions import Actions
 from ..actions.actions import ActionsHandler
 from ..actions.actions import Payload as ActionsPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
-from ..restrictions import Payload as RestrictionsPayload
-from ..restrictions import RestrictionResponse, Restrictions
-from ..restrictions.restrictions import RestrictionsHandler
 from ..shared.exceptions import (
     ActionException,
     AuthenticationException,
     PermissionDenied,
     PresenterException,
-    RestrictionException,
     ViewException,
 )
 from ..shared.interfaces import (
@@ -74,49 +68,6 @@ class ActionsView(BaseView):
             raise ViewException(exception.message, status_code=403)
 
         self.logger.debug("Action request finished successfully.")
-        return result
-
-
-class RestrictionsView(BaseView):
-    """
-    The RestrictionsView receives a bundle of restrictions via HTTP and handles
-    it to the RestrictionsHandler.
-    """
-
-    method = "GET"
-
-    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
-        """
-        Dispatches request to the viewpoint.
-        """
-        self.logger.debug("Start dispatching restrictions request.")
-
-        # Setup payload
-        payload: RestrictionsPayload = body
-
-        # Handle request.
-        handler: Restrictions = RestrictionsHandler()
-        try:
-            restriction_response = handler.handle_request(
-                payload, self.logging, self.services
-            )
-        except RestrictionException as exception:
-            raise ViewException(exception.message, status_code=400)
-        response = self.parse_restriction_response(restriction_response)
-        self.logger.debug(
-            "Restrictions request finished successfully. Send response now."
-        )
-        return response
-
-    def parse_restriction_response(
-        self, restriction_response: RestrictionResponse
-    ) -> List[Dict[str, Any]]:
-        result = []
-        for blob in restriction_response:
-            blob_result = {}
-            for fqfield, value in blob.items():
-                blob_result[str(fqfield)] = value
-            result.append(blob_result)
         return result
 
 
