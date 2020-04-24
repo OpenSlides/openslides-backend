@@ -8,8 +8,8 @@ from ..models.fields import RelationMixin
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
+from .actions_interface import ActionPayload
 
-ActionPayload = Union[List[Dict[str, Any]], Dict[str, Any]]
 DataSet = TypedDict("DataSet", {"position": int, "data": Any})
 RelationsElement = TypedDict(
     "RelationsElement", {"type": str, "value": Union[Optional[int], List[int]]}

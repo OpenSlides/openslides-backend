@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from openslides_backend.actions import Payload
+from openslides_backend.actions import ActionPayload
 from openslides_backend.actions.topic.create import TopicCreate
 from openslides_backend.actions.topic.delete import TopicDelete
 from openslides_backend.actions.topic.update import TopicUpdate
@@ -39,7 +39,7 @@ class BaseTopicCreateActionTester(TestCase):
                 "meeting_id": 4002059810,
                 "title": "title_pha2Eirohg",
                 "text": "text_CaekiiLai2",
-                "mediafile_attachment_ids": self.attachments,
+                "attachment_ids": self.attachments,
             }
         ]
         self.valid_payload_3 = [{"meeting_id": 3611987967, "title": "title_eivaey2Aeg"}]
@@ -54,12 +54,12 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
         )
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -120,12 +120,14 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                             "type": "add",
                             "value": [42],
                         },
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): {"type": "add", "value": [6259289755, 42]},
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): {"type": "add", "value": [42]},
+                        get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): {
+                            "type": "add",
+                            "value": [6259289755, 42],
+                        },
+                        get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): {
+                            "type": "add",
+                            "value": [42],
+                        },
                     },
                 }
             ],
@@ -170,12 +172,12 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         )
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -232,17 +234,17 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                             "meeting_id": 4002059810,
                             "title": "title_pha2Eirohg",
                             "text": "text_CaekiiLai2",
-                            "mediafile_attachment_ids": self.attachments,
+                            "attachment_ids": self.attachments,
                         },
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[0]}"),
                         "fields": {"topic_ids": [6259289755, 42]},
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[1]}"),
                         "fields": {"topic_ids": [42]},
                     },
                     {
@@ -254,22 +256,18 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                 "information": {
                     get_fqid("topic/42"): ["Object created"],
                     get_fqid("meeting/4002059810"): ["Object attached to topic"],
-                    get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
+                    get_fqid(f"mediafile/{self.attachments[0]}"): [
                         "Object attached to topic"
                     ],
-                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                    get_fqid(f"mediafile/{self.attachments[1]}"): [
                         "Object attached to topic"
                     ],
                 },
                 "user_id": self.user_id,
                 "locked_fields": {
                     get_fqfield("meeting/4002059810/topic_ids"): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                    ): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                    ): 1,
+                    get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): 1,
+                    get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): 1,
                 },
             }
         ]
@@ -362,6 +360,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             "/", json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assertEqual(response.status_code, 200)
+        self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_correct_2(self) -> None:
         client = Client(self.application, ResponseWrapper)
@@ -426,21 +425,15 @@ class BaseTopicUpdateActionTester(TestCase):
                 "id": 1312354708,
                 "title": "title_pai9oN2aec",
                 "text": "text_oon2lai3Ie",
-                "mediafile_attachment_ids": self.attachments,
+                "attachment_ids": self.attachments,
             }
         ]
         self.valid_payload_3 = [
-            {
-                "id": 6259289755,
-                "title": "title_Ashae0quei",
-                "mediafile_attachment_ids": [],
-            }
+            {"id": 6259289755, "title": "title_Ashae0quei", "attachment_ids": []}
         ]
-        self.valid_payload_4 = [
-            {"id": 6259289755, "mediafile_attachment_ids": self.attachments}
-        ]
+        self.valid_payload_4 = [{"id": 6259289755, "attachment_ids": self.attachments}]
         self.valid_payload_5 = [
-            {"id": 6259289755, "mediafile_attachment_ids": [self.attachments[1]]}
+            {"id": 6259289755, "attachment_ids": [self.attachments[1]]}
         ]
 
 
@@ -453,12 +446,12 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
         )
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -492,12 +485,14 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                 {
                     "instance": self.valid_payload_2[0],
                     "relations": {
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): {"type": "add", "value": [6259289755, 1312354708]},
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): {"type": "add", "value": [1312354708]},
+                        get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): {
+                            "type": "add",
+                            "value": [6259289755, 1312354708],
+                        },
+                        get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): {
+                            "type": "add",
+                            "value": [1312354708],
+                        },
                     },
                 }
             ],
@@ -512,9 +507,10 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                 {
                     "instance": self.valid_payload_3[0],
                     "relations": {
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): {"type": "remove", "value": []},
+                        get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        },
                     },
                 }
             ],
@@ -529,9 +525,10 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                 {
                     "instance": self.valid_payload_4[0],
                     "relations": {
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): {"type": "add", "value": [6259289755]},
+                        get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): {
+                            "type": "add",
+                            "value": [6259289755],
+                        },
                     },
                 }
             ],
@@ -546,12 +543,14 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
                 {
                     "instance": self.valid_payload_5[0],
                     "relations": {
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                        ): {"type": "remove", "value": []},
-                        get_fqfield(
-                            f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                        ): {"type": "add", "value": [6259289755]},
+                        get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        },
+                        get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): {
+                            "type": "add",
+                            "value": [6259289755],
+                        },
                     },
                 }
             ],
@@ -567,12 +566,12 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
         )
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -618,38 +617,34 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                         "fields": {
                             "title": "title_pai9oN2aec",
                             "text": "text_oon2lai3Ie",
-                            "mediafile_attachment_ids": self.attachments,
+                            "attachment_ids": self.attachments,
                         },
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[0]}"),
                         "fields": {"topic_ids": [6259289755, 1312354708]},
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[1]}"),
                         "fields": {"topic_ids": [1312354708]},
                     },
                 ],
                 "information": {
                     get_fqid("topic/1312354708"): ["Object updated"],
-                    get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
+                    get_fqid(f"mediafile/{self.attachments[0]}"): [
                         "Object attached to topic"
                     ],
-                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                    get_fqid(f"mediafile/{self.attachments[1]}"): [
                         "Object attached to topic"
                     ],
                 },
                 "user_id": self.user_id,
                 "locked_fields": {
                     get_fqfield("topic/1312354708/deleted"): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                    ): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                    ): 1,
+                    get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): 1,
+                    get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): 1,
                 },
             },
         ]
@@ -666,27 +661,24 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("topic/6259289755"),
-                        "fields": {
-                            "title": "title_Ashae0quei",
-                            "mediafile_attachment_ids": [],
-                        },
+                        "fields": {"title": "title_Ashae0quei", "attachment_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid("mediafile_attachment/3549387598"),
+                        "fqid": get_fqid("mediafile/3549387598"),
                         "fields": {"topic_ids": []},
                     },
                 ],
                 "information": {
                     get_fqid("topic/6259289755"): ["Object updated"],
-                    get_fqid("mediafile_attachment/3549387598"): [
+                    get_fqid("mediafile/3549387598"): [
                         "Object attachment to topic reset"
                     ],
                 },
                 "user_id": self.user_id,
                 "locked_fields": {
                     get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield("mediafile_attachment/3549387598/topic_ids"): 1,
+                    get_fqfield("mediafile/3549387598/topic_ids"): 1,
                 },
             },
         ]
@@ -703,26 +695,24 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("topic/6259289755"),
-                        "fields": {"mediafile_attachment_ids": self.attachments},
+                        "fields": {"attachment_ids": self.attachments},
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[1]}"),
                         "fields": {"topic_ids": [6259289755]},
                     },
                 ],
                 "information": {
                     get_fqid("topic/6259289755"): ["Object updated"],
-                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                    get_fqid(f"mediafile/{self.attachments[1]}"): [
                         "Object attached to topic"
                     ],
                 },
                 "user_id": self.user_id,
                 "locked_fields": {
                     get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                    ): 1,
+                    get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): 1,
                 },
             },
         ]
@@ -739,37 +729,33 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("topic/6259289755"),
-                        "fields": {"mediafile_attachment_ids": [self.attachments[1]]},
+                        "fields": {"attachment_ids": [self.attachments[1]]},
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[0]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[0]}"),
                         "fields": {"topic_ids": []},
                     },
                     {
                         "type": "update",
-                        "fqid": get_fqid(f"mediafile_attachment/{self.attachments[1]}"),
+                        "fqid": get_fqid(f"mediafile/{self.attachments[1]}"),
                         "fields": {"topic_ids": [6259289755]},
                     },
                 ],
                 "information": {
                     get_fqid("topic/6259289755"): ["Object updated"],
-                    get_fqid(f"mediafile_attachment/{self.attachments[0]}"): [
+                    get_fqid(f"mediafile/{self.attachments[0]}"): [
                         "Object attachment to topic reset"
                     ],
-                    get_fqid(f"mediafile_attachment/{self.attachments[1]}"): [
+                    get_fqid(f"mediafile/{self.attachments[1]}"): [
                         "Object attached to topic"
                     ],
                 },
                 "user_id": self.user_id,
                 "locked_fields": {
                     get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[0]}/topic_ids"
-                    ): 1,
-                    get_fqfield(
-                        f"mediafile_attachment/{self.attachments[1]}/topic_ids"
-                    ): 1,
+                    get_fqfield(f"mediafile/{self.attachments[0]}/topic_ids"): 1,
+                    get_fqfield(f"mediafile/{self.attachments[1]}/topic_ids"): 1,
                 },
             },
         ]
@@ -913,12 +899,12 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
         )
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -943,7 +929,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": None,
+                        "attachment_ids": None,
                     },
                     "relations": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
@@ -965,7 +951,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_2[0]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": None,
+                        "attachment_ids": None,
                     },
                     "relations": {
                         get_fqfield("meeting/7816466305/topic_ids"): {
@@ -978,14 +964,14 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_2[1]["id"],
                         "meeting_id": None,
-                        "mediafile_attachment_ids": None,
+                        "attachment_ids": None,
                     },
                     "relations": {
                         get_fqfield("meeting/3611987967/topic_ids"): {
                             "type": "remove",
                             "value": [6375863023],
                         },
-                        get_fqfield("mediafile_attachment/3549387598/topic_ids"): {
+                        get_fqfield("mediafile/3549387598/topic_ids"): {
                             "type": "remove",
                             "value": [],
                         },
@@ -1004,12 +990,12 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
         )
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -1080,7 +1066,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     {"type": "delete", "fqid": get_fqid("topic/6259289755")},
                     {
                         "type": "update",
-                        "fqid": get_fqid("mediafile_attachment/3549387598"),
+                        "fqid": get_fqid("mediafile/3549387598"),
                         "fields": {"topic_ids": []},
                     },
                     {
@@ -1094,7 +1080,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     get_fqid("meeting/3611987967"): [
                         "Object attachment to topic reset"
                     ],
-                    get_fqid("mediafile_attachment/3549387598"): [
+                    get_fqid("mediafile/3549387598"): [
                         "Object attachment to topic reset"
                     ],
                 },
@@ -1102,7 +1088,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                 "locked_fields": {
                     get_fqfield("topic/6259289755/deleted"): 1,
                     get_fqfield("meeting/3611987967/topic_ids"): 1,
-                    get_fqfield("mediafile_attachment/3549387598/topic_ids"): 1,
+                    get_fqfield("mediafile/3549387598/topic_ids"): 1,
                 },
             },
         ]

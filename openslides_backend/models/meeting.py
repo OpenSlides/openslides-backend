@@ -17,6 +17,4 @@ class Meeting(Model):
         to=Collection("committee"),
         related_name="meeting_ids",
     )
-    title = fields.RequiredCharField(
-        description="The title or headline of this meeting."
-    )
+    name = fields.RequiredCharField(description="The name of this meeting.")

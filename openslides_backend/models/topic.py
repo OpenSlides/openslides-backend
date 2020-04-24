@@ -19,8 +19,9 @@ class Topic(Model):
     )
     title = fields.RequiredCharField(description="The title or headline of this topic.")
     text = fields.TextField(description="The HTML formatted text of this topic.")
-    mediafile_attachment_ids = fields.ManyToManyArrayField(
+    attachment_ids = fields.ManyToManyArrayField(  # TODO: Use Generic
         description="The attachments that should be related with this topic.",
-        to=Collection("mediafile_attachment"),
-        related_name="topic_ids",
+        to=Collection("mediafile"),
+        related_name="topic_ids",  # TODO: Use attachment_ids
     )
+    # tag_ids = fields.GenericManyToManyArrayField(description="...", to=Collection("tag"), related_name="tagged_ids")

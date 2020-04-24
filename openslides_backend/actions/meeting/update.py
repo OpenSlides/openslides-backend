@@ -14,7 +14,7 @@ update_meeting_schema = fastjsonschema.compile(
         "type": "array",
         "items": {
             "type": "object",
-            "properties": Meeting().get_properties("id", "title"),
+            "properties": Meeting().get_properties("id", "name"),
             "required": ["id"],
             "additionalProperties": False,
         },

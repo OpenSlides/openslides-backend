@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from openslides_backend.actions import Payload
+from openslides_backend.actions import ActionPayload
 from openslides_backend.actions.committee.create import CommitteeCreate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
@@ -21,7 +21,7 @@ class BaseCommitteeCreateActionTester(TestCase):
     """
 
     def setUp(self) -> None:
-        self.valid_payload_1 = [{"organisation_id": 1, "title": "title_ieth5Ha1th"}]
+        self.valid_payload_1 = [{"organisation_id": 1, "name": "name_ieth5Ha1th"}]
 
 
 class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
@@ -31,12 +31,12 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
         self.action.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_validation_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
     def test_validation_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.validate(payload)
 
@@ -75,12 +75,12 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
         self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_perform_empty(self) -> None:
-        payload: Payload = []
+        payload: ActionPayload = []
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_empty_2(self) -> None:
-        payload: Payload = [{}]
+        payload: ActionPayload = [{}]
         with self.assertRaises(ActionException):
             self.action.perform(payload, user_id=self.user_id)
 
@@ -96,7 +96,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                     {
                         "type": "create",
                         "fqid": get_fqid("committee/42"),
-                        "fields": {"organisation_id": 1, "title": "title_ieth5Ha1th"},
+                        "fields": {"organisation_id": 1, "name": "name_ieth5Ha1th"},
                     },
                     {
                         "type": "update",
@@ -136,7 +136,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         response = client.post("/", json=[{"action": "committee.create", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'organisation_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
         )
 
@@ -153,7 +153,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'organisation_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
         )
 

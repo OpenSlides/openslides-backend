@@ -6,7 +6,7 @@ from fastjsonschema import JsonSchemaException  # type: ignore
 from ..shared.exceptions import ActionException, EventStoreException
 from ..shared.interfaces import LoggingModule, Services, WriteRequestElement
 from ..shared.schema import schema_version
-from .actions_interface import Payload
+from .actions_interface import ActionResult, Payload
 from .base import Action
 
 
@@ -85,7 +85,7 @@ class ActionsHandler:
 
     def handle_request(
         self, payload: Payload, user_id: int, logging: LoggingModule, services: Services
-    ) -> None:
+    ) -> List[ActionResult]:
         """
         Takes payload and user id and handles this request by validating and
         parsing all actions. In the end it sends everything to the event store.
@@ -102,6 +102,9 @@ class ActionsHandler:
         except JsonSchemaException as exception:
             raise ActionException(exception.message)
 
+        # TODO: Start a loop here and retry parsing actions and writing to event
+        # store for some time if event store sends ModelLocked Exception
+
         # Parse actions and creates events
         write_request_elements = self.parse_actions(payload)
 
@@ -111,7 +114,13 @@ class ActionsHandler:
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
+        # Return action result
+        # TODO: This is a fake result because in this place all actions were
+        # always successful.
         self.logger.debug("Request was successful. Send response now.")
+        return [
+            ActionResult(success=True, message="Action handled successfully")
+        ] * len(payload)
 
     def validate(self, payload: Payload) -> None:
         """

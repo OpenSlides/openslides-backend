@@ -18,10 +18,10 @@ class Motion(Model):
         to=Collection("meeting"),
         related_name="motion_ids",
     )
-    identifier = fields.CharField(
-        description="The customizable human readable identifier of this motion."
+    number = fields.CharField(
+        description="The customizable human readable number or identifier of this motion."
     )
-    serial_number = fields.PositiveIntegerField(
+    sequential_number = fields.PositiveIntegerField(
         description="The (positive) serial number of this motion. This number is auto-generated and read-only."
     )
 
@@ -31,13 +31,13 @@ class Motion(Model):
     )
     text = fields.TextField(description="The HTML formatted main text of this motion.")
     modified_final_version = fields.TextField(
-        description="the HTML formatted modified final version ot motion's main text."
+        description="The HTML formatted modified final version ot motion's main text."
     )
-    # amendment_paragraph_ # TODO
+    # TODO: amendment_paragraph_$<paragraph_number>: HTML;
     reason = fields.TextField(
         description="The HTML formatted reason text of this motion."
     )
-    motion_statute_paragraph_id = fields.ForeignKeyField(
+    statute_paragraph_id = fields.ForeignKeyField(
         description="The statute paragraph this motions refers to.",
         to=Collection("motion_statute_paragraph"),
         related_name="motion_ids",
@@ -47,17 +47,17 @@ class Motion(Model):
     sort_parent_id = fields.ForeignKeyField(
         description="Parent field for multi-depth sorting of motions.",
         to=Collection("motion"),
-        related_name="sort_children_ids",
+        related_name="sort_child_ids",
     )
     sort_weight = fields.IntegerField(
         description="Weight field for sorting of motions."
     )
-    parent_id = fields.ForeignKeyField(
+    lead_motion_id = fields.ForeignKeyField(
         description="Parent field for structuring of motions as amendments.",
         to=Collection("motion"),
         related_name="amendment_ids",
     )
-    motion_category_id = fields.ForeignKeyField(
+    category_id = fields.ForeignKeyField(
         description="The category of this motion.",
         to=Collection("motion_category"),
         related_name="motion_ids",
@@ -65,7 +65,7 @@ class Motion(Model):
     category_weight = fields.IntegerField(
         description="Used for sorting of motions inside the category."
     )
-    motion_block_id = fields.ForeignKeyField(
+    block_id = fields.ForeignKeyField(
         description="The block of this motion.",
         to=Collection("motion_block"),
         related_name="motion_ids",
@@ -77,11 +77,11 @@ class Motion(Model):
     )
 
     # State and recommendation
-    # (TODO: Do we really need workflow_id.)
+    # (TODO: Do we really need workflow_id.) -> workflow_id: motion_workflow/motion_ids;
     state_id = fields.RequiredForeignKeyField(
         description="The state of this motion.",
         to=Collection("motion_state"),
-        related_name="motion_active_ids",
+        related_name="motion_ids",
     )
     state_extension = fields.CharField(
         description="The description of some special states."
@@ -89,7 +89,7 @@ class Motion(Model):
     recommendation_id = fields.ForeignKeyField(
         description="The recommended state of this motion.",
         to=Collection("motion_state"),
-        related_name="motion_recommended_ids",
+        related_name="motion_recommendation_ids",
     )
     recommendation_extension = fields.CharField(
         description="The description of some special recommended states."
@@ -99,7 +99,7 @@ class Motion(Model):
     supporter_ids = fields.ManyToManyArrayField(
         description="The users that are supportes of this motion.",
         to=Collection("user"),
-        related_name="motion_supported_$_ids",
+        related_name="supported_motion_$_ids",
         specific_relation="meeting_id",
     )
 
@@ -112,21 +112,28 @@ class Motion(Model):
     )
 
     # Miscellaneous
-    mediafile_attachment_ids = fields.ManyToManyArrayField(
+    attachment_ids = fields.ManyToManyArrayField(  # TODO: Use GenericManyToManyArrayField
         description="The attachments that should be related with this motion.",
-        to=Collection("mediafile_attachment"),
-        related_name="motion_ids",
+        to=Collection("mediafile"),
+        related_name="motion_ids",  # TOTO: Use attachment_ids
     )
-    tag_ids = fields.ManyToManyArrayField(
+    tag_ids = fields.ManyToManyArrayField(  # TODO: Use GenericManyToManyArrayField
         description="The tags that should be related with this motion.",
         to=Collection("tag"),
-        related_name="motion_ids",
+        related_name="tagged_ids",
     )
+    # TODO:
+    # projection_ids: (projection/element_id)[];  // use GenericManyToManyArrayField
+    # current_projector_ids: (projector/current_element_ids)[];  // use GenericManyToManyArrayField
+    # personal_note_ids: (personal_note/content_object_id)[];  // use GenericManyToManyArrayField
 
-    # Nur Rückreferenzen, deshalb keine Felddefinitionen.
-    # submitter_ids
-    # poll_ids
-    # change_recommendation_ids
-    # comment_ids
-    # agenda_item_id: agenda_item;
-    # list_of_speakers_id: list_of_speakers;
+    # The following fields are only reverse relations and therefor must not be defined here:
+    # amendment_ids
+    # sort_child_ids
+    # derived_motion_ids
+    # submitter_ids: (motion_submitter/motion_id)[];
+    # poll_ids: (motion_poll/motion_id)[];
+    # change_recommendation_ids: (motion_change_recommendation/motion_id)[];
+    # comment_ids: (motion_comment/motion_id)[];
+    # agenda_item_id: agenda_item/content_object_id;
+    # list_of_speakers_id: list_of_speakers/content_object_id;

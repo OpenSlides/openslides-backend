@@ -18,7 +18,7 @@ from .services.event_store import EventStoreHTTPAdapter
 from .services.permission import PermissionHTTPAdapter
 from .shared.interfaces import View, WSGIApplication
 
-# ATTENTION: We use the Python builtin logging module. To change it use
+# ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".
 
 
@@ -71,9 +71,10 @@ def create_wsgi_application(view_name: str) -> WSGIApplication:
         view = ActionsView
     elif view_name == "RestrictionsView":
         view = RestrictionsView
-    else:
-        # view_name == "PresenterView"
+    elif view_name == "PresenterView":
         view = PresenterView
+    else:
+        raise ValueError(f"The value of view_name must not be {view_name}.")
 
     # Setup services
     services = OpenSlidesBackendServices(

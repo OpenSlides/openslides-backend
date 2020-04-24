@@ -1,10 +1,17 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
+from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
 from ..shared.interfaces import LoggingModule, Services
 
-Payload = List[Dict[str, Any]]
+ActionPayload = Union[List[Dict[str, Any]], Dict[str, Any]]
+ActionPayloadWithLabel = TypedDict(
+    "ActionPayloadWithLabel", {"action": str, "data": ActionPayload}
+)
+Payload = List[ActionPayloadWithLabel]
+
+ActionResult = TypedDict("ActionResult", {"success": bool, "message": str})
 
 
 class Actions(Protocol):  # pragma: no cover
@@ -21,5 +28,5 @@ class Actions(Protocol):  # pragma: no cover
         user_id: int,
         logging: LoggingModule,
         services: Services,
-    ) -> None:
+    ) -> List[ActionResult]:
         ...
