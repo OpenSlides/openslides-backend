@@ -18,7 +18,11 @@ class OrganisationField(fields.RequiredForeignKeyField):
 class Committee(Model):
     """
     Model for committees.
+
+    There are the following reverse relation fields:
+        TODO
     """
+    # TODO: Add reverse relation fields to docstring.
 
     collection = Collection("committee")
     verbose_name = "committee"

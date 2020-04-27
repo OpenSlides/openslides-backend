@@ -6,6 +6,15 @@ from .base import Model
 class Motion(Model):
     """
     Model for motions.
+
+    There are the following reverse relation fields:
+        amendment_ids: (motion/lead_motion_id)[]
+        sort_child_ids: (motion/sort_parent_id)[]
+        derived_motion_ids: (motion/origin_id)[]  // Note: The related motions may not be in the same meeting
+        submitter_ids: (motion_submitter/motion_id)[]
+        poll_ids: (motion_poll/motion_id)[]
+        change_recommendation_ids: (motion_change_recommendation/motion_id)[]
+        comment_ids: (motion_comment/motion_id)[]
     """
 
     collection = Collection("motion")
@@ -77,7 +86,6 @@ class Motion(Model):
     )
 
     # State and recommendation
-    # (TODO: Do we really need workflow_id.) -> workflow_id: motion_workflow/motion_ids;
     state_id = fields.RequiredForeignKeyField(
         description="The state of this motion.",
         to=Collection("motion_state"),
@@ -126,14 +134,5 @@ class Motion(Model):
     # projection_ids: (projection/element_id)[];  // use GenericManyToManyArrayField
     # current_projector_ids: (projector/current_element_ids)[];  // use GenericManyToManyArrayField
     # personal_note_ids: (personal_note/content_object_id)[];  // use GenericManyToManyArrayField
-
-    # The following fields are only reverse relations and therefor must not be defined here:
-    # amendment_ids
-    # sort_child_ids
-    # derived_motion_ids
-    # submitter_ids: (motion_submitter/motion_id)[];
-    # poll_ids: (motion_poll/motion_id)[];
-    # change_recommendation_ids: (motion_change_recommendation/motion_id)[];
-    # comment_ids: (motion_comment/motion_id)[];
-    # agenda_item_id: agenda_item/content_object_id;
-    # list_of_speakers_id: list_of_speakers/content_object_id;
+    # agenda_item_id: agenda_item/content_object_id;  // use Generic
+    # list_of_speakers_id: list_of_speakers/content_object_id;  // use Generic
