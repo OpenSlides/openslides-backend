@@ -32,6 +32,12 @@ class BaseView:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 
+    def get_user_id_from_headers(self, headers: Headers) -> int:
+        try:
+            return self.services.authentication().get_user(headers)
+        except AuthenticationException as exception:
+            raise ViewException(exception.message, status_code=400)
+
 
 class ActionsView(BaseView):
     """
@@ -46,22 +52,14 @@ class ActionsView(BaseView):
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching actions request.")
-
-        # Get request user id.
-        try:
-            self.user_id = self.services.authentication().get_user(headers)
-        except AuthenticationException as exception:
-            raise ViewException(exception.message, status_code=400)
-
+        user_id = self.get_user_id_from_headers(headers)
         # Setup payload
         payload: ActionsPayload = body
 
         # Handle request.
-        handler: Actions = ActionsHandler()
+        handler: Actions = ActionsHandler(logging=self.logging, services=self.services)
         try:
-            result = handler.handle_request(
-                payload, self.user_id, self.logging, self.services
-            )
+            result = handler.handle_request(payload, user_id)
         except ActionException as exception:
             raise ViewException(exception.message, status_code=400)
         except PermissionDenied as exception:
@@ -89,11 +87,12 @@ class PresenterView(BaseView):
         payload: PresenterPayload = body
 
         # Handle request.
-        handler: Presenter = PresenterHandler()
+        handler: Presenter = PresenterHandler(
+            logging=self.logging, services=self.services,
+        )
+        user_id = self.get_user_id_from_headers(headers)
         try:
-            presenter_response = handler.handle_request(
-                payload, self.logging, self.services
-            )
+            presenter_response = handler.handle_request(payload, user_id)
         except PresenterException as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug("Presenter request finished successfully. Send response now.")

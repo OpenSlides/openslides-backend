@@ -4,7 +4,8 @@ import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import ActionException, EventStoreException
-from ..shared.interfaces import LoggingModule, Services, WriteRequestElement
+from ..shared.handlers import Base as HandlerBase
+from ..shared.interfaces import WriteRequestElement
 from ..shared.schema import schema_version
 from .actions_interface import ActionResult, Payload
 from .base import Action
@@ -78,23 +79,17 @@ payload_schema = fastjsonschema.compile(
 )
 
 
-class ActionsHandler:
+class ActionsHandler(HandlerBase):
     """
     Actions handler. It is the concret implementation of Actions interface.
     """
 
-    def handle_request(
-        self, payload: Payload, user_id: int, logging: LoggingModule, services: Services
-    ) -> List[ActionResult]:
+    def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
         """
         Takes payload and user id and handles this request by validating and
         parsing all actions. In the end it sends everything to the event store.
         """
         self.user_id = user_id
-        self.logging = logging
-        self.logger = logging.getLogger(__name__)
-        self.permission = services.permission
-        self.database = services.database
 
         # Validate payload of request
         try:
@@ -110,7 +105,7 @@ class ActionsHandler:
 
         # Send events to database
         try:
-            services.event_store().send(write_request_elements)
+            self.services.event_store().send(write_request_elements)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 

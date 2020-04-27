@@ -4,9 +4,10 @@ import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import PresenterException
-from ..shared.interfaces import LoggingModule, Services
+from ..shared.handlers import Base as HandlerBase
 from ..shared.patterns import Collection
 from ..shared.schema import schema_version
+from .base import presenters
 from .presenter_interface import Payload, PresenterResponse
 
 Presentation = Any  # TODO: Add a base.py and implement a base Presenter class.
@@ -53,18 +54,14 @@ payload_schema = fastjsonschema.compile(
         "items": {
             "type": "object",
             "properties": {
-                "user_id": {
-                    "description": "Id of the user the presentation should be for.",
-                    "type": "integer",
-                    "mininmum": 0,
-                },
-                "presentation": {
-                    "description": "The name of the presentation.",
+                "presenter": {
+                    "description": "The name of the presenter.",
                     "type": "string",
                     "minLength": 1,
                 },
+                "data": {"description": "The data", "type": "object"},
             },
-            "required": ["user_id", "presentation"],
+            "required": ["presenter"],
             "additionalProperties": False,
         },
         "minItems": 1,
@@ -73,22 +70,16 @@ payload_schema = fastjsonschema.compile(
 )
 
 
-class PresenterHandler:
+class PresenterHandler(HandlerBase):
     """
     Presenter handler. It is the concret implementation of Presenter interface.
     """
 
-    def handle_request(
-        self, payload: Payload, logging: LoggingModule, services: Services,
-    ) -> PresenterResponse:
+    def handle_request(self, payload: Payload, user_id: int) -> PresenterResponse:
         """
         Takes payload and user id and handles this request by validating and
         parsing the presentations.
         """
-        self.logging = logging
-        self.logger = logging.getLogger(__name__)
-        self.permission = services.permission
-        self.database = services.database
 
         # Validate payload of request
         try:
@@ -120,16 +111,13 @@ class PresenterHandler:
         )
         response = []
         for presentation_blob in payload:
-            # user_id = presentation_blob["user_id"]
-            if presentation_blob["presentation"] == "dummy":
-                response.append(self.dummy_presentation())
+            Presenter = presenters.get(presentation_blob["presenter"])
+            if Presenter is not None:
+                presenter_instance = Presenter()  # type:ignore
+                response.append(presenter_instance.data)
             else:
                 raise PresenterException(
-                    f"Presentation {presentation_blob['presentation']} does not exist."
+                    f"Presentation {presentation_blob['presenter']} does not exist."
                 )
         self.logger.debug("Presentation data ready.")
         return response
-
-    def dummy_presentation(self) -> Any:
-        # Just a dummy presentation.
-        return {"dummy": "dummy"}
