@@ -79,6 +79,12 @@ class WSGIApplicationTester(TestCase):
             "Action fuzzy_action_hamzaeNg4a does not exist.", str(response.data)
         )
 
+    def test_health_route(self) -> None:
+        client = Client(self.application, ResponseWrapper)
+        response = client.get("/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("healthinfo", str(response.data))
+
 
 class TypesTester(TestCase):
     """

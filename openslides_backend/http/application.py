@@ -1,3 +1,4 @@
+import re
 from typing import Any, Iterable, Union
 
 import simplejson as json
@@ -8,6 +9,8 @@ from werkzeug.wrappers.json import JSONMixin  # type: ignore
 
 from ..shared.exceptions import ViewException
 from ..shared.interfaces import StartResponse, WSGIEnvironment
+
+health_route = re.compile("^/health$")
 
 
 class Request(JSONMixin, WerkzeugRequest):
@@ -33,12 +36,20 @@ class OpenSlidesBackendWSGIApplication:
         self.view = view
         self.services = services
 
+    def health_info(self, request: Request) -> Union[Response, HTTPException]:
+        return Response(json.dumps({"healthinfo": {}}))
+
     def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
         """
         Dispatches request to route according to URL rules. Returns a Response
         object or a HTTPException (or a subclass of it). Both are WSGI
         applications themselves.
         """
+        if health_route.match(request.environ["RAW_URI"]):
+            return self.health_info(request)
+        return self.default_route(request)
+
+    def default_route(self, request: Request) -> Union[Response, HTTPException]:
         # Check request method
         if request.method != self.view.method:
             return MethodNotAllowed(valid_methods=[self.view.method])
