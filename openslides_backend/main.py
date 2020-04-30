@@ -13,7 +13,7 @@ from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication
 from .http.views import ActionsView, PresenterView
 from .services.authentication import AuthenticationHTTPAdapter
-from .services.database import DatabaseHTTPAdapter
+from .services.database import DatabaseAdapter, HTTPEngine
 from .services.event_store import EventStoreHTTPAdapter
 from .services.permission import PermissionHTTPAdapter
 from .shared.interfaces import View, WSGIApplication
@@ -33,7 +33,8 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
         AuthenticationHTTPAdapter, config.authentication_url, logging
     )
     permission = providers.Singleton(PermissionHTTPAdapter, config.permission_url)
-    database = providers.Singleton(DatabaseHTTPAdapter, config.database_url, logging)
+    engine = providers.Singleton(HTTPEngine, config.database_url, logging)
+    database = providers.Singleton(DatabaseAdapter, engine, logging)
     event_store = providers.Singleton(EventStoreHTTPAdapter, config.event_store_url)
 
 
