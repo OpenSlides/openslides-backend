@@ -6,7 +6,12 @@ from .base import Model
 class Meeting(Model):
     """
     Model for meetings.
+
+    There are the following reverse relation fields:
+        TODO
     """
+
+    # TODO: Add reverse relation fields to docstring.
 
     collection = Collection("meeting")
     verbose_name = "meeting"

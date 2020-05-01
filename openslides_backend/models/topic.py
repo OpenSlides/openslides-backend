@@ -6,6 +6,8 @@ from .base import Model
 class Topic(Model):
     """
     Model for simple topics that can be shown in agenda.
+
+    There are the following reverse relation fields: None
     """
 
     collection = Collection("topic")
@@ -19,9 +21,19 @@ class Topic(Model):
     )
     title = fields.RequiredCharField(description="The title or headline of this topic.")
     text = fields.TextField(description="The HTML formatted text of this topic.")
-    attachment_ids = fields.ManyToManyArrayField(  # TODO: Use Generic
+    attachment_ids = fields.ManyToManyArrayField(
         description="The attachments that should be related with this topic.",
         to=Collection("mediafile"),
-        related_name="topic_ids",  # TODO: Use attachment_ids
+        related_name="attachment_ids",
+        generic_relation=True,
     )
-    # tag_ids = fields.GenericManyToManyArrayField(description="...", to=Collection("tag"), related_name="tagged_ids")
+    tag_ids = fields.ManyToManyArrayField(
+        description="The tags that should be related with this topic.",
+        to=Collection("tag"),
+        related_name="tagged_ids",
+        generic_relation=True,
+    )
+
+    # TODO
+    # agenda_item_id: agenda_item/content_object_id;
+    # list_of_speakers_id: list_of_speakers/content_object_id;

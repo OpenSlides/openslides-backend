@@ -165,9 +165,9 @@ class Action(BaseAction):
         remove: Set[int]
         relations: Relations = {}
 
-        for field_name, field, is_generic in relation_fields:
-            if is_generic:
-                # Generic relation case: 1:n or m:n
+        for field_name, field, is_reverse in relation_fields:
+            if not is_reverse:
+                # Common relation case: 1:n or m:n
 
                 # Prepare new relation ids
                 value = obj.get(field_name)
@@ -186,24 +186,24 @@ class Action(BaseAction):
                     add = set(rel_ids)
                     remove = set()
                 else:
-                    add, remove = self.relation_diff_to_n(
+                    add, remove = self.relation_diff_to_many(
                         model, id, field_name, field, rel_ids
                     )
-                if field.specific_relation is None:
+                if field.structured_relation is None:
                     related_name = field.related_name
                 else:
-                    # Fetch current db instance with specific_relation field.
+                    # Fetch current db instance with structured_relation field.
                     db_instance, position = self.database.get(
                         fqid=FullQualifiedId(model.collection, id=obj["id"]),
-                        mapped_fields=[field.specific_relation],
+                        mapped_fields=[field.structured_relation],
                     )
                     self.set_min_position(position)
-                    if db_instance.get(field.specific_relation) is None:
+                    if db_instance.get(field.structured_relation) is None:
                         raise ValueError(
-                            f"The field {field.specific_relation} must not be empty in database."
+                            f"The field {field.structured_relation} must not be empty in database."
                         )
                     related_name = field.related_name.replace(
-                        "$", str(db_instance.get(field.specific_relation))
+                        "$", str(db_instance.get(field.structured_relation))
                     )
 
                 # Get related models from database
@@ -216,13 +216,28 @@ class Action(BaseAction):
                 # for remove case
                 for rel_id, rel in rels.items():
                     if rel_id in add:
+                        value_to_be_added: Union[int, FullQualifiedId]
+                        if field.generic_relation:
+                            value_to_be_added = FullQualifiedId(
+                                collection=field.own_collection, id=id
+                            )
+                        else:
+                            value_to_be_added = id
                         rel_element = RelationsElement(
-                            type="add", value=rel.get(related_name, []) + [id],
+                            type="add",
+                            value=rel.get(related_name, []) + [value_to_be_added],
                         )
                     else:
                         # ref_id in remove
+                        value_to_be_removed: Union[int, FullQualifiedId]
+                        if field.generic_relation:
+                            value_to_be_removed = FullQualifiedId(
+                                collection=field.own_collection, id=id
+                            )
+                        else:
+                            value_to_be_removed = id
                         new_value = rel[related_name]
-                        new_value.remove(id)
+                        new_value.remove(value_to_be_removed)
                         rel_element = RelationsElement(type="remove", value=new_value,)
                     fqfield = FullQualifiedField(field.to, rel_id, related_name)
                     relations[fqfield] = rel_element
@@ -246,7 +261,7 @@ class Action(BaseAction):
                         add = set(rel_ids)
                         remove = set()
                     else:
-                        add, remove = self.relation_diff_to_n(
+                        add, remove = self.relation_diff_to_many(
                             model, id, field_name, field, rel_ids
                         )
 
@@ -292,7 +307,7 @@ class Action(BaseAction):
                         add = set(rel_ids)
                         remove = set()
                     else:
-                        add, remove = self.relation_diff_to_1(
+                        add, remove = self.relation_diff_to_one(
                             model, id, field_name, field, rel_ids
                         )
 
@@ -332,7 +347,7 @@ class Action(BaseAction):
 
         return relations
 
-    def relation_diff_to_n(
+    def relation_diff_to_many(
         self,
         model: Model,
         id: int,
@@ -370,7 +385,7 @@ class Action(BaseAction):
         remove = current_ids - new_ids
         return (add, remove)
 
-    def relation_diff_to_1(
+    def relation_diff_to_one(
         self,
         model: Model,
         id: int,
