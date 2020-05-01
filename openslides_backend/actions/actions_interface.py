@@ -3,8 +3,6 @@ from typing import Any, Dict, List, Union
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..shared.interfaces import LoggingModule, Services
-
 ActionPayload = Union[List[Dict[str, Any]], Dict[str, Any]]
 ActionPayloadWithLabel = TypedDict(
     "ActionPayloadWithLabel", {"action": str, "data": ActionPayload}
@@ -22,11 +20,5 @@ class Actions(Protocol):  # pragma: no cover
     the request fails.
     """
 
-    def handle_request(
-        self,
-        payload: Payload,
-        user_id: int,
-        logging: LoggingModule,
-        services: Services,
-    ) -> List[ActionResult]:
+    def handle_request(self, payload: Payload, user_id: int,) -> List[ActionResult]:
         ...

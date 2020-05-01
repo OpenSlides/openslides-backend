@@ -32,6 +32,17 @@ class BaseView:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 
+    def get_user_id_from_headers(self, headers: Headers) -> int:
+        """
+        Returns user id from authentication service using HTTP headers.
+        """
+        try:
+            user_id = self.services.authentication().get_user(headers)
+        except AuthenticationException as exception:
+            raise ViewException(exception.message, status_code=400)
+        self.logger.debug(f"User id is {user_id}.")
+        return user_id
+
 
 class ActionsView(BaseView):
     """
@@ -47,21 +58,16 @@ class ActionsView(BaseView):
         """
         self.logger.debug("Start dispatching actions request.")
 
-        # Get request user id.
-        try:
-            self.user_id = self.services.authentication().get_user(headers)
-        except AuthenticationException as exception:
-            raise ViewException(exception.message, status_code=400)
+        # Get user id.
+        user_id = self.get_user_id_from_headers(headers)
 
-        # Setup payload
+        # Setup payload.
         payload: ActionsPayload = body
 
         # Handle request.
-        handler: Actions = ActionsHandler()
+        handler: Actions = ActionsHandler(logging=self.logging, services=self.services)
         try:
-            result = handler.handle_request(
-                payload, self.user_id, self.logging, self.services
-            )
+            result = handler.handle_request(payload, user_id)
         except ActionException as exception:
             raise ViewException(exception.message, status_code=400)
         except PermissionDenied as exception:
@@ -85,15 +91,18 @@ class PresenterView(BaseView):
         """
         self.logger.debug("Start dispatching presenter request.")
 
-        # Setup payload
+        # Get user_id.
+        user_id = self.get_user_id_from_headers(headers)
+
+        # Setup payload.
         payload: PresenterPayload = body
 
         # Handle request.
-        handler: Presenter = PresenterHandler()
+        handler: Presenter = PresenterHandler(
+            logging=self.logging, services=self.services,
+        )
         try:
-            presenter_response = handler.handle_request(
-                payload, self.logging, self.services
-            )
+            presenter_response = handler.handle_request(payload, user_id)
         except PresenterException as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug("Presenter request finished successfully. Send response now.")

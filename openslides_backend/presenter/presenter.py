@@ -1,47 +1,28 @@
-from typing import Any, Callable, Dict, Type
+from typing import Callable, Dict, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import PresenterException
-from ..shared.interfaces import LoggingModule, Services
-from ..shared.patterns import Collection
+from ..shared.handlers import Base as HandlerBase
 from ..shared.schema import schema_version
+from .base import Presenter
 from .presenter_interface import Payload, PresenterResponse
 
-Presentation = Any  # TODO: Add a base.py and implement a base Presenter class.
+presenters_map: Dict[str, Type[Presenter]] = {}
 
 
-def prepare_presentations_map() -> None:
+def register_presenter(name: str) -> Callable[[Type[Presenter]], Type[Presenter]]:
     """
-    This function just imports all presentation modules so that the presentations
-    are recognized by the system and the register decorator can do its work.
-
-    New modules have to be added here.
-    """
-    # from . import meeting, topic  # type: ignore # noqa
-    pass
-
-
-presentations_map: Dict[Collection, Type[Presentation]] = {}
-
-
-def register_presentation(
-    name: Collection,
-) -> Callable[[Type[Presentation]], Type[Presentation]]:
-    """
-    Decorator to be used for presentation classes. Registers the class so that
-    it can be found by the handler.
+    Decorator to be used for presenter classes. Registers the class so that it
+    can be found by the handler.
     """
 
-    def wrapper(presentation: Type[Presentation]) -> Type[Presentation]:
-        presentations_map[name] = presentation
-        return presentation
+    def wrapper(clazz: Type[Presenter]) -> Type[Presenter]:
+        presenters_map[name] = clazz
+        return clazz
 
     return wrapper
-
-
-prepare_presentations_map()
 
 
 payload_schema = fastjsonschema.compile(
@@ -53,18 +34,14 @@ payload_schema = fastjsonschema.compile(
         "items": {
             "type": "object",
             "properties": {
-                "user_id": {
-                    "description": "Id of the user the presentation should be for.",
-                    "type": "integer",
-                    "mininmum": 0,
-                },
-                "presentation": {
-                    "description": "The name of the presentation.",
+                "presenter": {
+                    "description": "The name of the presenter.",
                     "type": "string",
                     "minLength": 1,
                 },
+                "data": {"description": "The data", "type": "object"},
             },
-            "required": ["user_id", "presentation"],
+            "required": ["presenter"],
             "additionalProperties": False,
         },
         "minItems": 1,
@@ -73,22 +50,16 @@ payload_schema = fastjsonschema.compile(
 )
 
 
-class PresenterHandler:
+class PresenterHandler(HandlerBase):
     """
     Presenter handler. It is the concret implementation of Presenter interface.
     """
 
-    def handle_request(
-        self, payload: Payload, logging: LoggingModule, services: Services,
-    ) -> PresenterResponse:
+    def handle_request(self, payload: Payload, user_id: int) -> PresenterResponse:
         """
         Takes payload and user id and handles this request by validating and
         parsing the presentations.
         """
-        self.logging = logging
-        self.logger = logging.getLogger(__name__)
-        self.permission = services.permission
-        self.database = services.database
 
         # Validate payload of request
         try:
@@ -97,7 +68,7 @@ class PresenterHandler:
             raise PresenterException(exception.message)
 
         # Parse presentations and creates response
-        response = self.parse_presentations(payload)
+        response = self.parse_presenters(payload)
         self.logger.debug("Request was successful. Send response now.")
         return response
 
@@ -109,27 +80,24 @@ class PresenterHandler:
         self.logger.debug("Validate presenter request.")
         payload_schema(payload)
 
-    def parse_presentations(self, payload: Payload) -> PresenterResponse:
+    def parse_presenters(self, payload: Payload) -> PresenterResponse:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.
         """
         # permissions = self.permission().get_all(self.user_id)
         self.logger.debug(
-            f"Presentations map contains the following presentations: {presentations_map}."
+            f"Presenter map contains the following presenters: {presenters_map}."
         )
         response = []
-        for presentation_blob in payload:
-            # user_id = presentation_blob["user_id"]
-            if presentation_blob["presentation"] == "dummy":
-                response.append(self.dummy_presentation())
+        for presenter_blob in payload:
+            Presenter = presenters_map.get(presenter_blob["presenter"])
+            if Presenter is not None:
+                presenter_instance = Presenter()
+                response.append(presenter_instance.data)
             else:
                 raise PresenterException(
-                    f"Presentation {presentation_blob['presentation']} does not exist."
+                    f"Presenter {presenter_blob['presenter']} does not exist."
                 )
-        self.logger.debug("Presentation data ready.")
+        self.logger.debug("Presenter data ready.")
         return response
-
-    def dummy_presentation(self) -> Any:
-        # Just a dummy presentation.
-        return {"dummy": "dummy"}
