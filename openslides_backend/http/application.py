@@ -25,8 +25,7 @@ class OpenSlidesBackendWSGIApplication:
     """
     Central application class for this service.
 
-    During initialization we bind injected dependencies to the instance and also
-    map rule factory's urls.
+    During initialization we bind injected dependencies to the instance.
     """
 
     def __init__(self, logging: Any, view: Any, services: Any) -> None:
@@ -35,9 +34,6 @@ class OpenSlidesBackendWSGIApplication:
         self.logger.debug("Initialize OpenSlides Backend WSGI application.")
         self.view = view
         self.services = services
-
-    def health_info(self, request: Request) -> Union[Response, HTTPException]:
-        return Response(json.dumps({"healthinfo": {}}))
 
     def dispatch_request(self, request: Request) -> Union[Response, HTTPException]:
         """
@@ -50,6 +46,9 @@ class OpenSlidesBackendWSGIApplication:
         return self.default_route(request)
 
     def default_route(self, request: Request) -> Union[Response, HTTPException]:
+        """
+        Default route that calls the injected view.
+        """
         # Check request method
         if request.method != self.view.method:
             return MethodNotAllowed(valid_methods=[self.view.method])
@@ -86,6 +85,15 @@ class OpenSlidesBackendWSGIApplication:
             f"All done. Application sends HTTP 200 with body {response_body}."
         )
         return Response(json.dumps(response_body), content_type="application/json")
+
+    def health_info(self, request: Request) -> Union[Response, HTTPException]:
+        """
+        Route to provide health data of this service.
+        """
+        return Response(
+            json.dumps({"healthinfo": {"status": "dummy status"}}),
+            content_type="application/json",
+        )
 
     def wsgi_application(
         self, environ: WSGIEnvironment, start_response: StartResponse
