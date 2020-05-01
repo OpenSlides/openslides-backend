@@ -30,9 +30,9 @@ def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
     be found by the handler.
     """
 
-    def wrapper(action: Type[Action]) -> Type[Action]:
-        actions_map[name] = action
-        return action
+    def wrapper(clazz: Type[Action]) -> Type[Action]:
+        actions_map[name] = clazz
+        return clazz
 
     return wrapper
 

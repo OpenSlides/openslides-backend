@@ -1,33 +1,19 @@
-from typing import Any
-
-presenters = {}
+from typing import Any, Dict
 
 
-def register_presenter(name: str) -> Any:
-    """Decoratorfunction
-       @register_presenter is used for
-       automagic adding presenters to the registry (presenters)
-    Arguments:
-        name {string} -- registry the decorated class
+class PresenterBase:  # pragma: no cover
+    """
+    Abstract base class for presenters.
     """
 
-    def wrapper(clazz: object) -> object:
-        """Wrapper / inner function of decorator
-
-        Arguments:
-            clazz {object} -- The actual decorated class
-
-        Returns:
-            [object] -- The decorated class
-        """
-        presenters[name] = clazz
-        return clazz
-
-    return wrapper
+    @property
+    def data(self) -> Dict[Any, Any]:
+        ...
 
 
-class PresenterBase:
-    """Baseclass for Presenters
+class Presenter(PresenterBase):
+    """
+    Base clase for presenters.
     """
 
     pass

@@ -3,7 +3,9 @@ from typing import Any, Dict, List
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-PresenterBlob = TypedDict("PresenterBlob", {"presenter": str, "data": Any})
+PresenterBlob = TypedDict(
+    "PresenterBlob", {"presenter": str, "data": Any}
+)  # TODO: Check if Any is correct here.
 Payload = List[PresenterBlob]
 PresenterResponse = List[Dict[Any, Any]]
 

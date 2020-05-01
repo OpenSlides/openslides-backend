@@ -1,48 +1,28 @@
-from typing import Any, Callable, Dict, Type
+from typing import Callable, Dict, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import PresenterException
 from ..shared.handlers import Base as HandlerBase
-from ..shared.patterns import Collection
 from ..shared.schema import schema_version
-from .base import presenters
+from .base import Presenter
 from .presenter_interface import Payload, PresenterResponse
 
-Presentation = Any  # TODO: Add a base.py and implement a base Presenter class.
+presenters_map: Dict[str, Type[Presenter]] = {}
 
 
-def prepare_presentations_map() -> None:
+def register_presenter(name: str) -> Callable[[Type[Presenter]], Type[Presenter]]:
     """
-    This function just imports all presentation modules so that the presentations
-    are recognized by the system and the register decorator can do its work.
-
-    New modules have to be added here.
-    """
-    # from . import meeting, topic  # type: ignore # noqa
-    pass
-
-
-presentations_map: Dict[Collection, Type[Presentation]] = {}
-
-
-def register_presentation(
-    name: Collection,
-) -> Callable[[Type[Presentation]], Type[Presentation]]:
-    """
-    Decorator to be used for presentation classes. Registers the class so that
-    it can be found by the handler.
+    Decorator to be used for presenter classes. Registers the class so that it
+    can be found by the handler.
     """
 
-    def wrapper(presentation: Type[Presentation]) -> Type[Presentation]:
-        presentations_map[name] = presentation
-        return presentation
+    def wrapper(clazz: Type[Presenter]) -> Type[Presenter]:
+        presenters_map[name] = clazz
+        return clazz
 
     return wrapper
-
-
-prepare_presentations_map()
 
 
 payload_schema = fastjsonschema.compile(
@@ -88,7 +68,7 @@ class PresenterHandler(HandlerBase):
             raise PresenterException(exception.message)
 
         # Parse presentations and creates response
-        response = self.parse_presentations(payload)
+        response = self.parse_presenters(payload)
         self.logger.debug("Request was successful. Send response now.")
         return response
 
@@ -100,24 +80,24 @@ class PresenterHandler(HandlerBase):
         self.logger.debug("Validate presenter request.")
         payload_schema(payload)
 
-    def parse_presentations(self, payload: Payload) -> PresenterResponse:
+    def parse_presenters(self, payload: Payload) -> PresenterResponse:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.
         """
         # permissions = self.permission().get_all(self.user_id)
         self.logger.debug(
-            f"Presentations map contains the following presentations: {presentations_map}."
+            f"Presenter map contains the following presenters: {presenters_map}."
         )
         response = []
-        for presentation_blob in payload:
-            Presenter = presenters.get(presentation_blob["presenter"])
+        for presenter_blob in payload:
+            Presenter = presenters_map.get(presenter_blob["presenter"])
             if Presenter is not None:
-                presenter_instance = Presenter()  # type:ignore
+                presenter_instance = Presenter()
                 response.append(presenter_instance.data)
             else:
                 raise PresenterException(
-                    f"Presentation {presentation_blob['presenter']} does not exist."
+                    f"Presenter {presenter_blob['presenter']} does not exist."
                 )
-        self.logger.debug("Presentation data ready.")
+        self.logger.debug("Presenter data ready.")
         return response

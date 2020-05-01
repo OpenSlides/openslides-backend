@@ -1,13 +1,17 @@
-from .base import PresenterBase, register_presenter
+from typing import Any, Dict
+
+from .base import Presenter
+from .presenter import register_presenter
 
 
 @register_presenter("whoami")
-class Whoami(PresenterBase):
-    """Whoami represents the users identity
+class Whoami(Presenter):
+    """
+    Whoami represents the users identity
     """
 
     @property
-    def data(self) -> object:
+    def data(self) -> Dict[Any, Any]:
         return {
             "auth_type": "default",
             "permissions": [],

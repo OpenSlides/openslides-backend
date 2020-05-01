@@ -2,10 +2,11 @@ from ..interfaces import LoggingModule, Services
 
 
 class Base:
-    """Baseclass for handlers
+    """
+    Base class for handlers
     """
 
-    def __init__(self, services: Services, logging: LoggingModule):
+    def __init__(self, services: Services, logging: LoggingModule) -> None:
         self.services = services
         self.logging = logging
         self.logger = logging.getLogger(__name__)

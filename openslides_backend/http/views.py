@@ -33,10 +33,15 @@ class BaseView:
         self.logger = logging.getLogger(__name__)
 
     def get_user_id_from_headers(self, headers: Headers) -> int:
+        """
+        Returns user id from authentication service using HTTP headers.
+        """
         try:
-            return self.services.authentication().get_user(headers)
+            user_id = self.services.authentication().get_user(headers)
         except AuthenticationException as exception:
             raise ViewException(exception.message, status_code=400)
+        self.logger.debug(f"User id is {user_id}.")
+        return user_id
 
 
 class ActionsView(BaseView):
@@ -52,8 +57,11 @@ class ActionsView(BaseView):
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching actions request.")
+
+        # Get user id.
         user_id = self.get_user_id_from_headers(headers)
-        # Setup payload
+
+        # Setup payload.
         payload: ActionsPayload = body
 
         # Handle request.
@@ -83,14 +91,16 @@ class PresenterView(BaseView):
         """
         self.logger.debug("Start dispatching presenter request.")
 
-        # Setup payload
+        # Get user_id.
+        user_id = self.get_user_id_from_headers(headers)
+
+        # Setup payload.
         payload: PresenterPayload = body
 
         # Handle request.
         handler: Presenter = PresenterHandler(
             logging=self.logging, services=self.services,
         )
-        user_id = self.get_user_id_from_headers(headers)
         try:
             presenter_response = handler.handle_request(payload, user_id)
         except PresenterException as exception:

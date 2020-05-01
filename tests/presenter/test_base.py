@@ -17,14 +17,14 @@ class PresenterBaseUnitTester(TestCase):
         self.user_id = 0
 
     def test_with_bad_key(self) -> None:
-        payload = [PresenterBlob(presenter="non_existing_presentation", data={})]
+        payload = [PresenterBlob(presenter="non_existing_presenter", data={})]
         with self.assertRaises(PresenterException) as context_manager:
             self.presenter_handler.handle_request(
                 payload=payload, user_id=self.user_id,
             )
         self.assertEqual(
             context_manager.exception.message,
-            f"Presentation non_existing_presentation does not exist.",
+            f"Presenter non_existing_presenter does not exist.",
         )
 
     def test_initial_data(self) -> None:
@@ -80,11 +80,10 @@ class PresenterBaseWSGITester(TestCase):
 
     def test_wsgi_request_fuzzy(self) -> None:
         client = Client(self.application, ResponseWrapper)
-        response = client.get("/", json=[{"presenter": "non_existing_presentation"}],)
+        response = client.get("/", json=[{"presenter": "non_existing_presenter"}],)
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "Presentation non_existing_presentation does not exist.",
-            str(response.data),
+            "Presenter non_existing_presenter does not exist.", str(response.data),
         )
 
     def test_wsgi_request_correct_1(self) -> None:
