@@ -48,22 +48,22 @@ class CreateAction(PermissionMixin, Action):
             # Check permission using permission_reference field.
             self.check_permission(instance[self.permission_reference])
 
-            # Collect relation fields and also check specific relation. Collect
+            # Collect relation fields and also check structured_relation. Collect
             # also reverse relation fields.
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
                 if field_name in instance.keys():
-                    if field.specific_relation:
-                        if instance.get(field.specific_relation) is None:
+                    if field.structured_relation:
+                        if instance.get(field.structured_relation) is None:
                             raise ActionException(
                                 "You must give both a relation field "
-                                "with specific relation and its corresponding "
+                                "with structured_relation and its corresponding "
                                 "foreign key field."
                             )
-                    relation_fields.append((field_name, field, True))
+                    relation_fields.append((field_name, field, False))
             for field_name, field in self.model.get_reverse_relations():
                 if field_name in instance.keys():
-                    relation_fields.append((field_name, field, False))
+                    relation_fields.append((field_name, field, True))
 
             # Get new id.
             id, position = self.database.getId(collection=self.model.collection)
@@ -129,22 +129,22 @@ class UpdateAction(PermissionMixin, Action):
             # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
 
-            # Collect relation fields and also check specific relation. Collect
+            # Collect relation fields and also check structured_relation. Collect
             # also reverse relation fields.
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
                 if field_name in instance.keys():
-                    if field.specific_relation:
-                        if instance.get(field.specific_relation) is not None:
+                    if field.structured_relation:
+                        if instance.get(field.structured_relation) is not None:
                             raise ActionException(
                                 "You must not try to update both a relation field "
-                                "with specific relation and its corresponding "
+                                "with structured_relation and its corresponding "
                                 "foreign key field."
                             )
-                    relation_fields.append((field_name, field, True))
+                    relation_fields.append((field_name, field, False))
             for field_name, field in self.model.get_reverse_relations():
                 if field_name in instance.keys():
-                    relation_fields.append((field_name, field, False))
+                    relation_fields.append((field_name, field, True))
 
             # Get relations.
             relations = self.get_relations(
@@ -218,11 +218,11 @@ class DeleteAction(PermissionMixin, Action):
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
                 instance[field_name] = None
-                relation_fields.append((field_name, field, True))
+                relation_fields.append((field_name, field, False))
 
             for field_name, field in self.model.get_reverse_relations():
                 instance[field_name] = None
-                relation_fields.append((field_name, field, False))
+                relation_fields.append((field_name, field, True))
 
             # Get relations.
             relations = self.get_relations(

@@ -9,12 +9,17 @@ TESTDATA = [
     {
         "collection": "mediafile",
         "id": 3549387598,
-        "fields": {"meeting_ids": [3611987967], "topic_ids": [6259289755]},
+        "fields": {
+            "meeting_ids": [3611987967],
+            "attachment_ids": [
+                FullQualifiedId(collection=Collection("topic"), id=6259289755)
+            ],
+        },
     },
     {
         "collection": "mediafile",
         "id": 7583920032,
-        "fields": {"meeting_ids": [], "topic_ids": []},
+        "fields": {"meeting_ids": [], "attachment_ids": []},
     },
     {
         "collection": "topic",

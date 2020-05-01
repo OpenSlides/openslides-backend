@@ -22,6 +22,7 @@ class Committee(Model):
     There are the following reverse relation fields:
         TODO
     """
+
     # TODO: Add reverse relation fields to docstring.
 
     collection = Collection("committee")

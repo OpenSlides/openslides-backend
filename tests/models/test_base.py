@@ -31,6 +31,12 @@ class FakeModel2(Model):
         to=Collection("fake_model"),
         related_name="fake_model_2_ids",
     )
+    generic_relation_field = fields.ForeignKeyField(
+        description="The foreign key to fake_model.",
+        to=Collection("fake_model"),
+        related_name="fake_model_2_generic_ids",
+        generic_relation=True,
+    )
 
 
 class ActionsBaseTester(TestCase):
@@ -67,19 +73,22 @@ class ActionsBaseTester(TestCase):
 
     def test_get_fields_fake_model(self) -> None:
         self.assertEqual(
-            ["id", "text", "fake_model_2_ids"],
+            ["id", "text", "fake_model_2_ids", "fake_model_2_generic_ids"],
             [field_name for field_name, _ in FakeModel().get_fields()],
         )
         self.assertEqual(
             ["id", "text"],
-            [field_name for field_name, _ in FakeModel().get_fields(only_generic=True)],
+            [field_name for field_name, _ in FakeModel().get_fields(only_common=True)],
         )
 
     def test_own_collection_attr(self) -> None:
         reverse_relations = list(FakeModel().get_reverse_relations())
-        self.assertEqual(len(reverse_relations), 1)
+        self.assertEqual(len(reverse_relations), 2)
         field_name, field = reverse_relations[0]
         self.assertEqual(field_name, "fake_model_2_ids")
+        self.assertEqual(str(field.own_collection), "fake_model_2")
+        field_name, field = reverse_relations[1]
+        self.assertEqual(field_name, "fake_model_2_generic_ids")
         self.assertEqual(str(field.own_collection), "fake_model_2")
 
     def test_get_field_normal_field(self) -> None:
@@ -90,16 +99,16 @@ class ActionsBaseTester(TestCase):
         with self.assertRaises(ValueError):
             FakeModel().get_field("Unknown field")
 
-    def test_specific_relation_init(self) -> None:
+    def test_structured_relation_init(self) -> None:
         with self.assertRaises(ValueError):
             fields.ForeignKeyField(
                 description="The foreign key of fake_model_tahheque7O.",
                 to=Collection("fake_model_tahheque7O"),
                 related_name="invalid_related_name",
-                specific_relation="invalid_specific_relation",
+                structured_relation="invalid_structured_relation",
             )
 
-    def test_specific_relation_init_2(self) -> None:
+    def test_structured_relation_init_2(self) -> None:
         with self.assertRaises(ValueError):
             fields.ForeignKeyField(
                 description="The foreign key of fake_model_tahheque7O.",

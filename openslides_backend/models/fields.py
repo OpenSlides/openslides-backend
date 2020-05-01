@@ -62,21 +62,23 @@ class RelationMixin(Field):
     """
     Field that provides a relation to another Collection.
 
-    At the moment we only support 1:m and n:m relations but not 1:1 relations.
+    At the moment we only support 1:m and m:n relations but not 1:1 or m:1 relations.
 
     Args:
         to: The collection this field is related to.
         related_name: The name of the array field of the related model. This
             string may contain a $ as special character. I this case the $ will
             be replaced by an id of a specific field of this model e. g. the
-            meeting id. This is only possible if the specific_relation argument
+            meeting id. This is only possible if the structured_relation argument
             is set. In the end there will be a lot of fields in the related
             model.
-        specific_relation: The name of the foreign key field of this model where
+        structured_relation: The name of the foreign key field of this model where
             we can find the id that should be used to replace the $ used in
             related_name argument. Attention: If the value of this field
             changes, all relations have to be adjusted. So don't use a
             writable field at all.
+        generic_relation: If this flag is true the reverse field contains
+            FQFields of different collections i. e. it is a generic field.
     """
 
     on_delete: str
@@ -88,20 +90,24 @@ class RelationMixin(Field):
         self,
         to: Collection,
         related_name: str,
-        specific_relation: str = None,
+        structured_relation: str = None,
+        generic_relation: bool = False,
         **kwargs: Any
     ) -> None:
-        if specific_relation is not None:
+        if structured_relation is not None:
             if "$" not in related_name:
-                raise ValueError("Setting specific name requires a $ in related_name.")
+                raise ValueError(
+                    "Setting structured_relation requires a $ in related_name."
+                )
         else:
             if "$" in related_name:
                 raise ValueError(
-                    "A $ in related name requires setting specific_relation."
+                    "A $ in related name requires setting structured_relation."
                 )
         self.to = to
         self.related_name = related_name
-        self.specific_relation = specific_relation
+        self.structured_relation = structured_relation
+        self.generic_relation = generic_relation
         ReverseRelations[self.to].append(self)
         super().__init__(**kwargs)  # type: ignore
 

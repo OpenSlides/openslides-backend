@@ -108,7 +108,7 @@ class Motion(Model):
         description="The users that are supportes of this motion.",
         to=Collection("user"),
         related_name="supported_motion_$_ids",
-        specific_relation="meeting_id",
+        structured_relation="meeting_id",
     )
 
     # Timestamps
@@ -120,19 +120,21 @@ class Motion(Model):
     )
 
     # Miscellaneous
-    attachment_ids = fields.ManyToManyArrayField(  # TODO: Use GenericManyToManyArrayField
+    attachment_ids = fields.ManyToManyArrayField(
         description="The attachments that should be related with this motion.",
         to=Collection("mediafile"),
-        related_name="motion_ids",  # TOTO: Use attachment_ids
+        related_name="attachment_ids",
+        generic_relation=True,
     )
-    tag_ids = fields.ManyToManyArrayField(  # TODO: Use GenericManyToManyArrayField
+    tag_ids = fields.ManyToManyArrayField(
         description="The tags that should be related with this motion.",
         to=Collection("tag"),
         related_name="tagged_ids",
+        generic_relation=True,
     )
     # TODO:
-    # projection_ids: (projection/element_id)[];  // use GenericManyToManyArrayField
-    # current_projector_ids: (projector/current_element_ids)[];  // use GenericManyToManyArrayField
-    # personal_note_ids: (personal_note/content_object_id)[];  // use GenericManyToManyArrayField
-    # agenda_item_id: agenda_item/content_object_id;  // use Generic
-    # list_of_speakers_id: list_of_speakers/content_object_id;  // use Generic
+    # projection_ids: (projection/element_id)[];  // use generic ManyToManyArrayField
+    # current_projector_ids: (projector/current_element_ids)[];  // use generic ManyToManyArrayField
+    # personal_note_ids: (personal_note/content_object_id)[];  // use generic ManyToManyArrayField
+    # agenda_item_id: agenda_item/content_object_id;  // use generic ForeignKeyField
+    # list_of_speakers_id: list_of_speakers/content_object_id;  // use generic ForeignKeyField
