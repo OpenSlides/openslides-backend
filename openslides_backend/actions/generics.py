@@ -48,6 +48,9 @@ class CreateAction(PermissionMixin, Action):
             # Check permission using permission_reference field.
             self.check_permission(instance[self.permission_reference])
 
+            # Update instance (by default this does nothing)
+            instance = self.update_instance(instance)
+
             # Collect relation fields and also check structured_relation. Collect
             # also reverse relation fields.
             relation_fields = []
@@ -128,6 +131,9 @@ class UpdateAction(PermissionMixin, Action):
 
             # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
+
+            # Update instance (by default this does nothing)
+            instance = self.update_instance(instance)
 
             # Collect relation fields and also check structured_relation. Collect
             # also reverse relation fields.
@@ -211,6 +217,9 @@ class DeleteAction(PermissionMixin, Action):
 
             # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
+
+            # Update instance (by default this does nothing)
+            instance = self.update_instance(instance)
 
             # Collect relation fields and reverse relation fields and also
             # update instance and set all relation fields and reverse relation

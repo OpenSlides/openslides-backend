@@ -62,7 +62,7 @@ class RelationMixin(Field):
     """
     Field that provides a relation to another Collection.
 
-    At the moment we only support 1:m and m:n relations but not 1:1 or m:1 relations.
+    We support 1:m, m:n 1:1 and m:1 relations.
 
     Args:
         to: The collection this field is related to.
@@ -86,6 +86,8 @@ class RelationMixin(Field):
     own_collection: Collection
     own_field_name: str
 
+    type: str
+
     def __init__(
         self,
         to: Collection,
@@ -108,25 +110,36 @@ class RelationMixin(Field):
         self.related_name = related_name
         self.structured_relation = structured_relation
         self.generic_relation = generic_relation
-        ReverseRelations[self.to].append(self)
+        ReverseRelations[self.to].append(
+            self
+        )  # TODO: Care of generic relation case when creating reverse relation field.
         super().__init__(**kwargs)  # type: ignore
-
-    def is_single_relation(self) -> bool:
-        raise NotImplementedError
-
-    def is_multiple_relation(self) -> bool:
-        return not self.is_single_relation()
 
 
 ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
+class RequiredOneToOneField(RelationMixin, IdField):
+
+    on_delete = "protect"  # TODO: Enable cascade
+    type = "1:1"
+
+
+class OneToOneField(RelationMixin, IdField):
+
+    on_delete = "set_null"  # TODO: Enable cascade
+    type = "1:1"
+
+    def get_schema(self) -> Schema:
+        schema = super().get_schema()
+        schema["type"] = ["integer", "null"]
+        return schema
+
+
 class RequiredForeignKeyField(RelationMixin, IdField):
 
     on_delete = "protect"  # TODO: Enable cascade
-
-    def is_single_relation(self) -> bool:
-        return True
+    type = "1:m"
 
 
 class ForeignKeyField(RequiredForeignKeyField):
@@ -140,6 +153,9 @@ class ForeignKeyField(RequiredForeignKeyField):
 
 
 class ManyToManyArrayField(RelationMixin):
+
+    type = "m:n"
+
     def get_schema(self) -> Schema:
         return dict(
             description=self.description,
@@ -147,6 +163,3 @@ class ManyToManyArrayField(RelationMixin):
             items={"type": "integer", "minimum": 1},
             uniqueItems=True,
         )
-
-    def is_single_relation(self) -> bool:
-        return False

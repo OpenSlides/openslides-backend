@@ -943,6 +943,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "meeting_id": None,
+                        "agenda_item_id": None,
                         "attachment_ids": None,
                         "tag_ids": None,
                     },
@@ -966,6 +967,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_2[0]["id"],
                         "meeting_id": None,
+                        "agenda_item_id": None,
                         "attachment_ids": None,
                         "tag_ids": None,
                     },
@@ -980,6 +982,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_2[1]["id"],
                         "meeting_id": None,
+                        "agenda_item_id": None,
                         "attachment_ids": None,
                         "tag_ids": None,
                     },

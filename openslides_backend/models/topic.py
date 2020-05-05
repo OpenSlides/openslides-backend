@@ -33,7 +33,12 @@ class Topic(Model):
         related_name="tagged_ids",
         generic_relation=True,
     )
+    agenda_item_id = fields.OneToOneField(
+        description="The id of the agenda item.",
+        to=Collection("agenda_item"),
+        related_name="content_object_id",
+        generic_relation=True,
+    )
 
     # TODO
-    # agenda_item_id: agenda_item/content_object_id;
     # list_of_speakers_id: list_of_speakers/content_object_id;

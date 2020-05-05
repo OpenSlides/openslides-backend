@@ -74,6 +74,15 @@ class Action(BaseAction):
         """
         raise NotImplementedError
 
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Updates one instance of the payload. This can be overridden by custom
+        action classes.
+
+        This can only be used of payload is a list.
+        """
+        return instance
+
     def check_permission_on_dataset(self, dataset: DataSet) -> None:
         """
         Checks permission in the middle of the action according to dataset. Can
@@ -167,17 +176,19 @@ class Action(BaseAction):
 
         for field_name, field, is_reverse in relation_fields:
             if not is_reverse:
-                # Common relation case: 1:n or m:n
+                # Common relation case: 1:m or m:n or 1:1 case.
 
                 # Prepare new relation ids
                 value = obj.get(field_name)
                 if value is None:
                     rel_ids = []
                 else:
-                    if field.is_single_relation():
+                    if field.type in ("1:m", "1:1"):
+                        # We simulate a list of new values in these cases so
+                        # we can reuse the code here.
                         rel_ids = [value]
                     else:
-                        # field.is_multiple_relation()
+                        assert field.type == "m:n"
                         rel_ids = value
 
                 # Parse which relation ids should be added and which should be
@@ -243,13 +254,12 @@ class Action(BaseAction):
                     relations[fqfield] = rel_element
 
             else:
-                # Reverse relation case: m:n or m:1
+                # Reverse relation case: m:n, m:1 or 1:1
 
                 # Prepare new relation ids
                 value = obj.get(field_name)
 
-                if field.is_multiple_relation():
-                    # m:n case
+                if field.type == "m:n":
                     if value is None:
                         rel_ids = []
                     else:
@@ -266,6 +276,10 @@ class Action(BaseAction):
                         )
 
                     # Get related models from database
+                    if field.generic_relation:
+                        raise NotImplementedError(
+                            "Generic relation case is not implemented yet."
+                        )
                     rels, position = self.database.getMany(
                         field.own_collection,
                         list(add | remove),
@@ -294,12 +308,17 @@ class Action(BaseAction):
                         relations[fqfield] = rel_element
 
                 else:
-                    # field.is_single_relation() that means m:1 case
-
+                    assert field.type in ("1:m", "1:1")
+                    # Note: 1:m means m:1 here because we are in reverse relation case
                     if value is None:
                         rel_ids = []
                     else:
-                        rel_ids = value
+                        if field.type == "1:1":
+                            # We simulate a list of new values in this case so
+                            # we can reuse the code here.
+                            rel_ids = [value]
+                        else:
+                            rel_ids = value
 
                     # Parse which relation ids should be added and which should be
                     # removed in related model.
@@ -312,12 +331,21 @@ class Action(BaseAction):
                         )
 
                     # Get related models from database
-                    rels, position = self.database.getMany(
-                        field.own_collection,
-                        list(add | remove),
-                        mapped_fields=[field.own_field_name],
-                    )
-                    self.set_min_position(position)
+                    if field.generic_relation:
+                        rels = {}
+                        for related_model_fqid in list(add | remove):
+                            related_model, position = self.database.get(
+                                related_model_fqid, mapped_fields=[field.own_field_name]
+                            )
+                            self.set_min_position(position)
+                            rels[related_model_fqid] = related_model
+                    else:
+                        rels, position = self.database.getMany(
+                            field.own_collection,
+                            list(add | remove),
+                            mapped_fields=[field.own_field_name],
+                        )
+                        self.set_min_position(position)
 
                     # Prepare result which contains relations elements for add case and
                     # for remove case
@@ -340,9 +368,14 @@ class Action(BaseAction):
                                 )
                             # else: field.on_delete == "set_null"
                             rel_element = RelationsElement(type="remove", value=None,)
-                        fqfield = FullQualifiedField(
-                            field.own_collection, rel_id, field.own_field_name
-                        )
+                        if field.generic_relation:
+                            fqfield = FullQualifiedField(
+                                rel_id.collection, rel_id.id, field.own_field_name
+                            )  # TODO: own_field_name is not guaranteed here
+                        else:
+                            fqfield = FullQualifiedField(
+                                field.own_collection, rel_id, field.own_field_name
+                            )
                         relations[fqfield] = rel_element
 
         return relations
@@ -369,14 +402,14 @@ class Action(BaseAction):
         self.set_min_position(position)
 
         # Fetch current ids from relation field
-        if field.is_single_relation():
+        if field.type in ("1:m", "1:1"):
             current_id = current_obj.get(field_name)
             if current_id is None:
                 current_ids = set()
             else:
                 current_ids = set([current_id])
         else:
-            # field.is_multiple_relation()
+            assert field.type == "m:n"
             current_ids = set(current_obj.get(field_name, []))
 
         # Calculate and return add set and remove set
