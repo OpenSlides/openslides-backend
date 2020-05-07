@@ -902,6 +902,7 @@ class BaseTopicDeleteActionTester(TestCase):
             {"id": 1312354708},
             {"id": 6259289755},
         ]
+        self.pseudo_valid_payload_3 = [{"id": 5756367535}]
 
 
 class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
@@ -932,6 +933,9 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
 
     def test_validation_correct_2(self) -> None:
         self.action.validate(self.valid_payload_2)
+
+    def test_validation_correct_3(self) -> None:
+        self.action.validate(self.pseudo_valid_payload_3)
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
@@ -997,6 +1001,34 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         },
                     },
                 },
+            ],
+        )
+
+    def test_prepare_dataset_3(self) -> None:
+        dataset = self.action.prepare_dataset(self.pseudo_valid_payload_3)
+        self.assertEqual(dataset["position"], 1)
+        self.assertEqual(
+            dataset["data"],
+            [
+                {
+                    "instance": {
+                        "id": self.pseudo_valid_payload_3[0]["id"],
+                        "meeting_id": None,
+                        "agenda_item_id": None,
+                        "attachment_ids": None,
+                        "tag_ids": None,
+                    },
+                    "relations": {
+                        get_fqfield("meeting/9079236097/topic_ids"): {
+                            "type": "remove",
+                            "value": [],
+                        },
+                        get_fqfield("agenda_item/3393211712/content_object_id"): {
+                            "type": "remove",
+                            "value": None,
+                        },
+                    },
+                }
             ],
         )
 

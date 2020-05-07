@@ -40,5 +40,4 @@ class Topic(Model):
         generic_relation=True,
     )
 
-    # TODO
-    # list_of_speakers_id: list_of_speakers/content_object_id;
+    # TODO: list_of_speakers_id: list_of_speakers/content_object_id;
