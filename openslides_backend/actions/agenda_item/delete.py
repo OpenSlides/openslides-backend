@@ -1,20 +1,20 @@
 import fastjsonschema  # type: ignore
 
-from ...models.topic import Topic
+from ...models.agenda_item import AgendaItem
 from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import DeleteAction
 
-delete_topic_schema = fastjsonschema.compile(
+delete_agenda_item_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
-        "title": "Delete topics schema",
-        "description": "An array of topics to be deleted.",
+        "title": "Delete agenda items schema",
+        "description": "An array of agenda items to be deleted.",
         "type": "array",
         "items": {
             "type": "object",
-            "properties": Topic().get_properties("id"),
+            "properties": AgendaItem().get_properties("id"),
             "required": ["id"],
             "additionalProperties": False,
         },
@@ -24,14 +24,12 @@ delete_topic_schema = fastjsonschema.compile(
 )
 
 
-@register_action("topic.delete")
-class TopicDelete(DeleteAction):
+@register_action("agenda_item.delete")
+class AgendaItemDelete(DeleteAction):
     """
-    Action to delete simple topics that can be shown in the agenda.
+    Action to delete agenda items.
     """
 
-    # TODO: Add protection against deletion without deleting agenda item.
-
-    model = Topic()
-    schema = delete_topic_schema
+    model = AgendaItem()
+    schema = delete_agenda_item_schema
     permissions = [TOPIC_CAN_MANAGE]

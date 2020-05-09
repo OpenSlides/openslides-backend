@@ -914,5 +914,4 @@ class MotionSortActionWSGITester(BaseMotionSortActionTester):
         response = client.post(
             "/", json=[{"action": "motion.sort", "data": self.valid_payload_1}],
         )
-        print(response.data)
         self.assertEqual(response.status_code, 200)

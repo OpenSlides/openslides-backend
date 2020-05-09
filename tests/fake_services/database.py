@@ -45,7 +45,6 @@ TESTDATA = [
         "collection": "meeting",
         "id": 3611987967,
         "fields": {"topic_ids": [6375863023, 6259289755], "user_ids": [5968705978]},
-        "attachment_ids": [3549387598],
     },
     {
         "collection": "topic",
@@ -155,6 +154,26 @@ TESTDATA = [
         "collection": "motion",
         "id": 8000824551,
         "fields": {"meeting_id": 5562405520, "sort_parent_id": 1082050467},
+    },
+    # Agenda test:
+    {
+        "collection": "meeting",
+        "id": 9079236097,
+        "fields": {
+            "topic_ids": [5756367535],
+            "agenda_item_ids": [3393211712],
+            "user_ids": [5968705978],
+        },
+    },
+    {
+        "collection": "topic",
+        "id": 5756367535,
+        "fields": {"meeting_id": 9079236097, "agenda_item_id": 3393211712},
+    },
+    {
+        "collection": "agenda_item",
+        "id": 3393211712,
+        "fields": {"meeting_id": 9079236097, "content_object_id": "topic/5756367535"},
     },
 ]  # type: List[Dict[str, Any]]
 
