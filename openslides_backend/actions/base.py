@@ -9,18 +9,9 @@ from ..shared.exceptions import ActionException
 from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .actions_interface import ActionPayload
+from .relations import Relations, RelationsElement, RelationsHandler
 
 DataSet = TypedDict("DataSet", {"position": int, "data": Any})
-RelationsElement = TypedDict(
-    "RelationsElement",
-    {
-        "type": str,
-        "value": Optional[
-            Union[int, FullQualifiedId, List[int], List[FullQualifiedId]]
-        ],
-    },
-)
-Relations = Dict[FullQualifiedField, RelationsElement]
 
 
 class BaseAction:  # pragma: no cover
@@ -177,41 +168,20 @@ class Action(BaseAction):
         relations are added.
         """
         relations: Relations = {}
-
         for field_name, field, is_reverse in relation_fields:
-            if not field.generic_relation:
-                if not is_reverse:
-                    result = self.get_relations_common_relation_case(
-                        model, id, obj, field, field_name, shortcut
-                    )
-                else:
-                    if field.type == "m:n":
-                        result = self.get_relations_reverse_relation_case_many_to_many(
-                            model, id, obj, field, field_name, shortcut
-                        )
-                    else:
-                        assert field.type in ("1:m", "1:1")
-                        # Note: 1:m means m:1 here because we are in reverse relation case
-                        result = self.get_relations_reverse_relation_case_x_to_one(
-                            model, id, obj, field, field_name, shortcut
-                        )
-            else:
-                if not is_reverse:
-                    result = self.get_relations_common_relation_case_generic(
-                        model, id, obj, field, field_name, shortcut
-                    )
-                else:
-                    if field.type == "m:n":
-                        # result = self.get_relations_reverse_relation_case_many_to_many_generic(
-                        #     model, id, obj, field, field_name, shortcut
-                        # )  # TODO: This method does not exist yet.
-                        raise NotImplementedError
-                    else:
-                        assert field.type in ("1:m", "1:1")
-                        # Note: 1:m means m:1 here because we are in reverse relation case
-                        result = self.get_relations_reverse_relation_case_x_to_one_generic(
-                            model, id, obj, field, field_name, shortcut
-                        )
+            handler = RelationsHandler(
+                self.database,
+                self.set_min_position,
+                model,
+                id,
+                field,
+                field_name,
+                obj,
+                is_reverse,
+                only_add=shortcut,
+                only_remove=False,
+            )
+            result = handler.perform()
             relations.update(result)
         return relations
 
