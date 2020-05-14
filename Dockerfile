@@ -18,6 +18,5 @@ RUN apk add --no-cache gcc musl-dev linux-headers git \
 
 EXPOSE ${OPENSLIDES_BACKEND_ACTIONS_PORT}
 EXPOSE ${OPENSLIDES_BACKEND_PRESENTER_PORT}
-# EXPOSE 8002
 
 CMD [ "python", "-m", "openslides_backend" ]
