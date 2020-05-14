@@ -21,9 +21,17 @@ Relations = Dict[FullQualifiedField, RelationsElement]
 
 class RelationsHandler:
     """
-    """
+    This class combines serveral methods to calculate changes of relation fields.
 
-    # TODO: Add docstring
+    There are the following distinctions:
+        by type: 1:1, 1:m / m:1 or m:n
+        by direction: common or reverse
+        by field: normal field or with structured field
+        by content: integer relation and generic relation (using a full qualified id)
+
+    Therefor we have many cases this class has to handle (e. g. reverse relation
+    m:n with structured field or common relation 1:m with generic relation)
+    """
 
     def __init__(
         self,
@@ -65,6 +73,9 @@ class RelationsHandler:
         rel_ids = self.prepare_new_relation_ids()
         related_name = self.get_related_name()
         target = self.field.own_collection if self.is_reverse else self.field.to
+
+        add: Union[Set[int], Set[FullQualifiedId]]
+        remove: Union[Set[int], Set[FullQualifiedId]]
 
         if self.field.generic_relation and self.is_reverse:
             rel_ids = cast(List[FullQualifiedId], rel_ids)
