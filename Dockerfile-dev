@@ -1,19 +1,29 @@
 FROM python:3.8.1-alpine3.11
 
-RUN apk add build-base
+ARG OPENSLIDES_BACKEND_ACTIONS_PORT=8000
+ARG OPENSLIDES_BACKEND_PRESENTER_PORT=8001
+ENV OPENSLIDES_BACKEND_COMPONENT=all
+ENV OPENSLIDES_BACKEND_DEBUG 1
 
 WORKDIR /srv/code
 
-EXPOSE 8000
-EXPOSE 8001
-EXPOSE 8002
+RUN apk add --no-cache gcc musl-dev linux-headers git \
+    && addgroup -S appgroup \
+    && adduser -S appuser -G appgroup
 
 COPY requirements.txt .
+
 COPY requirements_production.txt .
-RUN pip install --no-cache-dir --requirement requirements.txt
 
-ENV OPENSLIDES_BACKEND_DEBUG 1
-
-CMD [ "python", "-m", "openslides_backend" ]
+RUN pip install --no-cache-dir --requirement requirements.txt \
+    && chown -R appuser:appgroup /srv/code
 
 COPY openslides_backend/ ./openslides_backend/
+
+USER appuser
+
+EXPOSE ${OPENSLIDES_BACKEND_ACTIONS_PORT}
+EXPOSE ${OPENSLIDES_BACKEND_PRESENTER_PORT}
+# EXPOSE 8002
+
+CMD [ "python", "-m", "openslides_backend" ]
