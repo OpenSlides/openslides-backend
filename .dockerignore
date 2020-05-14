@@ -1,0 +1,4 @@
+.virualenv
+.env
+.env.development
+.vscode

@@ -1,0 +1,10 @@
+version: "3"
+services:
+  backend:
+    image: openslides_backend_dev
+    ports:
+      - "${OPENSLIDES_BACKEND_ACTIONS_PORT}:8000"
+      - "${OPENSLIDES_BACKEND_PRESENTER_PORT}:8001"
+    env_file: .env.development
+    volumes:
+      - ./openslides_backend:/srv/code/openslides_backends
