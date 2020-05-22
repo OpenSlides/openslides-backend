@@ -69,8 +69,8 @@ class CreateAction(PermissionMixin, Action):
                     relation_fields.append((field_name, field, True))
 
             # Get new id.
-            id, position = self.database.getId(collection=self.model.collection)
-            self.set_min_position(position)
+            # TODO: Fix this call.
+            id = self.database.getId(collection=self.model.collection)
 
             # Get relations.
             relations = self.get_relations(
@@ -83,7 +83,7 @@ class CreateAction(PermissionMixin, Action):
 
             data.append({"instance": instance, "new_id": id, "relations": relations})
 
-        return {"position": self.position, "data": data}
+        return {"position": self.database.position, "data": data}
 
     def create_instance_write_request_element(
         self, position: int, element: Any
@@ -123,11 +123,10 @@ class UpdateAction(PermissionMixin, Action):
         data = []
         for instance in payload:
             # Fetch current db instance with permission_reference field.
-            db_instance, position = self.database.get(
+            db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
                 mapped_fields=[self.permission_reference],
             )
-            self.set_min_position(position)
 
             # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
@@ -162,7 +161,7 @@ class UpdateAction(PermissionMixin, Action):
 
             data.append({"instance": instance, "relations": relations})
 
-        return {"position": self.position, "data": data}
+        return {"position": self.database.position, "data": data}
 
     def create_instance_write_request_element(
         self, position: int, element: Any
@@ -209,11 +208,10 @@ class DeleteAction(PermissionMixin, Action):
         data = []
         for instance in payload:
             # Fetch current db instance with permission_reference field
-            db_instance, position = self.database.get(
+            db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
                 mapped_fields=[self.permission_reference],
             )
-            self.set_min_position(position)
 
             # Check permission using permission_reference field.
             self.check_permission(db_instance[self.permission_reference])
@@ -243,7 +241,7 @@ class DeleteAction(PermissionMixin, Action):
 
             data.append({"instance": instance, "relations": relations})
 
-        return {"position": self.position, "data": data}
+        return {"position": self.database.position, "data": data}
 
     def create_instance_write_request_element(
         self, position: int, element: Any

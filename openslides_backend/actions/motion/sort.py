@@ -89,14 +89,13 @@ class TreeSortMixin(BaseAction):
         """
         # Get all item ids to verify, that the user send all ids.
         filter = FilterOperator(field="meeting_id", value=meeting_id, operator="==")
-        db_instances, position = self.database.filter(
+        db_instances = self.database.filter(
             collection=self.model.collection,
             filter=filter,
             meeting_id=meeting_id,
-            mapped_fields=[],
+            mapped_fields=["id"],
         )
-        self.set_min_position(position)
-        all_model_ids = set(db_instances.keys())
+        all_model_ids = set([instance["id"] for instance in db_instances])
 
         # Setup initial node using a fake root node.
         fake_root: Dict[str, Any] = {"id": None, "children": []}
@@ -157,7 +156,7 @@ class TreeSortMixin(BaseAction):
                 f"Did not recieve {len(all_model_ids)} ids, got {len(ids_found)}."
             )
 
-        return {"position": self.position, "data": nodes_to_update}
+        return {"position": self.database.position, "data": nodes_to_update}
 
     def create_write_request_elements(
         self, dataset: DataSet

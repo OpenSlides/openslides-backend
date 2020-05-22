@@ -8,7 +8,8 @@ from .interface import Command, EngineResponse
 
 
 class HTTPEngine:
-    """HTTP implementation of the Engine interface
+    """
+    HTTP implementation of the Engine interface
     """
 
     def __init__(self, database_url: str, logging: LoggingModule):
@@ -26,24 +27,21 @@ class HTTPEngine:
         try:
             error = response.json().get("error")
         except:  # noqa: E722
+            # TODO: Fix this exception case.
             pass
         if error is not None:
             raise DatabaseException(error)
         return response.json()
 
     def get(self, command: Command) -> EngineResponse:
-        command_url = f" {self.url}/get"  # noqa
+        command_url = f" {self.url}/get"
         return self._retrieve(command_url, command)
 
-    def getMany(self, command: Command) -> EngineResponse:
-        command_url = f" {self.url}/get_many"  # noqa
+    def get_many(self, command: Command) -> EngineResponse:
+        command_url = f" {self.url}/get_many"
         return self._retrieve(command_url, command)
 
-    def getManyByFQIDs(self, command: Command) -> EngineResponse:
-        command_url = f" {self.url}/get_many"  # noqa
-        return self._retrieve(command_url, command)
-
-    def getAll(self, command: Command) -> EngineResponse:
+    def get_all(self, command: Command) -> EngineResponse:
         command_url = f" {self.url}/get_all"
         return self._retrieve(command_url, command)
 

@@ -5,8 +5,9 @@ from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
+from ..services.database.adapter.interface import Datastore
 from ..shared.exceptions import ActionException
-from ..shared.interfaces import Database, Event, Permission, WriteRequestElement
+from ..shared.interfaces import Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
 from .actions_interface import ActionPayload
 from .relations import Relations, RelationsHandler
@@ -20,12 +21,8 @@ class BaseAction:  # pragma: no cover
     """
 
     permission: Permission
-    database: Database
+    database: Datastore
     user_id: int
-    position: int
-
-    def set_min_position(self, position: int) -> None:
-        ...
 
 
 class Action(BaseAction):
@@ -37,9 +34,7 @@ class Action(BaseAction):
 
     schema: Callable[[ActionPayload], None]
 
-    position = 0
-
-    def __init__(self, permission: Permission, database: Database) -> None:
+    def __init__(self, permission: Permission, database: Datastore) -> None:
         self.permission = permission
         self.database = database
 
@@ -142,16 +137,6 @@ class Action(BaseAction):
                 locked_fields={fqfield: position},
             )
 
-    def set_min_position(self, position: int) -> None:
-        """
-        Sets self.position to the new value position if this value is smaller
-        than the old one. Sets it if it is the first call.
-        """
-        if self.position == 0:
-            self.position = position
-        else:
-            self.position = min(position, self.position)
-
     def get_relations(
         self,
         model: Model,
@@ -171,7 +156,6 @@ class Action(BaseAction):
         for field_name, field, is_reverse in relation_fields:
             handler = RelationsHandler(
                 self.database,
-                self.set_min_position,
                 model,
                 id,
                 field,
