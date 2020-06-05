@@ -1,30 +1,29 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from typing_extensions import Protocol
 
 from openslides_backend.services.database.commands import Command
 
-EngineResponse = Dict[str, Any]
+# TODO: Use proper typing here.
+EngineResponse = Any
 
 
 class Engine(Protocol):
-    """Datastore defines the interface to the engine used by the datastore
-       This will be the HTTPEngine per default
+    """
+    Engine defines the interface to the engine used by the datastore. This will
+    be the HTTPEngine per default
     """
 
     def get(self, data: Command) -> EngineResponse:
         ...
 
-    def getMany(self, data: Command) -> EngineResponse:
+    def get_many(self, data: Command) -> EngineResponse:
         ...
 
-    def getManyByFQIDs(self, data: Command) -> EngineResponse:
+    def get_all(self, data: Command) -> EngineResponse:
         ...
 
-    def getAll(self, data: Command) -> List[EngineResponse]:
-        ...
-
-    def filter(self, data: Command) -> List[EngineResponse]:
+    def filter(self, data: Command) -> EngineResponse:
         ...
 
     def exists(self, data: Command) -> EngineResponse:
@@ -37,7 +36,4 @@ class Engine(Protocol):
         ...
 
     def max(self, data: Command) -> EngineResponse:
-        ...
-
-    def getId(self, data: Command) -> EngineResponse:
         ...

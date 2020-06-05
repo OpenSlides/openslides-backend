@@ -1,6 +1,13 @@
 from copy import deepcopy
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
+from openslides_backend.services.database.adapter.interface import (
+    Aggregate,
+    Count,
+    Found,
+    GetManyRequest,
+    PartialModel,
+)
 from openslides_backend.shared.filters import Filter, FilterOperator
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
@@ -186,46 +193,63 @@ class DatabaseTestAdapter:
     implementation.
     """
 
+    position = 1
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
 
     def get(
-        self, fqid: FullQualifiedId, mapped_fields: List[str] = None
-    ) -> Tuple[Dict[str, Any], int]:
-        result, position = self.getMany(fqid.collection, [fqid.id], mapped_fields)
-        return result[fqid.id], position
+        self,
+        fqid: FullQualifiedId,
+        mapped_fields: List[str] = None,
+        position: int = None,
+        get_deleted_models: int = None,
+    ) -> PartialModel:
+        get_many_request = GetManyRequest(fqid.collection, [fqid.id], mapped_fields)
+        result = self.get_many([get_many_request])
+        return result[fqid.collection][fqid.id]
 
-    def getMany(
-        self, collection: Collection, ids: List[int], mapped_fields: List[str] = None
-    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
+    def get_many(
+        self,
+        get_many_requests: List[GetManyRequest],
+        mapped_fields: List[str] = None,
+        position: int = None,
+        get_deleted_models: int = None,
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
+        if mapped_fields is not None:
+            raise NotImplementedError(
+                "This test adapter does not support this field yet."
+            )
         result = {}
-        for data in deepcopy(TESTDATA):
-            if data["collection"] == str(collection) and data["id"] in ids:
-                element = {}
-                if mapped_fields is None:
-                    element = data["fields"]
-                else:
-                    for field in mapped_fields:
-                        if field in data["fields"].keys():
-                            element[field] = data["fields"][field]
-                result[data["id"]] = element
-        if len(ids) != len(result):
-            # Something was not found.
-            print(collection, ids, result)
-            raise RuntimeError
-        return (result, 1)
+        for get_many_request in get_many_requests:
+            inner_result = {}
+            for data in deepcopy(TESTDATA):
+                if (
+                    data["collection"] == str(get_many_request.collection)
+                    and data["id"] in get_many_request.ids
+                ):
+                    element = {}
+                    if get_many_request.mapped_fields is None:
+                        element = data["fields"]
+                    else:
+                        for field in get_many_request.mapped_fields:
+                            if field in data["fields"].keys():
+                                element[field] = data["fields"][field]
+                    inner_result[data["id"]] = element
+            if len(get_many_request.ids) != len(inner_result):
+                # Something was not found.
+                print(get_many_request, inner_result)
+                raise RuntimeError
+            result[get_many_request.collection] = inner_result
+        return result
 
-    def getId(self, collection: Collection) -> Tuple[int, int]:
-        return (42, 1)
-
-    def exists(self, collection: Collection, ids: List[int]) -> Tuple[bool, int]:
-        for id in ids:
-            for data in TESTDATA:
-                if data["id"] == id:
-                    break
-            else:
-                return (False, 1)
-        return (True, 1)
+    def get_all(
+        self,
+        collection: Collection,
+        mapped_fields: List[str] = None,
+        get_deleted_models: int = None,
+    ) -> List[PartialModel]:
+        raise NotImplementedError
 
     def filter(
         self,
@@ -233,8 +257,8 @@ class DatabaseTestAdapter:
         filter: Filter,
         meeting_id: int = None,
         mapped_fields: List[str] = None,
-    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
-        result = {}
+    ) -> List[PartialModel]:
+        result = []
         for data in deepcopy(TESTDATA):
             data_meeting_id = data["fields"].get("meeting_id")
             if meeting_id is not None and (
@@ -244,20 +268,40 @@ class DatabaseTestAdapter:
             if data["collection"] != str(collection):
                 continue
             if not isinstance(filter, FilterOperator):
-                # TODO: Implement other filters
-                continue
-            if (
-                filter.operator == "=="
-                and data["fields"].get(filter.field) == filter.value
-            ):
-                element = {}
-                if mapped_fields is None:
-                    element = data["fields"]
-                else:
-                    for field in mapped_fields:
-                        if field in data["fields"].keys():
-                            element[field] = data["fields"][field]
-                result[data["id"]] = element
-                continue
-            # TODO: Implement other operators.
-        return (result, 1)
+                raise NotImplementedError
+            if filter.operator == "==":
+                if data["fields"].get(filter.field) == filter.value:
+                    element = {}
+                    if mapped_fields is None:
+                        element = data["fields"]
+                        element["id"] = data["id"]
+                    else:
+                        for field in mapped_fields:
+                            if field in data["fields"].keys():
+                                element[field] = data["fields"][field]
+                            if field == "id":
+                                element["id"] = data["id"]
+                    result.append(element)
+            else:
+                raise NotImplementedError
+        return result
+
+    def exists(self, collection: Collection, filter: Filter) -> Found:
+        raise NotImplementedError
+
+    def count(self, collection: Collection, filter: Filter) -> Count:
+        raise NotImplementedError
+
+    def min(
+        self, collection: Collection, filter: Filter, field: str, type: str = None
+    ) -> Aggregate:
+        raise NotImplementedError
+
+    def max(
+        self, collection: Collection, filter: Filter, field: str, type: str = None
+    ) -> Aggregate:
+        raise NotImplementedError
+
+    def getId(self, collection: Collection) -> int:
+        # TODO: This method is not valid here.
+        return 42

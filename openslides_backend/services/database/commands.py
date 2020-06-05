@@ -1,12 +1,13 @@
 from typing import Any, Dict, List, Optional
 
 from openslides_backend.services.database.adapter.interface import GetManyRequest
-from openslides_backend.shared.interfaces import Filter
+from openslides_backend.shared.filters import Filter as FilterInterface
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 
 class Command:
-    """Command is the base class for commands used by the Engine interface
+    """
+    Command is the base class for commands used by the Engine interface.
     """
 
     @property
@@ -18,7 +19,8 @@ class Command:
 
 
 class Get(Command):
-    """Get command
+    """
+    Get command
     """
 
     def __init__(
@@ -46,7 +48,8 @@ class Get(Command):
 
 
 class GetMany(Command):
-    """GetMany command
+    """
+    GetMany command
     """
 
     def __init__(
@@ -75,23 +78,9 @@ class GetMany(Command):
         return result
 
 
-class GetManyByFQIDs(Command):
-    """GetMany command
-    """
-
-    def __init__(
-        self, ids: List[FullQualifiedId],
-    ):
-        self.ids = ids
-
-    @property
-    def data(self) -> Dict[str, Any]:
-        fqids = list(map(lambda x: str(x), self.ids))
-        return {"requests": fqids}
-
-
 class GetAll(Command):
-    """GetAll command
+    """
+    GetAll command
     """
 
     def __init__(
@@ -115,10 +104,11 @@ class GetAll(Command):
 
 
 class Exists(Command):
-    """Exists command
+    """
+    Exists command
     """
 
-    def __init__(self, collection: Collection, filter: Filter):
+    def __init__(self, collection: Collection, filter: FilterInterface):
         self.collection = collection
         self.filter = filter
 
@@ -128,10 +118,11 @@ class Exists(Command):
 
 
 class Count(Command):
-    """Count command
+    """
+    Count command
     """
 
-    def __init__(self, collection: Collection, filter: Filter):
+    def __init__(self, collection: Collection, filter: FilterInterface):
         self.collection = collection
         self.filter = filter
 
@@ -141,11 +132,16 @@ class Count(Command):
 
 
 class Min(Command):
-    """Min command
+    """
+    Min command
     """
 
     def __init__(
-        self, collection: Collection, filter: Filter, field: str, type: str = None
+        self,
+        collection: Collection,
+        filter: FilterInterface,
+        field: str,
+        type: str = None,
     ):
         self.collection = collection
         self.filter = filter
@@ -165,11 +161,16 @@ class Min(Command):
 
 
 class Max(Command):
-    """Max command
+    """
+    Max command
     """
 
     def __init__(
-        self, collection: Collection, filter: Filter, field: str, type: str = None
+        self,
+        collection: Collection,
+        filter: FilterInterface,
+        field: str,
+        type: str = None,
     ):
         self.collection = collection
         self.filter = filter
@@ -188,11 +189,12 @@ class Max(Command):
         return result
 
 
-class Filters(Command):
-    """Filter command
+class Filter(Command):
+    """
+    Filter command
     """
 
-    def __init__(self, collection: Collection, filter: Filter):
+    def __init__(self, collection: Collection, filter: FilterInterface):
         self.collection = collection
         self.filter = filter
 

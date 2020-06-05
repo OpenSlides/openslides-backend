@@ -1,9 +1,10 @@
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import openslides_backend.services.database.commands as commands
 from openslides_backend.services.database.adapter.interface import GetManyRequest
 from openslides_backend.services.database.engine import Engine
-from openslides_backend.shared.interfaces import Filter, LoggingModule
+from openslides_backend.shared.filters import Filter
+from openslides_backend.shared.interfaces import LoggingModule
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 from .interface import Aggregate, Count, Found, PartialModel
@@ -13,6 +14,8 @@ class Adapter:
     """
     Adapter to connect to (read-only) database.
     """
+
+    position = 0
 
     def __init__(self, adapter: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
@@ -30,15 +33,16 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.get(command)
+        self.set_min_position(response)
         return response
 
-    def getMany(
+    def get_many(
         self,
         get_many_requests: List[GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[str, Dict[int, PartialModel]]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -48,20 +52,11 @@ class Adapter:
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
-        response = self.adapter.getMany(command)
+        response = self.adapter.get_many(command)
+        self.set_min_position(response)
         return response
 
-    def getManyByFQIDs(
-        self, ids: List[FullQualifiedId],
-    ) -> Dict[str, Dict[int, PartialModel]]:
-        command = commands.GetManyByFQIDs(ids=ids,)
-        self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
-        )
-        response = self.adapter.getMany(command)
-        return response
-
-    def getAll(
+    def get_all(
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
@@ -71,7 +66,8 @@ class Adapter:
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
-        response = self.adapter.getAll(command)
+        response = self.adapter.get_all(command)
+        self.set_min_position(response)
         return response
 
     def filter(
@@ -81,11 +77,12 @@ class Adapter:
         meeting_id: int = None,
         mapped_fields: List[str] = None,
     ) -> List[PartialModel]:
-        command = commands.Filters(collection=collection, filter=filter)
+        command = commands.Filter(collection=collection, filter=filter)
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.filter(command)
+        self.set_min_position(response)
         return response
 
     def exists(self, collection: Collection, filter: Filter) -> Found:
@@ -94,6 +91,7 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.exists(command)
+        self.set_min_position(response)
         return {"exists": response["exists"], "position": response["position"]}
 
     def count(self, collection: Collection, filter: Filter) -> Count:
@@ -102,6 +100,7 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.count(command)
+        self.set_min_position(response)
         return {"count": response["count"], "position": response["position"]}
 
     def min(
@@ -114,6 +113,7 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.min(command)
+        self.set_min_position(response)
         return response
 
     def max(
@@ -126,4 +126,31 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.max(command)
+        self.set_min_position(response)
         return response
+
+    def set_min_position(
+        self,
+        response: Union[
+            PartialModel,
+            Dict[Collection, Dict[int, PartialModel]],
+            List[PartialModel],
+            Found,
+            Count,
+            Aggregate,
+        ],
+    ) -> None:
+        """
+        Inspects result from database and calculates the minimum value of
+        "meta_position" fields inside the result.
+        """
+        # TODO: Calculate this. At the moment we use a fix value here.
+        position = 1
+
+        if self.position == 0:
+            self.position = position
+        else:
+            self.position = min(position, self.position)
+
+    def getId(self, collection: Collection) -> int:
+        raise RuntimeError("This method has to be fixed.")

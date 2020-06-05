@@ -1,10 +1,9 @@
-from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Text
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..shared.patterns import Collection, FullQualifiedId
-from .filters import Filter
+from ..shared.patterns import FullQualifiedId
 
 StartResponse = Callable
 
@@ -118,39 +117,6 @@ class Permission(Protocol):  # pragma: no cover
 
     def get_all(self, user_id: int) -> List[str]:
         ...
-
-
-class Database(Protocol):  # pragma: no cover
-    """
-    Interface for database adapter used in views and actions.
-    """
-
-    def get(
-        self, fqid: FullQualifiedId, mapped_fields: List[str] = None
-    ) -> Tuple[Dict[str, Any], int]:
-        ...
-
-    def getMany(
-        self, collection: Collection, ids: List[int], mapped_fields: List[str] = None
-    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
-        ...
-
-    def getId(self, collection: Collection) -> Tuple[int, int]:
-        ...
-
-    def exists(self, collection: Collection, ids: List[int]) -> Tuple[bool, int]:
-        ...
-
-    def filter(
-        self,
-        collection: Collection,
-        filter: Filter,
-        meeting_id: int = None,
-        mapped_fields: List[str] = None,
-    ) -> Tuple[Dict[int, Dict[str, Any]], int]:
-        ...
-
-    # TODO: getAll, filter, count, min, max, ...some with deleted or only deleted
 
 
 class Event(TypedDict, total=False):

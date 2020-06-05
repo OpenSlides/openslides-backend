@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from openslides_backend.shared.interfaces import Filter
+from openslides_backend.shared.filters import Filter
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 PartialModel = Dict[str, Any]
@@ -20,7 +20,9 @@ class DeletedModelsBehaviour(Enum):
 
 
 class GetManyRequest:
-    """Encapsulates a single GetManyRequests
+    """
+    Encapsulates a single GetManyRequest to be used for get_many requests to the
+    datastore.
     """
 
     def __init__(
@@ -41,8 +43,11 @@ class GetManyRequest:
 
 
 class Datastore(Protocol):
-    """Datastore defines the interface to the datastore
     """
+    Datastore defines the interface to the datastore
+    """
+
+    position: int
 
     def get(
         self,
@@ -53,21 +58,16 @@ class Datastore(Protocol):
     ) -> PartialModel:
         ...
 
-    def getMany(
+    def get_many(
         self,
         get_many_requests: List[GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[str, Dict[int, PartialModel]]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
 
-    def getManyByFQIDs(
-        self, ids: List[FullQualifiedId]
-    ) -> Dict[str, Dict[int, PartialModel]]:
-        ...
-
-    def getAll(
+    def get_all(
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
@@ -98,4 +98,8 @@ class Datastore(Protocol):
     def max(
         self, collection: Collection, filter: Filter, field: str, type: str = None
     ) -> Aggregate:
+        ...
+
+    # TODO: Remove this method here.
+    def getId(self, collection: Collection) -> int:
         ...

@@ -4,6 +4,7 @@ from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
+from ..services.database.adapter.interface import GetManyRequest
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 
@@ -36,7 +37,6 @@ class RelationsHandler:
     def __init__(
         self,
         database: Any,  # TODO: Use a database connection here.
-        set_min_position: Any,  # TODO: See above.
         model: Model,
         id: int,
         field: RelationMixin,
@@ -47,7 +47,6 @@ class RelationsHandler:
         only_remove: bool = False,
     ) -> None:
         self.database = database
-        self.set_min_position = set_min_position
         self.model = model
         self.id = id
         self.field = field
@@ -82,18 +81,21 @@ class RelationsHandler:
             add, remove = self.relation_diffs_fqid(rel_ids)
             rels = {}
             for related_model_fqid in list(add | remove):
-                related_model, position = self.database.get(
+                related_model = self.database.get(
                     related_model_fqid, mapped_fields=[related_name]
                 )
-                self.set_min_position(position)
                 rels[related_model_fqid] = related_model
         else:
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
-            rels, position = self.database.getMany(
-                target, list(add | remove), mapped_fields=[related_name],
+            response = self.database.get_many(
+                [
+                    GetManyRequest(
+                        target, list(add | remove), mapped_fields=[related_name]
+                    )
+                ]
             )
-            self.set_min_position(position)
+            rels = response[target]
 
         if self.field.generic_relation and not self.is_reverse:
             return self.prepare_result_to_fqid(add, remove, rels, target, related_name)
@@ -124,11 +126,10 @@ class RelationsHandler:
             if self.is_reverse:
                 raise NotImplementedError
             # Fetch current db instance with structured_relation field.
-            db_instance, position = self.database.get(
+            db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=self.id),
                 mapped_fields=[self.field.structured_relation],
             )
-            self.set_min_position(position)
             if db_instance.get(self.field.structured_relation) is None:
                 raise ValueError(
                     f"The field {self.field.structured_relation} must not be empty in database."
@@ -158,11 +159,10 @@ class RelationsHandler:
             # We have to compare with the current database state.
 
             # Retrieve current object from database
-            current_obj, position = self.database.get(
+            current_obj = self.database.get(
                 FullQualifiedId(self.model.collection, self.id),
                 mapped_fields=[self.field_name],
             )
-            self.set_min_position(position)
 
             # Get current ids from relation field
             if self.type in ("1:1", "1:m"):
@@ -205,11 +205,10 @@ class RelationsHandler:
             # We have to compare with the current database state.
 
             # Retrieve current object from database
-            current_obj, position = self.database.get(
+            current_obj = self.database.get(
                 FullQualifiedId(self.model.collection, self.id),
                 mapped_fields=[self.field_name],
             )
-            self.set_min_position(position)
 
             # Get current ids from relation field
             if self.type in ("1:1", "1:m"):

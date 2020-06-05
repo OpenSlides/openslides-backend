@@ -23,42 +23,31 @@ def test_get() -> None:
     engine.get.assert_called_with(command)
 
 
-def test_getMany() -> None:
+def test_get_many() -> None:
     fields = ["a", "b", "c"]
     fields2 = ["d", "e", "f"]
     collection = Collection("a")
     ids = [1]
     gmr = GetManyRequest(collection, ids, fields)
     command = commands.GetMany([gmr], fields2)
-    engine.getMany.return_value = {
+    engine.get_many.return_value = {
         "a/1": {"f": 1, "meta_deleted": False, "meta_position": 1}
     }
-    result = db.getMany([gmr], fields2)
+    result = db.get_many([gmr], fields2)
     assert result is not None
     assert command.data == {"requests": [gmr.to_dict()], "mapped_fields": fields2}
-    engine.getMany.assert_called_with(command)
-
-
-def test_getManyByFQIDs() -> None:
-    fqid = FullQualifiedId(Collection("fakeModel"), 1)
-    command = commands.GetManyByFQIDs([fqid])
-    engine.getMany.return_value = {
-        "a/1": {"f": 1, "meta_deleted": False, "meta_position": 1}
-    }
-    result = db.getManyByFQIDs([fqid])
-    assert result is not None
-    assert command.data == {"requests": [str(fqid)]}
+    engine.get_many.assert_called_with(command)
 
 
 def test_getAll() -> None:
     fields = ["a", "b", "c"]
     collection = Collection("a")
     command = commands.GetAll(collection=collection, mapped_fields=fields)
-    engine.getAll.return_value = [{"f": 1, "meta_deleted": False, "meta_position": 1}]
-    partial_models = db.getAll(collection=collection, mapped_fields=fields)
+    engine.get_all.return_value = [{"f": 1, "meta_deleted": False, "meta_position": 1}]
+    partial_models = db.get_all(collection=collection, mapped_fields=fields)
     assert command.data == {"collection": str(collection), "mapped_fields": fields}
     assert partial_models is not None
-    engine.getAll.assert_called_with(command)
+    engine.get_all.assert_called_with(command)
 
 
 def test_simple_filter() -> None:
@@ -67,7 +56,7 @@ def test_simple_filter() -> None:
     value = "1"
     operator = "="
     filter = FilterOperator(field=field, value=value, operator=operator)
-    command = commands.Filters(collection=collection, filter=filter)
+    command = commands.Filter(collection=collection, filter=filter)
     engine.filter.return_value = [
         {"f": 1, "meta_deleted": False, "meta_position": 1},
         {"f": 1, "meta_deleted": False, "meta_position": 5},
@@ -88,7 +77,7 @@ def test_complex_filter() -> None:
     filter1 = FilterOperator(field="f", value="1", operator="=")
     filter2 = FilterOperator(field="f", value="3", operator="=")
     or_filter = Or([filter1, filter2])
-    command = commands.Filters(collection=collection, filter=or_filter)
+    command = commands.Filter(collection=collection, filter=or_filter)
     engine.filter.return_value = [
         {"f": 1, "meta_deleted": False, "meta_position": 1},
         {"f": 3, "meta_deleted": False, "meta_position": 4},
