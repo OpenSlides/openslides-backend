@@ -6,7 +6,6 @@ from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
 from openslides_backend.http.views import ActionsView, PresenterView
-from openslides_backend.main import OpenSlidesBackendWSGI
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
@@ -14,10 +13,10 @@ from openslides_backend.shared.patterns import (
     FullQualifiedField,
     FullQualifiedId,
 )
+from openslides_backend.wsgi import OpenSlidesBackendWSGI
 
 from .fake_services.authentication import AuthenticationTestAdapter
 from .fake_services.database import DatabaseTestAdapter
-from .fake_services.event_store import EventStoreTestAdapter
 from .fake_services.permission import PermissionTestAdapter
 
 
@@ -33,8 +32,7 @@ class FakeServices(containers.DeclarativeContainer):
     config = providers.Configuration("config")
     authentication = providers.Singleton(AuthenticationTestAdapter, config.user_id)
     permission = providers.Singleton(PermissionTestAdapter)
-    database = providers.Singleton(DatabaseTestAdapter)
-    event_store = providers.Singleton(EventStoreTestAdapter)
+    datastore = providers.Singleton(DatabaseTestAdapter)
 
 
 def create_test_application(user_id: int, view_name: str) -> WSGIApplication:

@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Iterable, List, Type
+from typing import Callable, Dict, List, Sequence, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
@@ -103,9 +103,9 @@ class ActionsHandler(HandlerBase):
         # Parse actions and creates events
         write_request_elements = self.parse_actions(payload)
 
-        # Send events to database
+        # Send events to datastore
         try:
-            self.services.event_store().send(write_request_elements)
+            self.database.write(write_request_elements)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
@@ -125,7 +125,7 @@ class ActionsHandler(HandlerBase):
         self.logger.debug("Validate actions request.")
         payload_schema(payload)
 
-    def parse_actions(self, payload: Payload) -> Iterable[WriteRequestElement]:
+    def parse_actions(self, payload: Payload) -> Sequence[WriteRequestElement]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
@@ -139,7 +139,7 @@ class ActionsHandler(HandlerBase):
             if action is None:
                 raise ActionException(f"Action {element['action']} does not exist.")
             self.logger.debug(f"Perform action {element['action']}.")
-            write_request_elements = action(self.permission(), self.database()).perform(
+            write_request_elements = action(self.permission(), self.database).perform(
                 element["data"], self.user_id
             )
             self.logger.debug(

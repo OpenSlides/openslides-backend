@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
-import openslides_backend.services.database as database
-import openslides_backend.services.database.commands as commands
+from openslides_backend.services.database import commands
+from openslides_backend.services.database.adapter.adapter import Adapter
 from openslides_backend.services.database.adapter.interface import GetManyRequest
 from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
@@ -9,7 +9,7 @@ from openslides_backend.shared.patterns import Collection, FullQualifiedId
 engine = Mock()
 log = Mock()
 
-db = database.Adapter(engine, log)
+db = Adapter(engine, log)
 
 
 def test_get() -> None:
