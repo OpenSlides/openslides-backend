@@ -1,13 +1,20 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Sequence, Union
 
-import openslides_backend.services.database.commands as commands
-from openslides_backend.services.database.adapter.interface import GetManyRequest
-from openslides_backend.services.database.engine import Engine
-from openslides_backend.shared.filters import Filter
-from openslides_backend.shared.interfaces import LoggingModule
-from openslides_backend.shared.patterns import Collection, FullQualifiedId
+import requests
+import simplejson as json
+from typing_extensions import TypedDict
 
-from .interface import Aggregate, Count, Found, PartialModel
+from ....shared.filters import Filter
+from ....shared.interfaces import Event, LoggingModule, WriteRequestElement
+from ....shared.patterns import (
+    KEYSEPARATOR,
+    Collection,
+    FullQualifiedField,
+    FullQualifiedId,
+)
+from .. import commands
+from ..engine.http_engine import HTTPEngine as Engine
+from .interface import Aggregate, Count, Found, GetManyRequest, PartialModel
 
 
 class Adapter:
@@ -15,11 +22,13 @@ class Adapter:
     Adapter to connect to (read-only) database.
     """
 
-    position = 0
+    # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
+    position: Dict[str, int]
 
     def __init__(self, adapter: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.adapter = adapter
+        self.position = {}  # TODO: Rename to locked_fields
 
     def get(
         self,
@@ -33,7 +42,9 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.get(command)
-        self.set_min_position(response)
+        position = response.get("meta_position")
+        if position is not None:
+            self.set_min_position(fqid, position)
         return response
 
     def get_many(
@@ -42,7 +53,7 @@ class Adapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> Dict[FullQualifiedId, PartialModel]:
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -53,8 +64,15 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.get_many(command)
-        self.set_min_position(response)
-        return response
+        result = {}
+        for key, value in response.items():
+            collection, id = key.split(KEYSEPARATOR)
+            fqid = FullQualifiedId(collection=Collection(collection), id=int(id))
+            result[fqid] = value
+            position = value.get("meta_position")
+            if position is not None:
+                self.set_min_position(fqid, position)
+        return result
 
     def get_all(
         self,
@@ -62,12 +80,19 @@ class Adapter:
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
     ) -> List[PartialModel]:
+        # TODO: Check the return value of this method. The interface docs say
+        # something else.
         command = commands.GetAll(collection=collection, mapped_fields=mapped_fields)
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.get_all(command)
-        self.set_min_position(response)
+        for item in response:
+            position = item.get("meta_position")
+            item_id = item.get("id")
+            if position is not None and id is not None:
+                fqid = FullQualifiedId(collection=collection, id=item_id)
+                self.set_min_position(fqid, position)
         return response
 
     def filter(
@@ -77,35 +102,45 @@ class Adapter:
         meeting_id: int = None,
         mapped_fields: List[str] = None,
     ) -> List[PartialModel]:
+        # TODO: Check the return value of this method. The interface docs say
+        # something else.
         command = commands.Filter(collection=collection, filter=filter)
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.filter(command)
-        self.set_min_position(response)
+        for item in response:
+            position = item.get("meta_position")
+            item_id = item.get("id")
+            if position is not None and id is not None:
+                fqid = FullQualifiedId(collection=collection, id=item_id)
+                self.set_min_position(fqid, position)
         return response
 
     def exists(self, collection: Collection, filter: Filter) -> Found:
+        # Attention: We do not handle the position result of this request. You
+        # have to do this manually.
         command = commands.Exists(collection=collection, filter=filter)
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.exists(command)
-        self.set_min_position(response)
         return {"exists": response["exists"], "position": response["position"]}
 
     def count(self, collection: Collection, filter: Filter) -> Count:
+        # Attention: We do not handle the position result of this request. You
+        # have to do this manually.
         command = commands.Count(collection=collection, filter=filter)
         self.logger.debug(
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.count(command)
-        self.set_min_position(response)
         return {"count": response["count"], "position": response["position"]}
 
     def min(
         self, collection: Collection, filter: Filter, field: str, type: str = None
     ) -> Aggregate:
+        # TODO: This method does nit reflect the position of the fetched objects.
         command = commands.Min(
             collection=collection, filter=filter, field=field, type=type
         )
@@ -113,12 +148,12 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.min(command)
-        self.set_min_position(response)
         return response
 
     def max(
         self, collection: Collection, filter: Filter, field: str, type: str = None
     ) -> Aggregate:
+        # TODO: This method does nit reflect the position of the fetched objects.
         command = commands.Max(
             collection=collection, filter=filter, field=field, type=type
         )
@@ -126,31 +161,75 @@ class Adapter:
             f"Start request to database with the following data: {command.data}"
         )
         response = self.adapter.max(command)
-        self.set_min_position(response)
         return response
 
     def set_min_position(
-        self,
-        response: Union[
-            PartialModel,
-            Dict[Collection, Dict[int, PartialModel]],
-            List[PartialModel],
-            Found,
-            Count,
-            Aggregate,
-        ],
+        self, key: Union[FullQualifiedId, FullQualifiedField], position: int,
     ) -> None:
         """
-        Inspects result from database and calculates the minimum value of
-        "meta_position" fields inside the result.
         """
-        # TODO: Calculate this. At the moment we use a fix value here.
-        position = 1
-
-        if self.position == 0:
-            self.position = position
+        # TODO: Rename this method and add docstring.
+        current_position = self.position.get(str(key))
+        if current_position is None:
+            new_position = position
         else:
-            self.position = min(position, self.position)
+            new_position = min(position, current_position)
+        self.position[str(key)] = new_position
 
     def getId(self, collection: Collection) -> int:
-        raise RuntimeError("This method has to be fixed.")
+        # TODO: Rename to reserve_ids or reserve_id
+        # TODO: Do not use hardcoded stuff here.
+        payload = json.dumps({"collection": str(collection), "amount": 1})
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(
+            "http://localhost:9003/internal/datastore/writer/reserve_ids",
+            data=payload,
+            headers=headers,
+        )
+        # TODO: Catch error if server does not respond.
+        if not response.ok:
+            raise RuntimeError("Oskar")
+        return response.json().get("ids")[0]
+
+    def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
+        headers = {"Content-Type": "application/json"}
+        # TODO: Support multiple write_requests
+        if len(write_requests) != 1:
+            raise RuntimeError("Multiple or None write_requests not supported.")
+
+        StringifiedWriteRequestElement = TypedDict(
+            "StringifiedWriteRequestElement",
+            {
+                "events": List[Event],
+                "information": Dict[str, List[str]],
+                "user_id": int,
+                "locked_fields": Dict[str, int],
+            },
+        )
+
+        information = {}
+        for fqid, value in write_requests[0]["information"].items():
+            information[str(fqid)] = value
+
+        stringified_write_request_element: StringifiedWriteRequestElement = {
+            "events": write_requests[0]["events"],
+            "information": information,
+            "user_id": write_requests[0]["user_id"],
+            "locked_fields": self.position,
+        }
+        # TODO: REMOVE locked_fields in business logic
+
+        class MyEncoder(json.JSONEncoder):
+            def default(self, o):  # type: ignore
+                if isinstance(o, FullQualifiedId):
+                    return str(o)
+                return super().default(o)
+
+        payload = json.dumps(stringified_write_request_element, cls=MyEncoder)
+        response = requests.post(
+            "http://localhost:9003/internal/datastore/writer/write",  # TODO: Do not hard code here.
+            data=payload,
+            headers=headers,
+        )
+        if not response.ok:
+            raise RuntimeError("Something went wrong.")

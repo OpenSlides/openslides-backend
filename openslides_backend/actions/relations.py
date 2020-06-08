@@ -82,7 +82,7 @@ class RelationsHandler:
             rels = {}
             for related_model_fqid in list(add | remove):
                 related_model = self.database.get(
-                    related_model_fqid, mapped_fields=[related_name]
+                    related_model_fqid, mapped_fields=[related_name, "meta_position"]
                 )
                 rels[related_model_fqid] = related_model
         else:
@@ -91,11 +91,16 @@ class RelationsHandler:
             response = self.database.get_many(
                 [
                     GetManyRequest(
-                        target, list(add | remove), mapped_fields=[related_name]
+                        target,
+                        list(add | remove),
+                        mapped_fields=[related_name, "meta_position"],
                     )
                 ]
             )
-            rels = response[target]
+            # TODO: Check existance of fetched objects.
+            rels = {}
+            for fqid, related_model in response.items():
+                rels[fqid.id] = related_model
 
         if self.field.generic_relation and not self.is_reverse:
             return self.prepare_result_to_fqid(add, remove, rels, target, related_name)
@@ -161,7 +166,7 @@ class RelationsHandler:
             # Retrieve current object from database
             current_obj = self.database.get(
                 FullQualifiedId(self.model.collection, self.id),
-                mapped_fields=[self.field_name],
+                mapped_fields=[self.field_name, "meta_position"],
             )
 
             # Get current ids from relation field
@@ -207,7 +212,7 @@ class RelationsHandler:
             # Retrieve current object from database
             current_obj = self.database.get(
                 FullQualifiedId(self.model.collection, self.id),
-                mapped_fields=[self.field_name],
+                mapped_fields=[self.field_name, "meta_position"],
             )
 
             # Get current ids from relation field

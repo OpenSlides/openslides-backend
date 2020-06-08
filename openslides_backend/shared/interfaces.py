@@ -49,8 +49,7 @@ class Services(Protocol):  # pragma: no cover
     #       services seems difficult for mypy.
     authentication: Any
     permission: Any
-    database: Any
-    event_store: Any
+    datastore: Any
 
 
 class Headers(Protocol):  # pragma: no cover

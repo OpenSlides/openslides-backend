@@ -4,13 +4,13 @@ from typing import Any, Dict, List
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from openslides_backend.shared.filters import Filter
-from openslides_backend.shared.patterns import Collection, FullQualifiedId
+from ....shared.filters import Filter
+from ....shared.patterns import Collection, FullQualifiedId
 
 PartialModel = Dict[str, Any]
 Found = TypedDict("Found", {"exists": bool, "position": int})
 Count = TypedDict("Count", {"count": int, "position": int})
-Aggregate = Dict[str, Any]
+Aggregate = Dict[str, Any]  # TODO: This interface seams to be wrong.
 
 
 class DeletedModelsBehaviour(Enum):
@@ -64,7 +64,7 @@ class Datastore(Protocol):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> Dict[FullQualifiedId, PartialModel]:
         ...
 
     def get_all(

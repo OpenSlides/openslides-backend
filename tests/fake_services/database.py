@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from openslides_backend.services.database.adapter.interface import (
     Aggregate,
@@ -9,6 +9,7 @@ from openslides_backend.services.database.adapter.interface import (
     PartialModel,
 )
 from openslides_backend.shared.filters import Filter, FilterOperator
+from openslides_backend.shared.interfaces import WriteRequestElement
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 # Do not change order of this entries. Just append new ones.
@@ -207,7 +208,7 @@ class DatabaseTestAdapter:
     ) -> PartialModel:
         get_many_request = GetManyRequest(fqid.collection, [fqid.id], mapped_fields)
         result = self.get_many([get_many_request])
-        return result[fqid.collection][fqid.id]
+        return result[fqid]
 
     def get_many(
         self,
@@ -215,14 +216,14 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[Collection, Dict[int, PartialModel]]:
+    ) -> Dict[FullQualifiedId, PartialModel]:
         if mapped_fields is not None:
             raise NotImplementedError(
                 "This test adapter does not support this field yet."
             )
         result = {}
         for get_many_request in get_many_requests:
-            inner_result = {}
+            found = []
             for data in deepcopy(TESTDATA):
                 if (
                     data["collection"] == str(get_many_request.collection)
@@ -235,12 +236,15 @@ class DatabaseTestAdapter:
                         for field in get_many_request.mapped_fields:
                             if field in data["fields"].keys():
                                 element[field] = data["fields"][field]
-                    inner_result[data["id"]] = element
-            if len(get_many_request.ids) != len(inner_result):
+                    fqid = FullQualifiedId(
+                        collection=Collection(data["collection"]), id=data["id"]
+                    )
+                    found.append(fqid)
+                    result[fqid] = element
+            if len(get_many_request.ids) != len(found):
                 # Something was not found.
-                print(get_many_request, inner_result)
+                print(get_many_request, found)
                 raise RuntimeError
-            result[get_many_request.collection] = inner_result
         return result
 
     def get_all(
@@ -305,3 +309,6 @@ class DatabaseTestAdapter:
     def getId(self, collection: Collection) -> int:
         # TODO: This method is not valid here.
         return 42
+
+    def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
+        pass

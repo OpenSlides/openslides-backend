@@ -7,8 +7,8 @@ Environment = TypedDict(
     {
         "authentication_url": str,
         "permission_url": str,
-        "database_url": str,
-        "event_store_url": str,
+        "datastore_reader_url": str,
+        "datastore_writer_url": str,
     },
 )
 
@@ -16,8 +16,8 @@ DEFAULT_PROTOCOL = "http"
 DEFAULT_HOST = "localhost"
 DEFAULT_AUTHENTICATION_PORT = 9000
 DEFAULT_PERMISSION_PORT = 9001
-DEFAULT_DATABASE_PORT = 9002
-DEFAULT_EVENT_STORE_PORT = 9003
+DEFAULT_DATASTORE_READER_PORT = 9002
+DEFAULT_DATASTORE_WRITER_PORT = 9002
 
 
 def get_environment() -> Environment:
@@ -33,20 +33,26 @@ def get_environment() -> Environment:
         "OPENSLIDES_BACKEND_PERMISSION_URL",
         get_fallback_url(DEFAULT_HOST, DEFAULT_PERMISSION_PORT),
     )
-    database_url = get_url_from_env(
-        "OPENSLIDES_BACKEND_DATABASE_URL",
-        get_fallback_url(DEFAULT_HOST, DEFAULT_DATABASE_PORT),
+    datastore_reader_url = (
+        get_url_from_env(
+            "OPENSLIDES_BACKEND_DATASTORE_READER_URL",
+            get_fallback_url(DEFAULT_HOST, DEFAULT_DATASTORE_READER_PORT),
+        )
+        + "/internal/datastore/reader"
     )
-    event_store_url = get_url_from_env(
-        "OPENSLIDES_BACKEND_EVENT_STORE_URL",
-        get_fallback_url(DEFAULT_HOST, DEFAULT_EVENT_STORE_PORT),
+    datastore_writer_url = (
+        get_url_from_env(
+            "OPENSLIDES_BACKEND_DATASTORE_WRITER_URL",
+            get_fallback_url(DEFAULT_HOST, DEFAULT_DATASTORE_WRITER_PORT),
+        )
+        + "/internal/datastore/writer"
     )
 
     return Environment(
         authentication_url=authentication_url,
         permission_url=permission_url,
-        database_url=database_url,
-        event_store_url=event_store_url,
+        datastore_reader_url=datastore_reader_url,
+        datastore_writer_url=datastore_writer_url,
     )
 
 
@@ -58,4 +64,4 @@ def get_fallback_url(host: str, port: int) -> str:
     """
     Helper function to build URL from given host and port.
     """
-    return f"{DEFAULT_PROTOCOL}://{host}:{port}/"
+    return f"{DEFAULT_PROTOCOL}://{host}:{port}"

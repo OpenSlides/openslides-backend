@@ -2,7 +2,7 @@ from typing import Any
 
 from typing_extensions import Protocol
 
-from openslides_backend.services.database.commands import Command
+from ..commands import Command
 
 # TODO: Use proper typing here.
 EngineResponse = Any
