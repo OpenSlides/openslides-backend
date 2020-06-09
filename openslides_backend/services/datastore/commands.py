@@ -1,8 +1,30 @@
 from typing import Any, Dict, List, Optional
 
-from openslides_backend.services.database.adapter.interface import GetManyRequest
-from openslides_backend.shared.filters import Filter as FilterInterface
-from openslides_backend.shared.patterns import Collection, FullQualifiedId
+from ...shared.filters import Filter as FilterInterface
+from ...shared.patterns import Collection, FullQualifiedId
+
+
+class GetManyRequest:
+    """
+    Encapsulates a single GetManyRequest to be used for get_many requests to the
+    datastore.
+    """
+
+    def __init__(
+        self, collection: Collection, ids: List[int], mapped_fields: List[str] = None,
+    ):
+        self.collection = collection
+        self.ids = ids
+        self.mapped_fields = mapped_fields
+
+    def to_dict(self) -> Dict[str, Any]:
+        result: Dict[str, Any] = {}
+        result["collection"] = str(self.collection)
+        if self.ids is not None:
+            result["ids"] = self.ids
+        if self.mapped_fields is not None:
+            result["mapped_fields"] = self.mapped_fields
+        return result
 
 
 class Command:

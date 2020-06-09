@@ -69,8 +69,7 @@ class CreateAction(PermissionMixin, Action):
                     relation_fields.append((field_name, field, True))
 
             # Get new id.
-            # TODO: Fix this call.
-            id = self.database.getId(collection=self.model.collection)
+            id = self.database.reserve_id(collection=self.model.collection)
 
             # Get relations.
             relations = self.get_relations(

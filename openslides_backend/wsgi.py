@@ -6,8 +6,8 @@ from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication
 from .http.views import ActionsView, PresenterView
 from .services.authentication import AuthenticationHTTPAdapter
-from .services.database.adapter.adapter import Adapter
-from .services.database.engine.http_engine import HTTPEngine
+from .services.datastore.adapter import Adapter
+from .services.datastore.http_engine import HTTPEngine
 from .services.permission import PermissionHTTPAdapter
 from .shared.interfaces import LoggingModule, View, WSGIApplication
 

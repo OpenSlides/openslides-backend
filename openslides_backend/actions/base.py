@@ -5,7 +5,7 @@ from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
-from ..services.database.adapter.interface import Datastore
+from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedId

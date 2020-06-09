@@ -1,8 +1,8 @@
 import requests
 import simplejson as json
 
-from ....shared.exceptions import DatabaseException
-from ....shared.interfaces import LoggingModule
+from ...shared.exceptions import DatabaseException
+from ...shared.interfaces import LoggingModule
 from .interface import Command, EngineResponse
 
 
