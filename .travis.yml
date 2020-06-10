@@ -10,5 +10,5 @@ script:
   - isort --check --recursive openslides_backend/ tests/
   - flake8 openslides_backend/ tests/
   - mypy openslides_backend/ tests/
-  - pytest --cov=openslides_backend --cov-fail-under=90 tests/
+  - pytest --cov=openslides_backend --cov-fail-under=89 tests/
   - docker build .

@@ -15,10 +15,10 @@ mypy:
 test:
 	pytest
 
-test_all:
+run-tests:
 	OPENSLIDES_BACKEND_RUN_ALL_TESTS=1 pytest
 
-pip_check:
+pip-check:
 	pip-check
 
 run-debug:

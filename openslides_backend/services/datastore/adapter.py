@@ -54,6 +54,7 @@ class Adapter:
         position: int = None,
         get_deleted_models: int = None,
     ) -> Dict[FullQualifiedId, PartialModel]:
+        # TODO: Change return type and switch respective code here.
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
