@@ -7,20 +7,15 @@ ENV OPENSLIDES_BACKEND_DEBUG 1
 
 WORKDIR /srv/code
 
-RUN apk add --no-cache gcc musl-dev linux-headers git \
-    && addgroup -S appgroup \
-    && adduser -S appuser -G appgroup
+RUN apk add --no-cache gcc musl-dev linux-headers git
 
 COPY requirements.txt .
-
 COPY requirements_production.txt .
 
-RUN pip install --no-cache-dir --requirement requirements.txt \
-    && chown -R appuser:appgroup /srv/code
+RUN pip install --no-cache-dir --requirement requirements.txt
 
 COPY openslides_backend/ ./openslides_backend/
-
-USER appuser
+COPY setup.cfg .
 
 EXPOSE ${OPENSLIDES_BACKEND_ACTIONS_PORT}
 EXPOSE ${OPENSLIDES_BACKEND_PRESENTER_PORT}

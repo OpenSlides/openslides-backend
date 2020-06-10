@@ -22,8 +22,8 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
 
     ports = {
-        "ActionsView": 8000,  # TODO: Don not hard code this.
-        "PresenterView": 8001,
+        "ActionsView": 9002,  # TODO: Don not hard code this.
+        "PresenterView": 9003,
     }
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
