@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Any, Dict, List, Sequence
 
-from openslides_backend.services.database.adapter.interface import (
+from openslides_backend.services.datastore.interface import (
     Aggregate,
     Count,
     Found,
@@ -306,8 +306,10 @@ class DatabaseTestAdapter:
     ) -> Aggregate:
         raise NotImplementedError
 
-    def getId(self, collection: Collection) -> int:
-        # TODO: This method is not valid here.
+    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
+        raise NotImplementedError("This test method is not implemented.")
+
+    def reserve_id(self, collection: Collection) -> int:
         return 42
 
     def write(self, write_requests: Sequence[WriteRequestElement]) -> None:

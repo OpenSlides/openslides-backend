@@ -1,11 +1,12 @@
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ....shared.filters import Filter
-from ....shared.patterns import Collection, FullQualifiedId
+from ...shared.filters import Filter
+from ...shared.patterns import Collection, FullQualifiedId
+from .commands import Command, GetManyRequest
 
 PartialModel = Dict[str, Any]
 Found = TypedDict("Found", {"exists": bool, "position": int})
@@ -19,32 +20,9 @@ class DeletedModelsBehaviour(Enum):
     ALL_MODELS = 3
 
 
-class GetManyRequest:
-    """
-    Encapsulates a single GetManyRequest to be used for get_many requests to the
-    datastore.
-    """
-
-    def __init__(
-        self, collection: Collection, ids: List[int], mapped_fields: List[str] = None,
-    ):
-        self.collection = collection
-        self.ids = ids
-        self.mapped_fields = mapped_fields
-
-    def to_dict(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
-        result["collection"] = str(self.collection)
-        if self.ids is not None:
-            result["ids"] = self.ids
-        if self.mapped_fields is not None:
-            result["mapped_fields"] = self.mapped_fields
-        return result
-
-
 class Datastore(Protocol):
     """
-    Datastore defines the interface to the datastore
+    Datastore defines the interface to the datastore.
     """
 
     position: int
@@ -100,6 +78,43 @@ class Datastore(Protocol):
     ) -> Aggregate:
         ...
 
-    # TODO: Remove this method here.
-    def getId(self, collection: Collection) -> int:
+    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
+        ...
+
+    def reserve_id(self, collection: Collection) -> int:
+        ...
+
+
+# TODO: Use proper typing here.
+EngineResponse = Any
+
+
+class Engine(Protocol):
+    """
+    Engine defines the interface to the engine used by the datastore. This will
+    be the HTTPEngine per default
+    """
+
+    def get(self, data: Command) -> EngineResponse:
+        ...
+
+    def get_many(self, data: Command) -> EngineResponse:
+        ...
+
+    def get_all(self, data: Command) -> EngineResponse:
+        ...
+
+    def filter(self, data: Command) -> EngineResponse:
+        ...
+
+    def exists(self, data: Command) -> EngineResponse:
+        ...
+
+    def count(self, data: Command) -> EngineResponse:
+        ...
+
+    def min(self, data: Command) -> EngineResponse:
+        ...
+
+    def max(self, data: Command) -> EngineResponse:
         ...

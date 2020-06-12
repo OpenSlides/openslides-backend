@@ -4,7 +4,7 @@ from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
-from ..services.database.adapter.interface import GetManyRequest
+from ..services.datastore.interface import GetManyRequest
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 

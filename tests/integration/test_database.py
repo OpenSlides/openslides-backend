@@ -3,9 +3,9 @@ from unittest.mock import Mock
 
 import pytest
 
-from openslides_backend.services.database.adapter.adapter import Adapter
-from openslides_backend.services.database.adapter.interface import GetManyRequest
-from openslides_backend.services.database.engine.http_engine import HTTPEngine
+from openslides_backend.services.datastore.adapter import Adapter
+from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.datastore.http_engine import HTTPEngine
 from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 

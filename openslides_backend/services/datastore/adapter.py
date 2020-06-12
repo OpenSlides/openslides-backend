@@ -4,30 +4,30 @@ import requests
 import simplejson as json
 from typing_extensions import TypedDict
 
-from ....shared.filters import Filter
-from ....shared.interfaces import Event, LoggingModule, WriteRequestElement
-from ....shared.patterns import (
+from ...shared.filters import Filter
+from ...shared.interfaces import Event, LoggingModule, WriteRequestElement
+from ...shared.patterns import (
     KEYSEPARATOR,
     Collection,
     FullQualifiedField,
     FullQualifiedId,
 )
-from .. import commands
-from ..engine.http_engine import HTTPEngine as Engine
-from .interface import Aggregate, Count, Found, GetManyRequest, PartialModel
+from . import commands
+from .http_engine import HTTPEngine as Engine
+from .interface import Aggregate, Count, Found, PartialModel
 
 
 class Adapter:
     """
-    Adapter to connect to (read-only) database.
+    Adapter to connect to readable and writeable datastore.
     """
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
     position: Dict[str, int]
 
-    def __init__(self, adapter: Engine, logging: LoggingModule) -> None:
+    def __init__(self, engine: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
-        self.adapter = adapter
+        self.engine = engine
         self.position = {}  # TODO: Rename to locked_fields
 
     def get(
@@ -39,9 +39,9 @@ class Adapter:
     ) -> PartialModel:
         command = commands.Get(fqid=fqid, mappedFields=mapped_fields)
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start GET request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.get(command)
+        response = self.engine.get(command)
         position = response.get("meta_position")
         if position is not None:
             self.set_min_position(fqid, position)
@@ -49,11 +49,12 @@ class Adapter:
 
     def get_many(
         self,
-        get_many_requests: List[GetManyRequest],
+        get_many_requests: List[commands.GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
     ) -> Dict[FullQualifiedId, PartialModel]:
+        # TODO: Change return type and switch respective code here.
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -61,9 +62,9 @@ class Adapter:
             get_deleted_models=get_deleted_models,
         )
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start GET_MANY request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.get_many(command)
+        response = self.engine.get_many(command)
         result = {}
         for key, value in response.items():
             collection, id = key.split(KEYSEPARATOR)
@@ -84,9 +85,9 @@ class Adapter:
         # something else.
         command = commands.GetAll(collection=collection, mapped_fields=mapped_fields)
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start GET_ALL request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.get_all(command)
+        response = self.engine.get_all(command)
         for item in response:
             position = item.get("meta_position")
             item_id = item.get("id")
@@ -106,9 +107,9 @@ class Adapter:
         # something else.
         command = commands.Filter(collection=collection, filter=filter)
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start FILTER request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.filter(command)
+        response = self.engine.filter(command)
         for item in response:
             position = item.get("meta_position")
             item_id = item.get("id")
@@ -122,9 +123,9 @@ class Adapter:
         # have to do this manually.
         command = commands.Exists(collection=collection, filter=filter)
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start EXISTS request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.exists(command)
+        response = self.engine.exists(command)
         return {"exists": response["exists"], "position": response["position"]}
 
     def count(self, collection: Collection, filter: Filter) -> Count:
@@ -132,9 +133,9 @@ class Adapter:
         # have to do this manually.
         command = commands.Count(collection=collection, filter=filter)
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start COUNT request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.count(command)
+        response = self.engine.count(command)
         return {"count": response["count"], "position": response["position"]}
 
     def min(
@@ -145,9 +146,9 @@ class Adapter:
             collection=collection, filter=filter, field=field, type=type
         )
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start MIN request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.min(command)
+        response = self.engine.min(command)
         return response
 
     def max(
@@ -158,9 +159,9 @@ class Adapter:
             collection=collection, filter=filter, field=field, type=type
         )
         self.logger.debug(
-            f"Start request to database with the following data: {command.data}"
+            f"Start MAX request to datastore with the following data: {command.data}"
         )
-        response = self.adapter.max(command)
+        response = self.engine.max(command)
         return response
 
     def set_min_position(
@@ -176,10 +177,14 @@ class Adapter:
             new_position = min(position, current_position)
         self.position[str(key)] = new_position
 
-    def getId(self, collection: Collection) -> int:
-        # TODO: Rename to reserve_ids or reserve_id
+    def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
+        self.logger.debug(
+            f"Start RESERVE_IDS request to datastore with the following data: "
+            f"Collection: {collection}, Amount: {amount}"
+        )
+
         # TODO: Do not use hardcoded stuff here.
-        payload = json.dumps({"collection": str(collection), "amount": 1})
+        payload = json.dumps({"collection": str(collection), "amount": amount})
         headers = {"Content-Type": "application/json"}
         response = requests.post(
             "http://localhost:9003/internal/datastore/writer/reserve_ids",
@@ -188,8 +193,11 @@ class Adapter:
         )
         # TODO: Catch error if server does not respond.
         if not response.ok:
-            raise RuntimeError("Oskar")
-        return response.json().get("ids")[0]
+            raise RuntimeError("Bad")
+        return response.json().get("ids")
+
+    def reserve_id(self, collection: Collection) -> int:
+        return self.reserve_ids(collection=collection, amount=1)[0]
 
     def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
         headers = {"Content-Type": "application/json"}
