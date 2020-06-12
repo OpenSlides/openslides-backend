@@ -187,7 +187,7 @@ class Adapter:
         payload = json.dumps({"collection": str(collection), "amount": amount})
         headers = {"Content-Type": "application/json"}
         response = requests.post(
-            "http://localhost:9003/internal/datastore/writer/reserve_ids",
+            "http://datastore-writer:9011/internal/datastore/writer/reserve_ids",
             data=payload,
             headers=headers,
         )
@@ -235,7 +235,7 @@ class Adapter:
 
         payload = json.dumps(stringified_write_request_element, cls=MyEncoder)
         response = requests.post(
-            "http://localhost:9003/internal/datastore/writer/write",  # TODO: Do not hard code here.
+            "http://datastore-writer:9011/internal/datastore/writer/write",  # TODO: Do not hard code here.
             data=payload,
             headers=headers,
         )

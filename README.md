@@ -4,7 +4,7 @@ Backend service for OpenSlides which
 
 * accepts incomming requests to add, change or delete data, checks and parses them and writes them to the event stream,
 * provides presentation of restricted data without autoupdate,
-* provides additional data for every autoupdate.
+* provides additional data for every autoupdate (TODO).
 
 To setup development version run
 
@@ -16,12 +16,20 @@ To start it run
 
     $ OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
 
+or
+
+    $ make run-debug
+
+## Listening ports
+
+The actions component listens to port 9002. The presenter component listens to port 9003. Both listen to all devices (0.0.0.0).
+
 
 ## Environment variables
 
 * OPENSLIDES_BACKEND_COMPONENT
 
-  Use one of the following values to start only one component of this service: `actions` (listening on port 8000) or `presenter` (listening on port 8001) or `addendum` (listening on port 8002). Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
+  Use one of the following values to start only one component of this service: `actions` or `presenter` or `addendum`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
 
 * OPENSLIDES_BACKEND_DEBUG
 
@@ -31,18 +39,82 @@ To start it run
 
   Use a truthy value to activate some more tests when running pytest. Default: 0
 
-* OPENSLIDES_BACKEND_AUTHENTICATION_URL
+* AUTHENTICATION_PROTOCOL
 
-  URL of authentication service. Default: http://localhost:9000/
+  Protocol of authentication service. Default: http
 
-* OPENSLIDES_BACKEND_PERMISSION_URL
+* AUTHENTICATION_HOST
 
-  URL of permission service. Default: http://localhost:9001/
+  Host of authentication service. Default: localhost
 
-* OPENSLIDES_BACKEND_DATABASE_URL
+* AUTHENTICATION_PORT,
 
-  URL of database service. Default: http://localhost:9002/
+  Port of authentication service. Default: 9004
 
-* OPENSLIDES_BACKEND_EVENT_STORE_URL
+* AUTHENTICATION_PATH
 
-  URL of event store service. Default: http://localhost:9003/
+  Path of authentication service. Default is an empty string.
+
+* PERMISSION_PROTOCOL
+
+  Protocol of permission service. Default: http
+
+* PERMISSION_HOST
+
+  Host of permission service. Default: localhost
+
+* PERMISSION_PORT,
+
+  Port of permission service. Default: 9005
+
+* PERMISSION_PATH
+
+  Path of permission service. Default is an empty string.
+
+* DATASTORE_READER_PROTOCOL
+
+  Protocol of datastore reader service. Default: http
+
+* DATASTORE_READER_HOST
+
+  Host of datastore reader service. Default: localhost
+
+* DATASTORE_READER_PORT,
+
+  Port of datastore reader service. Default: 9010
+
+* DATASTORE_READER_PATH
+
+  Path of datastore reader service. Default: /internal/reader
+
+* DATASTORE_WRITER_PROTOCOL
+
+  Protocol of datastore writer service. Default: http
+
+* DATASTORE_WRITER_HOST
+
+  Host of datastore writer service. Default: localhost
+
+* DATASTORE_WRITER_PORT,
+
+  Port of datastore writer service. Default: 9011
+
+* DATASTORE_WRITER_PATH
+
+  Path of datastore writer service. Default: /internal/writer
+
+* OPENSLIDES_BACKEND_WORKER_TIMEOUT
+
+  Gunicorn worker timeout in seconds. Default: 30
+
+
+# Some curl examples
+
+You may run curl against this service like this:
+
+    $ curl localhost:9002/health
+    $ curl localhost:9002 -X POST -H "Content-Type: application/json" -d '[{"action": "topic.create", "data": [{"meeting_id": 1, "title": "foo"}]}]'
+    $ curl localhost:9002 -X POST -H "Content-Type: application/json" -d '[{"action": "topic.update", "data": [{"id": 1, "title": "bar"}]}]'
+
+    $ curl localhost:9003/health
+    $ curl localhost:9003 -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]' localhost:9003

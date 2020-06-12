@@ -13,6 +13,11 @@ from .shared.interfaces import LoggingModule, WSGIApplication
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".
 
+DEFAULT_ADDRESSES = {
+    "ActionsView": "0.0.0.0:9002",
+    "PresenterView": "0.0.0.0:9003",
+}
+
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
@@ -20,11 +25,6 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     OpenSlidesBackendWSGIApplication via OpenSlidesBackendWSGIContainer either
     with actions component or with presenter component.
     """
-
-    ports = {
-        "ActionsView": 8000,  # TODO: Don not hard code this.
-        "PresenterView": 8001,
-    }
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
         # Setup global loglevel.
@@ -42,11 +42,10 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     def load_config(self) -> None:
         loglevel = "debug" if os.environ.get("OPENSLIDES_BACKEND_DEBUG") else "info"
         options = {
-            "bind": f"0.0.0.0:{self.ports[self.view_name]}",
+            "bind": DEFAULT_ADDRESSES[self.view_name],
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
             "timeout": int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30")),
             "loglevel": loglevel,
-            # TODO: This does not work. Changes will reload the application, but code changed do not reflect.
             "reload": loglevel == "debug",
             "reload_engine": "auto",  # This is the default however.
         }
@@ -76,7 +75,7 @@ def start_addendum_server() -> None:  # pragma: no cover
     # pushes additional fqfields that might be new for some users.
     print("Start addendum server ...")
     while True:
-        pass
+        time.sleep(1000000000)
 
 
 def start_them_all() -> None:  # pragma: no cover
@@ -86,7 +85,7 @@ def start_them_all() -> None:  # pragma: no cover
     processes = {
         "actions": multiprocessing.Process(target=start_actions_server),
         "presenter": multiprocessing.Process(target=start_presenter_server),
-        "addendum": multiprocessing.Process(target=start_addendum_server),
+        # "addendum": multiprocessing.Process(target=start_addendum_server),
     }
     for process in processes.values():
         process.start()

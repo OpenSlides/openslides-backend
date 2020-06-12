@@ -12,56 +12,48 @@ Environment = TypedDict(
     },
 )
 
-DEFAULT_PROTOCOL = "http"
-DEFAULT_HOST = "localhost"
-DEFAULT_AUTHENTICATION_PORT = 9000
-DEFAULT_PERMISSION_PORT = 9001
-DEFAULT_DATASTORE_READER_PORT = 9002
-DEFAULT_DATASTORE_WRITER_PORT = 9002
+DEFAULTS = {
+    "AUTHENTICATION_PROTOCOL": "http",
+    "AUTHENTICATION_HOST": "localhost",
+    "AUTHENTICATION_PORT": "9004",
+    "AUTHENTICATION_PATH": "",
+    "PERMISSION_PROTOCOL": "http",
+    "PERMISSION_HOST": "localhost",
+    "PERMISSION_PORT": "9005",
+    "PERMISSION_PATH": "",
+    "DATASTORE_READER_PROTOCOL": "http",
+    "DATASTORE_READER_HOST": "localhost",
+    "DATASTORE_READER_PORT": "9010",
+    "DATASTORE_READER_PATH": "/internal/reader",
+    "DATASTORE_WRITER_PROTOCOL": "http",
+    "DATASTORE_WRITER_HOST": "localhost",
+    "DATASTORE_WRITER_PORT": "9011",
+    "DATASTORE_WRITER_PATH": "/internal/writer",
+}
 
 
 def get_environment() -> Environment:
     """
     Parses environment variables and sets their defaults if they do not exist.
     """
-
-    authentication_url = get_url_from_env(
-        "OPENSLIDES_BACKEND_AUTHENTICATION_URL",
-        get_fallback_url(DEFAULT_HOST, DEFAULT_AUTHENTICATION_PORT),
-    )
-    permission_url = get_url_from_env(
-        "OPENSLIDES_BACKEND_PERMISSION_URL",
-        get_fallback_url(DEFAULT_HOST, DEFAULT_PERMISSION_PORT),
-    )
-    datastore_reader_url = (
-        get_url_from_env(
-            "OPENSLIDES_BACKEND_DATASTORE_READER_URL",
-            get_fallback_url(DEFAULT_HOST, DEFAULT_DATASTORE_READER_PORT),
-        )
-        + "/internal/datastore/reader"
-    )
-    datastore_writer_url = (
-        get_url_from_env(
-            "OPENSLIDES_BACKEND_DATASTORE_WRITER_URL",
-            get_fallback_url(DEFAULT_HOST, DEFAULT_DATASTORE_WRITER_PORT),
-        )
-        + "/internal/datastore/writer"
-    )
-
     return Environment(
-        authentication_url=authentication_url,
-        permission_url=permission_url,
-        datastore_reader_url=datastore_reader_url,
-        datastore_writer_url=datastore_writer_url,
+        authentication_url=get_endpoint("AUTHENTICATION"),
+        permission_url=get_endpoint("PERMISSION"),
+        datastore_reader_url=get_endpoint("DATASTORE_READER"),
+        datastore_writer_url=get_endpoint("DATASTORE_WRITER"),
     )
 
 
-def get_url_from_env(env: str, fallback: str) -> str:
-    return os.environ.get(env, fallback)
-
-
-def get_fallback_url(host: str, port: int) -> str:
-    """
-    Helper function to build URL from given host and port.
-    """
-    return f"{DEFAULT_PROTOCOL}://{host}:{port}"
+def get_endpoint(service: str) -> str:
+    parts = {}
+    for suffix in ("PROTOCOL", "HOST", "PORT", "PATH"):
+        variable = "_".join((service, suffix))
+        value = os.environ.get(variable)
+        if value is None:
+            default = DEFAULTS.get(variable)
+            if default is None:
+                raise ValueError(f"Environment variable {variable} does not exist.")
+            parts[suffix] = default
+        else:
+            parts[suffix] = value
+    return f"{parts['PROTOCOL']}://{parts['HOST']}:{parts['PORT']}{parts['PATH']}"

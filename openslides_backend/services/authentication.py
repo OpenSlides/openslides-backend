@@ -37,7 +37,7 @@ class AuthenticationHTTPAdapter:
         else:
             if not response.ok:
                 raise AuthenticationException(
-                    f"Authentication service sends HTTP {response.status_code}."
+                    f"Authentication service sends HTTP {response.status_code}. Please contact administrator."
                 )
             try:
                 body = response.json()

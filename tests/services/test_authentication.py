@@ -102,7 +102,7 @@ class FakeServer:
 class AuthenticationHTTPAdapterTester(TestCase):
     def setUp(self) -> None:
         self.host = "localhost"
-        self.port = 9000
+        self.port = 9004
         self.auth = AuthenticationHTTPAdapter(
             # TODO: Use a function from environment.py. Don't declare host and port twice.
             authentication_url=f"http://{self.host}:{self.port}",
@@ -129,7 +129,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
                 self.auth.get_user(headers)
             self.assertEqual(
                 context_manager.exception.message,
-                "Authentication service sends HTTP 500.",
+                "Authentication service sends HTTP 500. Please contact administrator.",
             )
 
     def test_empty_payload(self) -> None:
@@ -169,9 +169,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
                 create_wsgi_application(logging=MagicMock(), view_name="ActionsView"),
                 ResponseWrapper,
             )
-            response = client.post(
-                "/system/api/actions", content_type="application/json"
-            )
+            response = client.post("", content_type="application/json")
             self.assertEqual(response.status_code, 400)
             self.assertIn("Failed to decode JSON object", str(response.data))
 
@@ -181,6 +179,8 @@ class AuthenticationHTTPAdapterTester(TestCase):
                 create_wsgi_application(logging=MagicMock(), view_name="ActionsView"),
                 ResponseWrapper,
             )
-            response = client.post("/system/api/actions", json=[])
-            self.assertEqual(response.status_code, 400)
+            response = client.post("", json=[])
+            self.assertEqual(
+                response.status_code, 400
+            )  # This is 400 not 500 because our service "translates" the repsonse.
             self.assertIn("Authentication service sends HTTP 500.", str(response.data))
