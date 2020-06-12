@@ -47,7 +47,7 @@ The actions component listens to port 9002. The presenter component listens to p
 
   Host of authentication service. Default: localhost
 
-* AUTHENTICATION_PORT,
+* AUTHENTICATION_PORT
 
   Port of authentication service. Default: 9004
 
@@ -63,7 +63,7 @@ The actions component listens to port 9002. The presenter component listens to p
 
   Host of permission service. Default: localhost
 
-* PERMISSION_PORT,
+* PERMISSION_PORT
 
   Port of permission service. Default: 9005
 
@@ -79,13 +79,13 @@ The actions component listens to port 9002. The presenter component listens to p
 
   Host of datastore reader service. Default: localhost
 
-* DATASTORE_READER_PORT,
+* DATASTORE_READER_PORT
 
   Port of datastore reader service. Default: 9010
 
 * DATASTORE_READER_PATH
 
-  Path of datastore reader service. Default: /internal/reader
+  Path of datastore reader service. Default: /internal/datastore/reader
 
 * DATASTORE_WRITER_PROTOCOL
 
@@ -95,13 +95,13 @@ The actions component listens to port 9002. The presenter component listens to p
 
   Host of datastore writer service. Default: localhost
 
-* DATASTORE_WRITER_PORT,
+* DATASTORE_WRITER_PORT
 
   Port of datastore writer service. Default: 9011
 
 * DATASTORE_WRITER_PATH
 
-  Path of datastore writer service. Default: /internal/writer
+  Path of datastore writer service. Default: /internal/datastore/writer
 
 * OPENSLIDES_BACKEND_WORKER_TIMEOUT
 
@@ -117,4 +117,4 @@ You may run curl against this service like this:
     $ curl localhost:9002 -X POST -H "Content-Type: application/json" -d '[{"action": "topic.update", "data": [{"id": 1, "title": "bar"}]}]'
 
     $ curl localhost:9003/health
-    $ curl localhost:9003 -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]' localhost:9003
+    $ curl localhost:9003 -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]'

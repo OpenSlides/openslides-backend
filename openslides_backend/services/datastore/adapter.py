@@ -1,17 +1,8 @@
 from typing import Dict, List, Sequence, Union
 
-import requests
-import simplejson as json
-from typing_extensions import TypedDict
-
 from ...shared.filters import Filter
-from ...shared.interfaces import Event, LoggingModule, WriteRequestElement
-from ...shared.patterns import (
-    KEYSEPARATOR,
-    Collection,
-    FullQualifiedField,
-    FullQualifiedId,
-)
+from ...shared.interfaces import LoggingModule, WriteRequestElement
+from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from . import commands
 from .http_engine import HTTPEngine as Engine
 from .interface import Aggregate, Count, Found, PartialModel
@@ -53,7 +44,7 @@ class Adapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[FullQualifiedId, PartialModel]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         # TODO: Change return type and switch respective code here.
         command = commands.GetMany(
             get_many_requests=get_many_requests,
@@ -66,13 +57,17 @@ class Adapter:
         )
         response = self.engine.get_many(command)
         result = {}
-        for key, value in response.items():
-            collection, id = key.split(KEYSEPARATOR)
-            fqid = FullQualifiedId(collection=Collection(collection), id=int(id))
-            result[fqid] = value
-            position = value.get("meta_position")
-            if position is not None:
-                self.set_min_position(fqid, position)
+        for collection_str in response.keys():
+            inner_result = {}
+            collection = Collection(collection_str)
+            for id_str, value in response[collection_str].items():
+                instance_id = int(id_str)
+                position = value.get("meta_position")
+                if position is not None:
+                    fqid = FullQualifiedId(collection, instance_id)
+                    self.set_min_position(fqid, position)
+                inner_result[instance_id] = value
+            result[collection] = inner_result
         return result
 
     def get_all(
@@ -178,66 +173,26 @@ class Adapter:
         self.position[str(key)] = new_position
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
+        command = commands.ReserveIds(collection=collection, amount=amount)
         self.logger.debug(
             f"Start RESERVE_IDS request to datastore with the following data: "
             f"Collection: {collection}, Amount: {amount}"
         )
-
-        # TODO: Do not use hardcoded stuff here.
-        payload = json.dumps({"collection": str(collection), "amount": amount})
-        headers = {"Content-Type": "application/json"}
-        response = requests.post(
-            "http://datastore-writer:9011/internal/datastore/writer/reserve_ids",
-            data=payload,
-            headers=headers,
-        )
-        # TODO: Catch error if server does not respond.
-        if not response.ok:
-            raise RuntimeError("Bad")
-        return response.json().get("ids")
+        response = self.engine.reserve_ids(command)
+        return response.get("ids")
 
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
     def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
-        headers = {"Content-Type": "application/json"}
         # TODO: Support multiple write_requests
         if len(write_requests) != 1:
             raise RuntimeError("Multiple or None write_requests not supported.")
-
-        StringifiedWriteRequestElement = TypedDict(
-            "StringifiedWriteRequestElement",
-            {
-                "events": List[Event],
-                "information": Dict[str, List[str]],
-                "user_id": int,
-                "locked_fields": Dict[str, int],
-            },
+        command = commands.Write(
+            write_request=write_requests[0], locked_fields=self.position
         )
-
-        information = {}
-        for fqid, value in write_requests[0]["information"].items():
-            information[str(fqid)] = value
-
-        stringified_write_request_element: StringifiedWriteRequestElement = {
-            "events": write_requests[0]["events"],
-            "information": information,
-            "user_id": write_requests[0]["user_id"],
-            "locked_fields": self.position,
-        }
-        # TODO: REMOVE locked_fields in business logic
-
-        class MyEncoder(json.JSONEncoder):
-            def default(self, o):  # type: ignore
-                if isinstance(o, FullQualifiedId):
-                    return str(o)
-                return super().default(o)
-
-        payload = json.dumps(stringified_write_request_element, cls=MyEncoder)
-        response = requests.post(
-            "http://datastore-writer:9011/internal/datastore/writer/write",  # TODO: Do not hard code here.
-            data=payload,
-            headers=headers,
+        self.logger.debug(
+            f"Start WRITE request to datastore with the following data: "
+            f"Write request: {write_requests[0]}"
         )
-        if not response.ok:
-            raise RuntimeError("Something went wrong.")
+        self.engine.write(command)

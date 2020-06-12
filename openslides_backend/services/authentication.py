@@ -35,6 +35,7 @@ class AuthenticationHTTPAdapter:
             )
             user_id = self.auth_is_down()
         else:
+            # TODO: Check if we want to use self.auth_is_down() here too or if we want to raise HTTP 400 (at the moment we do so).
             if not response.ok:
                 raise AuthenticationException(
                     f"Authentication service sends HTTP {response.status_code}. Please contact administrator."

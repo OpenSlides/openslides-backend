@@ -88,19 +88,19 @@ class RelationsHandler:
         else:
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
+            ids = list(add | remove)
             response = self.database.get_many(
                 [
                     GetManyRequest(
-                        target,
-                        list(add | remove),
-                        mapped_fields=[related_name, "meta_position"],
+                        target, ids, mapped_fields=[related_name, "meta_position"],
                     )
                 ]
             )
-            # TODO: Check existance of fetched objects.
-            rels = {}
-            for fqid, related_model in response.items():
-                rels[fqid.id] = related_model
+            if len(ids) != len(response[target]):
+                raise ActionException(
+                    f"Instance of {target} does not exist. Expected {ids} in response, got only {response}."
+                )
+            rels = response[target]
 
         if self.field.generic_relation and not self.is_reverse:
             return self.prepare_result_to_fqid(add, remove, rels, target, related_name)

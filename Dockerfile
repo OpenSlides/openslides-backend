@@ -11,8 +11,9 @@ WORKDIR /srv/code
 
 RUN apk add --no-cache gcc musl-dev linux-headers git \
     && addgroup -S appgroup \
-    && adduser -S appuser -G appgroup \
-    && git clone --no-checkout -- $REPOSITORY_URL . \
+    && adduser -S appuser -G appgroup
+
+RUN git clone --no-checkout -- $REPOSITORY_URL . \
     && git checkout $COMMIT \
     && pip install --no-cache-dir --requirement requirements_production.txt \
     && chown -R appuser:appgroup /srv/code

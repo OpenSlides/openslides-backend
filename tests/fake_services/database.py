@@ -208,7 +208,7 @@ class DatabaseTestAdapter:
     ) -> PartialModel:
         get_many_request = GetManyRequest(fqid.collection, [fqid.id], mapped_fields)
         result = self.get_many([get_many_request])
-        return result[fqid]
+        return result[fqid.collection][fqid.id]
 
     def get_many(
         self,
@@ -216,14 +216,14 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[FullQualifiedId, PartialModel]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
             raise NotImplementedError(
                 "This test adapter does not support this field yet."
             )
         result = {}
         for get_many_request in get_many_requests:
-            found = []
+            inner_result = {}
             for data in deepcopy(TESTDATA):
                 if (
                     data["collection"] == str(get_many_request.collection)
@@ -236,15 +236,12 @@ class DatabaseTestAdapter:
                         for field in get_many_request.mapped_fields:
                             if field in data["fields"].keys():
                                 element[field] = data["fields"][field]
-                    fqid = FullQualifiedId(
-                        collection=Collection(data["collection"]), id=data["id"]
-                    )
-                    found.append(fqid)
-                    result[fqid] = element
-            if len(get_many_request.ids) != len(found):
+                    inner_result[data["id"]] = element
+            if len(get_many_request.ids) != len(inner_result):
                 # Something was not found.
-                print(get_many_request, found)
+                print(get_many_request, inner_result)
                 raise RuntimeError
+            result[get_many_request.collection] = inner_result
         return result
 
     def get_all(

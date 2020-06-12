@@ -48,11 +48,11 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 
 run-dev:
 	docker run --interactive --tty --volume=$(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend \
-	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend-dev
+	--network=host --rm openslides-backend-dev
 
 run-dev-interactive:
 	docker run --interactive --tty --volume=$(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend \
-	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend-dev sh
+	--network=host --rm openslides-backend-dev sh
 
 run-dev-compose:
 	docker-compose -f docker-compose-dev.yml up -d

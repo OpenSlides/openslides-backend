@@ -42,7 +42,7 @@ class Datastore(Protocol):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[FullQualifiedId, PartialModel]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
 
     def get_all(
