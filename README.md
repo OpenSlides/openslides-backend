@@ -39,21 +39,69 @@ The actions component listens to port 9002. The presenter component listens to p
 
   Use a truthy value to activate some more tests when running pytest. Default: 0
 
-* AUTHENTICATION_URL
+* AUTHENTICATION_PROTOCOL
 
-  URL of authentication service. Default: http://localhost:9004/
+  Protocol of authentication service. Default: http
 
-* PERMISSION_URL
+* AUTHENTICATION_HOST
 
-  URL of permission service. Default: http://localhost:9005/
+  Host of authentication service. Default: localhost
 
-* DATASTORE_READER_URL
+* AUTHENTICATION_PORT,
 
-  URL of datastore reader service. Default: http://localhost:9010/internal/reader
+  Port of authentication service. Default: 9004
 
-* DATASTORE_WRITER_URL
+* AUTHENTICATION_PATH
 
-  URL of datastore writer service. Default: http://localhost:9011/internal/writer
+  Path of authentication service. Default is an empty string.
+
+* PERMISSION_PROTOCOL
+
+  Protocol of permission service. Default: http
+
+* PERMISSION_HOST
+
+  Host of permission service. Default: localhost
+
+* PERMISSION_PORT,
+
+  Port of permission service. Default: 9005
+
+* PERMISSION_PATH
+
+  Path of permission service. Default is an empty string.
+
+* DATASTORE_READER_PROTOCOL
+
+  Protocol of datastore reader service. Default: http
+
+* DATASTORE_READER_HOST
+
+  Host of datastore reader service. Default: localhost
+
+* DATASTORE_READER_PORT,
+
+  Port of datastore reader service. Default: 9010
+
+* DATASTORE_READER_PATH
+
+  Path of datastore reader service. Default: /internal/reader
+
+* DATASTORE_WRITER_PROTOCOL
+
+  Protocol of datastore writer service. Default: http
+
+* DATASTORE_WRITER_HOST
+
+  Host of datastore writer service. Default: localhost
+
+* DATASTORE_WRITER_PORT,
+
+  Port of datastore writer service. Default: 9011
+
+* DATASTORE_WRITER_PATH
+
+  Path of datastore writer service. Default: /internal/writer
 
 * OPENSLIDES_BACKEND_WORKER_TIMEOUT
 
