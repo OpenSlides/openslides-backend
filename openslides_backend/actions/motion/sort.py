@@ -7,7 +7,7 @@ from ...models.motion import Motion
 from ...shared.exceptions import ActionException, PermissionDenied
 from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement
-from ...shared.patterns import FullQualifiedField, FullQualifiedId
+from ...shared.patterns import FullQualifiedId
 from ...shared.permissions.motion import MOTION_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
@@ -87,6 +87,8 @@ class TreeSortMixin(BaseAction):
 
         This function traverses this tree in preorder to assign the weight.
         """
+        # TODO: Check if instances exist in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
+
         # Get all item ids to verify, that the user send all ids.
         filter = FilterOperator(field="meeting_id", value=meeting_id, operator="==")
         db_instances = self.database.filter(
@@ -156,7 +158,7 @@ class TreeSortMixin(BaseAction):
                 f"Did not recieve {len(all_model_ids)} ids, got {len(ids_found)}."
             )
 
-        return {"position": self.database.position, "data": nodes_to_update}
+        return {"data": nodes_to_update}
 
     def create_write_request_elements(
         self, dataset: DataSet
@@ -169,11 +171,7 @@ class TreeSortMixin(BaseAction):
                 events=[event],
                 information=information,
                 user_id=self.user_id,
-                locked_fields={
-                    FullQualifiedField(self.model.collection, id, "deleted"): dataset[
-                        "position"
-                    ]
-                },  # TODO: Lock more fields to protect against intermediate creation of new instances.
+                locked_fields={},  # TODO: Lock more fields to protect against intermediate creation of new instances but care where exactly to lock them.
             )
 
 

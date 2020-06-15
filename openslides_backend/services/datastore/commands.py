@@ -1,7 +1,18 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Union
+
+import simplejson as json
+from mypy_extensions import TypedDict
 
 from ...shared.filters import Filter as FilterInterface
+from ...shared.filters import FilterData
+from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
+
+GetManyRequestData = TypedDict(
+    "GetManyRequestData",
+    {"collection": str, "ids": List[int], "mapped_fields": List[str]},
+    total=False,
+)
 
 
 class GetManyRequest:
@@ -12,19 +23,35 @@ class GetManyRequest:
 
     def __init__(
         self, collection: Collection, ids: List[int], mapped_fields: List[str] = None,
-    ):
+    ) -> None:
         self.collection = collection
         self.ids = ids
         self.mapped_fields = mapped_fields
 
-    def to_dict(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
-        result["collection"] = str(self.collection)
-        if self.ids is not None:
-            result["ids"] = self.ids
+    def to_dict(self) -> GetManyRequestData:
+        result: GetManyRequestData = {
+            "collection": str(self.collection),
+            "ids": self.ids,
+        }
         if self.mapped_fields is not None:
             result["mapped_fields"] = self.mapped_fields
         return result
+
+
+CommandData = Dict[
+    str, Union[str, int, List[str], List[GetManyRequestData], FilterData]
+]
+
+
+StringifiedWriteRequestElement = TypedDict(
+    "StringifiedWriteRequestElement",
+    {
+        "events": List[Event],
+        "information": Dict[str, List[str]],
+        "user_id": int,
+        "locked_fields": Dict[str, int],
+    },
+)
 
 
 class Command:
@@ -33,10 +60,15 @@ class Command:
     """
 
     @property
-    def data(self) -> Any:
-        pass
+    def data(self) -> str:
+        return json.dumps(self.get_raw_data())
 
-    def __eq__(self, other: Any) -> bool:
+    def get_raw_data(self) -> CommandData:
+        raise NotImplementedError
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Command):
+            return NotImplemented
         return self.data == other.data
 
 
@@ -48,20 +80,20 @@ class Get(Command):
     def __init__(
         self,
         fqid: FullQualifiedId,
-        mappedFields: Optional[List[str]],
+        mappedFields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ):
+    ) -> None:
         self.fqid = fqid
         self.mappedFields = mappedFields
         self.position = position
         self.get_deleted_models = get_deleted_models
 
-    @property
-    def data(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
+    def get_raw_data(self) -> CommandData:
+        result: CommandData = {}
         result["fqid"] = str(self.fqid)
-        result["mapped_fields"] = self.mappedFields
+        if self.mappedFields is not None:
+            result["mapped_fields"] = self.mappedFields
         if self.position is not None:
             result["position"] = self.position
         if self.get_deleted_models is not None:
@@ -80,16 +112,20 @@ class GetMany(Command):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ):
+    ) -> None:
         self.get_many_requests = get_many_requests
         self.mapped_fields = mapped_fields
         self.position = position
         self.get_deleted_models = get_deleted_models
 
-    @property
-    def data(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
-        requests = list(map(lambda x: x.to_dict(), self.get_many_requests))
+    def get_raw_data(self) -> CommandData:
+        result: CommandData = {}
+        requests = list(
+            map(
+                lambda get_many_request: get_many_request.to_dict(),
+                self.get_many_requests,
+            )
+        )
         result["requests"] = requests
         if self.mapped_fields is not None:
             result["mapped_fields"] = self.mapped_fields
@@ -110,16 +146,16 @@ class GetAll(Command):
         collection: Collection,
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
-    ):
+    ) -> None:
         self.collection = collection
         self.mapped_fields = mapped_fields
         self.get_deleted_models = get_deleted_models
 
-    @property
-    def data(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {}
+    def get_raw_data(self) -> Dict[str, Any]:
+        result: CommandData = {}
         result["collection"] = str(self.collection)
-        result["mapped_fields"] = self.mapped_fields
+        if self.mapped_fields is not None:
+            result["mapped_fields"] = self.mapped_fields
         if self.get_deleted_models is not None:
             result["get_deleted_models"] = self.get_deleted_models
         return result
@@ -130,12 +166,11 @@ class Exists(Command):
     Exists command
     """
 
-    def __init__(self, collection: Collection, filter: FilterInterface):
+    def __init__(self, collection: Collection, filter: FilterInterface) -> None:
         self.collection = collection
         self.filter = filter
 
-    @property
-    def data(self) -> Dict[str, Any]:
+    def get_raw_data(self) -> CommandData:
         return {"collection": str(self.collection), "filter": self.filter.to_dict()}
 
 
@@ -144,12 +179,11 @@ class Count(Command):
     Count command
     """
 
-    def __init__(self, collection: Collection, filter: FilterInterface):
+    def __init__(self, collection: Collection, filter: FilterInterface) -> None:
         self.collection = collection
         self.filter = filter
 
-    @property
-    def data(self) -> Dict[str, Any]:
+    def get_raw_data(self) -> CommandData:
         return {"collection": str(self.collection), "filter": self.filter.to_dict()}
 
 
@@ -164,15 +198,14 @@ class Min(Command):
         filter: FilterInterface,
         field: str,
         type: str = None,
-    ):
+    ) -> None:
         self.collection = collection
         self.filter = filter
         self.field = field
         self.type = type
 
-    @property
-    def data(self) -> Dict[str, Any]:
-        result = {
+    def get_raw_data(self) -> CommandData:
+        result: CommandData = {
             "collection": str(self.collection),
             "filter": self.filter.to_dict(),
             "field": self.field,
@@ -193,15 +226,14 @@ class Max(Command):
         filter: FilterInterface,
         field: str,
         type: str = None,
-    ):
+    ) -> None:
         self.collection = collection
         self.filter = filter
         self.field = field
         self.type = type
 
-    @property
-    def data(self) -> Dict[str, Any]:
-        result = {
+    def get_raw_data(self) -> CommandData:
+        result: CommandData = {
             "collection": str(self.collection),
             "filter": self.filter.to_dict(),
             "field": self.field,
@@ -216,10 +248,57 @@ class Filter(Command):
     Filter command
     """
 
-    def __init__(self, collection: Collection, filter: FilterInterface):
+    def __init__(self, collection: Collection, filter: FilterInterface) -> None:
         self.collection = collection
         self.filter = filter
 
-    @property
-    def data(self) -> Dict[str, Any]:
+    def get_raw_data(self) -> CommandData:
         return {"collection": str(self.collection), "filter": self.filter.to_dict()}
+
+
+class ReserveIds(Command):
+    """
+    Reserve ids command
+    """
+
+    def __init__(self, collection: Collection, amount: int) -> None:
+        self.collection = collection
+        self.amount = amount
+
+    def get_raw_data(self) -> CommandData:
+        return {"collection": str(self.collection), "amount": self.amount}
+
+
+class Write(Command):
+    """
+    Write command
+    """
+
+    def __init__(
+        self, write_request: WriteRequestElement, locked_fields: Dict[str, int]
+    ) -> None:
+        self.write_request = write_request
+        self.locked_fields = locked_fields
+
+    @property
+    def data(self) -> str:
+        information = {}
+        for fqid, value in self.write_request["information"].items():
+            information[str(fqid)] = value
+        stringified_write_request_element: StringifiedWriteRequestElement = {
+            "events": self.write_request["events"],
+            "information": information,
+            "user_id": self.write_request["user_id"],
+            "locked_fields": self.locked_fields,
+        }
+        # TODO: REMOVE locked_fields in business logic
+
+        class WriteRequestJSONEncoder(json.JSONEncoder):
+            def default(self, o):  # type: ignore
+                if isinstance(o, FullQualifiedId):
+                    return str(o)
+                return super().default(o)
+
+        return json.dumps(
+            stringified_write_request_element, cls=WriteRequestJSONEncoder
+        )

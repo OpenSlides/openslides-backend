@@ -12,6 +12,8 @@ from openslides_backend.shared.filters import Filter, FilterOperator
 from openslides_backend.shared.interfaces import WriteRequestElement
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
+TEST_POSITION = 1
+
 # Do not change order of this entries. Just append new ones.
 TESTDATA = [
     {
@@ -190,11 +192,12 @@ class DatabaseTestAdapter:
     """
     Test adapter for database (read) queries.
 
-    See openslides_backend.adapters.protocols.DatabaseProvider for
-    implementation.
+    See openslides_backend.adapters.interface.Datastore for implementation.
     """
 
-    position = 1
+    # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
+    locked_fields: Dict[str, int]
+    # TODO: This adapter does not set locked_fields so you can't use it here. Fix this.
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
@@ -208,7 +211,7 @@ class DatabaseTestAdapter:
     ) -> PartialModel:
         get_many_request = GetManyRequest(fqid.collection, [fqid.id], mapped_fields)
         result = self.get_many([get_many_request])
-        return result[fqid]
+        return result[fqid.collection][fqid.id]
 
     def get_many(
         self,
@@ -216,14 +219,18 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[FullQualifiedId, PartialModel]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
             raise NotImplementedError(
                 "This test adapter does not support this field yet."
             )
+        if position is not None:
+            raise NotImplementedError("This keyword is not supported at the moment.")
+        if get_deleted_models is not None:
+            raise NotImplementedError("This keyword is not supported at the moment.")
         result = {}
         for get_many_request in get_many_requests:
-            found = []
+            inner_result = {}
             for data in deepcopy(TESTDATA):
                 if (
                     data["collection"] == str(get_many_request.collection)
@@ -232,19 +239,19 @@ class DatabaseTestAdapter:
                     element = {}
                     if get_many_request.mapped_fields is None:
                         element = data["fields"]
+                        element["meta_position"] = TEST_POSITION
                     else:
                         for field in get_many_request.mapped_fields:
                             if field in data["fields"].keys():
                                 element[field] = data["fields"][field]
-                    fqid = FullQualifiedId(
-                        collection=Collection(data["collection"]), id=data["id"]
-                    )
-                    found.append(fqid)
-                    result[fqid] = element
-            if len(get_many_request.ids) != len(found):
+                            elif field == "meta_position":
+                                element["meta_position"] = TEST_POSITION
+                    inner_result[data["id"]] = element
+            if len(get_many_request.ids) != len(inner_result):
                 # Something was not found.
-                print(get_many_request, found)
+                print(get_many_request, inner_result)
                 raise RuntimeError
+            result[get_many_request.collection] = inner_result
         return result
 
     def get_all(

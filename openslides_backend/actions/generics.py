@@ -2,7 +2,7 @@ from typing import Any, List
 
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, WriteRequestElement
-from ..shared.patterns import FullQualifiedField, FullQualifiedId
+from ..shared.patterns import FullQualifiedId
 from .base import Action, ActionPayload, BaseAction, DataSet
 
 
@@ -82,10 +82,10 @@ class CreateAction(PermissionMixin, Action):
 
             data.append({"instance": instance, "new_id": id, "relations": relations})
 
-        return {"position": self.database.position, "data": data}
+        return {"data": data}
 
     def create_instance_write_request_element(
-        self, position: int, element: Any
+        self, element: Any
     ) -> WriteRequestElement:
         """
         Creates a write request element for one instance of the current model.
@@ -121,6 +121,8 @@ class UpdateAction(PermissionMixin, Action):
 
         data = []
         for instance in payload:
+            # TODO: Check if instance exists in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
+
             # Fetch current db instance with permission_reference field.
             db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
@@ -160,10 +162,10 @@ class UpdateAction(PermissionMixin, Action):
 
             data.append({"instance": instance, "relations": relations})
 
-        return {"position": self.database.position, "data": data}
+        return {"data": data}
 
     def create_instance_write_request_element(
-        self, position: int, element: Any
+        self, element: Any
     ) -> WriteRequestElement:
         """
         Creates a write request element for one instance of the current model.
@@ -179,11 +181,7 @@ class UpdateAction(PermissionMixin, Action):
             events=[event],
             information=information,
             user_id=self.user_id,
-            locked_fields={
-                FullQualifiedField(
-                    self.model.collection, element["instance"]["id"], "deleted"
-                ): position
-            },
+            locked_fields={},
         )
 
 
@@ -206,6 +204,8 @@ class DeleteAction(PermissionMixin, Action):
 
         data = []
         for instance in payload:
+            # TODO: Check if instance exists in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
+
             # Fetch current db instance with permission_reference field
             db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
@@ -240,10 +240,10 @@ class DeleteAction(PermissionMixin, Action):
 
             data.append({"instance": instance, "relations": relations})
 
-        return {"position": self.database.position, "data": data}
+        return {"data": data}
 
     def create_instance_write_request_element(
-        self, position: int, element: Any
+        self, element: Any
     ) -> WriteRequestElement:
         """
         Creates a write request element for one instance of the current model.
@@ -259,7 +259,5 @@ class DeleteAction(PermissionMixin, Action):
             events=[event],
             information=information,
             user_id=self.user_id,
-            locked_fields={
-                FullQualifiedField(self.model.collection, fqid.id, "deleted"): position
-            },
+            locked_fields={},
         )

@@ -24,11 +24,11 @@ DEFAULTS = {
     "DATASTORE_READER_PROTOCOL": "http",
     "DATASTORE_READER_HOST": "localhost",
     "DATASTORE_READER_PORT": "9010",
-    "DATASTORE_READER_PATH": "/internal/reader",
+    "DATASTORE_READER_PATH": "/internal/datastore/reader",
     "DATASTORE_WRITER_PROTOCOL": "http",
     "DATASTORE_WRITER_HOST": "localhost",
     "DATASTORE_WRITER_PORT": "9011",
-    "DATASTORE_WRITER_PATH": "/internal/writer",
+    "DATASTORE_WRITER_PATH": "/internal/datastore/writer",
 }
 
 

@@ -25,7 +25,8 @@ class Datastore(Protocol):
     Datastore defines the interface to the datastore.
     """
 
-    position: int
+    # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
+    locked_fields: Dict[str, int]
 
     def get(
         self,
@@ -42,7 +43,7 @@ class Datastore(Protocol):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
-    ) -> Dict[FullQualifiedId, PartialModel]:
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
 
     def get_all(
