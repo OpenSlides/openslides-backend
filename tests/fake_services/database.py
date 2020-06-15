@@ -12,6 +12,8 @@ from openslides_backend.shared.filters import Filter, FilterOperator
 from openslides_backend.shared.interfaces import WriteRequestElement
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
+TEST_POSITION = 1
+
 # Do not change order of this entries. Just append new ones.
 TESTDATA = [
     {
@@ -190,11 +192,12 @@ class DatabaseTestAdapter:
     """
     Test adapter for database (read) queries.
 
-    See openslides_backend.adapters.protocols.DatabaseProvider for
-    implementation.
+    See openslides_backend.adapters.interface.Datastore for implementation.
     """
 
-    position = 1
+    # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
+    locked_fields: Dict[str, int]
+    # TODO: This adapter does not set locked_fields so you can't use it here. Fix this.
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         pass
@@ -221,6 +224,10 @@ class DatabaseTestAdapter:
             raise NotImplementedError(
                 "This test adapter does not support this field yet."
             )
+        if position is not None:
+            raise NotImplementedError("This keyword is not supported at the moment.")
+        if get_deleted_models is not None:
+            raise NotImplementedError("This keyword is not supported at the moment.")
         result = {}
         for get_many_request in get_many_requests:
             inner_result = {}
@@ -232,10 +239,13 @@ class DatabaseTestAdapter:
                     element = {}
                     if get_many_request.mapped_fields is None:
                         element = data["fields"]
+                        element["meta_position"] = TEST_POSITION
                     else:
                         for field in get_many_request.mapped_fields:
                             if field in data["fields"].keys():
                                 element[field] = data["fields"][field]
+                            elif field == "meta_position":
+                                element["meta_position"] = TEST_POSITION
                     inner_result[data["id"]] = element
             if len(get_many_request.ids) != len(inner_result):
                 # Something was not found.

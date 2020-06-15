@@ -14,12 +14,12 @@ class Adapter:
     """
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
-    position: Dict[str, int]
+    locked_fields: Dict[str, int]
 
     def __init__(self, engine: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.engine = engine
-        self.position = {}  # TODO: Rename to locked_fields
+        self.locked_fields = {}
 
     def get(
         self,
@@ -28,14 +28,18 @@ class Adapter:
         position: int = None,
         get_deleted_models: int = None,
     ) -> PartialModel:
+        if position is not None or get_deleted_models is not None:
+            raise NotImplementedError(
+                "The keywords 'position' and 'get_deleted_models' are not supported yet."
+            )
         command = commands.Get(fqid=fqid, mappedFields=mapped_fields)
         self.logger.debug(
             f"Start GET request to datastore with the following data: {command.data}"
         )
         response = self.engine.get(command)
-        position = response.get("meta_position")
-        if position is not None:
-            self.set_min_position(fqid, position)
+        meta_position = response.get("meta_position")
+        if meta_position is not None:
+            self.update_locked_fields(fqid, meta_position)
         return response
 
     def get_many(
@@ -45,7 +49,10 @@ class Adapter:
         position: int = None,
         get_deleted_models: int = None,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
-        # TODO: Change return type and switch respective code here.
+        if position is not None or get_deleted_models is not None:
+            raise NotImplementedError(
+                "The keywords 'position' and 'get_deleted_models' are not supported yet."
+            )
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -62,10 +69,10 @@ class Adapter:
             collection = Collection(collection_str)
             for id_str, value in response[collection_str].items():
                 instance_id = int(id_str)
-                position = value.get("meta_position")
-                if position is not None:
+                meta_position = value.get("meta_position")
+                if meta_position is not None:
                     fqid = FullQualifiedId(collection, instance_id)
-                    self.set_min_position(fqid, position)
+                    self.update_locked_fields(fqid, meta_position)
                 inner_result[instance_id] = value
             result[collection] = inner_result
         return result
@@ -76,6 +83,10 @@ class Adapter:
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
     ) -> List[PartialModel]:
+        if get_deleted_models is not None:
+            raise NotImplementedError(
+                "The keyword 'get_deleted_models' is not supported yet."
+            )
         # TODO: Check the return value of this method. The interface docs say
         # something else.
         command = commands.GetAll(collection=collection, mapped_fields=mapped_fields)
@@ -84,11 +95,11 @@ class Adapter:
         )
         response = self.engine.get_all(command)
         for item in response:
-            position = item.get("meta_position")
+            meta_position = item.get("meta_position")
             item_id = item.get("id")
-            if position is not None and id is not None:
+            if meta_position is not None and id is not None:
                 fqid = FullQualifiedId(collection=collection, id=item_id)
-                self.set_min_position(fqid, position)
+                self.update_locked_fields(fqid, meta_position)
         return response
 
     def filter(
@@ -98,6 +109,10 @@ class Adapter:
         meeting_id: int = None,
         mapped_fields: List[str] = None,
     ) -> List[PartialModel]:
+        if meeting_id is not None or mapped_fields is not None:
+            raise NotImplementedError(
+                "The keywords 'meeting_id' and 'mapped_fields' are not supported yet."
+            )
         # TODO: Check the return value of this method. The interface docs say
         # something else.
         command = commands.Filter(collection=collection, filter=filter)
@@ -106,11 +121,11 @@ class Adapter:
         )
         response = self.engine.filter(command)
         for item in response:
-            position = item.get("meta_position")
+            meta_position = item.get("meta_position")
             item_id = item.get("id")
-            if position is not None and id is not None:
+            if meta_position is not None and id is not None:
                 fqid = FullQualifiedId(collection=collection, id=item_id)
-                self.set_min_position(fqid, position)
+                self.update_locked_fields(fqid, meta_position)
         return response
 
     def exists(self, collection: Collection, filter: Filter) -> Found:
@@ -136,7 +151,7 @@ class Adapter:
     def min(
         self, collection: Collection, filter: Filter, field: str, type: str = None
     ) -> Aggregate:
-        # TODO: This method does nit reflect the position of the fetched objects.
+        # TODO: This method does not reflect the position of the fetched objects.
         command = commands.Min(
             collection=collection, filter=filter, field=field, type=type
         )
@@ -149,7 +164,7 @@ class Adapter:
     def max(
         self, collection: Collection, filter: Filter, field: str, type: str = None
     ) -> Aggregate:
-        # TODO: This method does nit reflect the position of the fetched objects.
+        # TODO: This method does not reflect the position of the fetched objects.
         command = commands.Max(
             collection=collection, filter=filter, field=field, type=type
         )
@@ -159,18 +174,19 @@ class Adapter:
         response = self.engine.max(command)
         return response
 
-    def set_min_position(
+    def update_locked_fields(
         self, key: Union[FullQualifiedId, FullQualifiedField], position: int,
     ) -> None:
         """
+        Updates the locked_fields map by adding the new value for the given FQId or
+        FQField. If there is an existing value we take the smaller one.
         """
-        # TODO: Rename this method and add docstring.
-        current_position = self.position.get(str(key))
+        current_position = self.locked_fields.get(str(key))
         if current_position is None:
             new_position = position
         else:
             new_position = min(position, current_position)
-        self.position[str(key)] = new_position
+        self.locked_fields[str(key)] = new_position
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)
@@ -189,7 +205,7 @@ class Adapter:
         if len(write_requests) != 1:
             raise RuntimeError("Multiple or None write_requests not supported.")
         command = commands.Write(
-            write_request=write_requests[0], locked_fields=self.position
+            write_request=write_requests[0], locked_fields=self.locked_fields
         )
         self.logger.debug(
             f"Start WRITE request to datastore with the following data: "

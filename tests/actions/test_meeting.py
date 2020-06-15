@@ -54,7 +54,6 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -122,7 +121,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
                     get_fqid("committee/5914213969"): ["Object attached to meeting"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("committee/5914213969/meeting_ids"): 1},
+                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -214,7 +213,6 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"], [{"instance": self.valid_payload_1[0], "relations": {}}],
         )
@@ -243,7 +241,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                 ],
                 "information": {get_fqid("meeting/7816466305"): ["Object updated"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("meeting/7816466305/deleted"): 1},
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -313,7 +311,6 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -374,10 +371,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("meeting/3908439961/deleted"): 1,
-                    get_fqfield("committee/5914213969/meeting_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)

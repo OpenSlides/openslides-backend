@@ -50,7 +50,6 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -109,7 +108,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                     get_fqid("organisation/1"): ["Object attached to committee"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("organisation/1/committee_ids"): 1},
+                "locked_fields": {},
             },
         ]
         write_request_elements = self.action.perform(

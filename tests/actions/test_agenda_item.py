@@ -6,13 +6,7 @@ from openslides_backend.actions.agenda_item.update import AgendaItemUpdate
 
 from ..fake_services.database import DatabaseTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
-from ..utils import (
-    Client,
-    ResponseWrapper,
-    create_test_application,
-    get_fqfield,
-    get_fqid,
-)
+from ..utils import Client, ResponseWrapper, create_test_application, get_fqid
 
 
 class AgendaItemCreateUpdateDeleteTester(TestCase):
@@ -69,10 +63,7 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
                     get_fqid("topic/1312354708"): ["Object attached to agenda item"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("meeting/7816466305/agenda_item_ids"): 1,
-                    get_fqfield("topic/1312354708/agenda_item_id"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -119,11 +110,7 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("agenda_item/3393211712/deleted"): 1,
-                    get_fqfield("topic/1312354708/agenda_item_id"): 1,
-                    get_fqfield("topic/5756367535/agenda_item_id"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -168,11 +155,7 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("agenda_item/3393211712/deleted"): 1,
-                    get_fqfield("meeting/9079236097/agenda_item_ids"): 1,
-                    get_fqfield("topic/5756367535/agenda_item_id"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)

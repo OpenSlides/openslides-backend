@@ -96,7 +96,7 @@ class RelationsHandler:
                     )
                 ]
             )
-            if len(ids) != len(response[target]):
+            if len(ids) != len(response.get(target, {})):
                 raise ActionException(
                     f"Instance of {target} does not exist. Expected {ids} in response, got only {response}."
                 )

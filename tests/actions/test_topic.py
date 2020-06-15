@@ -103,12 +103,10 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
                 },
             }
         ]
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(result, expected)
 
     def test_prepare_dataset_2(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_2)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -139,7 +137,6 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
 
     def test_prepare_dataset_3(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_3)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -218,7 +215,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     get_fqid("meeting/2393342057"): ["Object attached to topic"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("meeting/2393342057/topic_ids"): 1},
+                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -273,11 +270,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("meeting/4002059810/topic_ids"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[0]}/attachment_ids"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[1]}/attachment_ids"): 1,
-                },
+                "locked_fields": {},
             }
         ]
         self.assertEqual(result, expected)
@@ -309,7 +302,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     get_fqid("meeting/3611987967"): ["Object attached to topic"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("meeting/3611987967/topic_ids"): 1},
+                "locked_fields": {},
             }
         ]
         self.assertEqual(e, expected)
@@ -480,14 +473,12 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"], [{"instance": self.valid_payload_1[0], "relations": {}}],
         )
 
     def test_prepare_dataset_2(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_2)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -513,7 +504,6 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 
     def test_prepare_dataset_3(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_3)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -530,7 +520,6 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 
     def test_prepare_dataset_4(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_4)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -547,7 +536,6 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 
     def test_prepare_dataset_5(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_5)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -607,7 +595,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 ],
                 "information": {get_fqid("topic/1312354708"): ["Object updated"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("topic/1312354708/deleted"): 1},
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -655,11 +643,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/1312354708/deleted"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[0]}/attachment_ids"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[1]}/attachment_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -690,10 +674,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield("mediafile/3549387598/attachment_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -724,10 +705,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[1]}/attachment_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -766,11 +744,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[0]}/attachment_ids"): 1,
-                    get_fqfield(f"mediafile/{self.attachments[1]}/attachment_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -939,7 +913,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -963,7 +936,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
 
     def test_prepare_dataset_2(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_2)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -1006,7 +978,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
 
     def test_prepare_dataset_3(self) -> None:
         dataset = self.action.prepare_dataset(self.pseudo_valid_payload_3)
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(
             dataset["data"],
             [
@@ -1077,10 +1048,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/1312354708/deleted"): 1,
-                    get_fqfield("meeting/7816466305/topic_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -1108,10 +1076,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/1312354708/deleted"): 1,
-                    get_fqfield("meeting/7816466305/topic_ids"): 1,
-                },
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -1137,11 +1102,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("topic/6259289755/deleted"): 1,
-                    get_fqfield("meeting/3611987967/topic_ids"): 1,
-                    get_fqfield("mediafile/3549387598/attachment_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)

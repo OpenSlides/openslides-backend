@@ -12,7 +12,7 @@ from ..shared.patterns import FullQualifiedId
 from .actions_interface import ActionPayload
 from .relations import Relations, RelationsHandler
 
-DataSet = TypedDict("DataSet", {"position": int, "data": Any})
+DataSet = TypedDict("DataSet", {"data": Any})
 
 
 class BaseAction:  # pragma: no cover
@@ -92,28 +92,25 @@ class Action(BaseAction):
         By default it calls self.create_element_write_request_element and uses
         get_relations_updates() for relations.
         """
-        position = dataset["position"]
         for element in dataset["data"]:
             element_write_request_element = self.create_instance_write_request_element(
-                position, element
+                element
             )
-            for relation in self.get_relations_updates(position, element):
+            for relation in self.get_relations_updates(element):
                 element_write_request_element = merge_write_request_elements(
                     (element_write_request_element, relation)
                 )
             yield element_write_request_element
 
     def create_instance_write_request_element(
-        self, position: int, element: Any
+        self, element: Any
     ) -> WriteRequestElement:
         """
         Creates a write request element for one instance of the current model.
         """
         raise NotImplementedError
 
-    def get_relations_updates(
-        self, position: int, element: Any
-    ) -> Iterable[WriteRequestElement]:
+    def get_relations_updates(self, element: Any) -> Iterable[WriteRequestElement]:
         """
         Creates write request elements (with update events) for all relations.
         """
@@ -134,7 +131,7 @@ class Action(BaseAction):
                     FullQualifiedId(fqfield.collection, fqfield.id): [info_text]
                 },
                 user_id=self.user_id,
-                locked_fields={fqfield: position},
+                locked_fields={},
             )
 
     def get_relations(

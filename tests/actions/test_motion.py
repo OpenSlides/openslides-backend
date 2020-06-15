@@ -47,7 +47,6 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         instance = deepcopy(self.valid_payload_1[0])
         instance["last_modified"] = round(time.time())
         self.assertEqual(
@@ -103,10 +102,7 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("motion/2995885358/deleted"): 1,
-                    get_fqfield("motion_statute_paragraph/8264607531/motion_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(list(write_request_elements), expected)
@@ -160,7 +156,6 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         instance = deepcopy(self.valid_payload_1[0])
         instance["last_modified"] = round(time.time())
         expected = [
@@ -186,7 +181,6 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
 
     def test_prepare_dataset_2(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_2)
-        self.assertEqual(dataset["position"], 1)
         instance = deepcopy(self.valid_payload_2[0])
         instance["last_modified"] = round(time.time())
         expected = [
@@ -257,12 +251,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     ],
                 },
                 "user_id": self.user_id_1,
-                "locked_fields": {
-                    get_fqfield("motion/2995885358/deleted"): 1,
-                    get_fqfield("motion_category/8734727380/motion_ids"): 1,
-                    get_fqfield("motion_block/4116433002/motion_ids"): 1,
-                    get_fqfield("motion_block/4740630442/motion_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -312,12 +301,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     ],
                 },
                 "user_id": self.user_id_2,
-                "locked_fields": {
-                    get_fqfield("motion/2995885358/deleted"): 1,
-                    get_fqfield("motion_category/8734727380/motion_ids"): 1,
-                    get_fqfield("motion_block/4116433002/motion_ids"): 1,
-                    get_fqfield("motion_block/4740630442/motion_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -350,10 +334,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     get_fqid("user/7268025091"): ["Object attached to motion"],
                 },
                 "user_id": self.user_id_1,
-                "locked_fields": {
-                    get_fqfield("motion/2995885358/deleted"): 1,
-                    get_fqfield("user/7268025091/supported_motion_5562405520_ids"): 1,
-                },
+                "locked_fields": {},
             }
         ]
         self.assertEqual(
@@ -386,10 +367,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     get_fqid("user/7268025091"): ["Object attached to motion"],
                 },
                 "user_id": self.user_id_2,
-                "locked_fields": {
-                    get_fqfield("motion/2995885358/deleted"): 1,
-                    get_fqfield("user/7268025091/supported_motion_5562405520_ids"): 1,
-                },
+                "locked_fields": {},
             }
         ]
         self.assertEqual(
@@ -427,7 +405,6 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
-        self.assertEqual(dataset["position"], 1)
         expected = [
             {
                 "instance": {
@@ -547,15 +524,7 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {
-                    get_fqfield("motion/2995885358/deleted"): 1,
-                    get_fqfield("meeting/5562405520/motion_ids"): 1,
-                    get_fqfield("motion_statute_paragraph/8264607531/motion_ids"): 1,
-                    get_fqfield("motion_state/5205893377/motion_ids"): 1,
-                    get_fqfield("motion_state/5205893377/motion_recommendation_ids"): 1,
-                    get_fqfield("motion_category/8734727380/motion_ids"): 1,
-                    get_fqfield("motion_block/4116433002/motion_ids"): 1,
-                },
+                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -667,7 +636,6 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
                 "sort_children_ids": [],
             },
         }
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(dataset["data"], expected)
 
     def test_prepare_dataset_2(self) -> None:
@@ -699,7 +667,6 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
                 "sort_children_ids": [],
             },
         }
-        self.assertEqual(dataset["position"], 1)
         self.assertEqual(dataset["data"], expected)
 
     def test_circular_dataset(self) -> None:
@@ -737,7 +704,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/3265963568"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/3265963568/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -753,7 +720,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2279328478"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/2279328478/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -769,7 +736,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/1082050467"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/1082050467/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -785,7 +752,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/8000824551"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/8000824551/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -801,7 +768,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2995885358"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/2995885358/deleted"): 1},
+                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -827,7 +794,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/3265963568"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/3265963568/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -843,7 +810,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2279328478"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/2279328478/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -859,7 +826,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/8000824551"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/8000824551/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -875,7 +842,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/1082050467"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/1082050467/deleted"): 1},
+                "locked_fields": {},
             },
             {
                 "events": [
@@ -891,7 +858,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2995885358"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {get_fqfield("motion/2995885358/deleted"): 1},
+                "locked_fields": {},
             },
         ]
         self.assertEqual(
