@@ -131,7 +131,6 @@ class Action(BaseAction):
                     FullQualifiedId(fqfield.collection, fqfield.id): [info_text]
                 },
                 user_id=self.user_id,
-                locked_fields={},
             )
 
     def get_relations(
@@ -176,7 +175,6 @@ def merge_write_request_elements(
     events: List[Event] = []
     information: Dict[FullQualifiedId, List[str]] = {}
     user_id: Optional[int] = None
-    locked_fields: Dict[Any, int] = {}
     for element in write_request_elements:
         events.extend(element["events"])
         for fqid, info_text in element["information"].items():
@@ -191,16 +189,6 @@ def merge_write_request_elements(
                 raise ValueError(
                     "You can not merge two write request elements of different users."
                 )
-        for key, position in element["locked_fields"].items():
-            if locked_fields.get(key) is None:
-                locked_fields[key] = position
-            else:
-                locked_fields[key] = min(position, locked_fields[key])
     if user_id is None:
-        raise
-    return WriteRequestElement(
-        events=events,
-        information=information,
-        user_id=user_id,
-        locked_fields=locked_fields,
-    )
+        raise ValueError("At least one of the given user ids must not be None.")
+    return WriteRequestElement(events=events, information=information, user_id=user_id)

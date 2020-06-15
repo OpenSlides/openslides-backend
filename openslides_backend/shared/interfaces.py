@@ -136,9 +136,6 @@ class WriteRequestElement(TypedDict):
     events: List[Event]
     information: Dict[FullQualifiedId, List[str]]
     user_id: int
-    locked_fields: Dict[
-        Any, int
-    ]  # TODO: We have different possibilities to lock things in the DB.
 
 
 class EventStore(Protocol):  # pragma: no cover

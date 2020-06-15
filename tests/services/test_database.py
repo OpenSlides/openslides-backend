@@ -185,7 +185,6 @@ def test_write() -> None:
         "events": [],
         "information": {},
         "user_id": 42,
-        "locked_fields": {},
     }
     command = commands.Write(write_request=write_request, locked_fields={})
     engine.write.return_value = None

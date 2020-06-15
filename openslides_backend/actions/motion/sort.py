@@ -96,6 +96,7 @@ class TreeSortMixin(BaseAction):
             filter=filter,
             meeting_id=meeting_id,
             mapped_fields=["id"],
+            lock_result=True,
         )
         all_model_ids = set([instance["id"] for instance in db_instances])
 
@@ -167,11 +168,9 @@ class TreeSortMixin(BaseAction):
             fqid = FullQualifiedId(self.model.collection, id)
             information = {fqid: ["Object sorted"]}
             event = Event(type="update", fqid=fqid, fields=instance)
+            # TODO: Lock some fields to protect against intermediate creation of new instances but care where exactly to lock them.
             yield WriteRequestElement(
-                events=[event],
-                information=information,
-                user_id=self.user_id,
-                locked_fields={},  # TODO: Lock more fields to protect against intermediate creation of new instances but care where exactly to lock them.
+                events=[event], information=information, user_id=self.user_id
             )
 
 

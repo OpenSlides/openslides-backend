@@ -3,7 +3,7 @@ from unittest import TestCase
 from openslides_backend.actions.base import merge_write_request_elements
 from openslides_backend.shared.interfaces import WriteRequestElement
 
-from ..utils import get_fqfield, get_fqid
+from ..utils import get_fqid
 
 
 class ActionsBaseTester(TestCase):
@@ -24,7 +24,6 @@ class ActionsBaseTester(TestCase):
                 get_fqid("collection_Chebie1jie/42"): ["Information text laPu7iepei"]
             },
             user_id=1,
-            locked_fields={get_fqfield("collection_Chebie1jie/42/field_aeXahloPh1"): 1},
         )
         self.write_request_element_2 = WriteRequestElement(
             events=[
@@ -38,7 +37,6 @@ class ActionsBaseTester(TestCase):
                 get_fqid("collection_Chebie1jie/42"): ["Information text eesh7thouY"]
             },
             user_id=1,
-            locked_fields={get_fqfield("collection_Chebie1jie/42/field_aeXahloPh1"): 2},
         )
 
     def test_merge_write_request_elements(self) -> None:
@@ -65,7 +63,6 @@ class ActionsBaseTester(TestCase):
                 ]
             },
             user_id=1,
-            locked_fields={get_fqfield("collection_Chebie1jie/42/field_aeXahloPh1"): 1},
         )
         self.assertEqual(result, expected)
 

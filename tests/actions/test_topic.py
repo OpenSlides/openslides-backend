@@ -215,7 +215,6 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     get_fqid("meeting/2393342057"): ["Object attached to topic"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -270,7 +269,6 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             }
         ]
         self.assertEqual(result, expected)
@@ -302,7 +300,6 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
                     get_fqid("meeting/3611987967"): ["Object attached to topic"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             }
         ]
         self.assertEqual(e, expected)
@@ -595,7 +592,6 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 ],
                 "information": {get_fqid("topic/1312354708"): ["Object updated"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -643,7 +639,6 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -674,7 +669,6 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -705,7 +699,6 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -744,7 +737,6 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -1048,7 +1040,6 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -1076,7 +1067,6 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -1102,7 +1092,6 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)

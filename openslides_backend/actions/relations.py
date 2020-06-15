@@ -82,7 +82,7 @@ class RelationsHandler:
             rels = {}
             for related_model_fqid in list(add | remove):
                 related_model = self.database.get(
-                    related_model_fqid, mapped_fields=[related_name, "meta_position"]
+                    related_model_fqid, mapped_fields=[related_name], lock_result=True,
                 )
                 rels[related_model_fqid] = related_model
         else:
@@ -90,11 +90,10 @@ class RelationsHandler:
             add, remove = self.relation_diffs(rel_ids)
             ids = list(add | remove)
             response = self.database.get_many(
-                [
-                    GetManyRequest(
-                        target, ids, mapped_fields=[related_name, "meta_position"],
-                    )
-                ]
+                get_many_requests=[
+                    GetManyRequest(target, ids, mapped_fields=[related_name],)
+                ],
+                lock_result=True,
             )
             if len(ids) != len(response.get(target, {})):
                 raise ActionException(
@@ -166,7 +165,8 @@ class RelationsHandler:
             # Retrieve current object from database
             current_obj = self.database.get(
                 FullQualifiedId(self.model.collection, self.id),
-                mapped_fields=[self.field_name, "meta_position"],
+                mapped_fields=[self.field_name],
+                lock_result=True,
             )
 
             # Get current ids from relation field
@@ -212,7 +212,8 @@ class RelationsHandler:
             # Retrieve current object from database
             current_obj = self.database.get(
                 FullQualifiedId(self.model.collection, self.id),
-                mapped_fields=[self.field_name, "meta_position"],
+                mapped_fields=[self.field_name],
+                lock_result=True,
             )
 
             # Get current ids from relation field
