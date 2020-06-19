@@ -121,7 +121,6 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
                     get_fqid("committee/5914213969"): ["Object attached to meeting"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -241,7 +240,6 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                 ],
                 "information": {get_fqid("meeting/7816466305"): ["Object updated"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)
@@ -371,7 +369,6 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         result = list(write_request_elements)

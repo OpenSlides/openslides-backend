@@ -63,7 +63,6 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
                     get_fqid("topic/1312354708"): ["Object attached to agenda item"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -110,7 +109,6 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)
@@ -155,7 +153,6 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(result, expected)

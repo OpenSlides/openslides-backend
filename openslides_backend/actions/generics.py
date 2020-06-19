@@ -97,10 +97,7 @@ class CreateAction(PermissionMixin, Action):
         information = {fqid: ["Object created"]}
         event = Event(type="create", fqid=fqid, fields=element["instance"])
         return WriteRequestElement(
-            events=[event],
-            information=information,
-            user_id=self.user_id,
-            locked_fields={},
+            events=[event], information=information, user_id=self.user_id
         )
 
 
@@ -127,6 +124,7 @@ class UpdateAction(PermissionMixin, Action):
             db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
                 mapped_fields=[self.permission_reference],
+                lock_result=True,
             )
 
             # Check permission using permission_reference field.
@@ -178,10 +176,7 @@ class UpdateAction(PermissionMixin, Action):
         fields = {k: v for k, v in element["instance"].items() if k != "id"}
         event = Event(type="update", fqid=fqid, fields=fields)
         return WriteRequestElement(
-            events=[event],
-            information=information,
-            user_id=self.user_id,
-            locked_fields={},
+            events=[event], information=information, user_id=self.user_id
         )
 
 
@@ -210,6 +205,7 @@ class DeleteAction(PermissionMixin, Action):
             db_instance = self.database.get(
                 fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
                 mapped_fields=[self.permission_reference],
+                lock_result=True,
             )
 
             # Check permission using permission_reference field.
@@ -256,8 +252,5 @@ class DeleteAction(PermissionMixin, Action):
         information = {fqid: ["Object deleted"]}
         event = Event(type="delete", fqid=fqid)
         return WriteRequestElement(
-            events=[event],
-            information=information,
-            user_id=self.user_id,
-            locked_fields={},
+            events=[event], information=information, user_id=self.user_id
         )

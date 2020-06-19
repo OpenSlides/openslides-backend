@@ -1,5 +1,6 @@
 from typing import Dict, List, Sequence, Union
 
+from ...shared.exceptions import DatabaseException
 from ...shared.filters import Filter
 from ...shared.interfaces import LoggingModule, WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
@@ -27,19 +28,27 @@ class Adapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> PartialModel:
-        if position is not None or get_deleted_models is not None:
-            raise NotImplementedError(
-                "The keywords 'position' and 'get_deleted_models' are not supported yet."
-            )
-        command = commands.Get(fqid=fqid, mappedFields=mapped_fields)
+        if lock_result and mapped_fields is not None:
+            mapped_fields.append("meta_position")
+        command = commands.Get(
+            fqid=fqid,
+            mappedFields=mapped_fields,
+            position=position,
+            get_deleted_models=get_deleted_models,
+        )
         self.logger.debug(
             f"Start GET request to datastore with the following data: {command.data}"
         )
         response = self.engine.get(command)
-        meta_position = response.get("meta_position")
-        if meta_position is not None:
-            self.update_locked_fields(fqid, meta_position)
+        if lock_result:
+            instance_position = response.get("meta_position")
+            if instance_position is None:
+                raise DatabaseException(
+                    "Response from datastore does not contain field 'meta_position' but this is required."
+                )
+            self.update_locked_fields(fqid, instance_position)
         return response
 
     def get_many(
@@ -48,11 +57,10 @@ class Adapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
-        if position is not None or get_deleted_models is not None:
-            raise NotImplementedError(
-                "The keywords 'position' and 'get_deleted_models' are not supported yet."
-            )
+        if lock_result and mapped_fields is not None:
+            mapped_fields.append("meta_position")
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -69,10 +77,14 @@ class Adapter:
             collection = Collection(collection_str)
             for id_str, value in response[collection_str].items():
                 instance_id = int(id_str)
-                meta_position = value.get("meta_position")
-                if meta_position is not None:
+                if lock_result:
+                    instance_position = value.get("meta_position")
+                    if instance_position is None:
+                        raise DatabaseException(
+                            "Response from datastore does not contain field 'meta_position' but this is required."
+                        )
                     fqid = FullQualifiedId(collection, instance_id)
-                    self.update_locked_fields(fqid, meta_position)
+                    self.update_locked_fields(fqid, instance_position)
                 inner_result[instance_id] = value
             result[collection] = inner_result
         return result
@@ -82,24 +94,31 @@ class Adapter:
         collection: Collection,
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> List[PartialModel]:
-        if get_deleted_models is not None:
-            raise NotImplementedError(
-                "The keyword 'get_deleted_models' is not supported yet."
-            )
         # TODO: Check the return value of this method. The interface docs say
         # something else.
-        command = commands.GetAll(collection=collection, mapped_fields=mapped_fields)
+        if lock_result and mapped_fields is not None:
+            mapped_fields.extend(("id", "meta_position"))
+        command = commands.GetAll(
+            collection=collection,
+            mapped_fields=mapped_fields,
+            get_deleted_models=get_deleted_models,
+        )
         self.logger.debug(
             f"Start GET_ALL request to datastore with the following data: {command.data}"
         )
         response = self.engine.get_all(command)
-        for item in response:
-            meta_position = item.get("meta_position")
-            item_id = item.get("id")
-            if meta_position is not None and id is not None:
-                fqid = FullQualifiedId(collection=collection, id=item_id)
-                self.update_locked_fields(fqid, meta_position)
+        if lock_result:
+            for item in response:
+                instance_id = item.get("id")
+                instance_position = item.get("meta_position")
+                if instance_id is None or instance_position is None:
+                    raise DatabaseException(
+                        "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
+                    )
+                fqid = FullQualifiedId(collection=collection, id=instance_id)
+                self.update_locked_fields(fqid, instance_position)
         return response
 
     def filter(
@@ -108,6 +127,7 @@ class Adapter:
         filter: Filter,
         meeting_id: int = None,
         mapped_fields: List[str] = None,
+        lock_result: bool = False,
     ) -> List[PartialModel]:
         if meeting_id is not None or mapped_fields is not None:
             raise NotImplementedError(
@@ -115,38 +135,51 @@ class Adapter:
             )
         # TODO: Check the return value of this method. The interface docs say
         # something else.
+        if lock_result and mapped_fields is not None:
+            mapped_fields.extend(("id", "meta_position"))
         command = commands.Filter(collection=collection, filter=filter)
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {command.data}"
         )
         response = self.engine.filter(command)
-        for item in response:
-            meta_position = item.get("meta_position")
-            item_id = item.get("id")
-            if meta_position is not None and id is not None:
-                fqid = FullQualifiedId(collection=collection, id=item_id)
-                self.update_locked_fields(fqid, meta_position)
+        if lock_result:
+            for item in response:
+                instance_id = item.get("id")
+                instance_position = item.get("meta_position")
+                if instance_id is None or instance_position is None:
+                    raise DatabaseException(
+                        "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
+                    )
+                fqid = FullQualifiedId(collection=collection, id=instance_id)
+                self.update_locked_fields(fqid, instance_position)
         return response
 
-    def exists(self, collection: Collection, filter: Filter) -> Found:
-        # Attention: We do not handle the position result of this request. You
-        # have to do this manually.
+    def exists(
+        self, collection: Collection, filter: Filter, lock_result: bool = False,
+    ) -> Found:
         command = commands.Exists(collection=collection, filter=filter)
         self.logger.debug(
             f"Start EXISTS request to datastore with the following data: {command.data}"
         )
         response = self.engine.exists(command)
-        return {"exists": response["exists"], "position": response["position"]}
+        if lock_result:
+            position = response.get("position")
+            if position is None:
+                raise DatabaseException("Invalid response from datastore.")
+            raise NotImplementedError("Locking is not implemented")
+        return {"exists": response["exists"]}
 
-    def count(self, collection: Collection, filter: Filter) -> Count:
-        # Attention: We do not handle the position result of this request. You
-        # have to do this manually.
+    def count(
+        self, collection: Collection, filter: Filter, lock_result: bool = False,
+    ) -> Count:
         command = commands.Count(collection=collection, filter=filter)
         self.logger.debug(
             f"Start COUNT request to datastore with the following data: {command.data}"
         )
         response = self.engine.count(command)
-        return {"count": response["count"], "position": response["position"]}
+        if lock_result:
+            raise NotImplementedError("Locking is not implemented")
+        return {"count": response["count"]}
 
     def min(
         self, collection: Collection, filter: Filter, field: str, type: str = None

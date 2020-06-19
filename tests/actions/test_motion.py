@@ -102,7 +102,6 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(list(write_request_elements), expected)
@@ -251,7 +250,6 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     ],
                 },
                 "user_id": self.user_id_1,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -301,7 +299,6 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     ],
                 },
                 "user_id": self.user_id_2,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -334,7 +331,6 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     get_fqid("user/7268025091"): ["Object attached to motion"],
                 },
                 "user_id": self.user_id_1,
-                "locked_fields": {},
             }
         ]
         self.assertEqual(
@@ -367,7 +363,6 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     get_fqid("user/7268025091"): ["Object attached to motion"],
                 },
                 "user_id": self.user_id_2,
-                "locked_fields": {},
             }
         ]
         self.assertEqual(
@@ -524,7 +519,6 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
                     ],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -704,7 +698,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/3265963568"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -720,7 +713,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2279328478"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -736,7 +728,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/1082050467"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -752,7 +743,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/8000824551"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -768,7 +758,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2995885358"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(
@@ -794,7 +783,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/3265963568"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -810,7 +798,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2279328478"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -826,7 +813,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/8000824551"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -842,7 +828,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/1082050467"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
             {
                 "events": [
@@ -858,7 +843,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
                 ],
                 "information": {get_fqid("motion/2995885358"): ["Object sorted"]},
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         self.assertEqual(

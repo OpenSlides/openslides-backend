@@ -9,8 +9,8 @@ from ...shared.patterns import Collection, FullQualifiedId
 from .commands import Command, GetManyRequest
 
 PartialModel = Dict[str, Any]
-Found = TypedDict("Found", {"exists": bool, "position": int})
-Count = TypedDict("Count", {"count": int, "position": int})
+Found = TypedDict("Found", {"exists": bool})
+Count = TypedDict("Count", {"count": int})
 Aggregate = Dict[str, Any]  # TODO: This interface seams to be wrong.
 
 
@@ -34,6 +34,7 @@ class Datastore(Protocol):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> PartialModel:
         ...
 
@@ -43,6 +44,7 @@ class Datastore(Protocol):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
 
@@ -51,6 +53,7 @@ class Datastore(Protocol):
         collection: Collection,
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> List[PartialModel]:
         ...
 
@@ -60,13 +63,18 @@ class Datastore(Protocol):
         filter: Filter,
         meeting_id: int = None,
         mapped_fields: List[str] = None,
+        lock_result: bool = False,
     ) -> List[PartialModel]:
         ...
 
-    def exists(self, collection: Collection, filter: Filter) -> Found:
+    def exists(
+        self, collection: Collection, filter: Filter, lock_result: bool = False
+    ) -> Found:
         ...
 
-    def count(self, collection: Collection, filter: Filter) -> Count:
+    def count(
+        self, collection: Collection, filter: Filter, lock_result: bool = False
+    ) -> Count:
         ...
 
     def min(

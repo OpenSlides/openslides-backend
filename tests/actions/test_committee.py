@@ -108,7 +108,6 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                     get_fqid("organisation/1"): ["Object attached to committee"],
                 },
                 "user_id": self.user_id,
-                "locked_fields": {},
             },
         ]
         write_request_elements = self.action.perform(

@@ -208,6 +208,7 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> PartialModel:
         get_many_request = GetManyRequest(fqid.collection, [fqid.id], mapped_fields)
         result = self.get_many([get_many_request])
@@ -219,6 +220,7 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
             raise NotImplementedError(
@@ -239,13 +241,16 @@ class DatabaseTestAdapter:
                     element = {}
                     if get_many_request.mapped_fields is None:
                         element = data["fields"]
-                        element["meta_position"] = TEST_POSITION
+                        if lock_result:
+                            element["meta_position"] = TEST_POSITION
                     else:
                         for field in get_many_request.mapped_fields:
                             if field in data["fields"].keys():
                                 element[field] = data["fields"][field]
                             elif field == "meta_position":
                                 element["meta_position"] = TEST_POSITION
+                        if lock_result:
+                            element.setdefault("meta_position", TEST_POSITION)
                     inner_result[data["id"]] = element
             if len(get_many_request.ids) != len(inner_result):
                 # Something was not found.
@@ -259,6 +264,7 @@ class DatabaseTestAdapter:
         collection: Collection,
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
+        lock_result: bool = False,
     ) -> List[PartialModel]:
         raise NotImplementedError
 
@@ -268,6 +274,7 @@ class DatabaseTestAdapter:
         filter: Filter,
         meeting_id: int = None,
         mapped_fields: List[str] = None,
+        lock_result: bool = False,
     ) -> List[PartialModel]:
         result = []
         for data in deepcopy(TESTDATA):
@@ -286,21 +293,32 @@ class DatabaseTestAdapter:
                     if mapped_fields is None:
                         element = data["fields"]
                         element["id"] = data["id"]
+                        if lock_result:
+                            element["meta_position"] = TEST_POSITION
                     else:
                         for field in mapped_fields:
                             if field in data["fields"].keys():
                                 element[field] = data["fields"][field]
-                            if field == "id":
+                            elif field == "id":
                                 element["id"] = data["id"]
+                            elif field == "meta_position":
+                                element["meta_position"] = TEST_POSITION
+                        if lock_result:
+                            element.setdefault("id", data["id"])
+                            element.setdefault("meta_position", TEST_POSITION)
                     result.append(element)
             else:
                 raise NotImplementedError
         return result
 
-    def exists(self, collection: Collection, filter: Filter) -> Found:
+    def exists(
+        self, collection: Collection, filter: Filter, lock_result: bool = False
+    ) -> Found:
         raise NotImplementedError
 
-    def count(self, collection: Collection, filter: Filter) -> Count:
+    def count(
+        self, collection: Collection, filter: Filter, lock_result: bool = False
+    ) -> Count:
         raise NotImplementedError
 
     def min(
