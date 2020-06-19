@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+import simplejson as json
+
 from openslides_backend.actions import ActionPayload
 from openslides_backend.actions.committee.create import CommitteeCreate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
@@ -27,7 +29,14 @@ class BaseCommitteeCreateActionTester(TestCase):
 class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = CommitteeCreate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.datastore_content = {
+            get_fqfield("organisation/1/name"): "test_organisation_name",
+            get_fqfield("organisation/1/committee_ids"): [5914213969],
+        }
+        self.action = CommitteeCreate(
+            PermissionTestAdapter(),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
+        )
         self.action.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_validation_empty(self) -> None:
@@ -59,7 +68,7 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
                     "relations": {
                         get_fqfield("organisation/1/committee_ids"): {
                             "type": "add",
-                            "value": [5914213969, 7826715669, 42],
+                            "value": [5914213969, 42],
                         },
                     },
                 }
@@ -70,7 +79,14 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
 class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = CommitteeCreate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.datastore_content = {
+            get_fqfield("organisation/1/name"): "test_organisation_name",
+            get_fqfield("organisation/1/committee_ids"): [5914213969],
+        }
+        self.action = CommitteeCreate(
+            PermissionTestAdapter(),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
+        )
         self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_perform_empty(self) -> None:
@@ -100,7 +116,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                     {
                         "type": "update",
                         "fqid": get_fqid("organisation/1"),
-                        "fields": {"committee_ids": [5914213969, 7826715669, 42]},
+                        "fields": {"committee_ids": [5914213969, 42]},
                     },
                 ],
                 "information": {
@@ -124,13 +140,21 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
 class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.datastore_content = {
+            get_fqfield("organisation/1/name"): "test_organisation_name",
+            get_fqfield("organisation/1/committee_ids"): [5914213969],
+        }
         self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
-        self.application = create_test_application(
-            user_id=self.user_id, view_name="ActionsView"
-        )
 
     def test_wsgi_request_empty(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        expected_write_data = ""
+        application = create_test_application(
+            user_id=self.user_id,
+            view_name="ActionsView",
+            datastore_content=self.datastore_content,
+            expected_write_data=expected_write_data,
+        )
+        client = Client(application, ResponseWrapper)
         response = client.post("/", json=[{"action": "committee.create", "data": [{}]}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
@@ -139,7 +163,14 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        expected_write_data = ""
+        application = create_test_application(
+            user_id=self.user_id,
+            view_name="ActionsView",
+            datastore_content=self.datastore_content,
+            expected_write_data=expected_write_data,
+        )
+        client = Client(application, ResponseWrapper)
         response = client.post(
             "/",
             json=[
@@ -156,7 +187,35 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         )
 
     def test_wsgi_request_correct_1(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        expected_write_data = json.dumps(
+            {
+                "events": [
+                    {
+                        "type": "create",
+                        "fqid": "committee/42",
+                        "fields": {"organisation_id": 1, "name": "name_ieth5Ha1th"},
+                    },
+                    {
+                        "type": "update",
+                        "fqid": "organisation/1",
+                        "fields": {"committee_ids": [5914213969, 42]},
+                    },
+                ],
+                "information": {
+                    "committee/42": ["Object created"],
+                    "organisation/1": ["Object attached to committee"],
+                },
+                "user_id": self.user_id,
+                "locked_fields": {"organisation/1": 1},
+            }
+        )
+        application = create_test_application(
+            user_id=self.user_id,
+            view_name="ActionsView",
+            datastore_content=self.datastore_content,
+            expected_write_data=expected_write_data,
+        )
+        client = Client(application, ResponseWrapper)
         response = client.post(
             "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
@@ -166,13 +225,20 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
 class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.datastore_content = {
+            get_fqfield("organisation/1/name"): "test_organisation_name"
+        }
         self.user_id_no_permission = 9707919439
-        self.application = create_test_application(
-            user_id=self.user_id_no_permission, view_name="ActionsView"
-        )
 
     def test_wsgi_request_no_permission_1(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        expected_write_data = ""
+        application = create_test_application(
+            user_id=self.user_id_no_permission,
+            view_name="ActionsView",
+            datastore_content=self.datastore_content,
+            expected_write_data=expected_write_data,
+        )
+        client = Client(application, ResponseWrapper)
         response = client.post(
             "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )

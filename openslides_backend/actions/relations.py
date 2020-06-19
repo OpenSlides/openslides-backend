@@ -89,16 +89,13 @@ class RelationsHandler:
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
             ids = list(add | remove)
+            # TODO: Check if all instances of target exist.
             response = self.database.get_many(
                 get_many_requests=[
                     GetManyRequest(target, ids, mapped_fields=[related_name],)
                 ],
                 lock_result=True,
             )
-            if len(ids) != len(response.get(target, {})):
-                raise ActionException(
-                    f"Instance of {target} does not exist. Expected {ids} in response, got only {response}."
-                )
             rels = response[target]
 
         if self.field.generic_relation and not self.is_reverse:

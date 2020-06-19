@@ -57,7 +57,16 @@ StringifiedWriteRequestElement = TypedDict(
 class Command:
     """
     Command is the base class for commands used by the Engine interface.
+
+    The property 'name' returns by default the name of the class converted to snake case.
     """
+
+    @property
+    def name(self) -> str:
+        name = type(self).__name__
+        return "".join(
+            ["_" + char.lower() if char.isupper() else char for char in name]
+        ).lstrip("_")
 
     @property
     def data(self) -> str:

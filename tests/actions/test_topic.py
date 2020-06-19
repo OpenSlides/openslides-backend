@@ -6,15 +6,14 @@ from openslides_backend.actions.topic.delete import TopicDelete
 from openslides_backend.actions.topic.update import TopicUpdate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
-from ..fake_services.database import TESTDATA, DatabaseTestAdapter
+from ..fake_services.database import DatabaseTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
-from ..utils import (
-    Client,
-    ResponseWrapper,
-    create_test_application,
-    get_fqfield,
-    get_fqid,
-)
+from ..utils import Client, ResponseWrapper
+from ..utils import create_test_application_old as create_test_application
+from ..utils import get_fqfield, get_fqid
+
+# TODO: These tests use all old style datastore testing.
+# Fix this (do not use create_test_applicaton_old and do not use old_style_testing=True any more).
 
 
 class BaseTopicCreateActionTester(TestCase):
@@ -30,10 +29,7 @@ class BaseTopicCreateActionTester(TestCase):
                 "text": "text_eeKoosahh4",
             }
         ]
-        self.attachments = [
-            TESTDATA[0]["id"],
-            TESTDATA[1]["id"],
-        ]
+        self.attachments = [3549387598, 7583920032]
         self.valid_payload_2 = [
             {
                 "meeting_id": 4002059810,
@@ -48,7 +44,9 @@ class BaseTopicCreateActionTester(TestCase):
 class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = TopicCreate(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.action.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
@@ -167,7 +165,9 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
 class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = TopicCreate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = TopicCreate(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
@@ -415,10 +415,7 @@ class BaseTopicUpdateActionTester(TestCase):
         self.valid_payload_1 = [
             {"id": 1312354708, "title": "title_ahbuQu9ooz", "text": "text_thuF7Ahxee"}
         ]
-        self.attachments = [
-            TESTDATA[0]["id"],
-            TESTDATA[1]["id"],
-        ]
+        self.attachments = [3549387598, 7583920032]
         self.valid_payload_2 = [
             {
                 "id": 1312354708,
@@ -439,7 +436,9 @@ class BaseTopicUpdateActionTester(TestCase):
 class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = TopicUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = TopicUpdate(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.action.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
@@ -554,7 +553,9 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = TopicUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = TopicUpdate(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
@@ -874,7 +875,9 @@ class BaseTopicDeleteActionTester(TestCase):
 class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = TopicDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = TopicDelete(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.action.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )
@@ -999,7 +1002,9 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
 class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = TopicDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = TopicDelete(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.user_id = (
             5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
         )

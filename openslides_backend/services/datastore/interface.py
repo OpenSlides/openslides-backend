@@ -1,12 +1,12 @@
 from enum import Enum
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Sequence, Tuple
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter
 from ...shared.patterns import Collection, FullQualifiedId
-from .commands import Command, GetManyRequest
+from .commands import GetManyRequest
 
 PartialModel = Dict[str, Any]
 Found = TypedDict("Found", {"exists": bool})
@@ -94,36 +94,11 @@ class Datastore(Protocol):
         ...
 
 
-# TODO: Use proper typing here.
-EngineResponse = Any
-
-
 class Engine(Protocol):
     """
     Engine defines the interface to the engine used by the datastore. This will
     be the HTTPEngine per default
     """
 
-    def get(self, data: Command) -> EngineResponse:
-        ...
-
-    def get_many(self, data: Command) -> EngineResponse:
-        ...
-
-    def get_all(self, data: Command) -> EngineResponse:
-        ...
-
-    def filter(self, data: Command) -> EngineResponse:
-        ...
-
-    def exists(self, data: Command) -> EngineResponse:
-        ...
-
-    def count(self, data: Command) -> EngineResponse:
-        ...
-
-    def min(self, data: Command) -> EngineResponse:
-        ...
-
-    def max(self, data: Command) -> EngineResponse:
+    def retrieve(self, endpoint: str, data: str) -> Tuple[bytes, int]:
         ...

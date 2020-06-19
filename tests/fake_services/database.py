@@ -1,3 +1,4 @@
+from collections import defaultdict
 from copy import deepcopy
 from typing import Any, Dict, List, Sequence
 
@@ -14,98 +15,52 @@ from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 TEST_POSITION = 1
 
-# Do not change order of this entries. Just append new ones.
-TESTDATA = [
-    {
-        "collection": "mediafile",
-        "id": 3549387598,
-        "fields": {
+OLD_TESTDATA = {
+    "mediafile_pubilc_file": {9283748294: {"meeting_id": 4256427454}},
+    "mediafile": {
+        3549387598: {
             "meeting_ids": [3611987967],
             "attachment_ids": [
                 FullQualifiedId(collection=Collection("topic"), id=6259289755)
             ],
         },
+        7583920032: {"meeting_ids": [], "attachment_ids": []},
     },
-    {
-        "collection": "mediafile",
-        "id": 7583920032,
-        "fields": {"meeting_ids": [], "attachment_ids": []},
+    "agenda_item": {
+        3393211712: {"meeting_id": 9079236097, "content_object_id": "topic/5756367535"},
     },
-    {
-        "collection": "topic",
-        "id": 1312354708,
-        "fields": {"meeting_id": 7816466305, "title": "title_Aevoozu3ua"},
-    },
-    {
-        "collection": "mediafile_pubilc_file",
-        "id": 9283748294,
-        "fields": {"meeting_id": 4256427454},
-    },
-    {
-        "collection": "meeting",
-        "id": 2393342057,
-        "fields": {"topic_ids": [], "user_ids": [5968705978, 4796568680]},
-    },
-    {
-        "collection": "meeting",
-        "id": 4002059810,
-        "fields": {"topic_ids": [], "user_ids": [5968705978]},
-    },
-    {
-        "collection": "meeting",
-        "id": 3611987967,
-        "fields": {"topic_ids": [6375863023, 6259289755], "user_ids": [5968705978]},
-    },
-    {
-        "collection": "topic",
-        "id": 6375863023,
-        "fields": {"meeting_id": 3611987967, "title": "title_ahpout2aFa"},
-    },
-    {
-        "collection": "topic",
-        "id": 6259289755,
-        "fields": {
+    "topic": {
+        1312354708: {"meeting_id": 7816466305, "title": "title_Aevoozu3ua"},
+        6375863023: {"meeting_id": 3611987967, "title": "title_ahpout2aFa"},
+        6259289755: {
             "meeting_id": 3611987967,
             "title": "title_ub0eeYushu",
             "attachment_ids": [3549387598],
         },
+        5756367535: {"meeting_id": 9079236097, "agenda_item_id": 3393211712},
     },
-    {
-        "collection": "meeting",
-        "id": 7816466305,
-        "fields": {"committee_id": 5914213969, "topic_ids": [1312354708]},
+    "meeting": {
+        2393342057: {"topic_ids": [], "user_ids": [5968705978, 4796568680]},
+        4002059810: {"topic_ids": [], "user_ids": [5968705978]},
+        3611987967: {"topic_ids": [6375863023, 6259289755], "user_ids": [5968705978]},
+        7816466305: {"committee_id": 5914213969, "topic_ids": [1312354708]},
+        3908439961: {"committee_id": 5914213969, "topic_ids": []},
+        5562405520: {"committee_id": 7826715669, "motion_ids": [2995885358]},
+        9079236097: {
+            "topic_ids": [5756367535],
+            "agenda_item_ids": [3393211712],
+            "user_ids": [5968705978],
+        },
     },
-    {
-        "collection": "organisation",
-        "id": 1,
-        "fields": {"committee_ids": [5914213969, 7826715669]},
-    },
-    {
-        "collection": "committee",
-        "id": 5914213969,
-        "fields": {"organisation_id": 1, "meeting_ids": [7816466305, 3908439961]},
-    },
-    {
-        "collection": "meeting",
-        "id": 3908439961,
-        "fields": {"committee_id": 5914213969, "topic_ids": []},
+    "organisation": {1: {"committee_ids": [5914213969, 7826715669]}},
+    "committee": {
+        5914213969: {"organisation_id": 1, "meeting_ids": [7816466305, 3908439961]},
+        7826715669: {"organisation_id": 1, "meeting_ids": [5562405520]},
     },
     # Motion test:
-    {"collection": "user", "id": 7268025091, "fields": {}},
-    {
-        "collection": "committee",
-        "id": 7826715669,
-        "fields": {"organisation_id": 1, "meeting_ids": [5562405520]},
-    },
-    {
-        "collection": "meeting",
-        "id": 5562405520,
-        "fields": {"committee_id": 7826715669, "motion_ids": [2995885358]},
-    },
-    {
-        "collection": "motion",
-        "id": 2995885358,
-        "fields": {
+    "user": {7268025091: {}},
+    "motion": {
+        2995885358: {
             "title": "title_ruZ9nu3yee",
             "meeting_id": 5562405520,
             "state_id": 5205893377,
@@ -114,78 +69,29 @@ TESTDATA = [
             "block_id": 4116433002,
             "statute_paragraph_id": 8264607531,
         },
+        3265963568: {"meeting_id": 5562405520, "sort_child_ids": []},
+        2279328478: {"meeting_id": 5562405520, "sort_child_ids": []},
+        1082050467: {"meeting_id": 5562405520, "sort_child_ids": [8000824551]},
+        8000824551: {"meeting_id": 5562405520, "sort_parent_id": 1082050467},
     },
-    {
-        "collection": "motion_state",
-        "id": 5205893377,
-        "fields": {
+    "motion_state": {
+        5205893377: {
             "meeting_id": 5562405520,
             "motion_ids": [2995885358],
             "motion_recommendation_ids": [2995885358],
         },
     },
-    {
-        "collection": "motion_category",
-        "id": 8734727380,
-        "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
+    "motion_category": {
+        8734727380: {"meeting_id": 5562405520, "motion_ids": [2995885358]},
     },
-    {
-        "collection": "motion_block",
-        "id": 4116433002,
-        "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
+    "motion_block": {
+        4116433002: {"meeting_id": 5562405520, "motion_ids": [2995885358]},
+        4740630442: {"meeting_id": 5562405520, "motion_ids": []},
     },
-    {
-        "collection": "motion_block",
-        "id": 4740630442,
-        "fields": {"meeting_id": 5562405520, "motion_ids": []},
+    "motion_statute_paragraph": {
+        8264607531: {"meeting_id": 5562405520, "motion_ids": [2995885358]},
     },
-    {
-        "collection": "motion_statute_paragraph",
-        "id": 8264607531,
-        "fields": {"meeting_id": 5562405520, "motion_ids": [2995885358]},
-    },
-    # Sort motions (not fully related)
-    {
-        "collection": "motion",
-        "id": 3265963568,
-        "fields": {"meeting_id": 5562405520, "sort_child_ids": []},
-    },
-    {
-        "collection": "motion",
-        "id": 2279328478,
-        "fields": {"meeting_id": 5562405520, "sort_child_ids": []},
-    },
-    {
-        "collection": "motion",
-        "id": 1082050467,
-        "fields": {"meeting_id": 5562405520, "sort_child_ids": [8000824551]},
-    },
-    {
-        "collection": "motion",
-        "id": 8000824551,
-        "fields": {"meeting_id": 5562405520, "sort_parent_id": 1082050467},
-    },
-    # Agenda test:
-    {
-        "collection": "meeting",
-        "id": 9079236097,
-        "fields": {
-            "topic_ids": [5756367535],
-            "agenda_item_ids": [3393211712],
-            "user_ids": [5968705978],
-        },
-    },
-    {
-        "collection": "topic",
-        "id": 5756367535,
-        "fields": {"meeting_id": 9079236097, "agenda_item_id": 3393211712},
-    },
-    {
-        "collection": "agenda_item",
-        "id": 3393211712,
-        "fields": {"meeting_id": 9079236097, "content_object_id": "topic/5756367535"},
-    },
-]  # type: List[Dict[str, Any]]
+}  # type: Dict[str, Dict[int, Dict[str, Any]]]
 
 
 class DatabaseTestAdapter:
@@ -200,7 +106,20 @@ class DatabaseTestAdapter:
     # TODO: This adapter does not set locked_fields so you can't use it here. Fix this.
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        pass
+        self.initial_data: Dict[str, Dict[int, Dict[str, Any]]]
+        datastore_content = kwargs.get("datastore_content")
+        if datastore_content is not None:
+            self.initial_data = defaultdict(lambda: defaultdict(dict))
+            for fqfield, value in datastore_content.items():
+                self.initial_data[str(fqfield.collection)][fqfield.id][
+                    fqfield.field
+                ] = value
+        else:
+            if not kwargs.get("old_style_testing"):
+                raise ValueError(
+                    "DatabaseTestAdapter should be used with datastore_content or with old_style_testing set to True."
+                )
+            self.initial_data = deepcopy(OLD_TESTDATA)
 
     def get(
         self,
@@ -233,25 +152,24 @@ class DatabaseTestAdapter:
         result = {}
         for get_many_request in get_many_requests:
             inner_result = {}
-            for data in deepcopy(TESTDATA):
-                if (
-                    data["collection"] == str(get_many_request.collection)
-                    and data["id"] in get_many_request.ids
-                ):
-                    element = {}
-                    if get_many_request.mapped_fields is None:
-                        element = data["fields"]
-                        if lock_result:
+            for instance_id in get_many_request.ids:
+                data = self.initial_data.get(str(get_many_request.collection), {}).get(
+                    instance_id, {}
+                )
+                element = {}
+                if get_many_request.mapped_fields is None:
+                    element = data
+                    if lock_result:
+                        element["meta_position"] = TEST_POSITION
+                else:
+                    for field in get_many_request.mapped_fields:
+                        if field in data.keys():
+                            element[field] = data[field]
+                        elif field == "meta_position":
                             element["meta_position"] = TEST_POSITION
-                    else:
-                        for field in get_many_request.mapped_fields:
-                            if field in data["fields"].keys():
-                                element[field] = data["fields"][field]
-                            elif field == "meta_position":
-                                element["meta_position"] = TEST_POSITION
-                        if lock_result:
-                            element.setdefault("meta_position", TEST_POSITION)
-                    inner_result[data["id"]] = element
+                    if lock_result:
+                        element.setdefault("meta_position", TEST_POSITION)
+                inner_result[instance_id] = element
             if len(get_many_request.ids) != len(inner_result):
                 # Something was not found.
                 print(get_many_request, inner_result)
@@ -277,34 +195,32 @@ class DatabaseTestAdapter:
         lock_result: bool = False,
     ) -> List[PartialModel]:
         result = []
-        for data in deepcopy(TESTDATA):
-            data_meeting_id = data["fields"].get("meeting_id")
+        for instance_id, data in self.initial_data.get(str(collection), {}).items():
+            data_meeting_id = data.get("meeting_id")
             if meeting_id is not None and (
                 data_meeting_id is None or data_meeting_id != meeting_id
             ):
                 continue
-            if data["collection"] != str(collection):
-                continue
             if not isinstance(filter, FilterOperator):
                 raise NotImplementedError
             if filter.operator == "==":
-                if data["fields"].get(filter.field) == filter.value:
+                if data.get(filter.field) == filter.value:
                     element = {}
                     if mapped_fields is None:
-                        element = data["fields"]
-                        element["id"] = data["id"]
+                        element = data
+                        element["id"] = instance_id
                         if lock_result:
                             element["meta_position"] = TEST_POSITION
                     else:
                         for field in mapped_fields:
-                            if field in data["fields"].keys():
-                                element[field] = data["fields"][field]
+                            if field in data.keys():
+                                element[field] = data[field]
                             elif field == "id":
-                                element["id"] = data["id"]
+                                element["id"] = instance_id
                             elif field == "meta_position":
                                 element["meta_position"] = TEST_POSITION
                         if lock_result:
-                            element.setdefault("id", data["id"])
+                            element.setdefault("id", instance_id)
                             element.setdefault("meta_position", TEST_POSITION)
                     result.append(element)
             else:
