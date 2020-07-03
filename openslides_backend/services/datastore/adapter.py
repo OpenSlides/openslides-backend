@@ -167,15 +167,15 @@ class Adapter:
         mapped_fields: List[str] = None,
         lock_result: bool = False,
     ) -> List[PartialModel]:
-        if meeting_id is not None or mapped_fields is not None:
-            raise NotImplementedError(
-                "The keywords 'meeting_id' and 'mapped_fields' are not supported yet."
-            )
+        if meeting_id is not None:
+            raise NotImplementedError("The keyword 'meeting_id' is not supported yet.")
         # TODO: Check the return value of this method. The interface docs say
         # something else.
         if lock_result and mapped_fields is not None:
             mapped_fields.extend(("id", "meta_position"))
-        command = commands.Filter(collection=collection, filter=filter)
+        command = commands.Filter(
+            collection=collection, filter=filter, mapped_fields=mapped_fields
+        )
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {command.data}"
         )

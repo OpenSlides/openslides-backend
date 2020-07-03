@@ -12,6 +12,10 @@ class AgendaItem(Model):
         child_ids: (agenda_item/parent_id)[];
     """
 
+    AGENDA_ITEM = 1
+    INTERNAL_ITEM = 2
+    HIDDEN_ITEM = 3
+
     collection = Collection("agenda_item")
     verbose_name = "agenda item"
 
