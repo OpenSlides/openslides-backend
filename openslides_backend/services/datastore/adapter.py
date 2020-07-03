@@ -1,4 +1,7 @@
-from typing import Dict, List, Sequence, Union
+from typing import Any, Dict, List, Sequence, Union
+
+import simplejson as json
+from simplejson.errors import JSONDecodeError  # type: ignore
 
 from ...shared.exceptions import DatabaseException
 from ...shared.filters import Filter
@@ -7,6 +10,9 @@ from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from . import commands
 from .http_engine import HTTPEngine as Engine
 from .interface import Aggregate, Count, Found, PartialModel
+
+# TODO: Use proper typing here.
+DatastoreResponse = Any
 
 
 class Adapter:
@@ -21,6 +27,32 @@ class Adapter:
         self.logger = logging.getLogger(__name__)
         self.engine = engine
         self.locked_fields = {}
+
+    def retrieve(self, command: commands.Command) -> DatastoreResponse:
+        """
+        Uses engine to send data to datastore and retrieve result.
+
+        This method also checks the payload and decodes JSON body.
+        """
+        content, status_code = self.engine.retrieve(command.name, command.data)
+        if len(content):
+            try:
+                payload = json.loads(content)
+            except JSONDecodeError:
+                error_message = "Bad response from datastore service. Body does not contain valid JSON."
+                raise DatabaseException(error_message)
+        else:
+            payload = None
+        self.logger.debug(f"Get repsonse with status code {status_code}: {payload}")
+        if status_code >= 400:
+            error_message = f"Datastore service sends HTTP {status_code}."
+            additional_error_message = (
+                payload.get("error") if isinstance(payload, dict) else None
+            )
+            if additional_error_message is not None:
+                error_message = " ".join((error_message, str(additional_error_message)))
+            raise DatabaseException(error_message)
+        return payload
 
     def get(
         self,
@@ -41,7 +73,7 @@ class Adapter:
         self.logger.debug(
             f"Start GET request to datastore with the following data: {command.data}"
         )
-        response = self.engine.get(command)
+        response = self.retrieve(command)
         if lock_result:
             instance_position = response.get("meta_position")
             if instance_position is None:
@@ -59,8 +91,14 @@ class Adapter:
         get_deleted_models: int = None,
         lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
-        if lock_result and mapped_fields is not None:
-            mapped_fields.append("meta_position")
+        if mapped_fields is not None:
+            raise NotImplementedError(
+                "The keyword 'mapped_fields' is not supported. Please use mapped_fields inside the GetManyRequest."
+            )
+        if lock_result:
+            for get_many_request in get_many_requests:
+                if get_many_request.mapped_fields is not None:
+                    get_many_request.mapped_fields.append("meta_position")
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -70,7 +108,7 @@ class Adapter:
         self.logger.debug(
             f"Start GET_MANY request to datastore with the following data: {command.data}"
         )
-        response = self.engine.get_many(command)
+        response = self.retrieve(command)
         result = {}
         for collection_str in response.keys():
             inner_result = {}
@@ -108,7 +146,7 @@ class Adapter:
         self.logger.debug(
             f"Start GET_ALL request to datastore with the following data: {command.data}"
         )
-        response = self.engine.get_all(command)
+        response = self.retrieve(command)
         if lock_result:
             for item in response:
                 instance_id = item.get("id")
@@ -141,7 +179,7 @@ class Adapter:
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {command.data}"
         )
-        response = self.engine.filter(command)
+        response = self.retrieve(command)
         if lock_result:
             for item in response:
                 instance_id = item.get("id")
@@ -161,7 +199,7 @@ class Adapter:
         self.logger.debug(
             f"Start EXISTS request to datastore with the following data: {command.data}"
         )
-        response = self.engine.exists(command)
+        response = self.retrieve(command)
         if lock_result:
             position = response.get("position")
             if position is None:
@@ -176,7 +214,7 @@ class Adapter:
         self.logger.debug(
             f"Start COUNT request to datastore with the following data: {command.data}"
         )
-        response = self.engine.count(command)
+        response = self.retrieve(command)
         if lock_result:
             raise NotImplementedError("Locking is not implemented")
         return {"count": response["count"]}
@@ -191,7 +229,7 @@ class Adapter:
         self.logger.debug(
             f"Start MIN request to datastore with the following data: {command.data}"
         )
-        response = self.engine.min(command)
+        response = self.retrieve(command)
         return response
 
     def max(
@@ -204,7 +242,7 @@ class Adapter:
         self.logger.debug(
             f"Start MAX request to datastore with the following data: {command.data}"
         )
-        response = self.engine.max(command)
+        response = self.retrieve(command)
         return response
 
     def update_locked_fields(
@@ -227,7 +265,7 @@ class Adapter:
             f"Start RESERVE_IDS request to datastore with the following data: "
             f"Collection: {collection}, Amount: {amount}"
         )
-        response = self.engine.reserve_ids(command)
+        response = self.retrieve(command)
         return response.get("ids")
 
     def reserve_id(self, collection: Collection) -> int:
@@ -244,4 +282,4 @@ class Adapter:
             f"Start WRITE request to datastore with the following data: "
             f"Write request: {write_requests[0]}"
         )
-        self.engine.write(command)
+        self.retrieve(command)

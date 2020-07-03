@@ -6,7 +6,8 @@ from openslides_backend.shared.patterns import (
     FullQualifiedId,
 )
 
-from .utils import Client, ResponseWrapper, create_test_application
+from .utils import Client, ResponseWrapper
+from .utils import create_test_application_old as create_test_application
 
 
 class WSGIApplicationTester(TestCase):

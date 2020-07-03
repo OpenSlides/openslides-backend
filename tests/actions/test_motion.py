@@ -10,13 +10,12 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 
 from ..fake_services.database import DatabaseTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
-from ..utils import (
-    Client,
-    ResponseWrapper,
-    create_test_application,
-    get_fqfield,
-    get_fqid,
-)
+from ..utils import Client, ResponseWrapper
+from ..utils import create_test_application_old as create_test_application
+from ..utils import get_fqfield, get_fqid
+
+# TODO: These tests use all old style datastore testing.
+# Fix this (do not use create_test_applicaton_old and do not use old_style_testing=True any more).
 
 
 class BaseMotionUpdateActionTester(TestCase):
@@ -37,7 +36,9 @@ class BaseMotionUpdateActionTester(TestCase):
 class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = MotionUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = MotionUpdate(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.action.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
         )
@@ -68,7 +69,9 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
 class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = MotionUpdate(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = MotionUpdate(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
         )
@@ -141,7 +144,7 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
     def setUp(self) -> None:
         super().setUp()
         self.action = MotionUpdateMetadata(
-            PermissionTestAdapter(), DatabaseTestAdapter()
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
         )
         self.action.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
@@ -200,7 +203,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
     def setUp(self) -> None:
         super().setUp()
         self.action = MotionUpdateMetadata(
-            PermissionTestAdapter(), DatabaseTestAdapter()
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
         )
         self.user_id_1 = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
@@ -390,7 +393,9 @@ class BaseMotionDeleteActionTester(TestCase):
 class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = MotionDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = MotionDelete(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.action.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
         )
@@ -455,7 +460,9 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
 class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = MotionDelete(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = MotionDelete(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
         )
@@ -590,7 +597,9 @@ class BaseMotionSortActionTester(TestCase):
 class MotionSortActionUnitTester(BaseMotionSortActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = MotionSort(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = MotionSort(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.action.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
         )
@@ -674,7 +683,9 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
 class MotionSortActionPerformTester(BaseMotionSortActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.action = MotionSort(PermissionTestAdapter(), DatabaseTestAdapter())
+        self.action = MotionSort(
+            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+        )
         self.user_id = (
             7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
         )

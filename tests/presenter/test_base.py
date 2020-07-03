@@ -1,10 +1,12 @@
 import json
+from typing import Any, Dict
 from unittest import TestCase
 from unittest.mock import MagicMock
 
 from openslides_backend.presenter import PresenterBlob
 from openslides_backend.presenter.presenter import PresenterHandler
 from openslides_backend.shared.exceptions import PresenterException
+from openslides_backend.shared.patterns import FullQualifiedField
 
 from ..utils import Client, ResponseWrapper, create_test_application
 
@@ -65,12 +67,19 @@ class PresenterBaseUnitTester(TestCase):
 class PresenterBaseWSGITester(TestCase):
     def setUp(self) -> None:
         self.user_id = 0
-        self.application = create_test_application(
-            user_id=self.user_id, view_name="PresenterView"
-        )
+        self.datastore_content: Dict[FullQualifiedField, Any] = {}
+        self.expected_write_data = ""
 
     def test_wsgi_request_empty(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="PresenterView",
+                datastore_content=self.datastore_content,
+                expected_write_data=self.expected_write_data,
+            ),
+            ResponseWrapper,
+        )
         response = client.get("/", json=[{"presenter": ""}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
@@ -79,7 +88,15 @@ class PresenterBaseWSGITester(TestCase):
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="PresenterView",
+                datastore_content=self.datastore_content,
+                expected_write_data=self.expected_write_data,
+            ),
+            ResponseWrapper,
+        )
         response = client.get("/", json=[{"presenter": "non_existing_presenter"}],)
         self.assertEqual(response.status_code, 400)
         self.assertIn(
@@ -87,7 +104,15 @@ class PresenterBaseWSGITester(TestCase):
         )
 
     def test_wsgi_request_correct_1(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="PresenterView",
+                datastore_content=self.datastore_content,
+                expected_write_data=self.expected_write_data,
+            ),
+            ResponseWrapper,
+        )
         response = client.get("/", json=[{"presenter": "initial-data"}],)
         self.assertEqual(response.status_code, 200)
         expected = [
@@ -103,7 +128,15 @@ class PresenterBaseWSGITester(TestCase):
         self.assertEqual(json.loads(response.data), expected)
 
     def test_wsgi_whoami(self) -> None:
-        client = Client(self.application, ResponseWrapper)
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="PresenterView",
+                datastore_content=self.datastore_content,
+                expected_write_data=self.expected_write_data,
+            ),
+            ResponseWrapper,
+        )
         response = client.get("/", json=[{"presenter": "whoami"}],)
         self.assertEqual(response.status_code, 200)
         expected = [
