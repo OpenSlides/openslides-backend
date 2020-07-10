@@ -4,7 +4,6 @@ import fastjsonschema  # type: ignore
 
 from ...models.agenda_item import AgendaItem
 from ...shared.patterns import Collection, FullQualifiedId
-from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import UpdateAction
@@ -41,7 +40,6 @@ class AgendaItemUpdate(UpdateAction):
 
     model = AgendaItem()
     schema = update_agenda_item_schema
-    permissions = [TOPIC_CAN_MANAGE]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         collection_name, id = instance["content_object_id"].split("/")

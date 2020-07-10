@@ -1,7 +1,6 @@
 import fastjsonschema  # type: ignore
 
 from ...models.topic import Topic
-from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import UpdateAction
@@ -34,4 +33,3 @@ class TopicUpdate(UpdateAction):
 
     model = Topic()
     schema = update_topic_schema
-    permissions = [TOPIC_CAN_MANAGE]

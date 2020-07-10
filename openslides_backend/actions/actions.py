@@ -162,13 +162,14 @@ class ActionsHandler(HandlerBase):
             self.logger.debug(
                 f"Actions map contains the following actions: {actions_map}."
             )
-            action = actions_map.get(element["action"])
+            action_name = element["action"]
+            action = actions_map.get(action_name)
             if action is None:
-                raise ActionException(f"Action {element['action']} does not exist.")
-            self.logger.debug(f"Perform action {element['action']}.")
-            write_request_elements = action(self.permission(), self.database).perform(
-                element["data"], self.user_id
-            )
+                raise ActionException(f"Action {action_name} does not exist.")
+            self.logger.debug(f"Perform action {action_name}.")
+            write_request_elements = action(
+                action_name, self.permission, self.database
+            ).perform(element["data"], self.user_id)
             self.logger.debug(
                 f"Prepared write request element {write_request_elements}."
             )

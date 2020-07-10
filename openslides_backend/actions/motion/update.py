@@ -3,7 +3,6 @@ import time
 import fastjsonschema  # type: ignore
 
 from ...models.motion import Motion
-from ...shared.permissions.motion import MOTION_CAN_MANAGE, MOTION_CAN_MANAGE_METADATA
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..base import ActionPayload, DataSet, DummyAction
@@ -37,7 +36,6 @@ class MotionUpdate(UpdateAction):
 
     model = Motion()
     schema = update_motion_schema
-    permissions = [MOTION_CAN_MANAGE]
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         if not isinstance(payload, list):
@@ -84,7 +82,6 @@ class MotionUpdateMetadata(UpdateAction):
 
     model = Motion()
     schema = update_motion_metadata_schema
-    permissions = [MOTION_CAN_MANAGE, MOTION_CAN_MANAGE_METADATA]
 
     # TODO: Check removal of supporters and maybe remove them in some state.
 

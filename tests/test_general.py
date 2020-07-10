@@ -17,7 +17,7 @@ class WSGIApplicationTester(TestCase):
 
     def setUp(self) -> None:
         self.application = create_test_application(
-            user_id=0, view_name="ActionsView"
+            user_id=0, view_name="ActionsView", superuser=-1
         )  # User is anonymous
 
     # def test_create_application(self) -> None:

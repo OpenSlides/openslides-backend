@@ -5,11 +5,9 @@ import fastjsonschema  # type: ignore
 import roman  # type: ignore
 
 from ...models.agenda_item import AgendaItem
-from ...shared.exceptions import PermissionDenied
 from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedId
-from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..base import Action, ActionPayload, DataSet
@@ -195,17 +193,8 @@ class AgendaItemNumbering(Action):
         if not isinstance(payload, dict):
             raise TypeError("ActionPayload for this action must be a dictionary.")
 
-        # Check permission.
-        meeting_id = payload["meeting_id"]
-        if not self.permission.has_perm(
-            self.user_id, f"{meeting_id}/{TOPIC_CAN_MANAGE}"
-        ):
-            raise PermissionDenied(
-                f"User must have {TOPIC_CAN_MANAGE} permission for "
-                f"meeting_id {meeting_id}."
-            )
-
         # Fetch all agenda items for this meeting from database.
+        meeting_id = payload["meeting_id"]
         agenda_items = self.database.filter(
             collection=self.model.collection,
             filter=FilterOperator(field="meeting_id", value=meeting_id, operator="=="),

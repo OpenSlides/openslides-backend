@@ -111,11 +111,10 @@ class Permission(Protocol):  # pragma: no cover
     Interface for permission service used in views and actions.
     """
 
-    def has_perm(self, user_id: int, permission: str) -> bool:
+    def check_action(self, user_id: int, action: str, data: Any) -> bool:
         ...
 
-    def get_all(self, user_id: int) -> List[str]:
-        ...
+    # TODO: Add interface endpoint for readablity checks.
 
 
 class Event(TypedDict, total=False):

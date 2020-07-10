@@ -41,13 +41,12 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
             {"id": 3393211712, "content_object_id": "topic/1312354708"}
         ]
         self.valid_payload_delete = [{"id": 3393211712}]
-        self.user_id = (
-            5968705978  # This user has perm TOPIC_CAN_MANAGE for some meetings.
-        )
+        self.user_id = 5968705978
 
     def test_perform_create(self) -> None:
         action = AgendaItemCreate(
-            PermissionTestAdapter(),
+            "agenda_item.create",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         write_request_elements = action.perform(
@@ -122,6 +121,7 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -136,7 +136,8 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
 
     def test_perform_update(self) -> None:
         action = AgendaItemUpdate(
-            PermissionTestAdapter(),
+            "agenda_item.update",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         write_request_elements = action.perform(
@@ -211,6 +212,7 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -225,7 +227,8 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
 
     def test_perform_delete(self) -> None:
         action = AgendaItemDelete(
-            PermissionTestAdapter(),
+            "agenda_item.delete",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         write_request_elements = action.perform(
@@ -294,6 +297,7 @@ class AgendaItemCreateUpdateDeleteTester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -373,6 +377,7 @@ class AgendaItemNumberingTester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -427,6 +432,7 @@ class AgendaItemNumberingTester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -481,6 +487,7 @@ class AgendaItemNumberingTester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=datastore_content,
                 expected_write_data=expected_write_data,
             ),

@@ -1,7 +1,6 @@
 import fastjsonschema  # type: ignore
 
 from ...models.topic import Topic
-from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import CreateAction
@@ -34,6 +33,5 @@ class TopicCreate(CreateAction):
 
     model = Topic()
     schema = create_topic_schema
-    permissions = [TOPIC_CAN_MANAGE]
 
     # TODO: Automaticly add agenda item.

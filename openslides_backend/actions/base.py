@@ -6,7 +6,7 @@ from mypy_extensions import TypedDict
 from ..models.base import Model
 from ..models.fields import RelationMixin
 from ..services.datastore.interface import Datastore
-from ..shared.exceptions import ActionException
+from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
 from .actions_interface import ActionPayload
@@ -34,7 +34,8 @@ class Action(BaseAction):
 
     schema: Callable[[ActionPayload], None]
 
-    def __init__(self, permission: Permission, database: Datastore) -> None:
+    def __init__(self, name: str, permission: Permission, database: Datastore) -> None:
+        self.name = name
         self.permission = permission
         self.database = database
 
@@ -46,8 +47,8 @@ class Action(BaseAction):
         """
         self.user_id = user_id
         self.validate(payload)
+        self.check_permissions(payload)
         dataset = self.prepare_dataset(payload)
-        self.check_permission_on_dataset(dataset)
         return self.create_write_request_elements(dataset)
 
     def validate(self, payload: ActionPayload) -> None:
@@ -58,6 +59,15 @@ class Action(BaseAction):
             type(self).schema(payload)
         except JsonSchemaException as exception:
             raise ActionException(exception.message)
+
+    def check_permissions(self, payload: ActionPayload) -> None:
+        """
+        Checks permission by requesting permission service.
+        """
+        if not self.permission.check_action(self.user_id, self.name, payload):
+            raise PermissionDenied(
+                f"You are not allowed to perform action {self.name}."
+            )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
@@ -74,13 +84,6 @@ class Action(BaseAction):
         This can only be used if payload is a list.
         """
         return instance
-
-    def check_permission_on_dataset(self, dataset: DataSet) -> None:
-        """
-        Checks permission in the middle of the action according to dataset. Can
-        be used for extra checks. Just passes at default.
-        """
-        pass
 
     def create_write_request_elements(
         self, dataset: DataSet

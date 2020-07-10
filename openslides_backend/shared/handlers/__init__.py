@@ -10,5 +10,5 @@ class Base:
         self.services = services
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-        self.permission = self.services.permission
+        self.permission = self.services.permission()
         self.database = self.services.datastore()

@@ -1,7 +1,6 @@
 import fastjsonschema  # type: ignore
 
 from ...models.motion import Motion
-from ...shared.permissions.motion import MOTION_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import DeleteAction
@@ -34,4 +33,3 @@ class MotionDelete(DeleteAction):
 
     model = Motion()
     schema = delete_motion_schema
-    permissions = [MOTION_CAN_MANAGE]

@@ -1,34 +1,12 @@
-from typing import Any, List
+from typing import Any
 
-from ..shared.exceptions import ActionException, PermissionDenied
+from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
-from .base import Action, ActionPayload, BaseAction, DataSet
+from .base import Action, ActionPayload, DataSet
 
 
-class PermissionMixin(BaseAction):
-    """
-    Mixin to enable permission check for list of permissions. The permissions
-    are concated with OR logic.
-    """
-
-    permission_reference = "meeting_id"
-    permissions: List[str]
-
-    def check_permission(self, permission_reference_id: int) -> None:
-        for manage_permission in self.permissions:
-            if self.permission.has_perm(
-                self.user_id, f"{permission_reference_id}/{manage_permission}"
-            ):
-                break
-        else:
-            raise PermissionDenied(
-                f"User must have {' or '.join(self.permissions)} permission for "
-                f"{self.permission_reference} {permission_reference_id}."
-            )
-
-
-class CreateAction(PermissionMixin, Action):
+class CreateAction(Action):
     """
     Generic create action.
     """
@@ -45,9 +23,6 @@ class CreateAction(PermissionMixin, Action):
 
         data = []
         for instance in payload:
-            # Check permission using permission_reference field.
-            self.check_permission(instance[self.permission_reference])
-
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
@@ -101,7 +76,7 @@ class CreateAction(PermissionMixin, Action):
         )
 
 
-class UpdateAction(PermissionMixin, Action):
+class UpdateAction(Action):
     """
     Generic update action.
     """
@@ -110,25 +85,14 @@ class UpdateAction(PermissionMixin, Action):
         """
         Prepares dataset from payload.
 
-        Fetches current db instance to get the correct permission. Then uses the
-        input and calculates (reverse) relations.
+        Uses the input and calculates (reverse) relations.
         """
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
 
         data = []
         for instance in payload:
-            # TODO: Check if instance exists in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
-
-            # Fetch current db instance with permission_reference field.
-            db_instance = self.database.get(
-                fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
-                mapped_fields=[self.permission_reference],
-                lock_result=True,
-            )
-
-            # Check permission using permission_reference field.
-            self.check_permission(db_instance[self.permission_reference])
+            # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
 
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
@@ -180,7 +144,7 @@ class UpdateAction(PermissionMixin, Action):
         )
 
 
-class DeleteAction(PermissionMixin, Action):
+class DeleteAction(Action):
     """
     Generic delete action.
     """
@@ -189,27 +153,17 @@ class DeleteAction(PermissionMixin, Action):
         """
         Prepares dataset from payload.
 
-        Fetches current db instance to get the correct permission and also all
-        reverse relations. If protected reverse relations are not empty, raises
-        ActionException. Else uses the input and calculates (reverse) relations
-        and that should be removed because on_delete is "cascade".
+        If protected reverse relations are not empty, raises ActionException inside the
+        get_relations method. Else uses the input and calculates (reverse) relations.
         """
+        # TODO: The relation field flag on_delete = "cascade" is not supported at the moment. Change this
+
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
 
         data = []
         for instance in payload:
             # TODO: Check if instance exists in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
-
-            # Fetch current db instance with permission_reference field
-            db_instance = self.database.get(
-                fqid=FullQualifiedId(self.model.collection, id=instance["id"]),
-                mapped_fields=[self.permission_reference],
-                lock_result=True,
-            )
-
-            # Check permission using permission_reference field.
-            self.check_permission(db_instance[self.permission_reference])
 
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)

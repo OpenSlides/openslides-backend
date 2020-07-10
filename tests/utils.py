@@ -34,9 +34,10 @@ class FakeServices(containers.DeclarativeContainer):
     config = providers.Configuration("config")
     logging = providers.Object(0)
     authentication = providers.Singleton(AuthenticationTestAdapter, config.user_id)
-    permission = providers.Singleton(PermissionTestAdapter)
+    superuser = providers.Configuration("superuser")
     datastore_content = providers.Configuration("datastore_content")
     expected_write_data = providers.Configuration("expected_write_data")
+    permission = providers.Singleton(PermissionTestAdapter, superuser)
     engine = providers.Singleton(HTTPTestEngine, datastore_content, expected_write_data)
     datastore = providers.Factory(Adapter, engine, logging)
 
@@ -44,6 +45,7 @@ class FakeServices(containers.DeclarativeContainer):
 def create_test_application(
     user_id: int,
     view_name: str,
+    superuser: int,
     datastore_content: Dict[FullQualifiedField, Any],
     expected_write_data: str,
 ) -> WSGIApplication:
@@ -65,6 +67,7 @@ def create_test_application(
     services = FakeServices(
         config={"user_id": user_id},
         logging=MagicMock(),
+        superuser=superuser,
         datastore_content=datastore_content,
         expected_write_data=expected_write_data,
     )
@@ -81,11 +84,14 @@ def create_test_application(
 class FakeServicesOld(containers.DeclarativeContainer):
     config = providers.Configuration("config")
     authentication = providers.Singleton(AuthenticationTestAdapter, config.user_id)
-    permission = providers.Singleton(PermissionTestAdapter)
+    superuser = providers.Configuration("superuser")
+    permission = providers.Singleton(PermissionTestAdapter, superuser)
     datastore = providers.Singleton(DatabaseTestAdapter, old_style_testing=True)
 
 
-def create_test_application_old(user_id: int, view_name: str) -> WSGIApplication:
+def create_test_application_old(
+    user_id: int, view_name: str, superuser: int,
+) -> WSGIApplication:
     """
     Application factory function to create a new instance of the application.
 
@@ -101,7 +107,7 @@ def create_test_application_old(user_id: int, view_name: str) -> WSGIApplication
         raise
 
     # Setup services
-    services = FakeServicesOld(config={"user_id": user_id})
+    services = FakeServicesOld(config={"user_id": user_id}, superuser=superuser)
 
     # Create application instance. Inject services.
     application_factory = OpenSlidesBackendWSGI(
