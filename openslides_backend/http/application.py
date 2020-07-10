@@ -88,11 +88,12 @@ class OpenSlidesBackendWSGIApplication:
 
     def health_info(self, request: Request) -> Union[Response, HTTPException]:
         """
-        Route to provide health data of this service.
+        Route to provide health data of this service. Retrieves status information
+        from respective view.
         """
+        health_info = self.view(self.logging, self.services).get_health_info()
         return Response(
-            json.dumps({"healthinfo": {"status": "dummy status"}}),
-            content_type="application/json",
+            json.dumps({"healthinfo": health_info}), content_type="application/json",
         )
 
     def wsgi_application(

@@ -35,3 +35,5 @@ class TopicCreate(CreateAction):
     model = Topic()
     schema = create_topic_schema
     permissions = [TOPIC_CAN_MANAGE]
+
+    # TODO: Automaticly add agenda item.

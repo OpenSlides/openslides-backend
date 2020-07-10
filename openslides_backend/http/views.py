@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from ..actions import Actions
 from ..actions.actions import ActionsHandler
 from ..actions.actions import Payload as ActionsPayload
@@ -76,6 +78,12 @@ class ActionsView(BaseView):
         self.logger.debug("Action request finished successfully.")
         return result
 
+    def get_health_info(self) -> Dict[str, Any]:
+        """
+        Returns some status information. HTTP method is ignored.
+        """
+        return {"actions": dict(ActionsHandler.get_actions_dev_status())}
+
 
 class PresenterView(BaseView):
     """
@@ -107,3 +115,9 @@ class PresenterView(BaseView):
             raise ViewException(exception.message, status_code=400)
         self.logger.debug("Presenter request finished successfully. Send response now.")
         return presenter_response
+
+    def get_health_info(self) -> Dict[str, Any]:
+        """
+        Returns some status information. HTTP method is ignored.
+        """
+        return {"status": "unkown"}

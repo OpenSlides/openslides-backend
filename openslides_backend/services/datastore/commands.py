@@ -257,12 +257,24 @@ class Filter(Command):
     Filter command
     """
 
-    def __init__(self, collection: Collection, filter: FilterInterface) -> None:
+    def __init__(
+        self,
+        collection: Collection,
+        filter: FilterInterface,
+        mapped_fields: List[str] = None,
+    ) -> None:
         self.collection = collection
         self.filter = filter
+        self.mapped_fields = mapped_fields
 
     def get_raw_data(self) -> CommandData:
-        return {"collection": str(self.collection), "filter": self.filter.to_dict()}
+        result: CommandData = {
+            "collection": str(self.collection),
+            "filter": self.filter.to_dict(),
+        }
+        if self.mapped_fields is not None:
+            result["mapped_fields"] = self.mapped_fields
+        return result
 
 
 class ReserveIds(Command):

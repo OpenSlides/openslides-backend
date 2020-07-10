@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Sequence, Type
+from typing import Callable, Dict, Iterable, List, Tuple, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
@@ -8,7 +8,7 @@ from ..shared.handlers import Base as HandlerBase
 from ..shared.interfaces import WriteRequestElement
 from ..shared.schema import schema_version
 from .actions_interface import ActionResult, Payload
-from .base import Action
+from .base import Action, merge_write_request_elements
 
 
 def prepare_actions_map() -> None:
@@ -18,7 +18,21 @@ def prepare_actions_map() -> None:
 
     New modules have to be added here.
     """
-    from . import agenda_item, committee, meeting, topic, motion  # type: ignore # noqa
+    from . import (  # noqa
+        agenda_item,
+        committee,
+        list_of_speakers,
+        meeting,
+        motion,
+        motion_category,
+        motion_change_recommendation,
+        motion_block,
+        motion_state,
+        motion_statute_paragraph,
+        motion_workflow,
+        tag,
+        topic,
+    )
 
 
 actions_map: Dict[str, Type[Action]] = {}
@@ -31,6 +45,8 @@ def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
     """
 
     def wrapper(clazz: Type[Action]) -> Type[Action]:
+        if actions_map.get(name):
+            raise RuntimeError(f"Action {name} is registered twice.")
         actions_map[name] = clazz
         return clazz
 
@@ -84,6 +100,17 @@ class ActionsHandler(HandlerBase):
     Actions handler. It is the concret implementation of Actions interface.
     """
 
+    @classmethod
+    def get_actions_dev_status(cls) -> Iterable[Tuple[str, str]]:
+        """
+        Returns name and development status of all actions
+        """
+        for name, action in actions_map.items():
+            status = "Implemented"
+            if getattr(action, "is_dummy", False):
+                status = "Not implemented"
+            yield name, status
+
     def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
         """
         Takes payload and user id and handles this request by validating and
@@ -101,11 +128,11 @@ class ActionsHandler(HandlerBase):
         # store for some time if event store sends ModelLocked Exception
 
         # Parse actions and creates events
-        write_request_elements = self.parse_actions(payload)
+        write_request_element = self.parse_actions(payload)
 
         # Send events to datastore
         try:
-            self.database.write(write_request_elements)
+            self.database.write(write_request_element)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
@@ -125,7 +152,7 @@ class ActionsHandler(HandlerBase):
         self.logger.debug("Validate actions request.")
         payload_schema(payload)
 
-    def parse_actions(self, payload: Payload) -> Sequence[WriteRequestElement]:
+    def parse_actions(self, payload: Payload) -> WriteRequestElement:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
@@ -146,5 +173,5 @@ class ActionsHandler(HandlerBase):
                 f"Prepared write request element {write_request_elements}."
             )
             all_write_request_elements.extend(write_request_elements)
-        self.logger.debug("All write request elements ready.")
-        return all_write_request_elements
+        self.logger.debug("Write request is ready.")
+        return merge_write_request_elements(all_write_request_elements)

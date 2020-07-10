@@ -206,7 +206,7 @@ class DatastoreAdapterTester(TestCase):
         }
         command = commands.Write(write_request=write_request, locked_fields={})
         self.engine.retrieve.return_value = "", 200
-        self.db.write(write_requests=[write_request])
+        self.db.write(write_request=write_request)
         assert (
             command.data
             == '{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}'

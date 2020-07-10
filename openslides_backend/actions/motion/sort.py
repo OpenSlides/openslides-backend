@@ -11,7 +11,7 @@ from ...shared.patterns import FullQualifiedId
 from ...shared.permissions.motion import MOTION_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
-from ..base import Action, ActionPayload, BaseAction, DataSet
+from ..base import Action, ActionPayload, BaseAction, DataSet, DummyAction
 
 sort_node_schema = {
     "$schema": schema_version,
@@ -201,3 +201,8 @@ class MotionSort(TreeSortMixin, Action):
             parent_id_key="sort_parent_id",
             children_ids_key="sort_children_ids",
         )
+
+
+@register_action("motion.sort_in_category")
+class MotionSortInCategory(DummyAction):
+    pass

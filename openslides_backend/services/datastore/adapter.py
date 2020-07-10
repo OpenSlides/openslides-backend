@@ -167,15 +167,15 @@ class Adapter:
         mapped_fields: List[str] = None,
         lock_result: bool = False,
     ) -> List[PartialModel]:
-        if meeting_id is not None or mapped_fields is not None:
-            raise NotImplementedError(
-                "The keywords 'meeting_id' and 'mapped_fields' are not supported yet."
-            )
+        if meeting_id is not None:
+            raise NotImplementedError("The keyword 'meeting_id' is not supported yet.")
         # TODO: Check the return value of this method. The interface docs say
         # something else.
         if lock_result and mapped_fields is not None:
             mapped_fields.extend(("id", "meta_position"))
-        command = commands.Filter(collection=collection, filter=filter)
+        command = commands.Filter(
+            collection=collection, filter=filter, mapped_fields=mapped_fields
+        )
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {command.data}"
         )
@@ -271,15 +271,12 @@ class Adapter:
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
-    def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
-        # TODO: Support multiple write_requests
-        if len(write_requests) != 1:
-            raise RuntimeError("Multiple or None write_requests not supported.")
+    def write(self, write_request: WriteRequestElement) -> None:
         command = commands.Write(
-            write_request=write_requests[0], locked_fields=self.locked_fields
+            write_request=write_request, locked_fields=self.locked_fields
         )
         self.logger.debug(
             f"Start WRITE request to datastore with the following data: "
-            f"Write request: {write_requests[0]}"
+            f"Write request: {write_request}"
         )
         self.retrieve(command)
