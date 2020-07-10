@@ -18,7 +18,21 @@ def prepare_actions_map() -> None:
 
     New modules have to be added here.
     """
-    from . import agenda_item, committee, meeting, topic, motion  # type: ignore # noqa
+    from . import (  # noqa
+        agenda_item,
+        committee,
+        list_of_speakers,
+        meeting,
+        motion,
+        motion_category,
+        motion_change_recommendation,
+        motion_block,
+        motion_state,
+        motion_statute_paragraph,
+        motion_workflow,
+        tag,
+        topic,
+    )
 
 
 actions_map: Dict[str, Type[Action]] = {}
@@ -31,6 +45,8 @@ def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
     """
 
     def wrapper(clazz: Type[Action]) -> Type[Action]:
+        if actions_map.get(name):
+            raise RuntimeError(f"Action {name} is registered twice.")
         actions_map[name] = clazz
         return clazz
 

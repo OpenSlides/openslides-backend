@@ -114,6 +114,11 @@ class MotionManageComments(DummyAction):
     pass
 
 
+@register_action("motion.numbering_in_category")
+class MotionNumberingInCategory(DummyAction):
+    pass
+
+
 @register_action("motion.create_poll")
 class MotionCreatePoll(DummyAction):
     pass
