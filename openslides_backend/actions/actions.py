@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Sequence, Type
+from typing import Callable, Dict, List, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
@@ -8,7 +8,7 @@ from ..shared.handlers import Base as HandlerBase
 from ..shared.interfaces import WriteRequestElement
 from ..shared.schema import schema_version
 from .actions_interface import ActionResult, Payload
-from .base import Action
+from .base import Action, merge_write_request_elements
 
 
 def prepare_actions_map() -> None:
@@ -101,11 +101,11 @@ class ActionsHandler(HandlerBase):
         # store for some time if event store sends ModelLocked Exception
 
         # Parse actions and creates events
-        write_request_elements = self.parse_actions(payload)
+        write_request_element = self.parse_actions(payload)
 
         # Send events to datastore
         try:
-            self.database.write(write_request_elements)
+            self.database.write(write_request_element)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
@@ -125,7 +125,7 @@ class ActionsHandler(HandlerBase):
         self.logger.debug("Validate actions request.")
         payload_schema(payload)
 
-    def parse_actions(self, payload: Payload) -> Sequence[WriteRequestElement]:
+    def parse_actions(self, payload: Payload) -> WriteRequestElement:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
@@ -146,5 +146,5 @@ class ActionsHandler(HandlerBase):
                 f"Prepared write request element {write_request_elements}."
             )
             all_write_request_elements.extend(write_request_elements)
-        self.logger.debug("All write request elements ready.")
-        return all_write_request_elements
+        self.logger.debug("Write request is ready.")
+        return merge_write_request_elements(all_write_request_elements)

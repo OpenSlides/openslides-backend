@@ -271,15 +271,12 @@ class Adapter:
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
-    def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
-        # TODO: Support multiple write_requests
-        if len(write_requests) != 1:
-            raise RuntimeError("Multiple or None write_requests not supported.")
+    def write(self, write_request: WriteRequestElement) -> None:
         command = commands.Write(
-            write_request=write_requests[0], locked_fields=self.locked_fields
+            write_request=write_request, locked_fields=self.locked_fields
         )
         self.logger.debug(
             f"Start WRITE request to datastore with the following data: "
-            f"Write request: {write_requests[0]}"
+            f"Write request: {write_request}"
         )
         self.retrieve(command)

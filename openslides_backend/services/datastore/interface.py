@@ -5,6 +5,7 @@ from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter
+from ...shared.interfaces import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
 from .commands import GetManyRequest
 
@@ -91,6 +92,9 @@ class Datastore(Protocol):
         ...
 
     def reserve_id(self, collection: Collection) -> int:
+        ...
+
+    def write(self, write_request: WriteRequestElement) -> None:
         ...
 
 

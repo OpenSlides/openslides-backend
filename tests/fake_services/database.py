@@ -253,5 +253,5 @@ class DatabaseTestAdapter:
     def reserve_id(self, collection: Collection) -> int:
         return 42
 
-    def write(self, write_requests: Sequence[WriteRequestElement]) -> None:
+    def write(self, write_request: WriteRequestElement) -> None:
         pass
