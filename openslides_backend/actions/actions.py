@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Type
+from typing import Callable, Dict, Iterable, List, Tuple, Type
 
 import fastjsonschema  # type: ignore
 from fastjsonschema import JsonSchemaException  # type: ignore
@@ -83,6 +83,17 @@ class ActionsHandler(HandlerBase):
     """
     Actions handler. It is the concret implementation of Actions interface.
     """
+
+    @classmethod
+    def get_actions_dev_status(cls) -> Iterable[Tuple[str, str]]:
+        """
+        Returns name and development status of all actions
+        """
+        for name, action in actions_map.items():
+            status = "Implemented"
+            if getattr(action, "is_dummy", False):
+                status = "Not implemented"
+            yield name, status
 
     def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
         """

@@ -6,7 +6,7 @@ from ...models.motion import Motion
 from ...shared.permissions.motion import MOTION_CAN_MANAGE, MOTION_CAN_MANAGE_METADATA
 from ...shared.schema import schema_version
 from ..actions import register_action
-from ..base import ActionPayload, DataSet
+from ..base import ActionPayload, DataSet, DummyAction
 from ..generics import UpdateAction
 
 update_motion_schema = fastjsonschema.compile(
@@ -98,12 +98,22 @@ class MotionUpdateMetadata(UpdateAction):
         return super().prepare_dataset(payload)
 
 
-# TODO: Support and unsupport
+@register_action("motion.support")
+class MotionSupport(DummyAction):
+    # TODO: Support and unsupport
+    pass
 
-# TODO: follow_recommendation
 
-# TODO: Cateogry weight is extra
+@register_action("motion.follow_recommendation")
+class MotionFollowRecommendation(DummyAction):
+    pass
 
-# TODO: comments
 
-# TODO: create poll
+@register_action("motion.manage_comments")
+class MotionManageComments(DummyAction):
+    pass
+
+
+@register_action("motion.create_poll")
+class MotionCreatePoll(DummyAction):
+    pass

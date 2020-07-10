@@ -166,6 +166,21 @@ class Action(BaseAction):
         return relations
 
 
+class DummyAction(Action):
+    """
+    Dummy action that shows, that his action should to be implemented next.
+    """
+
+    is_dummy = True
+
+    def perform(
+        self, payload: ActionPayload, user_id: int
+    ) -> Iterable[WriteRequestElement]:
+        raise NotImplementedError(
+            "This action has to be implemented but is still missing."
+        )
+
+
 def merge_write_request_elements(
     write_request_elements: Iterable[WriteRequestElement],
 ) -> WriteRequestElement:
