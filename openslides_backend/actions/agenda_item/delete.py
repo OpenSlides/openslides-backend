@@ -1,7 +1,6 @@
 import fastjsonschema  # type: ignore
 
 from ...models.agenda_item import AgendaItem
-from ...shared.permissions.topic import TOPIC_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import DeleteAction
@@ -32,4 +31,3 @@ class AgendaItemDelete(DeleteAction):
 
     model = AgendaItem()
     schema = delete_agenda_item_schema
-    permissions = [TOPIC_CAN_MANAGE]

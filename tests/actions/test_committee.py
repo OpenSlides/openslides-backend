@@ -29,15 +29,17 @@ class BaseCommitteeCreateActionTester(TestCase):
 class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7668157706
         self.datastore_content = {
             get_fqfield("organisation/1/name"): "test_organisation_name",
             get_fqfield("organisation/1/committee_ids"): [5914213969],
         }
         self.action = CommitteeCreate(
-            PermissionTestAdapter(),
+            "committee.create",
+            PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
-        self.action.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
+        self.action.user_id = user_id
 
     def test_validation_empty(self) -> None:
         payload: ActionPayload = []
@@ -79,15 +81,16 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
 class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7668157706
         self.datastore_content = {
             get_fqfield("organisation/1/name"): "test_organisation_name",
             get_fqfield("organisation/1/committee_ids"): [5914213969],
         }
         self.action = CommitteeCreate(
-            PermissionTestAdapter(),
+            "committee.create",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
-        self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
 
     def test_perform_empty(self) -> None:
         payload: ActionPayload = []
@@ -151,6 +154,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         application = create_test_application(
             user_id=self.user_id,
             view_name="ActionsView",
+            superuser=self.user_id,
             datastore_content=self.datastore_content,
             expected_write_data=expected_write_data,
         )
@@ -167,6 +171,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         application = create_test_application(
             user_id=self.user_id,
             view_name="ActionsView",
+            superuser=self.user_id,
             datastore_content=self.datastore_content,
             expected_write_data=expected_write_data,
         )
@@ -212,6 +217,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         application = create_test_application(
             user_id=self.user_id,
             view_name="ActionsView",
+            superuser=self.user_id,
             datastore_content=self.datastore_content,
             expected_write_data=expected_write_data,
         )
@@ -235,6 +241,7 @@ class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTeste
         application = create_test_application(
             user_id=self.user_id_no_permission,
             view_name="ActionsView",
+            superuser=0,
             datastore_content=self.datastore_content,
             expected_write_data=expected_write_data,
         )

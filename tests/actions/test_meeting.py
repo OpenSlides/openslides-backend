@@ -34,13 +34,13 @@ class BaseMeetingCreateActionTester(TestCase):
 class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7121641734
         self.action = MeetingCreate(
-            PermissionTestAdapter(),
+            "meeting.create",
+            PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
-        self.action.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
-        )
+        self.action.user_id = user_id
 
     def test_validation_empty(self) -> None:
         payload: ActionPayload = []
@@ -82,12 +82,11 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
 class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7121641734
         self.action = MeetingCreate(
-            PermissionTestAdapter(),
+            "meeting.create",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
-        )
-        self.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
         )
 
     def test_perform_empty(self) -> None:
@@ -144,9 +143,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
 class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
-        )
+        self.user_id = 7121641734
 
     def test_wsgi_request_empty(self) -> None:
         expected_write_data = ""
@@ -154,6 +151,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -172,6 +170,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -222,6 +221,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -244,6 +244,7 @@ class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
             create_test_application(
                 user_id=self.user_id_no_permission,
                 view_name="ActionsView",
+                superuser=0,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -271,13 +272,13 @@ class BaseMeetingUpdateActionTester(TestCase):
 class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7121641734
         self.action = MeetingUpdate(
-            PermissionTestAdapter(),
+            "meeting.update",
+            PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
-        self.action.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
-        )
+        self.action.user_id = user_id
 
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
@@ -292,12 +293,11 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
 class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7121641734
         self.action = MeetingUpdate(
-            PermissionTestAdapter(),
+            "meeting.update",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
-        )
-        self.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
         )
 
     def test_perform_correct_1(self) -> None:
@@ -324,9 +324,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
 class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
-        )
+        self.user_id = 7121641734
 
     def test_wsgi_request_correct_1(self) -> None:
         expected_write_data = json.dumps(
@@ -340,13 +338,15 @@ class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
                 ],
                 "information": {"meeting/7816466305": ["Object updated"]},
                 "user_id": self.user_id,
-                "locked_fields": {"meeting/7816466305": 1},
+                # "locked_fields": {"meeting/7816466305": 1},
+                "locked_fields": {},
             }
         )
         client = Client(
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -369,6 +369,7 @@ class MeetingUpdateActionWSGITesterNoPermission(BaseMeetingUpdateActionTester):
             create_test_application(
                 user_id=self.user_id_no_permission,
                 view_name="ActionsView",
+                superuser=0,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -403,13 +404,13 @@ class BaseMeetingDeleteActionTester(TestCase):
 class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7121641734
         self.action = MeetingDelete(
-            PermissionTestAdapter(),
+            "meeting.delete",
+            PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
-        self.action.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
-        )
+        self.action.user_id = user_id
 
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
@@ -453,12 +454,11 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
 class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7121641734
         self.action = MeetingDelete(
-            PermissionTestAdapter(),
+            "meeting.delete",
+            PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
-        )
-        self.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
         )
 
     def test_perform_correct_1(self) -> None:
@@ -508,9 +508,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
 class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            7121641734  # This user has perm MEETING_CAN_MANAGE for some committees.
-        )
+        self.user_id = 7121641734
 
     def test_wsgi_request_correct_1(self) -> None:
         expected_write_data = json.dumps(
@@ -536,6 +534,7 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -552,6 +551,7 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
             create_test_application(
                 user_id=self.user_id,
                 view_name="ActionsView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -579,6 +579,7 @@ class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
             create_test_application(
                 user_id=self.user_id_no_permission,
                 view_name="ActionsView",
+                superuser=0,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),
@@ -595,6 +596,7 @@ class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
             create_test_application(
                 user_id=self.user_id_no_permission,
                 view_name="ActionsView",
+                superuser=0,
                 datastore_content=self.datastore_content,
                 expected_write_data=expected_write_data,
             ),

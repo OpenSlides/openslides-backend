@@ -36,12 +36,13 @@ class BaseMotionUpdateActionTester(TestCase):
 class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7826715669
         self.action = MotionUpdate(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+            "motion.update",
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
-        self.action.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.action.user_id = user_id
 
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
@@ -69,11 +70,11 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
 class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7826715669
         self.action = MotionUpdate(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
-        )
-        self.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+            "motion.update",
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -113,11 +114,9 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
 class MotionUpdateActionWSGITester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.user_id = 7826715669
         self.application = create_test_application(
-            user_id=self.user_id, view_name="ActionsView"
+            user_id=self.user_id, view_name="ActionsView", superuser=self.user_id
         )
 
     def test_wsgi_request_correct_1(self) -> None:
@@ -143,12 +142,13 @@ class BaseMotionUpdateMetadataActionTester(TestCase):
 class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7826715669
         self.action = MotionUpdateMetadata(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+            "motion.update_metadate",
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
-        self.action.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.action.user_id = user_id
 
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
@@ -202,17 +202,16 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
 class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7826715669
         self.action = MotionUpdateMetadata(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+            "motion.update_metadata",
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
-        self.user_id_1 = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
-        self.user_id_2 = 3265963568  # This user has perm MOTION_CAN_MANAGE_METADATA for some meetings.
 
-    def test_perform_correct_1_1(self) -> None:
+    def test_perform_correct_1(self) -> None:
         write_request_elements = self.action.perform(
-            self.valid_payload_1, user_id=self.user_id_1
+            self.valid_payload_1, user_id=self.user_id
         )
         expected = [
             {
@@ -252,65 +251,16 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                         "Object attachment to motion reset"
                     ],
                 },
-                "user_id": self.user_id_1,
+                "user_id": self.user_id,
             },
         ]
         self.assertEqual(
             list(write_request_elements), expected,
         )
 
-    def test_perform_correct_1_2(self) -> None:
+    def test_perform_correct_2(self) -> None:
         write_request_elements = self.action.perform(
-            self.valid_payload_1, user_id=self.user_id_2
-        )
-        expected = [
-            {
-                "events": [
-                    {
-                        "type": "update",
-                        "fqid": get_fqid("motion/2995885358"),
-                        "fields": {
-                            "last_modified": round(time.time()),
-                            "category_id": None,
-                            "block_id": 4740630442,
-                        },
-                    },
-                    {
-                        "type": "update",
-                        "fqid": get_fqid("motion_block/4116433002"),
-                        "fields": {"motion_ids": []},
-                    },
-                    {
-                        "type": "update",
-                        "fqid": get_fqid("motion_block/4740630442"),
-                        "fields": {"motion_ids": [2995885358]},
-                    },
-                    {
-                        "type": "update",
-                        "fqid": get_fqid("motion_category/8734727380"),
-                        "fields": {"motion_ids": []},
-                    },
-                ],
-                "information": {
-                    get_fqid("motion/2995885358"): ["Object updated"],
-                    get_fqid("motion_block/4116433002"): [
-                        "Object attachment to motion reset"
-                    ],
-                    get_fqid("motion_block/4740630442"): ["Object attached to motion"],
-                    get_fqid("motion_category/8734727380"): [
-                        "Object attachment to motion reset"
-                    ],
-                },
-                "user_id": self.user_id_2,
-            },
-        ]
-        self.assertEqual(
-            list(write_request_elements), expected,
-        )
-
-    def test_perform_correct_2_1(self) -> None:
-        write_request_elements = self.action.perform(
-            self.valid_payload_2, user_id=self.user_id_1
+            self.valid_payload_2, user_id=self.user_id
         )
         expected = [
             {
@@ -333,39 +283,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
                     get_fqid("motion/2995885358"): ["Object updated"],
                     get_fqid("user/7268025091"): ["Object attached to motion"],
                 },
-                "user_id": self.user_id_1,
-            }
-        ]
-        self.assertEqual(
-            list(write_request_elements), expected,
-        )
-
-    def test_perform_correct_2_2(self) -> None:
-        write_request_elements = self.action.perform(
-            self.valid_payload_2, user_id=self.user_id_2
-        )
-        expected = [
-            {
-                "events": [
-                    {
-                        "type": "update",
-                        "fqid": get_fqid("motion/2995885358"),
-                        "fields": {
-                            "last_modified": round(time.time()),
-                            "supporter_ids": [7268025091],
-                        },
-                    },
-                    {
-                        "type": "update",
-                        "fqid": get_fqid("user/7268025091"),
-                        "fields": {"supported_motion_5562405520_ids": [2995885358]},
-                    },
-                ],
-                "information": {
-                    get_fqid("motion/2995885358"): ["Object updated"],
-                    get_fqid("user/7268025091"): ["Object attached to motion"],
-                },
-                "user_id": self.user_id_2,
+                "user_id": self.user_id,
             }
         ]
         self.assertEqual(
@@ -377,7 +295,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
             self.action.perform(self.valid_payload_1, user_id=4796568680)
         self.assertEqual(
             context_manager.exception.message,
-            "User must have motion.can_manage or motion.can_manage_metadata permission for meeting_id 5562405520.",
+            "You are not allowed to perform action motion.update_metadata.",
         )
 
 
@@ -393,12 +311,13 @@ class BaseMotionDeleteActionTester(TestCase):
 class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7826715669
         self.action = MotionDelete(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+            "motion.delete",
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
-        self.action.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.action.user_id = user_id
 
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
@@ -460,11 +379,11 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
 class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7826715669
         self.action = MotionDelete(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
-        )
-        self.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+            "motion.delete",
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -536,11 +455,9 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
 class MotionDeleteActionWSGITester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.user_id = 7826715669
         self.application = create_test_application(
-            user_id=self.user_id, view_name="ActionsView"
+            user_id=self.user_id, view_name="ActionsView", superuser=self.user_id
         )
 
     def test_wsgi_request_correct_1(self) -> None:
@@ -597,12 +514,13 @@ class BaseMotionSortActionTester(TestCase):
 class MotionSortActionUnitTester(BaseMotionSortActionTester):
     def setUp(self) -> None:
         super().setUp()
+        user_id = 7826715669
         self.action = MotionSort(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
+            "motion.sort",
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
-        self.action.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.action.user_id = user_id
 
     def test_validation_correct_1(self) -> None:
         self.action.validate(self.valid_payload_1)
@@ -683,11 +601,11 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
 class MotionSortActionPerformTester(BaseMotionSortActionTester):
     def setUp(self) -> None:
         super().setUp()
+        self.user_id = 7826715669
         self.action = MotionSort(
-            PermissionTestAdapter(), DatabaseTestAdapter(old_style_testing=True)
-        )
-        self.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
+            "motion.sort",
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -864,11 +782,9 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
 class MotionSortActionWSGITester(BaseMotionSortActionTester):
     def setUp(self) -> None:
         super().setUp()
-        self.user_id = (
-            7826715669  # This user has perm MOTION_CAN_MANAGE for some meetings.
-        )
+        self.user_id = 7826715669
         self.application = create_test_application(
-            user_id=self.user_id, view_name="ActionsView"
+            user_id=self.user_id, view_name="ActionsView", superuser=self.user_id
         )
 
     def test_wsgi_request_correct_1(self) -> None:

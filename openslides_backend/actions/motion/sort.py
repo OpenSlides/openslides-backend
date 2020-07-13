@@ -4,11 +4,10 @@ import fastjsonschema  # type: ignore
 
 from ...models.base import Model
 from ...models.motion import Motion
-from ...shared.exceptions import ActionException, PermissionDenied
+from ...shared.exceptions import ActionException
 from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedId
-from ...shared.permissions.motion import MOTION_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..base import Action, ActionPayload, BaseAction, DataSet, DummyAction
@@ -186,17 +185,9 @@ class MotionSort(TreeSortMixin, Action):
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         if not isinstance(payload, dict):
             raise TypeError("ActionPayload for this action must be a dictionary.")
-        meeting_id = payload["meeting_id"]
-        if not self.permission.has_perm(
-            self.user_id, f"{meeting_id}/{MOTION_CAN_MANAGE}"
-        ):
-            raise PermissionDenied(
-                f"User must have {MOTION_CAN_MANAGE} permission for "
-                f"meeting_id {meeting_id}."
-            )
         return self.sort_tree(
             nodes=payload["nodes"],
-            meeting_id=meeting_id,
+            meeting_id=payload["meeting_id"],
             weight_key="sort_weight",
             parent_id_key="sort_parent_id",
             children_ids_key="sort_children_ids",

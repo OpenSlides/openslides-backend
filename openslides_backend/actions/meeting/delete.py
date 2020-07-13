@@ -1,7 +1,6 @@
 import fastjsonschema  # type: ignore
 
 from ...models.meeting import Meeting
-from ...shared.permissions.meeting import MEETING_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import DeleteAction
@@ -32,5 +31,3 @@ class MeetingDelete(DeleteAction):
 
     model = Meeting()
     schema = delete_meeting_schema
-    permission_reference = "committee_id"
-    permissions = [MEETING_CAN_MANAGE]

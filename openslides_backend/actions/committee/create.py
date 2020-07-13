@@ -1,7 +1,6 @@
 import fastjsonschema  # type: ignore
 
 from ...models.committee import Committee
-from ...shared.permissions.committee import COMMITTEE_CAN_MANAGE
 from ...shared.schema import schema_version
 from ..actions import register_action
 from ..generics import CreateAction
@@ -32,5 +31,3 @@ class CommitteeCreate(CreateAction):
 
     model = Committee()
     schema = create_committee_schema
-    permission_reference = "organisation_id"
-    permissions = [COMMITTEE_CAN_MANAGE]

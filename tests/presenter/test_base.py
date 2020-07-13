@@ -75,6 +75,7 @@ class PresenterBaseWSGITester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="PresenterView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=self.expected_write_data,
             ),
@@ -92,6 +93,7 @@ class PresenterBaseWSGITester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="PresenterView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=self.expected_write_data,
             ),
@@ -108,6 +110,7 @@ class PresenterBaseWSGITester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="PresenterView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=self.expected_write_data,
             ),
@@ -132,6 +135,7 @@ class PresenterBaseWSGITester(TestCase):
             create_test_application(
                 user_id=self.user_id,
                 view_name="PresenterView",
+                superuser=self.user_id,
                 datastore_content=self.datastore_content,
                 expected_write_data=self.expected_write_data,
             ),
