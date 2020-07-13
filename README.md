@@ -16,7 +16,7 @@ To start it run
 
     $ OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
 
-or
+or just
 
     $ make run-debug
 
@@ -118,3 +118,5 @@ You may run curl against this service like this:
 
     $ curl localhost:9003/health
     $ curl localhost:9003 -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]'
+
+The health path returns a list of all possible action and its development status.
