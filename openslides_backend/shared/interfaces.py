@@ -61,7 +61,7 @@ class Headers(Protocol):  # pragma: no cover
         ...
 
 
-# TODO Use proper type here: Body is ActionsPayload or PresenterPayload
+# TODO Use proper type here: Body is ActionPayload or PresenterPayload
 RequestBody = Any
 ResponseBody = Optional[List[Any]]
 

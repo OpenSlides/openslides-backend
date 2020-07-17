@@ -14,7 +14,7 @@ from .shared.interfaces import LoggingModule, WSGIApplication
 # something like "import custom_logging as logging".
 
 DEFAULT_ADDRESSES = {
-    "ActionsView": "0.0.0.0:9002",
+    "ActionView": "0.0.0.0:9002",
     "PresenterView": "0.0.0.0:9003",
 }
 
@@ -23,7 +23,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
     Standalone application class for Gunicorn. It prepares Gunicorn for using
     OpenSlidesBackendWSGIApplication via OpenSlidesBackendWSGIContainer either
-    with actions component or with presenter component.
+    with action component or with presenter component.
     """
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
@@ -32,9 +32,9 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
         self.view_name = view_name
-        if self.view_name not in ("ActionsView", "PresenterView"):
+        if self.view_name not in ("ActionView", "PresenterView"):
             raise ValueError(
-                f"View name has to be ActionsView or PresenterView, not {self.view_name}."
+                f"View name has to be ActionView or PresenterView, not {self.view_name}."
             )
         logger.debug(f"Create gunicorn application for {self.view_name}.")
         super().__init__(*args, **kwargs)
@@ -62,8 +62,8 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         return create_wsgi_application(logging_module, self.view_name)
 
 
-def start_actions_server() -> None:  # pragma: no cover
-    OpenSlidesBackendGunicornApplication(view_name="ActionsView").run()
+def start_action_server() -> None:  # pragma: no cover
+    OpenSlidesBackendGunicornApplication(view_name="ActionView").run()
 
 
 def start_presenter_server() -> None:  # pragma: no cover
@@ -83,7 +83,7 @@ def start_them_all() -> None:  # pragma: no cover
         f"Start all components in child processes. Parent process id is {os.getpid()}."
     )
     processes = {
-        "actions": multiprocessing.Process(target=start_actions_server),
+        "action": multiprocessing.Process(target=start_action_server),
         "presenter": multiprocessing.Process(target=start_presenter_server),
         # "addendum": multiprocessing.Process(target=start_addendum_server),
     }
@@ -123,8 +123,8 @@ def start_them_all() -> None:  # pragma: no cover
 
 def main() -> None:  # pragma: no cover
     component = os.environ.get("OPENSLIDES_BACKEND_COMPONENT", "all")
-    if component == "actions":
-        start_actions_server()
+    if component == "action":
+        start_action_server()
     elif component == "presenter":
         start_presenter_server()
     elif component == "addendum":

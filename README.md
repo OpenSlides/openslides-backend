@@ -22,14 +22,14 @@ or just
 
 ## Listening ports
 
-The actions component listens to port 9002. The presenter component listens to port 9003. Both listen to all devices (0.0.0.0).
+The action component listens to port 9002. The presenter component listens to port 9003. Both listen to all devices (0.0.0.0).
 
 
 ## Environment variables
 
 * OPENSLIDES_BACKEND_COMPONENT
 
-  Use one of the following values to start only one component of this service: `actions` or `presenter` or `addendum`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
+  Use one of the following values to start only one component of this service: `action` or `presenter` or `addendum`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
 
 * OPENSLIDES_BACKEND_DEBUG
 

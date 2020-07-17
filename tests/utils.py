@@ -5,7 +5,7 @@ from dependency_injector import containers, providers  # type: ignore
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
-from openslides_backend.http.views import ActionsView, PresenterView
+from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.services.datastore.adapter import Adapter
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.shared.patterns import (
@@ -56,8 +56,8 @@ def create_test_application(
     """
     # Get view class
     view: Type[View]
-    if view_name == "ActionsView":
-        view = ActionsView
+    if view_name == "ActionView":
+        view = ActionView
     elif view_name == "PresenterView":
         view = PresenterView
     else:
@@ -99,8 +99,8 @@ def create_test_application_old(
     """
     # Get view class
     view: Type[View]
-    if view_name == "ActionsView":
-        view = ActionsView
+    if view_name == "ActionView":
+        view = ActionView
     elif view_name == "PresenterView":
         view = PresenterView
     else:

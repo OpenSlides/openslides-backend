@@ -2,7 +2,7 @@ FROM python:3.8.1-alpine3.11
 
 ARG REPOSITORY_URL="https://github.com/OpenSlides/openslides-backend"
 ARG GIT_CHECKOUT=master
-ARG OPENSLIDES_BACKEND_ACTIONS_PORT=9002
+ARG OPENSLIDES_BACKEND_ACTION_PORT=9002
 ARG OPENSLIDES_BACKEND_PRESENTER_PORT=9003
 
 ENV OPENSLIDES_BACKEND_COMPONENT=all
@@ -18,7 +18,7 @@ RUN git clone --no-checkout -- $REPOSITORY_URL . \
     && pip install --no-cache-dir --requirement requirements_production.txt \
     && chown -R appuser:appgroup /srv/code
 
-EXPOSE ${OPENSLIDES_BACKEND_ACTIONS_PORT}
+EXPOSE ${OPENSLIDES_BACKEND_ACTION_PORT}
 EXPOSE ${OPENSLIDES_BACKEND_PRESENTER_PORT}
 
 CMD [ "python", "-m", "openslides_backend" ]

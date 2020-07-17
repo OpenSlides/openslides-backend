@@ -166,7 +166,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
         # This this does not touch the fake auth server.
         with FakeServer(self.host, self.port, 6052759165):
             client = Client(
-                create_wsgi_application(logging=MagicMock(), view_name="ActionsView"),
+                create_wsgi_application(logging=MagicMock(), view_name="ActionView"),
                 ResponseWrapper,
             )
             response = client.post("", content_type="application/json")
@@ -176,7 +176,7 @@ class AuthenticationHTTPAdapterTester(TestCase):
     def test_wsgi_request_error(self) -> None:
         with FakeServer(self.host, self.port, 7824698278, "500"):
             client = Client(
-                create_wsgi_application(logging=MagicMock(), view_name="ActionsView"),
+                create_wsgi_application(logging=MagicMock(), view_name="ActionView"),
                 ResponseWrapper,
             )
             response = client.post("", json=[])
