@@ -1,0 +1,8 @@
+**/.venv
+**/.virtualenv
+
+**/.mypy_cache/
+**/__pycache__
+**/*.pyc
+**/.pytest_cache/
+**/htmlcov/

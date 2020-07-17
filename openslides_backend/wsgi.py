@@ -4,7 +4,7 @@ from dependency_injector import containers, providers  # type: ignore
 
 from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication
-from .http.views import ActionsView, PresenterView
+from .http.views import ActionView, PresenterView
 from .services.authentication import AuthenticationHTTPAdapter
 from .services.datastore.adapter import Adapter
 from .services.datastore.http_engine import HTTPEngine
@@ -59,8 +59,8 @@ def create_wsgi_application(logging: LoggingModule, view_name: str) -> WSGIAppli
 
     # Get view class
     view: Type[View]
-    if view_name == "ActionsView":
-        view = ActionsView
+    if view_name == "ActionView":
+        view = ActionView
     elif view_name == "PresenterView":
         view = PresenterView
     else:

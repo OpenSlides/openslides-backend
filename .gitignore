@@ -8,6 +8,7 @@ __pycache__/
 
 # Python virtual environment target directory
 .virtualenv/
+.venv/
 
 # Mypy (static type checker) cache
 .mypy_cache/

@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
-from ..actions import Actions
-from ..actions.actions import ActionsHandler
-from ..actions.actions import Payload as ActionsPayload
+from ..action import Action
+from ..action.action import ActionHandler
+from ..action.action import Payload as ActionPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
@@ -46,10 +46,10 @@ class BaseView:
         return user_id
 
 
-class ActionsView(BaseView):
+class ActionView(BaseView):
     """
-    The ActionsView receives a bundle of actions via HTTP and handles it to the
-    ActionsHandler after retrieving request user id.
+    The ActionView receives a bundle of actions via HTTP and handles it to the
+    ActionHandler after retrieving request user id.
     """
 
     method = "POST"
@@ -58,16 +58,16 @@ class ActionsView(BaseView):
         """
         Dispatches request to the viewpoint.
         """
-        self.logger.debug("Start dispatching actions request.")
+        self.logger.debug("Start dispatching action request.")
 
         # Get user id.
         user_id = self.get_user_id_from_headers(headers)
 
         # Setup payload.
-        payload: ActionsPayload = body
+        payload: ActionPayload = body
 
         # Handle request.
-        handler: Actions = ActionsHandler(logging=self.logging, services=self.services)
+        handler: Action = ActionHandler(logging=self.logging, services=self.services)
         try:
             result = handler.handle_request(payload, user_id)
         except ActionException as exception:
@@ -82,7 +82,7 @@ class ActionsView(BaseView):
         """
         Returns some status information. HTTP method is ignored.
         """
-        return {"actions": dict(ActionsHandler.get_actions_dev_status())}
+        return {"actions": dict(ActionHandler.get_actions_dev_status())}
 
 
 class PresenterView(BaseView):

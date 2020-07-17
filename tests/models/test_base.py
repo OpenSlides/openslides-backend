@@ -39,7 +39,7 @@ class FakeModel2(Model):
     )
 
 
-class ActionsBaseTester(TestCase):
+class ActionBaseTester(TestCase):
     """
     Tests methods of base Action class and also some helper functions.
     """
