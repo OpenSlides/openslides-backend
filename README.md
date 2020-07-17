@@ -39,19 +39,19 @@ The actions component listens to port 9002. The presenter component listens to p
 
   Use a truthy value to activate some more tests when running pytest. Default: 0
 
-* AUTHENTICATION_PROTOCOL
+* AUTH_PROTOCOL
 
   Protocol of authentication service. Default: http
 
-* AUTHENTICATION_HOST
+* AUTH_HOST
 
   Host of authentication service. Default: localhost
 
-* AUTHENTICATION_PORT
+* AUTH_PORT
 
   Port of authentication service. Default: 9004
 
-* AUTHENTICATION_PATH
+* AUTH_PATH
 
   Path of authentication service. Default is an empty string.
 
