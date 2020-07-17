@@ -8,6 +8,7 @@ from ..shared.handlers import Base as HandlerBase
 from ..shared.interfaces import WriteRequestElement
 from ..shared.schema import schema_version
 from .action_interface import ActionResult, Payload
+from .action_set import ActionSet
 from .base import Action, merge_write_request_elements
 
 
@@ -48,6 +49,25 @@ def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
         if actions_map.get(name):
             raise RuntimeError(f"Action {name} is registered twice.")
         actions_map[name] = clazz
+        return clazz
+
+    return wrapper
+
+
+def register_action_set(
+    name_prefix: str,
+) -> Callable[[Type[ActionSet]], Type[ActionSet]]:
+    """
+    Decorator to be used for action set classes. Registers the class so that its
+    actions can be found by the handler.
+    """
+
+    def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
+        for route, action in clazz.get_actions():
+            name = ".".join((name_prefix, route))
+            if actions_map.get(name):
+                raise RuntimeError(f"Action {name} is registered twice.")
+            actions_map[name] = action
         return clazz
 
     return wrapper
