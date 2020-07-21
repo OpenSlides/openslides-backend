@@ -1,31 +1,11 @@
 import time
 
-import fastjsonschema  # type: ignore
-
 from ...models.motion import Motion
 from ...shared.schema import schema_version
 from ..action import register_action
 from ..base import ActionPayload, DataSet, DummyAction
+from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
-
-update_motion_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Update motions schema",
-        "description": "An array of motions to be updated.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": Motion().get_properties(
-                "id", "title", "statute_paragraph_id",
-            ),  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
-            "required": ["id"],
-            "additionalProperties": False,
-        },
-        "minItems": 1,
-        "uniqueItems": True,
-    }
-)
 
 
 @register_action("motion.update")
@@ -35,7 +15,9 @@ class MotionUpdate(UpdateAction):
     """
 
     model = Motion()
-    schema = update_motion_schema
+    schema = DefaultSchema(Motion()).get_update_schema(
+        properties=["title", "statute_paragraph_id"]
+    )  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         if not isinstance(payload, list):
@@ -45,33 +27,31 @@ class MotionUpdate(UpdateAction):
         return super().prepare_dataset(payload)
 
 
-update_motion_metadata_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Update motions metadata schema",
-        "description": "An array of motions to be updated.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": Motion().get_properties(
-                "id",
-                "category_id",
-                "block_id",
-                "origin_id",
-                "state_id",
-                "state_extension",
-                "recommendation_id",
-                "recommendation_extension",
-                "supporter_ids",
-                "tag_ids",
-            ),  # TODO submitters
-            "required": ["id"],
-            "additionalProperties": False,
-        },
-        "minItems": 1,
-        "uniqueItems": True,
-    }
-)
+update_motion_metadata_schema = {
+    "$schema": schema_version,
+    "title": "Update motions metadata schema",
+    "description": "An array of motions to be updated.",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": Motion().get_properties(
+            "id",
+            "category_id",
+            "block_id",
+            "origin_id",
+            "state_id",
+            "state_extension",
+            "recommendation_id",
+            "recommendation_extension",
+            "supporter_ids",
+            "tag_ids",
+        ),  # TODO submitters
+        "required": ["id"],
+        "additionalProperties": False,
+    },
+    "minItems": 1,
+    "uniqueItems": True,
+}
 
 
 @register_action("motion.update_metadata")

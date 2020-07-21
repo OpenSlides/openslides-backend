@@ -1,13 +1,13 @@
-from typing import Callable, Dict, Iterable, List, Tuple, Type
+from typing import Callable, Dict, Iterable, List, Tuple, Type, Union
 
 import fastjsonschema  # type: ignore
-from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import ActionException, EventStoreException
 from ..shared.handlers import Base as HandlerBase
 from ..shared.interfaces import WriteRequestElement
 from ..shared.schema import schema_version
 from .action_interface import ActionResult, Payload
+from .action_set import ActionSet
 from .base import Action, merge_write_request_elements
 
 
@@ -48,6 +48,25 @@ def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
         if actions_map.get(name):
             raise RuntimeError(f"Action {name} is registered twice.")
         actions_map[name] = clazz
+        return clazz
+
+    return wrapper
+
+
+def register_action_set(
+    name_prefix: str,
+) -> Callable[[Type[ActionSet]], Type[ActionSet]]:
+    """
+    Decorator to be used for action set classes. Registers the class so that its
+    actions can be found by the handler.
+    """
+
+    def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
+        for route, action in clazz.get_actions().items():
+            name = ".".join((name_prefix, route))
+            if actions_map.get(name):
+                raise RuntimeError(f"Action {name} is registered twice.")
+            actions_map[name] = action
         return clazz
 
     return wrapper
@@ -101,15 +120,15 @@ class ActionHandler(HandlerBase):
     """
 
     @classmethod
-    def get_actions_dev_status(cls) -> Iterable[Tuple[str, str]]:
+    def get_actions_dev_status(cls) -> Iterable[Tuple[str, Union[str, Dict]]]:
         """
         Returns name and development status of all actions
         """
         for name, action in actions_map.items():
-            status = "Implemented"
             if getattr(action, "is_dummy", False):
-                status = "Not implemented"
-            yield name, status
+                yield name, "Not implemented"
+            else:
+                yield name, action.schema
 
     def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
         """
@@ -121,7 +140,7 @@ class ActionHandler(HandlerBase):
         # Validate payload of request
         try:
             self.validate(payload)
-        except JsonSchemaException as exception:
+        except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
         # TODO: Start a loop here and retry parsing actions and writing to event

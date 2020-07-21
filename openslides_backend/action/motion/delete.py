@@ -1,26 +1,7 @@
-import fastjsonschema  # type: ignore
-
 from ...models.motion import Motion
-from ...shared.schema import schema_version
 from ..action import register_action
+from ..default_schema import DefaultSchema
 from ..generics import DeleteAction
-
-delete_motion_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Delete motions schema",
-        "description": "An array of motions to be deleted.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": Motion().get_properties("id"),
-            "required": ["id"],
-            "additionalProperties": False,
-        },
-        "minItems": 1,
-        "uniqueItems": True,
-    }
-)
 
 
 @register_action("motion.delete")
@@ -32,4 +13,4 @@ class MotionDelete(DeleteAction):
     # TODO: Allow deleting for managers and for submitters (but only in some states)
 
     model = Motion()
-    schema = delete_motion_schema
+    schema = DefaultSchema(Motion()).get_delete_schema()

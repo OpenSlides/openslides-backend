@@ -1,35 +1,31 @@
 from typing import Any, Dict
 
-import fastjsonschema  # type: ignore
-
 from ...models.agenda_item import AgendaItem
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.schema import schema_version
 from ..action import register_action
 from ..generics import CreateAction
 
-create_agenda_item_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "New agenda items schema",
-        "description": "An array of new agenda items.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                **AgendaItem().get_properties("meeting_id", "item_number", "comment"),
-                "content_object_id": {
-                    "type": "string",
-                    "pattern": "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$",
-                },
+create_agenda_item_schema = {
+    "$schema": schema_version,
+    "title": "New agenda items schema",
+    "description": "An array of new agenda items.",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            **AgendaItem().get_properties("meeting_id", "item_number", "comment"),
+            "content_object_id": {
+                "type": "string",
+                "pattern": "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$",
             },
-            "required": ["meeting_id"],
-            "additionalProperties": False,
         },
-        "minItems": 1,
-        "uniqueItems": False,
-    }
-)
+        "required": ["meeting_id"],
+        "additionalProperties": False,
+    },
+    "minItems": 1,
+    "uniqueItems": False,
+}
 
 
 @register_action("agenda_item.create")

@@ -12,6 +12,9 @@ class CreateAction(Action):
     """
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
+        return self.create_action_prepare_dataset(payload)
+
+    def create_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
@@ -62,6 +65,11 @@ class CreateAction(Action):
     def create_instance_write_request_element(
         self, element: Any
     ) -> WriteRequestElement:
+        return self.create_action_create_instance_write_request_element(element)
+
+    def create_action_create_instance_write_request_element(
+        self, element: Any
+    ) -> WriteRequestElement:
         """
         Creates a write request element for one instance of the current model.
 
@@ -82,6 +90,9 @@ class UpdateAction(Action):
     """
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
+        return self.update_action_prepare_dataset(payload)
+
+    def update_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
@@ -96,6 +107,11 @@ class UpdateAction(Action):
 
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
+
+            if not isinstance(instance.get("id"), int):
+                raise TypeError(
+                    f"Instance {instance} of payload must contain integer id."
+                )
 
             # Collect relation fields and also check structured_relation. Collect
             # also reverse relation fields.
@@ -129,6 +145,11 @@ class UpdateAction(Action):
     def create_instance_write_request_element(
         self, element: Any
     ) -> WriteRequestElement:
+        return self.update_action_create_instance_write_request_element(element)
+
+    def update_action_create_instance_write_request_element(
+        self, element: Any
+    ) -> WriteRequestElement:
         """
         Creates a write request element for one instance of the current model.
 
@@ -150,6 +171,9 @@ class DeleteAction(Action):
     """
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
+        return self.delete_action_prepare_dataset(payload)
+
+    def delete_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
 
@@ -193,6 +217,11 @@ class DeleteAction(Action):
         return {"data": data}
 
     def create_instance_write_request_element(
+        self, element: Any
+    ) -> WriteRequestElement:
+        return self.delete_action_create_instance_write_request_element(element)
+
+    def delete_action_create_instance_write_request_element(
         self, element: Any
     ) -> WriteRequestElement:
         """

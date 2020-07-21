@@ -1,28 +1,7 @@
-import fastjsonschema  # type: ignore
-
 from ...models.topic import Topic
-from ...shared.schema import schema_version
 from ..action import register_action
+from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
-
-update_topic_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Update topics schema",
-        "description": "An array of topics to be updated.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": Topic().get_properties(
-                "id", "title", "text", "attachment_ids",
-            ),
-            "required": ["id"],
-            "additionalProperties": False,
-        },
-        "minItems": 1,
-        "uniqueItems": True,
-    }
-)
 
 
 @register_action("topic.update")
@@ -32,4 +11,6 @@ class TopicUpdate(UpdateAction):
     """
 
     model = Topic()
-    schema = update_topic_schema
+    schema = DefaultSchema(Topic()).get_update_schema(
+        properties=["title", "text", "attachment_ids"]
+    )
