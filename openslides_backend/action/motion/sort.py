@@ -36,31 +36,29 @@ sort_node_schema = {
 
 validate_sort_node = fastjsonschema.compile(sort_node_schema)
 
-sort_motion_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Sort motions schema",
-        "description": "Meeting id and an array of motions to be sorted.",
-        "type": "object",
-        "properties": {
-            "meeting_id": Motion().get_schema("meeting_id"),
-            "nodes": {
-                "description": (
-                    "An array of motions to be sorted. The array should contain all "
-                    "root motions of a meeting. Each node is a dictionary with an id "
-                    "and optional children. In the end all motions of a meeting should "
-                    "appear."
-                ),
-                "type": "array",
-                "items": sort_node_schema,
-                "minItems": 1,
-                "uniqueItems": True,
-            },
+sort_motion_schema = {
+    "$schema": schema_version,
+    "title": "Sort motions schema",
+    "description": "Meeting id and an array of motions to be sorted.",
+    "type": "object",
+    "properties": {
+        "meeting_id": Motion().get_schema("meeting_id"),
+        "nodes": {
+            "description": (
+                "An array of motions to be sorted. The array should contain all "
+                "root motions of a meeting. Each node is a dictionary with an id "
+                "and optional children. In the end all motions of a meeting should "
+                "appear."
+            ),
+            "type": "array",
+            "items": sort_node_schema,
+            "minItems": 1,
+            "uniqueItems": True,
         },
-        "required": ["meeting_id", "nodes"],
-        "additionalProperties": False,
-    }
-)
+    },
+    "required": ["meeting_id", "nodes"],
+    "additionalProperties": False,
+}
 
 
 # TODO: Move this mixin to a generic place.

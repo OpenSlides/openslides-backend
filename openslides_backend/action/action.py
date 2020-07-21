@@ -1,7 +1,6 @@
-from typing import Callable, Dict, Iterable, List, Tuple, Type
+from typing import Callable, Dict, Iterable, List, Tuple, Type, Union
 
 import fastjsonschema  # type: ignore
-from fastjsonschema import JsonSchemaException  # type: ignore
 
 from ..shared.exceptions import ActionException, EventStoreException
 from ..shared.handlers import Base as HandlerBase
@@ -63,7 +62,7 @@ def register_action_set(
     """
 
     def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
-        for route, action in clazz.get_actions():
+        for route, action in clazz.get_actions().items():
             name = ".".join((name_prefix, route))
             if actions_map.get(name):
                 raise RuntimeError(f"Action {name} is registered twice.")
@@ -121,15 +120,15 @@ class ActionHandler(HandlerBase):
     """
 
     @classmethod
-    def get_actions_dev_status(cls) -> Iterable[Tuple[str, str]]:
+    def get_actions_dev_status(cls) -> Iterable[Tuple[str, Union[str, Dict]]]:
         """
         Returns name and development status of all actions
         """
         for name, action in actions_map.items():
-            status = "Implemented"
             if getattr(action, "is_dummy", False):
-                status = "Not implemented"
-            yield name, status
+                yield name, "Not implemented"
+            else:
+                yield name, action.schema
 
     def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
         """
@@ -141,7 +140,7 @@ class ActionHandler(HandlerBase):
         # Validate payload of request
         try:
             self.validate(payload)
-        except JsonSchemaException as exception:
+        except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
         # TODO: Start a loop here and retry parsing actions and writing to event

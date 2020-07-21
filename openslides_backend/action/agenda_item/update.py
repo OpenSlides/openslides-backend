@@ -1,35 +1,31 @@
 from typing import Any, Dict
 
-import fastjsonschema  # type: ignore
-
 from ...models.agenda_item import AgendaItem
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.schema import schema_version
 from ..action import register_action
 from ..generics import UpdateAction
 
-update_agenda_item_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Update agenda item schema",
-        "description": "An array of agenda items to be updated.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                **AgendaItem().get_properties("id", "item_number", "comment"),
-                "content_object_id": {
-                    "type": "string",
-                    "pattern": "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$",
-                },
+update_agenda_item_schema = {
+    "$schema": schema_version,
+    "title": "Update agenda item schema",
+    "description": "An array of agenda items to be updated.",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            **AgendaItem().get_properties("id", "item_number", "comment"),
+            "content_object_id": {
+                "type": "string",
+                "pattern": "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$",
             },
-            "required": ["id"],
-            "additionalProperties": False,
         },
-        "minItems": 1,
-        "uniqueItems": True,
-    }
-)
+        "required": ["id"],
+        "additionalProperties": False,
+    },
+    "minItems": 1,
+    "uniqueItems": True,
+}
 
 
 @register_action("agenda_item.update")

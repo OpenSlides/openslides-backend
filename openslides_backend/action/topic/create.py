@@ -1,28 +1,7 @@
-import fastjsonschema  # type: ignore
-
 from ...models.topic import Topic
-from ...shared.schema import schema_version
 from ..action import register_action
+from ..default_schema import DefaultSchema
 from ..generics import CreateAction
-
-create_topic_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "New topics schema",
-        "description": "An array of new topics.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": Topic().get_properties(
-                "meeting_id", "title", "text", "attachment_ids"
-            ),
-            "required": ["meeting_id", "title"],
-            "additionalProperties": False,
-        },
-        "minItems": 1,
-        "uniqueItems": False,
-    }
-)
 
 
 @register_action("topic.create")
@@ -32,6 +11,9 @@ class TopicCreate(CreateAction):
     """
 
     model = Topic()
-    schema = create_topic_schema
+    schema = DefaultSchema(Topic()).get_create_schema(
+        properties=["meeting_id", "title", "text", "attachment_ids"],
+        required_properties=["meeting_id", "title"],
+    )
 
     # TODO: Automaticly add agenda item.

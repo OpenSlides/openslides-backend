@@ -1,26 +1,7 @@
-import fastjsonschema  # type: ignore
-
 from ...models.topic import Topic
-from ...shared.schema import schema_version
 from ..action import register_action
+from ..default_schema import DefaultSchema
 from ..generics import DeleteAction
-
-delete_topic_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Delete topics schema",
-        "description": "An array of topics to be deleted.",
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": Topic().get_properties("id"),
-            "required": ["id"],
-            "additionalProperties": False,
-        },
-        "minItems": 1,
-        "uniqueItems": True,
-    }
-)
 
 
 @register_action("topic.delete")
@@ -32,4 +13,4 @@ class TopicDelete(DeleteAction):
     # TODO: Add protection against deletion without deleting agenda item.
 
     model = Topic()
-    schema = delete_topic_schema
+    schema = DefaultSchema(Topic()).get_delete_schema()

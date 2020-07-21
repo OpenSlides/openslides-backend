@@ -1,4 +1,5 @@
 import inspect
+from typing import Dict
 from unittest import TestCase
 
 import simplejson as json
@@ -11,9 +12,7 @@ from openslides_backend.shared.patterns import Collection
 
 from ..utils import Client, ResponseWrapper, create_test_application, get_fqfield
 
-
-def dummy_schema(schema: str) -> None:
-    pass
+dummy_schema: Dict = {}
 
 
 class DummyModelVcioluoffl(Model):
@@ -30,7 +29,7 @@ class DummyActionSet_phooth3I(ActionSet):
 
 class ActionSetTester(TestCase):
     def test_dummy_action_set_routes(self) -> None:
-        for route, action in DummyActionSet_phooth3I.get_actions():
+        for route, action in DummyActionSet_phooth3I.get_actions().items():
             self.assertIn(
                 action.__name__,
                 (
@@ -44,7 +43,7 @@ class ActionSetTester(TestCase):
             )
 
     def test_dummy_action_set_types(self) -> None:
-        for name, action in DummyActionSet_phooth3I.get_actions():
+        for name, action in DummyActionSet_phooth3I.get_actions().items():
             generic_base = inspect.getmro(action)[1]
             self.assertIn(generic_base, (CreateAction, UpdateAction, DeleteAction))
 

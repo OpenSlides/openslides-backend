@@ -3,9 +3,7 @@ from unittest import TestCase
 import simplejson as json
 
 from openslides_backend.action import ActionPayload
-from openslides_backend.action.meeting.create import MeetingCreate
-from openslides_backend.action.meeting.delete import MeetingDelete
-from openslides_backend.action.meeting.update import MeetingUpdate
+from openslides_backend.action.meeting.create_update_delete import MeetingActionSet
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
 from ..fake_services.database import DatabaseTestAdapter
@@ -35,7 +33,7 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         user_id = 7121641734
-        self.action = MeetingCreate(
+        self.action = MeetingActionSet.get_action("create")(
             "meeting.create",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
@@ -83,7 +81,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7121641734
-        self.action = MeetingCreate(
+        self.action = MeetingActionSet.get_action("create")(
             "meeting.create",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
@@ -273,7 +271,7 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         user_id = 7121641734
-        self.action = MeetingUpdate(
+        self.action = MeetingActionSet.get_action("update")(
             "meeting.update",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
@@ -294,7 +292,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7121641734
-        self.action = MeetingUpdate(
+        self.action = MeetingActionSet.get_action("update")(
             "meeting.update",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
@@ -405,7 +403,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         user_id = 7121641734
-        self.action = MeetingDelete(
+        self.action = MeetingActionSet.get_action("delete")(
             "meeting.delete",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
@@ -455,7 +453,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7121641734
-        self.action = MeetingDelete(
+        self.action = MeetingActionSet.get_action("delete")(
             "meeting.delete",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),

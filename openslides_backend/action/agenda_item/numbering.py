@@ -1,7 +1,6 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Tuple
 
-import fastjsonschema  # type: ignore
 import roman  # type: ignore
 
 from ...models.agenda_item import AgendaItem
@@ -12,23 +11,21 @@ from ...shared.schema import schema_version
 from ..action import register_action
 from ..base import Action, ActionPayload, DataSet
 
-agenda_item_numbering_schema = fastjsonschema.compile(
-    {
-        "$schema": schema_version,
-        "title": "Agenda item numbering schema",
-        "description": "Just the id of the meeting where we should number the agenda in total.",
-        "type": "object",
-        "properties": {
-            "meeting_id": {
-                "description": "The id of the meeting.",
-                "type": "integer",
-                "minimum": 1,
-            },
+agenda_item_numbering_schema = {
+    "$schema": schema_version,
+    "title": "Agenda item numbering schema",
+    "description": "Just the id of the meeting where we should number the agenda in total.",
+    "type": "object",
+    "properties": {
+        "meeting_id": {
+            "description": "The id of the meeting.",
+            "type": "integer",
+            "minimum": 1,
         },
-        "required": ["meeting_id"],
-        "additionalProperties": False,
-    }
-)
+    },
+    "required": ["meeting_id"],
+    "additionalProperties": False,
+}
 
 
 def to_roman(number: int) -> str:

@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-from fastjsonschema import JsonSchemaException  # type: ignore
+import fastjsonschema  # type: ignore
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
@@ -15,6 +15,18 @@ from .relations import Relations, RelationsHandler
 DataSet = TypedDict("DataSet", {"data": Any})
 
 
+class SchemaProvider(type):
+    """
+    Metaclass to provide pre-compiled JSON schemas for faster validation.
+    """
+
+    def __new__(cls, name, bases, attrs):  # type: ignore
+        schema = attrs.get("schema")
+        if schema is not None:
+            attrs["schema_validator"] = fastjsonschema.compile(schema)
+        return super().__new__(cls, name, bases, attrs)
+
+
 class BaseAction:  # pragma: no cover
     """
     Abstract base class for an action.
@@ -25,14 +37,14 @@ class BaseAction:  # pragma: no cover
     user_id: int
 
 
-class Action(BaseAction):
+class Action(BaseAction, metaclass=SchemaProvider):
     """
     Base class for an action.
     """
 
     model: Model
-
-    schema: Callable[[ActionPayload], None]
+    schema: Dict
+    schema_validator: Callable[[ActionPayload], None]
 
     def __init__(self, name: str, permission: Permission, database: Datastore) -> None:
         self.name = name
@@ -56,8 +68,8 @@ class Action(BaseAction):
         Validates action payload according to schema class attribute.
         """
         try:
-            type(self).schema(payload)
-        except JsonSchemaException as exception:
+            type(self).schema_validator(payload)
+        except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
     def check_permissions(self, payload: ActionPayload) -> None:
