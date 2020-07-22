@@ -13,10 +13,10 @@ Environment = TypedDict(
 )
 
 DEFAULTS = {
-    "AUTHENTICATION_PROTOCOL": "http",
-    "AUTHENTICATION_HOST": "localhost",
-    "AUTHENTICATION_PORT": "9004",
-    "AUTHENTICATION_PATH": "",
+    "AUTH_PROTOCOL": "http",
+    "AUTH_HOST": "localhost",
+    "AUTH_PORT": "9004",
+    "AUTH_PATH": "",
     "PERMISSION_PROTOCOL": "http",
     "PERMISSION_HOST": "localhost",
     "PERMISSION_PORT": "9005",
@@ -37,7 +37,7 @@ def get_environment() -> Environment:
     Parses environment variables and sets their defaults if they do not exist.
     """
     return Environment(
-        authentication_url=get_endpoint("AUTHENTICATION"),
+        authentication_url=get_endpoint("AUTH"),
         permission_url=get_endpoint("PERMISSION"),
         datastore_reader_url=get_endpoint("DATASTORE_READER"),
         datastore_writer_url=get_endpoint("DATASTORE_WRITER"),
