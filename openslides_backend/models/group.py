@@ -23,5 +23,8 @@ class Group(Model):
         to=Collection("meeting"),
         related_name="motion_poll_default_group_ids",
     )
+    used_as_assignment_poll_default_id = fields.ForeignKeyField(
+        to=Collection("meeting"), related_name="assignment_poll_default_group_ids"
+    )
 
     # TODO: Add all fields.
