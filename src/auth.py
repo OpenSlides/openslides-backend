@@ -17,8 +17,8 @@ def get_mediafile_id(path, app, cookie):
         raise NotFoundError()
     if response.status_code != requests.codes.ok:
         raise ServerError(
-            f"The server responded with an unexpected code {response.status_code}: {response.content}"
-        )
+            f"The server responded with an unexpected code "
+            f"{response.status_code}: {response.content}")
 
     try:
         id = int(response.json()["id"])
