@@ -24,16 +24,15 @@ def handle_view_error(error):
     return f"Media-Server: {error.message}", error.status_code
 
 
-@app.route(app.config["URL_PREFIX"], defaults={"path": ""})
-@app.route(f"{app.config['URL_PREFIX']}<path:path>")
-def serve(path):
+@app.route("/system/media/get/<int:meeting_id>/<path:path>")
+def serve(meeting_id, path):
     if not path:
         raise NotFoundError()
 
     # get mediafile id
     cookie = request.headers.get("Cookie", "")
-    media_id = get_mediafile_id(path, app, cookie)
-    app.logger.debug(f'Id for "{path}" is {media_id}')
+    media_id = get_mediafile_id(meeting_id, path, app, cookie)
+    app.logger.debug(f'Id for "{path}" and "{meeting_id}" is {media_id}')
 
     # Query file from db
     global database
