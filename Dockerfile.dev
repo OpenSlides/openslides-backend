@@ -5,15 +5,19 @@ RUN apt-get -y update && apt-get -y upgrade && \
     postgresql-client
 
 WORKDIR /app
-#ENV FLASK_APP mediafileserver.py
 
 COPY requirements_production.txt requirements_production.txt
 RUN pip install -r requirements_production.txt
+COPY requirements_development.txt requirements_development.txt
+RUN pip install -r requirements_development.txt
 
-#COPY src/* src/
 COPY entrypoint.sh .
 
 EXPOSE 8000
 # TODO: Make the port configurable via ENV
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "src.mediaserver:app"]
+
+ENV FLASK_APP ./src/mediaserver.py
+ENV FLASK_ENV development
+
+CMD ["flask", "run", "--host", "0.0.0.0", "--port", "8000"]
