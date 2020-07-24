@@ -1,18 +1,19 @@
 #!/bin/bash
 
-export DB_HOST="${DB_HOST:-db}"
-export DB_PORT="${DB_PORT:-5432}"
-export DB_NAME="${DB_NAME:-mediafiledata}"
-export DB_USER="${DB_USER:-openslides}"
-export DB_PASSWORD="${DB_PASSWORD:-openslides}"
-PGPASSWORD="$DB_PASSWORD"
+export MEDIA_DATABASE_HOST="${MEDIA_DATABASE_HOST:-db}"
+export MEDIA_DATABASE_PORT="${MEDIA_DATABASE_PORT:-5432}"
+export MEDIA_DATABASE_NAME="${MEDIA_DATABASE_NAME:-mediafiledata}"
+export MEDIA_DATABASE_USER="${MEDIA_DATABASE_USER:-openslides}"
+export MEDIA_DATABASE_PASSWORD="${MEDIA_DATABASE_PASSWORD:-openslides}"
+PGPASSWORD="$MEDIA_DATABASE_PASSWORD"
 
-until pg_isready -h "$DB_HOST" -p "$DB_PORT"; do
-  echo "Waiting for Postgres server '$DB_HOST' to become available..."
+until pg_isready -h "$MEDIA_DATABASE_HOST" -p "$MEDIA_DATABASE_PORT"; do
+  echo "Waiting for Postgres server '$MEDIA_DATABASE_HOST' to become available..."
   sleep 3
 done
 
 # Create schema in postgresql
-psql -1 -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -f src/schema.sql
+PGPASSWORD="$MEDIA_DATABASE_PASSWORD" psql -1 -h "$MEDIA_DATABASE_HOST" -U "$MEDIA_DATABASE_USER" -d "$MEDIA_DATABASE_NAME" -f src/schema.sql
+#PGPASSWORD="$MEDIA_DATABASE_PASSWORD" psql -1 -h "$MEDIA_DATABASE_HOST" -U "$MEDIA_DATABASE_USER" -d "$MEDIA_DATABASE_NAME" -f src/test_data.sql
 
 exec "$@"

@@ -3,7 +3,7 @@ import os
 
 
 def get_type_for(config_value):
-    if config_value in ["DB_PORT", "BLOCK_SIZE"]:
+    if config_value in ["MEDIA_DATABASE_PORT", "BLOCK_SIZE"]:
         return int
     return str
 
@@ -16,9 +16,10 @@ def get_default_for(config_value):
 
 
 def init_config(app):
-    all_configs = ("URL_PREFIX", "CHECK_REQUEST_URL", "DB_HOST",
-                   "DB_PORT", "DB_NAME", "DB_USER",
-                   "DB_PASSWORD", "BLOCK_SIZE")
+    all_configs = ("URL_PREFIX", "CHECK_REQUEST_URL", "MEDIA_DATABASE_HOST",
+                   "MEDIA_DATABASE_PORT", "MEDIA_DATABASE_NAME",
+                   "MEDIA_DATABASE_USER", "MEDIA_DATABASE_PASSWORD",
+                   "BLOCK_SIZE")
 
     for config in all_configs:
         value = os.environ.get(config, get_default_for(config))

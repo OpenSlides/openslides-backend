@@ -4,6 +4,7 @@ from .exceptions import NotFoundError, ServerError
 
 
 def get_mediafile_id(path, app, cookie):
+    #return 3
     check_request_url = get_check_request_url(path, app)
     app.logger.debug(f"Send check request: {check_request_url}")
 
