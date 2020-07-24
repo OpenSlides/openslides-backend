@@ -1,5 +1,6 @@
 import psycopg2
 
+from .cache import NullCache
 from .exceptions import ServerError
 
 
@@ -8,12 +9,17 @@ class Database:
         self.config = app.config
         self.logger = app.logger
         self.connection = None
+        self.cache = NullCache(self.logger)
 
     def get_mediafile(self, media_id):
+        if self.cache.has_media_id(media_id):
+            return self.cache.get_media(media_id)
         while True:
             connection = self.get_connection()
             try:
-                return self._query(connection, media_id)
+                media = self._query(connection, media_id)
+                self.cache.set_media(media_id, media)
+                return media
             except psycopg2.InterfaceError:
                 if self.connection:
                     self.connection.close()
