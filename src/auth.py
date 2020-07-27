@@ -30,8 +30,6 @@ def get_mediafile_id(meeting_id, path, app, cookie):
 
 def get_check_request_url(meeting_id, path, app):
     check_request_url = app.config["CHECK_REQUEST_URL"]
-    if path.startswith("/"):
-        raise ServerError("The URL_PREFIX must begin and end with a slash.")
     if not check_request_url.endswith("/"):
         raise ServerError("The CHECK_REQUEST_URL must end with an slash.")
     return f"http://{check_request_url}/{meeting_id}/{path}"

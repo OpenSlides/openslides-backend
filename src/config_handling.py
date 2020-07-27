@@ -9,14 +9,12 @@ def get_type_for(config_value):
 
 
 def get_default_for(config_value):
-    if config_value == "URL_PREFIX":
-        return "/media/"
     if config_value == "BLOCK_SIZE":
         return 4096
 
 
 def init_config(app):
-    all_configs = ("URL_PREFIX", "CHECK_REQUEST_URL", "MEDIA_DATABASE_HOST",
+    all_configs = ("CHECK_REQUEST_URL", "MEDIA_DATABASE_HOST",
                    "MEDIA_DATABASE_PORT", "MEDIA_DATABASE_NAME",
                    "MEDIA_DATABASE_USER", "MEDIA_DATABASE_PASSWORD",
                    "BLOCK_SIZE")
@@ -33,15 +31,6 @@ def init_config(app):
             )
             sys.exit(1)
         app.config[config] = value
-
-    if os.path.exists("../config.py"):
-        app.config.from_pyfile("../config.py")
-        app.logger.info("Found config.py. Loaded!")
-    else:
-        app.logger.info(
-            "Didn't find a config.py. "
-            "Use settings from environment variables."
-        )
 
     for config in all_configs:
         if app.config[config] is None:
