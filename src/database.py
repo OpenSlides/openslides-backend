@@ -1,6 +1,6 @@
 import psycopg2
 
-from .cache import NullCache
+from .cache import LRUCache
 from .exceptions import ServerError
 
 
@@ -9,7 +9,7 @@ class Database:
         self.config = app.config
         self.logger = app.logger
         self.connection = None
-        self.cache = NullCache(self.logger)
+        self.cache = LRUCache(self.logger, 20)
 
     def get_mediafile(self, media_id):
         if self.cache.has_media_id(media_id):
