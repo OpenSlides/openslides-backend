@@ -5,8 +5,10 @@ import time
 def test_mediaservice_positiv():
     # wait the service to start
     time.sleep(10)
-    req = requests.get('http://media:8000/system/media/get/3/test')
+    req = requests.get('http://media:8000/system/media/get/2/test')
     assert req.status_code == 200
+    assert req.content == b'a2'
+    assert 'text/plain' in req.headers.get('Content-Type')
 
 
 def test_mediaservice_not_found():
