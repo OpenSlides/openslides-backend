@@ -1,0 +1,8 @@
+FROM python:3.8.1
+
+WORKDIR /app
+
+COPY requirements_tests.txt requirements_tests.txt
+RUN pip install -r requirements_tests.txt
+
+CMD ["pytest"]
