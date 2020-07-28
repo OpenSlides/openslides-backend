@@ -21,6 +21,9 @@ services:
             - 8000:8000
     tests:
         image: openslides-media-tests
+        depends_on:
+            - media
+            - media-postgresql
         volumes:
             - ./tests:/app/tests
 

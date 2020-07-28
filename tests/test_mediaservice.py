@@ -10,12 +10,10 @@ def test_mediaservice_positiv():
 
 
 def test_mediaservice_not_found():
-    time.sleep(10)
     req = requests.get('http://media:8000/system/media/get/4/test')
     assert req.status_code == 500
 
 
 def test_mediaservice_auth_problem():
-    time.sleep(10)
     req = requests.get('http://media:8000/system/media/get/12/test')
     assert req.status_code == 500
