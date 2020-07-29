@@ -20,7 +20,8 @@ app.logger.info("Started Media-Server")
 def handle_view_error(error):
     app.logger.error(
         f"Request to {request.path} resulted in {error.status_code}: "
-        f"{error.message}")
+        f"{error.message}"
+    )
     return f"Media-Server: {error.message}", error.status_code
 
 
@@ -41,7 +42,7 @@ def serve(meeting_id, path):
     # Send data (chunked)
     def chunked(size, source):
         for i in range(0, len(source), size):
-            yield bytes(source[i: i + size])
+            yield bytes(source[i : i + size])
 
     block_size = app.config["BLOCK_SIZE"]
     return Response(chunked(block_size, data), mimetype=mimetype)

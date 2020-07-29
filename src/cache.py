@@ -1,7 +1,7 @@
 from collections import OrderedDict
 
-class NullCache:
 
+class NullCache:
     def __init__(self, logger):
         self.logger = logger
 
@@ -17,7 +17,6 @@ class NullCache:
 
 
 class LRUCache:
-
     def __init__(self, logger, capacity=20):
         self.cache = OrderedDict()
         self.capacity = capacity
@@ -38,4 +37,4 @@ class LRUCache:
         self.cache[media_id] = media
         self.cache.move_to_end(media_id)
         if len(self.cache) > self.capacity:
-            self.cache.popitem(last = False)
+            self.cache.popitem(last=False)

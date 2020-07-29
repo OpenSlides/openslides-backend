@@ -24,22 +24,21 @@ class Database:
                 if self.connection:
                     self.connection.close()
                 self.connection = None
-                self.logger.info(
-                    "Database connection has been reset. Reconnect...")
+                self.logger.info("Database connection has been reset. " "Reconnect...")
             except psycopg2.Error as e:
-                self.logger.error(
-                    f"Error during retrieving a mediafile: {repr(e)}")
+                self.logger.error(f"Error during retrieving a mediafile: " f"{repr(e)}")
                 raise ServerError(f"Database error {e.pgcode}: {e.pgerror}")
 
     def _query(self, connection, media_id):
         with connection.cursor() as cur:
             cur.execute(
-                "SELECT data, mimetype FROM mediafile_data WHERE id=%s",
-                [media_id])
+                "SELECT data, mimetype FROM mediafile_data WHERE id=%s", [media_id]
+            )
             row = cur.fetchone()
             if not row:
                 raise ServerError(
-                    f"The mediafile with id {media_id} could not be found.")
+                    f"The mediafile with id {media_id} could not be found."
+                )
             return (row[0], row[1])
 
     def get_connection(self):
@@ -57,10 +56,8 @@ class Database:
                 password=self.config["MEDIA_DATABASE_PASSWORD"],
             )
         except psycopg2.Error as e:
-            self.logger.error(
-                f"Error during connect to the database: {repr(e)}")
-            raise ServerError(
-                f"Database connect error {e.pgcode}: {e.pgerror}")
+            self.logger.error(f"Error during connect to the database: " f"{repr(e)}")
+            raise ServerError(f"Database connect error {e.pgcode}: " f"{e.pgerror}")
 
     def shutdown(self):
         if self.connection:

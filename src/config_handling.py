@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 
 def get_type_for(config_value):
@@ -14,10 +14,15 @@ def get_default_for(config_value):
 
 
 def init_config(app):
-    all_configs = ("CHECK_REQUEST_URL", "MEDIA_DATABASE_HOST",
-                   "MEDIA_DATABASE_PORT", "MEDIA_DATABASE_NAME",
-                   "MEDIA_DATABASE_USER", "MEDIA_DATABASE_PASSWORD",
-                   "BLOCK_SIZE")
+    all_configs = (
+        "CHECK_REQUEST_URL",
+        "MEDIA_DATABASE_HOST",
+        "MEDIA_DATABASE_PORT",
+        "MEDIA_DATABASE_NAME",
+        "MEDIA_DATABASE_USER",
+        "MEDIA_DATABASE_PASSWORD",
+        "BLOCK_SIZE",
+    )
 
     for config in all_configs:
         value = os.environ.get(config, get_default_for(config))
@@ -27,7 +32,8 @@ def init_config(app):
             value = get_type_for(config)(value)
         except Exception:  # noqa
             app.logger.critical(
-                f"Environment variable for '{config}' does not have the type {str(get_type_for(config))}"
+                f"Environment variable for '{config}' does not have the "
+                f"type {str(get_type_for(config))}"
             )
             sys.exit(1)
         app.config[config] = value
@@ -35,5 +41,6 @@ def init_config(app):
     for config in all_configs:
         if app.config[config] is None:
             app.logger.critical(
-                f"Did not find an environment variable for '{config}'")
+                f"Did not find an environment variable for " f"'{config}'"
+            )
             sys.exit(1)
