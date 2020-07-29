@@ -1,0 +1,29 @@
+version: "3"
+services:
+    media-postgresql:
+        image: postgres:11
+        environment:
+            - POSTGRES_USER=openslides
+            - POSTGRES_PASSWORD=openslides
+            - POSTGRES_DB=openslides
+    media:
+        image: openslides-media-dev
+        environment:
+            - MEDIA_DATABASE_HOST=media-postgresql
+            - MEDIA_DATABASE_PORT=5432
+            - MEDIA_DATABASE_NAME=openslides
+            - MEDIA_DATABASE_USER=openslides
+            - MEDIA_DATABASE_PASSWORD=openslides
+            - CHECK_REQUEST_URL=test/
+        volumes:
+            - ./src:/app/src
+        ports:
+            - 9006:9006
+    tests:
+        image: openslides-media-tests
+        depends_on:
+            - media
+            - media-postgresql
+        volumes:
+            - ./tests:/app/tests
+            - ./src:/app/src
