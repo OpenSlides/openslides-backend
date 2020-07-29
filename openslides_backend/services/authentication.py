@@ -23,6 +23,9 @@ class AuthenticationHTTPAdapter:
         """
         Fetches user id from authentication service using request headers.
         """
+        # TODO: remove this once the auth service is correctly implemented
+        return 1
+
         self.logger.debug(
             f"Start request to authentication service with the following data: {headers}"
         )

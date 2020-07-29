@@ -96,7 +96,7 @@ class RelationsHandler:
                 ],
                 lock_result=True,
             )
-            rels = response[target]
+            rels = response[target] if target in response else {}
 
         if self.field.generic_relation and not self.is_reverse:
             return self.prepare_result_to_fqid(add, remove, rels, target, related_name)
