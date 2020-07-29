@@ -183,27 +183,21 @@ class DatabaseTestAdapter:
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
         lock_result: bool = False,
-    ) -> List[PartialModel]:
+    ) -> Dict[int, PartialModel]:
         raise NotImplementedError
 
     def filter(
         self,
         collection: Collection,
         filter: Filter,
-        meeting_id: int = None,
         mapped_fields: List[str] = None,
         lock_result: bool = False,
-    ) -> List[PartialModel]:
-        result = []
+    ) -> Dict[int, PartialModel]:
+        result = {}
         for instance_id, data in self.initial_data.get(str(collection), {}).items():
-            data_meeting_id = data.get("meeting_id")
-            if meeting_id is not None and (
-                data_meeting_id is None or data_meeting_id != meeting_id
-            ):
-                continue
             if not isinstance(filter, FilterOperator):
                 raise NotImplementedError
-            if filter.operator == "==":
+            if filter.operator == "=":
                 if data.get(filter.field) == filter.value:
                     element = {}
                     if mapped_fields is None:
@@ -222,7 +216,7 @@ class DatabaseTestAdapter:
                         if lock_result:
                             element.setdefault("id", instance_id)
                             element.setdefault("meta_position", TEST_POSITION)
-                    result.append(element)
+                    result[instance_id] = element
             else:
                 raise NotImplementedError
         return result

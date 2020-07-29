@@ -1,5 +1,4 @@
 from ..shared.patterns import Collection
-from . import fields
 from .base import Model
 
 

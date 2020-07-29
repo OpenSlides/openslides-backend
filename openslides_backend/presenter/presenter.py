@@ -12,7 +12,9 @@ from .presenter_interface import Payload, PresenterResponse
 presenters_map: Dict[str, Type[BasePresenter]] = {}
 
 
-def register_presenter(name: str) -> Callable[[Type[BasePresenter]], Type[BasePresenter]]:
+def register_presenter(
+    name: str,
+) -> Callable[[Type[BasePresenter]], Type[BasePresenter]]:
     """
     Decorator to be used for presenter classes. Registers the class so that it
     can be found by the handler.
@@ -93,7 +95,12 @@ class PresenterHandler(HandlerBase):
         for presenter_blob in payload:
             PresenterClass = presenters_map.get(presenter_blob["presenter"])
             if PresenterClass is not None:
-                presenter_instance = PresenterClass(presenter_blob.get("data"), self.permission, self.database, self.logging)
+                presenter_instance = PresenterClass(
+                    presenter_blob.get("data"),
+                    self.permission,
+                    self.database,
+                    self.logging,
+                )
                 presenter_instance.validate()
                 result = presenter_instance.get_result()
                 response.append(result)

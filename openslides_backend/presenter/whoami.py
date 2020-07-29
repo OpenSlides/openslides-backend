@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from .base import BasePresenter
 from .presenter import register_presenter

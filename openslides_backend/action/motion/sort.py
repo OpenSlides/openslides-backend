@@ -87,15 +87,14 @@ class TreeSortMixin(BaseAction):
         # TODO: Check if instances exist in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
 
         # Get all item ids to verify, that the user send all ids.
-        filter = FilterOperator(field="meeting_id", value=meeting_id, operator="==")
+        filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.database.filter(
             collection=self.model.collection,
             filter=filter,
-            meeting_id=meeting_id,
             mapped_fields=["id"],
             lock_result=True,
         )
-        all_model_ids = set([instance["id"] for instance in db_instances])
+        all_model_ids = set(db_instances.keys())
 
         # Setup initial node using a fake root node.
         fake_root: Dict[str, Any] = {"id": None, "children": []}

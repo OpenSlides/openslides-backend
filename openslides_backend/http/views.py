@@ -106,7 +106,7 @@ class PresenterView(BaseView):
         payload: PresenterPayload = body
 
         # Handle request.
-        handler = PresenterHandler(
+        handler: Presenter = PresenterHandler(
             logging=self.logging, services=self.services,
         )
         try:

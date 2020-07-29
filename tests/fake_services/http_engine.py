@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 import simplejson as json
 
@@ -82,10 +82,10 @@ class HTTPTestEngine:
         mapped_fields = payload.get("mapped_fields")
         if payload.get("meeting_id"):
             raise ValueError("The argument meeting_id is not supported here.")
-        result: List[Dict[str, Any]] = []
-        if not filter.get("operator") == "==":
+        result: Dict[int, Dict[str, Any]] = {}
+        if not filter.get("operator") == "=":
             raise ValueError(
-                "We do not support other filters than FilterOperator with == at the moment."
+                "We do not support other filters than FilterOperator with = at the moment."
             )
         all_instances = json.loads(
             self.get_all(json.dumps({"collection": collection}))[0]
@@ -99,7 +99,7 @@ class HTTPTestEngine:
                     for field in mapped_fields:
                         if field in instance.keys():
                             element[field] = instance[field]
-                result.append(element)
+                result[element["id"]] = element
         return json.dumps(result).encode(), 200
 
     def reserve_ids(self, data: str) -> Tuple[bytes, int]:

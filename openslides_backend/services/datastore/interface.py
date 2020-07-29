@@ -55,17 +55,16 @@ class Datastore(Protocol):
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
         lock_result: bool = False,
-    ) -> List[PartialModel]:
+    ) -> Dict[int, PartialModel]:
         ...
 
     def filter(
         self,
         collection: Collection,
         filter: Filter,
-        meeting_id: int = None,
         mapped_fields: List[str] = None,
         lock_result: bool = False,
-    ) -> List[PartialModel]:
+    ) -> Dict[int, PartialModel]:
         ...
 
     def exists(

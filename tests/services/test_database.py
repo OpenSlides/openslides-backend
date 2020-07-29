@@ -70,7 +70,7 @@ class DatastoreAdapterTester(TestCase):
         field = "f"
         value = "1"
         operator = "="
-        filter = FilterOperator(field=field, value=value, operator=operator)
+        filter = FilterOperator(field, operator, value)
         command = commands.Filter(collection=collection, filter=filter)
         self.engine.retrieve.return_value = (
             json.dumps(
@@ -93,9 +93,9 @@ class DatastoreAdapterTester(TestCase):
 
     def test_complex_filter(self) -> None:
         collection = Collection("a")
-        filter1 = FilterOperator(field="f", value="1", operator="=")
-        filter2 = FilterOperator(field="f", value="3", operator="=")
-        or_filter = Or([filter1, filter2])
+        filter1 = FilterOperator("f", "=", "1")
+        filter2 = FilterOperator("f", "=", "3")
+        or_filter = Or(filter1, filter2)
         command = commands.Filter(collection=collection, filter=or_filter)
         self.engine.retrieve.return_value = (
             json.dumps(
@@ -121,7 +121,7 @@ class DatastoreAdapterTester(TestCase):
         field = "f"
         value = "1"
         operator = "="
-        filter = FilterOperator(field=field, value=value, operator=operator)
+        filter = FilterOperator(field, operator, value)
         command = commands.Exists(collection=collection, filter=filter)
         self.engine.retrieve.return_value = (
             json.dumps({"exists": True, "position": 1}),
@@ -140,7 +140,7 @@ class DatastoreAdapterTester(TestCase):
         field = "f"
         value = "1"
         operator = "="
-        filter = FilterOperator(field=field, value=value, operator=operator)
+        filter = FilterOperator(field, operator, value)
         command = commands.Count(collection=collection, filter=filter)
         self.engine.retrieve.return_value = (
             json.dumps({"count": True, "position": 1}),
@@ -159,7 +159,7 @@ class DatastoreAdapterTester(TestCase):
         field = "f"
         value = "1"
         operator = "="
-        filter = FilterOperator(field=field, value=value, operator=operator)
+        filter = FilterOperator(field, operator, value)
         command = commands.Min(collection=collection, filter=filter, field=field)
         self.engine.retrieve.return_value = json.dumps({"min": 1, "position": 1}), 200
         agg = self.db.min(collection=collection, filter=filter, field=field)
@@ -176,7 +176,7 @@ class DatastoreAdapterTester(TestCase):
         field = "f"
         value = "1"
         operator = "="
-        filter = FilterOperator(field=field, value=value, operator=operator)
+        filter = FilterOperator(field, operator, value)
         command = commands.Max(collection=collection, filter=filter, field=field)
         self.engine.retrieve.return_value = json.dumps({"max": 1, "position": 1}), 200
         agg = self.db.max(collection=collection, filter=filter, field=field)

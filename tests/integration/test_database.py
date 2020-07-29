@@ -42,9 +42,9 @@ def test_getAll() -> None:
 @pytest.mark.skipif(test_context != "INTEGRATION", reason="integration only")
 def test_complex_filter() -> None:
     collection = Collection("a")
-    filter1 = FilterOperator(field="f", value="1", operator="=")
-    filter2 = FilterOperator(field="f", value="3", operator="=")
-    or_filter = Or([filter1, filter2])
+    filter1 = FilterOperator("f", "=", "1")
+    filter2 = FilterOperator("f", "=", "3")
+    or_filter = Or(filter1, filter2)
     found = db.filter(collection=collection, filter=or_filter)
     assert found is not None
     assert len(found) > 0
@@ -56,7 +56,7 @@ def test_exists() -> None:
     field = "f"
     value = "1"
     operator = "="
-    filter = FilterOperator(field=field, value=value, operator=operator)
+    filter = FilterOperator(field, operator, value)
     found = db.exists(collection=collection, filter=filter)
     assert found is not None
     assert found["exists"]
@@ -68,7 +68,7 @@ def test_count() -> None:
     field = "f"
     value = "1"
     operator = "="
-    filter = FilterOperator(field=field, value=value, operator=operator)
+    filter = FilterOperator(field, operator, value)
     count = db.count(collection=collection, filter=filter)
     assert count is not None
     assert count["count"] > 0
@@ -80,7 +80,7 @@ def test_min() -> None:
     field = "f"
     value = "1"
     operator = "="
-    filter = FilterOperator(field=field, value=value, operator=operator)
+    filter = FilterOperator(field, operator, value)
     agg = db.min(collection=collection, filter=filter, field=field)
     assert agg is not None
 
@@ -91,7 +91,7 @@ def test_max() -> None:
     field = "f"
     value = "1"
     operator = "="
-    filter = FilterOperator(field=field, value=value, operator=operator)
+    filter = FilterOperator(field, operator, value)
     agg = db.max(collection=collection, filter=filter, field=field)
     assert agg is not None
 
