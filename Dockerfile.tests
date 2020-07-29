@@ -7,9 +7,9 @@ WORKDIR /app
 
 COPY requirements_tests.txt requirements_tests.txt
 RUN pip install -r requirements_tests.txt
+COPY requirements_development.txt requirements_development.txt
+RUN pip install -r requirements_development.txt
 
 COPY entrypoint-tests.sh .
 
 ENTRYPOINT ["./entrypoint-tests.sh"]
-
-CMD ["pytest"]

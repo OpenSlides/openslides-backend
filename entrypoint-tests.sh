@@ -2,4 +2,5 @@
 
 wait-for-it -t 0 "media:9006"
 
-exec "$@"
+black src/ tests/ && isort --recursive src/ tests/ && flake8 src/ tests/ && \
+	pytest

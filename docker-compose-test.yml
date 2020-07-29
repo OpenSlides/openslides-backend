@@ -26,4 +26,4 @@ services:
             - media-postgresql
         volumes:
             - ./tests:/app/tests
-
+            - ./src:/app/src
