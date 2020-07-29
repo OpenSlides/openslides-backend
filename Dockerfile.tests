@@ -11,5 +11,6 @@ COPY requirements_development.txt requirements_development.txt
 RUN pip install -r requirements_development.txt
 
 COPY entrypoint-tests.sh .
+COPY setup.cfg .
 
 ENTRYPOINT ["./entrypoint-tests.sh"]
