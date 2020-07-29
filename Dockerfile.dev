@@ -6,18 +6,19 @@ RUN apt-get -y update && apt-get -y upgrade && \
 
 WORKDIR /app
 
-COPY requirements_production.txt requirements_production.txt
-RUN pip install -r requirements_production.txt
-COPY requirements_development.txt requirements_development.txt
+COPY requirements_production.txt .
+COPY requirements_development.txt .
 RUN pip install -r requirements_development.txt
 
 COPY entrypoint.sh .
+COPY execute-cleanup.sh .
+COPY setup.cfg .
 
 EXPOSE 9006
 # TODO: Make the port configurable via ENV
-ENTRYPOINT ["./entrypoint.sh"]
 
 ENV FLASK_APP ./src/mediaserver.py
 ENV FLASK_ENV development
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["flask", "run", "--host", "0.0.0.0", "--port", "9006"]

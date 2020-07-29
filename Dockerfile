@@ -5,7 +5,6 @@ RUN apt-get -y update && apt-get -y upgrade && \
     postgresql-client
 
 WORKDIR /app
-#ENV FLASK_APP mediafileserver.py
 
 COPY requirements_production.txt requirements_production.txt
 RUN pip install -r requirements_production.txt
