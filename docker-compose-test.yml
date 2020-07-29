@@ -18,7 +18,7 @@ services:
         volumes:
             - ./src:/app/src
         ports:
-            - 8000:8000
+            - 9006:9006
     tests:
         image: openslides-media-tests
         depends_on:

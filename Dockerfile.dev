@@ -13,11 +13,11 @@ RUN pip install -r requirements_development.txt
 
 COPY entrypoint.sh .
 
-EXPOSE 8000
+EXPOSE 9006
 # TODO: Make the port configurable via ENV
 ENTRYPOINT ["./entrypoint.sh"]
 
 ENV FLASK_APP ./src/mediaserver.py
 ENV FLASK_ENV development
 
-CMD ["flask", "run", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["flask", "run", "--host", "0.0.0.0", "--port", "9006"]

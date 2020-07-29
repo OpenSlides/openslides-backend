@@ -13,7 +13,7 @@ RUN pip install -r requirements_production.txt
 COPY src/* src/
 COPY entrypoint.sh .
 
-EXPOSE 8000
+EXPOSE 9006
 # TODO: Make the port configurable via ENV
 ENTRYPOINT ["./entrypoint.sh"]
-CMD ["gunicorn", "-b", "0.0.0.0:8000", "src.mediaserver:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:9006", "src.mediaserver:app"]
