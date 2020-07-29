@@ -14,7 +14,6 @@ services:
             - MEDIA_DATABASE_NAME=openslides
             - MEDIA_DATABASE_USER=openslides
             - MEDIA_DATABASE_PASSWORD=openslides
-            - CHECK_REQUEST_URL=test/
         volumes:
             - ./src:/app/src
         ports:
@@ -26,4 +25,3 @@ services:
             - media-postgresql
         volumes:
             - ./tests:/app/tests
-            - ./src:/app/src

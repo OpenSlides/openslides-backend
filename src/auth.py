@@ -5,6 +5,8 @@ from .exceptions import NotFoundError, ServerError
 
 def get_mediafile_id(meeting_id, path, app, cookie):
     return meeting_id
+
+    # TODO: Enable the call to the presenter
     check_request_url = get_check_request_url(meeting_id, path, app)
     app.logger.debug(f"Send check request: {check_request_url}")
 
@@ -29,8 +31,7 @@ def get_mediafile_id(meeting_id, path, app, cookie):
     return id
 
 
-def get_check_request_url(meeting_id, path, app):
-    check_request_url = app.config["CHECK_REQUEST_URL"]
-    if not check_request_url.endswith("/"):
-        raise ServerError("The CHECK_REQUEST_URL must end with an slash.")
-    return f"http://{check_request_url}/{meeting_id}/{path}"
+def get_check_request_url():
+    presenter_host = "todo"
+    presenter_port = "todo"
+    return f"http://{presenter_host}:{presenter_port}/system/presenter"
