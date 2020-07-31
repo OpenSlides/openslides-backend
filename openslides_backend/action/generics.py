@@ -47,18 +47,20 @@ class CreateAction(Action):
                     relation_fields.append((field_name, field, True))
 
             # Get new id.
-            id = self.database.reserve_id(collection=self.model.collection)
+            new_id = self.database.reserve_id(collection=self.model.collection)
 
             # Get relations.
             relations = self.get_relations(
                 model=self.model,
-                id=id,
+                id=new_id,
                 obj=instance,
                 relation_fields=relation_fields,
                 shortcut=True,
             )
 
-            data.append({"instance": instance, "new_id": id, "relations": relations})
+            data.append(
+                {"instance": instance, "new_id": new_id, "relations": relations}
+            )
 
         return {"data": data}
 

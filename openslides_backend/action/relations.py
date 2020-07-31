@@ -89,14 +89,19 @@ class RelationsHandler:
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
             ids = list(add | remove)
-            # TODO: Check if all instances of target exist.
             response = self.database.get_many(
                 get_many_requests=[
                     GetManyRequest(target, ids, mapped_fields=[related_name],)
                 ],
                 lock_result=True,
             )
+            # TODO: Check if the datastore really sends such an empty response.
             rels = response[target] if target in response else {}
+            for instance_id in ids:
+                if instance_id not in rels.keys():
+                    raise ActionException(
+                        f"You try to reference an instance of {target} that does not exist."
+                    )
 
         if self.field.generic_relation and not self.is_reverse:
             return self.prepare_result_to_fqid(add, remove, rels, target, related_name)

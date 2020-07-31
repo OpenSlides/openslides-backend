@@ -141,7 +141,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
             get_fqfield("organisation/1/name"): "test_organisation_name",
             get_fqfield("organisation/1/committee_ids"): [5914213969],
         }
-        self.user_id = 7668157706  # This user has perm COMMITTEE_CAN_MANAGE.
+        self.user_id = 7668157706
 
     def test_wsgi_request_empty(self) -> None:
         expected_write_data = ""  # noqa: F841
