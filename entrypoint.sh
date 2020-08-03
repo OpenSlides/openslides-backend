@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 export MEDIA_DATABASE_HOST="${MEDIA_DATABASE_HOST:-db}"
 export MEDIA_DATABASE_PORT="${MEDIA_DATABASE_PORT:-5432}"
