@@ -8,7 +8,6 @@ from .exceptions import NotFoundError, ServerError
 def get_mediafile_id(meeting_id, path, app, cookie):
     presenter_url = get_presenter_url(meeting_id, path)
     app.logger.debug(f"Send check request: {presenter_url}")
-    print(f"{presenter_url}")
     payload = [
         {
             "presenter": "get_mediafile_id",
