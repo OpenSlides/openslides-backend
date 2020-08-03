@@ -1,5 +1,6 @@
-import requests
 import os
+
+import requests
 
 from .exceptions import NotFoundError, ServerError
 
@@ -8,16 +9,17 @@ def get_mediafile_id(meeting_id, path, app, cookie):
     presenter_url = get_presenter_url(meeting_id, path)
     app.logger.debug(f"Send check request: {presenter_url}")
     print(f"{presenter_url}")
-    payload = [{"presenter": "get_mediafile_id",
-                "data": {
-                    "meeting_id": meeting_id,
-                    "path": path}}
-              ]
+    payload = [
+        {
+            "presenter": "get_mediafile_id",
+            "data": {"meeting_id": meeting_id, "path": path},
+        }
+    ]
 
     try:
-        response = requests.post(presenter_url,
-                                 headers={"Cookie": cookie},
-                                 json=payload)
+        response = requests.post(
+            presenter_url, headers={"Cookie": cookie}, json=payload
+        )
     except requests.exceptions.ConnectionError as e:
         app.logger.error(str(e))
         raise ServerError("The server didn't respond")
@@ -43,5 +45,5 @@ def get_presenter_url(meeting_id, path):
     if presenter_host is None:
         raise ServerError("PRESENTER_HOST is not set")
     if presenter_port is None:
-        raise  ServerError("PRESENTER_PORT is not set")
+        raise ServerError("PRESENTER_PORT is not set")
     return f"http://{presenter_host}:{presenter_port}/system/presenter"

@@ -47,12 +47,14 @@ def serve(meeting_id, path):
     block_size = app.config["BLOCK_SIZE"]
     return Response(chunked(block_size, data), mimetype=mimetype)
 
+
 # for testing
 @app.route("/system/presenter", methods=["POST"])
 def dummy_presenter():
     app.logger.debug(f"dummy_presenter gets: {request.json}")
     meeting_id = request.json[0]["data"]["meeting_id"]
     return f"[{meeting_id}]"
+
 
 def shutdown(database):
     app.logger.info("Stopping the server...")
