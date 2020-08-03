@@ -14,6 +14,8 @@ services:
             - MEDIA_DATABASE_NAME=openslides
             - MEDIA_DATABASE_USER=openslides
             - MEDIA_DATABASE_PASSWORD=openslides
+            - PRESENTER_HOST=media
+            - PRESENTER_PORT=9006
         volumes:
             - ./src:/app/src
         ports:
