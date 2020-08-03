@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    # repair the tests
+    #- uses: actions/setup-python@v2
+    
+    #- name: pytest
+    #  run: make test
+        
+    - name: docker build
+      run: make build-dev
