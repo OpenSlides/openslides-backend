@@ -361,6 +361,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
                     "instance": {
                         "id": self.valid_payload_1[0]["id"],
                         "agenda_item_ids": None,
+                        "category_ids": None,
                         "committee_id": None,
                         "motion_block_ids": None,
                         "motion_ids": None,
