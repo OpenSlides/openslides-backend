@@ -20,9 +20,11 @@ def prepare_actions_map() -> None:
     """
     from . import (  # noqa
         agenda_item,
+        assignment,
         committee,
         list_of_speakers,
         meeting,
+        mediafile,
         motion,
         motion_block,
         motion_category,
@@ -32,6 +34,7 @@ def prepare_actions_map() -> None:
         motion_workflow,
         tag,
         topic,
+        user,
     )
 
 
