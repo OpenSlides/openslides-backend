@@ -1,9 +1,8 @@
 import json
-from collections import namedtuple
+from unittest.mock import MagicMock, patch
 
 from openslides_backend.presenter import PresenterBlob
 
-from ..utils import get_fqfield
 from .test_base import BasePresenterUnitTester, BasePresenterWSGITester
 
 
@@ -23,19 +22,28 @@ class GetMediafileIdUnitTester(BasePresenterUnitTester):
 
 class GetMediafileIdWSGITester(BasePresenterWSGITester):
     def test_wsgi_get_mediafile_id(self) -> None:
-        # client = self.get_client(
-        self.get_client(
-            datastore_content={
-                get_fqfield("mediafile/1/meeting_id"): 1,
-                get_fqfield("mediafile/1/path"): "a/b/c",
-            }
-        )
-        # TODO: comment back in when testing/fake datastore is fixed
-        # response = client.post("/", json=[{"presenter": "get_mediafile_id", "data": {"meeting_id": 1, "path": "a/b/c"}}])
-        R = namedtuple("R", "data status_code")
-        response = R("[1]", 200)
-        self.assertEqual(response.status_code, 200)
-        expected = [1]
-        self.assertEqual(json.loads(response.data), expected)
+        # TODO: move mocking to base class
+        datastore = self.client.application.services.datastore()
+        retrieve = MagicMock(return_value={"1": {}})
+        with patch.object(datastore, "retrieve", retrieve):
+            response = self.client.post(
+                "/",
+                json=[
+                    {
+                        "presenter": "get_mediafile_id",
+                        "data": {"meeting_id": 1, "path": "a/b/c"},
+                    }
+                ],
+            )
+            self.assertEqual(response.status_code, 200)
+            expected = [1]
+            self.assertEqual(json.loads(response.data), expected)
+
+            retrieve.assert_called()
+            command = retrieve.call_args[0][0]
+            assert command.name == "filter"
+            data = command.get_raw_data()
+            assert data["collection"] == "mediafile"
+            assert len(data["filter"]["and_filter"]) == 2
 
     # TODO: more tests needed

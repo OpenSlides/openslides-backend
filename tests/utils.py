@@ -39,7 +39,7 @@ class FakeServices(containers.DeclarativeContainer):
     expected_write_data = providers.Configuration("expected_write_data")
     permission = providers.Singleton(PermissionTestAdapter, superuser)
     engine = providers.Singleton(HTTPTestEngine, datastore_content, expected_write_data)
-    datastore = providers.Factory(Adapter, engine, logging)
+    datastore = providers.Singleton(Adapter, engine, logging)
 
 
 def create_test_application(
