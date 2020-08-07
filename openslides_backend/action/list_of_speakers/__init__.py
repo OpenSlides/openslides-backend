@@ -27,6 +27,16 @@ class ListOfSpeakersSpeak(DummyAction):
     pass
 
 
+@register_action("list_of_speakers.mark_speaker")
+class ListOfSpeakersMarkSpeaker(DummyAction):
+    pass
+
+
+@register_action("list_of_speakers.stop_current_speaker")
+class ListOfSpeakersStopCurrentSpeaker(DummyAction):
+    pass
+
+
 @register_action("list_of_speakers.sort")
 class ListOfSpeakersSort(DummyAction):
     pass
@@ -39,4 +49,9 @@ class ListOfSpeakersReAddLast(DummyAction):
 
 @register_action("list_of_speakers.prune")
 class ListOfSpeakersPrune(DummyAction):
+    pass
+
+
+@register_action("list_of_speakers.delete_all_speakers_of_all_lists")
+class ListOfSpeakersDeleteAllSpeakersOfAllLists(DummyAction):
     pass
