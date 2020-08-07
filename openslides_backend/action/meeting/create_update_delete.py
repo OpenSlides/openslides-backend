@@ -1,3 +1,6 @@
+from ...models.group import (  # noqa  # TODO: Remove this unused import after some group actions are installed.
+    Group,
+)
 from ...models.meeting import Meeting
 from ..action import register_action_set
 from ..action_set import ActionSet
@@ -15,5 +18,7 @@ class MeetingActionSet(ActionSet):
         properties=["committee_id", "name"],
         required_properties=["committee_id", "name"],
     )
-    update_schema = DefaultSchema(Meeting()).get_update_schema(properties=["name"])
+    update_schema = DefaultSchema(Meeting()).get_update_schema(
+        properties=["name", "motion_poll_default_group_ids"]
+    )
     delete_schema = DefaultSchema(Meeting()).get_delete_schema()

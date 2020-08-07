@@ -427,6 +427,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
                         "agenda_item_ids": None,
                         "committee_id": None,
                         "motion_ids": None,
+                        "motion_poll_default_group_ids": None,
                         "topic_ids": None,
                     },
                     "relations": {
