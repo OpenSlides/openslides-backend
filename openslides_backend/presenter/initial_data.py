@@ -1,17 +1,16 @@
-from typing import Any, Dict
+from typing import Any
 
-from .base import Presenter
+from .base import BasePresenter
 from .presenter import register_presenter
 
 
 @register_presenter("initial-data")
-class InitialData(Presenter):
+class InitialData(BasePresenter):
     """
     Initial data for setup
     """
 
-    @property
-    def data(self) -> Dict[Any, Any]:
+    def get_result(self) -> Any:
         return {
             "privacy_policy": "The PP",
             "legal_notice": "The LN",

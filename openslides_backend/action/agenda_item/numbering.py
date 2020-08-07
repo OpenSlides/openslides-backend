@@ -194,7 +194,7 @@ class AgendaItemNumbering(Action):
         meeting_id = payload["meeting_id"]
         agenda_items = self.database.filter(
             collection=self.model.collection,
-            filter=FilterOperator(field="meeting_id", value=meeting_id, operator="=="),
+            filter=FilterOperator("meeting_id", "=", meeting_id),
             # meeting_id=meeting_id,
             mapped_fields=["item_number", "parent_id", "weight", "type"],
             lock_result=True,
@@ -205,7 +205,7 @@ class AgendaItemNumbering(Action):
         numeral_system = "arabic"
         agenda_number_prefix = None
         return DataSet(
-            data=AgendaTree(agenda_items).number_all(
+            data=AgendaTree(agenda_items.values()).number_all(
                 numeral_system=numeral_system, agenda_number_prefix=agenda_number_prefix
             )
         )

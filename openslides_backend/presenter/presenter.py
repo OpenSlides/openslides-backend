@@ -6,19 +6,21 @@ from fastjsonschema import JsonSchemaException  # type: ignore
 from ..shared.exceptions import PresenterException
 from ..shared.handlers import Base as HandlerBase
 from ..shared.schema import schema_version
-from .base import Presenter
+from .base import BasePresenter
 from .presenter_interface import Payload, PresenterResponse
 
-presenters_map: Dict[str, Type[Presenter]] = {}
+presenters_map: Dict[str, Type[BasePresenter]] = {}
 
 
-def register_presenter(name: str) -> Callable[[Type[Presenter]], Type[Presenter]]:
+def register_presenter(
+    name: str,
+) -> Callable[[Type[BasePresenter]], Type[BasePresenter]]:
     """
     Decorator to be used for presenter classes. Registers the class so that it
     can be found by the handler.
     """
 
-    def wrapper(clazz: Type[Presenter]) -> Type[Presenter]:
+    def wrapper(clazz: Type[BasePresenter]) -> Type[BasePresenter]:
         presenters_map[name] = clazz
         return clazz
 
@@ -91,10 +93,17 @@ class PresenterHandler(HandlerBase):
         )
         response = []
         for presenter_blob in payload:
-            Presenter = presenters_map.get(presenter_blob["presenter"])
-            if Presenter is not None:
-                presenter_instance = Presenter()
-                response.append(presenter_instance.data)
+            PresenterClass = presenters_map.get(presenter_blob["presenter"])
+            if PresenterClass is not None:
+                presenter_instance = PresenterClass(
+                    presenter_blob.get("data"),
+                    self.permission,
+                    self.database,
+                    self.logging,
+                )
+                presenter_instance.validate()
+                result = presenter_instance.get_result()
+                response.append(result)
             else:
                 raise PresenterException(
                     f"Presenter {presenter_blob['presenter']} does not exist."

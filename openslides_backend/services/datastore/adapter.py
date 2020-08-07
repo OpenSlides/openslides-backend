@@ -133,9 +133,7 @@ class Adapter:
         mapped_fields: List[str] = None,
         get_deleted_models: int = None,
         lock_result: bool = False,
-    ) -> List[PartialModel]:
-        # TODO: Check the return value of this method. The interface docs say
-        # something else.
+    ) -> Dict[int, PartialModel]:
         if lock_result and mapped_fields is not None:
             mapped_fields.extend(("id", "meta_position"))
         command = commands.GetAll(
@@ -163,14 +161,9 @@ class Adapter:
         self,
         collection: Collection,
         filter: Filter,
-        meeting_id: int = None,
         mapped_fields: List[str] = None,
         lock_result: bool = False,
-    ) -> List[PartialModel]:
-        if meeting_id is not None:
-            raise NotImplementedError("The keyword 'meeting_id' is not supported yet.")
-        # TODO: Check the return value of this method. The interface docs say
-        # something else.
+    ) -> Dict[int, PartialModel]:
         if lock_result and mapped_fields is not None:
             mapped_fields.extend(("id", "meta_position"))
         command = commands.Filter(
@@ -181,8 +174,7 @@ class Adapter:
         )
         response = self.retrieve(command)
         if lock_result:
-            for item in response:
-                instance_id = item.get("id")
+            for instance_id, item in response.items():
                 instance_position = item.get("meta_position")
                 if instance_id is None or instance_position is None:
                     raise DatabaseException(

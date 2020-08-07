@@ -91,7 +91,7 @@ class PresenterView(BaseView):
     it to the PresenterHandler.
     """
 
-    method = "GET"
+    method = "POST"
 
     def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
         """
