@@ -1,26 +1,8 @@
 # Development and testing
 
-all: black isort flake8 mypy test
-
-black:
-	black openslides_backend/ tests/
-
-isort:
-	isort --recursive openslides_backend/ tests/
-
-flake8:
-	flake8 openslides_backend/ tests/
-
-mypy:
-	mypy openslides_backend/ tests/
-
-test:
-	pytest
-
-run-tests:
-	echo "This has to be fixed."
-	OPENSLIDES_BACKEND_RUN_ALL_TESTS=1 pytest
-	# TODO: Run tests inside a container.
+all:
+	$(MAKE) run-cleanup
+	$(MAKE) run-tests-fast
 
 pip-check:
 	pip-check
@@ -46,13 +28,41 @@ build-dev:
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 
-run-dev:
-	docker run --interactive --tty --volume=$(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend \
+dev_args=--interactive --tty \
+	--volume=$(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend \
+	--volume=$(dir $(mkfile_path))tests:/srv/code/tests \
 	--network=host --rm openslides-backend-dev
 
-run-dev-interactive:
-	docker run --interactive --tty --volume=$(dir $(mkfile_path))openslides_backend:/srv/code/openslides_backend \
-	--network=host --rm openslides-backend-dev sh
+run-dev: | build-dev
+	docker run $(dev_args)
+
+run-dev-interactive run-bash: | build-dev
+	docker run $(dev_args) sh
+
+run-cleanup: | build-dev
+	docker run $(dev_args) sh cleanup.sh
+
+black: | build-dev
+	docker run $(dev_args) black openslides_backend/ tests/
+
+isort: | build-dev
+	docker run $(dev_args) isort --recursive openslides_backend/ tests/
+
+flake8: | build-dev
+	docker run $(dev_args) flake8 openslides_backend/ tests/
+
+mypy: | build-dev
+	docker run $(dev_args) mypy openslides_backend/ tests/
+
+test: | build-dev
+	docker run $(dev_args) pytest
+
+run-tests: | build-dev
+	docker run $(dev_args) sh -c "OPENSLIDES_BACKEND_RUN_ALL_TESTS=1 pytest"
+
+run-tests-fast: | build-dev
+	docker run $(dev_args) pytest
+
 
 run-dev-compose:
 	docker-compose -f docker-compose-dev.yml up -d
