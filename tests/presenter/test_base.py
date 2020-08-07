@@ -16,6 +16,8 @@ class BasePresenterUnitTester(TestCase):
         )
         self.user_id = 0
 
+
+class GeneralPresenterUnitTester(BasePresenterUnitTester):
     def test_with_bad_key(self) -> None:
         payload = [PresenterBlob(presenter="non_existing_presenter", data={})]
         with self.assertRaises(PresenterException) as context_manager:
@@ -33,7 +35,9 @@ class BasePresenterWSGITester(TestCase):
         self.user_id = 0
         self.client = self.get_client()
 
-    def get_client(self, datastore_content: Any = {}, expected_write_data: str = "") -> Client:
+    def get_client(
+        self, datastore_content: Any = {}, expected_write_data: str = ""
+    ) -> Client:
         return Client(
             create_test_application(
                 user_id=self.user_id,
@@ -45,8 +49,10 @@ class BasePresenterWSGITester(TestCase):
             ResponseWrapper,
         )
 
+
+class GeneralPresenterWSGITester(BasePresenterWSGITester):
     def test_wsgi_request_empty(self) -> None:
-        response = self.client.get("/", json=[{"presenter": ""}])
+        response = self.client.post("/", json=[{"presenter": ""}])
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "data[0].presenter must be longer than or equal to 1 characters",
@@ -54,7 +60,9 @@ class BasePresenterWSGITester(TestCase):
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
-        response = self.client.get("/", json=[{"presenter": "non_existing_presenter"}],)
+        response = self.client.post(
+            "/", json=[{"presenter": "non_existing_presenter"}],
+        )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
             "Presenter non_existing_presenter does not exist.", str(response.data),

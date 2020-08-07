@@ -26,7 +26,7 @@ class WhoamiUnitTester(BasePresenterUnitTester):
 
 class WhoamiWSGITester(BasePresenterWSGITester):
     def test_wsgi_whoami(self) -> None:
-        response = self.client.get("/", json=[{"presenter": "whoami"}])
+        response = self.client.post("/", json=[{"presenter": "whoami"}])
         self.assertEqual(response.status_code, 200)
         expected = [
             {

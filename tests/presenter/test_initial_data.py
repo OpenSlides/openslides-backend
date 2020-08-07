@@ -26,7 +26,7 @@ class InitialDataUnitTester(BasePresenterUnitTester):
 
 class InitialDataWSGITester(BasePresenterWSGITester):
     def test_wsgi_initial_data(self) -> None:
-        response = self.client.get("/", json=[{"presenter": "initial-data"}],)
+        response = self.client.post("/", json=[{"presenter": "initial-data"}],)
         self.assertEqual(response.status_code, 200)
         expected = [
             {

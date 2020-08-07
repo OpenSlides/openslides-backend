@@ -1,6 +1,6 @@
 from typing import Any
 
-import fastjsonschema
+import fastjsonschema  # type: ignore
 
 from ..models.mediafile import Mediafile
 from ..shared.exceptions import PresenterException
