@@ -79,6 +79,9 @@ class Model(metaclass=ModelMetaClass):
         """
         Returns JSON schema for the given field.
         """
+        for field_name, field_obj in self.get_reverse_relations():
+            if field == field_name:
+                return field_obj.get_reverse_schema()
         return getattr(self, field).get_schema()
 
     def get_properties(self, *fields: str) -> Dict[str, Schema]:

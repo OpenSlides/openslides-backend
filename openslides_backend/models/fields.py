@@ -115,6 +115,12 @@ class RelationMixin(Field):
         )  # TODO: Care of generic relation case when creating reverse relation field.
         super().__init__(**kwargs)  # type: ignore
 
+    def get_reverse_schema(self) -> Schema:
+        """
+        Returns the reverse side of the field schema.
+        """
+        raise NotImplementedError
+
 
 ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
@@ -123,6 +129,9 @@ class RequiredOneToOneField(RelationMixin, IdField):
 
     on_delete = "protect"  # TODO: Enable cascade
     type = "1:1"
+
+    def get_reverse_schema(self) -> Schema:
+        return self.get_schema()
 
 
 class OneToOneField(RelationMixin, IdField):
@@ -135,11 +144,22 @@ class OneToOneField(RelationMixin, IdField):
         schema["type"] = ["integer", "null"]
         return schema
 
+    def get_reverse_schema(self) -> Schema:
+        return self.get_schema()
+
 
 class RequiredForeignKeyField(RelationMixin, IdField):
 
     on_delete = "protect"  # TODO: Enable cascade
     type = "1:m"
+
+    def get_reverse_schema(self) -> Schema:
+        return dict(
+            description=self.description,
+            type="array",
+            items={"type": "integer", "minimum": 1},
+            uniqueItems=True,
+        )
 
 
 class ForeignKeyField(RequiredForeignKeyField):
@@ -150,6 +170,14 @@ class ForeignKeyField(RequiredForeignKeyField):
         schema = super().get_schema()
         schema["type"] = ["integer", "null"]
         return schema
+
+    def get_reverse_schema(self) -> Schema:
+        return dict(
+            description=self.description,
+            type="array",
+            items={"type": "integer", "minimum": 1},
+            uniqueItems=True,
+        )
 
 
 class ManyToManyArrayField(RelationMixin):
@@ -163,3 +191,6 @@ class ManyToManyArrayField(RelationMixin):
             items={"type": "integer", "minimum": 1},
             uniqueItems=True,
         )
+
+    def get_reverse_schema(self) -> Schema:
+        return self.get_schema()
