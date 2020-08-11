@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterable, List, Set
 
-import fastjsonschema  # type: ignore
+import fastjsonschema
 
 from ...models.base import Model
 from ...models.motion import Motion

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Tuple
 
-import roman  # type: ignore
+import roman
 
 from ...models.agenda_item import AgendaItem
 from ...shared.filters import FilterOperator
