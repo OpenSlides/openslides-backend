@@ -39,7 +39,7 @@ class Adapter:
             try:
                 payload = json.loads(content)
             except JSONDecodeError:
-                error_message = "Bad response from datastore service. Body does not contain valid JSON."
+                error_message = f"Bad response from datastore service. Body does not contain valid JSON. Received: {str(content)}"
                 raise DatabaseException(error_message)
         else:
             payload = None
@@ -271,4 +271,9 @@ class Adapter:
             f"Start WRITE request to datastore with the following data: "
             f"Write request: {write_request}"
         )
+        self.retrieve(command)
+
+    def truncate_db(self) -> None:
+        command = commands.TruncateDb()
+        self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)

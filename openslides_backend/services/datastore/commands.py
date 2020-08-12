@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 import simplejson as json
 from mypy_extensions import TypedDict
@@ -69,7 +69,7 @@ class Command:
         ).lstrip("_")
 
     @property
-    def data(self) -> str:
+    def data(self) -> Optional[str]:
         return json.dumps(self.get_raw_data())
 
     def get_raw_data(self) -> CommandData:
@@ -323,3 +323,13 @@ class Write(Command):
         return json.dumps(
             stringified_write_request_element, cls=WriteRequestJSONEncoder
         )
+
+
+class TruncateDb(Command):
+    """
+    TruncateDb command. Does not need data.
+    """
+
+    @property
+    def data(self) -> None:
+        pass

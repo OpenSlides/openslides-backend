@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Optional, Tuple
 
 import requests
 
@@ -21,7 +21,7 @@ class HTTPEngine:
         "min",
         "max",
     ]
-    WRITER_ENDPOINTS = ["reserve_ids", "write"]
+    WRITER_ENDPOINTS = ["reserve_ids", "write", "truncate_db"]
 
     def __init__(
         self,
@@ -34,7 +34,7 @@ class HTTPEngine:
         self.datastore_writer_url = datastore_writer_url
         self.headers = {"Content-Type": "application/json"}
 
-    def retrieve(self, endpoint: str, data: str) -> Tuple[bytes, int]:
+    def retrieve(self, endpoint: str, data: Optional[str]) -> Tuple[bytes, int]:
         # TODO: Check and test this error handling.
         if endpoint in self.READER_ENDPOINTS:
             base_url = self.datastore_reader_url
