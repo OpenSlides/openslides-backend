@@ -324,6 +324,7 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
                     "sort_parent_id": None,
                     "lead_motion_id": None,
                     "category_id": None,
+                    "change_recommendation_ids": None,
                     "block_id": None,
                     "origin_id": None,
                     "state_id": None,
