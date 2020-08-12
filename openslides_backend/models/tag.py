@@ -8,8 +8,10 @@ class Tag(Model):
     Model for tags.
 
     There are the following reverse relation fields:
-        tagged_ids: (*/tag_ids)[];
+        tagged_ids: ({agenda_item,assignment,motion,topic}/tag_ids)[];
     """
+
+    # TODO tag_ids in agenda_item, assignment
 
     collection = Collection("tag")
     verbose_name = "tag"
