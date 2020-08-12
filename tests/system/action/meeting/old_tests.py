@@ -362,6 +362,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
                         "id": self.valid_payload_1[0]["id"],
                         "agenda_item_ids": None,
                         "committee_id": None,
+                        "motion_block_ids": None,
                         "motion_ids": None,
                         "motion_poll_default_group_ids": None,
                         "topic_ids": None,
