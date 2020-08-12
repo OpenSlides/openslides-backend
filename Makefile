@@ -36,7 +36,6 @@ run-prod: | build-prod
 	docker run --interactive --tty \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
 
-
 # Build and run development docker container setup with docker compose (not usable inside docker container)
 
 start-dev:
