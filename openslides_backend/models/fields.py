@@ -8,62 +8,85 @@ Schema = Dict[str, Any]
 
 class Field:
     """
-    Base class for model fields.
+    Base class for model fields. Subclasses extend the schema. All Fields can be
+    extended further via the kwargs in the constructor, e.g. to introduce new
+    constraints. All constraints from jsonschema are valid.
     """
 
-    def __init__(self, description: str) -> None:
+    def __init__(self, description: str = "", **constraints: Any) -> None:
         self.description = description
+        self.constraints = constraints
 
     def get_schema(self) -> Schema:
         """
         Returns a JSON schema for this field.
         """
-        raise NotImplementedError
+        return dict(description=self.description, **self.constraints)
+
+    def extend_schema(self, schema: Schema, **kwargs: Any) -> Schema:
+        """
+        Use in subclasses to extend the schema of the the super class.
+        """
+        schema.update(kwargs)
+        return schema
 
 
-class IdField(Field):
+class ArrayField(Field):
+    """ Used for arbitrary arrays. """
+
     def get_schema(self) -> Schema:
-        return dict(description=self.description, type="integer", minimum=1,)
+        return self.extend_schema(super().get_schema(), type="array")
 
 
 class IntegerField(Field):
     def get_schema(self) -> Schema:
-        return dict(description=self.description, type="integer",)
+        return self.extend_schema(super().get_schema(), type="integer")
 
 
-class PositiveIntegerField(Field):
+class PositiveIntegerField(IntegerField):
     def get_schema(self) -> Schema:
-        return dict(description=self.description, type="integer", minimum=1,)
+        return self.extend_schema(super().get_schema(), minimum=1)
 
 
-class CharField(Field):
+class IdField(PositiveIntegerField):
+    pass
+
+
+class TimestampField(PositiveIntegerField):
+    """ Used to represent a UNIX timestamp. """
+
+    pass
+
+
+class BooleanField(Field):
     def get_schema(self) -> Schema:
-        return dict(description=self.description, type="string", maxLength=256,)
-
-
-class RequiredCharField(CharField):
-    def get_schema(self) -> Schema:
-        schema = super().get_schema()
-        schema["minLength"] = 1
-        return schema
+        return self.extend_schema(super().get_schema(), type="boolean")
 
 
 class TextField(Field):
     def get_schema(self) -> Schema:
-        return dict(description=self.description, type="string",)
+        return self.extend_schema(super().get_schema(), type="string")
 
 
-class TimestampField(Field):
+class RequiredTextField(TextField):
     def get_schema(self) -> Schema:
-        return dict(description=self.description, type="integer", minimum=1,)
+        return self.extend_schema(super().get_schema(), minLength=1)
+
+
+class CharField(TextField):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), maxLength=256)
+
+
+class RequiredCharField(CharField):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), minLength=1)
 
 
 class RelationMixin(Field):
     """
     Field that provides a relation to another Collection.
-
     We support 1:m, m:n 1:1 and m:1 relations.
-
     Args:
         to: The collection this field is related to.
         related_name: The name of the array field of the related model. This
@@ -126,7 +149,6 @@ ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
 class RequiredOneToOneField(RelationMixin, IdField):
-
     on_delete = "protect"  # TODO: Enable cascade
     type = "1:1"
 
@@ -135,21 +157,17 @@ class RequiredOneToOneField(RelationMixin, IdField):
 
 
 class OneToOneField(RelationMixin, IdField):
-
     on_delete = "set_null"  # TODO: Enable cascade
     type = "1:1"
 
     def get_schema(self) -> Schema:
-        schema = super().get_schema()
-        schema["type"] = ["integer", "null"]
-        return schema
+        return self.extend_schema(super().get_schema(), type=["integer", "null"])
 
     def get_reverse_schema(self) -> Schema:
         return self.get_schema()
 
 
 class RequiredForeignKeyField(RelationMixin, IdField):
-
     on_delete = "protect"  # TODO: Enable cascade
     type = "1:m"
 
@@ -163,30 +181,18 @@ class RequiredForeignKeyField(RelationMixin, IdField):
 
 
 class ForeignKeyField(RequiredForeignKeyField):
-
     on_delete = "set_null"  # TODO: Enable cascade
 
     def get_schema(self) -> Schema:
-        schema = super().get_schema()
-        schema["type"] = ["integer", "null"]
-        return schema
-
-    def get_reverse_schema(self) -> Schema:
-        return dict(
-            description=self.description,
-            type="array",
-            items={"type": "integer", "minimum": 1},
-            uniqueItems=True,
-        )
+        return self.extend_schema(super().get_schema(), type=["integer", "null"])
 
 
-class ManyToManyArrayField(RelationMixin):
-
+class ManyToManyArrayField(RelationMixin, IdField):
     type = "m:n"
 
     def get_schema(self) -> Schema:
-        return dict(
-            description=self.description,
+        return self.extend_schema(
+            super().get_schema(),
             type="array",
             items={"type": "integer", "minimum": 1},
             uniqueItems=True,
