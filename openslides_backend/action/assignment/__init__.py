@@ -1,20 +1,6 @@
 from ..action import register_action
 from ..base import DummyAction
-
-
-@register_action("assignment.create")
-class AssignmentCreate(DummyAction):
-    pass
-
-
-@register_action("assignment.update")
-class AssignmentUpdate(DummyAction):
-    pass
-
-
-@register_action("assignment.delete")
-class AssignmentDelete(DummyAction):
-    pass
+from . import create_update_delete  # noqa
 
 
 @register_action("assignment.sort")
