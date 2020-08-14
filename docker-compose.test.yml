@@ -14,14 +14,21 @@ services:
             - MEDIA_DATABASE_NAME=openslides
             - MEDIA_DATABASE_USER=openslides
             - MEDIA_DATABASE_PASSWORD=openslides
+            - PRESENTER_HOST=dummy_presenter
+            - PRESENTER_PORT=9003
         volumes:
             - ./src:/app/src
         ports:
             - 9006:9006
+    dummy_presenter:
+        image: openslides-media-dummy-presenter
+        volumes:
+            - ./tests/dummy_presenter:/app/dummy_presenter
     tests:
         image: openslides-media-tests
         depends_on:
             - media
             - media-postgresql
+            - dummy_presenter
         volumes:
             - ./tests:/app/tests

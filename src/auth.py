@@ -3,15 +3,18 @@ import requests
 from .exceptions import NotFoundError, ServerError
 
 
-def get_mediafile_id(meeting_id, path, app, cookie):
-    return meeting_id
-
-    # TODO: Enable the call to the presenter
-    check_request_url = get_check_request_url(meeting_id, path, app)
-    app.logger.debug(f"Send check request: {check_request_url}")
+def get_mediafile_id(meeting_id, path, app, presenter_headers):
+    presenter_url = get_presenter_url(app, meeting_id, path)
+    app.logger.debug(f"Send check request: {presenter_url}")
+    payload = [
+        {
+            "presenter": "get_mediafile_id",
+            "data": {"meeting_id": meeting_id, "path": path},
+        }
+    ]
 
     try:
-        response = requests.post(check_request_url, headers={"Cookie": cookie})
+        response = requests.post(presenter_url, headers=presenter_headers, json=payload)
     except requests.exceptions.ConnectionError as e:
         app.logger.error(str(e))
         raise ServerError("The server didn't respond")
@@ -25,13 +28,13 @@ def get_mediafile_id(meeting_id, path, app, cookie):
         )
 
     try:
-        id = int(response.json()["id"])
+        id = int(response.json()[0])
     except Exception:
-        raise ServerError("The Response did not contain a valid id.")
+        raise NotFoundError("The Response did not contain a valid id.")
     return id
 
 
-def get_check_request_url():
-    presenter_host = "todo"
-    presenter_port = "todo"
+def get_presenter_url(app, meeting_id, path):
+    presenter_host = app.config["PRESENTER_HOST"]
+    presenter_port = app.config["PRESENTER_PORT"]
     return f"http://{presenter_host}:{presenter_port}/system/presenter"
