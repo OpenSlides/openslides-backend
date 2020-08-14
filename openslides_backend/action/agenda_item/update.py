@@ -3,7 +3,6 @@ from typing import Any, Dict
 from ...models.agenda_item import AgendaItem
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.schema import schema_version
-from ..action import register_action
 from ..generics import UpdateAction
 
 update_agenda_item_schema = {
@@ -28,7 +27,6 @@ update_agenda_item_schema = {
 }
 
 
-@register_action("agenda_item.update")
 class AgendaItemUpdate(UpdateAction):
     """
     Action to update agenda items.
