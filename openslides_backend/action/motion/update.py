@@ -4,20 +4,13 @@ from ...models.motion import Motion
 from ...shared.schema import schema_version
 from ..action import register_action
 from ..base import ActionPayload, DataSet, DummyAction
-from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 
 
-@register_action("motion.update")
 class MotionUpdate(UpdateAction):
     """
     Action to update motions.
     """
-
-    model = Motion()
-    schema = DefaultSchema(Motion()).get_update_schema(
-        properties=["title", "statute_paragraph_id"]
-    )  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         if not isinstance(payload, list):

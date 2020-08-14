@@ -3,9 +3,9 @@ from copy import deepcopy
 from typing import Any, Dict
 from unittest import TestCase
 
-from openslides_backend.action.motion.delete import MotionDelete
+from openslides_backend.action.motion.create_update_delete import MotionActionSet
 from openslides_backend.action.motion.sort import MotionSort
-from openslides_backend.action.motion.update import MotionUpdate, MotionUpdateMetadata
+from openslides_backend.action.motion.update import MotionUpdateMetadata
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 
 from ..fake_services.database import DatabaseTestAdapter
@@ -37,7 +37,7 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         user_id = 7826715669
-        self.action = MotionUpdate(
+        self.action = MotionActionSet.get_action("update")(
             "motion.update",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
@@ -71,7 +71,7 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7826715669
-        self.action = MotionUpdate(
+        self.action = MotionActionSet.get_action("update")(
             "motion.update",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
@@ -312,7 +312,7 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         user_id = 7826715669
-        self.action = MotionDelete(
+        self.action = MotionActionSet.get_action("delete")(
             "motion.delete",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
@@ -380,7 +380,7 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7826715669
-        self.action = MotionDelete(
+        self.action = MotionActionSet.get_action("delete")(
             "motion.delete",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
