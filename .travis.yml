@@ -1,14 +1,1 @@
-language: python
-services:
-  - docker
-python:
-  - 3.8
-env:
-  - OPENSLIDES_BACKEND_RUN_ALL_TESTS=1
-script:
-  - black --check openslides_backend/ tests/
-  - isort --check --recursive openslides_backend/ tests/
-  - flake8 openslides_backend/ tests/
-  - mypy openslides_backend/ tests/
-  - pytest --cov=openslides_backend --cov-fail-under=87 tests/
-  - docker build .
+script: echo ""
