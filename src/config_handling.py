@@ -3,7 +3,7 @@ import sys
 
 
 def get_type_for(config_value):
-    if config_value in ("MEDIA_DATABASE_PORT", "BLOCK_SIZE"):
+    if config_value in ("MEDIA_DATABASE_PORT", "BLOCK_SIZE", "PRESENTER_PORT"):
         return int
     return str
 
@@ -21,6 +21,8 @@ def init_config(app):
         "MEDIA_DATABASE_USER",
         "MEDIA_DATABASE_PASSWORD",
         "BLOCK_SIZE",
+        "PRESENTER_HOST",
+        "PRESENTER_PORT",
     )
 
     for config in all_configs:
@@ -38,8 +40,6 @@ def init_config(app):
         app.config[config] = value
 
     for config in all_configs:
-        if app.config[config] is None:
-            app.logger.critical(
-                f"Did not find an environment variable for " f"'{config}'"
-            )
+        if app.config.get(config) is None:
+            app.logger.critical(f"Did not find an environment variable for '{config}'")
             sys.exit(1)

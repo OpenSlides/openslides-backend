@@ -1,0 +1,10 @@
+FROM python:3.8.1
+
+WORKDIR /app
+
+RUN pip install flask
+
+ENV FLASK_APP ./dummy_presenter/dummy_presenter.py
+ENV FLASK_ENV development
+
+CMD ["flask", "run", "--host", "0.0.0.0", "--port", "9003"]

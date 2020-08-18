@@ -5,8 +5,8 @@ import requests
 from .exceptions import NotFoundError, ServerError
 
 
-def get_mediafile_id(meeting_id, path, app, cookie):
-    presenter_url = get_presenter_url(meeting_id, path)
+def get_mediafile_id(meeting_id, path, app, presenter_headers):
+    presenter_url = get_presenter_url(app, meeting_id, path)
     app.logger.debug(f"Send check request: {presenter_url}")
     payload = [
         {
@@ -16,9 +16,7 @@ def get_mediafile_id(meeting_id, path, app, cookie):
     ]
 
     try:
-        response = requests.post(
-            presenter_url, headers={"Cookie": cookie}, json=payload
-        )
+        response = requests.post(presenter_url, headers=presenter_headers, json=payload)
     except requests.exceptions.ConnectionError as e:
         app.logger.error(str(e))
         raise ServerError("The server didn't respond")
@@ -34,15 +32,11 @@ def get_mediafile_id(meeting_id, path, app, cookie):
     try:
         id = int(response.json()[0])
     except Exception:
-        raise ServerError("The Response did not contain a valid id.")
+        raise NotFoundError("The Response did not contain a valid id.")
     return id
 
 
-def get_presenter_url(meeting_id, path):
-    presenter_host = os.environ.get("PRESENTER_HOST")
-    presenter_port = os.environ.get("PRESENTER_PORT")
-    if presenter_host is None:
-        raise ServerError("PRESENTER_HOST is not set")
-    if presenter_port is None:
-        raise ServerError("PRESENTER_PORT is not set")
+def get_presenter_url(app, meeting_id, path):
+    presenter_host = app.config["PRESENTER_HOST"]
+    presenter_port = app.config["PRESENTER_PORT"]
     return f"http://{presenter_host}:{presenter_port}/system/presenter"
