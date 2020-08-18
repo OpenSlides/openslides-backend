@@ -1,7 +1,7 @@
 from typing import Any, Dict, Type
 from unittest.mock import MagicMock
 
-from dependency_injector import containers, providers  # type: ignore
+from dependency_injector import containers, providers
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 

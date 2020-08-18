@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Sequence, Union
 
 import simplejson as json
-from simplejson.errors import JSONDecodeError  # type: ignore
+from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatabaseException
 from ...shared.filters import Filter

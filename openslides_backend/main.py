@@ -6,7 +6,7 @@ import sys
 import time
 from typing import Any
 
-from gunicorn.app.base import BaseApplication  # type: ignore
+from gunicorn.app.base import BaseApplication
 
 from .shared.interfaces import LoggingModule, WSGIApplication
 

@@ -1,6 +1,6 @@
 from typing import Any, Callable, Optional
 
-from fastjsonschema import JsonSchemaException  # type: ignore
+from fastjsonschema import JsonSchemaException
 
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import PresenterException
