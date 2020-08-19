@@ -13,3 +13,8 @@ class ServerError(HttpError):
 class NotFoundError(HttpError):
     def __init__(self, message="Not Found."):
         super().__init__(message, 404)
+
+
+class BadRequestError(HttpError):
+    def __init__(self, message):
+        super().__init__(message, 400)
