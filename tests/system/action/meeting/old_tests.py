@@ -142,7 +142,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.create", "data": [{}]}]
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'committee_id\\', \\'name\\'] properties",
             str(response.data),
@@ -159,7 +159,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'committee_id\\', \\'name\\'] properties",
             str(response.data),
@@ -194,7 +194,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
@@ -207,7 +207,7 @@ class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
 
 class BaseMeetingUpdateActionTester(BaseActionTestCase):
@@ -299,7 +299,7 @@ class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class MeetingUpdateActionWSGITesterNoPermission(BaseMeetingUpdateActionTester):
@@ -312,7 +312,7 @@ class MeetingUpdateActionWSGITesterNoPermission(BaseMeetingUpdateActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
 
 class BaseMeetingDeleteActionTester(BaseActionTestCase):
@@ -469,13 +469,13 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_incorrect_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "You are not allowed to delete meeting 7816466305 as long as there are "
             "some required related objects (see topic_ids).",
@@ -492,10 +492,10 @@ class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
         response = self.client.post(
             "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)

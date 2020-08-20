@@ -3,7 +3,7 @@
 printf "Black:\n"
 black openslides_backend tests
 printf "\nIsort:\n"
-isort -rc openslides_backend tests
+isort openslides_backend tests
 printf "\nFlake8:\n"
 flake8 openslides_backend tests
 printf "\nmypy:\n"

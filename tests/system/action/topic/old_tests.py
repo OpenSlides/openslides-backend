@@ -227,7 +227,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": [{}]}]
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
             str(response.data),
@@ -243,7 +243,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
             str(response.data),
@@ -297,7 +297,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_correct_2(self) -> None:
@@ -365,7 +365,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": self.valid_payload_2}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_correct_3(self) -> None:
         expected_write_data = json.dumps(  # noqa: F841
@@ -414,7 +414,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": self.valid_payload_3}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
@@ -426,19 +426,19 @@ class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": self.valid_payload_2}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_3(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.create", "data": self.valid_payload_3}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
 
 class BaseTopicUpdateActionTester(BaseActionTestCase):
@@ -790,7 +790,7 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": [{}]}]
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'id\\'] properties", str(response.data),
         )
@@ -805,7 +805,7 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'id\\'] properties", str(response.data),
         )
@@ -814,31 +814,31 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_correct_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_2}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_correct_3(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_3}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_correct_4(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_4}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_correct_5(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_5}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
@@ -850,31 +850,31 @@ class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_2}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_3(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_3}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_4(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_4}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_5(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.update", "data": self.valid_payload_5}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
 
 class BaseTopicDeleteActionTester(BaseActionTestCase):
@@ -1139,7 +1139,7 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.delete", "data": [{}]}]
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'id\\'] properties", str(response.data),
         )
@@ -1154,7 +1154,7 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'id\\'] properties", str(response.data),
         )
@@ -1163,13 +1163,13 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.delete", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
     def test_wsgi_request_correct_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.delete", "data": self.valid_payload_2}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class TopicDeleteActionWSGITesterNoPermission(BaseTopicDeleteActionTester):
@@ -1181,10 +1181,10 @@ class TopicDeleteActionWSGITesterNoPermission(BaseTopicDeleteActionTester):
         response = self.client.post(
             "/", json=[{"action": "topic.delete", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "topic.delete", "data": self.valid_payload_2}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)

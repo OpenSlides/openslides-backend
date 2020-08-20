@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from ..shared.patterns import Collection
+from ..shared.patterns import Collection, FullQualifiedId
 
 Schema = Dict[str, Any]
 
@@ -117,7 +117,7 @@ class RelationMixin(Field):
         related_name: str,
         structured_relation: str = None,
         generic_relation: bool = False,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         if structured_relation is not None:
             if "$" not in related_name:
@@ -133,9 +133,10 @@ class RelationMixin(Field):
         self.related_name = related_name
         self.structured_relation = structured_relation
         self.generic_relation = generic_relation
-        ReverseRelations[self.to].append(
-            self
-        )  # TODO: Care of generic relation case when creating reverse relation field.
+        if generic_relation:
+            ReverseRelations[self.to].append(GenericFieldWrapper(self))
+        else:
+            ReverseRelations[self.to].append(self)
         super().__init__(**kwargs)  # type: ignore
 
     def get_reverse_schema(self) -> Schema:
@@ -144,8 +145,30 @@ class RelationMixin(Field):
         """
         raise NotImplementedError
 
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}(to={self.to}, related_name={self.related_name}, structured={self.structured_relation}, generic={self.generic_relation}, type={self.type}, description={self.description})"
+
 
 ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
+
+
+class GenericFieldWrapper(RelationMixin, object):
+    def __init__(self, instance: RelationMixin) -> None:
+        object.__setattr__(self, "instance", instance)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        object.__setattr__(object.__getattribute__(self, "instance"), name, value)
+
+    def __getattribute__(self, name: str) -> Any:
+        def get_reverse_schema(self: Any) -> Schema:
+            return self.extend_schema(
+                self.get_reverse_schema(), type="string", pattern=FullQualifiedId.REGEX
+            )
+
+        instance = object.__getattribute__(self, "instance")
+        if name == "get_reverse_schema":
+            return lambda *args, **kargs: get_reverse_schema(instance)
+        return instance.__getattribute__(name)
 
 
 class RequiredOneToOneField(RelationMixin, IdField):

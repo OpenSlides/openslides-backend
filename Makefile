@@ -49,7 +49,7 @@ start-dev-interactive:
 	docker-compose -f dev/docker-compose.dev.yml up  --build
 
 run-dev-standalone:
-	docker-compose -f dev/docker-compose.dev.yml exec backend sh
+	docker-compose -f dev/docker-compose.dev.yml exec backend bash
 
 run-dev run-bash: | start-dev run-dev-standalone
 

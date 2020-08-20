@@ -1,5 +1,4 @@
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqid
 
 
 class MotionStatuteParagraphActionTest(BaseActionTestCase):
@@ -13,9 +12,9 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
-        self.assert_model_exists(get_fqid("motion_statute_paragraph/1"))
-        model = self.datastore.get(get_fqid("motion_statute_paragraph/1"))
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_statute_paragraph/1")
+        model = self.get_model("motion_statute_paragraph/1")
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("weight") == 0
 
@@ -23,7 +22,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         response = self.client.post(
             "/", json=[{"action": "motion_statute_paragraph.create", "data": [{}]}],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'title\\'] properties", str(response.data),
         )
@@ -38,7 +37,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'title\\'] properties", str(response.data),
         )

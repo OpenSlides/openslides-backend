@@ -111,6 +111,18 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         return instance
 
+    def fetch_model(
+        self, fqid: FullQualifiedId, mapped_fields: List[str] = []
+    ) -> Dict[str, Any]:
+        if fqid in self.additional_relation_models:
+            additional_model = self.additional_relation_models[fqid]
+            if mapped_fields:
+                return {field: additional_model.get(field) for field in mapped_fields}
+            else:
+                return additional_model
+        else:
+            return self.database.get(fqid, mapped_fields)
+
     def create_write_request_elements(
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:

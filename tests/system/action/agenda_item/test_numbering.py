@@ -2,7 +2,7 @@ import simplejson as json
 
 from openslides_backend.models.agenda_item import AgendaItem
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqfield, get_fqid
+from tests.util import get_fqfield
 
 
 class AgendaItemNumberingTester(BaseActionTestCase):
@@ -13,11 +13,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_model(
-            get_fqid("meeting/1"),
-            {"name": "name_dto8zaGeJ1u", "agenda_item_ids": [1, 2, 3]},
+            "meeting/1", {"name": "name_dto8zaGeJ1u", "agenda_item_ids": [1, 2, 3]},
         )
         self.create_model(
-            get_fqid("agenda_item/1"),
+            "agenda_item/1",
             {
                 "id": 1,
                 "meeting_id": 1,
@@ -27,11 +26,11 @@ class AgendaItemNumberingTester(BaseActionTestCase):
             },
         )
         self.create_model(
-            get_fqid("agenda_item/2"),
+            "agenda_item/2",
             {"id": 2, "meeting_id": 1, "weight": 10, "parent_id": 1, "type": 1},
         )
         self.create_model(
-            get_fqid("agenda_item/3"),
+            "agenda_item/3",
             {"id": 3, "meeting_id": 1, "parent_id": 1, "weight": 10, "type": 1},
         )
         self.valid_payload = {"meeting_id": 1}
@@ -103,7 +102,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         response = self.client.post(
             "/", json=[{"action": "agenda_item.numbering", "data": self.valid_payload}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_numbering_with_parents(self) -> None:
@@ -158,7 +157,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         response = self.client.post(
             "/", json=[{"action": "agenda_item.numbering", "data": self.valid_payload}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_numbering_with_non_public_items(self) -> None:
@@ -213,5 +212,5 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         response = self.client.post(
             "/", json=[{"action": "agenda_item.numbering", "data": self.valid_payload}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))
