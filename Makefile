@@ -68,14 +68,39 @@ run-flake8: | build-dev
 run-mypy: | build-dev
 	docker run $(dev_args) mypy openslides_backend/ tests/
 
-run-tests: | build-dev
-	docker run $(dev_args) sh -c "OPENSLIDES_BACKEND_RUN_ALL_TESTS=1 pytest"
-
-run-tests-fast: | build-dev
-	docker run $(dev_args) pytest
+run-unit-tests: | build-dev
+	docker run $(dev_args) pytest tests/unit/
 
 
-# github actions commands (no tty available)
+# compose commands
+
+COMPOSE_FILE=docker-compose.dev.yml
+
+run-dev-compose: | build-dev
+	docker-compose -f $(COMPOSE_FILE) up -d
+
+run-dev-verbose: | build-dev
+	docker-compose -f $(COMPOSE_FILE) up
+
+stop-dev-compose:
+	docker-compose -f $(COMPOSE_FILE) down --volumes
+
+run-compose-bash: | run-dev-compose
+	docker-compose -f $(COMPOSE_FILE) exec backend sh
+
+run-tests: | run-dev-compose
+	docker-compose -f $(COMPOSE_FILE) exec backend pytest
+	docker-compose -f $(COMPOSE_FILE) down --volumes
+
+run-tests-cov: | run-dev-compose
+	docker-compose -f $(COMPOSE_FILE) exec backend pytest --cov
+	docker-compose -f $(COMPOSE_FILE) down --volumes
+
+run-tests-cov-no-tty: | run-dev-compose
+	docker run $(action_args) pytest --cov
+
+
+# other github actions commands (no tty available)
 
 run-black-check: | build-dev
 	docker run $(action_args) black --check --diff openslides_backend/ tests/
@@ -88,15 +113,3 @@ run-flake8-check: | build-dev
 
 run-mypy-check: | build-dev
 	docker run $(action_args) mypy openslides_backend/ tests/
-
-run-tests-cov: | build-dev
-	docker run $(action_args) sh -c "OPENSLIDES_BACKEND_RUN_ALL_TESTS=1 pytest --cov=openslides_backend --cov-fail-under=87"
-
-
-# compose commands
-
-run-dev-compose:
-	docker-compose -f docker-compose-dev.yml up -d
-
-stop-dev-compose:
-	docker-compose down --volumes

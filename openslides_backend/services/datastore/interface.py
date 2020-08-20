@@ -96,6 +96,9 @@ class Datastore(Protocol):
     def write(self, write_request: WriteRequestElement) -> None:
         ...
 
+    def truncate_db(self) -> None:
+        ...
+
 
 class Engine(Protocol):
     """

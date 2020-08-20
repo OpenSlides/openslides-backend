@@ -31,4 +31,4 @@ jobs:
 
     - name: run tests in docker
       if: ${{ always() }}
-      run: make run-tests-cov
+      run: make run-tests-cov-no-tty

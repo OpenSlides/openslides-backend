@@ -31,10 +31,6 @@ The action component listens to port 9002. The presenter component listens to po
 
   Use a truthy value to set loglevel to debug and activate Gunicorn's reload mechanism. Default: 0
 
-* OPENSLIDES_BACKEND_RUN_ALL_TESTS
-
-  Use a truthy value to activate some more tests when running pytest. Default: 0
-
 * AUTH_PROTOCOL
 
   Protocol of authentication service. Default: http

@@ -1,0 +1,70 @@
+version: "3"
+services:
+    backend:
+        image: openslides-backend-dev
+        ports:
+            - "9002:9002"
+            - "9003:9003"
+        volumes:
+            - ./openslides_backend:/srv/code/openslides_backend
+            - ./tests:/srv/code/tests
+        environment:
+            - DATASTORE_READER_HOST=reader
+            - DATASTORE_WRITER_HOST=writer
+        depends_on:
+            - reader
+            - writer
+        networks:
+            - datastore
+    reader:
+        build:
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
+            dockerfile: Dockerfile.prod
+            args:
+                MODULE: "reader"
+                PORT: "9010"
+        image: openslides-datastore-reader
+        ports:
+            - "9010:9010"
+        depends_on:
+            - postgresql
+        networks:
+            - datastore
+            - postgresql
+    writer:
+        build:
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
+            dockerfile: Dockerfile.prod
+            args:
+                MODULE: "writer"
+                PORT: "9011"
+        image: openslides-datastore-writer
+        ports:
+            - "9011:9011"
+        environment:
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+        depends_on:
+            - postgresql
+            - redis
+        networks:
+            - datastore
+            - postgresql
+            - redis
+    postgresql:
+        image: postgres:11
+        environment:
+            - POSTGRES_USER=openslides
+            - POSTGRES_PASSWORD=openslides
+            - POSTGRES_DB=openslides
+        networks:
+            - postgresql
+    redis:
+        image: redis:alpine
+        ports:
+            - "6379:6379"
+        networks:
+            - redis
+networks:
+    datastore:
+    postgresql:
+    redis:
