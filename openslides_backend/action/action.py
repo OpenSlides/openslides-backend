@@ -1,6 +1,6 @@
 from typing import Callable, Dict, Iterable, List, Tuple, Type, Union
 
-import fastjsonschema  # type: ignore
+import fastjsonschema
 
 from ..shared.exceptions import ActionException, EventStoreException
 from ..shared.handlers import Base as HandlerBase

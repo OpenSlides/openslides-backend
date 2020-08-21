@@ -6,19 +6,15 @@ Backend service for OpenSlides which
 * provides presentation of restricted data without autoupdate,
 * provides additional data for every autoupdate (TODO).
 
-To setup development version run
+To start the development build with auto reload run
 
-    $ python -m venv .virtualenv
-    $ source .virtualenv/bin/activate
-    $ pip install --requirement requirements.txt
+    $ make run-dev
 
-To start it run
+To start the productive build run
 
-    $ OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
+    $ make run-prod
 
-or just
-
-    $ make run-debug
+For more details and other commands, consult the [Makefile](Makefile).
 
 ## Listening ports
 
@@ -34,10 +30,6 @@ The action component listens to port 9002. The presenter component listens to po
 * OPENSLIDES_BACKEND_DEBUG
 
   Use a truthy value to set loglevel to debug and activate Gunicorn's reload mechanism. Default: 0
-
-* OPENSLIDES_BACKEND_RUN_ALL_TESTS
-
-  Use a truthy value to activate some more tests when running pytest. Default: 0
 
 * AUTH_PROTOCOL
 

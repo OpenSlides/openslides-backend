@@ -1,6 +1,6 @@
 from typing import Type
 
-from dependency_injector import containers, providers  # type: ignore
+from dependency_injector import containers, providers
 
 from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication

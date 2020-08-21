@@ -1,7 +1,7 @@
 from typing import Callable, Dict, Type
 
-import fastjsonschema  # type: ignore
-from fastjsonschema import JsonSchemaException  # type: ignore
+import fastjsonschema
+from fastjsonschema import JsonSchemaException
 
 from ..shared.exceptions import PresenterException
 from ..shared.handlers import Base as HandlerBase

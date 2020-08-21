@@ -5,7 +5,7 @@ import simplejson as json
 from werkzeug.exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
 from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
-from werkzeug.wrappers.json import JSONMixin  # type: ignore
+from werkzeug.wrappers.json import JSONMixin
 
 from ..shared.exceptions import ViewException
 from ..shared.interfaces import StartResponse, WSGIEnvironment

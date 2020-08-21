@@ -5,15 +5,30 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-and-test-dev-image:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    # repair the tests
-    #- uses: actions/setup-python@v2
-    
-    #- name: pytest
-    #  run: make test
-        
-    - name: docker build
+
+    - name: create docker dev image
       run: make build-dev
+
+    - name: check black in docker
+      if: ${{ always() }}
+      run: make run-black-check
+
+    - name: check isort in docker
+      if: ${{ always() }}
+      run: make run-isort-check
+
+    - name: check flake8 in docker
+      if: ${{ always() }}
+      run: make run-flake8-check
+
+    - name: check mypy in docker
+      if: ${{ always() }}
+      run: make run-mypy-check
+
+    - name: run tests in docker
+      if: ${{ always() }}
+      run: make run-tests-cov-no-tty

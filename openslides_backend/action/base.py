@@ -1,6 +1,6 @@
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
-import fastjsonschema  # type: ignore
+import fastjsonschema
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
