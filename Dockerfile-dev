@@ -13,6 +13,7 @@ COPY requirements_production.txt .
 RUN pip install --no-cache-dir --requirement requirements.txt
 
 COPY cleanup.sh .
+COPY wait.sh .
 COPY setup.cfg .
 
 ARG OPENSLIDES_BACKEND_ACTION_PORT=9002
