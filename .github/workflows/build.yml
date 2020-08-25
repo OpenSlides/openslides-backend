@@ -15,20 +15,28 @@ jobs:
 
     - name: check black in docker
       if: ${{ always() }}
-      run: make run-black-check
+      run: make ci-black-check
 
     - name: check isort in docker
       if: ${{ always() }}
-      run: make run-isort-check
+      run: make ci-isort-check
 
     - name: check flake8 in docker
       if: ${{ always() }}
-      run: make run-flake8-check
+      run: make ci-flake8-check
 
     - name: check mypy in docker
       if: ${{ always() }}
-      run: make run-mypy-check
+      run: make ci-mypy-check
 
-    - name: run tests in docker
+    - name: build tests
       if: ${{ always() }}
-      run: make run-tests-cov-no-tty
+      run: make build-tests
+
+    - name: run tests with coverage
+      if: ${{ always() }}
+      run: make ci-run-tests-cov
+
+    - name: stop tests
+      if: ${{ always() }}
+      run: make stop-tests

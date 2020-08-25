@@ -56,60 +56,56 @@ run-dev-interactive run-bash: | build-dev
 run-cleanup: | build-dev
 	docker run $(dev_args) sh cleanup.sh
 
-run-black: | build-dev
-	docker run $(dev_args) black openslides_backend/ tests/
-
-run-isort: | build-dev
-	docker run $(dev_args) isort --recursive openslides_backend/ tests/
-
-run-flake8: | build-dev
-	docker run $(dev_args) flake8 openslides_backend/ tests/
-
-run-mypy: | build-dev
-	docker run $(dev_args) mypy openslides_backend/ tests/
-
 run-unit-tests: | build-dev
 	docker run $(dev_args) pytest tests/unit/
 
 
-# compose commands
+# testing
+# -T is important for GH actions: There is no TTY
 
-COMPOSE_FILE=docker-compose.dev.yml
+DC=docker-compose -f docker-compose.dev.yml
 
-run-dev-compose: | build-dev
-	docker-compose -f $(COMPOSE_FILE) up -d
+build-tests: | build-dev
+	$(DC) build
 
-run-dev-verbose: | build-dev
-	docker-compose -f $(COMPOSE_FILE) up
+start-test-setup: | build-tests
+	$(DC) up -d
+	$(DC) exec -T backend ./wait.sh writer 9011
+	$(DC) exec -T backend ./wait.sh reader 9010
 
-stop-dev-compose:
-	docker-compose -f $(COMPOSE_FILE) down --volumes
+start-test-setup-verbose: | build-tests
+	$(DC) up
+	$(DC) exec -T backend ./wait.sh writer 9011
+	$(DC) exec -T backend ./wait.sh reader 9010
 
-run-compose-bash: | run-dev-compose
-	docker-compose -f $(COMPOSE_FILE) exec backend sh
+run-tests-interactive: | start-test-setup
+	$(DC) exec backend sh
 
-run-tests: | run-dev-compose
-	docker-compose -f $(COMPOSE_FILE) exec backend pytest
-	docker-compose -f $(COMPOSE_FILE) down --volumes
+run-tests: | start-test-setup
+	$(DC) exec backend pytest
+	$(DC) down --volumes
 
-run-tests-cov: | run-dev-compose
-	docker-compose -f $(COMPOSE_FILE) exec backend pytest --cov
-	docker-compose -f $(COMPOSE_FILE) down --volumes
+run-tests-cov: | start-test-setup
+	$(DC) exec backend pytest --cov
+	$(DC) down --volumes
 
-run-tests-cov-no-tty: | run-dev-compose
-	docker run $(action_args) pytest --cov
+ci-run-tests-cov: | start-test-setup
+	$(DC) exec -T backend pytest --cov
+	$(DC) down --volumes
 
+stop-tests:
+	$(DC) down --volumes
 
 # other github actions commands (no tty available)
 
-run-black-check: | build-dev
+ci-black-check: | build-dev
 	docker run $(action_args) black --check --diff openslides_backend/ tests/
 
-run-isort-check: | build-dev
+ci-isort-check: | build-dev
 	docker run $(action_args) isort --check-only --diff openslides_backend/ tests/
 
-run-flake8-check: | build-dev
+ci-flake8-check: | build-dev
 	docker run $(action_args) flake8 openslides_backend/ tests/
 
-run-mypy-check: | build-dev
+ci-mypy-check: | build-dev
 	docker run $(action_args) mypy openslides_backend/ tests/
