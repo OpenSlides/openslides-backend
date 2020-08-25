@@ -9,6 +9,7 @@ from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
+from ..shared.typing import ModelMap
 from .action_interface import ActionPayload
 from .relations import Relations, RelationsHandler
 
@@ -52,10 +53,17 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema: Dict
     schema_validator: Callable[[ActionPayload], None]
 
-    def __init__(self, name: str, permission: Permission, database: Datastore) -> None:
+    def __init__(
+        self,
+        name: str,
+        permission: Permission,
+        database: Datastore,
+        additional_relation_models: ModelMap = {},
+    ) -> None:
         self.name = name
         self.permission = permission
         self.database = database
+        self.additional_relation_models = additional_relation_models
 
     def perform(
         self, payload: ActionPayload, user_id: int
@@ -185,6 +193,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 is_reverse,
                 only_add=shortcut,
                 only_remove=False,
+                additional_relation_models=self.additional_relation_models,
             )
             result = handler.perform()
             relations.update(result)

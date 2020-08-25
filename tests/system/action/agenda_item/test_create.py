@@ -5,6 +5,7 @@ from tests.util import get_fqid
 class AgendaItemSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model(get_fqid("topic/1"), {"name": "test"})
+        self.create_model(get_fqid("meeting/1"), {"name": "test"})
         response = self.client.post(
             "/",
             json=[
