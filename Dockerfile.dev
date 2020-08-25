@@ -1,7 +1,6 @@
 FROM python:3.8.1
 
-RUN apt-get -y update && apt-get -y upgrade && \
-  apt-get install --no-install-recommends -y \
+RUN apt-get -y update && apt-get install --no-install-recommends -y \
     postgresql-client
 
 WORKDIR /app
@@ -15,7 +14,6 @@ COPY execute-cleanup.sh .
 COPY setup.cfg .
 
 EXPOSE 9006
-# TODO: Make the port configurable via ENV
 
 ENV FLASK_APP ./src/mediaserver.py
 ENV FLASK_ENV development

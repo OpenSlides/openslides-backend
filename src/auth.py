@@ -1,17 +1,21 @@
 import requests
 
-from .exceptions import NotFoundError, ServerError
+from .exceptions import ServerError
+
+AUTH_HEADER = "Authentication"
 
 
-def get_mediafile_id(meeting_id, path, app, presenter_headers):
-    presenter_url = get_presenter_url(app, meeting_id, path)
-    app.logger.debug(f"Send check request: {presenter_url}")
+def check_mediafile_id(mediafile_id, app, presenter_headers):
+    """
+    Returns a triple: ok, filename, auth_header.
+    filename is given, if ok=True. If ok=false, the user has no perms.
+    if auth_header is returned, it must be set in the response.
+    """
+    presenter_url = get_presenter_url(app)
     payload = [
-        {
-            "presenter": "get_mediafile_id",
-            "data": {"meeting_id": meeting_id, "path": path},
-        }
+        {"presenter": "check_mediafile_id", "data": {"mediafile_id": mediafile_id}}
     ]
+    app.logger.debug(f"Send check request: {presenter_url}: {payload}")
 
     try:
         response = requests.post(presenter_url, headers=presenter_headers, json=payload)
@@ -19,22 +23,36 @@ def get_mediafile_id(meeting_id, path, app, presenter_headers):
         app.logger.error(str(e))
         raise ServerError("The server didn't respond")
 
-    if response.status_code in (requests.codes.forbidden, requests.codes.not_found):
-        raise NotFoundError()
     if response.status_code != requests.codes.ok:
         raise ServerError(
-            f"The server responded with an unexpected code "
+            "The server responded with an unexpected code "
             f"{response.status_code}: {response.content}"
         )
 
+    # Expects: {ok: bool, filename: Optional[str]}
+
     try:
-        id = int(response.json()[0])
-    except Exception:
-        raise NotFoundError("The Response did not contain a valid id.")
-    return id
+        content = response.json()
+    except ValueError:
+        raise ServerError("The Response does not contain valid JSON.")
+    if not isinstance(content, list) or len(content) != 1:
+        raise ServerError("The returned json is not a list of length 1.")
+    content = content[0]
+    if not isinstance(content, dict):
+        raise ServerError("The returned content is not a dict.")
+
+    auth_header = response.headers.get(AUTH_HEADER)
+
+    if not content.get("ok", False):
+        return False, None, auth_header
+
+    if "filename" not in content:
+        raise ServerError("The presenter did not provide a filename")
+
+    return True, content["filename"], auth_header
 
 
-def get_presenter_url(app, meeting_id, path):
+def get_presenter_url(app):
     presenter_host = app.config["PRESENTER_HOST"]
     presenter_port = app.config["PRESENTER_PORT"]
     return f"http://{presenter_host}:{presenter_port}/system/presenter"
