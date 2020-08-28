@@ -62,5 +62,5 @@ class AuthenticationHTTPAdapter:
         """
         Fallback to guest mode if auth is down
         """
-        self.logger.debug(f"Auth cannot be reached. Fall back to guest mode.")
+        self.logger.debug("Auth cannot be reached. Fall back to guest mode.")
         return GUEST_USER_ID

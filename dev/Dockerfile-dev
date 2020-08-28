@@ -1,0 +1,18 @@
+FROM python:3.8.1-alpine3.11
+
+RUN apk add --no-cache gcc musl-dev linux-headers make curl git
+
+WORKDIR /srv/code
+COPY requirements.txt .
+COPY setup.cfg .
+COPY Makefile Makefile
+COPY dev dev
+
+RUN pip install --no-cache-dir --requirement dev/requirements_development.txt
+
+EXPOSE 9002
+EXPOSE 9003
+
+ENV OPENSLIDES_BACKEND_DEBUG 1
+
+# CMD [ "python", "-m", "openslides_backend" ]
