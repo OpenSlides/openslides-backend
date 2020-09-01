@@ -2,13 +2,14 @@ import re
 from typing import Any, Iterable, Union
 
 import simplejson as json
-from werkzeug.exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
+from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin
 
 from ..shared.exceptions import ViewException
 from ..shared.interfaces import StartResponse, WSGIEnvironment
+from .http_exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
 
 health_route = re.compile("^/health$")
 
@@ -61,8 +62,8 @@ class OpenSlidesBackendWSGIApplication:
             )
         try:
             request_body = request.get_json()
-        except BadRequest as exception:
-            return exception
+        except WerkzeugBadRequest as exception:
+            return BadRequest(exception.description)
         self.logger.debug(f"Request contains JSON: {request_body}.")
 
         # Dispatch view and return response.
