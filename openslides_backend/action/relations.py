@@ -251,7 +251,7 @@ class RelationsHandler:
         for rel_id, rel in sorted(rels.items(), key=lambda item: str(item[0])):
             new_value: Optional[Union[int, List[int]]]
             if rel_id in add:
-                if self.field.type in ("1:1", "m:1"):
+                if self.type in ("1:1", "m:1"):
                     if rel.get(related_name) is None:
                         new_value = self.id
                     else:
@@ -260,7 +260,7 @@ class RelationsHandler:
                             "because related field is not empty."
                         )
                 else:
-                    assert self.field.type in ("1:m", "m:n")
+                    assert self.type in ("1:m", "m:n")
                     value_to_be_added = self.id
                     new_value = rel.get(related_name, []) + [value_to_be_added]
                 rel_element = RelationsElement(type="add", value=new_value)
@@ -274,10 +274,10 @@ class RelationsHandler:
                         "long as there are some required related objects "
                         f"(see {self.field_name})."
                     )
-                if self.field.type in ("1:1", "m:1"):
+                if self.type in ("1:1", "m:1"):
                     new_value = None
                 else:
-                    assert self.field.type in ("1:m", "m:n")
+                    assert self.type in ("1:m", "m:n")
                     value_to_be_removed = self.id
                     new_value = rel[related_name]
                     assert isinstance(new_value, list)
@@ -303,7 +303,7 @@ class RelationsHandler:
         for rel_id, rel in sorted(rels.items(), key=lambda item: item[0]):
             new_value: Optional[Union[FullQualifiedId, List[FullQualifiedId]]]
             if rel_id in add:
-                if self.field.type in ("1:1", "m:1"):
+                if self.type in ("1:1", "m:1"):
                     if rel.get(related_name) is None:
                         new_value = FullQualifiedId(
                             collection=self.field.own_collection, id=self.id
@@ -314,7 +314,7 @@ class RelationsHandler:
                             "because related field is not empty."
                         )
                 else:
-                    assert self.field.type in ("1:m", "m:n")
+                    assert self.type in ("1:m", "m:n")
                     value_to_be_added = FullQualifiedId(
                         collection=self.field.own_collection, id=self.id
                     )
@@ -330,10 +330,10 @@ class RelationsHandler:
                         "long as there are some required related objects "
                         f"(see {self.field_name})."
                     )
-                if self.field.type in ("1:1", "m:1"):
+                if self.type in ("1:1", "m:1"):
                     new_value = None
                 else:
-                    assert self.field.type in ("1:m", "m:n")
+                    assert self.type in ("1:m", "m:n")
                     value_to_be_removed = FullQualifiedId(
                         collection=self.field.own_collection, id=self.id
                     )
