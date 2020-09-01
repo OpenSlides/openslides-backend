@@ -15,10 +15,10 @@ class MeetingActionSet(ActionSet):
 
     model = Meeting()
     create_schema = DefaultSchema(Meeting()).get_create_schema(
-        properties=["committee_id", "name"],
+        properties=["committee_id", *Meeting().get_settings_keys()],
         required_properties=["committee_id", "name"],
     )
     update_schema = DefaultSchema(Meeting()).get_update_schema(
-        properties=["name", "motion_poll_default_group_ids"]
+        properties=Meeting().get_settings_keys()
     )
     delete_schema = DefaultSchema(Meeting()).get_delete_schema()
