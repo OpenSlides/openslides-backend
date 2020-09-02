@@ -53,10 +53,13 @@ jobs:
       run: black --check --diff openslides_backend/ tests/
 
     - name: Check isort
+      if: ${{ always() }}
       run: isort --check-only --diff openslides_backend/ tests/
 
     - name: Check flake8
+      if: ${{ always() }}
       run: flake8 openslides_backend/ tests/
 
     - name: Check mypy
+      if: ${{ always() }}
       run: mypy openslides_backend/ tests/

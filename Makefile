@@ -17,7 +17,7 @@ mypy:
 test:
 	pytest
 
-test-incomplete:
+test-unit-integration:
 	pytest tests/unit tests/integration
 
 run-debug:
@@ -27,7 +27,7 @@ pip-check:
 	pip-check
 
 
-# Build and run production docker container
+# Build and run production docker container (not usable inside the docker container)
 
 build-prod:
 	docker build . --tag=openslides-backend
@@ -37,7 +37,7 @@ run-prod: | build-prod
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
 
 
-# Build and run development docker container setup with docker compose
+# Build and run development docker container setup with docker compose (not usable inside docker container)
 
 start-dev:
 	docker-compose -f dev/docker-compose.dev.yml up --build --detach
@@ -48,8 +48,16 @@ stop-dev:
 start-dev-interactive:
 	docker-compose -f dev/docker-compose.dev.yml up  --build
 
-run-dev run-bash:
+run-dev-standalone:
 	docker-compose -f dev/docker-compose.dev.yml exec backend sh
+
+run-dev run-bash: | start-dev run-dev-standalone
 
 run-tests:
 	dev/run-tests.sh
+
+
+# Build standalone development container (not usable inside the docker container)
+
+build-dev:
+	docker build --file=dev/Dockerfile-dev . --tag=openslides-backend-dev

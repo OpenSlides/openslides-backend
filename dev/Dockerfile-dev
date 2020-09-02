@@ -15,4 +15,4 @@ EXPOSE 9003
 
 ENV OPENSLIDES_BACKEND_DEBUG 1
 
-# CMD [ "python", "-m", "openslides_backend" ]
+CMD [ "python", "-m", "openslides_backend" ]

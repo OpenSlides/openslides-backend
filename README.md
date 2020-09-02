@@ -18,13 +18,23 @@ To start the development build run in a first terminal
 
 Then run in a separate terminal
 
-    $ make run-dev
+    $ make run-dev-standalone
 
-Inside this terminal you may use all commands you find in the [Makefile](Makefile). You may want to use
+Inside this terminal you may use some commands you find in the [Makefile](Makefile). You may want to use
 
     $ make run-debug
     $ make test
     $ make  # Coding style tools, typechecker and tests all together
+
+You may also use
+
+    $ make run-dev
+
+to do everythin at once. Do not forget to run
+
+    $ make stop-dev
+  
+when you are done.
 
 ### Development without Docker Compose
 
@@ -34,14 +44,9 @@ To setup and local development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
-    $ pip install --requirement dev/requirement_development.txt
-    $ make run-debug
+    $ pip install --requirement dev/requirements_development.txt
 
 To start it run
-
-    $ OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
-
-or just
 
     $ make run-debug
 
