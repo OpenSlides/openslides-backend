@@ -1,0 +1,65 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-production-image:
+    name: Build and test production docker image
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create docker production image
+      run: docker build . --tag=openslides-backend
+
+    - name: Run docker production image
+      run: docker run --detach --publish 9002:9002 --publish 9003:9003 openslides-backend
+
+    - name: Sleep for some seconds
+      run: sleep 2
+
+    - name: Fire a test request to actions component
+      run: curl -I localhost:9002/health
+
+    - name: Fire a test request to presenter component
+      run: curl -I localhost:9003/health
+
+  build-and-test-dev-image:
+    name: Build and test development image
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Run tests
+      run: dev/run-tests.sh
+
+  check-coding-style:
+    name: Check coding style with black, isort, flake8 and mypy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python 3.8.1
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8.1
+
+    - name: Install requirements
+      run: pip install --requirement dev/requirements_development.txt
+
+    - name: Check black
+      run: black --check --diff openslides_backend/ tests/
+
+    - name: Check isort
+      if: ${{ always() }}
+      run: isort --check-only --diff openslides_backend/ tests/
+
+    - name: Check flake8
+      if: ${{ always() }}
+      run: flake8 openslides_backend/ tests/
+
+    - name: Check mypy
+      if: ${{ always() }}
+      run: mypy openslides_backend/ tests/

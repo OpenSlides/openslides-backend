@@ -1,14 +1,17 @@
 version: "3"
 services:
     backend:
+        build:
+            context: ..
+            dockerfile: dev/Dockerfile-dev
         image: openslides-backend-dev
         ports:
             - "9002:9002"
             - "9003:9003"
         command: sleep infinity
         volumes:
-            - ./openslides_backend:/srv/code/openslides_backend
-            - ./tests:/srv/code/tests
+            - ../openslides_backend:/srv/code/openslides_backend
+            - ../tests:/srv/code/tests
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer

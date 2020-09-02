@@ -2,19 +2,54 @@
 
 Backend service for OpenSlides which
 
-* accepts incomming requests to add, change or delete data, checks and parses them and writes them to the event stream,
+* accepts incomming requests to add, change or delete data, checks and parses them and writes them to the datastore,
 * provides presentation of restricted data without autoupdate,
-* provides additional data for every autoupdate (TODO).
 
-To start the development build with auto reload run
+Use docker to build and start the application with your favorite tools. See [Dockerfile](Dockerfile) for steps to setup the production build.
+
+
+## Development
+
+### Development with Docker Compose
+
+To start the development build run in a first terminal
+
+    $ make start-dev-interactive
+
+Then run in a separate terminal
+
+    $ make run-dev-standalone
+
+Inside this terminal you may use some commands you find in the [Makefile](Makefile). You may want to use
+
+    $ make run-debug
+    $ make test
+    $ make  # Coding style tools, typechecker and tests all together
+
+You may also use
 
     $ make run-dev
 
-To start the productive build run
+to do everythin at once. Do not forget to run
 
-    $ make run-prod
+    $ make stop-dev
+  
+when you are done.
 
-For more details and other commands, consult the [Makefile](Makefile).
+### Development without Docker Compose
+
+You may use some commands you find in the [Makefile](Makefile) even outside a docker environment. Nevertheless we prefer some kind of system tests here that require other services of Openslides 4 (e. g. the datastore with postgres and redis). If you do not use Docker Compose, you have to provide these services in another way. Only for integration and unit tests all other services can be absent.
+
+To setup and local development version run
+
+    $ python -m venv .virtualenv
+    $ source .virtualenv/bin/activate
+    $ pip install --requirement dev/requirements_development.txt
+
+To start it run
+
+    $ make run-debug
+
 
 ## Listening ports
 
@@ -25,7 +60,7 @@ The action component listens to port 9002. The presenter component listens to po
 
 * OPENSLIDES_BACKEND_COMPONENT
 
-  Use one of the following values to start only one component of this service: `action` or `presenter` or `addendum`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
+  Use one of the following values to start only one component of this service: `action` or `presenter`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
 
 * OPENSLIDES_BACKEND_DEBUG
 

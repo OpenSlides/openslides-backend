@@ -22,5 +22,5 @@ class GeneralPresenterTester(TestCase):
             )
         self.assertEqual(
             context_manager.exception.message,
-            f"Presenter non_existing_presenter does not exist.",
+            "Presenter non_existing_presenter does not exist.",
         )
