@@ -1,18 +1,12 @@
 from typing import Type
 from unittest.mock import MagicMock
 
-from werkzeug.test import Client as WerkzeugClient
-from werkzeug.wrappers import BaseResponse
-
 from openslides_backend.environment import get_environment
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 
-
-class Client(WerkzeugClient):
-    def __init__(self, application: WSGIApplication):
-        super().__init__(application, BaseResponse)
+from ..util import Client
 
 
 def create_action_test_client() -> Client:

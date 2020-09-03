@@ -1,9 +1,18 @@
+from werkzeug.test import Client as WerkzeugClient
+from werkzeug.wrappers import BaseResponse
+
+from openslides_backend.shared.interfaces import WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     Collection,
     FullQualifiedField,
     FullQualifiedId,
 )
+
+
+class Client(WerkzeugClient):
+    def __init__(self, application: WSGIApplication):
+        super().__init__(application, BaseResponse)
 
 
 def get_fqid(value: str) -> FullQualifiedId:
