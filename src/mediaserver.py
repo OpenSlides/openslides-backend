@@ -2,9 +2,9 @@ import atexit
 import base64
 import json
 
-from flask import Flask, Response, request
+from flask import Flask, Response, jsonify, request
 
-from .auth import get_mediafile_id
+from .auth import AUTH_HEADER, check_mediafile_id
 from .config_handling import init_config
 from .database import Database
 from .exceptions import BadRequestError, HttpError, NotFoundError
@@ -25,25 +25,27 @@ def handle_view_error(error):
         f"{error.message}"
     )
     res_content = {"message": f"Media-Server: {error.message}"}
-    return json.dumps(res_content), error.status_code
+    response = jsonify(res_content)
+    response.status_code = error.status_code
+    return response
 
 
-@app.route("/system/media/get/<int:meeting_id>/<path:path>")
-def serve(meeting_id, path):
-    if not path:
-        raise NotFoundError()
-
+@app.route("/system/media/get/<int:mediafile_id>")
+def serve(mediafile_id):
     # get mediafile id
     presenter_headers = dict(request.headers)
     del_keys = [key for key in presenter_headers if "content" in key]
     for key in del_keys:
         del presenter_headers[key]
-    media_id = get_mediafile_id(meeting_id, path, app, presenter_headers)
-    app.logger.debug(f'Id for "{path}" and "{meeting_id}" is {media_id}')
+    ok, filename, auth_header = check_mediafile_id(mediafile_id, app, presenter_headers)
+    if not ok:
+        raise NotFoundError()
+
+    app.logger.debug(f'Filename for "{mediafile_id}" is {filename}')
 
     # Query file from db
     global database
-    data, mimetype = database.get_mediafile(media_id)
+    data, mimetype = database.get_mediafile(mediafile_id)
 
     # Send data (chunked)
     def chunked(size, source):
@@ -51,7 +53,11 @@ def serve(meeting_id, path):
             yield bytes(source[i : i + size])
 
     block_size = app.config["BLOCK_SIZE"]
-    return Response(chunked(block_size, data), mimetype=mimetype)
+    response = Response(chunked(block_size, data), mimetype=mimetype)
+    response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+    if auth_header:
+        response.headers[AUTH_HEADER] = auth_header
+    return response
 
 
 @app.route("/internal/media/upload/", methods=["POST"])
