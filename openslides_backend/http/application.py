@@ -7,6 +7,7 @@ from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin
 
+from ..services.authentication import AUTHENTICATION_HEADER
 from ..shared.exceptions import ViewException
 from ..shared.interfaces import StartResponse, WSGIEnvironment
 from .http_exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
@@ -69,7 +70,9 @@ class OpenSlidesBackendWSGIApplication:
         # Dispatch view and return response.
         view_instance = self.view(self.logging, self.services)
         try:
-            response_body = view_instance.dispatch(request_body, request.headers)
+            response_body, access_token = view_instance.dispatch(
+                request_body, request.headers
+            )
         except ViewException as exception:
             if exception.status_code == 400:
                 return BadRequest(exception.message)
@@ -85,7 +88,10 @@ class OpenSlidesBackendWSGIApplication:
         self.logger.debug(
             f"All done. Application sends HTTP 200 with body {response_body}."
         )
-        return Response(json.dumps(response_body), content_type="application/json")
+        response = Response(json.dumps(response_body), content_type="application/json")
+        if access_token is not None:
+            response.headers[AUTHENTICATION_HEADER] = access_token
+        return response
 
     def health_info(self, request: Request) -> Union[Response, HTTPException]:
         """

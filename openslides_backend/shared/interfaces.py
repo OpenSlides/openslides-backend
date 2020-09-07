@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, List, Optional, Text
+from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
@@ -76,7 +76,9 @@ class View(Protocol):  # pragma: no cover
     def __init__(self, logging: LoggingModule, services: Services) -> None:
         ...
 
-    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
+    def dispatch(
+        self, body: RequestBody, headers: Headers
+    ) -> Tuple[ResponseBody, Optional[str]]:
         ...
 
 
@@ -102,7 +104,7 @@ class Authentication(Protocol):  # pragma: no cover
     def __init__(self, authentication_url: str, logging: LoggingModule) -> None:
         ...
 
-    def get_user(self, headers: Headers) -> int:
+    def get_user(self, headers: Headers) -> Tuple[int, Optional[str]]:
         ...
 
 

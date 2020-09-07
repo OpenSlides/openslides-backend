@@ -16,7 +16,7 @@ DEFAULTS = {
     "AUTH_PROTOCOL": "http",
     "AUTH_HOST": "localhost",
     "AUTH_PORT": "9004",
-    "AUTH_PATH": "",
+    "AUTH_PATH": "/internal/auth",
     "PERMISSION_PROTOCOL": "http",
     "PERMISSION_HOST": "localhost",
     "PERMISSION_PORT": "9005",

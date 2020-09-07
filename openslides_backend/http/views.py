@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from ..action import Action
 from ..action.action import ActionHandler
@@ -34,16 +34,16 @@ class BaseView:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 
-    def get_user_id_from_headers(self, headers: Headers) -> int:
+    def get_user_id_from_headers(self, headers: Headers) -> Tuple[int, str]:
         """
         Returns user id from authentication service using HTTP headers.
         """
         try:
-            user_id = self.services.authentication().get_user(headers)
+            user_id, access_token = self.services.authentication().get_user(headers)
         except AuthenticationException as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug(f"User id is {user_id}.")
-        return user_id
+        return user_id, access_token
 
 
 class ActionView(BaseView):
@@ -54,14 +54,14 @@ class ActionView(BaseView):
 
     method = "POST"
 
-    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
+    def dispatch(self, body: RequestBody, headers: Headers) -> Tuple[ResponseBody, str]:
         """
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching action request.")
 
         # Get user id.
-        user_id = self.get_user_id_from_headers(headers)
+        user_id, access_token = self.get_user_id_from_headers(headers)
 
         # Setup payload.
         payload: ActionPayload = body
@@ -76,7 +76,7 @@ class ActionView(BaseView):
             raise ViewException(exception.message, status_code=403)
 
         self.logger.debug("Action request finished successfully.")
-        return result
+        return result, access_token
 
     def get_health_info(self) -> Dict[str, Any]:
         """
@@ -93,14 +93,14 @@ class PresenterView(BaseView):
 
     method = "POST"
 
-    def dispatch(self, body: RequestBody, headers: Headers) -> ResponseBody:
+    def dispatch(self, body: RequestBody, headers: Headers) -> Tuple[ResponseBody, str]:
         """
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching presenter request.")
 
         # Get user_id.
-        user_id = self.get_user_id_from_headers(headers)
+        user_id, access_token = self.get_user_id_from_headers(headers)
 
         # Setup payload.
         payload: PresenterPayload = body
@@ -114,7 +114,7 @@ class PresenterView(BaseView):
         except PresenterException as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug("Presenter request finished successfully. Send response now.")
-        return presenter_response
+        return presenter_response, access_token
 
     def get_health_info(self) -> Dict[str, Any]:
         """
