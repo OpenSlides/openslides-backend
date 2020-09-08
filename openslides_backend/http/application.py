@@ -71,7 +71,7 @@ class OpenSlidesBackendWSGIApplication:
         view_instance = self.view(self.logging, self.services)
         try:
             response_body, access_token = view_instance.dispatch(
-                request_body, request.headers
+                request_body, request.headers, request.cookies
             )
         except ViewException as exception:
             if exception.status_code == 400:
