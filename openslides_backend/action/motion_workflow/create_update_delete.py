@@ -12,7 +12,7 @@ class MotionWorkflowActionSet(ActionSet):
 
     model = MotionWorkflow()
     create_schema = DefaultSchema(MotionWorkflow()).get_create_schema(
-        properties=["name", "meeting_id"], required_properties=["name"],
+        properties=["name", "meeting_id"], required_properties=["name", "meeting_id"],
     )
     update_schema = DefaultSchema(MotionWorkflow()).get_update_schema(
         properties=["name", "first_state_id"]

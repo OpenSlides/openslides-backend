@@ -1,9 +1,9 @@
 from openslides_backend.shared.exceptions import DatabaseException
-from tests.system.base import BaseSystemTestCase
+from tests.system.action.base import BaseActionTestCase
 from tests.util import get_fqid
 
 
-class MotionWorkflowSystemTest(BaseSystemTestCase):
+class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.create_model(get_fqid("motion_workflow/111"), {"name": "name_srtgb123"})
         response = self.client.post(
