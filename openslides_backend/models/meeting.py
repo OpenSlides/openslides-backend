@@ -55,7 +55,8 @@ class Meeting(Model):
             "list_of_speakers_present_users_only",
             "list_of_speakers_show_first_contribution",
             "motions_default_workflow_id",
-            "motions_default_statute_amendments_workflow_id",
+            "motions_default_amendment_workflow_id",
+            "motions_default_statute_amendment_workflow_id",
             "motions_preamble",
             "motions_default_line_numbering",
             "motions_line_length",
@@ -174,10 +175,15 @@ class Meeting(Model):
     list_of_speakers_show_first_contribution = fields.BooleanField()
 
     motions_default_workflow_id = fields.RequiredOneToOneField(
-        to=Collection("workflow"), related_name="default_workflow_meeting_id",
+        to=Collection("motion_workflow"), related_name="default_workflow_meeting_id",
     )
-    motions_default_statute_amendments_workflow_id = fields.RequiredOneToOneField(
-        to=Collection("workflow"), related_name="default_statute_amendments_meeting_id",
+    motions_default_amendment_workflow_id = fields.RequiredOneToOneField(
+        to=Collection("motion_workflow"),
+        related_name="default_amendment_workflow_meeting_id",
+    )
+    motions_default_statute_amendment_workflow_id = fields.RequiredOneToOneField(
+        to=Collection("motion_workflow"),
+        related_name="default_statute_amendment_workflow_meeting_id",
     )
     motions_preamble = fields.TextField()
     motions_default_line_numbering = fields.TextField(
