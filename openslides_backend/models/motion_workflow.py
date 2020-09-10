@@ -27,7 +27,7 @@ class MotionWorkflow(Model):
         to=Collection("meeting"),
         related_name="motion_workflow_ids",
     )
-    first_state_id = fields.RequiredForeignKeyField(
+    first_state_id = fields.RequiredOneToOneField(
         description="The id of the first state of this motion workflow.",
         to=Collection("motion_state"),
         related_name="first_state_of_workflow_id",
