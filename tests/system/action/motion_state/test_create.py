@@ -4,10 +4,16 @@ from tests.util import get_fqid
 
 class MotionStateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
+        self.create_model(
+            get_fqid("motion_workflow/42"), {"name": "test_name_fjwnq8d8tje8"}
+        )
         response = self.client.post(
             "/",
             json=[
-                {"action": "motion_state.create", "data": [{"name": "test_Xcdfgee"}]}
+                {
+                    "action": "motion_state.create",
+                    "data": [{"name": "test_Xcdfgee", "workflow_id": 42}],
+                }
             ],
         )
         self.assertEqual(response.status_code, 200)
@@ -21,7 +27,8 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\'] properties", str(response.data),
+            "data[0] must contain [\\'name\\', \\'workflow_id\\'] properties",
+            str(response.data),
         )
 
     def test_create_wrong_field(self) -> None:
@@ -36,5 +43,6 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\'] properties", str(response.data),
+            "data[0] must contain [\\'name\\', \\'workflow_id\\'] properties",
+            str(response.data),
         )

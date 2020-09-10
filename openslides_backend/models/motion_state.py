@@ -7,13 +7,15 @@ class MotionState(Model):
     """
     Model for motion state.
 
-    Reverse fields:
-    - motion_ids
-    - motion_recommendation_ids
+    There are the following reverse relation fields:
+        motion_ids: (motion/state_id)[];
+        motion_recommendation_ids: (motion/recommendation_id)[];
+        first_state_of_workflow_id: motion_workflow/first_state_id;
+        previous_state_ids: (motion_state/next_state_ids)[];
     """
 
     collection = Collection("motion_state")
-    verbose_name = "motion_state"
+    verbose_name = "motion state"
 
     id = fields.IdField(description="The id of this motion state.")
     name = fields.RequiredCharField(description="The name of this motion state.")
@@ -22,38 +24,38 @@ class MotionState(Model):
     )
     css_class = fields.CharField(description="The css class of this motion state.")
     restrictions = fields.ArrayField(
-        description="The restrictions of this motion state."
+        description="The restrictions of this motion state.", items={"type": "string"}
     )
     allow_support = fields.BooleanField(
-        description="If this motion state allow_support."
+        description="If this motion state allows supporting motions."
     )
     allow_create_poll = fields.BooleanField(
-        description="If this motion state allow_create_poll."
+        description="If this motion state allows creating polls."
     )
     allow_submitter_edit = fields.BooleanField(
-        description="If this motion state allow_submitter_edit."
+        description="If this motion state allows submitter to edit the motion."
     )
-    set_number = fields.BooleanField(description="If this motion state set_number.")
+    set_number = fields.BooleanField(
+        description="If this motion state sets number of motion when activated."
+    )
     show_state_extension_field = fields.BooleanField(
-        description="If this motion state show_state_extension_field."
+        description="If in this motion state the state extension field is visable."
     )
     merge_amendment_into_final = fields.PositiveIntegerField(
-        description="The merge_amendment_into_final of this motion state."
+        description="Unknown description."
     )
     show_recommendation_extension_field = fields.BooleanField(
-        description="If this motion state show_recommendation_extension_field."
+        description="If in this motion state the recommendation extension field is visable."
     )
 
-    workflow_id = fields.ForeignKeyField(
+    workflow_id = fields.RequiredForeignKeyField(
         description="The id of the workflow of this motion state.",
         to=Collection("motion_workflow"),
         related_name="state_ids",
     )
-    first_state_of_workflow_id = fields.ForeignKeyField(
-        description="The first_state_of_workflow_id of this motion state.",
-        to=Collection("motion_workflow"),
-        related_name="first_state_id",
-    )
 
-    # TODO next_state_ids: (motion_state/previous_state_ids)[];
-    # TODO previous_state_ids: (motion_state/next_state_ids)[];
+    next_state_ids = fields.ManyToManyArrayField(
+        description="The ids of the states that follow this state.",
+        to=Collection("motion_state"),
+        related_name="previous_state_ids",
+    )
