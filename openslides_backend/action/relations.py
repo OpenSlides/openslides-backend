@@ -4,9 +4,10 @@ from mypy_extensions import TypedDict
 
 from ..models.base import Model
 from ..models.fields import RelationMixin
-from ..services.datastore.interface import GetManyRequest
+from ..services.datastore.interface import GetManyRequest, PartialModel
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ..shared.typing import ModelMap
 
 RelationsElement = TypedDict(
     "RelationsElement",
@@ -32,6 +33,11 @@ class RelationsHandler:
 
     Therefor we have many cases this class has to handle (e. g. reverse relation
     m:n with structured field or common relation 1:m with generic relation)
+
+    additional_relation_models can provide models that are needed for resolving the
+    relations, but are not yet present in the datastore. This is needed when nesting
+    actions that are dependent on each other (e.g. topic.create calls
+    agenda_item.create, which assumes the topic exists already).
     """
 
     def __init__(
@@ -45,6 +51,7 @@ class RelationsHandler:
         is_reverse: bool = False,
         only_add: bool = False,
         only_remove: bool = False,
+        additional_relation_models: ModelMap = {},
     ) -> None:
         self.database = database
         self.model = model
@@ -59,6 +66,7 @@ class RelationsHandler:
             )
         self.only_add = only_add
         self.only_remove = only_remove
+        self.additional_relation_models = additional_relation_models
         self.type = self.field.type
         if self.type == "1:m" and self.is_reverse:
             # Switch 1:m to m:1 in reverse case.
@@ -75,28 +83,48 @@ class RelationsHandler:
 
         add: Union[Set[int], Set[FullQualifiedId]]
         remove: Union[Set[int], Set[FullQualifiedId]]
+        rels: Union[Dict[int, PartialModel], Dict[FullQualifiedId, PartialModel]]
 
         if self.field.generic_relation and self.is_reverse:
             rel_ids = cast(List[FullQualifiedId], rel_ids)
             add, remove = self.relation_diffs_fqid(rel_ids)
-            rels = {}
+            fq_rels = {}
             for related_model_fqid in list(add | remove):
-                related_model = self.database.get(
-                    related_model_fqid, mapped_fields=[related_name], lock_result=True,
-                )
-                rels[related_model_fqid] = related_model
+                if related_model_fqid in self.additional_relation_models:
+                    related_model = {
+                        related_name: self.additional_relation_models[
+                            related_model_fqid
+                        ].get(related_name)
+                    }
+                else:
+                    related_model = self.database.get(
+                        related_model_fqid,
+                        mapped_fields=[related_name],
+                        lock_result=True,
+                    )
+                fq_rels[related_model_fqid] = related_model
+            rels = fq_rels
         else:
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
             ids = list(add | remove)
-            # TODO: Check if all instances of target exist.
             response = self.database.get_many(
                 get_many_requests=[
                     GetManyRequest(target, ids, mapped_fields=[related_name],)
                 ],
                 lock_result=True,
             )
-            rels = response[target] if target in response else {}
+            # TODO: Check if the datastore really sends such an empty response.
+            id_rels = response[target] if target in response else {}
+            for instance_id in ids:
+                fqid = FullQualifiedId(target, instance_id)
+                if fqid in self.additional_relation_models:
+                    id_rels[instance_id] = self.additional_relation_models[fqid]
+                if instance_id not in id_rels.keys():
+                    raise ActionException(
+                        f"You try to reference an instance of {target} that does not exist."
+                    )
+            rels = id_rels
 
         if self.field.generic_relation and not self.is_reverse:
             return self.prepare_result_to_fqid(add, remove, rels, target, related_name)
@@ -243,7 +271,7 @@ class RelationsHandler:
         self,
         add: Union[Set[int], Set[FullQualifiedId]],
         remove: Union[Set[int], Set[FullQualifiedId]],
-        rels: Union[Dict[int, Any], Dict[FullQualifiedId, Any]],
+        rels: Union[Dict[int, PartialModel], Dict[FullQualifiedId, PartialModel]],
         target: Collection,
         related_name: str,
     ) -> Relations:

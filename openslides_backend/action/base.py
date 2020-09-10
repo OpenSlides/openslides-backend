@@ -9,10 +9,17 @@ from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
+from ..shared.typing import ModelMap
 from .action_interface import ActionPayload
 from .relations import Relations, RelationsHandler
 
-DataSet = TypedDict("DataSet", {"data": Any})
+DataSetElement = TypedDict(
+    "DataSetElement",
+    {"instance": Dict[str, Any], "new_id": int, "relations": Relations},
+)
+DataSet = TypedDict(
+    "DataSet", {"data": Any, "agenda_items": Iterable[DataSetElement]}, total=False
+)
 
 
 class SchemaProvider(type):
@@ -46,10 +53,17 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema: Dict
     schema_validator: Callable[[ActionPayload], None]
 
-    def __init__(self, name: str, permission: Permission, database: Datastore) -> None:
+    def __init__(
+        self,
+        name: str,
+        permission: Permission,
+        database: Datastore,
+        additional_relation_models: ModelMap = {},
+    ) -> None:
         self.name = name
         self.permission = permission
         self.database = database
+        self.additional_relation_models = additional_relation_models
 
     def perform(
         self, payload: ActionPayload, user_id: int
@@ -125,10 +139,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         raise NotImplementedError
 
-    def get_relations_updates(self, element: Any) -> Iterable[WriteRequestElement]:
+    def get_relations_updates(
+        self, element: Any, model: Model = None
+    ) -> Iterable[WriteRequestElement]:
         """
         Creates write request elements (with update events) for all relations.
         """
+        if model is None:
+            model = self.model
         for fqfield, data in element["relations"].items():
             event = Event(
                 type="update",
@@ -136,10 +154,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 fields={fqfield.field: data["value"]},
             )
             if data["type"] == "add":
-                info_text = f"Object attached to {self.model}"
+                info_text = f"Object attached to {model}"
             else:
                 # data["type"] == "remove"
-                info_text = f"Object attachment to {self.model} reset"
+                info_text = f"Object attachment to {model} reset"
             yield WriteRequestElement(
                 events=[event],
                 information={
@@ -175,6 +193,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 is_reverse,
                 only_add=shortcut,
                 only_remove=False,
+                additional_relation_models=self.additional_relation_models,
             )
             result = handler.perform()
             relations.update(result)
