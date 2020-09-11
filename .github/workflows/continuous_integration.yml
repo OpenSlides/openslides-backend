@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [ master ]
 
+env:
+  PYTHON_VERSION: 3.8.5
+
 jobs:
   build-production-image:
     name: Build and test production docker image
@@ -27,7 +30,7 @@ jobs:
       run: curl -I localhost:9003/health
 
   build-and-test-dev-image:
-    name: Build and test development image
+    name: Build and test development docker image with Docker Compose
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -35,16 +38,16 @@ jobs:
     - name: Run tests
       run: dev/run-tests.sh
 
-  check-coding-style:
-    name: Check coding style with black, isort, flake8 and mypy
+  check-coding-style-black:
+    name: Check coding style with black
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set up Python 3.8.1
+    - name: Set up Python
       uses: actions/setup-python@v2
       with:
-        python-version: 3.8.1
+        python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
       run: pip install --requirement dev/requirements_development.txt
@@ -52,14 +55,53 @@ jobs:
     - name: Check black
       run: black --check --diff openslides_backend/ tests/
 
+  check-coding-style-isort:
+    name: Check coding style with isort
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install requirements
+      run: pip install --requirement dev/requirements_development.txt
+
     - name: Check isort
-      if: ${{ always() }}
       run: isort --check-only --diff openslides_backend/ tests/
 
+  check-coding-style-flake8:
+    name: Check coding style with flake8
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install requirements
+      run: pip install --requirement dev/requirements_development.txt
+
     - name: Check flake8
-      if: ${{ always() }}
       run: flake8 openslides_backend/ tests/
 
+  check-coding-style-mypy:
+    name: Check coding style with mypy
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install requirements
+      run: pip install --requirement dev/requirements_development.txt
+
     - name: Check mypy
-      if: ${{ always() }}
       run: mypy openslides_backend/ tests/
