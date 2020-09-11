@@ -45,6 +45,12 @@ class AgendaItem(Model):
         description="The weight of the agenda item. Submitting null defaults to 0."
     )
     closed = fields.BooleanField(description="If this agenda item is closed.")
+    tag_ids = fields.ManyToManyArrayField(
+        description="The tags that should be related with this agenda item.",
+        to=Collection("tag"),
+        related_name="tagged_ids",
+        generic_relation=True,
+    )
 
     # TODO:
     # is_internal: boolean;  // calculated
