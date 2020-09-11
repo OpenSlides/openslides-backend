@@ -14,7 +14,16 @@ create_agenda_item_schema = {
     "items": {
         "type": "object",
         "properties": {
-            **AgendaItem().get_properties("meeting_id", "item_number", "comment"),
+            **AgendaItem().get_properties(
+                "meeting_id",
+                "item_number",
+                "comment",
+                "type",
+                "parent_id",
+                "duration",
+                "weight",
+                "closed",
+            ),
             "content_object_id": {
                 "type": "string",
                 "pattern": "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$",
@@ -38,8 +47,13 @@ class AgendaItemCreate(CreateAction):
     schema = create_agenda_item_schema
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Adjusts content_object and sets defaults for type and weight.
+        """
         collection_name, id = instance["content_object_id"].split("/")
         instance["content_object_id"] = FullQualifiedId(
             Collection(collection_name), int(id)
         )
+        instance["type"] = instance.get("type", self.model.AGENDA_ITEM)
+        instance["weight"] = instance.get("weight", 0)
         return instance
