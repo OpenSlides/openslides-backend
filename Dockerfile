@@ -1,6 +1,4 @@
-FROM python:3.8.5-alpine3.11
-
-RUN apk add --no-cache gcc musl-dev linux-headers
+FROM python:3.8.5-slim-buster
 
 WORKDIR /srv/code
 COPY openslides_backend openslides_backend
@@ -8,7 +6,7 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir --requirement requirements.txt
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN adduser --system --no-create-home appuser
 
 USER appuser
 

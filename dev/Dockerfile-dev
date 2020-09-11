@@ -1,6 +1,6 @@
-FROM python:3.8.5-alpine3.11
+FROM python:3.8.5-slim-buster
 
-RUN apk add --no-cache gcc musl-dev linux-headers make curl git
+RUN apt-get update && apt-get install --yes make git curl nc
 
 WORKDIR /srv/code
 COPY requirements.txt .
