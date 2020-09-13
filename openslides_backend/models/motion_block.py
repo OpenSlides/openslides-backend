@@ -7,10 +7,8 @@ class MotionBlock(Model):
     """
     Model for motion block.
 
-    Reverse fields:
-    - motion_ids
-    - projection_ids
-    - current_projection_ids
+    There are the following reverse relation fields:
+        motion_ids: (motion/block_id)[];
     """
 
     collection = Collection("motion_block")
@@ -24,14 +22,19 @@ class MotionBlock(Model):
     )
     title = fields.RequiredCharField(description="The title of this motion block.")
     internal = fields.BooleanField(description="If the motion block is internal.")
-    list_of_speakers_id = fields.ForeignKeyField(
+    agenda_item_id = fields.OneToOneField(
+        description="The agenda item id of this motion block.",
+        to=Collection("agenda_item"),
+        related_name="content_object_id",
+        generic_relation=True,
+    )
+    list_of_speakers_id = fields.OneToOneField(
         description="The list of speakers id of this motion block.",
         to=Collection("list_of_speakers"),
         related_name="content_object_id",
+        generic_relation=True,
     )
-    # TODO related_name should be "content_object_id"
-    agenda_item_id = fields.ForeignKeyField(
-        description="The agenda item id of this motion block.",
-        to=Collection("agenda_item"),
-        related_name="agenda_item_id",
-    )
+
+    # TODO
+    # projection_ids: (projection/element_id)[];
+    # current_projector_ids: (projector/current_element_ids)[];

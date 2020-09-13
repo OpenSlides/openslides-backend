@@ -90,6 +90,8 @@ class RelationsHandler:
             add, remove = self.relation_diffs_fqid(rel_ids)
             fq_rels = {}
             for related_model_fqid in list(add | remove):
+                if not related_model_fqid.collection == target:
+                    continue
                 if related_model_fqid in self.additional_relation_models:
                     related_model = {
                         related_name: self.additional_relation_models[

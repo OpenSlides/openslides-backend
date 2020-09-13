@@ -118,18 +118,18 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Takes dataset and creates write request elements that can be sent to event
         store.
 
-        By default it calls self.create_element_write_request_element and uses
+        By default it calls self.create_instance_write_request_element and uses
         get_relations_updates() for relations.
         """
         for element in dataset["data"]:
-            element_write_request_element = self.create_instance_write_request_element(
+            instance_write_request_element = self.create_instance_write_request_element(
                 element
             )
             for relation in self.get_relations_updates(element):
-                element_write_request_element = merge_write_request_elements(
-                    (element_write_request_element, relation)
+                instance_write_request_element = merge_write_request_elements(
+                    (instance_write_request_element, relation)
                 )
-            yield element_write_request_element
+            yield instance_write_request_element
 
     def create_instance_write_request_element(
         self, element: Any

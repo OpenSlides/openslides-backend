@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Iterable
 
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
@@ -63,6 +63,16 @@ class CreateAction(Action):
             )
 
         return {"data": data}
+
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        yield from self.create_action_create_write_request_elements(dataset)
+
+    def create_action_create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        yield from super().create_write_request_elements(dataset)
 
     def create_instance_write_request_element(
         self, element: Any
@@ -144,6 +154,16 @@ class UpdateAction(Action):
 
         return {"data": data}
 
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        yield from self.update_action_create_write_request_elements(dataset)
+
+    def update_action_create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        yield from super().create_write_request_elements(dataset)
+
     def create_instance_write_request_element(
         self, element: Any
     ) -> WriteRequestElement:
@@ -217,6 +237,16 @@ class DeleteAction(Action):
             data.append({"instance": instance, "relations": relations})
 
         return {"data": data}
+
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        yield from self.delete_action_create_write_request_elements(dataset)
+
+    def delete_action_create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        yield from super().create_write_request_elements(dataset)
 
     def create_instance_write_request_element(
         self, element: Any

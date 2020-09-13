@@ -1,54 +1,22 @@
 from typing import Iterable
 
-from ...models.agenda_item import AgendaItem
 from ...models.topic import Topic
 from ...shared.interfaces import WriteRequestElement
 from ...shared.patterns import FullQualifiedId
 from ..action import register_action
 from ..action_interface import ActionPayload
+from ..agenda_item.agenda_creation import AGENDA_PREFIX, agenda_creation_properties
 from ..agenda_item.create import AgendaItemCreate
 from ..base import DataSet
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction
 
-schema = DefaultSchema(Topic()).get_create_schema(
+create_schema = DefaultSchema(Topic()).get_create_schema(
     properties=["meeting_id", "title", "text", "attachment_ids"],
     required_properties=["meeting_id", "title"],
 )
 
-AGENDA_PREFIX = "agenda_"
-
-agenda_creation_properties = {
-    f"{AGENDA_PREFIX}type": {
-        "description": "The type of the agenda item (common, internal, hidden).",
-        "type": "integer",
-        "enum": [
-            AgendaItem.AGENDA_ITEM,
-            AgendaItem.INTERNAL_ITEM,
-            AgendaItem.HIDDEN_ITEM,
-        ],
-    },
-    f"{AGENDA_PREFIX}parent_id": {
-        "description": "The id of the parent agenda item.",
-        "type": ["integer", "null"],
-        "minimum": 1,
-    },
-    f"{AGENDA_PREFIX}comment": {
-        "description": "The comment of the agenda item.",
-        "type": "string",
-    },
-    f"{AGENDA_PREFIX}duration": {
-        "description": "The duration of this agenda item object in seconds.",
-        "type": "integer",
-        "minimum": 0,
-    },
-    f"{AGENDA_PREFIX}weight": {
-        "description": "The weight of the agenda item. Submitting null defaults to 0.",
-        "type": "integer",
-    },
-}
-
-schema["items"]["properties"].update(agenda_creation_properties)
+create_schema["items"]["properties"].update(agenda_creation_properties)
 
 
 @register_action("topic.create")
@@ -58,17 +26,25 @@ class TopicCreate(CreateAction):
     """
 
     model = Topic()
-    schema = schema
+    schema = create_schema
 
     def create_write_request_elements(
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:
         agenda_item_creation = []
-        for topic_element in dataset["data"]:
+
+        for content_object_element in dataset["data"]:
+            agenda_create_flag = content_object_element["instance"].get(
+                f"{AGENDA_PREFIX}create"
+            )
+            meeting_id = content_object_element["instance"].get("meeting_id")
+            if not self.check_agenda_creation(agenda_create_flag, meeting_id):
+                continue
+
             additional_relation_models = {
                 FullQualifiedId(
-                    Topic.collection, topic_element["new_id"]
-                ): topic_element["instance"]
+                    self.model.collection, content_object_element["new_id"]
+                ): content_object_element["instance"]
             }
             action = AgendaItemCreate(
                 "agenda_item.create",
@@ -77,13 +53,16 @@ class TopicCreate(CreateAction):
                 additional_relation_models,
             )
             agenda_item_payload_element = {
-                "meeting_id": topic_element["instance"]["meeting_id"],
-                "content_object_id": f"topic/{topic_element['new_id']}",
+                "meeting_id": content_object_element["instance"]["meeting_id"],
+                "content_object_id": f"{str(self.model.collection)}/{content_object_element['new_id']}",
             }
             for extra_field in agenda_creation_properties.keys():
+                if extra_field == f"{AGENDA_PREFIX}create":
+                    # This field should not be provided to the AgendaItemCreate action.
+                    continue
                 prefix_len = len(AGENDA_PREFIX)
                 extra_field_without_prefix = extra_field[prefix_len:]
-                value = topic_element["instance"].pop(extra_field, None)
+                value = content_object_element["instance"].pop(extra_field, None)
                 if value is not None:
                     agenda_item_payload_element[extra_field_without_prefix] = value
             agenda_item_payload: ActionPayload = [agenda_item_payload_element]
@@ -93,3 +72,7 @@ class TopicCreate(CreateAction):
 
         for action, agenda_item_payload in agenda_item_creation:
             yield from action.perform(agenda_item_payload, self.user_id)
+
+    def check_agenda_creation(self, flag: bool = None, meeting_id: int = None) -> bool:
+        # For topics this should always return True.
+        return True
