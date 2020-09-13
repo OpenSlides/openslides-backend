@@ -1,32 +1,20 @@
 from typing import Iterable
 
-from ...models.topic import Topic
+from ...models.motion_block import MotionBlock
 from ...shared.interfaces import WriteRequestElement
 from ...shared.patterns import FullQualifiedId
-from ..action import register_action
+from ..action import register_action_set
 from ..action_interface import ActionPayload
+from ..action_set import ActionSet
 from ..agenda_item.agenda_creation import AGENDA_PREFIX, agenda_creation_properties
 from ..agenda_item.create import AgendaItemCreate
 from ..base import DataSet
 from ..default_schema import DefaultSchema
-from ..generics import CreateAction
-
-create_schema = DefaultSchema(Topic()).get_create_schema(
-    properties=["meeting_id", "title", "text", "attachment_ids"],
-    required_properties=["meeting_id", "title"],
-)
-
-create_schema["items"]["properties"].update(agenda_creation_properties)
+from ..generics import CreateAction, DeleteAction, UpdateAction
 
 
-@register_action("topic.create")
-class TopicCreate(CreateAction):
-    """
-    Action to create simple topics that can be shown in the agenda.
-    """
-
-    model = Topic()
-    schema = create_schema
+class MotionBlockCreateActionUnregistered(CreateAction):
+    model = MotionBlock()
 
     def create_write_request_elements(
         self, dataset: DataSet
@@ -40,7 +28,6 @@ class TopicCreate(CreateAction):
             meeting_id = content_object_element["instance"].get("meeting_id")
             if not self.check_agenda_creation(agenda_create_flag, meeting_id):
                 continue
-
             additional_relation_models = {
                 FullQualifiedId(
                     self.model.collection, content_object_element["new_id"]
@@ -74,5 +61,36 @@ class TopicCreate(CreateAction):
             yield from action.perform(agenda_item_payload, self.user_id)
 
     def check_agenda_creation(self, flag: bool = None, meeting_id: int = None) -> bool:
-        # For topics this should always return True.
+        """
+        Checks meeting settings and flag and returns whether an
+        agenda item should be created or not.
+        """
+        # TODO: Code this check.
         return True
+
+
+create_schema = DefaultSchema(MotionBlock()).get_create_schema(
+    properties=["title", "internal", "meeting_id"],
+    required_properties=["title", "meeting_id"],
+)
+
+create_schema["items"]["properties"].update(agenda_creation_properties)
+
+
+@register_action_set("motion_block")
+class MotionBlockActionSet(ActionSet):
+    """
+    Actions to create, update and delete motion blocks.
+    """
+
+    model = MotionBlock()
+    create_schema = create_schema
+    update_schema = DefaultSchema(MotionBlock()).get_update_schema(
+        properties=["title", "internal", "motion_ids"]
+    )
+    delete_schema = DefaultSchema(MotionBlock()).get_delete_schema()
+    routes = {
+        "create": MotionBlockCreateActionUnregistered,
+        "update": UpdateAction,
+        "delete": DeleteAction,
+    }

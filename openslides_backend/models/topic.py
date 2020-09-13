@@ -39,5 +39,9 @@ class Topic(Model):
         related_name="content_object_id",
         generic_relation=True,
     )
-
-    # TODO: list_of_speakers_id: list_of_speakers/content_object_id;
+    list_of_speakers_id = fields.OneToOneField(
+        description="The list of speakers id of this motion block.",
+        to=Collection("list_of_speakers"),
+        related_name="content_object_id",
+        generic_relation=True,
+    )
