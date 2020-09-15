@@ -8,15 +8,14 @@ class Tag(Model):
     Model for tags.
 
     There are the following reverse relation fields:
-        tagged_ids: (*/tag_ids)[];
+        tagged_ids: ({agenda_item,assignment,motion,topic}/tag_ids)[];
     """
 
     collection = Collection("tag")
     verbose_name = "tag"
 
     id = fields.IdField(description="The id of this tag.")
-    name = fields.CharField()
-
+    name = fields.RequiredCharField(description="The name of this tag.")
     meeting_id = fields.RequiredForeignKeyField(
         description="The id of the meeting of this tag.",
         to=Collection("meeting"),
