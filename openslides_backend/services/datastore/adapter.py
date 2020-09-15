@@ -182,7 +182,10 @@ class Adapter:
                     )
                 fqid = FullQualifiedId(collection=collection, id=instance_id)
                 self.update_locked_fields(fqid, instance_position)
-        return response
+        response2 = dict()
+        for key in response:
+            response2[int(key)] = response[key]
+        return response2
 
     def exists(
         self, collection: Collection, filter: Filter, lock_result: bool = False,
