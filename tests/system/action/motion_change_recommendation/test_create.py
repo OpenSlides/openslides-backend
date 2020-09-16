@@ -1,12 +1,10 @@
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqid
 
 
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def test_create_good_required_fields(self) -> None:
         self.create_model(
-            get_fqid("motion/233"),
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",
@@ -24,9 +22,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
-        self.assert_model_exists(get_fqid("motion_change_recommendation/1"))
-        model = self.datastore.get(get_fqid("motion_change_recommendation/1"))
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion_change_recommendation/1")
         assert model.get("line_from") == 125
         assert model.get("line_to") == 234
         assert model.get("text") == "text_DvLXGcdW"
@@ -36,8 +33,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_create_good_all_fields(self) -> None:
         self.create_model(
-            get_fqid("motion/233"),
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",
@@ -59,9 +55,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
-        self.assert_model_exists(get_fqid("motion_change_recommendation/1"))
-        model = self.datastore.get(get_fqid("motion_change_recommendation/1"))
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion_change_recommendation/1")
         assert model.get("line_from") == 125
         assert model.get("line_to") == 234
         assert model.get("text") == "text_DvLXGcdW"
@@ -76,7 +71,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         response = self.client.post(
             "/", json=[{"action": "motion_change_recommendation.create", "data": [{}]}],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'line_from\\', \\'line_to\\', \\'text\\', \\'motion_id\\'] properties",
             str(response.data),
@@ -84,8 +79,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_create_wrong_field(self) -> None:
         self.create_model(
-            get_fqid("motion/233"),
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",
@@ -104,7 +98,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain only specified properties", str(response.data),
         )
