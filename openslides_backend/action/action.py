@@ -30,6 +30,7 @@ def prepare_actions_map() -> None:
         motion_category,
         motion_change_recommendation,
         motion_comment,
+        motion_comment_section,
         motion_state,
         motion_statute_paragraph,
         motion_workflow,
