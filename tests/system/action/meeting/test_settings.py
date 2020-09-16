@@ -1,15 +1,14 @@
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqid
 
 
 class MeetingSettingsSystemTest(BaseActionTestCase):
     def test_group_ids(self) -> None:
-        self.create_model(get_fqid("meeting/1"), {"motion_poll_default_group_ids": [1]})
-        self.create_model(get_fqid("group/1"), {"used_as_motion_poll_default_id": 1})
+        self.create_model("meeting/1", {"motion_poll_default_group_ids": [1]})
+        self.create_model("group/1", {"used_as_motion_poll_default_id": 1})
         self.create_model(
-            get_fqid("group/2"), {"name": "2", "used_as_motion_poll_default_id": None}
+            "group/2", {"name": "2", "used_as_motion_poll_default_id": None}
         )
-        self.create_model(get_fqid("group/3"), {"used_as_motion_poll_default_id": None})
+        self.create_model("group/3", {"used_as_motion_poll_default_id": None})
         response = self.client.post(
             "/",
             json=[
@@ -19,12 +18,12 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
-        meeting = self.datastore.get(get_fqid("meeting/1"))
+        self.assert_status_code(response, 200)
+        meeting = self.get_model("meeting/1")
         self.assertEqual(meeting["motion_poll_default_group_ids"], [2, 3])
-        group1 = self.datastore.get(get_fqid("group/1"))
+        group1 = self.get_model("group/1")
         self.assertEqual(group1.get("used_as_motion_poll_default_id"), None)
-        group2 = self.datastore.get(get_fqid("group/2"))
+        group2 = self.get_model("group/2")
         self.assertEqual(group2["used_as_motion_poll_default_id"], 1)
-        group3 = self.datastore.get(get_fqid("group/3"))
+        group3 = self.get_model("group/3")
         self.assertEqual(group3["used_as_motion_poll_default_id"], 1)

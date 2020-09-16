@@ -77,7 +77,7 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
             "/",
             json=[{"action": "agenda_item.create", "data": self.valid_payload_create}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_update(self) -> None:
@@ -127,7 +127,7 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
             "/",
             json=[{"action": "agenda_item.update", "data": self.valid_payload_update}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_delete(self) -> None:
@@ -173,5 +173,5 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
             "/",
             json=[{"action": "agenda_item.delete", "data": self.valid_payload_delete}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assertIn("Action handled successfully", str(response.data))

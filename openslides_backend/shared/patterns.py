@@ -31,6 +31,8 @@ class FullQualifiedId:
     e. g. motion_change_recommendation/42
     """
 
+    REGEX = "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$"
+
     def __init__(self, collection: Collection, id: int) -> None:
         self.collection = collection
         self.id = id

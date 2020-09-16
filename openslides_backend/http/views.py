@@ -9,6 +9,7 @@ from ..presenter.presenter import PresenterHandler
 from ..shared.exceptions import (
     ActionException,
     AuthenticationException,
+    DatabaseException,
     PermissionDenied,
     PresenterException,
     ViewException,
@@ -70,7 +71,7 @@ class ActionView(BaseView):
         handler: Action = ActionHandler(logging=self.logging, services=self.services)
         try:
             result = handler.handle_request(payload, user_id)
-        except ActionException as exception:
+        except (ActionException, DatabaseException) as exception:
             raise ViewException(exception.message, status_code=400)
         except PermissionDenied as exception:
             raise ViewException(exception.message, status_code=403)

@@ -96,3 +96,31 @@ class Model(metaclass=ModelMetaClass):
             except AttributeError:
                 raise ValueError(f"{field} is not a field of {self}")
         return properties
+
+
+def load_models() -> None:
+    """
+    This function just imports all models so that the fields are recognized by the
+    system.
+
+    New models have to be added here.
+    """
+    from . import (  # noqa
+        agenda_item,
+        committee,
+        group,
+        mediafile,
+        meeting,
+        motion,
+        motion_block,
+        motion_category,
+        motion_state,
+        motion_statute_paragraph,
+        motion_workflow,
+        tag,
+        topic,
+        user,
+    )
+
+
+load_models()

@@ -52,11 +52,10 @@ class AgendaItem(Model):
         generic_relation=True,
     )
 
-    # TODO:
-    # is_internal: boolean;  // calculated
-    # is_hidden: boolean;  // calculated
-    # level: number; // calculated.
+    is_internal = fields.BooleanField()  # calculated
+    is_hidden = fields.BooleanField()  # calculated
+    level = fields.IntegerField()  # calculated
 
     # TODO:
-    # current_projector_ids: (projector/current_element_ids)[]
-    # projection_ids: (projection/element_id)[];
+    # projection_ids: (projection/element_id)[];  // use generic ManyToManyArrayField
+    # current_projector_ids: (projector/current_element_ids)[];  // use generic ManyToManyArrayField

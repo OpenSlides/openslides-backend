@@ -1,10 +1,9 @@
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqid
 
 
 class TopicSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model(get_fqid("meeting/1"), {"name": "test"})
+        self.create_model("meeting/1", {"name": "test"})
         response = self.client.post(
             "/",
             json=[
@@ -14,18 +13,18 @@ class TopicSystemTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
-        self.assert_model_exists(get_fqid("topic/1"))
-        topic = self.datastore.get(get_fqid("topic/1"))
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/1")
+        topic = self.get_model("topic/1")
         self.assertEqual(topic.get("meeting_id"), 1)
         self.assertEqual(topic.get("agenda_item_id"), 1)
-        self.assert_model_exists(get_fqid("agenda_item/1"))
-        agenda_item = self.datastore.get(get_fqid("agenda_item/1"))
+        self.assert_model_exists("agenda_item/1")
+        agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
 
     def test_create_more_fields(self) -> None:
-        self.create_model(get_fqid("meeting/1"), {"name": "test"})
+        self.create_model("meeting/1", {"name": "test"})
         response = self.client.post(
             "/",
             json=[
@@ -42,14 +41,14 @@ class TopicSystemTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
-        self.assert_model_exists(get_fqid("topic/1"))
-        topic = self.datastore.get(get_fqid("topic/1"))
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/1")
+        topic = self.get_model("topic/1")
         self.assertEqual(topic.get("meeting_id"), 1)
         self.assertEqual(topic.get("agenda_item_id"), 1)
         self.assertTrue(topic.get("agenda_type") is None)
-        self.assert_model_exists(get_fqid("agenda_item/1"))
-        agenda_item = self.datastore.get(get_fqid("agenda_item/1"))
+        self.assert_model_exists("agenda_item/1")
+        agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
         self.assertEqual(agenda_item["type"], 2)

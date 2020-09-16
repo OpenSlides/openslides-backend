@@ -148,7 +148,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "committee.create", "data": [{}]}]
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
@@ -165,7 +165,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
@@ -197,7 +197,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         response = self.client.post(
             "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTester):
@@ -213,4 +213,4 @@ class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTeste
         response = self.client.post(
             "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 403)
+        self.assert_status_code(response, 403)

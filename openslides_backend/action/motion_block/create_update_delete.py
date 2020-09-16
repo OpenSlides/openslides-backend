@@ -40,7 +40,6 @@ class MotionBlockCreateActionUnregistered(CreateAction):
                 additional_relation_models,
             )
             agenda_item_payload_element = {
-                "meeting_id": content_object_element["instance"]["meeting_id"],
                 "content_object_id": f"{str(self.model.collection)}/{content_object_element['new_id']}",
             }
             for extra_field in agenda_creation_properties.keys():

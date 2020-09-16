@@ -115,7 +115,7 @@ class MotionUpdateActionWSGITester(BaseMotionUpdateActionTester):
         response = self.client.post(
             "/", json=[{"action": "motion.update", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class BaseMotionUpdateMetadataActionTester(BaseActionTestCase):
@@ -452,7 +452,7 @@ class MotionDeleteActionWSGITester(BaseMotionDeleteActionTester):
         response = self.client.post(
             "/", json=[{"action": "motion.delete", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
 
 
 class BaseMotionSortActionTester(BaseActionTestCase):
@@ -775,4 +775,4 @@ class MotionSortActionWSGITester(BaseMotionSortActionTester):
         response = self.client.post(
             "/", json=[{"action": "motion.sort", "data": self.valid_payload_1}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
