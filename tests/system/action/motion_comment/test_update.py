@@ -16,7 +16,6 @@ class MotionCommentActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_comment/111")
         model = self.get_model("motion_comment/111")
         assert model.get("comment") == "comment_Xcdfgee"
 
