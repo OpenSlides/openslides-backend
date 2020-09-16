@@ -172,10 +172,17 @@ class GenericRelationFieldWrapper(RelationMixin):
 
     def __getattribute__(self, name: str) -> Any:
         def get_reverse_schema(self: Any) -> Schema:
-            # TODO: Fix this schema wrapping for 1:m and m:n cases.
-            return self.extend_schema(
-                self.get_reverse_schema(), type="string", pattern=FullQualifiedId.REGEX
-            )
+            if self.type == "1:1":
+                return self.extend_schema(
+                    self.get_reverse_schema(),
+                    type="string",
+                    pattern=FullQualifiedId.REGEX,
+                )
+            else:
+                return self.extend_schema(
+                    self.get_reverse_schema(),
+                    items={"type": "string", "pattern": FullQualifiedId.REGEX},
+                )
 
         instance = object.__getattribute__(self, "instance")
         if name == "get_reverse_schema":
@@ -207,8 +214,8 @@ class RequiredForeignKeyField(RelationMixin, IdField):
     type = "1:m"
 
     def get_reverse_schema(self) -> Schema:
-        return dict(
-            description=self.description,
+        return self.extend_schema(
+            super().get_schema(),
             type="array",
             items={"type": "integer", "minimum": 1},
             uniqueItems=True,
