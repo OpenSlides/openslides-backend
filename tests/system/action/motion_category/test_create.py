@@ -82,7 +82,8 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain only specified properties", str(response.data),
+            "data[0] must not contain {\\'wrong_field\\'} properties",
+            str(response.data),
         )
 
     def test_create_link_non_existing_meeting(self) -> None:
