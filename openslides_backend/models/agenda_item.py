@@ -52,6 +52,7 @@ class AgendaItem(Model):
         generic_relation=True,
     )
 
+    # TODO: Calculate these fields (and care that these are not really fields here)
     is_internal = fields.BooleanField()  # calculated
     is_hidden = fields.BooleanField()  # calculated
     level = fields.IntegerField()  # calculated

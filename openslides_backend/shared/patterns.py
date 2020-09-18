@@ -31,7 +31,7 @@ class FullQualifiedId:
     e. g. motion_change_recommendation/42
     """
 
-    REGEX = "^[a-z]([a-z_]*[a-z])?/[1-9][0-9]*$"
+    REGEX = KEYSEPARATOR.join(("^[a-z]([a-z_]*[a-z])?", "[1-9][0-9]*$"))
 
     def __init__(self, collection: Collection, id: int) -> None:
         self.collection = collection
@@ -54,7 +54,7 @@ class FullQualifiedId:
 
 class FullQualifiedField:
     """
-    The key used in the key-value store i. e. the event store, e. g.
+    The key used in the key-value store i. e. the datastore, e. g.
     motion_change_recommendation/42/text
     """
 
