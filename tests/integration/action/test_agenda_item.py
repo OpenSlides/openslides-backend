@@ -1,9 +1,9 @@
 import simplejson as json
 
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqfield
+from tests.util import Client, get_fqfield
 
-# TODO: remove this file once adapted to the new schema.
+from ..util import create_test_application_with_fake as create_test_application
 
 
 class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
@@ -17,22 +17,19 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
             get_fqfield("meeting/9079236097/topic_ids"): [5756367535],
             get_fqfield("meeting/9079236097/agenda_item_ids"): [3393211712],
             get_fqfield("topic/1312354708/title"): "title_eeWa8oenii",
+            get_fqfield("topic/1312354708/meeting_id"): 7816466305,
             get_fqfield("topic/5756367535/meeting_id"): 9079236097,
             get_fqfield("topic/5756367535/agenda_item_id"): 3393211712,
             get_fqfield("agenda_item/3393211712/meeting_id"): 9079236097,
             get_fqfield("agenda_item/3393211712/content_object_id"): "topic/5756367535",
         }
-        self.valid_payload_create = [
-            {"meeting_id": 7816466305, "content_object_id": "topic/1312354708"}
-        ]
-        self.valid_payload_update = [
-            {"id": 3393211712, "content_object_id": "topic/1312354708"}
-        ]
+        self.valid_payload_create = [{"content_object_id": "topic/1312354708"}]
+        self.valid_payload_update = [{"id": 3393211712, "duration": 3600}]
         self.valid_payload_delete = [{"id": 3393211712}]
         self.user_id = 5968705978
 
     def test_wsgi_request_create(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {
@@ -41,6 +38,8 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
                         "fields": {
                             "meeting_id": 7816466305,
                             "content_object_id": "topic/1312354708",
+                            "type": 1,
+                            "weight": 0,
                         },
                     },
                     {
@@ -63,17 +62,16 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
                 "locked_fields": {"meeting/7816466305": 1, "topic/1312354708": 1},
             }
         )
-        # client = Client(
-        #     create_test_application(
-        #         user_id=self.user_id,
-        #         view_name="ActionView",
-        #         superuser=self.user_id,
-        #         datastore_content=self.datastore_content,
-        #         expected_write_data=expected_write_data,
-        #     ),
-        #     ResponseWrapper,
-        # )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            ),
+        )
+        response = client.post(
             "/",
             json=[{"action": "agenda_item.create", "data": self.valid_payload_create}],
         )
@@ -81,49 +79,30 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_update(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {
                         "type": "update",
                         "fqid": "agenda_item/3393211712",
-                        "fields": {"content_object_id": "topic/1312354708"},
-                    },
-                    {
-                        "type": "update",
-                        "fqid": "topic/1312354708",
-                        "fields": {"agenda_item_id": 3393211712},
-                    },
-                    {
-                        "type": "update",
-                        "fqid": "topic/5756367535",
-                        "fields": {"agenda_item_id": None},
+                        "fields": {"duration": 3600},
                     },
                 ],
-                "information": {
-                    "agenda_item/3393211712": ["Object updated"],
-                    "topic/1312354708": ["Object attached to agenda item"],
-                    "topic/5756367535": ["Object attachment to agenda item reset"],
-                },
+                "information": {"agenda_item/3393211712": ["Object updated"]},
                 "user_id": self.user_id,
-                "locked_fields": {
-                    "agenda_item/3393211712": 1,
-                    "topic/5756367535": 1,
-                    "topic/1312354708": 1,
-                },
+                "locked_fields": {},
             }
         )
-        # client = Client(
-        #     create_test_application(
-        #         user_id=self.user_id,
-        #         view_name="ActionView",
-        #         superuser=self.user_id,
-        #         datastore_content=self.datastore_content,
-        #         expected_write_data=expected_write_data,
-        #     ),
-        #     ResponseWrapper,
-        # )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            ),
+        )
+        response = client.post(
             "/",
             json=[{"action": "agenda_item.update", "data": self.valid_payload_update}],
         )
@@ -131,7 +110,7 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
         self.assertIn("Action handled successfully", str(response.data))
 
     def test_wsgi_request_delete(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {"type": "delete", "fqid": "agenda_item/3393211712"},
@@ -159,17 +138,16 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
                 },
             }
         )
-        # client = Client(
-        #     create_test_application(
-        #         user_id=self.user_id,
-        #         view_name="ActionView",
-        #         superuser=self.user_id,
-        #         datastore_content=self.datastore_content,
-        #         expected_write_data=expected_write_data,
-        #     ),
-        #     ResponseWrapper,
-        # )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            ),
+        )
+        response = client.post(
             "/",
             json=[{"action": "agenda_item.delete", "data": self.valid_payload_delete}],
         )

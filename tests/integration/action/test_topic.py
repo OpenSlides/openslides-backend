@@ -1,5 +1,3 @@
-from unittest.mock import MagicMock
-
 import simplejson as json
 
 from openslides_backend.action import ActionPayload
@@ -8,9 +6,14 @@ from openslides_backend.action.topic.delete import TopicDelete
 from openslides_backend.action.topic.update import TopicUpdate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqfield, get_fqid
+from tests.util import Client, get_fqfield, get_fqid
 
-# TODO: remove this file once adapted to the new schema.
+from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.permission import PermissionTestAdapter
+from ..util import create_test_application_old as create_test_application
+
+# TODO: These tests use all old style datastore testing.
+# Fix this (do not use create_test_applicaton_old and do not use old_style_testing=True any more).
 
 
 class BaseTopicCreateActionTester(BaseActionTestCase):
@@ -45,8 +48,8 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
         user_id = 5968705978
         self.action = TopicCreate(
             "topic.create",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -157,8 +160,8 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         self.user_id = 5968705978
         self.action = TopicCreate(
             "topic.create",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_empty(self) -> None:
@@ -181,21 +184,21 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
             self.valid_payload_1, user_id=self.user_id
         )
         result = list(write_request_elements)
-        self.assertTrue(len(result) == 3)
+        self.assertTrue(len(result) == 2)
 
     def test_perform_correct_2(self) -> None:
         write_request_elements = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
         result = list(write_request_elements)
-        self.assertTrue(len(result) == 3)
+        self.assertTrue(len(result) == 2)
 
     def test_perform_correct_3(self) -> None:
         write_request_elements = self.action.perform(
             self.valid_payload_3, user_id=self.user_id
         )
         result = list(write_request_elements)
-        self.assertTrue(len(result) == 3)
+        self.assertTrue(len(result) == 2)
 
     def test_perform_no_permission_1(self) -> None:
         with self.assertRaises(PermissionDenied):
@@ -222,6 +225,10 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             get_fqfield("meeting/3611987967/topic_ids"): [6375863023, 6259289755],
         }
         self.user_id = 5968705978
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionView", superuser=self.user_id
+        )
+        self.client = Client(self.application)
 
     def test_wsgi_request_empty(self) -> None:
         response = self.client.post(
@@ -421,6 +428,10 @@ class TopicCreateActionWSGITesterNoPermission(BaseTopicCreateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionView", superuser=0
+        )
+        self.client = Client(self.application)
 
     def test_wsgi_request_no_permission_1(self) -> None:
         response = self.client.post(
@@ -475,8 +486,8 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 
         self.action = TopicUpdate(
             "topic.update",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -593,8 +604,8 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
         self.user_id = 5968705978
         self.action = TopicUpdate(
             "topic.update",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_empty(self) -> None:
@@ -785,6 +796,10 @@ class TopicUpdateActionWSGITester(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 5968705978
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionView", superuser=self.user_id
+        )
+        self.client = Client(self.application)
 
     def test_wsgi_request_empty(self) -> None:
         response = self.client.post(
@@ -845,6 +860,10 @@ class TopicUpdateActionWSGITesterNoPermission(BaseTopicUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionView", superuser=0
+        )
+        self.client = Client(self.application)
 
     def test_wsgi_request_no_permission_1(self) -> None:
         response = self.client.post(
@@ -897,8 +916,8 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
         user_id = 5968705978
         self.action = TopicDelete(
             "topic.delete",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -937,6 +956,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         "meeting_id": None,
                         "agenda_item_id": None,
                         "attachment_ids": None,
+                        "list_of_speakers_id": None,
                         "tag_ids": None,
                     },
                     "relations": {
@@ -960,6 +980,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         "meeting_id": None,
                         "agenda_item_id": None,
                         "attachment_ids": None,
+                        "list_of_speakers_id": None,
                         "tag_ids": None,
                     },
                     "relations": {
@@ -975,6 +996,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                         "meeting_id": None,
                         "agenda_item_id": None,
                         "attachment_ids": None,
+                        "list_of_speakers_id": None,
                         "tag_ids": None,
                     },
                     "relations": {
@@ -992,31 +1014,8 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
         )
 
     def test_prepare_dataset_3(self) -> None:
-        dataset = self.action.prepare_dataset(self.pseudo_valid_payload_3)
-        self.assertEqual(
-            dataset["data"],
-            [
-                {
-                    "instance": {
-                        "id": self.pseudo_valid_payload_3[0]["id"],
-                        "meeting_id": None,
-                        "agenda_item_id": None,
-                        "attachment_ids": None,
-                        "tag_ids": None,
-                    },
-                    "relations": {
-                        get_fqfield("meeting/9079236097/topic_ids"): {
-                            "type": "remove",
-                            "value": [],
-                        },
-                        get_fqfield("agenda_item/3393211712/content_object_id"): {
-                            "type": "remove",
-                            "value": None,
-                        },
-                    },
-                }
-            ],
-        )
+        with self.assertRaises(ActionException):
+            self.action.prepare_dataset(self.pseudo_valid_payload_3)
 
 
 class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
@@ -1025,8 +1024,8 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
         self.user_id = 5968705978
         self.action = TopicDelete(
             "topic.delete",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_empty(self) -> None:
@@ -1134,6 +1133,10 @@ class TopicDeleteActionWSGITester(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 5968705978
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionView", superuser=self.user_id
+        )
+        self.client = Client(self.application)
 
     def test_wsgi_request_empty(self) -> None:
         response = self.client.post(
@@ -1176,6 +1179,10 @@ class TopicDeleteActionWSGITesterNoPermission(BaseTopicDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id_no_permission = 9707919439
+        self.application = create_test_application(
+            user_id=self.user_id_no_permission, view_name="ActionView", superuser=0
+        )
+        self.client = Client(self.application)
 
     def test_wsgi_request_no_permission_1(self) -> None:
         response = self.client.post(

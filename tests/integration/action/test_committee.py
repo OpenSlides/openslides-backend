@@ -1,14 +1,14 @@
-from unittest.mock import MagicMock
-
 import simplejson as json
 
 from openslides_backend.action import ActionPayload
 from openslides_backend.action.committee.create import CommitteeCreate
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqfield, get_fqid
+from tests.util import Client, get_fqfield, get_fqid
 
-# TODO: remove this file once adapted to the new schema.
+from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.permission import PermissionTestAdapter
+from ..util import create_test_application_with_fake as create_test_application
 
 
 class BaseCommitteeCreateActionTester(BaseActionTestCase):
@@ -30,8 +30,8 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
         }
         self.action = CommitteeCreate(
             "committee.create",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(datastore_content=self.datastore_content),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -82,8 +82,8 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
         }
         self.action = CommitteeCreate(
             "committee.create",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(datastore_content=self.datastore_content),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_empty(self) -> None:
@@ -144,10 +144,17 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         self.user_id = 7668157706
 
     def test_wsgi_request_empty(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
-            "/", json=[{"action": "committee.create", "data": [{}]}]
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
         )
+        response = client.post("/", json=[{"action": "committee.create", "data": [{}]}])
         self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
@@ -155,8 +162,17 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/",
             json=[
                 {
@@ -172,7 +188,7 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
         )
 
     def test_wsgi_request_correct_1(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {
@@ -194,7 +210,16 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
                 "locked_fields": {"organisation/1": 1},
             }
         )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
@@ -209,8 +234,17 @@ class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTeste
         self.user_id_no_permission = 9707919439
 
     def test_wsgi_request_no_permission_1(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id_no_permission,
+                view_name="ActionView",
+                superuser=0,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)

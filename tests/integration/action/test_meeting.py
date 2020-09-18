@@ -1,14 +1,14 @@
-from unittest.mock import MagicMock
-
 import simplejson as json
 
 from openslides_backend.action import ActionPayload
 from openslides_backend.action.meeting.create_update_delete import MeetingActionSet
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqfield, get_fqid
+from tests.util import Client, get_fqfield, get_fqid
 
-# TODO: remove this file once adapted to the new schema.
+from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.permission import PermissionTestAdapter
+from ..util import create_test_application_with_fake as create_test_application
 
 
 class BaseMeetingCreateActionTester(BaseActionTestCase):
@@ -29,8 +29,8 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("create")(
             "meeting.create",
-            MagicMock(superuser=user_id),
-            MagicMock(datastore_content=self.datastore_content),
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -77,8 +77,8 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("create")(
             "meeting.create",
-            MagicMock(superuser=self.user_id),
-            MagicMock(datastore_content=self.datastore_content),
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_empty(self) -> None:
@@ -138,10 +138,17 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         self.user_id = 7121641734
 
     def test_wsgi_request_empty(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
-            "/", json=[{"action": "meeting.create", "data": [{}]}]
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
         )
+        response = client.post("/", json=[{"action": "meeting.create", "data": [{}]}])
         self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain [\\'committee_id\\', \\'name\\'] properties",
@@ -149,8 +156,17 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         )
 
     def test_wsgi_request_fuzzy(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/",
             json=[
                 {
@@ -166,7 +182,7 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
         )
 
     def test_wsgi_request_correct_1(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {
@@ -191,7 +207,16 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
                 "locked_fields": {"committee/5914213969": 1},
             }
         )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
@@ -203,8 +228,17 @@ class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
         self.user_id_no_permission = 9707919439
 
     def test_wsgi_request_no_permission_1(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id_no_permission,
+                view_name="ActionView",
+                superuser=0,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)
@@ -229,8 +263,8 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("update")(
             "meeting.update",
-            MagicMock(superuser=user_id),
-            MagicMock(datastore_content=self.datastore_content),
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -250,8 +284,8 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("update")(
             "meeting.update",
-            MagicMock(superuser=self.user_id),
-            MagicMock(datastore_content=self.datastore_content),
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -281,7 +315,7 @@ class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
         self.user_id = 7121641734
 
     def test_wsgi_request_correct_1(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {
@@ -296,7 +330,16 @@ class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
                 "locked_fields": {},
             }
         )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
@@ -308,8 +351,17 @@ class MeetingUpdateActionWSGITesterNoPermission(BaseMeetingUpdateActionTester):
         self.user_id_no_permission = 9707919439
 
     def test_wsgi_request_no_permission_1(self) -> None:
-        expected_write_data = ""  # noqa: F841
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id_no_permission,
+                view_name="ActionView",
+                superuser=0,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)
@@ -341,8 +393,8 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("delete")(
             "meeting.delete",
-            MagicMock(superuser=user_id),
-            MagicMock(datastore_content=self.datastore_content),
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -355,27 +407,13 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(
-            dataset["data"],
-            [
-                {
-                    "instance": {
-                        "id": self.valid_payload_1[0]["id"],
-                        "agenda_item_ids": None,
-                        "category_ids": None,
-                        "committee_id": None,
-                        "motion_block_ids": None,
-                        "motion_ids": None,
-                        "motion_poll_default_group_ids": None,
-                        "topic_ids": None,
-                    },
-                    "relations": {
-                        get_fqfield("committee/5914213969/meeting_ids"): {
-                            "type": "remove",
-                            "value": [7816466305],
-                        },
-                    },
-                }
-            ],
+            dataset["data"][0]["relations"],
+            {
+                get_fqfield("committee/5914213969/meeting_ids"): {
+                    "type": "remove",
+                    "value": [7816466305],
+                },
+            },
         )
 
     def test_prepare_dataset_2(self) -> None:
@@ -394,8 +432,8 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("delete")(
             "meeting.delete",
-            MagicMock(superuser=self.user_id),
-            MagicMock(datastore_content=self.datastore_content),
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -448,7 +486,7 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
         self.user_id = 7121641734
 
     def test_wsgi_request_correct_1(self) -> None:
-        expected_write_data = json.dumps(  # noqa: F841
+        expected_write_data = json.dumps(
             {
                 "events": [
                     {"type": "delete", "fqid": "meeting/3908439961"},
@@ -466,13 +504,32 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
                 "locked_fields": {"meeting/3908439961": 1, "committee/5914213969": 1},
             }
         )
-        response = self.client.post(
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
     def test_wsgi_request_incorrect_2(self) -> None:
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id,
+                view_name="ActionView",
+                superuser=self.user_id,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
         self.assert_status_code(response, 400)
@@ -489,13 +546,33 @@ class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
         self.user_id_no_permission = 9707919439
 
     def test_wsgi_request_no_permission_1(self) -> None:
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id_no_permission,
+                view_name="ActionView",
+                superuser=0,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)
 
     def test_wsgi_request_no_permission_2(self) -> None:
-        response = self.client.post(
+        expected_write_data = ""
+        client = Client(
+            create_test_application(
+                user_id=self.user_id_no_permission,
+                view_name="ActionView",
+                superuser=0,
+                datastore_content=self.datastore_content,
+                expected_write_data=expected_write_data,
+            )
+        )
+        response = client.post(
             "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
         self.assert_status_code(response, 403)
