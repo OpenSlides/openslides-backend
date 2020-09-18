@@ -138,7 +138,7 @@ class RelationMixin(Field):
         self.generic_relation = generic_relation
         self.delete_protection = delete_protection
         if generic_relation:
-            ReverseRelations[self.to].append(GenericFieldWrapper(self))
+            ReverseRelations[self.to].append(GenericRelationFieldWrapper(self))
         else:
             ReverseRelations[self.to].append(self)
         super().__init__(**kwargs)  # type: ignore
@@ -150,13 +150,18 @@ class RelationMixin(Field):
         raise NotImplementedError
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}(to={self.to}, related_name={self.related_name}, structured={self.structured_relation}, generic={self.generic_relation}, type={self.type}, description={self.description})"
+        return (
+            f"{self.__class__.__name__}(to={self.to}, related_name={self.related_name}, "
+            f"structured_relation={self.structured_relation}, "
+            f"generic_relation={self.generic_relation}, type={self.type}, "
+            f"delete_protection={self.delete_protection}, description={self.description})"
+        )
 
 
 ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
 
 
-class GenericFieldWrapper(RelationMixin, object):
+class GenericRelationFieldWrapper(RelationMixin):
     def __init__(self, instance: RelationMixin) -> None:
         object.__setattr__(self, "instance", instance)
 
@@ -165,6 +170,7 @@ class GenericFieldWrapper(RelationMixin, object):
 
     def __getattribute__(self, name: str) -> Any:
         def get_reverse_schema(self: Any) -> Schema:
+            # TODO: Fix this schema wrapping for 1:m and m:n cases.
             return self.extend_schema(
                 self.get_reverse_schema(), type="string", pattern=FullQualifiedId.REGEX
             )

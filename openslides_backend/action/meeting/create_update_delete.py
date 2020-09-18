@@ -1,6 +1,3 @@
-from ...models.group import (  # noqa  # TODO: Remove this unused import after some group actions are installed.
-    Group,
-)
 from ...models.meeting import Meeting
 from ..action import register_action_set
 from ..action_set import ActionSet

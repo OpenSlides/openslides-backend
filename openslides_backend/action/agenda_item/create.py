@@ -30,16 +30,16 @@ class AgendaItemCreate(CreateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Adjusts content_object and sets defaults for type and weight.
+        Adjusts content object and meeting and sets defaults for type and weight
         """
-        # parse content_object_id
+        # Parse content_object_id.
         collection_name, id = instance["content_object_id"].split("/")
         instance["content_object_id"] = FullQualifiedId(
             Collection(collection_name), int(id)
         )
         instance["type"] = instance.get("type", AgendaItem.AGENDA_ITEM)
         instance["weight"] = instance.get("weight", 0)
-        # fetch meeting_id
+        # Fetch meeting_id
         content_object = self.fetch_model(instance["content_object_id"], ["meeting_id"])
         if not content_object.get("meeting_id"):
             raise ActionException("Given content object has no meeting id.")

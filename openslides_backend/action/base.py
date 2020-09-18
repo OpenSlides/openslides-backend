@@ -114,6 +114,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def fetch_model(
         self, fqid: FullQualifiedId, mapped_fields: List[str] = []
     ) -> Dict[str, Any]:
+        """
+        Helper method to retrieve an instance from database or
+        additional_relation_models dictionary.
+        """
         if fqid in self.additional_relation_models:
             additional_model = self.additional_relation_models[fqid]
             if mapped_fields:
@@ -121,7 +125,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             else:
                 return additional_model
         else:
-            return self.database.get(fqid, mapped_fields)
+            return self.database.get(fqid, mapped_fields, lock_result=True)
 
     def create_write_request_elements(
         self, dataset: DataSet
