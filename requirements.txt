@@ -1,9 +1,9 @@
-simplejson==3.17.0
-fastjsonschema==2.14.2
-requests==2.22.0
-roman==3.2
+simplejson==3.17.2
+fastjsonschema==2.14.5
+requests==2.24.0
+roman==3.3
 mypy-extensions==0.4.3
-typing-extensions==3.7.4.1
-dependency_injector==3.43.1
-Werkzeug==0.16.1
+typing-extensions==3.7.4.3
+dependency_injector==3.44.0
+Werkzeug==1.0.1
 gunicorn==20.0.4
