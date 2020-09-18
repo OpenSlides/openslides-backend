@@ -16,12 +16,12 @@ class MotionComment(Model):
 
     id = fields.IdField(description="The id of this motion comment.")
     comment = fields.TextField(description="The comment of this motion comment.")
-    motion_id = fields.ForeignKeyField(
+    motion_id = fields.RequiredForeignKeyField(
         description="The id of the motion of this motion comment.",
         to=Collection("motion"),
         related_name="comment_ids",
     )
-    section_id = fields.ForeignKeyField(
+    section_id = fields.RequiredForeignKeyField(
         description="The id of the section of this motion comment.",
         to=Collection("motion_comment_section"),
         related_name="comment_ids",

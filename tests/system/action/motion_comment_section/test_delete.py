@@ -23,17 +23,17 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_delete_existing_comments(self) -> None:
         self.create_model("motion_comment/79", {"name": "name_lkztu23d"})
         self.create_model(
-            "motion_comment_section/111",
+            "motion_comment_section/1141",
             {"name": "name_srtgb123", "comment_ids": [79]},
         )
 
         response = self.client.post(
             "/",
-            json=[{"action": "motion_comment_section.delete", "data": [{"id": 111}]}],
+            json=[{"action": "motion_comment_section.delete", "data": [{"id": 1141}]}],
         )
         self.assert_status_code(response, 400)
         assert (
-            "Cannot delete motion comment section \\'111\\' with existing comments."
-            in str(response.data)
-        )
-        self.assert_model_exists("motion_comment_section/111")
+            "You are not allowed to delete motion_comment_section 1141 as long as "
+            "there are some required related objects (see comment_ids)."
+        ) in str(response.data)
+        self.assert_model_exists("motion_comment_section/1141")
