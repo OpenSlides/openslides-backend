@@ -102,7 +102,7 @@ class ModelBaseTester(TestCase):
                 description="The foreign key of fake_model_tahheque7O.",
                 to=Collection("fake_model_tahheque7O"),
                 related_name="invalid_related_name",
-                structured_relation="invalid_structured_relation",
+                structured_relation=["invalid_structured_relation"],
             )
 
     def test_structured_relation_init_2(self) -> None:

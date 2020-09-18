@@ -108,7 +108,7 @@ class Motion(Model):
         description="The users that are supportes of this motion.",
         to=Collection("user"),
         related_name="supported_motion_$_ids",
-        structured_relation="meeting_id",
+        structured_relation=["meeting_id"],
     )
 
     # Timestamps

@@ -3,6 +3,8 @@ from typing import Dict, Iterable, Tuple
 from ..shared.patterns import Collection
 from .fields import Field, RelationMixin, ReverseRelations, Schema
 
+model_registry = {}
+
 
 class ModelMetaClass(type):
     """
@@ -10,6 +12,8 @@ class ModelMetaClass(type):
 
     This metaclass ensures that relation fields get attributes set so that they
     know its own collection and its own field name.
+
+    It also creates the registry for models and collections.
     """
 
     def __new__(metaclass, class_name, class_parents, class_attributes):  # type: ignore
@@ -22,6 +26,7 @@ class ModelMetaClass(type):
                 if isinstance(attr, RelationMixin):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
+            model_registry[new_class.collection] = new_class
         return new_class
 
 
@@ -36,15 +41,18 @@ class Model(metaclass=ModelMetaClass):
     def __str__(self) -> str:
         return self.verbose_name
 
-    def get_field(self, field_name: str) -> Field:
+    def get_field(self, field_name: str, only_common: bool = False) -> Field:
         """
         Returns the requested model field. Reverse relations are included.
         """
-        for model_field_name, model_field in self.get_fields():
+        for model_field_name, model_field in self.get_fields(only_common=only_common):
             if model_field_name == field_name:
                 return model_field
         else:
-            raise ValueError(f"Model {self} has no field {field_name}.")
+            message = f"Model {self} has no field {field_name}."
+            if only_common:
+                message += " Reverse relations are not checked."
+            raise ValueError(message)
 
     def get_fields(self, only_common: bool = False) -> Iterable[Tuple[str, Field]]:
         """

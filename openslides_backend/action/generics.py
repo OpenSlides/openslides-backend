@@ -35,7 +35,7 @@ class CreateAction(Action):
             for field_name, field in self.model.get_relation_fields():
                 if field_name in instance.keys():
                     if field.structured_relation:
-                        if instance.get(field.structured_relation) is None:
+                        if instance.get(field.structured_relation[0]) is None:
                             raise ActionException(
                                 "You must give both a relation field "
                                 "with structured_relation and its corresponding "
@@ -131,7 +131,7 @@ class UpdateAction(Action):
             for field_name, field in self.model.get_relation_fields():
                 if field_name in instance.keys():
                     if field.structured_relation:
-                        if instance.get(field.structured_relation) is not None:
+                        if instance.get(field.structured_relation[0]) is not None:
                             raise ActionException(
                                 "You must not try to update both a relation field "
                                 "with structured_relation and its corresponding "

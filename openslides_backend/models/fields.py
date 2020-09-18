@@ -95,11 +95,13 @@ class RelationMixin(Field):
             meeting id. This is only possible if the structured_relation argument
             is set. In the end there will be a lot of fields in the related
             model.
-        structured_relation: The name of the foreign key field of this model where
-            we can find the id that should be used to replace the $ used in
-            related_name argument. Attention: If the value of this field
-            changes, all relations have to be adjusted. So don't use a
-            writable field at all.
+        structured_relation: A list of foreign key field names. The first one is a
+            field of this model. We follow this relation. The second one is a field
+            of the model related by the first one. We go on this way until the last
+            one, where we can find the id that should be used to replace the $ used
+            in related_name argument. Attention: If the value of these fields
+            changed, all relations would have been broken. So such fields should not be
+            updated at all.
         generic_relation: If this flag is true the reverse field contains
             FQFields of different collections i. e. it is a generic field.
         delete_protection: If this flag is true the instance can not be delete
@@ -117,7 +119,7 @@ class RelationMixin(Field):
         self,
         to: Collection,
         related_name: str,
-        structured_relation: str = None,
+        structured_relation: List[str] = None,
         generic_relation: bool = False,
         delete_protection: bool = False,
         **kwargs: Any,
