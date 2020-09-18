@@ -10,7 +10,5 @@ class TopicDelete(DeleteAction):
     Action to delete simple topics that can be shown in the agenda.
     """
 
-    # TODO: Add protection against deletion without deleting agenda item.
-
     model = Topic()
     schema = DefaultSchema(Topic()).get_delete_schema()

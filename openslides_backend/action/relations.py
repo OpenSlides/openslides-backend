@@ -6,7 +6,12 @@ from ..models.base import Model
 from ..models.fields import RelationMixin
 from ..services.datastore.interface import GetManyRequest, PartialModel
 from ..shared.exceptions import ActionException
-from ..shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ..shared.patterns import (
+    KEYSEPARATOR,
+    Collection,
+    FullQualifiedField,
+    FullQualifiedId,
+)
 from ..shared.typing import ModelMap
 
 RelationsElement = TypedDict(
@@ -72,10 +77,6 @@ class RelationsHandler:
             # Switch 1:m to m:1 in reverse case.
             self.type = "m:1"
 
-        # TODO: Implement this case.
-        if self.field.generic_relation and self.is_reverse and self.type == "m:n":
-            raise NotImplementedError
-
     def perform(self) -> Relations:
         rel_ids = self.prepare_new_relation_ids()
         related_name = self.get_related_name()
@@ -118,6 +119,33 @@ class RelationsHandler:
             )
             # TODO: Check if the datastore really sends such an empty response.
             id_rels = response[target] if target in response else {}
+
+            # Switch type of values that represent a FQID
+            # only in non-reverse generic relation case.
+            if self.field.generic_relation:
+                assert not self.is_reverse
+                for rel_item in id_rels.values():
+                    related_field_value = rel_item.get(related_name)
+                    if related_field_value is not None:
+                        if self.type == "1:1":
+                            collection, element_id = related_field_value.split(
+                                KEYSEPARATOR
+                            )
+                            rel_item[related_name] = FullQualifiedId(
+                                Collection(collection), int(element_id)
+                            )
+                        else:
+                            new_related_field_value = []
+                            for value_item in related_field_value:
+                                collection, element_id = value_item.split(KEYSEPARATOR)
+                                new_related_field_value.append(
+                                    FullQualifiedId(
+                                        Collection(collection), int(element_id)
+                                    )
+                                )
+                            rel_item[related_name] = new_related_field_value
+
+            # Inject additional_relation_models and check existance of target objects.
             for instance_id in ids:
                 fqid = FullQualifiedId(target, instance_id)
                 if fqid in self.additional_relation_models:
@@ -296,9 +324,14 @@ class RelationsHandler:
                 rel_element = RelationsElement(type="add", value=new_value)
             else:
                 assert rel_id in remove
-                if self.is_reverse and self.field.on_delete == "protect":
+                if (
+                    self.is_reverse
+                    and self.type != "m:n"
+                    and self.field.on_delete == "protect"
+                ):
                     # Hint: There is no on_delete behavior in common relation
-                    # case so the reverse field is always nullable.
+                    # case so the reverse field is always nullable. The same
+                    # for m:n case where we just modifiy the related field list.
                     raise ActionException(
                         f"You are not allowed to delete {self.model} {self.id} as "
                         "long as there are some required related objects "
@@ -352,9 +385,14 @@ class RelationsHandler:
                 rel_element = RelationsElement(type="add", value=new_value)
             else:
                 assert rel_id in remove
-                if self.is_reverse and self.field.on_delete == "protect":
+                if (
+                    self.is_reverse
+                    and self.type != "m:n"
+                    and self.field.on_delete == "protect"
+                ):
                     # Hint: There is no on_delete behavior in common relation
-                    # case so the reverse field is always nullable.
+                    # case so the reverse field is always nullable. The same
+                    # for m:n case where we just modifiy the related field list.
                     raise ActionException(
                         f"You are not allowed to delete {self.model} {self.id} as "
                         "long as there are some required related objects "

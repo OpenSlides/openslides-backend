@@ -219,6 +219,18 @@ class DeleteAction(Action):
             # fields to None.
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
+                # Check delete_protection.
+                if field.delete_protection:
+                    db_instance = self.database.get(
+                        fqid=FullQualifiedId(self.model.collection, instance["id"]),
+                        mapped_fields=[field_name],
+                        lock_result=True,
+                    )
+                    if db_instance.get(field_name):
+                        raise ActionException(
+                            f"You can not delete {self.model} with id {instance['id']}, "
+                            f"because you have to delete the related {field.to} first."
+                        )
                 instance[field_name] = None
                 relation_fields.append((field_name, field, False))
 
