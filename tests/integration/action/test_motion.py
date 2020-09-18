@@ -1,16 +1,20 @@
 import time
 from copy import deepcopy
 from typing import Any, Dict
-from unittest.mock import MagicMock
 
 from openslides_backend.action.motion.delete import MotionDelete
 from openslides_backend.action.motion.sort import MotionSort
 from openslides_backend.action.motion.update import MotionUpdate, MotionUpdateMetadata
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from tests.system.action.base import BaseActionTestCase
-from tests.util import get_fqfield, get_fqid
+from tests.util import Client, get_fqfield, get_fqid
 
-# TODO: remove this file once adapted to the new schema.
+from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.permission import PermissionTestAdapter
+from ..util import create_test_application_old as create_test_application
+
+# TODO: These tests use all old style datastore testing.
+# Fix this (do not use create_test_applicaton_old and do not use old_style_testing=True any more).
 
 
 class BaseMotionUpdateActionTester(BaseActionTestCase):
@@ -34,8 +38,8 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
         user_id = 7826715669
         self.action = MotionUpdate(
             "motion.update",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -68,8 +72,8 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
         self.user_id = 7826715669
         self.action = MotionUpdate(
             "motion.update",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -110,9 +114,13 @@ class MotionUpdateActionWSGITester(BaseMotionUpdateActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7826715669
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionView", superuser=self.user_id
+        )
 
     def test_wsgi_request_correct_1(self) -> None:
-        response = self.client.post(
+        client = Client(self.application)
+        response = client.post(
             "/", json=[{"action": "motion.update", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
@@ -136,8 +144,8 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
         user_id = 7826715669
         self.action = MotionUpdateMetadata(
             "motion.update_metadate",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -196,8 +204,8 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
         self.user_id = 7826715669
         self.action = MotionUpdateMetadata(
             "motion.update_metadata",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -305,8 +313,8 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
         user_id = 7826715669
         self.action = MotionDelete(
             "motion.delete",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -325,6 +333,7 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
                     "lead_motion_id": None,
                     "category_id": None,
                     "change_recommendation_ids": None,
+                    "comment_ids": None,
                     "block_id": None,
                     "origin_id": None,
                     "state_id": None,
@@ -374,8 +383,8 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
         self.user_id = 7826715669
         self.action = MotionDelete(
             "motion.delete",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -448,9 +457,13 @@ class MotionDeleteActionWSGITester(BaseMotionDeleteActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7826715669
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionView", superuser=self.user_id
+        )
 
     def test_wsgi_request_correct_1(self) -> None:
-        response = self.client.post(
+        client = Client(self.application)
+        response = client.post(
             "/", json=[{"action": "motion.delete", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
@@ -505,8 +518,8 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
         user_id = 7826715669
         self.action = MotionSort(
             "motion.sort",
-            MagicMock(superuser=user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -592,8 +605,8 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
         self.user_id = 7826715669
         self.action = MotionSort(
             "motion.sort",
-            MagicMock(superuser=self.user_id),  # noqa: F821
-            MagicMock(old_style_testing=True),  # noqa: F821
+            PermissionTestAdapter(superuser=self.user_id),
+            DatabaseTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -771,9 +784,13 @@ class MotionSortActionWSGITester(BaseMotionSortActionTester):
     def setUp(self) -> None:
         super().setUp()
         self.user_id = 7826715669
+        self.application = create_test_application(
+            user_id=self.user_id, view_name="ActionView", superuser=self.user_id
+        )
 
     def test_wsgi_request_correct_1(self) -> None:
-        response = self.client.post(
+        client = Client(self.application)
+        response = client.post(
             "/", json=[{"action": "motion.sort", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
