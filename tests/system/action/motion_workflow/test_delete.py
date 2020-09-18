@@ -3,7 +3,18 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.create_model("motion_workflow/111", {"name": "name_srtgb123"})
+        self.create_model(
+            "meeting/90",
+            {
+                "name": "name_testtest",
+                "motions_default_workflow_id": 12,
+                "motions_default_statute_amendment_workflow_id": 13,
+                "motion_workflow_ids": [111],
+            },
+        )
+        self.create_model(
+            "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
+        )
         response = self.client.post(
             "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
         )
@@ -17,3 +28,64 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/112")
+
+    def test_delete_fail_case_default_1(self) -> None:
+        self.create_model(
+            "meeting/90",
+            {
+                "name": "name_testtest",
+                "motions_default_workflow_id": 111,
+                "motions_default_statute_amendment_workflow_id": 13,
+                "motion_workflow_ids": [111],
+            },
+        )
+        self.create_model(
+            "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
+        )
+        response = self.client.post(
+            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("motion_workflow/111")
+        self.assertIn("Cannot delete a default workflow.", str(response.data))
+
+    def test_delete_fail_case_default_2(self) -> None:
+        self.create_model(
+            "meeting/90",
+            {
+                "name": "name_testtest",
+                "motions_default_workflow_id": 12,
+                "motions_default_statute_amendment_workflow_id": 111,
+                "motion_workflow_ids": [111],
+            },
+        )
+        self.create_model(
+            "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
+        )
+        response = self.client.post(
+            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("motion_workflow/111")
+        self.assertIn("Cannot delete a default workflow.", str(response.data))
+
+    def test_delete_fail_case_default_3(self) -> None:
+        self.create_model(
+            "meeting/90",
+            {
+                "name": "name_testtest",
+                "motions_default_workflow_id": 12,
+                "motions_default_statute_amendment_workflow_id": 13,
+                "motions_default_amendment_workflow_id": 111,
+                "motion_workflow_ids": [111],
+            },
+        )
+        self.create_model(
+            "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
+        )
+        response = self.client.post(
+            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_exists("motion_workflow/111")
+        self.assertIn("Cannot delete a default workflow.", str(response.data))
