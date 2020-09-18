@@ -102,6 +102,8 @@ class RelationMixin(Field):
             writable field at all.
         generic_relation: If this flag is true the reverse field contains
             FQFields of different collections i. e. it is a generic field.
+        delete_protection: If this flag is true the instance can not be delete
+            if this field is not empty.
     """
 
     on_delete: str
@@ -117,6 +119,7 @@ class RelationMixin(Field):
         related_name: str,
         structured_relation: str = None,
         generic_relation: bool = False,
+        delete_protection: bool = False,
         **kwargs: Any,
     ) -> None:
         if structured_relation is not None:
@@ -133,6 +136,7 @@ class RelationMixin(Field):
         self.related_name = related_name
         self.structured_relation = structured_relation
         self.generic_relation = generic_relation
+        self.delete_protection = delete_protection
         if generic_relation:
             ReverseRelations[self.to].append(GenericFieldWrapper(self))
         else:

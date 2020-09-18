@@ -27,12 +27,14 @@ class MotionBlock(Model):
         to=Collection("agenda_item"),
         related_name="content_object_id",
         generic_relation=True,
+        delete_protection=True,
     )
     list_of_speakers_id = fields.OneToOneField(
         description="The list of speakers id of this motion block.",
         to=Collection("list_of_speakers"),
         related_name="content_object_id",
         generic_relation=True,
+        delete_protection=True,
     )
 
     # TODO
