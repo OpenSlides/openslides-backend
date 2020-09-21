@@ -1,0 +1,267 @@
+import os
+import string
+from textwrap import dedent
+from typing import Any, Dict, List, Optional, Union
+
+import requests
+import simplejson as json
+import yaml
+
+from openslides_backend.shared.patterns import KEYSEPARATOR
+
+SOURCE = "https://raw.githubusercontent.com/normanjaeckel/OpenSlides/modelsToYML/docs/models.yml"
+
+DESTINATION = os.path.abspath(
+    os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "..",
+        "openslides_backend",
+        "models",
+        "models.py",
+    )
+)
+
+COMMON_FIELD_CLASSES = {
+    "string": "CharField",
+    "number": "IntegerField",
+    "boolean": "BooleanField",
+    "JSON": "JSONField",
+    "HTML": "HTMLField",
+    "float": "FloatField",
+    "decimal(6)": "DecimalField",
+    "datetime": "DatetimeField",
+    "string[]": "CharArrayField",
+    "number[]": "NumberArrayField",
+}
+
+RELATION_FIELD_CLASSES = {
+    "relation": "RelationField",
+    "relation-list": "RelationListField",
+    "generic-relation": "GenericRelationField",
+    "generic-relation-list": "GenericRelationListField",
+}
+
+FILE_TEMPLATE = dedent(
+    """\
+    # Code generated. DO NOT EDIT.
+
+    from openslides_backend.models import fields_new as fields
+    from openslides_backend.models.base import Model
+    from openslides_backend.shared.patterns import Collection
+    """
+)
+
+MODELS: Dict[str, Dict[str, Any]] = {}
+
+
+class Node:
+    pass
+
+
+class RelatedField(Node):
+    name: str
+    type: Optional[str] = None
+    replacement: Optional[str] = None
+
+    def __init__(self, value: Union[str, Dict]) -> None:
+        if isinstance(value, str):
+            self.name = value
+        else:
+            self.name = value.get("name", "")
+            self.type = value.get("type")
+            self.replacement = value.get("replacement")
+        assert self.name
+        if self.type:
+            assert (
+                self.type in ("structured-relation", "structured-tag")
+                and self.replacement
+            )
+
+
+class To(Node):
+    collection: Union[str, List[str]]
+    field: RelatedField
+
+    def __init__(self, value: Union[str, Dict]) -> None:
+        if isinstance(value, str):
+            collection, related_field = value.split(KEYSEPARATOR)
+            self.collection = collection
+            self.field = RelatedField(related_field)
+        else:
+            self.collection = value.get("collection", "")
+            self.field = RelatedField(value.get("field", {}))
+        assert self.collection
+
+    def get_properties(self) -> str:
+        properties = f'to="{self.collection}", related_name="{self.field.name}", '
+        if self.reverse_is_generic():
+            properties += "generic_relation=True, "
+        if self.field.type == "structured-relation":
+            properties += f'structured_relation="{self.field.replacement}", '
+        if self.field.type == "structured-tag":
+            properties += f'structured_tag="{self.field.replacement}", '
+        return properties
+
+    def reverse_is_generic(self) -> bool:
+        if isinstance(self.collection, list):
+            return False
+        related_type = Attribute(get_model_field(self.collection, self.field.name)).type
+        is_generic = related_type in ("generic-relation", "generic-relation-list")
+        if is_generic:
+            assert self.field.type not in (
+                "generic-relation",
+                "generic-relation-list",
+                "structured-relation",
+                "structured-tag",
+            )
+        return is_generic
+
+
+class Attribute(Node):
+    type: str
+    replacement: Optional[str] = None
+    to: Optional[To] = None
+    fields: Optional["Attribute"] = None
+    contraints: Dict[str, Any]
+
+    is_template: bool = False
+
+    FIELD_TEMPLATE = string.Template(
+        "    ${field_name} = fields.${field_class}(${properties})\n"
+    )
+
+    def __init__(
+        self, value: Union[str, Dict], is_inner_attribute: bool = False
+    ) -> None:
+        self.FIELD_CLASSES = {
+            **COMMON_FIELD_CLASSES,
+            **RELATION_FIELD_CLASSES,
+        }
+        self.contraints = {}
+        if isinstance(value, str):
+            self.type = value
+        else:
+            self.type = value.get("type", "")
+            if self.type == "template":
+                self.is_template = True
+                self.replacement = value.get("replacement")
+                inner_value = value.get("fields")
+                assert not is_inner_attribute and self.replacement and inner_value
+                self.fields = type(self)(inner_value, is_inner_attribute=True)
+            else:
+                if self.type in RELATION_FIELD_CLASSES.keys():
+                    self.to = To(value.get("to", {}))
+                else:
+                    assert self.type in COMMON_FIELD_CLASSES.keys()
+                for k, v in value.items():
+                    if k not in ("type", "to"):
+                        self.contraints[k] = v
+
+    def get_code(self, field_name: str) -> str:
+        structured_field_sign = field_name.find("$")
+        if structured_field_sign == -1:
+            assert not self.is_template
+            return self.get_code_for_normal(field_name)
+        assert self.is_template
+        field_name = field_name.replace("$", "", 1)
+        assert field_name.find("$") == -1
+        return self.get_code_for_template(field_name, structured_field_sign)
+
+    def get_code_for_normal(self, field_name: str) -> str:
+        if field_name == "organisation_id":
+            field_class = "OrganisationField"
+        else:
+            field_class = self.FIELD_CLASSES[self.type]
+        properties = ""
+        if self.to:
+            properties += self.to.get_properties()
+        if self.contraints:
+            properties += f"constraints={json.dumps(self.contraints)}"
+        return self.FIELD_TEMPLATE.substitute(
+            dict(
+                field_name=field_name,
+                field_class=field_class,
+                properties=properties.rstrip(", "),
+            )
+        )
+
+    def get_code_for_template(self, field_name: str, index: int) -> str:
+        assert self.fields is not None
+        field_class = f"Template{self.FIELD_CLASSES[self.fields.type]}"
+        properties = f'replacement="{self.replacement}", index={index}, '
+        if self.fields.to:
+            properties += self.fields.to.get_properties()
+        if self.contraints:
+            properties += f"constraints={json.dumps(self.contraints)}"
+        return self.FIELD_TEMPLATE.substitute(
+            dict(field_name=field_name, field_class=field_class, properties=properties,)
+        )
+
+
+class Model(Node):
+    collection: str
+    attributes: Dict[str, Attribute]
+
+    MODEL_TEMPLATE = string.Template(
+        dedent(
+            """
+
+            class ${class_name}(Model):
+                collection = Collection("${collection}")
+                verbose_name = "${collection}"
+
+            """
+        )
+    )
+
+    def __init__(self, collection: str, fields: Dict[str, Any]) -> None:
+        self.collection = collection
+        assert collection
+        self.attributes = {}
+        for field_name, value in fields.items():
+            self.attributes[field_name] = Attribute(value)
+
+    def get_code(self) -> str:
+        code = self.MODEL_TEMPLATE.substitute(
+            dict(class_name=self.get_class_name(), collection=self.collection)
+        )
+        for field_name, attribute in self.attributes.items():
+            code += attribute.get_code(field_name)
+        return code
+
+    def get_class_name(self) -> str:
+        return "".join([part.capitalize() for part in self.collection.split("_")])
+
+
+def get_model_field(collection: str, field_name: str) -> Union[str, Dict]:
+    model = MODELS.get(collection)
+    if model is None:
+        raise ValueError(f"Collection {collection} does not exist.")
+    value = model.get(field_name)
+    if value is None:
+        raise ValueError(f"Field {field_name} does not exist.")
+    return value
+
+
+def main() -> None:
+    global MODELS
+
+    # Retrieve models.yml from GitHub
+    models_yml = requests.get(SOURCE).content
+
+    # Fix broken keys
+    models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())
+    models_yml = models_yml.replace(" no:".encode(), ' "no":'.encode())
+
+    # Load and parse models.yml
+    MODELS = yaml.safe_load(models_yml)
+    with open(DESTINATION, "w") as dest:
+        dest.write(FILE_TEMPLATE)
+        for collection, fields in MODELS.items():
+            model = Model(collection, fields)
+            dest.write(model.get_code())
+    print(f"Models file {DESTINATION} successfully created.")
+
+
+if __name__ == "__main__":
+    main()
