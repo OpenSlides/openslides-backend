@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from mypy_extensions import TypedDict
 
-from ..models.base import Model
+from ..models.base import Model, model_registry
 from ..models.fields import RelationMixin
 from ..services.datastore.interface import GetManyRequest, PartialModel
 from ..shared.exceptions import ActionException
@@ -184,19 +184,35 @@ class RelationsHandler:
         else:
             if self.is_reverse:
                 raise NotImplementedError
-            # Fetch current db instance with structured_relation field.
-            db_instance = self.database.get(
-                fqid=FullQualifiedId(self.model.collection, id=self.id),
-                mapped_fields=[self.field.structured_relation],
+            replacement = self.search_structured_relation(
+                list(self.field.structured_relation), self.model.collection, self.id
             )
-            if db_instance.get(self.field.structured_relation) is None:
-                raise ValueError(
-                    f"The field {self.field.structured_relation} must not be empty in database."
-                )
-            related_name = self.field.related_name.replace(
-                "$", str(db_instance.get(self.field.structured_relation))
-            )
+            related_name = self.field.related_name.replace("$", replacement)
         return related_name
+
+    def search_structured_relation(
+        self, structured_relation: List[str], collection: Collection, id: int,
+    ) -> str:
+        """
+        Recursive helper method to walk down the structured_relation field name list.
+        """
+        field_name = structured_relation.pop(0)
+        db_instance = self.database.get(
+            fqid=FullQualifiedId(collection, id), mapped_fields=[field_name],
+        )
+        value = db_instance.get(field_name)
+        if value is None:
+            raise ValueError(
+                f"The field {field_name} for {collection} must not be empty in database."
+            )
+        if structured_relation:
+            new_collection = (
+                model_registry[collection]().get_field(field_name, only_common=True).to
+            )
+            return self.search_structured_relation(
+                structured_relation, new_collection, value
+            )
+        return str(value)
 
     def relation_diffs(self, rel_ids: List[int]) -> Tuple[Set[int], Set[int]]:
         """
