@@ -5,31 +5,7 @@ from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedId
 from ..action import register_action
 from ..default_schema import DefaultSchema
-from ..generics import CreateAction, DeleteAction, UpdateAction
-
-
-@register_action("motion_workflow.create")
-class MotionWorkflowCreateAction(CreateAction):
-    """
-    Action to create a motion workflow.
-    """
-
-    model = MotionWorkflow()
-    schema = DefaultSchema(MotionWorkflow()).get_create_schema(
-        properties=["name", "meeting_id"], required_properties=["name", "meeting_id"],
-    )
-
-
-@register_action("motion_workflow.update")
-class MotionWorkflowUpdateAction(UpdateAction):
-    """
-    Action to update a motion workflow.
-    """
-
-    model = MotionWorkflow()
-    schema = DefaultSchema(MotionWorkflow()).get_update_schema(
-        properties=["name", "first_state_id"]
-    )
+from ..generics import DeleteAction
 
 
 @register_action("motion_workflow.delete")
