@@ -49,18 +49,17 @@ class Action(BaseAction, metaclass=SchemaProvider):
     Base class for an action.
     """
 
+    name: str
     model: Model
     schema: Dict
     schema_validator: Callable[[ActionPayload], None]
 
     def __init__(
         self,
-        name: str,
         permission: Permission,
         database: Datastore,
         additional_relation_models: ModelMap = {},
     ) -> None:
-        self.name = name
         self.permission = permission
         self.database = database
         self.additional_relation_models = additional_relation_models
