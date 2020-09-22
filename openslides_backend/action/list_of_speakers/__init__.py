@@ -1,20 +1,6 @@
 from ..action import register_action
 from ..base import DummyAction
-
-
-@register_action("list_of_speakers.create")
-class ListOfSpeakersCreate(DummyAction):
-    pass
-
-
-@register_action("list_of_speakers.update")
-class ListOfSpeakersUpdate(DummyAction):
-    pass
-
-
-@register_action("list_of_speakers.delete")
-class ListOfSpeakersDelete(DummyAction):
-    pass
+from . import update  # noqa
 
 
 @register_action("list_of_speakers.manage_speakers")
