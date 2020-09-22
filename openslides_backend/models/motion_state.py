@@ -22,9 +22,21 @@ class MotionState(Model):
     recommendation_label = fields.CharField(
         description="The recommendation label of this motion state."
     )
-    css_class = fields.CharField(description="The css class of this motion state.")
+    css_class = fields.CharField(
+        description="The css class of this motion state.",
+        enum=["gray", "red", "green", "lightblue", "yellow"],
+    )
     restrictions = fields.ArrayField(
-        description="The restrictions of this motion state.", items={"type": "string"}
+        description="The restrictions of this motion state.",
+        items={
+            "type": "string",
+            "enum": [
+                "motions.can_see_internal",
+                "motions.can_manage_metadata",
+                "motions.can_manage",
+                "is_submitter",
+            ],
+        },
     )
     allow_support = fields.BooleanField(
         description="If this motion state allows supporting motions."
@@ -41,8 +53,8 @@ class MotionState(Model):
     show_state_extension_field = fields.BooleanField(
         description="If in this motion state the state extension field is visable."
     )
-    merge_amendment_into_final = fields.PositiveIntegerField(
-        description="Unknown description."
+    merge_amendment_into_final = fields.IntegerField(
+        description="Unknown description.", enum=[-1, 0, 1]
     )
     show_recommendation_extension_field = fields.BooleanField(
         description="If in this motion state the recommendation extension field is visable."
