@@ -93,7 +93,11 @@ class To(Node):
         assert self.collection
 
     def get_properties(self) -> str:
-        properties = f'to="{self.collection}", related_name="{self.field.name}", '
+        if isinstance(self.collection, str):
+            to_value = f'Collection("{self.collection}")'
+        else:
+            to_value = "[" + ", ".join([f'Collection("{collection}")' for collection in self.collection]) + "]"
+        properties = f'to={to_value}, related_name="{self.field.name}", '
         if self.reverse_is_generic():
             properties += "generic_relation=True, "
         if self.field.type == "structured-relation":

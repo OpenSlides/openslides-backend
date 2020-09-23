@@ -18,14 +18,16 @@ class Organisation(Model):
     theme = fields.CharField()
     custom_translations = fields.JSONField()
     committee_ids = fields.RelationListField(
-        to="committee", related_name="organisation_id"
+        to=Collection("committee"), related_name="organisation_id"
     )
-    role_ids = fields.RelationListField(to="role", related_name="organisation_id")
+    role_ids = fields.RelationListField(
+        to=Collection("role"), related_name="organisation_id"
+    )
     superadmin_role_id = fields.RelationField(
-        to="role", related_name="superadmin_role_for_organisation_id"
+        to=Collection("role"), related_name="superadmin_role_for_organisation_id"
     )
     resource_ids = fields.RelationListField(
-        to="resource", related_name="organisation_id"
+        to=Collection("resource"), related_name="organisation_id"
     )
 
 
@@ -50,70 +52,94 @@ class User(Model):
     email = fields.CharField()
     last_email_send = fields.CharField()
     vote_weight = fields.DecimalField()
-    role_id = fields.RelationField(to="role", related_name="user_ids")
+    role_id = fields.RelationField(to=Collection("role"), related_name="user_ids")
     is_present_in_meeting_ids = fields.RelationListField(
-        to="meeting", related_name="present_user_ids"
+        to=Collection("meeting"), related_name="present_user_ids"
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="temporary_user_ids")
-    guest_meeting_ids = fields.RelationListField(to="meeting", related_name="guest_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="temporary_user_ids"
+    )
+    guest_meeting_ids = fields.RelationListField(
+        to=Collection("meeting"), related_name="guest_ids"
+    )
     committee_as_member_ids = fields.RelationListField(
-        to="committee", related_name="member_ids"
+        to=Collection("committee"), related_name="member_ids"
     )
     committee_as_manager_ids = fields.RelationListField(
-        to="committee", related_name="manager_ids"
+        to=Collection("committee"), related_name="manager_ids"
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
     group__ids = fields.TemplateRelationListField(
-        replacement="meeting_id", index=6, to="group", related_name="user_ids",
+        replacement="meeting_id",
+        index=6,
+        to=Collection("group"),
+        related_name="user_ids",
     )
     speaker__ids = fields.TemplateRelationListField(
-        replacement="meeting_id", index=8, to="speaker", related_name="user_id",
+        replacement="meeting_id",
+        index=8,
+        to=Collection("speaker"),
+        related_name="user_id",
     )
     personal_note__ids = fields.TemplateRelationListField(
-        replacement="meeting_id", index=14, to="personal_note", related_name="user_id",
+        replacement="meeting_id",
+        index=14,
+        to=Collection("personal_note"),
+        related_name="user_id",
     )
     supported_motion__ids = fields.TemplateRelationListField(
-        replacement="meeting_id", index=17, to="motion", related_name="supporter_ids",
+        replacement="meeting_id",
+        index=17,
+        to=Collection("motion"),
+        related_name="supporter_ids",
     )
     submitted_motion__ids = fields.TemplateRelationListField(
         replacement="meeting_id",
         index=17,
-        to="motion_submitter",
+        to=Collection("motion_submitter"),
         related_name="user_id",
     )
     motion_poll_voted__ids = fields.TemplateRelationListField(
-        replacement="meeting_id", index=18, to="motion_poll", related_name="voted_ids",
+        replacement="meeting_id",
+        index=18,
+        to=Collection("motion_poll"),
+        related_name="voted_ids",
     )
     motion_vote__ids = fields.TemplateRelationListField(
-        replacement="meeting_id", index=12, to="motion_vote", related_name="user_id",
+        replacement="meeting_id",
+        index=12,
+        to=Collection("motion_vote"),
+        related_name="user_id",
     )
     assignment_candidate__ids = fields.TemplateRelationListField(
         replacement="meeting_id",
         index=21,
-        to="assignment_candidate",
+        to=Collection("assignment_candidate"),
         related_name="user_id",
     )
     assignment_poll_voted__ids = fields.TemplateRelationListField(
         replacement="meeting_id",
         index=22,
-        to="assignment_poll",
+        to=Collection("assignment_poll"),
         related_name="voted_ids",
     )
     assignment_option__ids = fields.TemplateRelationListField(
         replacement="meeting_id",
         index=18,
-        to="assignment_option",
+        to=Collection("assignment_option"),
         related_name="user_id",
     )
     assignment_vote__ids = fields.TemplateRelationListField(
         replacement="meeting_id",
         index=16,
-        to="assignment_vote",
+        to=Collection("assignment_vote"),
         related_name="user_id",
     )
 
@@ -126,12 +152,12 @@ class Role(Model):
     name = fields.CharField()
     permissions = fields.CharArrayField()
     organisation_id = fields.OrganisationField(
-        to="organisation", related_name="role_ids"
+        to=Collection("organisation"), related_name="role_ids"
     )
     superadmin_role_for_organisation_id = fields.RelationField(
-        to="organisation", related_name="superadmin_role_id"
+        to=Collection("organisation"), related_name="superadmin_role_id"
     )
-    user_ids = fields.RelationListField(to="user", related_name="role_id")
+    user_ids = fields.RelationListField(to=Collection("user"), related_name="role_id")
 
 
 class Resource(Model):
@@ -143,7 +169,7 @@ class Resource(Model):
     filesize = fields.IntegerField()
     mimetype = fields.CharField()
     organisation_id = fields.OrganisationField(
-        to="organisation", related_name="resource_ids"
+        to=Collection("organisation"), related_name="resource_ids"
     )
 
 
@@ -154,27 +180,30 @@ class Committee(Model):
     id = fields.IntegerField()
     name = fields.CharField()
     description = fields.HTMLField()
-    meeting_ids = fields.RelationListField(to="meeting", related_name="committee_id")
+    meeting_ids = fields.RelationListField(
+        to=Collection("meeting"), related_name="committee_id"
+    )
     template_meeting_id = fields.RelationField(
-        to="meeting", related_name="template_for_committee_id"
+        to=Collection("meeting"), related_name="template_for_committee_id"
     )
     default_meeting_id = fields.RelationField(
-        to="meeting", related_name="default_meeting_for_committee_id"
+        to=Collection("meeting"), related_name="default_meeting_for_committee_id"
     )
     member_ids = fields.RelationListField(
-        to="user", related_name="committee_as_member_ids"
+        to=Collection("user"), related_name="committee_as_member_ids"
     )
     manager_ids = fields.RelationListField(
-        to="user", related_name="committee_as_manager_ids"
+        to=Collection("user"), related_name="committee_as_manager_ids"
     )
     forward_to_committee_ids = fields.RelationListField(
-        to="committee", related_name="receive_forwardings_from_committee_ids"
+        to=Collection("committee"),
+        related_name="receive_forwardings_from_committee_ids",
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
-        to="committee", related_name="forward_to_committee_ids"
+        to=Collection("committee"), related_name="forward_to_committee_ids"
     )
     organisation_id = fields.OrganisationField(
-        to="organisation", related_name="committee_ids"
+        to=Collection("organisation"), related_name="committee_ids"
     )
 
 
@@ -193,7 +222,7 @@ class Meeting(Model):
     custom_translations = fields.JSONField()
     url_name = fields.CharField(constraints={"description": "For unique urls."})
     template_for_committee_id = fields.RelationField(
-        to="committee", related_name="template_meeting_id"
+        to=Collection("committee"), related_name="template_meeting_id"
     )
     enable_anonymous = fields.BooleanField()
     conference_show = fields.BooleanField()
@@ -221,13 +250,14 @@ class Meeting(Model):
     list_of_speakers_present_users_only = fields.BooleanField()
     list_of_speakers_show_first_contribution = fields.BooleanField()
     motions_default_workflow_id = fields.RelationField(
-        to="motion_workflow", related_name="default_workflow_meeting_id"
+        to=Collection("motion_workflow"), related_name="default_workflow_meeting_id"
     )
     motions_default_amendment_workflow_id = fields.RelationField(
-        to="motion_workflow", related_name="default_amendment_workflow_meeting_id"
+        to=Collection("motion_workflow"),
+        related_name="default_amendment_workflow_meeting_id",
     )
     motions_default_statute_amendment_workflow_id = fields.RelationField(
-        to="motion_workflow",
+        to=Collection("motion_workflow"),
         related_name="default_statute_amendment_workflow_meeting_id",
     )
     motions_preamble = fields.CharField()
@@ -266,7 +296,7 @@ class Meeting(Model):
     motion_poll_default_100_percent_base = fields.CharField()
     motion_poll_default_majority_method = fields.CharField()
     motion_poll_default_group_ids = fields.RelationListField(
-        to="group", related_name="used_as_motion_poll_default_id"
+        to=Collection("group"), related_name="used_as_motion_poll_default_id"
     )
     users_sort_by = fields.CharField()
     users_enable_presence_view = fields.BooleanField()
@@ -293,85 +323,102 @@ class Meeting(Model):
     assignment_poll_default_100_percent_base = fields.CharField()
     assignment_poll_default_majority_method = fields.CharField()
     assignment_poll_default_group_ids = fields.RelationListField(
-        to="group", related_name="used_as_assignment_poll_default_id"
+        to=Collection("group"), related_name="used_as_assignment_poll_default_id"
     )
-    projector_ids = fields.RelationListField(to="projector", related_name="meeting_id")
+    projector_ids = fields.RelationListField(
+        to=Collection("projector"), related_name="meeting_id"
+    )
     projectiondefault_ids = fields.RelationListField(
-        to="projectiondefault", related_name="meeting_id"
+        to=Collection("projectiondefault"), related_name="meeting_id"
     )
     projector_message_ids = fields.RelationListField(
-        to="projector_message", related_name="meeting_id"
+        to=Collection("projector_message"), related_name="meeting_id"
     )
     projector_countdown_ids = fields.RelationListField(
-        to="projector_countdown", related_name="meeting_id"
+        to=Collection("projector_countdown"), related_name="meeting_id"
     )
-    tag_ids = fields.RelationListField(to="tag", related_name="meeting_id")
+    tag_ids = fields.RelationListField(to=Collection("tag"), related_name="meeting_id")
     agenda_item_ids = fields.RelationListField(
-        to="agenda_item", related_name="meeting_id"
+        to=Collection("agenda_item"), related_name="meeting_id"
     )
     list_of_speakers_ids = fields.RelationListField(
-        to="list_of_speakers", related_name="meeting_id"
+        to=Collection("list_of_speakers"), related_name="meeting_id"
     )
-    topic_ids = fields.RelationListField(to="topic", related_name="meeting_id")
-    group_ids = fields.RelationListField(to="group", related_name="meeting_id")
-    mediafile_ids = fields.RelationListField(to="mediafile", related_name="meeting_id")
-    motion_ids = fields.RelationListField(to="motion", related_name="meeting_id")
+    topic_ids = fields.RelationListField(
+        to=Collection("topic"), related_name="meeting_id"
+    )
+    group_ids = fields.RelationListField(
+        to=Collection("group"), related_name="meeting_id"
+    )
+    mediafile_ids = fields.RelationListField(
+        to=Collection("mediafile"), related_name="meeting_id"
+    )
+    motion_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="meeting_id"
+    )
     motion_comment_section_ids = fields.RelationListField(
-        to="motion_comment_section", related_name="meeting_id"
+        to=Collection("motion_comment_section"), related_name="meeting_id"
     )
     motion_category_ids = fields.RelationListField(
-        to="motion_category", related_name="meeting_id"
+        to=Collection("motion_category"), related_name="meeting_id"
     )
     motion_block_ids = fields.RelationListField(
-        to="motion_block", related_name="meeting_id"
+        to=Collection("motion_block"), related_name="meeting_id"
     )
     motion_workflow_ids = fields.RelationListField(
-        to="motion_workflow", related_name="meeting_id"
+        to=Collection("motion_workflow"), related_name="meeting_id"
     )
     motion_statute_paragraph_ids = fields.RelationListField(
-        to="motion_statute_paragraph", related_name="meeting_id"
+        to=Collection("motion_statute_paragraph"), related_name="meeting_id"
     )
     motion_poll_ids = fields.RelationListField(
-        to="motion_poll", related_name="meeting_id"
+        to=Collection("motion_poll"), related_name="meeting_id"
     )
     assignment_ids = fields.RelationListField(
-        to="assignment", related_name="meeting_id"
+        to=Collection("assignment"), related_name="meeting_id"
     )
     assignment_poll_ids = fields.RelationListField(
-        to="assignment_poll", related_name="meeting_id"
+        to=Collection("assignment_poll"), related_name="meeting_id"
     )
     logo__id = fields.TemplateRelationField(
         replacement="location",
         index=5,
-        to="mediafile",
+        to=Collection("mediafile"),
         related_name="used_as_logo_$_in_meeting_id",
         structured_tag="location",
     )
     font__id = fields.TemplateRelationField(
         replacement="location",
         index=5,
-        to="mediafile",
+        to=Collection("mediafile"),
         related_name="used_as_font_$_in_meeting_id",
         structured_tag="location",
     )
-    committee_id = fields.RelationField(to="committee", related_name="meeting_ids")
+    committee_id = fields.RelationField(
+        to=Collection("committee"), related_name="meeting_ids"
+    )
     default_meeting_for_committee_id = fields.RelationField(
-        to="committee", related_name="default_meeting_id"
+        to=Collection("committee"), related_name="default_meeting_id"
     )
     present_user_ids = fields.RelationListField(
-        to="user", related_name="is_present_in_meeting_ids"
+        to=Collection("user"), related_name="is_present_in_meeting_ids"
     )
-    temporary_user_ids = fields.RelationListField(to="user", related_name="meeting_id")
-    guest_ids = fields.RelationListField(to="user", related_name="guest_meeting_ids")
+    temporary_user_ids = fields.RelationListField(
+        to=Collection("user"), related_name="meeting_id"
+    )
+    guest_ids = fields.RelationListField(
+        to=Collection("user"), related_name="guest_meeting_ids"
+    )
     user_ids = fields.NumberArrayField()
     reference_projector_id = fields.RelationField(
-        to="projector", related_name="used_as_reference_projector_meeting_id"
+        to=Collection("projector"),
+        related_name="used_as_reference_projector_meeting_id",
     )
     default_group_id = fields.RelationField(
-        to="group", related_name="default_group_for_meeting_id"
+        to=Collection("group"), related_name="default_group_for_meeting_id"
     )
     superadmin_group_id = fields.RelationField(
-        to="group", related_name="superadmin_group_for_meeting_id"
+        to=Collection("group"), related_name="superadmin_group_for_meeting_id"
     )
 
 
@@ -383,39 +430,43 @@ class Group(Model):
     name = fields.CharField()
     permissions = fields.CharArrayField()
     user_ids = fields.RelationListField(
-        to="user", related_name="group_$_ids", structured_relation="meeting_id"
+        to=Collection("user"),
+        related_name="group_$_ids",
+        structured_relation="meeting_id",
     )
     default_group_for_meeting_id = fields.RelationField(
-        to="meeting", related_name="default_group_id"
+        to=Collection("meeting"), related_name="default_group_id"
     )
     superadmin_group_for_meeting_id = fields.RelationField(
-        to="meeting", related_name="superadmin_group_id"
+        to=Collection("meeting"), related_name="superadmin_group_id"
     )
     mediafile_access_group_ids = fields.RelationListField(
-        to="mediafile", related_name="access_group_ids"
+        to=Collection("mediafile"), related_name="access_group_ids"
     )
     mediafile_inherited_access_group_ids = fields.RelationListField(
-        to="mediafile", related_name="inherited_access_group_ids"
+        to=Collection("mediafile"), related_name="inherited_access_group_ids"
     )
     read_comment_section_ids = fields.RelationListField(
-        to="motion_comment_section", related_name="read_group_ids"
+        to=Collection("motion_comment_section"), related_name="read_group_ids"
     )
     write_comment_section_ids = fields.RelationListField(
-        to="motion_comment_section", related_name="write_group_ids"
+        to=Collection("motion_comment_section"), related_name="write_group_ids"
     )
     motion_poll_ids = fields.RelationListField(
-        to="motion_poll", related_name="entitled_group_ids"
+        to=Collection("motion_poll"), related_name="entitled_group_ids"
     )
     assignment_poll_ids = fields.RelationListField(
-        to="assignment_poll", related_name="entitled_group_ids"
+        to=Collection("assignment_poll"), related_name="entitled_group_ids"
     )
     used_as_motion_poll_default_id = fields.RelationField(
-        to="meeting", related_name="motion_poll_default_group_ids"
+        to=Collection("meeting"), related_name="motion_poll_default_group_ids"
     )
     used_as_assignment_poll_default_id = fields.RelationField(
-        to="meeting", related_name="assignment_poll_default_group_ids"
+        to=Collection("meeting"), related_name="assignment_poll_default_group_ids"
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="group_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="group_ids"
+    )
 
 
 class PersonalNote(Model):
@@ -426,10 +477,12 @@ class PersonalNote(Model):
     note = fields.HTMLField()
     star = fields.BooleanField()
     user_id = fields.RelationField(
-        to="user", related_name="personal_note_$_ids", structured_relation="meeting_id"
+        to=Collection("user"),
+        related_name="personal_note_$_ids",
+        structured_relation="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
-        to="['motion']", related_name="personal_note_ids"
+        to=[Collection("motion")], related_name="personal_note_ids"
     )
 
 
@@ -440,9 +493,15 @@ class Tag(Model):
     id = fields.IntegerField()
     name = fields.CharField()
     tagged_ids = fields.GenericRelationListField(
-        to="['agenda_item', 'assignment', 'motion', 'topic']", related_name="tag_ids"
+        to=[
+            Collection("agenda_item"),
+            Collection("assignment"),
+            Collection("motion"),
+            Collection("topic"),
+        ],
+        related_name="tag_ids",
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="tag_ids")
+    meeting_id = fields.RelationField(to=Collection("meeting"), related_name="tag_ids")
 
 
 class AgendaItem(Model):
@@ -460,21 +519,34 @@ class AgendaItem(Model):
     weight = fields.IntegerField(constraints={"default": 0})
     level = fields.IntegerField()
     content_object_id = fields.GenericRelationField(
-        to="['motion', 'motion_block', 'assignment', 'topic']",
+        to=[
+            Collection("motion"),
+            Collection("motion_block"),
+            Collection("assignment"),
+            Collection("topic"),
+        ],
         related_name="agenda_item_id",
     )
-    parent_id = fields.RelationField(to="agenda_item", related_name="child_ids")
-    child_ids = fields.RelationListField(to="agenda_item", related_name="parent_id")
+    parent_id = fields.RelationField(
+        to=Collection("agenda_item"), related_name="child_ids"
+    )
+    child_ids = fields.RelationListField(
+        to=Collection("agenda_item"), related_name="parent_id"
+    )
     tag_ids = fields.RelationListField(
-        to="tag", related_name="tagged_ids", generic_relation=True
+        to=Collection("tag"), related_name="tagged_ids", generic_relation=True
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="agenda_item_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="agenda_item_ids"
+    )
 
 
 class ListOfSpeakers(Model):
@@ -484,19 +556,29 @@ class ListOfSpeakers(Model):
     id = fields.IntegerField()
     closed = fields.BooleanField()
     content_object_id = fields.GenericRelationField(
-        to="['motion', 'motion_block', 'assignment', 'topic', 'mediafile']",
+        to=[
+            Collection("motion"),
+            Collection("motion_block"),
+            Collection("assignment"),
+            Collection("topic"),
+            Collection("mediafile"),
+        ],
         related_name="list_of_speakers_id",
     )
     speaker_ids = fields.RelationListField(
-        to="speaker", related_name="list_of_speakers_id"
+        to=Collection("speaker"), related_name="list_of_speakers_id"
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="list_of_speakers_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="list_of_speakers_ids"
+    )
 
 
 class Speaker(Model):
@@ -509,10 +591,12 @@ class Speaker(Model):
     weight = fields.IntegerField(constraints={"default": 0})
     marked = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
-        to="list_of_speakers", related_name="speaker_ids"
+        to=Collection("list_of_speakers"), related_name="speaker_ids"
     )
     user_id = fields.RelationField(
-        to="user", related_name="speaker_$_ids", structured_relation="meeting_id"
+        to=Collection("user"),
+        related_name="speaker_$_ids",
+        structured_relation="meeting_id",
     )
 
 
@@ -524,18 +608,24 @@ class Topic(Model):
     title = fields.CharField()
     text = fields.HTMLField()
     attachment_ids = fields.RelationListField(
-        to="mediafile", related_name="attachment_ids", generic_relation=True
+        to=Collection("mediafile"), related_name="attachment_ids", generic_relation=True
     )
     agenda_item_id = fields.RelationField(
-        to="agenda_item", related_name="content_object_id", generic_relation=True
+        to=Collection("agenda_item"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     list_of_speakers_id = fields.RelationField(
-        to="list_of_speakers", related_name="content_object_id", generic_relation=True
+        to=Collection("list_of_speakers"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     tag_ids = fields.RelationListField(
-        to="tag", related_name="tagged_ids", generic_relation=True
+        to=Collection("tag"), related_name="tagged_ids", generic_relation=True
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="topic_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="topic_ids"
+    )
 
 
 class Motion(Model):
@@ -558,70 +648,98 @@ class Motion(Model):
     sort_weight = fields.IntegerField(constraints={"default": 0})
     created = fields.DatetimeField()
     last_modified = fields.DatetimeField()
-    lead_motion_id = fields.RelationField(to="motion", related_name="amendment_ids")
-    amendment_ids = fields.RelationListField(to="motion", related_name="lead_motion_id")
-    sort_parent_id = fields.RelationField(to="motion", related_name="sort_child_ids")
-    sort_child_ids = fields.RelationListField(
-        to="motion", related_name="sort_parent_id"
+    lead_motion_id = fields.RelationField(
+        to=Collection("motion"), related_name="amendment_ids"
     )
-    origin_id = fields.RelationField(to="motion", related_name="derived_motion_ids")
-    derived_motion_ids = fields.RelationListField(to="motion", related_name="origin_id")
+    amendment_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="lead_motion_id"
+    )
+    sort_parent_id = fields.RelationField(
+        to=Collection("motion"), related_name="sort_child_ids"
+    )
+    sort_child_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="sort_parent_id"
+    )
+    origin_id = fields.RelationField(
+        to=Collection("motion"), related_name="derived_motion_ids"
+    )
+    derived_motion_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="origin_id"
+    )
     forwarding_tree_motion_ids = fields.NumberArrayField()
-    state_id = fields.RelationField(to="motion_state", related_name="motion_ids")
+    state_id = fields.RelationField(
+        to=Collection("motion_state"), related_name="motion_ids"
+    )
     recommendation_id = fields.RelationField(
-        to="motion_state", related_name="motion_recommendation_ids"
+        to=Collection("motion_state"), related_name="motion_recommendation_ids"
     )
     recommendation_extension_reference_ids = fields.GenericRelationListField(
-        to="['motion']",
+        to=[Collection("motion")],
         related_name="referenced_in_motion_recommendation_extension_ids",
     )
     referenced_in_motion_recommendation_extension_ids = fields.RelationListField(
-        to="motion",
+        to=Collection("motion"),
         related_name="recommendation_extension_reference_ids",
         generic_relation=True,
     )
-    category_id = fields.RelationField(to="motion_category", related_name="motion_ids")
-    block_id = fields.RelationField(to="motion_block", related_name="motion_ids")
+    category_id = fields.RelationField(
+        to=Collection("motion_category"), related_name="motion_ids"
+    )
+    block_id = fields.RelationField(
+        to=Collection("motion_block"), related_name="motion_ids"
+    )
     submitter_ids = fields.RelationListField(
-        to="motion_submitter", related_name="motion_id"
+        to=Collection("motion_submitter"), related_name="motion_id"
     )
     supporter_ids = fields.RelationListField(
-        to="user",
+        to=Collection("user"),
         related_name="supported_motion_$_ids",
         structured_relation="meeting_id",
     )
-    poll_ids = fields.RelationListField(to="motion_poll", related_name="motion_id")
+    poll_ids = fields.RelationListField(
+        to=Collection("motion_poll"), related_name="motion_id"
+    )
     change_recommendation_ids = fields.RelationListField(
-        to="motion_change_recommendation", related_name="motion_id"
+        to=Collection("motion_change_recommendation"), related_name="motion_id"
     )
     statute_paragraph_id = fields.RelationField(
-        to="motion_statute_paragraph", related_name="motion_ids"
+        to=Collection("motion_statute_paragraph"), related_name="motion_ids"
     )
     comment_ids = fields.RelationListField(
-        to="motion_comment", related_name="motion_id"
+        to=Collection("motion_comment"), related_name="motion_id"
     )
     agenda_item_id = fields.RelationField(
-        to="agenda_item", related_name="content_object_id", generic_relation=True
+        to=Collection("agenda_item"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     list_of_speakers_id = fields.RelationField(
-        to="list_of_speakers", related_name="content_object_id", generic_relation=True
+        to=Collection("list_of_speakers"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     tag_ids = fields.RelationListField(
-        to="tag", related_name="tagged_ids", generic_relation=True
+        to=Collection("tag"), related_name="tagged_ids", generic_relation=True
     )
     attachment_ids = fields.RelationListField(
-        to="mediafile", related_name="attachment_ids", generic_relation=True
+        to=Collection("mediafile"), related_name="attachment_ids", generic_relation=True
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
     personal_note_ids = fields.RelationListField(
-        to="personal_note", related_name="content_object_id", generic_relation=True
+        to=Collection("personal_note"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="motion_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="motion_ids"
+    )
 
 
 class MotionSubmitter(Model):
@@ -631,11 +749,13 @@ class MotionSubmitter(Model):
     id = fields.IntegerField()
     weight = fields.IntegerField(constraints={"default": 0})
     user_id = fields.RelationField(
-        to="user",
+        to=Collection("user"),
         related_name="submitted_motion_$_ids",
         structured_relation="meeting_id",
     )
-    motion_id = fields.RelationField(to="motion", related_name="submitter_ids")
+    motion_id = fields.RelationField(
+        to=Collection("motion"), related_name="submitter_ids"
+    )
 
 
 class MotionComment(Model):
@@ -644,9 +764,11 @@ class MotionComment(Model):
 
     id = fields.IntegerField()
     comment = fields.HTMLField()
-    motion_id = fields.RelationField(to="motion", related_name="comment_ids")
+    motion_id = fields.RelationField(
+        to=Collection("motion"), related_name="comment_ids"
+    )
     section_id = fields.RelationField(
-        to="motion_comment_section", related_name="comment_ids"
+        to=Collection("motion_comment_section"), related_name="comment_ids"
     )
 
 
@@ -658,16 +780,16 @@ class MotionCommentSection(Model):
     name = fields.CharField()
     weight = fields.IntegerField(constraints={"default": 0})
     comment_ids = fields.RelationListField(
-        to="motion_comment", related_name="section_id"
+        to=Collection("motion_comment"), related_name="section_id"
     )
     read_group_ids = fields.RelationListField(
-        to="group", related_name="read_comment_section_ids"
+        to=Collection("group"), related_name="read_comment_section_ids"
     )
     write_group_ids = fields.RelationListField(
-        to="group", related_name="write_comment_section_ids"
+        to=Collection("group"), related_name="write_comment_section_ids"
     )
     meeting_id = fields.RelationField(
-        to="meeting", related_name="motion_comment_section_ids"
+        to=Collection("meeting"), related_name="motion_comment_section_ids"
     )
 
 
@@ -680,10 +802,18 @@ class MotionCategory(Model):
     prefix = fields.CharField()
     weight = fields.IntegerField(constraints={"default": 0})
     level = fields.IntegerField()
-    parent_id = fields.RelationField(to="motion_category", related_name="child_ids")
-    child_ids = fields.RelationListField(to="motion_category", related_name="parent_id")
-    motion_ids = fields.RelationListField(to="motion", related_name="category_id")
-    meeting_id = fields.RelationField(to="meeting", related_name="motion_category_ids")
+    parent_id = fields.RelationField(
+        to=Collection("motion_category"), related_name="child_ids"
+    )
+    child_ids = fields.RelationListField(
+        to=Collection("motion_category"), related_name="parent_id"
+    )
+    motion_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="category_id"
+    )
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="motion_category_ids"
+    )
 
 
 class MotionBlock(Model):
@@ -693,20 +823,30 @@ class MotionBlock(Model):
     id = fields.IntegerField()
     title = fields.CharField()
     internal = fields.BooleanField()
-    motion_ids = fields.RelationListField(to="motion", related_name="block_id")
+    motion_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="block_id"
+    )
     agenda_item_id = fields.RelationField(
-        to="agenda_item", related_name="content_object_id", generic_relation=True
+        to=Collection("agenda_item"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     list_of_speakers_id = fields.RelationField(
-        to="list_of_speakers", related_name="content_object_id", generic_relation=True
+        to=Collection("list_of_speakers"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="motion_block_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="motion_block_ids"
+    )
 
 
 class MotionChangeRecommendation(Model):
@@ -723,7 +863,7 @@ class MotionChangeRecommendation(Model):
     text = fields.HTMLField()
     creation_time = fields.DatetimeField()
     motion_id = fields.RelationField(
-        to="motion", related_name="change_recommendation_ids"
+        to=Collection("motion"), related_name="change_recommendation_ids"
     )
 
 
@@ -744,18 +884,22 @@ class MotionState(Model):
     merge_amendment_into_final = fields.IntegerField()
     show_recommendation_extension_field = fields.BooleanField()
     next_state_ids = fields.RelationListField(
-        to="motion_state", related_name="previous_state_ids"
+        to=Collection("motion_state"), related_name="previous_state_ids"
     )
     previous_state_ids = fields.RelationListField(
-        to="motion_state", related_name="next_state_ids"
+        to=Collection("motion_state"), related_name="next_state_ids"
     )
-    motion_ids = fields.RelationListField(to="motion", related_name="state_id")
+    motion_ids = fields.RelationListField(
+        to=Collection("motion"), related_name="state_id"
+    )
     motion_recommendation_ids = fields.RelationListField(
-        to="motion", related_name="recommendation_id"
+        to=Collection("motion"), related_name="recommendation_id"
     )
-    workflow_id = fields.RelationField(to="motion_workflow", related_name="state_ids")
+    workflow_id = fields.RelationField(
+        to=Collection("motion_workflow"), related_name="state_ids"
+    )
     first_state_of_workflow_id = fields.RelationField(
-        to="motion_workflow", related_name="first_state_id"
+        to=Collection("motion_workflow"), related_name="first_state_id"
     )
 
 
@@ -765,20 +909,25 @@ class MotionWorkflow(Model):
 
     id = fields.IntegerField()
     name = fields.CharField()
-    state_ids = fields.RelationListField(to="motion_state", related_name="workflow_id")
+    state_ids = fields.RelationListField(
+        to=Collection("motion_state"), related_name="workflow_id"
+    )
     first_state_id = fields.RelationField(
-        to="motion_state", related_name="first_state_of_workflow_id"
+        to=Collection("motion_state"), related_name="first_state_of_workflow_id"
     )
     default_workflow_meeting_id = fields.RelationField(
-        to="meeting", related_name="motions_default_workflow_id"
+        to=Collection("meeting"), related_name="motions_default_workflow_id"
     )
     default_amendment_workflow_meeting_id = fields.RelationField(
-        to="meeting", related_name="motions_default_amendment_workflow_id"
+        to=Collection("meeting"), related_name="motions_default_amendment_workflow_id"
     )
     default_statute_amendment_workflow_meeting_id = fields.RelationField(
-        to="meeting", related_name="motions_default_statute_amendment_workflow_id"
+        to=Collection("meeting"),
+        related_name="motions_default_statute_amendment_workflow_id",
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="motion_workflow_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="motion_workflow_ids"
+    )
 
 
 class MotionStatuteParagraph(Model):
@@ -790,10 +939,10 @@ class MotionStatuteParagraph(Model):
     text = fields.HTMLField()
     weight = fields.IntegerField(constraints={"default": 0})
     motion_ids = fields.RelationListField(
-        to="motion", related_name="statute_paragraph_id"
+        to=Collection("motion"), related_name="statute_paragraph_id"
     )
     meeting_id = fields.RelationField(
-        to="meeting", related_name="motion_statute_paragraph_ids"
+        to=Collection("meeting"), related_name="motion_statute_paragraph_ids"
     )
 
 
@@ -812,23 +961,29 @@ class MotionPoll(Model):
     votesinvalid = fields.DecimalField()
     votescast = fields.DecimalField()
     user_has_voted = fields.BooleanField()
-    motion_id = fields.RelationField(to="motion", related_name="poll_ids")
-    option_ids = fields.RelationListField(to="motion_option", related_name="poll_id")
+    motion_id = fields.RelationField(to=Collection("motion"), related_name="poll_ids")
+    option_ids = fields.RelationListField(
+        to=Collection("motion_option"), related_name="poll_id"
+    )
     voted_ids = fields.RelationListField(
-        to="user",
+        to=Collection("user"),
         related_name="motion_poll_voted_$_ids",
         structured_relation="meeting_id",
     )
     entitled_group_ids = fields.RelationListField(
-        to="group", related_name="motion_poll_ids"
+        to=Collection("group"), related_name="motion_poll_ids"
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="motion_poll_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="motion_poll_ids"
+    )
 
 
 class MotionOption(Model):
@@ -839,8 +994,12 @@ class MotionOption(Model):
     yes = fields.DecimalField()
     no = fields.DecimalField()
     abstain = fields.DecimalField()
-    poll_id = fields.RelationField(to="motion_poll", related_name="option_ids")
-    vote_ids = fields.RelationListField(to="motion_vote", related_name="option_id")
+    poll_id = fields.RelationField(
+        to=Collection("motion_poll"), related_name="option_ids"
+    )
+    vote_ids = fields.RelationListField(
+        to=Collection("motion_vote"), related_name="option_id"
+    )
 
 
 class MotionVote(Model):
@@ -850,9 +1009,13 @@ class MotionVote(Model):
     id = fields.IntegerField()
     weight = fields.DecimalField()
     value = fields.CharField()
-    option_id = fields.RelationField(to="motion_option", related_name="vote_ids")
+    option_id = fields.RelationField(
+        to=Collection("motion_option"), related_name="vote_ids"
+    )
     user_id = fields.RelationField(
-        to="user", related_name="motion_vote_$_ids", structured_relation="meeting_id"
+        to=Collection("user"),
+        related_name="motion_vote_$_ids",
+        structured_relation="meeting_id",
     )
 
 
@@ -868,30 +1031,38 @@ class Assignment(Model):
     default_poll_description = fields.CharField()
     number_poll_candidates = fields.BooleanField()
     candidate_ids = fields.RelationListField(
-        to="assignment_candidate", related_name="assignment_id"
+        to=Collection("assignment_candidate"), related_name="assignment_id"
     )
     poll_ids = fields.RelationListField(
-        to="assignment_poll", related_name="assignment_id"
+        to=Collection("assignment_poll"), related_name="assignment_id"
     )
     agenda_item_id = fields.RelationField(
-        to="agenda_item", related_name="content_object_id", generic_relation=True
+        to=Collection("agenda_item"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     list_of_speakers_id = fields.RelationField(
-        to="list_of_speakers", related_name="content_object_id", generic_relation=True
+        to=Collection("list_of_speakers"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     tag_ids = fields.RelationListField(
-        to="tag", related_name="tagged_ids", generic_relation=True
+        to=Collection("tag"), related_name="tagged_ids", generic_relation=True
     )
     attachment_ids = fields.RelationListField(
-        to="mediafile", related_name="attachment_ids", generic_relation=True
+        to=Collection("mediafile"), related_name="attachment_ids", generic_relation=True
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="assignment_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="assignment_ids"
+    )
 
 
 class AssignmentCandidate(Model):
@@ -900,9 +1071,11 @@ class AssignmentCandidate(Model):
 
     id = fields.IntegerField()
     weight = fields.IntegerField(constraints={"default": 0})
-    assignment_id = fields.RelationField(to="assignment", related_name="candidate_ids")
+    assignment_id = fields.RelationField(
+        to=Collection("assignment"), related_name="candidate_ids"
+    )
     user_id = fields.RelationField(
-        to="user",
+        to=Collection("user"),
         related_name="assignment_candidate_$_ids",
         structured_relation="meeting_id",
     )
@@ -930,25 +1103,31 @@ class AssignmentPoll(Model):
     votesinvalid = fields.DecimalField()
     votesvalid = fields.DecimalField()
     user_has_voted = fields.BooleanField()
-    assignment_id = fields.RelationField(to="assignment", related_name="poll_ids")
+    assignment_id = fields.RelationField(
+        to=Collection("assignment"), related_name="poll_ids"
+    )
     voted_ids = fields.RelationListField(
-        to="user",
+        to=Collection("user"),
         related_name="assignment_poll_voted_$_ids",
         structured_relation="meeting_id",
     )
     entitled_group_ids = fields.RelationListField(
-        to="group", related_name="assignment_poll_ids"
+        to=Collection("group"), related_name="assignment_poll_ids"
     )
     option_ids = fields.RelationListField(
-        to="assignment_option", related_name="poll_id"
+        to=Collection("assignment_option"), related_name="poll_id"
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="assignment_poll_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="assignment_poll_ids"
+    )
 
 
 class AssignmentOption(Model):
@@ -960,13 +1139,17 @@ class AssignmentOption(Model):
     no = fields.DecimalField()
     abstain = fields.DecimalField()
     weight = fields.IntegerField(constraints={"default": 0})
-    poll_id = fields.RelationField(to="assignment_poll", related_name="option_ids")
+    poll_id = fields.RelationField(
+        to=Collection("assignment_poll"), related_name="option_ids"
+    )
     user_id = fields.RelationField(
-        to="user",
+        to=Collection("user"),
         related_name="assignment_option_$_ids",
         structured_relation="meeting_id",
     )
-    vote_ids = fields.RelationListField(to="assignment_vote", related_name="option_id")
+    vote_ids = fields.RelationListField(
+        to=Collection("assignment_vote"), related_name="option_id"
+    )
 
 
 class AssignmentVote(Model):
@@ -976,9 +1159,11 @@ class AssignmentVote(Model):
     id = fields.IntegerField()
     value = fields.CharField()
     weight = fields.DecimalField()
-    option_id = fields.RelationField(to="assignment_option", related_name="vote_ids")
+    option_id = fields.RelationField(
+        to=Collection("assignment_option"), related_name="vote_ids"
+    )
     user_id = fields.RelationField(
-        to="user",
+        to=Collection("user"),
         related_name="assignment_vote_$_ids",
         structured_relation="meeting_id",
     )
@@ -998,37 +1183,48 @@ class Mediafile(Model):
     create_timestamp = fields.DatetimeField()
     has_inherited_access_groups = fields.BooleanField()
     inherited_access_group_ids = fields.RelationListField(
-        to="group", related_name="mediafile_inherited_access_group_ids"
+        to=Collection("group"), related_name="mediafile_inherited_access_group_ids"
     )
     access_group_ids = fields.RelationListField(
-        to="group", related_name="mediafile_access_group_ids"
+        to=Collection("group"), related_name="mediafile_access_group_ids"
     )
-    parent_id = fields.RelationField(to="mediafile", related_name="child_ids")
-    child_ids = fields.RelationListField(to="mediafile", related_name="parent_id")
+    parent_id = fields.RelationField(
+        to=Collection("mediafile"), related_name="child_ids"
+    )
+    child_ids = fields.RelationListField(
+        to=Collection("mediafile"), related_name="parent_id"
+    )
     list_of_speakers_id = fields.RelationField(
-        to="list_of_speakers", related_name="content_object_id", generic_relation=True
+        to=Collection("list_of_speakers"),
+        related_name="content_object_id",
+        generic_relation=True,
     )
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
     attachment_ids = fields.GenericRelationListField(
-        to="['motion', 'topic', 'assignment']", related_name="attachment_ids"
+        to=[Collection("motion"), Collection("topic"), Collection("assignment")],
+        related_name="attachment_ids",
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="mediafile_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="mediafile_ids"
+    )
     used_as_logo__in_meeting_id = fields.TemplateRelationField(
         replacement="location",
         index=13,
-        to="meeting",
+        to=Collection("meeting"),
         related_name="logo_$_id",
         structured_tag="location",
     )
     used_as_font__in_meeting_id = fields.TemplateRelationField(
         replacement="location",
         index=13,
-        to="meeting",
+        to=Collection("meeting"),
         related_name="font_$_id",
         structured_tag="location",
     )
@@ -1056,25 +1252,39 @@ class Projector(Model):
     show_title = fields.BooleanField()
     show_logo = fields.BooleanField()
     current_projection_ids = fields.RelationListField(
-        to="projection", related_name="current_projector_id"
+        to=Collection("projection"), related_name="current_projector_id"
     )
     current_element_ids = fields.GenericRelationListField(
-        to="['motion', 'mediafile', 'list_of_speakers', 'motion_block', 'assignment', 'agenda_item', 'user', 'assignment_poll', 'motion_poll', 'projector_message', 'projector_countdown']",
+        to=[
+            Collection("motion"),
+            Collection("mediafile"),
+            Collection("list_of_speakers"),
+            Collection("motion_block"),
+            Collection("assignment"),
+            Collection("agenda_item"),
+            Collection("user"),
+            Collection("assignment_poll"),
+            Collection("motion_poll"),
+            Collection("projector_message"),
+            Collection("projector_countdown"),
+        ],
         related_name="current_projector_ids",
     )
     preview_projection_ids = fields.RelationListField(
-        to="projection", related_name="preview_projector_id"
+        to=Collection("projection"), related_name="preview_projector_id"
     )
     history_projection_ids = fields.RelationListField(
-        to="projection", related_name="history_projector_id"
+        to=Collection("projection"), related_name="history_projector_id"
     )
     used_as_reference_projector_meeting_id = fields.RelationField(
-        to="meeting", related_name="reference_projector_id"
+        to=Collection("meeting"), related_name="reference_projector_id"
     )
     projectiondefault_ids = fields.RelationListField(
-        to="projectiondefault", related_name="projector_id"
+        to=Collection("projectiondefault"), related_name="projector_id"
     )
-    meeting_id = fields.RelationField(to="meeting", related_name="projector_ids")
+    meeting_id = fields.RelationField(
+        to=Collection("meeting"), related_name="projector_ids"
+    )
 
 
 class Projection(Model):
@@ -1084,16 +1294,28 @@ class Projection(Model):
     id = fields.IntegerField()
     options = fields.JSONField()
     current_projector_id = fields.RelationField(
-        to="projector", related_name="current_projection_ids"
+        to=Collection("projector"), related_name="current_projection_ids"
     )
     preview_projector_id = fields.RelationField(
-        to="projector", related_name="preview_projection_ids"
+        to=Collection("projector"), related_name="preview_projection_ids"
     )
     history_projector_id = fields.RelationField(
-        to="projector", related_name="history_projection_ids"
+        to=Collection("projector"), related_name="history_projection_ids"
     )
     element_id = fields.GenericRelationField(
-        to="['motion', 'mediafile', 'list_of_speakers', 'motion_block', 'assignment', 'agenda_item', 'user', 'assignment_poll', 'motion_poll', 'projector_message', 'projector_countdown']",
+        to=[
+            Collection("motion"),
+            Collection("mediafile"),
+            Collection("list_of_speakers"),
+            Collection("motion_block"),
+            Collection("assignment"),
+            Collection("agenda_item"),
+            Collection("user"),
+            Collection("assignment_poll"),
+            Collection("motion_poll"),
+            Collection("projector_message"),
+            Collection("projector_countdown"),
+        ],
         related_name="projection_ids",
     )
 
@@ -1106,10 +1328,10 @@ class Projectiondefault(Model):
     name = fields.CharField()
     display_name = fields.CharField()
     projector_id = fields.RelationField(
-        to="projector", related_name="projectiondefault_ids"
+        to=Collection("projector"), related_name="projectiondefault_ids"
     )
     meeting_id = fields.RelationField(
-        to="meeting", related_name="projectiondefault_ids"
+        to=Collection("meeting"), related_name="projectiondefault_ids"
     )
 
 
@@ -1120,13 +1342,15 @@ class ProjectorMessage(Model):
     id = fields.IntegerField()
     message = fields.HTMLField()
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
     meeting_id = fields.RelationField(
-        to="meeting", related_name="projector_message_ids"
+        to=Collection("meeting"), related_name="projector_message_ids"
     )
 
 
@@ -1141,11 +1365,13 @@ class ProjectorCountdown(Model):
     countdown_time = fields.IntegerField()
     running = fields.BooleanField()
     projection_ids = fields.RelationListField(
-        to="projection", related_name="element_id", generic_relation=True
+        to=Collection("projection"), related_name="element_id", generic_relation=True
     )
     current_projector_ids = fields.RelationListField(
-        to="projector", related_name="current_element_ids", generic_relation=True
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
     )
     meeting_id = fields.RelationField(
-        to="meeting", related_name="projector_countdown_ids"
+        to=Collection("meeting"), related_name="projector_countdown_ids"
     )
