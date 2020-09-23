@@ -605,7 +605,7 @@ class Topic(Model):
     verbose_name = "topic"
 
     id = fields.IntegerField()
-    title = fields.CharField()
+    title = fields.CharField(required=True)
     text = fields.HTMLField()
     attachment_ids = fields.RelationListField(
         to=Collection("mediafile"), related_name="attachment_ids", generic_relation=True
@@ -624,7 +624,7 @@ class Topic(Model):
         to=Collection("tag"), related_name="tagged_ids", generic_relation=True
     )
     meeting_id = fields.RelationField(
-        to=Collection("meeting"), related_name="topic_ids"
+        to=Collection("meeting"), related_name="topic_ids", required=True
     )
 
 

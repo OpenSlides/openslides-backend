@@ -126,6 +126,7 @@ class Attribute(Node):
     replacement: Optional[str] = None
     to: Optional[To] = None
     fields: Optional["Attribute"] = None
+    required: bool = False
     contraints: Dict[str, Any]
 
     is_template: bool = False
@@ -157,8 +158,9 @@ class Attribute(Node):
                     self.to = To(value.get("to", {}))
                 else:
                     assert self.type in COMMON_FIELD_CLASSES.keys()
+                self.required = value.get("required", False)
                 for k, v in value.items():
-                    if k not in ("type", "to"):
+                    if k not in ("type", "to", "required"):
                         self.contraints[k] = v
 
     def get_code(self, field_name: str) -> str:
@@ -179,6 +181,8 @@ class Attribute(Node):
         properties = ""
         if self.to:
             properties += self.to.get_properties()
+        if self.required:
+            properties += "required=True, "
         if self.contraints:
             properties += f"constraints={json.dumps(self.contraints)}"
         return self.FIELD_TEMPLATE.substitute(
@@ -195,6 +199,8 @@ class Attribute(Node):
         properties = f'replacement="{self.replacement}", index={index}, '
         if self.fields.to:
             properties += self.fields.to.get_properties()
+        if self.fields.required:
+            properties += "required=True, "
         if self.contraints:
             properties += f"constraints={json.dumps(self.contraints)}"
         return self.FIELD_TEMPLATE.substitute(

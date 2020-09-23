@@ -114,8 +114,10 @@ class BaseRelationField(Field):
         generic_relation: bool = False,
         delete_protection: bool = False,
         constraints: Dict[str, Any] = None,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
-        pass
+        super().__init__(*args, **kwargs)
 
 
 class RelationField(BaseRelationField):
