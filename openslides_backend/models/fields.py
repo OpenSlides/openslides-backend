@@ -330,11 +330,15 @@ class BaseTemplateField(Field):
         super().__init__(**kwargs)
 
 
-class TemplateRelationField(BaseTemplateField, RelationField):
+class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
     pass
 
 
-class TemplateRelationListField(BaseTemplateField, RelationListField):
+class TemplateRelationField(BaseTemplateRelationField, RelationField):
+    pass
+
+
+class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
     pass
 
 

@@ -1,10 +1,9 @@
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Tuple
 
-from ..models.fields import BaseGenericRelationField, OnDelete
+from ..models.fields import BaseRelationField, BaseTemplateRelationField, OnDelete
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
-from .actions_map import actions_map
 from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
 
@@ -215,7 +214,7 @@ class DeleteAction(Action):
 
             # Collect relation fields and also update instance and set
             # all relation fields to None.
-            relation_fields = []
+            relation_fields: List[Tuple[str, BaseRelationField]] = []
             for field_name, field in self.model.get_relation_fields():
                 if field.structured_relation or field.structured_tag:
                     # TODO: We do not fully support these fields. So silently skip them.
@@ -227,40 +226,28 @@ class DeleteAction(Action):
                         mapped_fields=[field_name],
                         lock_result=True,
                     )
-                    if field.on_delete == OnDelete.PROTECT:
-                        if db_instance.get(field_name):
-                            raise ActionException(
-                                f"You can not delete {self.model} with id {instance['id']}, "
-                                f"because you have to delete the related {str(field.to)} first."
-                            )
-                    elif field.on_delete == OnDelete.CASCADE:
-                        # extract all foreign keys as fqids from the model
-                        foreign_fqids = db_instance.get(field_name, [])
-                        if not isinstance(foreign_fqids, list):
-                            foreign_fqids = [foreign_fqids]
-                        if not isinstance(field, BaseGenericRelationField):
-                            assert not isinstance(field.to, list)
-                            foreign_fqids = [
-                                FullQualifiedId(field.to, id) for id in foreign_fqids
-                            ]
-                        # execute the delete action for all fqids
-                        for fqid in foreign_fqids:
-                            delete_action_class = actions_map.get(
-                                f"{str(fqid.collection)}.delete"
-                            )
-                            if not delete_action_class:
-                                raise ActionException(
-                                    f"Can't cascade the delete action to {str(fqid.collection)} "
-                                    "since no delete action was found."
-                                )
-                            delete_action = delete_action_class(
-                                self.permission, self.database
-                            )
-                            # assume that the delete action uses the standard payload
-                            payload = [{"id": fqid.id}]
-                            self.additional_write_requests.extend(
-                                delete_action.perform(payload, self.user_id)
-                            )
+                    if db_instance.get(field_name):
+                        raise ActionException(
+                            f"You can not delete {self.model} with id {instance['id']}, "
+                            f"because you have to delete the related {field.to} first."
+                        )
+                if isinstance(field, BaseTemplateRelationField):
+                    raw_field_name = (
+                        field_name[: field.index] + "$" + field_name[field.index :]
+                    )
+                    db_instance = self.database.get(
+                        fqid=FullQualifiedId(self.model.collection, instance["id"]),
+                        mapped_fields=[raw_field_name],
+                        lock_result=True,
+                    )
+                    for replacement in db_instance.get(raw_field_name, []):
+                        structured_field_name = (
+                            field_name[: field.index]
+                            + replacement
+                            + field_name[field.index :]
+                        )
+                        instance[structured_field_name] = None
+                        relation_fields.append((structured_field_name, field))
                 else:
                     instance[field_name] = None
                     relation_fields.append((field_name, field))

@@ -1,20 +1,13 @@
 from ..base import DummyAction
 from ..register import register_action
-
-
-@register_action("user.create")
-class UserCreate(DummyAction):
-    pass
-
-
-@register_action("user.update")
-class UserUpdate(DummyAction):
-    pass
-
-
-@register_action("user.delete")
-class UserDelete(DummyAction):
-    pass
+from . import (  # noqa
+    create,
+    create_temporary,
+    delete,
+    delete_temporary,
+    update,
+    update_temporary,
+)
 
 
 @register_action("user.reset_password")
@@ -24,4 +17,14 @@ class UserResetPassword(DummyAction):
 
 @register_action("user.set_password")
 class UserSetPassword(DummyAction):
+    pass
+
+
+@register_action("user.set_password_temporary")
+class UserSetPasswordTemporary(DummyAction):
+    pass
+
+
+@register_action("user.reset_passsword_to_default_temporary")
+class UserSetPasswordToDefaultTemporary(DummyAction):
     pass
