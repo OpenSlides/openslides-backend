@@ -1,7 +1,7 @@
 from ...models.models import MotionCategory
-from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
+from ..register import register_action_set
 
 
 @register_action_set("motion_category")

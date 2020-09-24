@@ -3,9 +3,9 @@ from typing import Any, Dict, List, cast
 from ...models.models import MotionWorkflow
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedId
-from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import DeleteAction
+from ..register import register_action
 
 
 @register_action("motion_workflow.delete")

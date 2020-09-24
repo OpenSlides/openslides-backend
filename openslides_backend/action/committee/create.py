@@ -1,7 +1,7 @@
 from ...models.models import Committee
-from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction
+from ..register import register_action
 
 
 @register_action("committee.create")

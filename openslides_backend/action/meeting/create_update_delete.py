@@ -1,7 +1,7 @@
 from ...models.models import Meeting
-from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
+from ..register import register_action_set
 
 meeting_settings_keys = [
     "welcome_title",

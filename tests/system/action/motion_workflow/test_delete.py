@@ -22,6 +22,21 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_workflow/111")
 
+    def test_delete_with_states(self) -> None:
+        self.create_model(
+            "meeting/1", {"motion_workflow_ids": [2, 100]},
+        )
+        self.create_model("motion_workflow/2", {"meeting_id": 1, "state_ids": [3]})
+        self.create_model("motion_state/3", {"workflow_id": 2})
+        # needed because you can't delete the last workflow of a meeting
+        self.create_model("motion_workflow/100", {"meeting_id": 1})
+        response = self.client.post(
+            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 2}]}],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion_workflow/2")
+        self.assert_model_deleted("motion_state/3")
+
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_workflow/112", {"name": "name_srtgb123"})
         response = self.client.post(

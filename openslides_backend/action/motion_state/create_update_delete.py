@@ -4,10 +4,10 @@ from ...models.models import MotionState
 from ...services.datastore.interface import GetManyRequest
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection
-from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction, DeleteAction, UpdateAction
+from ..register import register_action_set
 
 
 class MotionStateUpdateAction(UpdateAction):

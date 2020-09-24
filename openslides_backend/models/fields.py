@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, Dict, List, Union
 
 import bleach
@@ -5,6 +6,12 @@ import bleach
 from ..shared.patterns import Collection, FullQualifiedId
 
 Schema = Dict[str, Any]
+
+
+class OnDelete(Enum):
+    PROTECT = "PROTECT"
+    CASCADE = "CASCADE"
+    SET_NULL = "SET_NULL"
 
 
 class Field:
@@ -75,7 +82,7 @@ class JSONField(TextField):
     pass
 
 
-class HTMLField(TextField):
+class HTMLStrictField(TextField):
     """
     Field for restricted HTML.
     """
@@ -95,7 +102,7 @@ class HTMLField(TextField):
         "em",
         "sup",
         "sub",
-        "pre",  # text formattvalidate_html_strictng
+        "pre",  # text formating
         "h1",
         "h2",
         "h3",
@@ -152,13 +159,15 @@ class HTMLField(TextField):
         return self.ALLOWED_HTML_TAGS_STRICT
 
 
-class HTMLVideoField(HTMLField):
+class HTMLPermissiveField(HTMLStrictField):
     """
     HTML field which can also contain video tags.
     """
 
+    ALLOWED_HTML_TAGS_PERMISSIVE = ["video"]
+
     def get_allowed_tags(self) -> List[str]:
-        return super().get_allowed_tags() + ["video"]
+        return super().get_allowed_tags() + self.ALLOWED_HTML_TAGS_PERMISSIVE
 
 
 class FloatField(Field):
@@ -171,7 +180,7 @@ class DecimalField(Field):
         return self.extend_schema(super().get_schema(), type="number")
 
 
-class DatetimeField(IntegerField):
+class TimestampField(IntegerField):
     """
     Used to represent a UNIX timestamp.
     """
@@ -222,8 +231,7 @@ class BaseRelationField(Field):
         structured_relation: List[str] = None,
         structured_tag: str = None,
         generic_relation: bool = False,
-        delete_protection: bool = False,
-        # constraints: Dict[str, Any] = None,
+        on_delete: OnDelete = OnDelete.SET_NULL,
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -244,22 +252,16 @@ class BaseRelationField(Field):
         self.structured_relation = structured_relation
         self.structured_tag = structured_tag
         self.generic_relation = generic_relation
-        self.delete_protection = delete_protection
+        self.on_delete = on_delete
 
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}(to={self.to}, related_name={self.related_name}, "
             f"structured_relation={self.structured_relation}, structured_tag={self.structured_tag}, "
             f"generic_relation={self.generic_relation}, is_list_field={self.is_list_field}, "
-            f"delete_protection={self.delete_protection}, required={self.required}, "
+            f"on_delete={self.on_delete}, required={self.required}, "
             f"constraints={self.constraints})"
         )
-
-    def on_delete(self) -> str:
-        # TODO: Enable cascade
-        if self.required:
-            return "protect"
-        return "set_null"
 
 
 class RelationField(BaseRelationField):
@@ -283,7 +285,11 @@ class RelationListField(BaseRelationField):
         )
 
 
-class GenericRelationField(BaseRelationField):
+class BaseGenericRelationField(BaseRelationField):
+    pass
+
+
+class GenericRelationField(BaseGenericRelationField):
     is_list_field = False
 
     def get_schema(self) -> Schema:
@@ -295,7 +301,7 @@ class GenericRelationField(BaseRelationField):
         return schema
 
 
-class GenericRelationListField(BaseRelationField):
+class GenericRelationListField(BaseGenericRelationField):
     is_list_field = True
 
     def get_schema(self) -> Schema:
@@ -332,5 +338,5 @@ class TemplateRelationListField(BaseTemplateField, RelationListField):
     pass
 
 
-class TemplateHTMLField(BaseTemplateField, HTMLField):
+class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
     pass

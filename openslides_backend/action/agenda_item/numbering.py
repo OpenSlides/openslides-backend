@@ -8,8 +8,8 @@ from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedId
 from ...shared.schema import schema_version
-from ..action import register_action
 from ..base import Action, ActionPayload, DataSet
+from ..register import register_action
 
 agenda_item_numbering_schema = {
     "$schema": schema_version,

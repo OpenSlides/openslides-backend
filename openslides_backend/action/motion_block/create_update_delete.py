@@ -1,5 +1,4 @@
 from ...models.models import MotionBlock
-from ..action import register_action_set
 from ..action_set import ActionSet
 from ..agenda_item.agenda_creation import (
     CreateActionWithAgendaItem,
@@ -7,6 +6,7 @@ from ..agenda_item.agenda_creation import (
 )
 from ..default_schema import DefaultSchema
 from ..generics import DeleteAction, UpdateAction
+from ..register import register_action_set
 
 create_schema = DefaultSchema(MotionBlock()).get_create_schema(
     properties=["title", "internal", "meeting_id"],

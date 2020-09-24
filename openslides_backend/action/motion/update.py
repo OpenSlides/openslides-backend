@@ -2,10 +2,10 @@ import time
 
 from ...models.models import Motion
 from ...shared.schema import schema_version
-from ..action import register_action
 from ..base import ActionPayload, DataSet, DummyAction
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
+from ..register import register_action
 
 
 @register_action("motion.update")

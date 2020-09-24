@@ -7,6 +7,7 @@ from ..models.fields import (
     BaseRelationField,
     GenericRelationField,
     GenericRelationListField,
+    OnDelete,
     RelationField,
     RelationListField,
     TemplateRelationField,
@@ -388,7 +389,7 @@ class RelationsHandler:
                 assert rel_id in remove
                 if (
                     self.type in ("1:1", "m:1")
-                    and self.reverse_field.on_delete() == "protect"
+                    and self.reverse_field.on_delete == OnDelete.PROTECT
                 ):
                     # Hint: There is no on_delete behavior in m:n cases. The reverse
                     # field is always nullable. We just modifiy the related field list.
@@ -453,7 +454,7 @@ class RelationsHandler:
                 assert rel_id in remove
                 if (
                     self.type in ("1:1", "m:1")
-                    and self.reverse_field.on_delete() == "protect"
+                    and self.reverse_field.on_delete == OnDelete.PROTECT
                 ):
                     # Hint: There is no on_delete behavior in m:n cases. The reverse
                     # field is always nullable. We just modifiy the related field list.

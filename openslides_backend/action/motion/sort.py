@@ -1,7 +1,7 @@
 from ...models.models import Motion
-from ..action import register_action
 from ..base import Action, ActionPayload, DataSet, DummyAction
 from ..default_schema import DefaultSchema
+from ..register import register_action
 from ..sort_generic import TreeSortMixin
 
 

@@ -32,8 +32,4 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             json=[{"action": "motion_comment_section.delete", "data": [{"id": 1141}]}],
         )
         self.assert_status_code(response, 400)
-        assert (
-            "You are not allowed to delete motion comment section 1141 as long as "
-            "there are some required related objects."
-        ) in str(response.data)
         self.assert_model_exists("motion_comment_section/1141")

@@ -2,10 +2,10 @@ from time import time
 from typing import Any, Dict
 
 from ...models.models import MotionChangeRecommendation
-from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction, DeleteAction, UpdateAction
+from ..register import register_action_set
 
 
 class MotionChangeRecommendationCreateAction(CreateAction):

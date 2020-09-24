@@ -11,7 +11,7 @@ class Organisation(Model):
 
     id = fields.IntegerField()
     name = fields.CharField()
-    description = fields.HTMLField()
+    description = fields.HTMLStrictField()
     legal_notice = fields.CharField()
     privacy_policy = fields.CharField()
     login_text = fields.CharField()
@@ -44,9 +44,9 @@ class User(Model):
     is_committee = fields.BooleanField()
     password = fields.CharField()
     default_password = fields.CharField()
-    about_me = fields.HTMLField()
+    about_me = fields.HTMLStrictField()
     gender = fields.CharField()
-    comment = fields.HTMLField()
+    comment = fields.HTMLStrictField()
     number = fields.CharField()
     structure_level = fields.CharField()
     email = fields.CharField()
@@ -179,7 +179,7 @@ class Committee(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
-    description = fields.HTMLField()
+    description = fields.HTMLStrictField()
     meeting_ids = fields.RelationListField(
         to=Collection("meeting"), related_name="committee_id"
     )
@@ -213,12 +213,12 @@ class Meeting(Model):
 
     id = fields.IntegerField()
     welcome_title = fields.CharField()
-    welcome_text = fields.HTMLVideoField()
+    welcome_text = fields.HTMLPermissiveField()
     name = fields.CharField(constraints={"maxLength": 100})
     description = fields.CharField(constraints={"maxLength": 100})
     location = fields.CharField()
-    start_time = fields.DatetimeField()
-    end_time = fields.DatetimeField()
+    start_time = fields.TimestampField()
+    end_time = fields.TimestampField()
     custom_translations = fields.JSONField()
     url_name = fields.CharField(constraints={"description": "For unique urls."})
     template_for_committee_id = fields.RelationField(
@@ -526,7 +526,7 @@ class PersonalNote(Model):
     verbose_name = "personal note"
 
     id = fields.IntegerField()
-    note = fields.HTMLField()
+    note = fields.HTMLStrictField()
     star = fields.BooleanField()
     user_id = fields.RelationField(
         to=Collection("user"),
@@ -654,8 +654,8 @@ class Speaker(Model):
     verbose_name = "speaker"
 
     id = fields.IntegerField()
-    begin_time = fields.DatetimeField(read_only=True)
-    end_time = fields.DatetimeField(read_only=True)
+    begin_time = fields.TimestampField(read_only=True)
+    end_time = fields.TimestampField(read_only=True)
     weight = fields.IntegerField(default=0)
     marked = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
@@ -675,7 +675,7 @@ class Topic(Model):
 
     id = fields.IntegerField()
     title = fields.CharField(required=True)
-    text = fields.HTMLVideoField()
+    text = fields.HTMLPermissiveField()
     attachment_ids = fields.RelationListField(
         to=Collection("mediafile"), related_name="attachment_ids", generic_relation=True
     )
@@ -720,18 +720,18 @@ class Motion(Model):
         },
     )
     title = fields.CharField(required=True)
-    text = fields.HTMLField()
-    amendment_paragraph_ = fields.TemplateHTMLField(
+    text = fields.HTMLStrictField()
+    amendment_paragraph_ = fields.TemplateHTMLStrictField(
         replacement="paragraph_number", index=20,
     )
-    modified_final_version = fields.HTMLField()
-    reason = fields.HTMLField()
+    modified_final_version = fields.HTMLStrictField()
+    reason = fields.HTMLStrictField()
     category_weight = fields.IntegerField(default=0)
     state_extension = fields.CharField()
     recommendation_extension = fields.CharField()
     sort_weight = fields.IntegerField(default=0)
-    created = fields.DatetimeField(read_only=True)
-    last_modified = fields.DatetimeField(read_only=True)
+    created = fields.TimestampField(read_only=True)
+    last_modified = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
         to=Collection("motion"), related_name="amendment_ids"
     )
@@ -848,7 +848,7 @@ class MotionComment(Model):
     verbose_name = "motion comment"
 
     id = fields.IntegerField()
-    comment = fields.HTMLField()
+    comment = fields.HTMLStrictField()
     motion_id = fields.RelationField(
         to=Collection("motion"), related_name="comment_ids", required=True
     )
@@ -867,7 +867,9 @@ class MotionCommentSection(Model):
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=0)
     comment_ids = fields.RelationListField(
-        to=Collection("motion_comment"), related_name="section_id"
+        to=Collection("motion_comment"),
+        related_name="section_id",
+        on_delete=fields.OnDelete.PROTECT,
     )
     read_group_ids = fields.RelationListField(
         to=Collection("group"), related_name="read_comment_section_ids"
@@ -952,8 +954,8 @@ class MotionChangeRecommendation(Model):
     other_description = fields.CharField()
     line_from = fields.IntegerField(constraints={"minimum": 0})
     line_to = fields.IntegerField(constraints={"minimum": 0})
-    text = fields.HTMLField()
-    creation_time = fields.DatetimeField(read_only=True)
+    text = fields.HTMLStrictField()
+    creation_time = fields.TimestampField(read_only=True)
     motion_id = fields.RelationField(
         to=Collection("motion"), related_name="change_recommendation_ids", required=True
     )
@@ -1015,7 +1017,9 @@ class MotionWorkflow(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     state_ids = fields.RelationListField(
-        to=Collection("motion_state"), related_name="workflow_id"
+        to=Collection("motion_state"),
+        related_name="workflow_id",
+        on_delete=fields.OnDelete.CASCADE,
     )
     first_state_id = fields.RelationField(
         to=Collection("motion_state"),
@@ -1043,7 +1047,7 @@ class MotionStatuteParagraph(Model):
 
     id = fields.IntegerField()
     title = fields.CharField(required=True)
-    text = fields.HTMLField()
+    text = fields.HTMLStrictField()
     weight = fields.IntegerField(default=0)
     motion_ids = fields.RelationListField(
         to=Collection("motion"), related_name="statute_paragraph_id"
@@ -1134,7 +1138,7 @@ class Assignment(Model):
 
     id = fields.IntegerField()
     title = fields.CharField(required=True)
-    description = fields.HTMLField()
+    description = fields.HTMLStrictField()
     open_posts = fields.IntegerField(constraints={"minimum": 0})
     phase = fields.IntegerField(constraints={"enum": [1, 2, 3]})
     default_poll_description = fields.CharField()
@@ -1300,7 +1304,7 @@ class Mediafile(Model):
     )
     mimetype = fields.CharField()
     pdf_information = fields.JSONField()
-    create_timestamp = fields.DatetimeField()
+    create_timestamp = fields.TimestampField()
     has_inherited_access_groups = fields.BooleanField(
         read_only=True, constraints={"description": "Calculated field."}
     )
@@ -1468,7 +1472,7 @@ class ProjectorMessage(Model):
     verbose_name = "projector message"
 
     id = fields.IntegerField()
-    message = fields.HTMLField()
+    message = fields.HTMLStrictField()
     projection_ids = fields.RelationListField(
         to=Collection("projection"), related_name="element_id", generic_relation=True
     )

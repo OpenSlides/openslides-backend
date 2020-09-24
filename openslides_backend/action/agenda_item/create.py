@@ -3,9 +3,9 @@ from typing import Any, Dict
 from ...models.models import AgendaItem
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedId
-from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction
+from ..register import register_action
 
 
 @register_action("agenda_item.create")
