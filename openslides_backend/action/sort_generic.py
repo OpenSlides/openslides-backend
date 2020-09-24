@@ -13,6 +13,7 @@ from .base import BaseAction, DataSet
 sort_node_schema = {
     "$schema": schema_version,
     "title": "Sort node schema",
+    "id": "tree_sort_node",
     "description": "A node inside a sort tree.",
     "type": "object",
     "properties": {
@@ -23,7 +24,7 @@ sort_node_schema = {
         },
         "children": {
             "type": "array",
-            "items": {},  # TODO: Add recursive sort_node_schema here, then remove extra check in TreeSortMixin.
+            "items": {"type": "object", "$ref": "tree_sort_node"},
             "minItems": 1,
             "uniqueItems": True,
         },
