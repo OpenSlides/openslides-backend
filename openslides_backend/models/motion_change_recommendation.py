@@ -19,11 +19,11 @@ class MotionChangeRecommendation(Model):
     other_description = fields.CharField(
         "The other description of this motion change recommendation."
     )
-    line_from = fields.PositiveIntegerField(
-        "The line from of this motion change recommendation."
+    line_from = fields.IntegerField(
+        description="The line from of this motion change recommendation.", min=0
     )
-    line_to = fields.PositiveIntegerField(
-        "The line to of this motion change recommendation."
+    line_to = fields.IntegerField(
+        description="The line to of this motion change recommendation.", min=0
     )
     rejected = fields.BooleanField(
         description="If this motion change recommendation is rejected"
