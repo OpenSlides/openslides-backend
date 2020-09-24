@@ -20,7 +20,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_delete_handle_remove_relation(self) -> None:
         self.create_model(
-            "meeting/222", {"name": "name_xQyvfmsS", "category_ids": [111]}
+            "meeting/222", {"name": "name_xQyvfmsS", "motion_category_ids": [111]}
         )
         self.create_model(
             "motion/89",
@@ -35,11 +35,11 @@ class MotionCategorySystemTest(BaseActionTestCase):
                 "motion_ids": [89],
             },
         )
-        model = self.get_model("motion/89")
 
-        assert model.get("category_id") == 89
         self.client.post(
             "/", json=[{"action": "motion_category.delete", "data": [{"id": 111}]}],
         )
-        model = self.get_model("motion/89")
-        assert model.get("category_id") is None
+        motion = self.get_model("motion/89")
+        assert motion.get("category_id") is None
+        meeting = self.get_model("meeting/222")
+        assert meeting.get("motion_category_ids") == []

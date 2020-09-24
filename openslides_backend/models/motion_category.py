@@ -19,7 +19,7 @@ class MotionCategory(Model):
     meeting_id = fields.RequiredForeignKeyField(
         description="The id of the meeting of this motion_category.",
         to=Collection("meeting"),
-        related_name="category_ids",
+        related_name="motion_category_ids",
     )
     name = fields.RequiredCharField(
         description="The name of this motion category.", maxLength=255
