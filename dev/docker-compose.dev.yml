@@ -5,6 +5,7 @@ services:
             context: ..
             dockerfile: dev/Dockerfile-dev
         image: openslides-backend-dev
+        user: $USER_ID:$GROUP_ID
         ports:
             - "9002:9002"
             - "9003:9003"

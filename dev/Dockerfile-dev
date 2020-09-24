@@ -3,12 +3,19 @@ FROM python:3.8.5-slim-buster
 RUN apt-get update && apt-get install --yes make git curl ncat
 
 WORKDIR /srv/code
+RUN mkdir dev
+
 COPY requirements.txt .
-COPY setup.cfg .
-COPY Makefile Makefile
-COPY dev dev
+COPY dev/requirements_development.txt dev/.
 
 RUN pip install --no-cache-dir --requirement dev/requirements_development.txt
+
+COPY dev/wait.sh dev/.
+COPY dev/run-tests.sh dev/.
+COPY dev/cleanup.sh .
+
+COPY Makefile Makefile
+COPY setup.cfg .
 
 EXPOSE 9002
 EXPOSE 9003

@@ -40,18 +40,18 @@ run-prod: | build-prod
 # Build and run development docker container setup with docker compose (not usable inside docker container)
 
 start-dev:
-	docker-compose -f dev/docker-compose.dev.yml up --build --detach
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build --detach
 
 stop-dev:
 	docker-compose -f dev/docker-compose.dev.yml down --volumes
 
 start-dev-interactive:
-	docker-compose -f dev/docker-compose.dev.yml up  --build
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
 
-run-dev-standalone:
+run-dev-standalone: | start-dev
 	docker-compose -f dev/docker-compose.dev.yml exec backend bash
 
-run-dev run-bash: | start-dev run-dev-standalone
+run-dev run-bash: | run-dev-standalone
 
 run-tests:
 	dev/run-tests.sh
