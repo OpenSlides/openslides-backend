@@ -103,3 +103,25 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
             "data[0] must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
+
+    def test_create_title_change_recommendation(self) -> None:
+        self.create_model(
+            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion_change_recommendation.create",
+                    "data": [
+                        {
+                            "line_from": 0,
+                            "line_to": 0,
+                            "text": "new_title",
+                            "motion_id": 233,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
