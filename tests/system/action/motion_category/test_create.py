@@ -22,12 +22,13 @@ class MotionCategorySystemTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_category/124")
         model = self.get_model("motion_category/124")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("prefix") == "prefix_niqCxoXA"
         assert model.get("meeting_id") == 222
         assert model.get("parent_id") == 123
+        meeting = self.get_model("meeting/222")
+        assert meeting.get("motion_category_ids") == [124]
 
     def test_create_good_case_only_required_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -47,7 +48,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_category/1")
         model = self.get_model("motion_category/1")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("prefix") == "prefix_niqCxoXA"
