@@ -1,9 +1,76 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
+import bleach
+
 from ..shared.patterns import Collection, FullQualifiedId
 
 Schema = Dict[str, Any]
+
+ALLOWED_HTML_TAGS_STRICT = [
+    "a",
+    "img",  # links and images
+    "br",
+    "p",
+    "span",
+    "blockquote",  # text layout
+    "strike",
+    "del",
+    "ins",
+    "strong",
+    "u",
+    "em",
+    "sup",
+    "sub",
+    "pre",  # text formattvalidate_html_strictng
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",  # headings
+    "ol",
+    "ul",
+    "li",  # lists
+    "table",
+    "caption",
+    "thead",
+    "tbody",
+    "th",
+    "tr",
+    "td",  # tables
+    "div",
+]
+ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT + [
+    "video",
+]
+
+
+def allow_all(tag: str, name: str, value: str) -> bool:
+    return True
+
+
+ALLOWED_ATTRIBUTES = allow_all
+ALLOWED_STYLES = [
+    "color",
+    "background-color",
+    "height",
+    "width",
+    "text-align",
+    "vertical-align",
+    "float",
+    "text-decoration",
+    "margin",
+    "padding",
+    "line-height",
+    "max-width",
+    "min-width",
+    "max-height",
+    "min-height",
+    "overflow",
+    "word-break",
+    "word-wrap",
+]
 
 
 class Field:
@@ -29,6 +96,12 @@ class Field:
         """
         schema.update(kwargs)
         return schema
+
+    def validate(self, value: Any) -> Any:
+        """
+        Overwrite in subclass to validate/sanitize the input.
+        """
+        return value
 
 
 class ArrayField(Field):
@@ -58,6 +131,11 @@ class TimestampField(PositiveIntegerField):
     pass
 
 
+class DecimalField(Field):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), type="number")
+
+
 class BooleanField(Field):
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), type="boolean")
@@ -69,6 +147,29 @@ class TextField(Field):
 
 
 class RequiredTextField(TextField):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), minLength=1)
+
+
+class HtmlField(TextField):
+    def __init__(self, allowed_tags: List[str], **kwargs: str):
+        self.allowed_tags = allowed_tags
+        super().__init__(**kwargs)
+
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), type="string")
+
+    def validate(self, html: str) -> str:
+        html = html.replace("\t", "")
+        return bleach.clean(
+            html,
+            tags=self.allowed_tags,
+            attributes=ALLOWED_ATTRIBUTES,
+            styles=ALLOWED_STYLES,
+        )
+
+
+class RequiredHtmlField(HtmlField):
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), minLength=1)
 
@@ -143,7 +244,7 @@ class RelationMixin(Field):
             ReverseRelations[self.to].append(GenericRelationFieldWrapper(self))
         else:
             ReverseRelations[self.to].append(self)
-        super().__init__(**kwargs)  # type: ignore
+        super().__init__(**kwargs)
 
     def get_reverse_schema(self) -> Schema:
         """

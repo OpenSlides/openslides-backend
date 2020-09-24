@@ -31,7 +31,10 @@ class MotionChangeRecommendation(Model):
     internal = fields.BooleanField(
         description="If this motion change recommendation is internal"
     )
-    text = fields.TextField(description="The text of the motion change recommendation.")
+    text = fields.HtmlField(
+        description="The text of the motion change recommendation.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_STRICT,
+    )
     creation_time = fields.TimestampField(
         description="The creation_time of the motion change recommendation."
     )

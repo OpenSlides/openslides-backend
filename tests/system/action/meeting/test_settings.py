@@ -27,3 +27,18 @@ class MeetingSettingsSystemTest(BaseActionTestCase):
         self.assertEqual(group2["used_as_motion_poll_default_id"], 1)
         group3 = self.get_model("group/3")
         self.assertEqual(group3["used_as_motion_poll_default_id"], 1)
+
+    def test_html_field(self) -> None:
+        self.create_model("meeting/1", {"welcome_text": "Hi"})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "meeting.update",
+                    "data": [{"id": 1, "welcome_text": "<iframe>"}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        meeting = self.get_model("meeting/1")
+        self.assertEqual(meeting["welcome_text"], "&lt;iframe&gt;")

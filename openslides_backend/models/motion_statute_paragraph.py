@@ -23,7 +23,10 @@ class MotionStatuteParagraph(Model):
     title = fields.RequiredCharField(
         description="The title of this motion statute paragraph."
     )
-    text = fields.TextField(description="The text of this statute paragraph.")
+    text = fields.HtmlField(
+        description="The text of this statute paragraph.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_STRICT,
+    )
     weight = fields.IntegerField(
         description="The weight of this motion statute paragraph."
     )

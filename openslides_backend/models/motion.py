@@ -38,13 +38,18 @@ class Motion(Model):
     title = fields.RequiredCharField(
         description="The title or headline of this motion."
     )
-    text = fields.TextField(description="The HTML formatted main text of this motion.")
-    modified_final_version = fields.TextField(
-        description="The HTML formatted modified final version ot motion's main text."
+    text = fields.HtmlField(
+        description="The HTML formatted main text of this motion.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_STRICT,
+    )
+    modified_final_version = fields.HtmlField(
+        description="The HTML formatted modified final version ot motion's main text.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_STRICT,
     )
     # TODO: amendment_paragraph_$<paragraph_number>: HTML;
-    reason = fields.TextField(
-        description="The HTML formatted reason text of this motion."
+    reason = fields.HtmlField(
+        description="The HTML formatted reason text of this motion.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_STRICT,
     )
     statute_paragraph_id = fields.ForeignKeyField(
         description="The statute paragraph this motions refers to.",

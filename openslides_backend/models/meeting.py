@@ -18,15 +18,17 @@ class Meeting(Model):
     collection = Collection("meeting")
     verbose_name = "meeting"
 
-    def get_settings_keys(self) -> Iterable[str]:
+    def get_writeable_keys(self) -> Iterable[str]:
         return [
+            "welcome_title",
+            "welcome_text",
             "name",
             "description",
             "date",
             "location",
             "start_time",
             "end_time",
-            "custom_translations",  # TODO
+            "custom_translations",
             "url_name",
             "is_template",
             "enable_anonymous",
@@ -128,7 +130,7 @@ class Meeting(Model):
     )
 
     welcome_title = fields.CharField()
-    welcome_text = fields.TextField()
+    welcome_text = fields.HtmlField(allowed_tags=fields.ALLOWED_HTML_TAGS_PERMISSIVE)
 
     name = fields.CharField(maxLength=100)
     description = fields.CharField(maxLength=100)
