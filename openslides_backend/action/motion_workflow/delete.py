@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, cast
 
-from ...models.motion_workflow import MotionWorkflow
+from ...models.models import MotionWorkflow
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedId
 from ..action import register_action

@@ -1,6 +1,6 @@
 import os
 import string
-from textwrap import dedent
+from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Union
 
 import requests
@@ -53,6 +53,16 @@ FILE_TEMPLATE = dedent(
 
 MODELS: Dict[str, Dict[str, Any]] = {}
 
+ADDITIONAL_MODEL_CODE = {
+    "agenda_item": dedent(
+        """
+        AGENDA_ITEM = 1
+        INTERNAL_ITEM = 2
+        HIDDEN_ITEM = 3
+        """
+    ),
+}
+
 
 class Node:
     pass
@@ -96,7 +106,13 @@ class To(Node):
         if isinstance(self.collection, str):
             to_value = f'Collection("{self.collection}")'
         else:
-            to_value = "[" + ", ".join([f'Collection("{collection}")' for collection in self.collection]) + "]"
+            to_value = (
+                "["
+                + ", ".join(
+                    [f'Collection("{collection}")' for collection in self.collection]
+                )
+                + "]"
+            )
         properties = f'to={to_value}, related_name="{self.field.name}", '
         if self.reverse_is_generic():
             properties += "generic_relation=True, "
@@ -237,6 +253,7 @@ class Model(Node):
         )
         for field_name, attribute in self.attributes.items():
             code += attribute.get_code(field_name)
+        code += indent(ADDITIONAL_MODEL_CODE.get(self.collection, ""), " " * 4)
         return code
 
     def get_class_name(self) -> str:

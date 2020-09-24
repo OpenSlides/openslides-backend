@@ -548,6 +548,10 @@ class AgendaItem(Model):
         to=Collection("meeting"), related_name="agenda_item_ids"
     )
 
+    AGENDA_ITEM = 1
+    INTERNAL_ITEM = 2
+    HIDDEN_ITEM = 3
+
 
 class ListOfSpeakers(Model):
     collection = Collection("list_of_speakers")

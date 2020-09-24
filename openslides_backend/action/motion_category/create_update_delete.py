@@ -1,4 +1,4 @@
-from ...models.motion_category import MotionCategory
+from ...models.models import MotionCategory
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema

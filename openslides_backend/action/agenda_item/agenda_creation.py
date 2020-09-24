@@ -1,6 +1,6 @@
 from typing import Any, Dict, Type
 
-from ...models.agenda_item import AgendaItem
+from ...models.models import AgendaItem
 from ...models.base import Model
 from ...shared.patterns import KEYSEPARATOR
 from ..base import Action

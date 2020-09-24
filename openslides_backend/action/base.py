@@ -4,7 +4,7 @@ import fastjsonschema
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
-from ..models.fields import RelationMixin
+from ..models.fields_new import BaseRelationField
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
@@ -199,7 +199,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         model: Model,
         id: int,
         obj: Dict[str, Any],
-        relation_fields: Iterable[Tuple[str, RelationMixin, bool]],
+        relation_fields: Iterable[Tuple[str, BaseRelationField, bool]],
         shortcut: bool = False,
     ) -> Relations:
         """

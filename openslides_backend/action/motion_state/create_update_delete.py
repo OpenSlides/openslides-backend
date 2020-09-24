@@ -1,4 +1,4 @@
-from ...models.motion_state import MotionState
+from ...models.models import MotionState
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema

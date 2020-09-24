@@ -1,4 +1,4 @@
-from ...models.topic import Topic
+from ...models.models import Topic
 from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction

@@ -1,4 +1,4 @@
-from ...models.motion import Motion
+from ...models.models import Motion
 from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import DeleteAction

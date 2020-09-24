@@ -1,4 +1,4 @@
-from ...models.assignment import Assignment
+from ...models.models import Assignment
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..agenda_item.agenda_creation import (

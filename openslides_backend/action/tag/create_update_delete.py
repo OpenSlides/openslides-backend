@@ -1,4 +1,4 @@
-from ...models.tag import Tag
+from ...models.models import Tag
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema

@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 
 import roman
 
-from ...models.agenda_item import AgendaItem
+from ...models.models import AgendaItem
 from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedId

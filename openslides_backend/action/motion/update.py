@@ -1,6 +1,6 @@
 import time
 
-from ...models.motion import Motion
+from ...models.models import Motion
 from ...shared.schema import schema_version
 from ..action import register_action
 from ..base import ActionPayload, DataSet, DummyAction

@@ -1,4 +1,4 @@
-from ...models.motion_comment import MotionComment
+from ...models.models import MotionComment
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema

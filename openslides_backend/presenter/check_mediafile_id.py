@@ -2,7 +2,7 @@ from typing import Any
 
 import fastjsonschema
 
-from ..models.mediafile import Mediafile
+from ..models.models import Mediafile
 from ..shared.patterns import FullQualifiedId
 from ..shared.schema import schema_version
 from .base import BasePresenter

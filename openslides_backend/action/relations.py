@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 from mypy_extensions import TypedDict
 
 from ..models.base import Model, model_registry
-from ..models.fields import RelationMixin
+from ..models.fields_new import BaseRelationField
 from ..services.datastore.interface import GetManyRequest, PartialModel
 from ..shared.exceptions import ActionException
 from ..shared.patterns import (
@@ -50,7 +50,7 @@ class RelationsHandler:
         database: Any,  # TODO: Use a database connection here.
         model: Model,
         id: int,
-        field: RelationMixin,
+        field: BaseRelationField,
         field_name: str,
         obj: Dict[str, Any],
         is_reverse: bool = False,
