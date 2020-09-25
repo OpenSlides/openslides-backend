@@ -22,7 +22,6 @@ class BaseTopicCreateActionTester(BaseActionTestCase):
     """
 
     def setUp(self) -> None:
-        super().setUp()
         self.valid_payload_1 = [
             {
                 "meeting_id": 2393342057,
@@ -47,7 +46,6 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
         super().setUp()
         user_id = 5968705978
         self.action = TopicCreate(
-            "topic.create",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -159,7 +157,6 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         super().setUp()
         self.user_id = 5968705978
         self.action = TopicCreate(
-            "topic.create",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -485,7 +482,6 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
         user_id = 5968705978
 
         self.action = TopicUpdate(
-            "topic.update",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -603,7 +599,6 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
         super().setUp()
         self.user_id = 5968705978
         self.action = TopicUpdate(
-            "topic.update",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -915,7 +910,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
         super().setUp()
         user_id = 5968705978
         self.action = TopicDelete(
-            "topic.delete",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -1023,7 +1017,6 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
         super().setUp()
         self.user_id = 5968705978
         self.action = TopicDelete(
-            "topic.delete",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )

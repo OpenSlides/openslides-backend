@@ -29,5 +29,8 @@ class TopicCreate(CreateActionWithAgendaItem):
     def check_dependant_action_execution(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
-        """ For topics, alway return true. """
+        """
+        We always create an agenda item for each topic regardless of
+        payload or metting settings.
+        """
         return True

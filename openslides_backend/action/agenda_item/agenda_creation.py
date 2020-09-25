@@ -55,7 +55,8 @@ class CreateActionWithAgendaItemMixin:
     def check_dependant_action_execution_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
-        # TODO
+        # TODO: Check 'agenda_create' property in payload and meeting settings 'agenda_item_creation'.
+        # This is relevant for motion, assignment and motion_block but not for topic.
         return True
 
     def get_dependent_action_payload_agenda_item(

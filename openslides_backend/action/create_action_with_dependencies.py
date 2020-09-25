@@ -12,16 +12,18 @@ class CreateActionWithDependencies(CreateAction):
     """
 
     dependencies: List[Type[Action]]
-    """ A list of Actions which should be executed together with this create action. """
+    """
+    A list of actions which should be executed together with this create action.
+    """
 
     def create_write_request_elements(
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:
-        # yield write elements of this create action
+        # Yield write request elements of this create action.
         yield from super().create_write_request_elements(dataset)
 
         for element in dataset["data"]:
-            # merge additional_relation_models for possible nesting
+            # Merge additional_relation_models for possible nesting.
             additional_relation_models = {
                 **self.additional_relation_models,
                 FullQualifiedId(self.model.collection, element["new_id"]): element[
@@ -40,13 +42,19 @@ class CreateActionWithDependencies(CreateAction):
     def check_dependant_action_execution(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
-        """ Check whether the dependency should be executed or not. Override in subclass if needed. """
+        """
+        Check whether the dependency should be executed or not. Default is True.
+        Override in subclass if necessary.
+        """
         return True
 
     def get_dependent_action_payload(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> Dict[str, Any]:
-        """ Override in subclass to provide the correct payload for the dependencies. """
+        """
+        Override in subclass to provide the correct payload for the dependencies.
+        """
         raise NotImplementedError(
-            "You have to implement get_dependent_action_payload for a CreateActionWithDependencies"
+            "You have to implement get_dependent_action_payload for a "
+            "CreateActionWithDependencies."
         )

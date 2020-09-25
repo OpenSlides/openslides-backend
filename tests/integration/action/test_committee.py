@@ -29,7 +29,6 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
             get_fqfield("organisation/1/committee_ids"): [5914213969],
         }
         self.action = CommitteeCreate(
-            "committee.create",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
@@ -81,7 +80,6 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
             get_fqfield("organisation/1/committee_ids"): [5914213969],
         }
         self.action = CommitteeCreate(
-            "committee.create",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
