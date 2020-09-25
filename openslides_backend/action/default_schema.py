@@ -2,6 +2,7 @@ from typing import Dict, Iterable
 
 from ..models.base import Model
 from ..shared.schema import schema_version
+from .sort_generic import sort_node_schema
 
 
 class DefaultSchema:
@@ -70,4 +71,32 @@ class DefaultSchema:
             },
             "minItems": 1,
             "uniqueItems": True,
+        }
+
+    def get_sort_schema(self) -> Dict:
+        """
+        Returns a default sort schema.
+        """
+        return {
+            "$schema": schema_version,
+            "title": f"Sort {self.model} schema",
+            "description": f"Nested array of {self.model} objects to be sorted in the given meeting.",
+            "type": "object",
+            "properties": {
+                "meeting_id": self.model.get_schema("meeting_id"),
+                "nodes": {
+                    "description": (
+                        f"An array of {self.model} ids to be sorted. The array should contain all "
+                        "root objects of a meeting. Each node is a dictionary with an id "
+                        "and optional children. In the end all objects of a meeting must "
+                        "appear."
+                    ),
+                    "type": "array",
+                    "items": sort_node_schema,
+                    "minItems": 1,
+                    "uniqueItems": True,
+                },
+            },
+            "required": ["meeting_id", "nodes"],
+            "additionalProperties": False,
         }
