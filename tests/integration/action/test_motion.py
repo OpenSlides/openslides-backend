@@ -37,7 +37,6 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
         super().setUp()
         user_id = 7826715669
         self.action = MotionUpdate(
-            "motion.update",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -71,7 +70,6 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
         super().setUp()
         self.user_id = 7826715669
         self.action = MotionUpdate(
-            "motion.update",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -143,7 +141,6 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
         super().setUp()
         user_id = 7826715669
         self.action = MotionUpdateMetadata(
-            "motion.update_metadate",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -203,7 +200,6 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
         super().setUp()
         self.user_id = 7826715669
         self.action = MotionUpdateMetadata(
-            "motion.update_metadata",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -312,7 +308,6 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
         super().setUp()
         user_id = 7826715669
         self.action = MotionDelete(
-            "motion.delete",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -382,7 +377,6 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
         super().setUp()
         self.user_id = 7826715669
         self.action = MotionDelete(
-            "motion.delete",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -517,7 +511,6 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
         super().setUp()
         user_id = 7826715669
         self.action = MotionSort(
-            "motion.sort",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )
@@ -604,7 +597,6 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
         super().setUp()
         self.user_id = 7826715669
         self.action = MotionSort(
-            "motion.sort",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(old_style_testing=True),
         )

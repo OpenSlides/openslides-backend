@@ -14,9 +14,10 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_workflow/1")
-        model = self.get_model("motion_workflow/1")
-        assert model.get("name") == "test_Xcdfgee"
+        workflow = self.get_model("motion_workflow/1")
+        assert workflow.get("name") == "test_Xcdfgee"
+        state = self.get_model("motion_state/1")
+        assert state.get("workflow_id") == 1
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(

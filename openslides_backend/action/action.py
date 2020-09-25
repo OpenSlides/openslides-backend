@@ -50,10 +50,7 @@ def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
     """
 
     def wrapper(clazz: Type[Action]) -> Type[Action]:
-        if actions_map.get(name):
-            raise RuntimeError(f"Action {name} is registered twice.")
-        actions_map[name] = clazz
-        return clazz
+        return _register_action(name, clazz)
 
     return wrapper
 
@@ -69,12 +66,18 @@ def register_action_set(
     def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
         for route, action in clazz.get_actions().items():
             name = ".".join((name_prefix, route))
-            if actions_map.get(name):
-                raise RuntimeError(f"Action {name} is registered twice.")
-            actions_map[name] = action
+            _register_action(name, action)
         return clazz
 
     return wrapper
+
+
+def _register_action(name: str, ActionClass: Type[Action]) -> Type[Action]:
+    if actions_map.get(name):
+        raise RuntimeError(f"Action {name} is registered twice.")
+    actions_map[name] = ActionClass
+    ActionClass.name = name
+    return ActionClass
 
 
 prepare_actions_map()
@@ -191,9 +194,9 @@ class ActionHandler(HandlerBase):
             if action is None:
                 raise ActionException(f"Action {action_name} does not exist.")
             self.logger.debug(f"Perform action {action_name}.")
-            write_request_elements = action(
-                action_name, self.permission, self.database
-            ).perform(element["data"], self.user_id)
+            write_request_elements = action(self.permission, self.database).perform(
+                element["data"], self.user_id
+            )
             self.logger.debug(
                 f"Prepared write request element {write_request_elements}."
             )

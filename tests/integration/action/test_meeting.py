@@ -28,7 +28,6 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
         super().setUp()
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("create")(
-            "meeting.create",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
@@ -76,7 +75,6 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
         super().setUp()
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("create")(
-            "meeting.create",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
@@ -262,7 +260,6 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
         super().setUp()
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("update")(
-            "meeting.update",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
@@ -283,7 +280,6 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
         super().setUp()
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("update")(
-            "meeting.update",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
@@ -392,7 +388,6 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
         super().setUp()
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("delete")(
-            "meeting.delete",
             PermissionTestAdapter(superuser=user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )
@@ -431,7 +426,6 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
         super().setUp()
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("delete")(
-            "meeting.delete",
             PermissionTestAdapter(superuser=self.user_id),
             DatabaseTestAdapter(datastore_content=self.datastore_content),
         )

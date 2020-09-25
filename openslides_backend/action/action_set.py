@@ -18,18 +18,22 @@ class ActionSet:
 
     routes = {"create": CreateAction, "update": UpdateAction, "delete": DeleteAction}
 
+    actions: Dict[str, Type[Action]]
+
     @classmethod
     def get_actions(cls) -> Dict[str, Type[Action]]:
-        actions = {}
-        for route, base_class in cls.routes.items():
-            schema = getattr(cls, route + "_schema")
-            clazz = type(
-                type(cls.model).__name__ + route.capitalize(),
-                (base_class,),
-                dict(model=cls.model, schema=schema),
-            )
-            actions[route] = clazz
-        return actions
+        if not hasattr(cls, "actions"):
+            actions = {}
+            for route, base_class in cls.routes.items():
+                schema = getattr(cls, route + "_schema")
+                clazz = type(
+                    type(cls.model).__name__ + route.capitalize(),
+                    (base_class,),
+                    dict(model=cls.model, schema=schema),
+                )
+                actions[route] = clazz
+            cls.actions = actions
+        return cls.actions
 
     @classmethod
     def get_action(cls, route: str) -> Type[Action]:

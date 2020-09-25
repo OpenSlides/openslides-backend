@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-from ..shared.patterns import FullQualifiedId
+from .patterns import FullQualifiedId
 
 StartResponse = Callable
 
