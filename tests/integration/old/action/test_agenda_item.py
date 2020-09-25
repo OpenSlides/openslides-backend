@@ -44,13 +44,13 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
                     },
                     {
                         "type": "update",
-                        "fqid": "meeting/7816466305",
-                        "fields": {"agenda_item_ids": [42]},
+                        "fqid": "topic/1312354708",
+                        "fields": {"agenda_item_id": 42},
                     },
                     {
                         "type": "update",
-                        "fqid": "topic/1312354708",
-                        "fields": {"agenda_item_id": 42},
+                        "fqid": "meeting/7816466305",
+                        "fields": {"agenda_item_ids": [42]},
                     },
                 ],
                 "information": {
@@ -116,13 +116,13 @@ class AgendaItemCreateUpdateDeleteTester(BaseActionTestCase):
                     {"type": "delete", "fqid": "agenda_item/3393211712"},
                     {
                         "type": "update",
-                        "fqid": "meeting/9079236097",
-                        "fields": {"agenda_item_ids": []},
+                        "fqid": "topic/5756367535",
+                        "fields": {"agenda_item_id": None},
                     },
                     {
                         "type": "update",
-                        "fqid": "topic/5756367535",
-                        "fields": {"agenda_item_id": None},
+                        "fqid": "meeting/9079236097",
+                        "fields": {"agenda_item_ids": []},
                     },
                 ],
                 "information": {

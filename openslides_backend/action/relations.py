@@ -3,7 +3,15 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 from mypy_extensions import TypedDict
 
 from ..models.base import Model, model_registry
-from ..models.fields_new import BaseRelationField
+from ..models.fields import (
+    BaseRelationField,
+    GenericRelationField,
+    GenericRelationListField,
+    RelationField,
+    RelationListField,
+    TemplateRelationField,
+    TemplateRelationListField,
+)
 from ..services.datastore.interface import GetManyRequest, PartialModel
 from ..shared.exceptions import ActionException
 from ..shared.patterns import (
@@ -31,17 +39,15 @@ class RelationsHandler:
     This class combines serveral methods to calculate changes of relation fields.
 
     There are the following distinctions:
-        by type: 1:1, 1:m / m:1 or m:n
-        by direction: common or reverse
-        by field: normal field or with structured field
+        by type: 1:1, 1:m, m:1 or m:n
+        by field: normal field or with structured field or template field
         by content: integer relation and generic relation (using a full qualified id)
 
-    Therefor we have many cases this class has to handle (e. g. reverse relation
-    m:n with structured field or common relation 1:m with generic relation)
+    Therefor we have many cases this class has to handle.
 
-    additional_relation_models can provide models that are needed for resolving the
-    relations, but are not yet present in the datastore. This is needed when nesting
-    actions that are dependent on each other (e.g. topic.create calls
+    additional_relation_models can provide models that are required for resolving the
+    relations, but are not yet present in the datastore. This is necessary when nesting
+    actions that are dependent on each other (e. g. topic.create calls
     agenda_item.create, which assumes the topic exists already).
     """
 
@@ -53,7 +59,6 @@ class RelationsHandler:
         field: BaseRelationField,
         field_name: str,
         obj: Dict[str, Any],
-        is_reverse: bool = False,
         only_add: bool = False,
         only_remove: bool = False,
         additional_relation_models: ModelMap = {},
@@ -64,7 +69,6 @@ class RelationsHandler:
         self.field = field
         self.field_name = field_name
         self.obj = obj
-        self.is_reverse = is_reverse
         if only_add and only_remove:
             raise ValueError(
                 "Do not set only_add and only_remove because this is contradictory."
@@ -72,27 +76,65 @@ class RelationsHandler:
         self.only_add = only_add
         self.only_remove = only_remove
         self.additional_relation_models = additional_relation_models
-        self.type = self.field.type
-        if self.type == "1:m" and self.is_reverse:
-            # Switch 1:m to m:1 in reverse case.
-            self.type = "m:1"
+
+        # Get reverse_field and field type
+        self.reverse_field = self.get_reverse_field()
+        self.type = self.get_field_type()
+
+    def get_reverse_field(self) -> BaseRelationField:
+        reverse_collection = self.field.to
+        if isinstance(reverse_collection, list):
+            reverse_collection = reverse_collection[0]
+        if (
+            self.field.structured_relation is not None
+            or self.field.structured_tag is not None
+        ):
+            related_name = self.field.related_name.replace("$", "", 1)
+        else:
+            related_name = self.field.related_name
+        return model_registry[reverse_collection]().get_field(related_name)
+
+    def get_field_type(self) -> str:
+        if isinstance(self.field, RelationField) or isinstance(
+            self.field, GenericRelationField
+        ):
+            if not self.reverse_field.is_list_field:
+                return "1:1"
+            return "1:m"
+        else:
+            assert isinstance(self.field, RelationListField) or isinstance(
+                self.field, GenericRelationListField
+            )
+            if not self.reverse_field.is_list_field:
+                return "m:1"
+            return "m:n"
 
     def perform(self) -> Relations:
         rel_ids = self.prepare_new_relation_ids()
         related_name = self.get_related_name()
-        target = self.field.own_collection if self.is_reverse else self.field.to
+
+        if isinstance(self.field, TemplateRelationField) or isinstance(
+            self.field, TemplateRelationListField
+        ):
+            # It is currently not implemented to write into template relations fields.
+            raise NotImplementedError
 
         add: Union[Set[int], Set[FullQualifiedId]]
         remove: Union[Set[int], Set[FullQualifiedId]]
         rels: Union[Dict[int, PartialModel], Dict[FullQualifiedId, PartialModel]]
 
-        if self.field.generic_relation and self.is_reverse:
+        if isinstance(self.field, GenericRelationField) or isinstance(
+            self.field, GenericRelationListField
+        ):
+            assert isinstance(self.field.to, list)
             rel_ids = cast(List[FullQualifiedId], rel_ids)
             add, remove = self.relation_diffs_fqid(rel_ids)
             fq_rels = {}
             for related_model_fqid in list(add | remove):
-                if not related_model_fqid.collection == target:
-                    continue
+                if related_model_fqid.collection not in self.field.to:
+                    raise RuntimeError(
+                        "You try to change a generic relation field using foreign collections that are not available."
+                    )
                 if related_model_fqid in self.additional_relation_models:
                     related_model = {
                         related_name: self.additional_relation_models[
@@ -108,26 +150,26 @@ class RelationsHandler:
                 fq_rels[related_model_fqid] = related_model
             rels = fq_rels
         else:
+            assert isinstance(self.field.to, Collection)
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
             ids = list(add | remove)
             response = self.database.get_many(
                 get_many_requests=[
-                    GetManyRequest(target, ids, mapped_fields=[related_name],)
+                    GetManyRequest(self.field.to, ids, mapped_fields=[related_name],)
                 ],
                 lock_result=True,
             )
             # TODO: Check if the datastore really sends such an empty response.
-            id_rels = response[target] if target in response else {}
+            id_rels = response[self.field.to] if self.field.to in response else {}
 
             # Switch type of values that represent a FQID
             # only in non-reverse generic relation case.
             if self.field.generic_relation:
-                assert not self.is_reverse
                 for rel_item in id_rels.values():
                     related_field_value = rel_item.get(related_name)
                     if related_field_value is not None:
-                        if self.type == "1:1":
+                        if self.type in ("1:1", "m:1"):
                             collection, element_id = related_field_value.split(
                                 KEYSEPARATOR
                             )
@@ -135,6 +177,7 @@ class RelationsHandler:
                                 Collection(collection), int(element_id)
                             )
                         else:
+                            assert self.type in ("1:m", "m:n")
                             new_related_field_value = []
                             for value_item in related_field_value:
                                 collection, element_id = value_item.split(KEYSEPARATOR)
@@ -147,18 +190,18 @@ class RelationsHandler:
 
             # Inject additional_relation_models and check existance of target objects.
             for instance_id in ids:
-                fqid = FullQualifiedId(target, instance_id)
+                fqid = FullQualifiedId(self.field.to, instance_id)
                 if fqid in self.additional_relation_models:
                     id_rels[instance_id] = self.additional_relation_models[fqid]
                 if instance_id not in id_rels.keys():
                     raise ActionException(
-                        f"You try to reference an instance of {target} that does not exist."
+                        f"You try to reference an instance of {self.field.to} that does not exist."
                     )
             rels = id_rels
 
-        if self.field.generic_relation and not self.is_reverse:
-            return self.prepare_result_to_fqid(add, remove, rels, target, related_name)
-        return self.prepare_result_to_id(add, remove, rels, target, related_name)
+        if self.field.generic_relation:
+            return self.prepare_result_to_fqid(add, remove, rels, related_name)
+        return self.prepare_result_to_id(add, remove, rels, related_name)
 
     def prepare_new_relation_ids(self) -> Union[List[int], List[FullQualifiedId]]:
         value = self.obj.get(self.field_name)
@@ -177,13 +220,8 @@ class RelationsHandler:
 
     def get_related_name(self) -> str:
         if self.field.structured_relation is None:
-            if not self.is_reverse:
-                related_name = self.field.related_name
-            else:
-                related_name = self.field.own_field_name
+            related_name = self.field.related_name
         else:
-            if self.is_reverse:
-                raise NotImplementedError
             replacement = self.search_structured_relation(
                 list(self.field.structured_relation), self.model.collection, self.id
             )
@@ -206,9 +244,8 @@ class RelationsHandler:
                 f"The field {field_name} for {collection} must not be empty in database."
             )
         if structured_relation:
-            new_collection = (
-                model_registry[collection]().get_field(field_name, only_common=True).to
-            )
+            new_collection = model_registry[collection]().get_field(field_name).to
+            assert isinstance(new_collection, Collection)
             return self.search_structured_relation(
                 structured_relation, new_collection, value
             )
@@ -318,7 +355,6 @@ class RelationsHandler:
         add: Union[Set[int], Set[FullQualifiedId]],
         remove: Union[Set[int], Set[FullQualifiedId]],
         rels: Union[Dict[int, PartialModel], Dict[FullQualifiedId, PartialModel]],
-        target: Collection,
         related_name: str,
     ) -> Relations:
         relations: Relations = {}
@@ -341,17 +377,14 @@ class RelationsHandler:
             else:
                 assert rel_id in remove
                 if (
-                    self.is_reverse
-                    and self.type != "m:n"
-                    and self.field.on_delete == "protect"
+                    self.type in ("1:1", "m:1")
+                    and self.reverse_field.on_delete() == "protect"
                 ):
-                    # Hint: There is no on_delete behavior in common relation
-                    # case so the reverse field is always nullable. The same
-                    # for m:n case where we just modifiy the related field list.
+                    # Hint: There is no on_delete behavior in m:n cases. The reverse
+                    # field is always nullable. We just modifiy the related field list.
                     raise ActionException(
                         f"You are not allowed to delete {self.model} {self.id} as "
-                        "long as there are some required related objects "
-                        f"(see {self.field_name})."
+                        "long as there are some required related objects."
                     )
                 if self.type in ("1:1", "m:1"):
                     new_value = None
@@ -363,10 +396,11 @@ class RelationsHandler:
                     new_value.remove(value_to_be_removed)
                 rel_element = RelationsElement(type="remove", value=new_value)
             if isinstance(rel_id, int):
-                fqfield = FullQualifiedField(target, rel_id, related_name)
+                assert isinstance(self.field.to, Collection)
+                fqfield = FullQualifiedField(self.field.to, rel_id, related_name)
             else:
                 assert isinstance(rel_id, FullQualifiedId)
-                fqfield = FullQualifiedField(target, rel_id.id, related_name)
+                fqfield = FullQualifiedField(rel_id.collection, rel_id.id, related_name)
             relations[fqfield] = rel_element
         return relations
 
@@ -375,7 +409,6 @@ class RelationsHandler:
         add: Union[Set[int], Set[FullQualifiedId]],
         remove: Union[Set[int], Set[FullQualifiedId]],
         rels: Union[Dict[int, Any], Dict[FullQualifiedId, Any]],
-        target: Collection,
         related_name: str,
     ) -> Relations:
         relations: Relations = {}
@@ -402,18 +435,16 @@ class RelationsHandler:
             else:
                 assert rel_id in remove
                 if (
-                    self.is_reverse
-                    and self.type != "m:n"
-                    and self.field.on_delete == "protect"
+                    self.type in ("1:1", "m:1")
+                    and self.reverse_field.on_delete() == "protect"
                 ):
-                    # Hint: There is no on_delete behavior in common relation
-                    # case so the reverse field is always nullable. The same
-                    # for m:n case where we just modifiy the related field list.
+                    # Hint: There is no on_delete behavior in m:n cases. The reverse
+                    # field is always nullable. We just modifiy the related field list.
                     raise ActionException(
                         f"You are not allowed to delete {self.model} {self.id} as "
-                        "long as there are some required related objects "
-                        f"(see {self.field_name})."
+                        "long as there are some required related objects."
                     )
+                assert rel_id in remove
                 if self.type in ("1:1", "m:1"):
                     new_value = None
                 else:
@@ -426,9 +457,10 @@ class RelationsHandler:
                     new_value.remove(value_to_be_removed)
                 rel_element = RelationsElement(type="remove", value=new_value)
             if isinstance(rel_id, int):
-                fqfield = FullQualifiedField(target, rel_id, related_name)
+                assert isinstance(self.field.to, Collection)
+                fqfield = FullQualifiedField(self.field.to, rel_id, related_name)
             else:
                 assert isinstance(rel_id, FullQualifiedId)
-                fqfield = FullQualifiedField(target, rel_id.id, related_name)
+                fqfield = FullQualifiedField(rel_id.collection, rel_id.id, related_name)
             relations[fqfield] = rel_element
         return relations

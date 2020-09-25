@@ -1,10 +1,11 @@
+from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
 import fastjsonschema
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
-from ..models.fields_new import BaseRelationField
+from ..models.fields import BaseRelationField
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
@@ -71,7 +72,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Entrypoint to perform the action.
         """
         self.user_id = user_id
-        self.validate(payload)
+        self.validate(deepcopy(payload))
         self.check_permissions(payload)
         dataset = self.prepare_dataset(payload)
         return self.create_write_request_elements(dataset)
@@ -199,18 +200,18 @@ class Action(BaseAction, metaclass=SchemaProvider):
         model: Model,
         id: int,
         obj: Dict[str, Any],
-        relation_fields: Iterable[Tuple[str, BaseRelationField, bool]],
+        relation_fields: Iterable[Tuple[str, BaseRelationField]],
         shortcut: bool = False,
     ) -> Relations:
         """
-        Updates (reverse) relations of the given model for the given fields. Use
+        Updates relations of the given model for the given fields. Use
         this method in prepare_dataset method.
 
         If shortcut is True, we assume a create case. That means that all
         relations are added.
         """
         relations: Relations = {}
-        for field_name, field, is_reverse in relation_fields:
+        for field_name, field in relation_fields:
             handler = RelationsHandler(
                 self.database,
                 model,
@@ -218,7 +219,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 field,
                 field_name,
                 obj,
-                is_reverse,
                 only_add=shortcut,
                 only_remove=False,
                 additional_relation_models=self.additional_relation_models,

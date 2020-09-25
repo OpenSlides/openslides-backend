@@ -1,6 +1,6 @@
 from typing import Iterable, List
 
-from ...models.motion_comment_section import MotionCommentSection
+from ...models.models import MotionCommentSection
 from ...shared.exceptions import ActionException
 from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement

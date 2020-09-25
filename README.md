@@ -30,7 +30,7 @@ You may also use
 
     $ make run-dev
 
-to do everythin at once. Do not forget to run
+to do everything at once. Do not forget to run
 
     $ make stop-dev
   
@@ -49,6 +49,13 @@ To setup and local development version run
 To start it run
 
     $ make run-debug
+
+### Generate models file
+
+To generate a new models.py file (updated in [OpenSlides Main Repository](https://github.com/OpenSlides/OpenSlides)) run
+
+    $ make generate-models
+    $ make black
 
 
 ## Listening ports

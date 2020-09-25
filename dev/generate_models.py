@@ -45,7 +45,7 @@ FILE_TEMPLATE = dedent(
     """\
     # Code generated. DO NOT EDIT.
 
-    from openslides_backend.models import fields_new as fields
+    from openslides_backend.models import fields
     from openslides_backend.models.base import Model
     from openslides_backend.shared.patterns import Collection
     """
@@ -80,6 +80,7 @@ class RelatedField(Node):
             self.name = value.get("name", "")
             self.type = value.get("type")
             self.replacement = value.get("replacement")
+            self.through = []  # TODO: Parse these values
         assert self.name
         if self.type:
             assert (
@@ -117,8 +118,10 @@ class To(Node):
         if self.reverse_is_generic():
             properties += "generic_relation=True, "
         if self.field.type == "structured-relation":
-            properties += f'structured_relation="{self.field.replacement}", '
+            structured_relation = json.dumps(self.field.through + [self.field.replacement])
+            properties += f'structured_relation={structured_relation}, '
         if self.field.type == "structured-tag":
+            assert not self.field.through
             properties += f'structured_tag="{self.field.replacement}", '
         return properties
 
@@ -143,6 +146,7 @@ class Attribute(Node):
     to: Optional[To] = None
     fields: Optional["Attribute"] = None
     required: bool = False
+    read_only: bool = False
     contraints: Dict[str, Any]
 
     is_template: bool = False
@@ -159,6 +163,7 @@ class Attribute(Node):
             **RELATION_FIELD_CLASSES,
         }
         self.contraints = {}
+        self.in_array_constraints = {}
         if isinstance(value, str):
             self.type = value
         else:
@@ -175,9 +180,12 @@ class Attribute(Node):
                 else:
                     assert self.type in COMMON_FIELD_CLASSES.keys()
                 self.required = value.get("required", False)
+                self.read_only = value.get("read_only", False)
                 for k, v in value.items():
-                    if k not in ("type", "to", "required"):
+                    if k not in ("type", "to", "required", "read_only", "items"):
                         self.contraints[k] = v
+                    elif self.type in ("string[]", "number[]") and k == "items":
+                        self.in_array_constraints.update(v)
 
     def get_code(self, field_name: str) -> str:
         structured_field_sign = field_name.find("$")
@@ -199,8 +207,12 @@ class Attribute(Node):
             properties += self.to.get_properties()
         if self.required:
             properties += "required=True, "
+        if self.read_only:
+            properties += "read_only=True, "
         if self.contraints:
-            properties += f"constraints={json.dumps(self.contraints)}"
+            properties += f"constraints={json.dumps(self.contraints)}, "
+        if self.in_array_constraints and self.type in ("string[]", "number[]"):
+            properties += f"in_array_constraints={json.dumps(self.in_array_constraints)}"
         return self.FIELD_TEMPLATE.substitute(
             dict(
                 field_name=field_name,
@@ -234,7 +246,7 @@ class Model(Node):
 
             class ${class_name}(Model):
                 collection = Collection("${collection}")
-                verbose_name = "${collection}"
+                verbose_name = "${verbose_name}"
 
             """
         )
@@ -248,8 +260,9 @@ class Model(Node):
             self.attributes[field_name] = Attribute(value)
 
     def get_code(self) -> str:
+        verbose_name = " ".join(self.collection.split("_"))
         code = self.MODEL_TEMPLATE.substitute(
-            dict(class_name=self.get_class_name(), collection=self.collection)
+            dict(class_name=self.get_class_name(), collection=self.collection, verbose_name=verbose_name)
         )
         for field_name, attribute in self.attributes.items():
             code += attribute.get_code(field_name)
@@ -275,6 +288,9 @@ def main() -> None:
 
     # Retrieve models.yml from GitHub
     models_yml = requests.get(SOURCE).content
+
+    # with open("/home/norman/GitHub/OpenSlides/docs/models.yml", "rb") as x:
+    #     models_yml = x.read()
 
     # Fix broken keys
     models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())

@@ -1,7 +1,7 @@
 from typing import Dict, Iterable, Tuple
 
 from ..shared.patterns import Collection
-from . import fields_new as fields
+from . import fields
 
 model_registry = {}
 
@@ -10,7 +10,10 @@ class ModelMetaClass(type):
     """
     Metaclass for Model base class (see below).
 
-    It creates the registry for models and collections.
+    This metaclass ensures that relation fields get attributes set so that they
+    know its own collection and its own field name.
+
+    It also creates the registry for models and collections.
     """
 
     def __new__(metaclass, class_name, class_parents, class_attributes):  # type: ignore
@@ -18,6 +21,11 @@ class ModelMetaClass(type):
             metaclass, class_name, class_parents, class_attributes
         )
         if class_name != "Model":
+            for attr_name in class_attributes:
+                attr = getattr(new_class, attr_name)
+                if isinstance(attr, fields.BaseRelationField):
+                    attr.own_collection = new_class.collection
+                    attr.own_field_name = attr_name
             model_registry[new_class.collection] = new_class
         return new_class
 
