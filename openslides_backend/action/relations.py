@@ -235,10 +235,13 @@ class RelationsHandler:
         Recursive helper method to walk down the structured_relation field name list.
         """
         field_name = structured_relation.pop(0)
-        db_instance = self.database.get(
-            fqid=FullQualifiedId(collection, id), mapped_fields=[field_name],
-        )
-        value = db_instance.get(field_name)
+        # Try to find the field in self.obj. If this does not work, fetch it from DB.
+        value = self.obj.get(field_name)
+        if value is None:
+            db_instance = self.database.get(
+                fqid=FullQualifiedId(collection, id), mapped_fields=[field_name],
+            )
+            value = db_instance.get(field_name)
         if value is None:
             raise ValueError(
                 f"The field {field_name} for {collection} must not be empty in database."

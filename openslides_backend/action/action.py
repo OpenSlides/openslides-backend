@@ -33,6 +33,7 @@ def prepare_actions_map() -> None:
         motion_comment_section,
         motion_state,
         motion_statute_paragraph,
+        motion_submitter,
         motion_workflow,
         tag,
         topic,
