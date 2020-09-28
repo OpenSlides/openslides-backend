@@ -3,7 +3,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class AssignmentCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/110", {"name": "name_zvfbAjpZ"})
+        self.create_model(
+            "meeting/110", {"name": "name_zvfbAjpZ", "agenda_item_creation": "always"}
+        )
         response = self.client.post(
             "/",
             json=[
@@ -21,8 +23,78 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("meeting_id"), 110)
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
 
+    def test_create_other_agenda_item_check(self) -> None:
+        self.create_model(
+            "meeting/110",
+            {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_yes"},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "assignment.create",
+                    "data": [{"title": "test_Xcdfgee", "meeting_id": 110}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("assignment/1")
+        assert model.get("title") == "test_Xcdfgee"
+        assert model.get("meeting_id") == 110
+        agenda_item = self.get_model("agenda_item/1")
+        self.assertEqual(agenda_item.get("meeting_id"), 110)
+        self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
+
+    def test_create_other_agenda_item_check_2(self) -> None:
+        self.create_model(
+            "meeting/110",
+            {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_no"},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "assignment.create",
+                    "data": [{"title": "test_Xcdfgee", "meeting_id": 110}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("assignment/1")
+        assert model.get("title") == "test_Xcdfgee"
+        assert model.get("meeting_id") == 110
+        self.assert_model_not_exists("agenda_item/1")
+
+    def test_create_other_agenda_item_check_3(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_zvfbAjpZ", "agenda_item_creation": "never"}
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "assignment.create",
+                    "data": [
+                        {
+                            "title": "test_Xcdfgee",
+                            "meeting_id": 110,
+                            "agenda_create": True,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("assignment/1")
+        assert model.get("title") == "test_Xcdfgee"
+        assert model.get("meeting_id") == 110
+        self.assert_model_not_exists("agenda_item/1")
+
     def test_create_full_fields(self) -> None:
-        self.create_model("meeting/110", {"name": "name_zvfbAjpZ"})
+        self.create_model(
+            "meeting/110",
+            {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_yes"},
+        )
         response = self.client.post(
             "/",
             json=[

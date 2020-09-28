@@ -3,7 +3,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionBlockActionTest(BaseActionTestCase):
     def test_createx(self) -> None:
-        self.create_model("meeting/42", {"name": "test"})
+        self.create_model(
+            "meeting/42", {"name": "test", "agenda_item_creation": "always"}
+        )
         response = self.client.post(
             "/",
             json=[
