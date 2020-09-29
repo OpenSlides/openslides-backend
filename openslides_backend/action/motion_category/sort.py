@@ -12,13 +12,13 @@ class MotionCategorySort(TreeSortMixin, Action):
     """
 
     model = MotionCategory()
-    schema = DefaultSchema(MotionCategory()).get_sort_schema()
+    schema = DefaultSchema(MotionCategory()).get_tree_sort_schema()
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         if not isinstance(payload, dict):
             raise TypeError("ActionPayload for this action must be a dictionary.")
         return self.sort_tree(
-            nodes=payload["nodes"],
+            nodes=payload["tree"],
             meeting_id=payload["meeting_id"],
             weight_key="weight",
             parent_id_key="parent_id",

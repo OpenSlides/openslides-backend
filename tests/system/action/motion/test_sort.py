@@ -10,7 +10,7 @@ class MotionSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion.sort",
-                    "data": {"meeting_id": 222, "nodes": [{"id": 22}]},
+                    "data": {"meeting_id": 222, "tree": [{"id": 22}]},
                 }
             ],
         )
@@ -30,7 +30,7 @@ class MotionSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion.sort",
-                    "data": {"meeting_id": 222, "nodes": [{"id": 22}]},
+                    "data": {"meeting_id": 222, "tree": [{"id": 22}]},
                 }
             ],
         )
@@ -48,7 +48,7 @@ class MotionSortActionTest(BaseActionTestCase):
 
         valid_data = {
             "meeting_id": 222,
-            "nodes": [
+            "tree": [
                 {
                     "id": 1,
                     "children": [
@@ -85,7 +85,7 @@ class MotionSortActionTest(BaseActionTestCase):
 
         not_tree_data = {
             "meeting_id": 222,
-            "nodes": [
+            "tree": [
                 {
                     "id": 1,
                     "children": [{"id": 11, "children": [{"id": 12}]}, {"id": 12}],
@@ -106,7 +106,7 @@ class MotionSortActionTest(BaseActionTestCase):
 
         circle_data = {
             "meeting_id": 222,
-            "nodes": [
+            "tree": [
                 {
                     "id": 1,
                     "children": [
@@ -129,7 +129,7 @@ class MotionSortActionTest(BaseActionTestCase):
 
         small_tree_data = {
             "meeting_id": 222,
-            "nodes": [{"id": 1, "children": [{"id": 11}, {"id": 12}]}],
+            "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}]}],
         }
         response = self.client.post(
             "/", json=[{"action": "motion.sort", "data": small_tree_data}],
