@@ -17,6 +17,8 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_state/1")
         model = self.get_model("motion_state/1")
         assert model.get("name") == "test_Xcdfgee"
+        assert model.get("restrictions") == []
+        assert model.get("merge_amendment_into_final") == 0
 
     def test_create_enum_fields(self) -> None:
         self.create_model("motion_workflow/42", {"name": "test_name_fjwnq8d8tje8"})

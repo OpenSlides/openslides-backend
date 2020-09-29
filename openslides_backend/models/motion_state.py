@@ -54,7 +54,7 @@ class MotionState(Model):
         description="If in this motion state the state extension field is visable."
     )
     merge_amendment_into_final = fields.IntegerField(
-        description="Unknown description.", enum=[-1, 0, 1]
+        description="Unknown description.", enum=[-1, 0, 1], default=0
     )
     show_recommendation_extension_field = fields.BooleanField(
         description="If in this motion state the recommendation extension field is visable."
