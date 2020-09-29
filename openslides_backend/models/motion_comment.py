@@ -15,7 +15,10 @@ class MotionComment(Model):
     verbose_name = "motion_comment"
 
     id = fields.IdField(description="The id of this motion comment.")
-    comment = fields.TextField(description="The comment of this motion comment.")
+    comment = fields.HtmlField(
+        description="The comment of this motion comment.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_STRICT,
+    )
     motion_id = fields.RequiredForeignKeyField(
         description="The id of the motion of this motion comment.",
         to=Collection("motion"),

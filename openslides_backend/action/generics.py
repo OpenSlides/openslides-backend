@@ -26,6 +26,7 @@ class CreateAction(Action):
 
         data = []
         for instance in payload:
+            instance = self.validate_fields(instance)
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
@@ -117,6 +118,7 @@ class UpdateAction(Action):
         for instance in payload:
             # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
 
+            instance = self.validate_fields(instance)
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 

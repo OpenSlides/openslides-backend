@@ -20,7 +20,10 @@ class Topic(Model):
         related_name="topic_ids",
     )
     title = fields.RequiredCharField(description="The title or headline of this topic.")
-    text = fields.TextField(description="The HTML formatted text of this topic.")
+    text = fields.HtmlField(
+        description="The HTML formatted text of this topic.",
+        allowed_tags=fields.ALLOWED_HTML_TAGS_PERMISSIVE,
+    )
     attachment_ids = fields.ManyToManyArrayField(
         description="The attachments that should be related with this topic.",
         to=Collection("mediafile"),
