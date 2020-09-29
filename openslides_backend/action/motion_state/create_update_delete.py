@@ -1,7 +1,26 @@
+from typing import Any, Dict
+
 from ...models.models import MotionState
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
+from ..generics import CreateAction, DeleteAction, UpdateAction
+
+
+class MotionStateCreateAction(CreateAction):
+    """
+    Create action to set defaults.
+    """
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set default for restrictions.
+        """
+        instance["restrictions"] = instance.get("restrictions", [])
+        instance["merge_amendment_into_final"] = instance.get(
+            "merge_amendment_into_final", 0
+        )
+        return instance
 
 
 @register_action_set("motion_state")
@@ -46,3 +65,8 @@ class MotionStateActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(MotionState()).get_delete_schema()
+    routes = {
+        "create": MotionStateCreateAction,
+        "update": UpdateAction,
+        "delete": DeleteAction,
+    }

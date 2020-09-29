@@ -213,7 +213,7 @@ class Meeting(Model):
 
     id = fields.IntegerField()
     welcome_title = fields.CharField()
-    welcome_text = fields.HTMLField()
+    welcome_text = fields.HTMLVideoField()
     name = fields.CharField(constraints={"maxLength": 100})
     description = fields.CharField(constraints={"maxLength": 100})
     location = fields.CharField()
@@ -531,7 +531,7 @@ class PersonalNote(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="personal_note_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["content_object_id", "meeting_id"],
     )
     content_object_id = fields.GenericRelationField(
         to=[Collection("motion")], related_name="personal_note_ids"
@@ -664,7 +664,7 @@ class Speaker(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="speaker_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["list_of_speakers_id", "meeting_id"],
         required=True,
     )
 
@@ -675,7 +675,7 @@ class Topic(Model):
 
     id = fields.IntegerField()
     title = fields.CharField(required=True)
-    text = fields.HTMLField()
+    text = fields.HTMLVideoField()
     attachment_ids = fields.RelationListField(
         to=Collection("mediafile"), related_name="attachment_ids", generic_relation=True
     )
@@ -828,7 +828,7 @@ class MotionSubmitter(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="submitted_motion_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["motion_id", "meeting_id"],
     )
     motion_id = fields.RelationField(
         to=Collection("motion"), related_name="submitter_ids"
@@ -976,7 +976,9 @@ class MotionState(Model):
     allow_submitter_edit = fields.BooleanField()
     set_number = fields.BooleanField()
     show_state_extension_field = fields.BooleanField()
-    merge_amendment_into_final = fields.IntegerField(constraints={"enum": [-1, 0, 1]})
+    merge_amendment_into_final = fields.IntegerField(
+        constraints={"default": 0, "enum": [-1, 0, 1]}
+    )
     show_recommendation_extension_field = fields.BooleanField()
     next_state_ids = fields.RelationListField(
         to=Collection("motion_state"), related_name="previous_state_ids"
@@ -1114,7 +1116,7 @@ class MotionVote(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="motion_vote_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["option_id", "poll_id", "meeting_id"],
     )
 
 
@@ -1177,7 +1179,7 @@ class AssignmentCandidate(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="assignment_candidate_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["assignment_id", "meeting_id"],
     )
 
 
@@ -1245,7 +1247,7 @@ class AssignmentOption(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="assignment_option_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["poll_id", "meeting_id"],
     )
     vote_ids = fields.RelationListField(
         to=Collection("assignment_vote"), related_name="option_id"
@@ -1265,7 +1267,7 @@ class AssignmentVote(Model):
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="assignment_vote_$_ids",
-        structured_relation=["meeting_id"],
+        structured_relation=["option_id", "poll_id", "meeting_id"],
     )
 
 

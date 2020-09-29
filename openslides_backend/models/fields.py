@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Union
 
+import bleach
+
 from ..shared.patterns import Collection, FullQualifiedId
 
 Schema = Dict[str, Any]
@@ -32,6 +34,12 @@ class Field:
         """
         schema.update(kwargs)
         return schema
+
+    def validate(self, value: Any) -> Any:
+        """
+        Overwrite in subclass to validate/sanitize the input.
+        """
+        return value
 
 
 class IntegerField(Field):
@@ -66,7 +74,89 @@ class JSONField(TextField):
 
 
 class HTMLField(TextField):
-    pass
+    """
+    Field for restricted HTML.
+    """
+
+    ALLOWED_HTML_TAGS_STRICT = [
+        "a",
+        "img",  # links and images
+        "br",
+        "p",
+        "span",
+        "blockquote",  # text layout
+        "strike",
+        "del",
+        "ins",
+        "strong",
+        "u",
+        "em",
+        "sup",
+        "sub",
+        "pre",  # text formattvalidate_html_strictng
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",  # headings
+        "ol",
+        "ul",
+        "li",  # lists
+        "table",
+        "caption",
+        "thead",
+        "tbody",
+        "th",
+        "tr",
+        "td",  # tables
+        "div",
+    ]
+
+    ALLOWED_STYLES = [
+        "color",
+        "background-color",
+        "height",
+        "width",
+        "text-align",
+        "vertical-align",
+        "float",
+        "text-decoration",
+        "margin",
+        "padding",
+        "line-height",
+        "max-width",
+        "min-width",
+        "max-height",
+        "min-height",
+        "overflow",
+        "word-break",
+        "word-wrap",
+    ]
+
+    def validate(self, html: str) -> str:
+        def allow_all(tag: str, name: str, value: str) -> bool:
+            return True
+
+        html = html.replace("\t", "")
+        return bleach.clean(
+            html,
+            tags=self.get_allowed_tags(),
+            attributes=allow_all,
+            styles=self.ALLOWED_STYLES,
+        )
+
+    def get_allowed_tags(self) -> List[str]:
+        return self.ALLOWED_HTML_TAGS_STRICT
+
+
+class HTMLVideoField(HTMLField):
+    """
+    HTML field which can also contain video tags.
+    """
+
+    def get_allowed_tags(self) -> List[str]:
+        return super().get_allowed_tags() + ["video"]
 
 
 class FloatField(Field):
@@ -76,7 +166,7 @@ class FloatField(Field):
 
 class DecimalField(Field):
     def get_schema(self) -> Schema:
-        raise NotImplementedError
+        return self.extend_schema(super().get_schema(), type="number")
 
 
 class DatetimeField(IntegerField):
@@ -97,7 +187,7 @@ class ArrayField(Field):
         self.in_array_constraints = in_array_constraints
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="array")
+        return self.extend_schema(super().get_schema(), type="array", default=[])
 
 
 class CharArrayField(ArrayField):

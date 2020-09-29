@@ -113,15 +113,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Validate all model fields according to the model definition.
+        Validates all model fields according to the model definition.
         """
         for key, value in instance.items():
             try:
                 field = self.model.get_field(key)
-                instance[key] = field.validate(value)
             except ValueError:
-                # if the field doesn't exist, it's additional payload and we just ignore it
+                # If the field doesn't exist, it's additional payload and we just ignore it
                 continue
+            instance[key] = field.validate(value)
         return instance
 
     def fetch_model(
