@@ -35,7 +35,7 @@ class ArrayField(Field):
     """ Used for arbitrary arrays. """
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="array")
+        return self.extend_schema(super().get_schema(), type="array", default=[])
 
 
 class IntegerField(Field):
