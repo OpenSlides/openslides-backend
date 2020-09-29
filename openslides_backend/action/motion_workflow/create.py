@@ -1,6 +1,6 @@
 from typing import Any, Dict, Type
 
-from ...models.motion_workflow import MotionWorkflow
+from ...models.models import MotionWorkflow
 from ..action import register_action
 from ..base import Action
 from ..create_action_with_dependencies import CreateActionWithDependencies

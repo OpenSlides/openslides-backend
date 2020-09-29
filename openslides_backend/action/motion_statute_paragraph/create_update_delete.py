@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from ...models.motion_statute_paragraph import MotionStatuteParagraph
+from ...models.models import MotionStatuteParagraph
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema

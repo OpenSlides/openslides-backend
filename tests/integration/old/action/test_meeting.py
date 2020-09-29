@@ -417,7 +417,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
         self.assertEqual(
             context_manager.exception.message,
             "You are not allowed to delete meeting 7816466305 as long as there are "
-            "some required related objects (see topic_ids).",
+            "some required related objects.",
         )
 
 
@@ -462,7 +462,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
         self.assertEqual(
             context_manager.exception.message,
             "You are not allowed to delete meeting 7816466305 as long as there are "
-            "some required related objects (see topic_ids).",
+            "some required related objects.",
         )
 
     def test_perform_no_permission_1(self) -> None:
@@ -529,7 +529,7 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
         self.assert_status_code(response, 400)
         self.assertIn(
             "You are not allowed to delete meeting 7816466305 as long as there are "
-            "some required related objects (see topic_ids).",
+            "some required related objects.",
             str(response.data),
         )
 

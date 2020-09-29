@@ -1,4 +1,4 @@
-from ...models.list_of_speakers import ListOfSpeakers
+from ...models.models import ListOfSpeakers
 from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction

@@ -1,5 +1,4 @@
-from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import bleach
 
@@ -7,88 +6,27 @@ from ..shared.patterns import Collection, FullQualifiedId
 
 Schema = Dict[str, Any]
 
-ALLOWED_HTML_TAGS_STRICT = [
-    "a",
-    "img",  # links and images
-    "br",
-    "p",
-    "span",
-    "blockquote",  # text layout
-    "strike",
-    "del",
-    "ins",
-    "strong",
-    "u",
-    "em",
-    "sup",
-    "sub",
-    "pre",  # text formattvalidate_html_strictng
-    "h1",
-    "h2",
-    "h3",
-    "h4",
-    "h5",
-    "h6",  # headings
-    "ol",
-    "ul",
-    "li",  # lists
-    "table",
-    "caption",
-    "thead",
-    "tbody",
-    "th",
-    "tr",
-    "td",  # tables
-    "div",
-]
-ALLOWED_HTML_TAGS_PERMISSIVE = ALLOWED_HTML_TAGS_STRICT + [
-    "video",
-]
-
-
-def allow_all(tag: str, name: str, value: str) -> bool:
-    return True
-
-
-ALLOWED_ATTRIBUTES = allow_all
-ALLOWED_STYLES = [
-    "color",
-    "background-color",
-    "height",
-    "width",
-    "text-align",
-    "vertical-align",
-    "float",
-    "text-decoration",
-    "margin",
-    "padding",
-    "line-height",
-    "max-width",
-    "min-width",
-    "max-height",
-    "min-height",
-    "overflow",
-    "word-break",
-    "word-wrap",
-]
-
 
 class Field:
     """
-    Base class for model fields. Subclasses extend the schema. All Fields can be
-    extended further via the kwargs in the constructor, e.g. to introduce new
-    constraints. All constraints from jsonschema are valid.
+    Base class for model fields. Subclasses extend the schema.
     """
 
-    def __init__(self, description: str = "", **constraints: Any) -> None:
-        self.description = description
-        self.constraints = constraints
+    def __init__(
+        self,
+        required: bool = False,
+        read_only: bool = False,
+        constraints: Dict[str, Any] = None,
+    ) -> None:
+        self.required = required
+        self.read_only = read_only  # TODO: Use this flag in generic and custom actions.
+        self.constraints = constraints or {}
 
     def get_schema(self) -> Schema:
         """
         Returns a JSON schema for this field.
         """
-        return dict(description=self.description, **self.constraints)
+        return dict(**self.constraints)
 
     def extend_schema(self, schema: Schema, **kwargs: Any) -> Schema:
         """
@@ -104,74 +42,26 @@ class Field:
         return value
 
 
-class ArrayField(Field):
-    """ Used for arbitrary arrays. """
-
-    def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="array", default=[])
-
-
 class IntegerField(Field):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="integer")
-
-
-class PositiveIntegerField(IntegerField):
-    def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), minimum=1)
-
-
-class IdField(PositiveIntegerField):
-    pass
-
-
-class TimestampField(PositiveIntegerField):
-    """ Used to represent a UNIX timestamp. """
-
-    pass
-
-
-class DecimalField(Field):
-    def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="number")
+        if self.required:
+            return self.extend_schema(super().get_schema(), type="integer")
+        return self.extend_schema(super().get_schema(), type=["integer", "null"])
 
 
 class BooleanField(Field):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="boolean")
+        if self.required:
+            return self.extend_schema(super().get_schema(), type="boolean")
+        return self.extend_schema(super().get_schema(), type=["boolean", "null"])
 
 
 class TextField(Field):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="string")
-
-
-class RequiredTextField(TextField):
-    def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), minLength=1)
-
-
-class HtmlField(TextField):
-    def __init__(self, allowed_tags: List[str], **kwargs: str):
-        self.allowed_tags = allowed_tags
-        super().__init__(**kwargs)
-
-    def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="string")
-
-    def validate(self, html: str) -> str:
-        html = html.replace("\t", "")
-        return bleach.clean(
-            html,
-            tags=self.allowed_tags,
-            attributes=ALLOWED_ATTRIBUTES,
-            styles=ALLOWED_STYLES,
-        )
-
-
-class RequiredHtmlField(HtmlField):
-    def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), minLength=1)
+        schema = self.extend_schema(super().get_schema(), type="string")
+        if self.required:
+            schema = self.extend_schema(schema, minLength=1)
+        return schema
 
 
 class CharField(TextField):
@@ -179,159 +69,206 @@ class CharField(TextField):
         return self.extend_schema(super().get_schema(), maxLength=256)
 
 
-class RequiredCharField(CharField):
+class JSONField(TextField):
+    pass
+
+
+class HTMLField(TextField):
+    """
+    Field for restricted HTML.
+    """
+
+    ALLOWED_HTML_TAGS_STRICT = [
+        "a",
+        "img",  # links and images
+        "br",
+        "p",
+        "span",
+        "blockquote",  # text layout
+        "strike",
+        "del",
+        "ins",
+        "strong",
+        "u",
+        "em",
+        "sup",
+        "sub",
+        "pre",  # text formattvalidate_html_strictng
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",  # headings
+        "ol",
+        "ul",
+        "li",  # lists
+        "table",
+        "caption",
+        "thead",
+        "tbody",
+        "th",
+        "tr",
+        "td",  # tables
+        "div",
+    ]
+
+    ALLOWED_STYLES = [
+        "color",
+        "background-color",
+        "height",
+        "width",
+        "text-align",
+        "vertical-align",
+        "float",
+        "text-decoration",
+        "margin",
+        "padding",
+        "line-height",
+        "max-width",
+        "min-width",
+        "max-height",
+        "min-height",
+        "overflow",
+        "word-break",
+        "word-wrap",
+    ]
+
+    def validate(self, html: str) -> str:
+        def allow_all(tag: str, name: str, value: str) -> bool:
+            return True
+
+        html = html.replace("\t", "")
+        return bleach.clean(
+            html,
+            tags=self.get_allowed_tags(),
+            attributes=allow_all,
+            styles=self.ALLOWED_STYLES,
+        )
+
+    def get_allowed_tags(self) -> List[str]:
+        return self.ALLOWED_HTML_TAGS_STRICT
+
+
+class HTMLVideoField(HTMLField):
+    """
+    HTML field which can also contain video tags.
+    """
+
+    def get_allowed_tags(self) -> List[str]:
+        return super().get_allowed_tags() + ["video"]
+
+
+class FloatField(Field):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), minLength=1)
+        raise NotImplementedError
 
 
-class RelationMixin(Field):
+class DecimalField(Field):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), type="number")
+
+
+class DatetimeField(IntegerField):
     """
-    Field that provides a relation to another Collection.
-    We support 1:m, m:n 1:1 and m:1 relations.
-    Args:
-        to: The collection this field is related to.
-        related_name: The name of the array field of the related model. This
-            string may contain a $ as special character. I this case the $ will
-            be replaced by an id of a specific field of this model e. g. the
-            meeting id. This is only possible if the structured_relation argument
-            is set. In the end there will be a lot of fields in the related
-            model.
-        structured_relation: A list of foreign key field names. The first one is a
-            field of this model. We follow this relation. The second one is a field
-            of the model related by the first one. We go on this way until the last
-            one, where we can find the id that should be used to replace the $ used
-            in related_name argument. Attention: If the value of these fields
-            changed, all relations would have been broken. So such fields should not be
-            updated at all.
-        generic_relation: If this flag is true the reverse field contains
-            FQFields of different collections i. e. it is a generic field.
-        delete_protection: If this flag is true the instance can not be delete
-            if this field is not empty.
+    Used to represent a UNIX timestamp.
     """
 
-    on_delete: str
+    pass
 
+
+class ArrayField(Field):
+    """
+    Used for arbitrary arrays.
+    """
+
+    def __init__(self, in_array_constraints: Dict = None, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.in_array_constraints = in_array_constraints
+
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), type="array", default=[])
+
+
+class CharArrayField(ArrayField):
+    def get_schema(self) -> Schema:
+        items = dict(type="string", maxLength=256)
+        if self.in_array_constraints is not None:
+            items.update(self.in_array_constraints)
+        return self.extend_schema(super().get_schema(), items=items)
+
+
+class NumberArrayField(ArrayField):
+    def get_schema(self) -> Schema:
+        items = dict(type="integer")
+        if self.in_array_constraints is not None:
+            items.update(self.in_array_constraints)
+        return self.extend_schema(super().get_schema(), items=items)
+
+
+class BaseRelationField(Field):
     own_collection: Collection
     own_field_name: str
-
-    type: str
+    is_list_field: bool
 
     def __init__(
         self,
-        to: Collection,
+        to: Union[Collection, List[Collection]],
         related_name: str,
         structured_relation: List[str] = None,
+        structured_tag: str = None,
         generic_relation: bool = False,
         delete_protection: bool = False,
+        # constraints: Dict[str, Any] = None,
         **kwargs: Any,
     ) -> None:
-        if structured_relation is not None:
+        super().__init__(**kwargs)
+        if structured_relation is not None or structured_tag is not None:
+            assert not (structured_relation is not None and structured_tag is not None)
+            assert structured_relation != []
             if "$" not in related_name:
                 raise ValueError(
-                    "Setting structured_relation requires a $ in related_name."
+                    "Setting structured_relation or structured_tag requires a $ in related_name."
                 )
         else:
             if "$" in related_name:
                 raise ValueError(
-                    "A $ in related name requires setting structured_relation."
+                    "A $ in related name requires setting structured_relation or structured_tag."
                 )
         self.to = to
         self.related_name = related_name
         self.structured_relation = structured_relation
+        self.structured_tag = structured_tag
         self.generic_relation = generic_relation
         self.delete_protection = delete_protection
-        if generic_relation:
-            ReverseRelations[self.to].append(GenericRelationFieldWrapper(self))
-        else:
-            ReverseRelations[self.to].append(self)
-        super().__init__(**kwargs)
-
-    def get_reverse_schema(self) -> Schema:
-        """
-        Returns the reverse side of the field schema.
-        """
-        raise NotImplementedError
 
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}(to={self.to}, related_name={self.related_name}, "
-            f"structured_relation={self.structured_relation}, "
-            f"generic_relation={self.generic_relation}, type={self.type}, "
-            f"delete_protection={self.delete_protection}, description={self.description})"
+            f"structured_relation={self.structured_relation}, structured_tag={self.structured_tag}, "
+            f"generic_relation={self.generic_relation}, is_list_field={self.is_list_field}, "
+            f"delete_protection={self.delete_protection}, required={self.required}, "
+            f"constraints={self.constraints})"
         )
 
-
-ReverseRelations: Dict[Collection, List[RelationMixin]] = defaultdict(list)
-
-
-class GenericRelationFieldWrapper(RelationMixin):
-    def __init__(self, instance: RelationMixin) -> None:
-        object.__setattr__(self, "instance", instance)
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        object.__setattr__(object.__getattribute__(self, "instance"), name, value)
-
-    def __getattribute__(self, name: str) -> Any:
-        def get_reverse_schema(self: Any) -> Schema:
-            if self.type == "1:1":
-                return self.extend_schema(
-                    self.get_reverse_schema(),
-                    type="string",
-                    pattern=FullQualifiedId.REGEX,
-                )
-            else:
-                return self.extend_schema(
-                    self.get_reverse_schema(),
-                    items={"type": "string", "pattern": FullQualifiedId.REGEX},
-                )
-
-        instance = object.__getattribute__(self, "instance")
-        if name == "get_reverse_schema":
-            return lambda *args, **kargs: get_reverse_schema(instance)
-        return instance.__getattribute__(name)
+    def on_delete(self) -> str:
+        # TODO: Enable cascade
+        if self.required:
+            return "protect"
+        return "set_null"
 
 
-class RequiredOneToOneField(RelationMixin, IdField):
-    on_delete = "protect"  # TODO: Enable cascade
-    type = "1:1"
-
-    def get_reverse_schema(self) -> Schema:
-        return self.get_schema()
-
-
-class OneToOneField(RelationMixin, IdField):
-    on_delete = "set_null"  # TODO: Enable cascade
-    type = "1:1"
+class RelationField(BaseRelationField):
+    is_list_field = False
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type=["integer", "null"])
-
-    def get_reverse_schema(self) -> Schema:
-        return self.get_schema()
-
-
-class RequiredForeignKeyField(RelationMixin, IdField):
-    on_delete = "protect"  # TODO: Enable cascade
-    type = "1:m"
-
-    def get_reverse_schema(self) -> Schema:
-        return self.extend_schema(
-            super().get_schema(),
-            type="array",
-            items={"type": "integer", "minimum": 1},
-            uniqueItems=True,
-        )
-
-
-class ForeignKeyField(RequiredForeignKeyField):
-    on_delete = "set_null"  # TODO: Enable cascade
-
-    def get_schema(self) -> Schema:
+        if self.required:
+            return self.extend_schema(super().get_schema(), type="integer", mininum=1)
         return self.extend_schema(super().get_schema(), type=["integer", "null"])
 
 
-class ManyToManyArrayField(RelationMixin, IdField):
-    type = "m:n"
+class RelationListField(BaseRelationField):
+    is_list_field = True
 
     def get_schema(self) -> Schema:
         return self.extend_schema(
@@ -341,5 +278,55 @@ class ManyToManyArrayField(RelationMixin, IdField):
             uniqueItems=True,
         )
 
-    def get_reverse_schema(self) -> Schema:
-        return self.get_schema()
+
+class GenericRelationField(BaseRelationField):
+    is_list_field = False
+
+    def get_schema(self) -> Schema:
+        schema = self.extend_schema(
+            super().get_schema(), type="string", pattern=FullQualifiedId.REGEX
+        )
+        if self.required:
+            schema = self.extend_schema(schema, minLength=1)
+        return schema
+
+
+class GenericRelationListField(BaseRelationField):
+    is_list_field = True
+
+    def get_schema(self) -> Schema:
+        return self.extend_schema(
+            super().get_schema(),
+            type="array",
+            items={"type": "string", "pattern": FullQualifiedId.REGEX},
+            uniqueItems=True,
+        )
+
+
+class OrganisationField(RelationField):
+    """
+    Special field for foreign key to organisation model. We support only one
+    organisation (with id 1) at the moment.
+    """
+
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), enum=[1])
+
+
+class BaseTemplateField(Field):
+    def __init__(self, **kwargs: Any) -> None:
+        self.replacement = kwargs.pop("replacement")
+        self.index = kwargs.pop("index")
+        super().__init__(**kwargs)
+
+
+class TemplateRelationField(BaseTemplateField, RelationField):
+    pass
+
+
+class TemplateRelationListField(BaseTemplateField, RelationListField):
+    pass
+
+
+class TemplateHTMLField(BaseTemplateField, HTMLField):
+    pass

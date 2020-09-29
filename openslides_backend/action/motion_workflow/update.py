@@ -1,4 +1,4 @@
-from ...models.motion_workflow import MotionWorkflow
+from ...models.models import MotionWorkflow
 from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction

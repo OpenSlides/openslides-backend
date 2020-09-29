@@ -1,6 +1,6 @@
 from typing import Any, Dict, Type
 
-from ...models.topic import Topic
+from ...models.models import Topic
 from ..action import register_action
 from ..agenda_item.agenda_creation import (
     CreateActionWithAgendaItem,

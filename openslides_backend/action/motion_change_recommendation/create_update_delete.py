@@ -1,7 +1,7 @@
 from time import time
 from typing import Any, Dict
 
-from ...models.motion_change_recommendation import MotionChangeRecommendation
+from ...models.models import MotionChangeRecommendation
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema

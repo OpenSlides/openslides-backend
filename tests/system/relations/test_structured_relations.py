@@ -13,7 +13,8 @@ class StructuredRelationTester(BaseRelationsTestCase):
         self.create_model("fake_model_a/333", {})
         self.create_model("fake_model_b/111", {"meeting_id": meeting_id})
         field = cast(
-            fields.RelationMixin, FakeModelB().get_field("structured_relation_field")
+            fields.BaseRelationField,
+            FakeModelB().get_field("structured_relation_field"),
         )
         relations_handler = RelationsHandler(
             database=self.datastore,
@@ -40,7 +41,8 @@ class StructuredRelationTester(BaseRelationsTestCase):
         self.create_model("fake_model_b/111", {"meeting_id": meeting_id})
         self.create_model("fake_model_c/444", {"foreign_key_field": 111})
         field = cast(
-            fields.RelationMixin, FakeModelC().get_field("structured_relation_field")
+            fields.BaseRelationField,
+            FakeModelC().get_field("structured_relation_field"),
         )
         relations_handler = RelationsHandler(
             database=self.datastore,

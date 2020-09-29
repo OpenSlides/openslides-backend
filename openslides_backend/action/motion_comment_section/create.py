@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from ...models.motion_comment_section import MotionCommentSection
+from ...models.models import MotionCommentSection
 from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction

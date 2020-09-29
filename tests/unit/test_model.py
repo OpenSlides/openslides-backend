@@ -1,3 +1,4 @@
+from typing import cast
 from unittest import TestCase
 
 from openslides_backend.models import fields
@@ -13,8 +14,16 @@ class FakeModel(Model):
     collection = Collection("fake_model")
     verbose_name = "fake_model"
 
-    id = fields.IdField(description="The id of this fake model.")
-    text = fields.RequiredCharField(description="The text of this fake model.")
+    id = fields.IntegerField(required=True)
+    text = fields.CharField(
+        required=True, constraints={"description": "The text of this fake model."}
+    )
+    fake_model_2_ids = fields.RelationListField(
+        to=Collection("fake_model_2"), related_name="relation_field"
+    )
+    fake_model_2_generic_ids = fields.GenericRelationListField(
+        to=[Collection("fake_model_2")], related_name="generic_relation_field"
+    )
 
 
 class FakeModel2(Model):
@@ -25,14 +34,11 @@ class FakeModel2(Model):
     collection = Collection("fake_model_2")
     verbose_name = "fake_model_2"
 
-    id = fields.IdField(description="The id of this fake model.")
-    relation_field = fields.ForeignKeyField(
-        description="The foreign key to fake_model.",
-        to=Collection("fake_model"),
-        related_name="fake_model_2_ids",
+    id = fields.IntegerField(required=True)
+    relation_field = fields.RelationField(
+        to=Collection("fake_model"), related_name="fake_model_2_ids",
     )
-    generic_relation_field = fields.ForeignKeyField(
-        description="The foreign key to fake_model.",
+    generic_relation_field = fields.RelationField(
         to=Collection("fake_model"),
         related_name="fake_model_2_generic_ids",
         generic_relation=True,
@@ -46,11 +52,7 @@ class ModelBaseTester(TestCase):
 
     def test_get_properties(self) -> None:
         expected = {
-            "id": {
-                "description": "The id of this fake model.",
-                "type": "integer",
-                "minimum": 1,
-            },
+            "id": {"type": "integer"},
             "text": {
                 "description": "The text of this fake model.",
                 "type": "string",
@@ -70,27 +72,19 @@ class ModelBaseTester(TestCase):
 
     def test_get_fields_fake_model(self) -> None:
         self.assertEqual(
-            ["id", "text", "fake_model_2_ids", "fake_model_2_generic_ids"],
+            ["fake_model_2_generic_ids", "fake_model_2_ids", "id", "text"],
             [field_name for field_name, _ in FakeModel().get_fields()],
-        )
-        self.assertEqual(
-            ["id", "text"],
-            [field_name for field_name, _ in FakeModel().get_fields(only_common=True)],
         )
 
     def test_own_collection_attr(self) -> None:
-        reverse_relations = list(FakeModel().get_reverse_relations())
-        self.assertEqual(len(reverse_relations), 2)
-        field_name, field = reverse_relations[0]
-        self.assertEqual(field_name, "fake_model_2_ids")
-        self.assertEqual(str(field.own_collection), "fake_model_2")
-        field_name, field = reverse_relations[1]
-        self.assertEqual(field_name, "fake_model_2_generic_ids")
-        self.assertEqual(str(field.own_collection), "fake_model_2")
-
-    def test_get_field_normal_field(self) -> None:
-        field = FakeModel().get_field("text")
-        self.assertEqual(field.description, "The text of this fake model.")
+        rels = [
+            FakeModel().get_field("fake_model_2_ids"),
+            FakeModel().get_field("fake_model_2_generic_ids"),
+        ]
+        field = cast(fields.BaseRelationField, rels[0])
+        self.assertEqual(str(field.own_collection), "fake_model")
+        field = cast(fields.BaseRelationField, rels[1])
+        self.assertEqual(str(field.own_collection), "fake_model")
 
     def test_get_field_unknown_field(self) -> None:
         with self.assertRaises(ValueError):
@@ -98,8 +92,7 @@ class ModelBaseTester(TestCase):
 
     def test_structured_relation_init(self) -> None:
         with self.assertRaises(ValueError):
-            fields.ForeignKeyField(
-                description="The foreign key of fake_model_tahheque7O.",
+            fields.RelationField(
                 to=Collection("fake_model_tahheque7O"),
                 related_name="invalid_related_name",
                 structured_relation=["invalid_structured_relation"],
@@ -107,8 +100,7 @@ class ModelBaseTester(TestCase):
 
     def test_structured_relation_init_2(self) -> None:
         with self.assertRaises(ValueError):
-            fields.ForeignKeyField(
-                description="The foreign key of fake_model_tahheque7O.",
+            fields.RelationField(
                 to=Collection("fake_model_tahheque7O"),
                 related_name="invalid_related_name_with_$",
             )

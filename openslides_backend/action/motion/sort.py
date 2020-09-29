@@ -1,4 +1,4 @@
-from ...models.motion import Motion
+from ...models.models import Motion
 from ..action import register_action
 from ..base import Action, ActionPayload, DataSet, DummyAction
 from ..default_schema import DefaultSchema

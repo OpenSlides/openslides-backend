@@ -1,6 +1,6 @@
 import simplejson as json
 
-from openslides_backend.models.agenda_item import AgendaItem
+from openslides_backend.models.models import AgendaItem
 from tests.system.action.base import BaseActionTestCase
 from tests.util import get_fqfield
 

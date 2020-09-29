@@ -1,4 +1,4 @@
-from ...models.motion_block import MotionBlock
+from ...models.models import MotionBlock
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..agenda_item.agenda_creation import (

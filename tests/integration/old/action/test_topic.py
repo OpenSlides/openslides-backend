@@ -902,7 +902,6 @@ class BaseTopicDeleteActionTester(BaseActionTestCase):
             {"id": 1312354708},
             {"id": 6259289755},
         ]
-        self.pseudo_valid_payload_3 = [{"id": 5756367535}]
 
 
 class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
@@ -935,9 +934,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
 
     def test_validation_correct_2(self) -> None:
         self.action.validate(self.valid_payload_2)
-
-    def test_validation_correct_3(self) -> None:
-        self.action.validate(self.pseudo_valid_payload_3)
 
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
@@ -1006,10 +1002,6 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
                 },
             ],
         )
-
-    def test_prepare_dataset_3(self) -> None:
-        with self.assertRaises(ActionException):
-            self.action.prepare_dataset(self.pseudo_valid_payload_3)
 
 
 class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):

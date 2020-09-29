@@ -1,4 +1,4 @@
-from ...models.agenda_item import AgendaItem
+from ...models.models import AgendaItem
 from ..action import register_action
 from ..base import Action, ActionPayload, DataSet
 from ..default_schema import DefaultSchema

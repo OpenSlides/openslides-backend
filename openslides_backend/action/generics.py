@@ -30,8 +30,7 @@ class CreateAction(Action):
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
-            # Collect relation fields and also check structured_relation. Collect
-            # also reverse relation fields.
+            # Collect relation fields and also check structured_relation.
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
                 if field_name in instance.keys():
@@ -42,10 +41,7 @@ class CreateAction(Action):
                                 "with structured_relation and its corresponding "
                                 "foreign key field."
                             )
-                    relation_fields.append((field_name, field, False))
-            for field_name, field in self.model.get_reverse_relations():
-                if field_name in instance.keys():
-                    relation_fields.append((field_name, field, True))
+                    relation_fields.append((field_name, field))
 
             # Get new id.
             new_id = self.database.reserve_id(collection=self.model.collection)
@@ -127,8 +123,7 @@ class UpdateAction(Action):
                     f"Instance {instance} of payload must contain integer id."
                 )
 
-            # Collect relation fields and also check structured_relation. Collect
-            # also reverse relation fields.
+            # Collect relation fields and also check structured_relation.
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
                 if field_name in instance.keys():
@@ -139,10 +134,7 @@ class UpdateAction(Action):
                                 "with structured_relation and its corresponding "
                                 "foreign key field."
                             )
-                    relation_fields.append((field_name, field, False))
-            for field_name, field in self.model.get_reverse_relations():
-                if field_name in instance.keys():
-                    relation_fields.append((field_name, field, True))
+                    relation_fields.append((field_name, field))
 
             # Get relations.
             relations = self.get_relations(
@@ -204,7 +196,7 @@ class DeleteAction(Action):
         If protected reverse relations are not empty, raises ActionException inside the
         get_relations method. Else uses the input and calculates (reverse) relations.
         """
-        # TODO: The relation field flag on_delete = "cascade" is not supported at the moment. Change this
+        # TODO: The relation field behavior on_delete = "cascade" is not supported at the moment. Change this
 
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
@@ -216,11 +208,13 @@ class DeleteAction(Action):
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
-            # Collect relation fields and reverse relation fields and also
-            # update instance and set all relation fields and reverse relation
-            # fields to None.
+            # Collect relation fields and also update instance and set
+            # all relation fields to None.
             relation_fields = []
             for field_name, field in self.model.get_relation_fields():
+                if field.structured_relation or field.structured_tag:
+                    # TODO: We do not fully support these fields. So silently skip them.
+                    continue
                 # Check delete_protection.
                 if field.delete_protection:
                     db_instance = self.database.get(
@@ -234,11 +228,7 @@ class DeleteAction(Action):
                             f"because you have to delete the related {field.to} first."
                         )
                 instance[field_name] = None
-                relation_fields.append((field_name, field, False))
-
-            for field_name, field in self.model.get_reverse_relations():
-                instance[field_name] = None
-                relation_fields.append((field_name, field, True))
+                relation_fields.append((field_name, field))
 
             # Get relations.
             relations = self.get_relations(
@@ -276,7 +266,7 @@ class DeleteAction(Action):
         Just prepares a write request element with delete event for the given
         instance.
         """
-        # TODO: Find solution to delete relations with on_delete == "cascade"
+        # TODO: Find solution to delete relations with on_delete "cascade"
         fqid = FullQualifiedId(self.model.collection, element["instance"]["id"])
         information = {fqid: ["Object deleted"]}
         event = Event(type="delete", fqid=fqid)

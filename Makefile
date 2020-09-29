@@ -20,6 +20,9 @@ test:
 test-unit-integration:
 	pytest tests/unit tests/integration
 
+generate-models:
+	PYTHONPATH=. python dev/generate_models.py
+
 run-debug:
 	OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
 
