@@ -73,9 +73,9 @@ class DefaultSchema:
             "uniqueItems": True,
         }
 
-    def get_sort_schema(self) -> Dict:
+    def get_tree_sort_schema(self) -> Dict:
         """
-        Returns a default sort schema.
+        Returns a default tree sort schema.
         """
         return {
             "$schema": schema_version,
@@ -84,7 +84,7 @@ class DefaultSchema:
             "type": "object",
             "properties": {
                 "meeting_id": self.model.get_schema("meeting_id"),
-                "nodes": {
+                "tree": {
                     "description": (
                         f"An array of {self.model} ids to be sorted. The array should contain all "
                         "root objects of a meeting. Each node is a dictionary with an id "
@@ -97,6 +97,28 @@ class DefaultSchema:
                     "uniqueItems": True,
                 },
             },
-            "required": ["meeting_id", "nodes"],
+            "required": ["meeting_id", "tree"],
+            "additionalProperties": False,
+        }
+
+    def get_linear_sort_schema(self, id_field_to_sort: str) -> Dict:
+        """
+        Returns a default linear sort schema.
+        """
+        return {
+            "$schema": schema_version,
+            "title": f"Sort {self.model} schema",
+            "description": f"Meeting id and list of {self.model} ids",
+            "type": "object",
+            "properties": {
+                **self.model.get_properties("meeting_id"),
+                id_field_to_sort: {
+                    "type": "array",
+                    "items": {"type": "integer", "min": 1},
+                    "minItems": 1,
+                    "uniqueItems": True,
+                },
+            },
+            "required": ["meeting_id", id_field_to_sort],
             "additionalProperties": False,
         }

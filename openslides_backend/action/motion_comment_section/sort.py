@@ -5,32 +5,9 @@ from ...shared.exceptions import ActionException
 from ...shared.filters import FilterOperator
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import FullQualifiedId
-from ...shared.schema import schema_version
 from ..action import register_action
 from ..base import Action, ActionPayload, DataSet
-
-motion_comment_section_sort_schema = {
-    "$schema": schema_version,
-    "title": "Sort motion_comment_section schema",
-    "id": "motion_comment_section_sort",
-    "description": "id and list of motion_comment_section ids",
-    "type": "object",
-    "properties": {
-        "meeting_id": {
-            "description": "The meeting_id.",
-            "type": "integer",
-            "minimum": 1,
-        },
-        "motion_comment_section_ids": {
-            "type": "array",
-            "items": {"type": "integer"},
-            "minItems": 1,
-            "uniqueItems": True,
-        },
-    },
-    "required": ["meeting_id"],
-    "additionalProperties": False,
-}
+from ..default_schema import DefaultSchema
 
 
 @register_action("motion_comment_section.sort")
@@ -40,10 +17,11 @@ class MotionCommentSectionSort(Action):
     """
 
     model = MotionCommentSection()
-    schema = motion_comment_section_sort_schema
+    schema = DefaultSchema(MotionCommentSection()).get_linear_sort_schema(
+        "motion_comment_section_ids"
+    )
 
     def sort_linear(self, nodes: List, meeting_id: int) -> DataSet:
-
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.database.filter(
             collection=self.model.collection,
