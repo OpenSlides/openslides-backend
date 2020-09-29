@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 from unittest.mock import MagicMock
 
 from dependency_injector import containers, providers
@@ -9,27 +9,11 @@ from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedField
 from openslides_backend.wsgi import OpenSlidesBackendWSGI
 
-from ..util import Client
+from ...util import Client
 from .fake_services.authentication import AuthenticationTestAdapter
 from .fake_services.database import DatabaseTestAdapter
 from .fake_services.http_engine import HTTPTestEngine
 from .fake_services.permission import PermissionTestAdapter
-
-
-def create_action_test_client() -> Client:
-    return Client(create_action_test_application())
-
-
-def create_action_test_application() -> WSGIApplication:
-    return create_test_application(ActionView)
-
-
-def create_test_application(view: Type[View]) -> WSGIApplication:
-    application_factory = OpenSlidesBackendWSGI(
-        logging=MagicMock(), view=view, services=MagicMock()
-    )
-    application = application_factory.setup()
-    return application
 
 
 class FakeServices(containers.DeclarativeContainer):

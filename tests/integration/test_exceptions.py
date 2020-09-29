@@ -1,11 +1,21 @@
 import json
+from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
 
 from openslides_backend.shared.exceptions import ViewException
+from openslides_backend.shared.interfaces import View, WSGIApplication
+from openslides_backend.wsgi import OpenSlidesBackendWSGI
 
 from ..util import Client
-from .util import create_test_application
+
+
+def create_test_application(view: Type[View]) -> WSGIApplication:
+    application_factory = OpenSlidesBackendWSGI(
+        logging=MagicMock(), view=view, services=MagicMock()
+    )
+    application = application_factory.setup()
+    return application
 
 
 class TestHttpExceptions(TestCase):
