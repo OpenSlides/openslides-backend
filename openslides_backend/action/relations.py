@@ -365,10 +365,17 @@ class RelationsHandler:
                     if rel.get(related_name) is None:
                         new_value = self.id
                     else:
-                        raise ActionException(
-                            f"You can not add {rel_id} to field {self.field_name} "
-                            "because related field is not empty."
+                        if isinstance(rel_id, int):
+                            msg = KEYSEPARATOR.join(
+                                (str(self.field.to), str(rel_id), related_name)
+                            )
+                        else:
+                            msg = KEYSEPARATOR.join((str(rel_id), related_name))
+                        message = (
+                            f"You can not set {msg} in to a new value because this "
+                            "field is not empty."
                         )
+                        raise ActionException(message)
                 else:
                     assert self.type in ("1:m", "m:n")
                     value_to_be_added = self.id
@@ -421,10 +428,17 @@ class RelationsHandler:
                             collection=self.field.own_collection, id=self.id
                         )
                     else:
-                        raise ActionException(
-                            f"You can not add {rel_id} to field {self.field_name} "
-                            "because related field is not empty."
+                        if isinstance(rel_id, int):
+                            msg = KEYSEPARATOR.join(
+                                (str(self.field.to), str(rel_id), related_name)
+                            )
+                        else:
+                            msg = KEYSEPARATOR.join((str(rel_id), related_name))
+                        message = (
+                            f"You can not set {msg} in to a new value because this "
+                            "field is not empty."
                         )
+                        raise ActionException(message)
                 else:
                     assert self.type in ("1:m", "m:n")
                     value_to_be_added = FullQualifiedId(
