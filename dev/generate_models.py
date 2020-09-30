@@ -9,7 +9,7 @@ import yaml
 
 from openslides_backend.shared.patterns import KEYSEPARATOR
 
-SOURCE = "https://raw.githubusercontent.com/normanjaeckel/OpenSlides/FixBranch/docs/models.yml"
+SOURCE = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
