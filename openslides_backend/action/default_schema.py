@@ -81,24 +81,27 @@ class DefaultSchema:
             "$schema": schema_version,
             "title": f"Sort {self.model} schema",
             "description": f"Nested array of {self.model} objects to be sorted in the given meeting.",
-            "type": "object",
-            "properties": {
-                "meeting_id": self.model.get_schema("meeting_id"),
-                "tree": {
-                    "description": (
-                        f"An array of {self.model} ids to be sorted. The array should contain all "
-                        "root objects of a meeting. Each node is a dictionary with an id "
-                        "and optional children. In the end all objects of a meeting must "
-                        "appear."
-                    ),
-                    "type": "array",
-                    "items": sort_node_schema,
-                    "minItems": 1,
-                    "uniqueItems": True,
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "meeting_id": self.model.get_schema("meeting_id"),
+                    "tree": {
+                        "description": (
+                            f"An array of {self.model} ids to be sorted. The array should contain all "
+                            "root objects of a meeting. Each node is a dictionary with an id "
+                            "and optional children. In the end all objects of a meeting must "
+                            "appear."
+                        ),
+                        "type": "array",
+                        "items": sort_node_schema,
+                        "minItems": 1,
+                        "uniqueItems": True,
+                    },
                 },
+                "required": ["meeting_id", "tree"],
+                "additionalProperties": False,
             },
-            "required": ["meeting_id", "tree"],
-            "additionalProperties": False,
         }
 
     def get_linear_sort_schema(self, id_field_to_sort: str) -> Dict:
@@ -108,17 +111,20 @@ class DefaultSchema:
         return {
             "$schema": schema_version,
             "title": f"Sort {self.model} schema",
-            "description": f"Meeting id and list of {self.model} ids",
-            "type": "object",
-            "properties": {
-                **self.model.get_properties("meeting_id"),
-                id_field_to_sort: {
-                    "type": "array",
-                    "items": {"type": "integer", "min": 1},
-                    "minItems": 1,
-                    "uniqueItems": True,
+            "type": "array",
+            "items": {
+                "description": f"Meeting id and list of {self.model} ids",
+                "type": "object",
+                "properties": {
+                    **self.model.get_properties("meeting_id"),
+                    id_field_to_sort: {
+                        "type": "array",
+                        "items": {"type": "integer", "min": 1},
+                        "minItems": 1,
+                        "uniqueItems": True,
+                    },
                 },
+                "required": ["meeting_id", id_field_to_sort],
+                "additionalProperties": False,
             },
-            "required": ["meeting_id", id_field_to_sort],
-            "additionalProperties": False,
         }

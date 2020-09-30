@@ -15,10 +15,9 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_comment_section.sort",
-                    "data": {
-                        "meeting_id": 222,
-                        "motion_comment_section_ids": [32, 31],
-                    },
+                    "data": [
+                        {"meeting_id": 222, "motion_comment_section_ids": [32, 31]}
+                    ],
                 }
             ],
         )
@@ -38,10 +37,9 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_comment_section.sort",
-                    "data": {
-                        "meeting_id": 222,
-                        "motion_comment_section_ids": [32, 31],
-                    },
+                    "data": [
+                        {"meeting_id": 222, "motion_comment_section_ids": [32, 31]}
+                    ],
                 }
             ],
         )
@@ -64,10 +62,9 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_comment_section.sort",
-                    "data": {
-                        "meeting_id": 222,
-                        "motion_comment_section_ids": [32, 31],
-                    },
+                    "data": [
+                        {"meeting_id": 222, "motion_comment_section_ids": [32, 31]}
+                    ],
                 }
             ],
         )

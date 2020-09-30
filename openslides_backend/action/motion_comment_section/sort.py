@@ -17,9 +17,9 @@ class MotionCommentSectionSort(LinearSortMixin, Action):
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        if not isinstance(payload, dict):
-            raise TypeError("ActionPayload for this action must be a dictionary.")
+        if not isinstance(payload, list):
+            raise TypeError("ActionPayload for this action must be a list.")
         return self.sort_linear(
-            nodes=payload["motion_comment_section_ids"],
-            meeting_id=payload["meeting_id"],
+            nodes=payload[0]["motion_comment_section_ids"],
+            meeting_id=payload[0]["meeting_id"],
         )
