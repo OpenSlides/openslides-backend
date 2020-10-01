@@ -55,7 +55,6 @@ To start it run
 To generate a new models.py file (updated in [OpenSlides Main Repository](https://github.com/OpenSlides/OpenSlides)) run
 
     $ make generate-models
-    $ make black
 
 
 ## Listening ports

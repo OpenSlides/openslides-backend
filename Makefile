@@ -3,16 +3,16 @@
 all: black isort flake8 mypy
 
 black:
-	black openslides_backend/ tests/
+	black openslides_backend/ tests/ cli/
 
 isort:
-	isort openslides_backend/ tests/
+	isort openslides_backend/ tests/ cli/
 
 flake8:
-	flake8 openslides_backend/ tests/
+	flake8 openslides_backend/ tests/ cli/
 
 mypy:
-	mypy openslides_backend/ tests/
+	mypy openslides_backend/ tests/ cli/
 
 test:
 	pytest
