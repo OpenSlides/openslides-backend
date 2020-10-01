@@ -8,7 +8,7 @@ from ..shared.filters import FilterOperator
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
 from ..shared.schema import schema_version
-from .base import BaseAction, DataSet
+from .base import Action, BaseAction, DataSet
 
 sort_node_schema = {
     "$schema": schema_version,
@@ -130,6 +130,49 @@ class TreeSortMixin(BaseAction):
             )
 
         return {"data": nodes_to_update}
+
+    def create_write_request_elements(
+        self, dataset: DataSet
+    ) -> Iterable[WriteRequestElement]:
+        for id, instance in dataset["data"].items():
+            fqid = FullQualifiedId(self.model.collection, id)
+            information = {fqid: ["Object sorted"]}
+            event = Event(type="update", fqid=fqid, fields=instance)
+            # TODO: Lock some fields to protect against intermediate creation of new instances but care where exactly to lock them.
+            yield WriteRequestElement(
+                events=[event], information=information, user_id=self.user_id
+            )
+
+
+class LinearSortMixin(Action):
+    """
+    Provides a mixin for linear sorting.
+    """
+
+    def sort_linear(self, nodes: List, meeting_id: int) -> DataSet:
+        filter = FilterOperator("meeting_id", "=", meeting_id)
+        db_instances = self.database.filter(
+            collection=self.model.collection,
+            filter=filter,
+            mapped_fields=["id"],
+            lock_result=True,
+        )
+        valid_instance_ids = []
+        for id_ in nodes:
+            if id_ not in db_instances:
+                raise ActionException(
+                    f"Id {id_} not in db_instances of meeting {meeting_id}."
+                )
+            valid_instance_ids.append(id_)
+        if len(valid_instance_ids) != len(db_instances):
+            raise ActionException("Additional db_instances not found.")
+
+        data = dict()
+        weight = 1
+        for id_ in valid_instance_ids:
+            data[id_] = {"weight": weight}
+            weight += 1
+        return {"data": data}
 
     def create_write_request_elements(
         self, dataset: DataSet
