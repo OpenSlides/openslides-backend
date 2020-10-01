@@ -2,8 +2,8 @@ from typing import Any, Dict, Type
 
 from ...models.base import Model
 from ...models.models import AgendaItem
-from ...shared.patterns import KEYSEPARATOR
-from ..base import Action
+from ...shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ..base import Action, BaseAction
 from ..create_action_with_dependencies import CreateActionWithDependencies
 from .create import AgendaItemCreate
 
@@ -44,7 +44,7 @@ agenda_creation_properties = {
 }
 
 
-class CreateActionWithAgendaItemMixin:
+class CreateActionWithAgendaItemMixin(BaseAction):
     """
     Mixin that can be used to create an agenda item as a dependency.
     Just call the functions in the corresponding base functions.
@@ -55,9 +55,25 @@ class CreateActionWithAgendaItemMixin:
     def check_dependant_action_execution_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
-        # TODO: Check 'agenda_create' property in payload and meeting settings 'agenda_item_creation'.
-        # This is relevant for motion, assignment and motion_block but not for topic.
-        return True
+        meeting = self.database.get(
+            FullQualifiedId(Collection("meeting"), element["instance"]["meeting_id"]),
+            ["agenda_item_creation"],
+            lock_result=True,
+        )
+        agenda_item_creation = meeting.get("agenda_item_creation")
+        agenda_create = element["instance"].get("agenda_create")
+        if agenda_item_creation == "always":
+            return True
+        elif agenda_item_creation == "never":
+            return False
+        elif agenda_item_creation == "default_yes":
+            result_default = True
+        else:
+            result_default = False
+
+        if agenda_create is None:
+            return result_default
+        return agenda_create
 
     def get_dependent_action_payload_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
