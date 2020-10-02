@@ -694,6 +694,14 @@ class Topic(Model):
     tag_ids = fields.RelationListField(
         to=Collection("tag"), related_name="tagged_ids", generic_relation=True
     )
+    projection_ids = fields.RelationListField(
+        to=Collection("projection"), related_name="element_id", generic_relation=True
+    )
+    current_projector_ids = fields.RelationListField(
+        to=Collection("projector"),
+        related_name="current_element_ids",
+        generic_relation=True,
+    )
     meeting_id = fields.RelationField(
         to=Collection("meeting"), related_name="topic_ids", required=True
     )
@@ -1380,6 +1388,7 @@ class Projector(Model):
             Collection("motion_block"),
             Collection("assignment"),
             Collection("agenda_item"),
+            Collection("topic"),
             Collection("user"),
             Collection("assignment_poll"),
             Collection("motion_poll"),
@@ -1428,6 +1437,7 @@ class Projection(Model):
             Collection("motion_block"),
             Collection("assignment"),
             Collection("agenda_item"),
+            Collection("topic"),
             Collection("user"),
             Collection("assignment_poll"),
             Collection("motion_poll"),
