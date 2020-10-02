@@ -1,6 +1,9 @@
 from typing import Any, Dict
 
 from ...models.models import MotionState
+from ...services.datastore.interface import GetManyRequest
+from ...shared.exceptions import ActionException
+from ...shared.patterns import Collection
 from ..action import register_action_set
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
@@ -20,6 +23,34 @@ class MotionStateCreateAction(CreateAction):
         instance["merge_amendment_into_final"] = instance.get(
             "merge_amendment_into_final", 0
         )
+        return instance
+
+
+class MotionStateUpdateAction(UpdateAction):
+    """
+    Update action: check next_state_ids and previous_state_ids
+    """
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Check workflow_id of this state, next states and previous states.
+        """
+        state_ids = [instance["id"]]
+        state_ids.extend(instance.get("next_state_ids", []))
+        state_ids.extend(instance.get("previous_state_ids", []))
+
+        gmr = GetManyRequest(Collection("motion_state"), state_ids, ["workflow_id"])
+        db_states = self.database.get_many([gmr])
+        states = db_states.get(Collection("motion_state"), {}).values()
+        workflow_id = None
+        for state in states:
+            if workflow_id is None:
+                workflow_id = state["workflow_id"]
+            if workflow_id != state["workflow_id"]:
+                raise ActionException(
+                    f"Cannot update: found states from different workflows ({workflow_id}, {state['workflow_id']})"
+                )
+
         return instance
 
 
@@ -67,6 +98,6 @@ class MotionStateActionSet(ActionSet):
     delete_schema = DefaultSchema(MotionState()).get_delete_schema()
     routes = {
         "create": MotionStateCreateAction,
-        "update": UpdateAction,
+        "update": MotionStateUpdateAction,
         "delete": DeleteAction,
     }
