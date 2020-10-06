@@ -102,6 +102,8 @@ class DefaultSchema:
                 "required": ["meeting_id", "tree"],
                 "additionalProperties": False,
             },
+            "minItems": 1,
+            "maxItems": 1,
         }
 
     def get_linear_sort_schema(self, id_field_to_sort: str) -> Dict:
@@ -127,4 +129,6 @@ class DefaultSchema:
                 "required": ["meeting_id", id_field_to_sort],
                 "additionalProperties": False,
             },
+            "minItems": 1,
+            "maxItems": 1,
         }

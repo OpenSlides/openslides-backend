@@ -15,8 +15,6 @@ class AgendaItemSort(TreeSortMixin, Action):
     schema = DefaultSchema(AgendaItem()).get_tree_sort_schema()
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        if not isinstance(payload, list):
-            raise TypeError("ActionPayload for this action must be a list.")
         return self.sort_tree(
             nodes=payload[0]["tree"],
             meeting_id=payload[0]["meeting_id"],
