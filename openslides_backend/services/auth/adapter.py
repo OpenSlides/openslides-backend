@@ -4,8 +4,8 @@ import requests
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
-from ..shared.exceptions import AuthenticationException
-from ..shared.interfaces import Headers, LoggingModule
+from ...shared.exceptions import AuthenticationException
+from ...shared.interfaces import Headers, LoggingModule
 
 # TODO: Something should tell this service what the correct user id of the guest is.
 GUEST_USER_ID = 0

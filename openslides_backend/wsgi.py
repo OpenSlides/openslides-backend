@@ -5,7 +5,7 @@ from dependency_injector import containers, providers
 from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication
 from .http.views import ActionView, PresenterView
-from .services.authentication import AuthenticationHTTPAdapter
+from .services.auth.adapter import AuthenticationHTTPAdapter
 from .services.datastore.adapter import Adapter
 from .services.datastore.http_engine import HTTPEngine
 from .services.permission import PermissionHTTPAdapter
