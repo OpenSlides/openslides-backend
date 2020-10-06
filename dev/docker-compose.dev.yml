@@ -11,9 +11,9 @@ services:
             - "9003:9003"
         command: sleep infinity
         volumes:
-            - ../openslides_backend:/srv/code/openslides_backend
-            - ../tests:/srv/code/tests
-            - ../cli:/srv/code/cli
+            - ../openslides_backend:/app/openslides_backend
+            - ../tests:/app/tests
+            - ../cli:/app/cli
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer

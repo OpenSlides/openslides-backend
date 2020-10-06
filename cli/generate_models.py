@@ -28,7 +28,7 @@ COMMON_FIELD_CLASSES = {
     "boolean": "BooleanField",
     "JSON": "JSONField",
     "HTMLStrict": "HTMLStrictField",
-    "HtmlPermissive": "HTMLPermissiveField",
+    "HTMLPermissive": "HTMLPermissiveField",
     "float": "FloatField",
     "decimal(6)": "DecimalField",
     "timestamp": "TimestampField",

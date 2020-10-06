@@ -2,7 +2,7 @@ FROM python:3.8.5-slim-buster
 
 RUN apt-get update && apt-get install --yes make git curl ncat
 
-WORKDIR /srv/code
+WORKDIR /app
 RUN mkdir dev
 
 COPY requirements.txt .
