@@ -1,9 +1,11 @@
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, List
 
+from ..models.fields import BaseGenericRelationField, OnDelete
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
-from .base import Action, ActionPayload, DataSet
+from .actions_map import actions_map
+from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
 
 class CreateAction(Action):
@@ -193,6 +195,12 @@ class DeleteAction(Action):
     Generic delete action.
     """
 
+    additional_write_requests: List[WriteRequestElement]
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.additional_write_requests = []
+
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         return self.delete_action_prepare_dataset(payload)
 
@@ -203,7 +211,6 @@ class DeleteAction(Action):
         If protected reverse relations are not empty, raises ActionException inside the
         get_relations method. Else uses the input and calculates (reverse) relations.
         """
-        # TODO: The relation field behavior on_delete = "cascade" is not supported at the moment. Change this
 
         if not isinstance(payload, list):
             raise TypeError("ActionPayload for this action must be a list.")
@@ -222,20 +229,50 @@ class DeleteAction(Action):
                 if field.structured_relation or field.structured_tag:
                     # TODO: We do not fully support these fields. So silently skip them.
                     continue
-                # Check delete_protection.
-                if field.delete_protection:
+                # Check on_delete.
+                if field.on_delete != OnDelete.SET_NULL:
                     db_instance = self.database.get(
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
                         mapped_fields=[field_name],
                         lock_result=True,
                     )
-                    if db_instance.get(field_name):
-                        raise ActionException(
-                            f"You can not delete {self.model} with id {instance['id']}, "
-                            f"because you have to delete the related {field.to} first."
-                        )
-                instance[field_name] = None
-                relation_fields.append((field_name, field))
+                    if field.on_delete == OnDelete.PROTECT:
+                        if db_instance.get(field_name):
+                            raise ActionException(
+                                f"You can not delete {self.model} with id {instance['id']}, "
+                                f"because you have to delete the related {str(field.to)} first."
+                            )
+                    elif field.on_delete == OnDelete.CASCADE:
+                        # extract all foreign keys as fqids from the model
+                        foreign_fqids = db_instance.get(field_name, [])
+                        if not isinstance(foreign_fqids, list):
+                            foreign_fqids = [foreign_fqids]
+                        if not isinstance(field, BaseGenericRelationField):
+                            assert not isinstance(field.to, list)
+                            foreign_fqids = [
+                                FullQualifiedId(field.to, id) for id in foreign_fqids
+                            ]
+                        # execute the delete action for all fqids
+                        for fqid in foreign_fqids:
+                            delete_action_class = actions_map.get(
+                                f"{str(fqid.collection)}.delete"
+                            )
+                            if not delete_action_class:
+                                raise ActionException(
+                                    f"Can't cascade the delete action to {str(fqid.collection)} "
+                                    "since no delete action was found."
+                                )
+                            delete_action = delete_action_class(
+                                self.permission, self.database
+                            )
+                            # assume that the delete action uses the standard payload
+                            payload = [{"id": fqid.id}]
+                            self.additional_write_requests.extend(
+                                delete_action.perform(payload, self.user_id)
+                            )
+                else:
+                    instance[field_name] = None
+                    relation_fields.append((field_name, field))
 
             # Get relations.
             relations = self.get_relations(
@@ -257,7 +294,17 @@ class DeleteAction(Action):
     def delete_action_create_write_request_elements(
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:
-        yield from super().create_write_request_elements(dataset)
+        write_request_element = merge_write_request_elements(
+            self.additional_write_requests
+            + [element for element in super().create_write_request_elements(dataset)]
+        )
+        # sort elements so that update elements come before delete elements
+        write_request_element["events"] = sorted(
+            write_request_element["events"],
+            key=lambda event: event["type"],
+            reverse=True,
+        )
+        return [write_request_element]
 
     def create_instance_write_request_element(
         self, element: Any
@@ -273,7 +320,6 @@ class DeleteAction(Action):
         Just prepares a write request element with delete event for the given
         instance.
         """
-        # TODO: Find solution to delete relations with on_delete "cascade"
         fqid = FullQualifiedId(self.model.collection, element["instance"]["id"])
         information = {fqid: ["Object deleted"]}
         event = Event(type="delete", fqid=fqid)

@@ -54,6 +54,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     model: Model
     schema: Dict
     schema_validator: Callable[[ActionPayload], None]
+    internal: bool = False
 
     def __init__(
         self,

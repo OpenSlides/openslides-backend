@@ -1,5 +1,5 @@
-from ..action import register_action
 from ..base import DummyAction
+from ..register import register_action
 
 
 @register_action("user.create")

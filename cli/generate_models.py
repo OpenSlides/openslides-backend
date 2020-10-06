@@ -7,6 +7,7 @@ import requests
 import simplejson as json
 import yaml
 
+from openslides_backend.models.fields import OnDelete
 from openslides_backend.shared.patterns import KEYSEPARATOR
 
 SOURCE = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
@@ -26,11 +27,11 @@ COMMON_FIELD_CLASSES = {
     "number": "IntegerField",
     "boolean": "BooleanField",
     "JSON": "JSONField",
-    "HTML": "HTMLField",
-    "HTMLVideo": "HTMLVideoField",
+    "HTMLStrict": "HTMLStrictField",
+    "HtmlPermissive": "HTMLPermissiveField",
     "float": "FloatField",
     "decimal(6)": "DecimalField",
-    "datetime": "DatetimeField",
+    "timestamp": "TimestampField",
     "string[]": "CharArrayField",
     "number[]": "NumberArrayField",
 }
@@ -193,6 +194,7 @@ class Attribute(Node):
     required: bool = False
     read_only: bool = False
     default: Any = None
+    on_delete: Optional[OnDelete] = None
     contraints: Dict[str, Any]
 
     is_template: bool = False
@@ -223,6 +225,7 @@ class Attribute(Node):
             else:
                 if self.type in RELATION_FIELD_CLASSES.keys():
                     self.to = To(value.get("to", {}))
+                    self.on_delete = value.get("on_delete")
                 else:
                     assert self.type in COMMON_FIELD_CLASSES.keys()
                 self.required = value.get("required", False)
@@ -235,6 +238,7 @@ class Attribute(Node):
                         "required",
                         "read_only",
                         "default",
+                        "on_delete",
                         "items",
                     ):
                         self.contraints[k] = v
@@ -259,6 +263,9 @@ class Attribute(Node):
         properties = ""
         if self.to:
             properties += self.to.get_properties()
+        if self.on_delete:
+            assert self.on_delete in [mode.value for mode in OnDelete]
+            properties += f"on_delete=fields.OnDelete.{self.on_delete}, "
         if self.required:
             properties += "required=True, "
         if self.read_only:

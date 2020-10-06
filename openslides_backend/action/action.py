@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Iterable, List, Tuple, Type, Union
+from typing import Dict, Iterable, List, Tuple, Union
 
 import fastjsonschema
 
@@ -7,82 +7,8 @@ from ..shared.handlers import Base as HandlerBase
 from ..shared.interfaces import WriteRequestElement
 from ..shared.schema import schema_version
 from .action_interface import ActionResult, Payload
-from .action_set import ActionSet
-from .base import Action, merge_write_request_elements
-
-
-def prepare_actions_map() -> None:
-    """
-    This function just imports all action modules so that the actions are
-    recognized by the system and the register decorator can do its work.
-
-    New modules have to be added here.
-    """
-    from . import (  # noqa
-        agenda_item,
-        assignment,
-        committee,
-        list_of_speakers,
-        mediafile,
-        meeting,
-        motion,
-        motion_block,
-        motion_category,
-        motion_change_recommendation,
-        motion_comment,
-        motion_comment_section,
-        motion_state,
-        motion_statute_paragraph,
-        motion_submitter,
-        motion_workflow,
-        tag,
-        topic,
-        user,
-    )
-
-
-actions_map: Dict[str, Type[Action]] = {}
-
-
-def register_action(name: str) -> Callable[[Type[Action]], Type[Action]]:
-    """
-    Decorator to be used for action classes. Registers the class so that it can
-    be found by the handler.
-    """
-
-    def wrapper(clazz: Type[Action]) -> Type[Action]:
-        return _register_action(name, clazz)
-
-    return wrapper
-
-
-def register_action_set(
-    name_prefix: str,
-) -> Callable[[Type[ActionSet]], Type[ActionSet]]:
-    """
-    Decorator to be used for action set classes. Registers the class so that its
-    actions can be found by the handler.
-    """
-
-    def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
-        for route, action in clazz.get_actions().items():
-            name = ".".join((name_prefix, route))
-            _register_action(name, action)
-        return clazz
-
-    return wrapper
-
-
-def _register_action(name: str, ActionClass: Type[Action]) -> Type[Action]:
-    if actions_map.get(name):
-        raise RuntimeError(f"Action {name} is registered twice.")
-    actions_map[name] = ActionClass
-    ActionClass.name = name
-    return ActionClass
-
-
-prepare_actions_map()
-
+from .actions_map import actions_map
+from .base import merge_write_request_elements
 
 payload_schema = fastjsonschema.compile(
     {
@@ -192,7 +118,7 @@ class ActionHandler(HandlerBase):
             )
             action_name = element["action"]
             action = actions_map.get(action_name)
-            if action is None:
+            if action is None or action.internal:
                 raise ActionException(f"Action {action_name} does not exist.")
             self.logger.debug(f"Perform action {action_name}.")
             write_request_elements = action(self.permission, self.database).perform(

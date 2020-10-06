@@ -1,7 +1,7 @@
 from ...models.models import MotionCommentSection
-from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import DeleteAction
+from ..register import register_action
 
 
 @register_action("motion_comment_section.delete")

@@ -1,7 +1,7 @@
 from ...models.models import MotionCommentSection
-from ..action import register_action
 from ..base import Action, ActionPayload, DataSet
 from ..default_schema import DefaultSchema
+from ..register import register_action
 from ..sort_generic import LinearSortMixin
 
 

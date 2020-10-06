@@ -1,13 +1,13 @@
 from typing import Any, Dict, Type
 
 from ...models.models import Topic
-from ..action import register_action
 from ..agenda_item.agenda_creation import (
     CreateActionWithAgendaItem,
     agenda_creation_properties,
 )
 from ..base import Action
 from ..default_schema import DefaultSchema
+from ..register import register_action
 
 create_schema = DefaultSchema(Topic()).get_create_schema(
     properties=["meeting_id", "title", "text", "attachment_ids"],

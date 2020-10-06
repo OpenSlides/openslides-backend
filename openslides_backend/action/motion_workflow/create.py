@@ -1,11 +1,11 @@
 from typing import Any, Dict, Type
 
 from ...models.models import MotionWorkflow
-from ..action import register_action
 from ..base import Action
 from ..create_action_with_dependencies import CreateActionWithDependencies
 from ..default_schema import DefaultSchema
 from ..motion_state.create_update_delete import MotionStateActionSet
+from ..register import register_action
 
 MOTION_STATE_DEFAULT_NAME = "default"
 

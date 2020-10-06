@@ -1,7 +1,7 @@
 from ...models.models import AgendaItem
-from ..action import register_action
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
+from ..register import register_action
 
 
 @register_action("agenda_item.update")
