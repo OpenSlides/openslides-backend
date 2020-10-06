@@ -2,7 +2,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionBlockActionTest(BaseActionTestCase):
-    def test_createx(self) -> None:
+    def test_create(self) -> None:
         self.create_model(
             "meeting/42", {"name": "test", "agenda_item_creation": "always"}
         )

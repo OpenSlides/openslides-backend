@@ -1,4 +1,4 @@
-from typing import Any, Iterable
+from typing import Any, Dict, Iterable
 
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
@@ -26,6 +26,7 @@ class CreateAction(Action):
 
         data = []
         for instance in payload:
+            instance = self.set_defaults(instance)
             instance = self.validate_fields(instance)
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
@@ -60,6 +61,12 @@ class CreateAction(Action):
             )
 
         return {"data": data}
+
+    def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        for field_name, field in self.model.get_fields():
+            if field_name not in instance.keys() and field.default is not None:
+                instance[field_name] = field.default
+        return instance
 
     def create_write_request_elements(
         self, dataset: DataSet

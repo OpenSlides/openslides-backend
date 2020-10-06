@@ -10,22 +10,6 @@ from ..default_schema import DefaultSchema
 from ..generics import CreateAction, DeleteAction, UpdateAction
 
 
-class MotionStateCreateAction(CreateAction):
-    """
-    Create action to set defaults.
-    """
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Set default for restrictions.
-        """
-        instance["restrictions"] = instance.get("restrictions", [])
-        instance["merge_amendment_into_final"] = instance.get(
-            "merge_amendment_into_final", 0
-        )
-        return instance
-
-
 class MotionStateUpdateAction(UpdateAction):
     """
     Update action: check next_state_ids and previous_state_ids
@@ -96,8 +80,9 @@ class MotionStateActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(MotionState()).get_delete_schema()
+
     routes = {
-        "create": MotionStateCreateAction,
+        "create": CreateAction,
         "update": MotionStateUpdateAction,
         "delete": DeleteAction,
     }

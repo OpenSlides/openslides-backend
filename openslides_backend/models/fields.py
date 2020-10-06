@@ -16,10 +16,12 @@ class Field:
         self,
         required: bool = False,
         read_only: bool = False,
+        default: Any = None,
         constraints: Dict[str, Any] = None,
     ) -> None:
         self.required = required
         self.read_only = read_only  # TODO: Use this flag in generic and custom actions.
+        self.default = default
         self.constraints = constraints or {}
 
     def get_schema(self) -> Schema:
@@ -183,6 +185,8 @@ class ArrayField(Field):
     """
 
     def __init__(self, in_array_constraints: Dict = None, **kwargs: Any) -> None:
+        if "default" not in kwargs:
+            kwargs["default"] = []
         super().__init__(**kwargs)
         self.in_array_constraints = in_array_constraints
 

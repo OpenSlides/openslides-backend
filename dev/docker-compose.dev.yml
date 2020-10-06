@@ -13,6 +13,7 @@ services:
         volumes:
             - ../openslides_backend:/srv/code/openslides_backend
             - ../tests:/srv/code/tests
+            - ../cli:/srv/code/cli
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer

@@ -192,6 +192,7 @@ class Attribute(Node):
     fields: Optional["Attribute"] = None
     required: bool = False
     read_only: bool = False
+    default: Any = None
     contraints: Dict[str, Any]
 
     is_template: bool = False
@@ -226,8 +227,16 @@ class Attribute(Node):
                     assert self.type in COMMON_FIELD_CLASSES.keys()
                 self.required = value.get("required", False)
                 self.read_only = value.get("read_only", False)
+                self.default = value.get("default")
                 for k, v in value.items():
-                    if k not in ("type", "to", "required", "read_only", "items"):
+                    if k not in (
+                        "type",
+                        "to",
+                        "required",
+                        "read_only",
+                        "default",
+                        "items",
+                    ):
                         self.contraints[k] = v
                     elif self.type in ("string[]", "number[]") and k == "items":
                         self.in_array_constraints.update(v)
@@ -254,6 +263,8 @@ class Attribute(Node):
             properties += "required=True, "
         if self.read_only:
             properties += "read_only=True, "
+        if self.default is not None:
+            properties += f"default={json.dumps(self.default)}, "
         if self.contraints:
             properties += f"constraints={json.dumps(self.contraints)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):
