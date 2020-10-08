@@ -44,4 +44,12 @@ class AgendaItemCreate(CreateAction):
         if not content_object.get("meeting_id"):
             raise ActionException("Given content object has no meeting id.")
         instance["meeting_id"] = content_object["meeting_id"]
+        # assert parent_id is valid
+        if "parent_id" in instance:
+            parent_item = self.fetch_model(
+                FullQualifiedId(self.model.collection, instance["parent_id"]),
+                ["meeting_id"],
+            )
+            if not parent_item.get("meeting_id") == instance["meeting_id"]:
+                raise ActionException("Given parent_id is invalid.")
         return instance
