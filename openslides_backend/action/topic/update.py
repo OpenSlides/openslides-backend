@@ -12,5 +12,5 @@ class TopicUpdate(UpdateAction):
 
     model = Topic()
     schema = DefaultSchema(Topic()).get_update_schema(
-        properties=["title", "text", "attachment_ids", "tag_ids"]
+        optional_properties=["title", "text", "attachment_ids", "tag_ids"]
     )

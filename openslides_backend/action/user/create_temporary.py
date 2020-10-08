@@ -12,9 +12,8 @@ class UserCreateTemporary(CreateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_create_schema(
-        properties=[
-            "meeting_id",
-            "username",
+        required_properties=["meeting_id", "username"],
+        optional_properties=[
             "title",
             "first_name",
             "last_name",
@@ -29,5 +28,4 @@ class UserCreateTemporary(CreateAction):
             # "vote_weight",
             "is_present_in_meeting_ids",
         ],
-        required_properties=["meeting_id", "username"],
     )

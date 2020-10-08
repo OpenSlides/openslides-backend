@@ -93,6 +93,30 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert model.get("meeting_id") == 110
         self.assert_model_not_exists("agenda_item/1")
 
+    def test_create_agenda_item_no_default(self) -> None:
+        self.create_model("meeting/110", {"agenda_item_creation": "default_no"})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "assignment.create",
+                    "data": [
+                        {
+                            "title": "test_Xcdfgee",
+                            "meeting_id": 110,
+                            "agenda_create": True,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("assignment/1")
+        assert model.get("title") == "test_Xcdfgee"
+        assert model.get("meeting_id") == 110
+        agenda_item = self.get_model("agenda_item/1")
+        assert agenda_item.get("content_object_id") == "assignment/1"
+
     def test_create_full_fields(self) -> None:
         self.create_model(
             "meeting/110",

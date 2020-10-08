@@ -14,8 +14,8 @@ class MotionCommentSectionCreateAction(CreateAction):
 
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_create_schema(
-        properties=["name", "meeting_id", "read_group_ids", "write_group_ids"],
         required_properties=["name", "meeting_id"],
+        optional_properties=["read_group_ids", "write_group_ids"],
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

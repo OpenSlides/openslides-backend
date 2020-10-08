@@ -10,4 +10,15 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"ok": True, "filename": "the filename"})
 
-    # TODO: more tests needed
+    def test_is_directory(self) -> None:
+        self.create_model(
+            "mediafile/1", {"filename": "the filename", "is_directory": True}
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": False})
+
+    def test_non_existent(self) -> None:
+        payload = {"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}
+        response = self.client.post("/", json=[payload])
+        self.assert_status_code(response, 400)

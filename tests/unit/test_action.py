@@ -81,4 +81,10 @@ class ActionBaseTester(TestCase):
             ("You can not merge two write request elements of different users.",),
         )
 
-    # TODO: Test merge with empty array of WriteRequestElements
+    def test_merge_write_request_elements_empty(self) -> None:
+        with self.assertRaises(ValueError) as context_manager:
+            merge_write_request_elements([])
+        self.assertEqual(
+            context_manager.exception.args,
+            ("At least one of the given user ids must not be None.",),
+        )

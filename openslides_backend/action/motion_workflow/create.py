@@ -17,9 +17,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
     """
 
     model = MotionWorkflow()
-    schema = DefaultSchema(MotionWorkflow()).get_create_schema(
-        properties=["name", "meeting_id"], required_properties=["name", "meeting_id"],
-    )
+    schema = DefaultSchema(MotionWorkflow()).get_create_schema(["name", "meeting_id"])
     dependencies = [MotionStateActionSet.get_action("create")]
 
     def get_dependent_action_payload(

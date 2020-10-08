@@ -11,8 +11,6 @@ class TagActionSet(ActionSet):
     """
 
     model = Tag()
-    create_schema = DefaultSchema(Tag()).get_create_schema(
-        properties=["name", "meeting_id"], required_properties=["name", "meeting_id"],
-    )
-    update_schema = DefaultSchema(Tag()).get_update_schema(properties=["name"])
+    create_schema = DefaultSchema(Tag()).get_create_schema(["name", "meeting_id"])
+    update_schema = DefaultSchema(Tag()).get_update_schema(optional_properties=["name"])
     delete_schema = DefaultSchema(Tag()).get_delete_schema()

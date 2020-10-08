@@ -12,5 +12,5 @@ class MotionCommentSectionUpdateAction(UpdateAction):
 
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_update_schema(
-        properties=["name", "read_group_ids", "write_group_ids"]
+        optional_properties=["name", "read_group_ids", "write_group_ids"]
     )

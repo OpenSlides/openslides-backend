@@ -16,8 +16,8 @@ from ..list_of_speakers.list_of_speakers_creation import (
 from ..register import register_action
 
 create_schema = DefaultSchema(Topic()).get_create_schema(
-    properties=["meeting_id", "title", "text", "attachment_ids"],
     required_properties=["meeting_id", "title"],
+    optional_properties=["text", "attachment_ids"],
 )
 
 create_schema["items"]["properties"].update(agenda_creation_properties)

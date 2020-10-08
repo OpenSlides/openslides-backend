@@ -16,8 +16,7 @@ class MotionSubmitterCreateAction(CreateAction):
 
     model = MotionSubmitter()
     schema = DefaultSchema(MotionSubmitter()).get_create_schema(
-        properties=["motion_id", "user_id"],
-        required_properties=["motion_id", "user_id"],
+        ["motion_id", "user_id"],
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

@@ -15,9 +15,7 @@ class MotionSetStateAction(UpdateAction):
     """
 
     model = Motion()
-    schema = DefaultSchema(Motion()).get_update_schema(
-        properties=["state_id"], required_properties=["state_id"]
-    )
+    schema = DefaultSchema(Motion()).get_update_schema(["state_id"])
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

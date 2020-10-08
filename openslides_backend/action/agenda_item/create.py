@@ -16,16 +16,15 @@ class AgendaItemCreate(CreateAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_create_schema(
-        properties=[
+        required_properties=["content_object_id"],
+        optional_properties=[
             "item_number",
             "comment",
-            "content_object_id",
             "type",
             "parent_id",
             "duration",
             "weight",
         ],
-        required_properties=["content_object_id"],
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

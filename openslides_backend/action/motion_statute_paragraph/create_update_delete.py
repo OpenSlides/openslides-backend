@@ -28,10 +28,10 @@ class MotionStatuteParagraphActionSet(ActionSet):
 
     model = MotionStatuteParagraph()
     create_schema = DefaultSchema(MotionStatuteParagraph()).get_create_schema(
-        properties=["title", "text"], required_properties=["title"],
+        required_properties=["title"], optional_properties=["text"],
     )
     update_schema = DefaultSchema(MotionStatuteParagraph()).get_update_schema(
-        properties=["title"]
+        optional_properties=["title"]
     )
     delete_schema = DefaultSchema(MotionStatuteParagraph()).get_delete_schema()
     routes = {

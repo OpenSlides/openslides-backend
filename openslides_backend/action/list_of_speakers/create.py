@@ -11,9 +11,7 @@ from ..generics import CreateAction
 class ListOfSpeakersCreate(CreateAction):
     name = "list_of_speakers.create"
     model = ListOfSpeakers()
-    schema = DefaultSchema(ListOfSpeakers()).get_create_schema(
-        properties=["content_object_id"], required_properties=["content_object_id"],
-    )
+    schema = DefaultSchema(ListOfSpeakers()).get_create_schema(["content_object_id"])
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

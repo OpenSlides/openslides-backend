@@ -12,10 +12,9 @@ class MotionCommentActionSet(ActionSet):
 
     model = MotionComment()
     create_schema = DefaultSchema(MotionComment()).get_create_schema(
-        properties=["comment", "motion_id", "section_id"],
-        required_properties=["comment", "motion_id", "section_id"],
+        ["comment", "motion_id", "section_id"],
     )
     update_schema = DefaultSchema(MotionComment()).get_update_schema(
-        properties=["comment"]
+        optional_properties=["comment"]
     )
     delete_schema = DefaultSchema(MotionComment()).get_delete_schema()

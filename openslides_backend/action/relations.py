@@ -160,7 +160,7 @@ class RelationsHandler:
             ids = list(add | remove)
             response = self.database.get_many(
                 get_many_requests=[
-                    GetManyRequest(self.field.to, ids, mapped_fields=[related_name],)
+                    GetManyRequest(self.field.to, ids, mapped_fields=[related_name])
                 ],
                 lock_result=True,
             )

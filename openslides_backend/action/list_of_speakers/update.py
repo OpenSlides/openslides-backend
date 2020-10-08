@@ -11,4 +11,6 @@ class ListOfSpeakersUpdateAction(UpdateAction):
     """
 
     model = ListOfSpeakers()
-    schema = DefaultSchema(ListOfSpeakers()).get_update_schema(properties=["closed"])
+    schema = DefaultSchema(ListOfSpeakers()).get_update_schema(
+        optional_properties=["closed"]
+    )

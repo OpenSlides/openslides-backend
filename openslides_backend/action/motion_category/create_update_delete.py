@@ -12,10 +12,10 @@ class MotionCategoryActionSet(ActionSet):
 
     model = MotionCategory()
     create_schema = DefaultSchema(MotionCategory()).get_create_schema(
-        properties=["name", "prefix", "meeting_id", "parent_id"],
         required_properties=["name", "prefix", "meeting_id"],
+        optional_properties=["parent_id"],
     )
     update_schema = DefaultSchema(MotionCategory()).get_update_schema(
-        properties=["name", "prefix", "motion_ids"]
+        optional_properties=["name", "prefix", "motion_ids"]
     )
     delete_schema = DefaultSchema(MotionCategory()).get_delete_schema()

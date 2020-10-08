@@ -46,9 +46,8 @@ class MotionStateActionSet(ActionSet):
 
     model = MotionState()
     create_schema = DefaultSchema(MotionState()).get_create_schema(
-        properties=[
-            "name",
-            "workflow_id",
+        required_properties=["name", "workflow_id"],
+        optional_properties=[
             "recommendation_label",
             "css_class",
             "restrictions",
@@ -60,10 +59,9 @@ class MotionStateActionSet(ActionSet):
             "merge_amendment_into_final",
             "show_recommendation_extension_field",
         ],
-        required_properties=["name", "workflow_id"],
     )
     update_schema = DefaultSchema(MotionState()).get_update_schema(
-        properties=[
+        optional_properties=[
             "name",
             "recommendation_label",
             "css_class",
