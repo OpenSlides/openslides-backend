@@ -23,9 +23,6 @@ class CreateAction(Action):
         Just fetches new id, uses given instance and calculates (reverse)
         relations.
         """
-        if not isinstance(payload, list):
-            raise TypeError("ActionPayload for this action must be a list.")
-
         data = []
         for instance in payload:
             instance = self.set_defaults(instance)
@@ -116,9 +113,6 @@ class UpdateAction(Action):
 
         Uses the input and calculates (reverse) relations.
         """
-        if not isinstance(payload, list):
-            raise TypeError("ActionPayload for this action must be a list.")
-
         data = []
         for instance in payload:
             # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
@@ -211,9 +205,6 @@ class DeleteAction(Action):
         If protected reverse relations are not empty, raises ActionException inside the
         get_relations method. Else uses the input and calculates (reverse) relations.
         """
-
-        if not isinstance(payload, list):
-            raise TypeError("ActionPayload for this action must be a list.")
 
         data = []
         for instance in payload:

@@ -20,8 +20,6 @@ class MotionUpdate(UpdateAction):
     )  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        if not isinstance(payload, list):
-            raise TypeError("ActionPayload for this action must be a list.")
         for instance in payload:
             instance["last_modified"] = round(time.time())
         return super().prepare_dataset(payload)
@@ -68,8 +66,6 @@ class MotionUpdateMetadata(UpdateAction):
     # TODO: Enable set_state without any given state to reset to first state
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        if not isinstance(payload, list):
-            raise TypeError("ActionPayload for this action must be a list.")
         for instance in payload:
             instance["last_modified"] = round(time.time())
         return super().prepare_dataset(payload)

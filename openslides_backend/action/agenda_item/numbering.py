@@ -15,16 +15,21 @@ agenda_item_numbering_schema = {
     "$schema": schema_version,
     "title": "Agenda item numbering schema",
     "description": "Just the id of the meeting where we should number the agenda in total.",
-    "type": "object",
-    "properties": {
-        "meeting_id": {
-            "description": "The id of the meeting.",
-            "type": "integer",
-            "minimum": 1,
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "meeting_id": {
+                "description": "The id of the meeting.",
+                "type": "integer",
+                "minimum": 1,
+            },
         },
+        "required": ["meeting_id"],
+        "additionalProperties": False,
     },
-    "required": ["meeting_id"],
-    "additionalProperties": False,
+    "minItems": 1,
+    "maxItems": 1,
 }
 
 
@@ -187,11 +192,9 @@ class AgendaItemNumbering(Action):
     schema = agenda_item_numbering_schema
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        if not isinstance(payload, dict):
-            raise TypeError("ActionPayload for this action must be a dictionary.")
 
         # Fetch all agenda items for this meeting from database.
-        meeting_id = payload["meeting_id"]
+        meeting_id = payload[0]["meeting_id"]
         agenda_items = self.database.filter(
             collection=self.model.collection,
             filter=FilterOperator("meeting_id", "=", meeting_id),
