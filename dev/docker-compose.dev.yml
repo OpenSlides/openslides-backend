@@ -25,7 +25,7 @@ services:
     reader:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git"
-            dockerfile: Dockerfile.prod
+            dockerfile: Dockerfile
             args:
                 MODULE: "reader"
                 PORT: "9010"
@@ -40,7 +40,7 @@ services:
     writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git"
-            dockerfile: Dockerfile.prod
+            dockerfile: Dockerfile
             args:
                 MODULE: "writer"
                 PORT: "9011"
