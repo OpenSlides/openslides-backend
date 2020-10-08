@@ -4,6 +4,7 @@ from . import (  # noqa
     reset_recommendation,
     reset_state,
     set_recommendation,
+    set_state,
     sort,
     update,
 )
