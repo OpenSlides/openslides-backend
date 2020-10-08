@@ -1,4 +1,4 @@
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 
 from ..models.base import Model
 from ..shared.schema import schema_version
@@ -34,11 +34,18 @@ class DefaultSchema:
             "uniqueItems": True,
         }
 
-    def get_update_schema(self, properties: Iterable[str]) -> Dict:
+    def get_update_schema(
+        self,
+        properties: Iterable[str],
+        required_properties: Optional[Iterable[str]] = None,
+    ) -> Dict:
         """
         Returns a default update schema with properties as given. The required
         property 'id' is added.
         """
+        if required_properties is None:
+            required_properties = []
+
         return {
             "$schema": schema_version,
             "title": f"Update {self.model} schema",
@@ -47,7 +54,7 @@ class DefaultSchema:
             "items": {
                 "type": "object",
                 "properties": self.model.get_properties("id", *properties),
-                "required": ["id"],
+                "required": ["id"] + list(required_properties),
                 "additionalProperties": False,
             },
             "minItems": 1,

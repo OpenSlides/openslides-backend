@@ -1,1 +1,8 @@
-from . import create, delete, reset_recommendation, sort, update  # noqa
+from . import (  # noqa
+    create,
+    delete,
+    reset_recommendation,
+    set_recommendation,
+    sort,
+    update,
+)
