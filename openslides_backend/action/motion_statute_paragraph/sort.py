@@ -17,8 +17,8 @@ class MotionStatueParagraphSort(LinearSortMixin, Action):
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        if not isinstance(payload, dict):
-            raise TypeError("ActionPayload for this action must be a dictionary.")
+        # payload is an array with exactly one item
         return self.sort_linear(
-            nodes=payload["statute_paragraph_ids"], meeting_id=payload["meeting_id"],
+            nodes=payload[0]["statute_paragraph_ids"],
+            meeting_id=payload[0]["meeting_id"],
         )

@@ -17,6 +17,7 @@ class MotionCommentSectionSort(LinearSortMixin, Action):
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
+        # payload is an array with exactly one item
         return self.sort_linear(
             nodes=payload[0]["motion_comment_section_ids"],
             meeting_id=payload[0]["meeting_id"],

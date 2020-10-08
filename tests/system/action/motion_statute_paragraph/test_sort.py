@@ -16,7 +16,7 @@ class MotionStatuteParagraphSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_statute_paragraph.sort",
-                    "data": {"meeting_id": 222, "statute_paragraph_ids": [32, 31]},
+                    "data": [{"meeting_id": 222, "statute_paragraph_ids": [32, 31]}],
                 }
             ],
         )
@@ -36,7 +36,7 @@ class MotionStatuteParagraphSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_statute_paragraph.sort",
-                    "data": {"meeting_id": 222, "statute_paragraph_ids": [32, 31]},
+                    "data": [{"meeting_id": 222, "statute_paragraph_ids": [32, 31]}],
                 }
             ],
         )
@@ -61,7 +61,7 @@ class MotionStatuteParagraphSortActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_statute_paragraph.sort",
-                    "data": {"meeting_id": 222, "statute_paragraph_ids": [32, 31]},
+                    "data": [{"meeting_id": 222, "statute_paragraph_ids": [32, 31]}],
                 }
             ],
         )
