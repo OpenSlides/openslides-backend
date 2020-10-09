@@ -7,4 +7,5 @@ from . import (  # noqa
     set_state,
     sort,
     update,
+    update_metadata,
 )
