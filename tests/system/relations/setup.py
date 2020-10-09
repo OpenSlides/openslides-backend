@@ -1,3 +1,8 @@
+from openslides_backend.action import (  # noqa  Important to prevent circular imports
+    actions_map,
+)
+from openslides_backend.action.generics import CreateAction, UpdateAction
+from openslides_backend.action.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.interfaces import WSGIApplication
@@ -110,6 +115,18 @@ class FakeModelC(Model):
         related_name="fake_model_c_$_ids",
         structured_relation=["foreign_key_field", "meeting_id"],
     )
+
+
+@register_action("fake_model_a.create")
+class FakeModelACreateAction(CreateAction):
+    model = FakeModelA()
+    schema = {}  # type: ignore
+
+
+@register_action("fake_model_a.update")
+class FakeModelAUpdateAction(UpdateAction):
+    model = FakeModelA()
+    schema = {}  # type: ignore
 
 
 class BaseRelationsTestCase(BaseSystemTestCase):
