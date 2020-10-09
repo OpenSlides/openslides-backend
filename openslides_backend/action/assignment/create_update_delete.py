@@ -1,11 +1,17 @@
 from ...models.models import Assignment
 from ..action_set import ActionSet
 from ..agenda_item.agenda_creation import (
-    CreateActionWithAgendaItem,
+    CreateActionWithAgendaItemMixin,
     agenda_creation_properties,
 )
+from ..agenda_item.create import AgendaItemCreate
+from ..create_action_with_dependencies import CreateActionWithDependencies
 from ..default_schema import DefaultSchema
 from ..generics import DeleteAction, UpdateAction
+from ..list_of_speakers.create import ListOfSpeakersCreate
+from ..list_of_speakers.list_of_speakers_creation import (
+    CreateActionWithListOfSpeakersMixin,
+)
 from ..register import register_action_set
 
 create_schema = DefaultSchema(Assignment()).get_create_schema(
@@ -24,6 +30,16 @@ create_schema = DefaultSchema(Assignment()).get_create_schema(
 )
 
 create_schema["items"]["properties"].update(agenda_creation_properties)
+
+
+class AssignmentCreate(
+    CreateActionWithDependencies,
+    CreateActionWithAgendaItemMixin,
+    CreateActionWithListOfSpeakersMixin,
+):
+    model = Assignment()
+    schema = create_schema
+    dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
 
 @register_action_set("assignment")
@@ -48,7 +64,7 @@ class AssignmentActionSet(ActionSet):
     )
     delete_schema = DefaultSchema(Assignment()).get_delete_schema()
     routes = {
-        "create": CreateActionWithAgendaItem,
+        "create": AssignmentCreate,
         "update": UpdateAction,
         "delete": DeleteAction,
     }

@@ -31,12 +31,26 @@ class CreateActionWithDependencies(CreateAction):
                 ],
             }
             for ActionClass in self.dependencies:
-                if not self.check_dependant_action_execution(element, ActionClass):
+                special_check_method_name = "check_dependant_action_execution_" + str(
+                    ActionClass.model.collection
+                )
+                check_method = getattr(
+                    self,
+                    special_check_method_name,
+                    self.check_dependant_action_execution,
+                )
+                if not check_method(element, ActionClass):
                     continue
+                special_payload_method_name = "get_dependent_action_payload_" + str(
+                    ActionClass.model.collection
+                )
+                payload_method = getattr(
+                    self, special_payload_method_name, self.get_dependent_action_payload
+                )
+                payload = [payload_method(element, ActionClass)]
                 action = ActionClass(
                     self.permission, self.database, additional_relation_models,
                 )
-                payload = [self.get_dependent_action_payload(element, ActionClass)]
                 yield from action.perform(payload, self.user_id)
 
     def check_dependant_action_execution(

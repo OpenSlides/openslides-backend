@@ -22,6 +22,7 @@ class TopicSystemTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
+        self.assert_model_exists("list_of_speakers/1", {"content_object_id": "topic/1"})
 
     def test_create_more_fields(self) -> None:
         self.create_model("meeting/1", {"name": "test"})
