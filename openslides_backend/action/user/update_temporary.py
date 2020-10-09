@@ -25,7 +25,7 @@ class UserUpdateTemporary(UpdateAction):
             "number",
             "structure_level",
             "email",
-            # "vote_weight",
+            "vote_weight",
             "is_present_in_meeting_ids",
         ]
     )
