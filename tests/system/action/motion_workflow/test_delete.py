@@ -33,11 +33,9 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         response = self.client.post(
             "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 2}]}],
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "You can not delete motion workflow with id 2, because you have to delete the related motion_state first.",
-            str(response.data),
-        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("motion_workflow/2")
+        self.assert_model_deleted("motion_state/3")
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_workflow/112", {"name": "name_srtgb123"})
