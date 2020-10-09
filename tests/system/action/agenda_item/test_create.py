@@ -29,7 +29,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
     def test_create_more_fields(self) -> None:
         self.create_model("meeting/1", {"name": "test"})
         self.create_model("topic/1", {"name": "test", "meeting_id": 1})
-        self.create_model("agenda_item/42", {"comment": "test"})
+        self.create_model("agenda_item/42", {"comment": "test", "meeting_id": 1})
         response = self.client.post(
             "/",
             json=[
@@ -68,6 +68,21 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("agenda_item/1")
+
+    def test_create_differing_meeting_ids(self) -> None:
+        self.create_model("topic/1", {"meeting_id": 1})
+        self.create_model("agenda_item/1", {"meeting_id": 2})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [{"content_object_id": "topic/1", "parent_id": 2}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("agenda_item/2")
 
     def test_create_meeting_does_not_exist(self) -> None:
         self.create_model("topic/1", {"name": "test", "meeting_id": 2})

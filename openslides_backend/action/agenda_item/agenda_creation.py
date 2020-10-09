@@ -1,9 +1,8 @@
 from typing import Any, Dict, Type
 
-from ...models.base import Model
 from ...models.models import AgendaItem
 from ...shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
-from ..base import Action, BaseAction
+from ..base import Action
 
 AGENDA_PREFIX = "agenda_"
 
@@ -42,13 +41,11 @@ agenda_creation_properties = {
 }
 
 
-class CreateActionWithAgendaItemMixin(BaseAction):
+class CreateActionWithAgendaItemMixin(Action):
     """
     Mixin that can be used to create an agenda item as a dependency.
     Just call the functions in the corresponding base functions.
     """
-
-    model: Model
 
     def check_dependant_action_execution_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
