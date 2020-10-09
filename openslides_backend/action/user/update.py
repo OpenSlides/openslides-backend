@@ -12,7 +12,7 @@ class UserUpdate(UpdateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
-        properties=[
+        optional_properties=[
             "username",
             "title",
             "first_name",

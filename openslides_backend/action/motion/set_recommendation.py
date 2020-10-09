@@ -15,9 +15,7 @@ class MotionSetRecommendationAction(UpdateAction):
     """
 
     model = Motion()
-    schema = DefaultSchema(Motion()).get_update_schema(
-        properties=["recommendation_id"], required_properties=["recommendation_id"]
-    )
+    schema = DefaultSchema(Motion()).get_update_schema(["recommendation_id"])
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

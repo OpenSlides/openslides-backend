@@ -30,6 +30,9 @@ run-debug:
 pip-check:
 	pip-check
 
+coverage:
+	pytest --cov openslides_backend --cov-report html:openslides_backend/htmlcov
+
 
 # Build and run production docker container (not usable inside the docker container)
 

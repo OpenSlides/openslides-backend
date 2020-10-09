@@ -112,7 +112,7 @@ class PresenterView(BaseView):
         )
         try:
             presenter_response = handler.handle_request(payload, user_id)
-        except PresenterException as exception:
+        except (PresenterException, DatabaseException) as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug("Presenter request finished successfully. Send response now.")
         return presenter_response, access_token

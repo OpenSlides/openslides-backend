@@ -31,20 +31,17 @@ class MotionChangeRecommendationActionSet(ActionSet):
 
     model = MotionChangeRecommendation()
     create_schema = DefaultSchema(MotionChangeRecommendation()).get_create_schema(
-        properties=[
-            "line_from",
-            "line_to",
+        required_properties=["line_from", "line_to", "text", "motion_id"],
+        optional_properties=["rejected", "internal", "type", "other_description"],
+    )
+    update_schema = DefaultSchema(MotionChangeRecommendation()).get_update_schema(
+        optional_properties=[
             "text",
-            "motion_id",
             "rejected",
             "internal",
             "type",
             "other_description",
-        ],
-        required_properties=["line_from", "line_to", "text", "motion_id"],
-    )
-    update_schema = DefaultSchema(MotionChangeRecommendation()).get_update_schema(
-        properties=["text", "rejected", "internal", "type", "other_description"]
+        ]
     )
     delete_schema = DefaultSchema(MotionChangeRecommendation()).get_delete_schema()
     routes = {

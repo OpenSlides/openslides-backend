@@ -20,5 +20,5 @@ class Action(Protocol):  # pragma: no cover
     the request fails.
     """
 
-    def handle_request(self, payload: Payload, user_id: int,) -> List[ActionResult]:
+    def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
         ...

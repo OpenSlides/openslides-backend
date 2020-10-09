@@ -297,7 +297,7 @@ class Attribute(Node):
         if self.contraints:
             properties += f"constraints={json.dumps(self.contraints)}"
         return self.FIELD_TEMPLATE.substitute(
-            dict(field_name=field_name, field_class=field_class, properties=properties,)
+            dict(field_name=field_name, field_class=field_class, properties=properties)
         )
 
 

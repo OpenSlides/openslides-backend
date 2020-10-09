@@ -12,5 +12,5 @@ class MotionWorkflowUpdateAction(UpdateAction):
 
     model = MotionWorkflow()
     schema = DefaultSchema(MotionWorkflow()).get_update_schema(
-        properties=["name", "first_state_id"]
+        optional_properties=["name", "first_state_id"]
     )

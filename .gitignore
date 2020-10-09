@@ -21,3 +21,6 @@ htmlcov/
 # Specific editor files
 .vscode/*
 .vimrc
+
+# coverage
+openslides_backend/htmlcov

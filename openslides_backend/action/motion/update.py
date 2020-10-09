@@ -16,7 +16,7 @@ class MotionUpdate(UpdateAction):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(
-        properties=["title", "statute_paragraph_id"]
+        optional_properties=["title", "statute_paragraph_id"]
     )  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:

@@ -14,7 +14,7 @@ class MotionResetStateAction(UpdateAction):
     Reset motion state action.
     """
 
-    schema = DefaultSchema(Motion()).get_update_schema(properties=[])
+    schema = DefaultSchema(Motion()).get_update_schema()
     model = Motion()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

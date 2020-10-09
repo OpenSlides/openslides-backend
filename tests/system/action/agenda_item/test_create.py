@@ -97,3 +97,17 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("agenda_item/1")
+
+    def test_create_no_meeting_id(self) -> None:
+        self.create_model("topic/1", {"name": "test"})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [{"content_object_id": "topic/1"}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("agenda_item/1")

@@ -147,3 +147,19 @@ class MotionSortActionTest(BaseActionTestCase):
         assert model_12.get("sort_weight") == 6
         assert model_12.get("sort_parent_id") == 1
         assert model_12.get("sort_children_ids") == []
+
+    def test_extra_id(self) -> None:
+        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model("motion/1", {"meeting_id": 222, "title": "test_root"})
+        self.create_model("motion/11", {"meeting_id": 222, "title": "test_1_1"})
+        self.create_model("motion/12", {"meeting_id": 222, "title": "test_1_2"})
+
+        data = {
+            "meeting_id": 222,
+            "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}, {"id": 111}]}],
+        }
+        response = self.client.post(
+            "/", json=[{"action": "motion.sort", "data": [data]}],
+        )
+        self.assert_status_code(response, 400)
+        assert "Id in sort tree does not exist: 111" in str(response.data)

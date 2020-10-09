@@ -12,7 +12,7 @@ class AgendaItemUpdate(UpdateAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_update_schema(
-        properties=[
+        optional_properties=[
             "item_number",
             "comment",
             "closed",

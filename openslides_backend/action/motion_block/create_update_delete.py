@@ -15,8 +15,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
 from ..register import register_action_set
 
 create_schema = DefaultSchema(MotionBlock()).get_create_schema(
-    properties=["title", "internal", "meeting_id"],
-    required_properties=["title", "meeting_id"],
+    required_properties=["title", "meeting_id"], optional_properties=["internal"],
 )
 
 create_schema["items"]["properties"].update(agenda_creation_properties)
@@ -41,7 +40,7 @@ class MotionBlockActionSet(ActionSet):
     model = MotionBlock()
     create_schema = create_schema
     update_schema = DefaultSchema(MotionBlock()).get_update_schema(
-        properties=["title", "internal", "motion_ids"]
+        optional_properties=["title", "internal", "motion_ids"]
     )
     delete_schema = DefaultSchema(MotionBlock()).get_delete_schema()
     routes = {

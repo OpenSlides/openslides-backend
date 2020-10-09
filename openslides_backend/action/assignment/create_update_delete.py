@@ -15,9 +15,8 @@ from ..list_of_speakers.list_of_speakers_creation import (
 from ..register import register_action_set
 
 create_schema = DefaultSchema(Assignment()).get_create_schema(
-    properties=[
-        "title",
-        "meeting_id",
+    required_properties=["title", "meeting_id"],
+    optional_properties=[
         "description",
         "open_posts",
         "phase",
@@ -26,7 +25,6 @@ create_schema = DefaultSchema(Assignment()).get_create_schema(
         "attachment_ids",
         "tag_ids",
     ],
-    required_properties=["title", "meeting_id"],
 )
 
 create_schema["items"]["properties"].update(agenda_creation_properties)
@@ -51,7 +49,7 @@ class AssignmentActionSet(ActionSet):
     model = Assignment()
     create_schema = create_schema
     update_schema = DefaultSchema(Assignment()).get_update_schema(
-        properties=[
+        optional_properties=[
             "title",
             "description",
             "open_posts",

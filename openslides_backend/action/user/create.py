@@ -12,8 +12,8 @@ class UserCreate(CreateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_create_schema(
-        properties=[
-            "username",
+        required_properties=["username"],
+        optional_properties=[
             "title",
             "first_name",
             "last_name",
@@ -30,5 +30,4 @@ class UserCreate(CreateAction):
             "role_id",
             "is_present_in_meeting_ids",
         ],
-        required_properties=["username"],
     )
