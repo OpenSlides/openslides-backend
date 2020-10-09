@@ -30,6 +30,9 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "meta_position": 2,
             },
         )
+        self.assert_model_exists(
+            "list_of_speakers/1", {"content_object_id": "motion_block/1"}
+        )
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(

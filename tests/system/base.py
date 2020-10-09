@@ -42,9 +42,12 @@ class BaseSystemTestCase(TestCase):
         self.assertTrue(model)
         return model
 
-    def assert_model_exists(self, fqid: str) -> None:
+    def assert_model_exists(self, fqid: str, fields: Dict[str, Any] = None) -> None:
         model = self.get_model(fqid)
         self.assertFalse(model.get("meta_deleted"))
+        if fields is not None:
+            for field_name, value in fields.items():
+                self.assertEqual(model.get(field_name), value)
 
     def assert_model_not_exists(self, fqid: str) -> None:
         with self.assertRaises(DatabaseException):

@@ -2,11 +2,17 @@ from typing import Any, Dict, Type
 
 from ...models.models import Topic
 from ..agenda_item.agenda_creation import (
-    CreateActionWithAgendaItem,
+    CreateActionWithAgendaItemMixin,
     agenda_creation_properties,
 )
+from ..agenda_item.create import AgendaItemCreate
 from ..base import Action
+from ..create_action_with_dependencies import CreateActionWithDependencies
 from ..default_schema import DefaultSchema
+from ..list_of_speakers.create import ListOfSpeakersCreate
+from ..list_of_speakers.list_of_speakers_creation import (
+    CreateActionWithListOfSpeakersMixin,
+)
 from ..register import register_action
 
 create_schema = DefaultSchema(Topic()).get_create_schema(
@@ -18,15 +24,20 @@ create_schema["items"]["properties"].update(agenda_creation_properties)
 
 
 @register_action("topic.create")
-class TopicCreate(CreateActionWithAgendaItem):
+class TopicCreate(
+    CreateActionWithDependencies,
+    CreateActionWithAgendaItemMixin,
+    CreateActionWithListOfSpeakersMixin,
+):
     """
     Action to create simple topics that can be shown in the agenda.
     """
 
     model = Topic()
     schema = create_schema
+    dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
-    def check_dependant_action_execution(
+    def check_dependant_action_execution_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
         """

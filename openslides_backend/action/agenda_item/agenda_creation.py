@@ -4,8 +4,6 @@ from ...models.base import Model
 from ...models.models import AgendaItem
 from ...shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ..base import Action, BaseAction
-from ..create_action_with_dependencies import CreateActionWithDependencies
-from .create import AgendaItemCreate
 
 AGENDA_PREFIX = "agenda_"
 
@@ -91,25 +89,3 @@ class CreateActionWithAgendaItemMixin(BaseAction):
             if value is not None:
                 agenda_item_payload_element[extra_field_without_prefix] = value
         return agenda_item_payload_element
-
-
-class CreateActionWithAgendaItem(
-    CreateActionWithDependencies, CreateActionWithAgendaItemMixin
-):
-    """
-    Base action for dependent agenda item creation.
-    """
-
-    dependencies = [AgendaItemCreate]
-
-    def check_dependant_action_execution(
-        self, element: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> bool:
-        return self.check_dependant_action_execution_agenda_item(
-            element, CreateActionClass
-        )
-
-    def get_dependent_action_payload(
-        self, element: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> Dict[str, Any]:
-        return self.get_dependent_action_payload_agenda_item(element, CreateActionClass)

@@ -22,6 +22,9 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 110)
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
+        self.assert_model_exists(
+            "list_of_speakers/1", {"content_object_id": "assignment/1"}
+        )
 
     def test_create_other_agenda_item_check(self) -> None:
         self.create_model(
