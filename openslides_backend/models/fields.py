@@ -176,8 +176,16 @@ class FloatField(Field):
 
 
 class DecimalField(Field):
+    """
+    Represents a decimal number with fixed precision. Currently always decimal(6), has
+    to be changed if other precisions are needed. Given as string since precision is of
+    utmost importance.
+    """
+
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="number")
+        return self.extend_schema(
+            super().get_schema(), type="string", pattern=r"^\d.\d{6}$"
+        )
 
 
 class TimestampField(IntegerField):
