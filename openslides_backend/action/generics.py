@@ -1,4 +1,6 @@
-from typing import Any, Dict, Iterable, List, Tuple
+import re
+from collections import defaultdict
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from ..models.fields import (
     BaseGenericRelationField,
@@ -30,23 +32,44 @@ class CreateAction(Action):
         """
         data = []
         for instance in payload:
+            # Primary instance manipilation for defaults and extra fields.
             instance = self.set_defaults(instance)
             instance = self.validate_fields(instance)
-            # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
-            # Collect relation fields and also check structured_relation.
+            # Collect relation fields and also check structured relations and template fields.
             relation_fields = []
+            additional_instance_fields: Dict[str, List[str]] = defaultdict(list)
             for field_name, field in self.model.get_relation_fields():
-                if field_name in instance.keys():
-                    if field.structured_relation:
-                        if instance.get(field.structured_relation[0]) is None:
-                            raise ActionException(
-                                "You must give both a relation field "
-                                "with structured_relation and its corresponding "
-                                "foreign key field."
-                            )
-                    relation_fields.append((field_name, field))
+                for instance_field in instance.keys():
+                    if field_name == instance_field:
+                        if field.structured_relation:
+                            if instance.get(field.structured_relation[0]) is None:
+                                raise ActionException(
+                                    "You must give both a relation field "
+                                    "with structured_relation and its corresponding "
+                                    "foreign key field."
+                                )
+                        relation_fields.append((field_name, field))
+                    elif isinstance(field, BaseTemplateRelationField):
+                        regex = (
+                            r"^"
+                            + field_name[: field.index]
+                            + r"(\d+)"
+                            + field_name[field.index :]
+                            + r"$"
+                        )
+                        match = re.match(regex, instance_field)
+                        if not match:
+                            continue
+                        relation_fields.append((instance_field, field))
+                        template_field_name = (
+                            field_name[: field.index] + "$" + field_name[field.index :]
+                        )
+                        additional_instance_fields[template_field_name].append(
+                            match.group(1)
+                        )
+            instance.update(additional_instance_fields)
 
             # Get new id.
             new_id = self.database.reserve_id(collection=self.model.collection)
@@ -122,8 +145,8 @@ class UpdateAction(Action):
         for instance in payload:
             # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
 
+            # Primary instance manipilation for defaults and extra fields.
             instance = self.validate_fields(instance)
-            # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
             if not isinstance(instance.get("id"), int):
@@ -131,18 +154,60 @@ class UpdateAction(Action):
                     f"Instance {instance} of payload must contain integer id."
                 )
 
-            # Collect relation fields and also check structured_relation.
+            # Collect relation fields and also check structured relations and template fields.
             relation_fields = []
+            additional_instance_fields: Dict[str, Set[str]] = defaultdict(set)
             for field_name, field in self.model.get_relation_fields():
-                if field_name in instance.keys():
-                    if field.structured_relation:
-                        if instance.get(field.structured_relation[0]) is not None:
-                            raise ActionException(
-                                "You must not try to update both a relation field "
-                                "with structured_relation and its corresponding "
-                                "foreign key field."
-                            )
-                    relation_fields.append((field_name, field))
+                for instance_field in instance.keys():
+                    if field_name == instance_field:
+                        if field.structured_relation:
+                            if instance.get(field.structured_relation[0]) is not None:
+                                raise ActionException(
+                                    "You must not try to update both a relation field "
+                                    "with structured_relation and its corresponding "
+                                    "foreign key field."
+                                )
+                        relation_fields.append((field_name, field))
+                    elif isinstance(field, BaseTemplateRelationField):
+                        regex = (
+                            r"^"
+                            + field_name[: field.index]
+                            + r"(\d+)"
+                            + field_name[field.index :]
+                            + r"$"
+                        )
+                        match = re.match(regex, instance_field)
+                        if not match:
+                            continue
+                        relation_fields.append((instance_field, field))
+                        template_field_name = (
+                            field_name[: field.index] + "$" + field_name[field.index :]
+                        )
+                        replacement = match.group(1)
+                        template_field_db_value = set(
+                            self.fetch_model(
+                                fqid=FullQualifiedId(
+                                    self.model.collection, instance["id"]
+                                ),
+                                mapped_fields=[template_field_name],
+                            ).get(template_field_name, [])
+                        )
+                        if instance[instance_field]:
+                            if replacement not in template_field_db_value:
+                                additional_instance_fields[template_field_name].update(
+                                    template_field_db_value, set([replacement])
+                                )
+                        else:
+                            if replacement in template_field_db_value:
+                                additional_instance_fields[template_field_name].update(
+                                    template_field_db_value
+                                )
+                                additional_instance_fields[template_field_name].remove(
+                                    replacement
+                                )
+            for k, v in additional_instance_fields.items():
+                # instance.update(...) but with type changeing from set to list
+                instance[k] = list(v)
 
             # Get relations.
             relations = self.get_relations(
