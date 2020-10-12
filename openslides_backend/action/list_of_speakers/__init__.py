@@ -1,6 +1,6 @@
 from ..base import DummyAction
 from ..register import register_action
-from . import update  # noqa
+from . import delete, update  # noqa
 
 
 @register_action("list_of_speakers.manage_speakers")
