@@ -184,7 +184,7 @@ class DecimalField(Field):
 
     def get_schema(self) -> Schema:
         return self.extend_schema(
-            super().get_schema(), type="string", pattern=r"^\d.\d{6}$"
+            super().get_schema(), type="string", pattern=r"^([0-9]|[1-9][0-9]+)\.\d{6}$"
         )
 
 
