@@ -16,7 +16,9 @@ class ActionSet:
     update_schema: Dict
     delete_schema: Dict
 
-    routes = {"create": CreateAction, "update": UpdateAction, "delete": DeleteAction}
+    CreateActionClass: Type[Action] = CreateAction
+    UpdateActionClass: Type[Action] = UpdateAction
+    DeleteActionClass: Type[Action] = DeleteAction
 
     actions: Dict[str, Type[Action]]
 
@@ -24,8 +26,9 @@ class ActionSet:
     def get_actions(cls) -> Dict[str, Type[Action]]:
         if not hasattr(cls, "actions"):
             actions = {}
-            for route, base_class in cls.routes.items():
+            for route in ("create", "update", "delete"):
                 schema = getattr(cls, route + "_schema")
+                base_class = getattr(cls, route.capitalize() + "ActionClass")
                 clazz = type(
                     type(cls.model).__name__ + route.capitalize(),
                     (base_class,),

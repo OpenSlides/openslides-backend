@@ -1,7 +1,7 @@
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionCommentActionTest(BaseActionTestCase):
+class MotionCommentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.create_model("motion_comment/111", {"name": "name_srtgb123"})
         response = self.client.post(

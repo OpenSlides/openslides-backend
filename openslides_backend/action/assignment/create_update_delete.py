@@ -7,7 +7,6 @@ from ..agenda_item.agenda_creation import (
 from ..agenda_item.create import AgendaItemCreate
 from ..create_action_with_dependencies import CreateActionWithDependencies
 from ..default_schema import DefaultSchema
-from ..generics import DeleteAction, UpdateAction
 from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
@@ -61,8 +60,5 @@ class AssignmentActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(Assignment()).get_delete_schema()
-    routes = {
-        "create": AssignmentCreate,
-        "update": UpdateAction,
-        "delete": DeleteAction,
-    }
+
+    CreateActionClass = AssignmentCreate

@@ -7,7 +7,6 @@ from ..agenda_item.agenda_creation import (
 from ..agenda_item.create import AgendaItemCreate
 from ..create_action_with_dependencies import CreateActionWithDependencies
 from ..default_schema import DefaultSchema
-from ..generics import DeleteAction, UpdateAction
 from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
@@ -43,8 +42,5 @@ class MotionBlockActionSet(ActionSet):
         optional_properties=["title", "internal", "motion_ids"]
     )
     delete_schema = DefaultSchema(MotionBlock()).get_delete_schema()
-    routes = {
-        "create": MotionBlockCreate,
-        "update": UpdateAction,
-        "delete": DeleteAction,
-    }
+
+    CreateActionClass = MotionBlockCreate

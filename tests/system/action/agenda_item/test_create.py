@@ -70,6 +70,8 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_differing_meeting_ids(self) -> None:
+        self.create_model("meeting/1", {})
+        self.create_model("meeting/2", {})
         self.create_model("topic/1", {"meeting_id": 1})
         self.create_model("agenda_item/1", {"meeting_id": 2})
         response = self.client.post(
@@ -77,11 +79,14 @@ class AgendaItemSystemTest(BaseActionTestCase):
             json=[
                 {
                     "action": "agenda_item.create",
-                    "data": [{"content_object_id": "topic/1", "parent_id": 2}],
+                    "data": [{"content_object_id": "topic/1", "parent_id": 1}],
                 }
             ],
         )
         self.assert_status_code(response, 400)
+        self.assertIn(
+            "The field meeting_id must be equal", str(response.data),
+        )
         self.assert_model_not_exists("agenda_item/2")
 
     def test_create_meeting_does_not_exist(self) -> None:

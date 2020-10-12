@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Union
 
 import bleach
 
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import Collection, FullQualifiedId, string_to_fqid
 
 Schema = Dict[str, Any]
 
@@ -240,6 +240,7 @@ class BaseRelationField(Field):
         structured_tag: str = None,
         generic_relation: bool = False,
         on_delete: OnDelete = OnDelete.SET_NULL,
+        equal_fields: Union[str, List[str]] = [],
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
@@ -261,6 +262,10 @@ class BaseRelationField(Field):
         self.structured_tag = structured_tag
         self.generic_relation = generic_relation
         self.on_delete = on_delete
+        if isinstance(equal_fields, list):
+            self.equal_fields = equal_fields
+        else:
+            self.equal_fields = [equal_fields]
 
     def __str__(self) -> str:
         return (
@@ -268,7 +273,7 @@ class BaseRelationField(Field):
             f"structured_relation={self.structured_relation}, structured_tag={self.structured_tag}, "
             f"generic_relation={self.generic_relation}, is_list_field={self.is_list_field}, "
             f"on_delete={self.on_delete}, required={self.required}, "
-            f"constraints={self.constraints})"
+            f"constraints={self.constraints}, equal_fields={self.equal_fields})"
         )
 
 
@@ -308,6 +313,10 @@ class GenericRelationField(BaseGenericRelationField):
             schema = self.extend_schema(schema, minLength=1)
         return schema
 
+    def validate(self, value: Any) -> Any:
+        assert not isinstance(value, list)
+        return string_to_fqid(value)
+
 
 class GenericRelationListField(BaseGenericRelationField):
     is_list_field = True
@@ -319,6 +328,10 @@ class GenericRelationListField(BaseGenericRelationField):
             items={"type": "string", "pattern": FullQualifiedId.REGEX},
             uniqueItems=True,
         )
+
+    def validate(self, value: Any) -> Any:
+        assert isinstance(value, list)
+        return [string_to_fqid(fqid) for fqid in value]
 
 
 class OrganisationField(RelationField):

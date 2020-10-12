@@ -84,3 +84,12 @@ class FullQualifiedField:
     @property
     def fqid(self) -> FullQualifiedId:
         return FullQualifiedId(collection=self.collection, id=self.id)
+
+
+def string_to_fqid(fqid: str) -> FullQualifiedId:
+    """
+    Converts an Fqid as a string to a FullQualifiedId object.
+    Assumes the string is a valid fqid.
+    """
+    collection, id = fqid.split(KEYSEPARATOR)
+    return FullQualifiedId(Collection(collection), int(id))

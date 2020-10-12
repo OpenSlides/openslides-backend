@@ -5,12 +5,15 @@ from ...services.datastore.interface import GetManyRequest
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection
 from ..action_set import ActionSet
+from ..create_action_with_inferred_meeting import (
+    get_create_action_with_inferred_meeting,
+)
 from ..default_schema import DefaultSchema
-from ..generics import CreateAction, DeleteAction, UpdateAction
+from ..generics import UpdateAction
 from ..register import register_action_set
 
 
-class MotionStateUpdateAction(UpdateAction):
+class MotionStateUpdate(UpdateAction):
     """
     Update action: check next_state_ids and previous_state_ids
     """
@@ -79,8 +82,5 @@ class MotionStateActionSet(ActionSet):
     )
     delete_schema = DefaultSchema(MotionState()).get_delete_schema()
 
-    routes = {
-        "create": CreateAction,
-        "update": MotionStateUpdateAction,
-        "delete": DeleteAction,
-    }
+    CreateActionClass = get_create_action_with_inferred_meeting("workflow_id")
+    UpdateActionClass = MotionStateUpdate

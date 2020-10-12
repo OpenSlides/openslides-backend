@@ -3,13 +3,14 @@ from typing import Any, Dict
 from ...models.models import MotionSubmitter
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedId
+from ..create_action_with_inferred_meeting import CreateActionWithInferredMeetingMixin
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction
 from ..register import register_action
 
 
 @register_action("motion_submitter.create")
-class MotionSubmitterCreateAction(CreateAction):
+class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAction):
     """
     Action to create a motion submitter.
     """
@@ -19,13 +20,14 @@ class MotionSubmitterCreateAction(CreateAction):
         ["motion_id", "user_id"],
     )
 
+    relation_field_for_meeting = "motion_id"
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Check if motion and user belong to the same meeting if the user is a temporary user.
         """
-        motion_meeting_id = self.database.get(
-            FullQualifiedId(Collection("motion"), instance["motion_id"]), ["meeting_id"]
-        ).get("meeting_id")
+        instance = self.update_instance_with_meeting_id(instance)
+        motion_meeting_id = instance["meeting_id"]  # meeting_id is set from motion
         user_meeting_id = self.database.get(
             FullQualifiedId(Collection("user"), instance["user_id"]), ["meeting_id"]
         ).get("meeting_id")

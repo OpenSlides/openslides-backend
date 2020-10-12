@@ -20,6 +20,7 @@ from ..shared.patterns import (
     Collection,
     FullQualifiedField,
     FullQualifiedId,
+    string_to_fqid,
 )
 from ..shared.typing import ModelMap
 
@@ -174,21 +175,13 @@ class RelationsHandler:
                     related_field_value = rel_item.get(related_name)
                     if related_field_value is not None:
                         if self.type in ("1:1", "m:1"):
-                            collection, element_id = related_field_value.split(
-                                KEYSEPARATOR
-                            )
-                            rel_item[related_name] = FullQualifiedId(
-                                Collection(collection), int(element_id)
-                            )
+                            rel_item[related_name] = string_to_fqid(related_field_value)
                         else:
                             assert self.type in ("1:m", "m:n")
                             new_related_field_value = []
                             for value_item in related_field_value:
-                                collection, element_id = value_item.split(KEYSEPARATOR)
                                 new_related_field_value.append(
-                                    FullQualifiedId(
-                                        Collection(collection), int(element_id)
-                                    )
+                                    string_to_fqid(value_item)
                                 )
                             rel_item[related_name] = new_related_field_value
 
@@ -345,10 +338,7 @@ class RelationsHandler:
             # Transform str to FullQualifiedId
             transformed_current_ids = set()
             for current_id in current_ids:
-                collection, id = current_id.split("/")
-                transformed_current_ids.add(
-                    FullQualifiedId(Collection(collection), int(id))
-                )
+                transformed_current_ids.add(string_to_fqid(current_id))
 
             # Calculate add set and remove set
             new_ids = set(rel_ids)
