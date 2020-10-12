@@ -123,7 +123,9 @@ class DefaultSchema:
             },
         )
 
-    def get_linear_sort_schema(self, id_field_to_sort: str) -> Dict:
+    def get_linear_sort_schema(
+        self, id_field_to_sort: str, id_field_main: str = "meeting_id"
+    ) -> Dict:
         """
         Returns a default linear sort schema.
         """
@@ -133,7 +135,7 @@ class DefaultSchema:
                 "description": f"Meeting id and list of {self.model} ids",
                 "type": "object",
                 "properties": {
-                    **self.model.get_properties("meeting_id"),
+                    **self.model.get_properties(id_field_main),
                     id_field_to_sort: {
                         "type": "array",
                         "items": {"type": "integer", "min": 1},
@@ -141,7 +143,7 @@ class DefaultSchema:
                         "uniqueItems": True,
                     },
                 },
-                "required": ["meeting_id", id_field_to_sort],
+                "required": [id_field_main, id_field_to_sort],
                 "additionalProperties": False,
             },
         )

@@ -13,12 +13,13 @@ class MotionStatueParagraphSort(LinearSortMixin, Action):
 
     model = MotionStatuteParagraph()
     schema = DefaultSchema(MotionStatuteParagraph()).get_linear_sort_schema(
-        "statute_paragraph_ids"
+        "statute_paragraph_ids", "meeting_id",
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         # payload is an array with exactly one item
         return self.sort_linear(
             nodes=payload[0]["statute_paragraph_ids"],
-            meeting_id=payload[0]["meeting_id"],
+            filter_id=payload[0]["meeting_id"],
+            filter_str="meeting_id",
         )
