@@ -1,6 +1,7 @@
 import re
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Tuple
+from copy import deepcopy
+from typing import Any, Dict, Iterable, List, Set, Tuple, Type
 
 from ..models.fields import (
     BaseGenericRelationField,
@@ -11,6 +12,7 @@ from ..models.fields import (
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
 from ..shared.patterns import FullQualifiedId
+from ..shared.typing import DeletedModel, ModelMap
 from .actions_map import actions_map
 from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
@@ -283,9 +285,26 @@ class DeleteAction(Action):
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
+            # fetch db instance with all relevant fields
+            relevant_fields = [
+                field_name
+                for field_name, field in self.model.get_relation_fields()
+                if field.on_delete != OnDelete.SET_NULL
+            ]
+            db_instance = self.database.get(
+                fqid=FullQualifiedId(self.model.collection, instance["id"]),
+                mapped_fields=relevant_fields,
+                lock_result=True,
+            )
+
             # Collect relation fields and also update instance and set
             # all relation fields to None.
             relation_fields: List[Tuple[str, BaseRelationField]] = []
+            # Gather all delete actions with payload and also all models to be deleted
+            delete_actions: List[Tuple[Type[Action], ActionPayload]] = []
+            additional_relation_models: ModelMap = deepcopy(
+                self.additional_relation_models
+            )
             for field_name, field in self.model.get_relation_fields():
                 if field.structured_relation or field.structured_tag:
                     # TODO: We do not fully support these fields. So silently skip them.
@@ -295,29 +314,28 @@ class DeleteAction(Action):
                     if isinstance(field, BaseTemplateRelationField):
                         # We currently do not support such template fields.
                         raise NotImplementedError
-                    db_instance = self.database.get(
-                        fqid=FullQualifiedId(self.model.collection, instance["id"]),
-                        mapped_fields=[field_name],
-                        lock_result=True,
-                    )
+
+                    # Extract all foreign keys as fqids from the model
+                    foreign_fqids = db_instance.get(field_name, [])
+                    if not isinstance(foreign_fqids, list):
+                        foreign_fqids = [foreign_fqids]
+                    if not isinstance(field, BaseGenericRelationField):
+                        assert not isinstance(field.to, list)
+                        foreign_fqids = [
+                            FullQualifiedId(field.to, id) for id in foreign_fqids
+                        ]
+
                     if field.on_delete == OnDelete.PROTECT:
-                        if db_instance.get(field_name):
-                            raise ActionException(
-                                f"You can not delete {self.model} with id {instance['id']}, "
-                                f"because you have to delete the related {str(field.to)} first."
-                            )
+                        for fqid in foreign_fqids:
+                            if not isinstance(
+                                self.additional_relation_models.get(fqid), DeletedModel
+                            ):
+                                raise ActionException(
+                                    f"You can not delete {self.model} with id {instance['id']}, "
+                                    f"because you have to delete the related {str(field.to)} first."
+                                )
                     else:
-                        assert field.on_delete == OnDelete.CASCADE
-                        # Extract all foreign keys as fqids from the model
-                        foreign_fqids = db_instance.get(field_name, [])
-                        if not isinstance(foreign_fqids, list):
-                            foreign_fqids = [foreign_fqids]
-                        if not isinstance(field, BaseGenericRelationField):
-                            assert not isinstance(field.to, list)
-                            foreign_fqids = [
-                                FullQualifiedId(field.to, id) for id in foreign_fqids
-                            ]
-                        # Execute the delete action for all fqids
+                        # field.on_delete == OnDelete.CASCADE
                         for fqid in foreign_fqids:
                             delete_action_class = actions_map.get(
                                 f"{str(fqid.collection)}.delete"
@@ -327,14 +345,10 @@ class DeleteAction(Action):
                                     f"Can't cascade the delete action to {str(fqid.collection)} "
                                     "since no delete action was found."
                                 )
-                            delete_action = delete_action_class(
-                                self.permission, self.database
-                            )
                             # Assume that the delete action uses the standard payload
                             payload = [{"id": fqid.id}]
-                            self.additional_write_requests.extend(
-                                delete_action.perform(payload, self.user_id)
-                            )
+                            delete_actions.append((delete_action_class, payload))
+                            additional_relation_models[fqid] = DeletedModel()
                 else:
                     # field.on_delete == OnDelete.SET_NULL
                     if isinstance(field, BaseTemplateRelationField):
@@ -357,6 +371,15 @@ class DeleteAction(Action):
                     else:
                         instance[field_name] = None
                         relation_fields.append((field_name, field))
+
+            # Add additional relation models and execute all previously gathered delete actions
+            for delete_action_class, payload in delete_actions:
+                delete_action = delete_action_class(
+                    self.permission, self.database, additional_relation_models
+                )
+                self.additional_write_requests.extend(
+                    delete_action.perform(payload, self.user_id)
+                )
 
             # Get relations.
             relations = self.get_relations(
@@ -382,12 +405,16 @@ class DeleteAction(Action):
             self.additional_write_requests
             + [element for element in super().create_write_request_elements(dataset)]
         )
-        # sort elements so that update elements come before delete elements
-        write_request_element["events"] = sorted(
-            write_request_element["events"],
-            key=lambda event: event["type"],
-            reverse=True,
-        )
+        # remove double entries and updates for deleted models
+        events: List[Event] = []
+        deleted: List[FullQualifiedId] = []
+        for event in write_request_element["events"]:
+            if event["fqid"] in deleted:
+                continue
+            if event["type"] == "delete":
+                deleted.append(event["fqid"])
+            events.append(event)
+        write_request_element["events"] = events
         return [write_request_element]
 
     def create_instance_write_request_element(
