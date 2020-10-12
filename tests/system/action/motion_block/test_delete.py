@@ -18,7 +18,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_block/112")
 
-    def test_delete_correct_2(self) -> None:
+    def test_delete_correct_cascading(self) -> None:
         self.create_model(
             "motion_block/111",
             {
@@ -43,6 +43,5 @@ class MotionBlockActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_block/111")
-        # TODO: Enable this afte we have cascade deletion.
-        # self.assert_model_deleted("agenda_item/333")
-        # self.assert_model_deleted("list_of_speakers/222")
+        self.assert_model_deleted("agenda_item/333")
+        self.assert_model_deleted("list_of_speakers/222")
