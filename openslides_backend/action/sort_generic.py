@@ -149,8 +149,8 @@ class LinearSortMixin(Action):
     Provides a mixin for linear sorting.
     """
 
-    def sort_linear(self, nodes: List, meeting_id: int) -> DataSet:
-        filter = FilterOperator("meeting_id", "=", meeting_id)
+    def sort_linear(self, nodes: List, filter_id: int, filter_str: str) -> DataSet:
+        filter = FilterOperator(filter_str, "=", filter_id)
         db_instances = self.database.filter(
             collection=self.model.collection,
             filter=filter,
@@ -160,12 +160,10 @@ class LinearSortMixin(Action):
         valid_instance_ids = []
         for id_ in nodes:
             if id_ not in db_instances:
-                raise ActionException(
-                    f"Id {id_} not in db_instances of meeting {meeting_id}."
-                )
+                raise ActionException(f"Id {id_} not in db_instances.")
             valid_instance_ids.append(id_)
         if len(valid_instance_ids) != len(db_instances):
-            raise ActionException("Additional db_instances not found.")
+            raise ActionException("Additional db_instances found.")
 
         data = dict()
         weight = 1
