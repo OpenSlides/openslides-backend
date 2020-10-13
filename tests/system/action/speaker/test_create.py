@@ -21,6 +21,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         speaker = self.get_model("speaker/1")
         assert speaker.get("user_id") == 7
         assert speaker.get("list_of_speakers_id") == 23
+        assert speaker.get("weight") == 10000
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [1]
 
