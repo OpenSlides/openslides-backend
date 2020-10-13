@@ -1,7 +1,8 @@
 import time
+from typing import Any, Dict
 
 from ...models.models import Motion
-from ..base import ActionPayload, DataSet, DummyAction
+from ..base import DummyAction
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
@@ -15,13 +16,19 @@ class MotionUpdate(UpdateAction):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(
-        optional_properties=["title", "statute_paragraph_id"]
-    )  # TODO number, modified_final_version, reason, text, amendmend_paragraphs, lead_motion_id, attachment_ids
+        optional_properties=[
+            "title",
+            "number",
+            "text",
+            "reason",
+            "amendment_paragraph_",
+            "modified_final_version",
+        ]
+    )
 
-    def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        for instance in payload:
-            instance["last_modified"] = round(time.time())
-        return super().prepare_dataset(payload)
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance["last_modified"] = round(time.time())
+        return instance
 
 
 @register_action("motion.support")
