@@ -26,4 +26,5 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
         return {
             "name": MOTION_STATE_DEFAULT_NAME,
             "workflow_id": element["new_id"],
+            "first_state_of_workflow_id": element["new_id"],
         }
