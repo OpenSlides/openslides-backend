@@ -27,5 +27,7 @@ class UserUpdateTemporary(UpdateAction):
             "email",
             "vote_weight",
             "is_present_in_meeting_ids",
+            "default_password",
+            "group__ids",
         ]
     )
