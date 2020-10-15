@@ -6,6 +6,7 @@ from . import (  # noqa
     delete,
     delete_temporary,
     update,
+    update_self,
     update_temporary,
 )
 
