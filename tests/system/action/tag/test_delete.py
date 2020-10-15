@@ -34,6 +34,7 @@ class TagDeleteTest(BaseActionTestCase):
         self.assertEqual(
             topic,
             {
+                "id": 222,
                 "meta_deleted": False,
                 "meta_position": 3,
                 "title": "test_title_ertgd590854398",

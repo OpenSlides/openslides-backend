@@ -29,3 +29,8 @@ def get_fqfield(value: str) -> FullQualifiedField:
     """
     collection, id, field = value.split(KEYSEPARATOR)
     return FullQualifiedField(Collection(collection), int(id), field)
+
+
+def get_id_from_fqid(fqid: str) -> int:
+    id = fqid.split(KEYSEPARATOR)[1]
+    return int(id)

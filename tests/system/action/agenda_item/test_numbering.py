@@ -12,15 +12,13 @@ class AgendaItemNumberingTester(BaseActionTestCase):
             "meeting/1", {"agenda_item_ids": [1, 2, 3]},
         )
         self.create_model(
-            "agenda_item/1", {"id": 1, "meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/1", {"meeting_id": 1, "weight": 10, "type": 1},
         )
         self.create_model(
-            "agenda_item/2",
-            {"id": 2, "meeting_id": 1, "weight": 10, "parent_id": 1, "type": 1},
+            "agenda_item/2", {"meeting_id": 1, "weight": 10, "parent_id": 1, "type": 1},
         )
         self.create_model(
-            "agenda_item/3",
-            {"id": 3, "meeting_id": 1, "parent_id": 1, "weight": 10, "type": 1},
+            "agenda_item/3", {"meeting_id": 1, "parent_id": 1, "weight": 10, "type": 1},
         )
         response = self.client.post(
             "/",
@@ -39,10 +37,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
             "meeting/1", {"agenda_item_ids": [1, 2]},
         )
         self.create_model(
-            "agenda_item/1", {"id": 1, "meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/1", {"meeting_id": 1, "weight": 10, "type": 1},
         )
         self.create_model(
-            "agenda_item/2", {"id": 2, "meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/2", {"meeting_id": 1, "weight": 10, "type": 1},
         )
         response = self.client.post(
             "/",
@@ -59,11 +57,11 @@ class AgendaItemNumberingTester(BaseActionTestCase):
             "meeting/1", {"agenda_item_ids": [1, 2]},
         )
         self.create_model(
-            "agenda_item/1", {"id": 1, "meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/1", {"meeting_id": 1, "weight": 10, "type": 1},
         )
         self.create_model(
             "agenda_item/2",
-            {"id": 2, "meeting_id": 1, "weight": 10, "type": AgendaItem.INTERNAL_ITEM},
+            {"meeting_id": 1, "weight": 10, "type": AgendaItem.INTERNAL_ITEM},
         )
         response = self.client.post(
             "/",

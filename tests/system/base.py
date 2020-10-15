@@ -11,7 +11,7 @@ from openslides_backend.shared.interfaces import (
     WSGIApplication,
 )
 from tests.system.util import Client
-from tests.util import get_fqid
+from tests.util import get_fqid, get_id_from_fqid
 
 
 class BaseSystemTestCase(TestCase):
@@ -30,6 +30,7 @@ class BaseSystemTestCase(TestCase):
         self.assertEqual(response.status_code, code)
 
     def create_model(self, fqid: str, data: Dict[str, Any]) -> None:
+        data["id"] = get_id_from_fqid(fqid)
         request = WriteRequestElement(
             events=[Event(type="create", fqid=get_fqid(fqid), fields=data)],
             information={},
@@ -40,6 +41,7 @@ class BaseSystemTestCase(TestCase):
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(get_fqid(fqid), get_deleted_models=3)
         self.assertTrue(model)
+        self.assertEqual(model.get("id"), get_id_from_fqid(fqid))
         return model
 
     def assert_model_exists(self, fqid: str, fields: Dict[str, Any] = None) -> None:
