@@ -22,6 +22,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.assertEqual(
             self.get_model(f"agenda_item/{model['agenda_item_id']}"),
             {
+                "id": 1,
                 "type": 1,
                 "weight": 0,
                 "meeting_id": 42,

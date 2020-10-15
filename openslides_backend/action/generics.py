@@ -73,6 +73,7 @@ class CreateAction(Action):
 
             # Get new id.
             new_id = self.database.reserve_id(collection=self.model.collection)
+            instance["id"] = new_id
 
             # Get relations.
             relations = self.get_relations(
