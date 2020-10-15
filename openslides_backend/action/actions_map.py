@@ -13,6 +13,7 @@ def prepare_actions_map() -> None:
     from . import (  # noqa
         agenda_item,
         assignment,
+        assignment_candidate,
         committee,
         list_of_speakers,
         mediafile,
