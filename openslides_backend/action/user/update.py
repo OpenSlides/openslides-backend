@@ -25,8 +25,11 @@ class UserUpdate(UpdateAction):
             "number",
             "structure_level",
             "email",
-            # "vote_weight",
+            "vote_weight",
             "role_id",
             "is_present_in_meeting_ids",
+            "guest_meeting_ids",
+            "committee_as_member_ids",
+            "committee_as_manager_ids",
         ]
     )
