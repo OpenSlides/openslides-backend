@@ -3,12 +3,13 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionStatuteParagraphActionTest(BaseActionTestCase):
     def test_create(self) -> None:
+        self.create_model("meeting/42", {})
         response = self.client.post(
             "/",
             json=[
                 {
                     "action": "motion_statute_paragraph.create",
-                    "data": [{"title": "test_Xcdfgee"}],
+                    "data": [{"meeting_id": 42, "title": "test_Xcdfgee"}],
                 }
             ],
         )
@@ -24,10 +25,12 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'title\\'] properties", str(response.data),
+            "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
+            str(response.data),
         )
 
     def test_create_wrong_field(self) -> None:
+        self.create_model("meeting/42", {})
         response = self.client.post(
             "/",
             json=[
@@ -39,5 +42,6 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'title\\'] properties", str(response.data),
+            "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
+            str(response.data),
         )
