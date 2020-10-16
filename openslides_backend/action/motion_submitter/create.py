@@ -21,7 +21,7 @@ class MotionSubmitterCreateAction(CreateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        check if motion and user have the same meeting_id
+        Check if motion and user belong to the same meeting if the user is a temporary user.
         """
         motion_meeting_id = self.database.get(
             FullQualifiedId(Collection("motion"), instance["motion_id"]), ["meeting_id"]
@@ -30,8 +30,8 @@ class MotionSubmitterCreateAction(CreateAction):
             FullQualifiedId(Collection("user"), instance["user_id"]), ["meeting_id"]
         ).get("meeting_id")
 
-        if motion_meeting_id != user_meeting_id:
+        if user_meeting_id is not None and motion_meeting_id != user_meeting_id:
             raise ActionException(
-                "Cannot create motion_submitter, meeting id of motion and user don't match."
+                "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match."
             )
         return instance
