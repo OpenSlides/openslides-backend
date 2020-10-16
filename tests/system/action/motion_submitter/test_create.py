@@ -77,6 +77,6 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot create motion_submitter, meeting id of motion and user don\\'t match.",
+            "Cannot create motion_submitter, meeting id of motion and (temporary) user don\\'t match.",
             str(response.data),
         )
