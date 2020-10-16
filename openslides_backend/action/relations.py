@@ -117,7 +117,7 @@ class RelationsHandler:
         if isinstance(self.field, TemplateRelationField) or isinstance(
             self.field, TemplateRelationListField
         ):
-            if self.field_name.find("$") > -1:
+            if self.field_name.find("$_") > -1 or self.field_name[-1] == "$":
                 raise ValueError(
                     "You can not handle raw template fields here. Use then with "
                     "populated replacements."

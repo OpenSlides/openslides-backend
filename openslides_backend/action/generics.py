@@ -55,6 +55,7 @@ class CreateAction(Action):
                         regex = (
                             r"^"
                             + field_name[: field.index]
+                            + r"\$"
                             + r"(\d+)"
                             + field_name[field.index :]
                             + r"$"
@@ -173,6 +174,7 @@ class UpdateAction(Action):
                         regex = (
                             r"^"
                             + field_name[: field.index]
+                            + r"\$"
                             + r"(\d+)"
                             + field_name[field.index :]
                             + r"$"
