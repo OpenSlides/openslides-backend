@@ -9,14 +9,14 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.create",
-                    "data": [{"fake_model_b_42_ids": [123]}],
+                    "data": [{"fake_model_b_$42_ids": [123]}],
                 }
             ],
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/1")
         model = self.get_model("fake_model_a/1")
-        self.assertEqual(model.get("fake_model_b_42_ids"), [123])
+        self.assertEqual(model.get("fake_model_b_$42_ids"), [123])
         self.assertEqual(model.get("fake_model_b_$_ids"), ["42"])
         model = self.get_model("fake_model_b/123")
         self.assertEqual(model.get("structured_relation_field"), 1)
@@ -25,8 +25,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
         self.create_model(
             "fake_model_a/234",
             {
-                "fake_model_b_42_ids": [3451],
-                "fake_model_b_43_ids": [3452],
+                "fake_model_b_$42_ids": [3451],
+                "fake_model_b_$43_ids": [3452],
                 "fake_model_b_$_ids": ["42", "43"],
             },
         )
@@ -42,14 +42,14 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.create",
-                    "data": [{"fake_model_b_44_ids": [3453]}],
+                    "data": [{"fake_model_b_$44_ids": [3453]}],
                 }
             ],
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/235")
         model = self.get_model("fake_model_a/235")
-        self.assertEqual(model.get("fake_model_b_44_ids"), [3453])
+        self.assertEqual(model.get("fake_model_b_$44_ids"), [3453])
         self.assertEqual(model.get("fake_model_b_$_ids"), ["44"])
         model = self.get_model("fake_model_b/3453")
         self.assertEqual(model.get("structured_relation_field"), 235)
@@ -58,8 +58,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
         self.create_model(
             "fake_model_a/234",
             {
-                "fake_model_b_42_ids": [3451],
-                "fake_model_b_43_ids": [3452],
+                "fake_model_b_$42_ids": [3451],
+                "fake_model_b_$43_ids": [3452],
                 "fake_model_b_$_ids": ["42", "43"],
             },
         )
@@ -75,16 +75,16 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_44_ids": [3453]}],
+                    "data": [{"id": 234, "fake_model_b_$44_ids": [3453]}],
                 }
             ],
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")
         model = self.get_model("fake_model_a/234")
-        self.assertEqual(model.get("fake_model_b_42_ids"), [3451])
-        self.assertEqual(model.get("fake_model_b_43_ids"), [3452])
-        self.assertEqual(model.get("fake_model_b_44_ids"), [3453])
+        self.assertEqual(model.get("fake_model_b_$42_ids"), [3451])
+        self.assertEqual(model.get("fake_model_b_$43_ids"), [3452])
+        self.assertEqual(model.get("fake_model_b_$44_ids"), [3453])
         self.assertEqual(
             set(model.get("fake_model_b_$_ids", [])), set(["42", "43", "44"])
         )
@@ -95,8 +95,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
         self.create_model(
             "fake_model_a/234",
             {
-                "fake_model_b_42_ids": [3451],
-                "fake_model_b_43_ids": [3452],
+                "fake_model_b_$42_ids": [3451],
+                "fake_model_b_$43_ids": [3452],
                 "fake_model_b_$_ids": ["42", "43"],
             },
         )
@@ -112,15 +112,15 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_43_ids": [3453]}],
+                    "data": [{"id": 234, "fake_model_b_$43_ids": [3453]}],
                 }
             ],
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")
         model = self.get_model("fake_model_a/234")
-        self.assertEqual(model.get("fake_model_b_42_ids"), [3451])
-        self.assertEqual(model.get("fake_model_b_43_ids"), [3453])
+        self.assertEqual(model.get("fake_model_b_$42_ids"), [3451])
+        self.assertEqual(model.get("fake_model_b_$43_ids"), [3453])
         self.assertEqual(set(model.get("fake_model_b_$_ids", [])), set(["42", "43"]))
         model = self.get_model("fake_model_b/3453")
         self.assertEqual(model.get("structured_relation_field"), 234)
@@ -129,8 +129,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
         self.create_model(
             "fake_model_a/234",
             {
-                "fake_model_b_42_ids": [3451],
-                "fake_model_b_43_ids": [3452],
+                "fake_model_b_$42_ids": [3451],
+                "fake_model_b_$43_ids": [3452],
                 "fake_model_b_$_ids": ["42", "43"],
             },
         )
@@ -145,15 +145,15 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_43_ids": []}],
+                    "data": [{"id": 234, "fake_model_b_$43_ids": []}],
                 }
             ],
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")
         model = self.get_model("fake_model_a/234")
-        self.assertEqual(model.get("fake_model_b_42_ids"), [3451])
-        self.assertEqual(model.get("fake_model_b_43_ids"), [])
+        self.assertEqual(model.get("fake_model_b_$42_ids"), [3451])
+        self.assertEqual(model.get("fake_model_b_$43_ids"), [])
         self.assertEqual(set(model.get("fake_model_b_$_ids", [])), set(["42"]))
         model = self.get_model("fake_model_b/3452")
         self.assertEqual(model.get("structured_relation_field"), None)
