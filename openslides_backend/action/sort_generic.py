@@ -149,7 +149,9 @@ class LinearSortMixin(Action):
     Provides a mixin for linear sorting.
     """
 
-    def sort_linear(self, nodes: List, filter_id: int, filter_str: str) -> DataSet:
+    def sort_linear(
+        self, nodes: List, filter_id: int, filter_str: str, weight_key: str = "weight"
+    ) -> DataSet:
         filter = FilterOperator(filter_str, "=", filter_id)
         db_instances = self.database.filter(
             collection=self.model.collection,
@@ -168,7 +170,7 @@ class LinearSortMixin(Action):
         data = dict()
         weight = 1
         for id_ in valid_instance_ids:
-            data[id_] = {"weight": weight}
+            data[id_] = {weight_key: weight}
             weight += 1
         return {"data": data}
 
