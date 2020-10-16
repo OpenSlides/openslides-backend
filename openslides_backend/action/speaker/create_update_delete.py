@@ -4,7 +4,14 @@ from ..create_action_with_inferred_meeting import (
     get_create_action_with_inferred_meeting,
 )
 from ..default_schema import DefaultSchema
+from ..generics import DeleteAction
 from ..register import register_action_set
+
+
+class SpeakerDeleteAction(DeleteAction):
+    model = Speaker()
+    schema = DefaultSchema(Speaker()).get_delete_schema()
+    name = "speaker.delete"
 
 
 @register_action_set("speaker")
@@ -22,3 +29,4 @@ class SpeakerActionSet(ActionSet):
     delete_schema = DefaultSchema(Speaker()).get_delete_schema()
 
     CreateActionClass = get_create_action_with_inferred_meeting("list_of_speakers_id")
+    DeleteActionClass = SpeakerDeleteAction

@@ -1,15 +1,10 @@
 from ..base import DummyAction
 from ..register import register_action
-from . import delete, update  # noqa
+from . import delete, delete_all_speakers, update  # noqa
 
 
 @register_action("list_of_speakers.manage_speakers")
 class ListOfSpeakersManageSpeakers(DummyAction):
-    pass
-
-
-@register_action("list_of_speakers.speak")
-class ListOfSpeakersSpeak(DummyAction):
     pass
 
 
@@ -30,11 +25,6 @@ class ListOfSpeakersSort(DummyAction):
 
 @register_action("list_of_speakers.re_add_last")
 class ListOfSpeakersReAddLast(DummyAction):
-    pass
-
-
-@register_action("list_of_speakers.prune")
-class ListOfSpeakersPrune(DummyAction):
     pass
 
 
