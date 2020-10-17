@@ -5,7 +5,11 @@ import fastjsonschema
 from mypy_extensions import TypedDict
 
 from ..models.base import Model
-from ..models.fields import BaseRelationField
+from ..models.fields import (
+    BaseGenericRelationField,
+    BaseRelationField,
+    BaseTemplateField,
+)
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
@@ -109,6 +113,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
         action classes.
 
         This can only be used if payload is a list.
+
+        This is called after initial validation, but before additional relation
+        validation.
         """
         return instance
 
@@ -116,14 +123,47 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Validates all model fields according to the model definition.
         """
-        for key, value in instance.items():
-            try:
-                field = self.model.get_field(key)
-            except ValueError:
-                # If the field doesn't exist, it's additional payload and we just ignore it
-                continue
-            instance[key] = field.validate(value)
+        for field_name, field in self.model.get_fields():
+            if field_name in instance:
+                instance[field_name] = field.validate(instance[field_name])
         return instance
+
+    def validate_relation_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validates all relation fields according to the model definition.
+        """
+        for field_name, field in self.model.get_relation_fields():
+            if field_name in instance and field.equal_fields:
+                if isinstance(field, BaseTemplateField):
+                    raise NotImplementedError()
+                fqids = self.get_field_value_as_fqid_list(field, instance[field_name])
+                for fqid in fqids:
+                    related_model = self.fetch_model(fqid, deepcopy(field.equal_fields))
+                    for equal_field_name in field.equal_fields:
+                        if instance.get(equal_field_name) != related_model.get(
+                            equal_field_name
+                        ):
+                            raise ActionException(
+                                f"The field {equal_field_name} must be equal "
+                                f"but differs on {fqid}: "
+                                f"{str(instance.get(equal_field_name))} != "
+                                f"{str(related_model.get(equal_field_name))}"
+                            )
+        return instance
+
+    def get_field_value_as_fqid_list(
+        self, field: BaseRelationField, value: Any
+    ) -> List[FullQualifiedId]:
+        """ Transforms the given value to an Fqid List. """
+        if not isinstance(value, list):
+            if value is None:
+                value = []
+            else:
+                value = [value]
+        if not isinstance(field, BaseGenericRelationField):
+            assert not isinstance(field.to, list)
+            value = [FullQualifiedId(field.to, id) for id in value]
+        return value
 
     def fetch_model(
         self, fqid: FullQualifiedId, mapped_fields: List[str] = []

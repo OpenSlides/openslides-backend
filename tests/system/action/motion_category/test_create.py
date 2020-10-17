@@ -4,7 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySystemTest(BaseActionTestCase):
     def test_create_good_case_full_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion_category/123", {"name": "name_bWdKLQxL"})
+        self.create_model(
+            "motion_category/123", {"name": "name_bWdKLQxL", "meeting_id": 222}
+        )
         response = self.client.post(
             "/",
             json=[

@@ -1,7 +1,7 @@
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionCommentActionTest(BaseActionTestCase):
+class MotionCommentUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
             "motion_comment/111", {"comment": "comment_srtgb123"},

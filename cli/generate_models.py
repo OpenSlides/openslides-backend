@@ -89,11 +89,12 @@ def main() -> None:
 
     global MODELS
 
-    # Retrieve models.yml from GitHub
-    models_yml = requests.get(SOURCE).content
-
-    # with open("/home/norman/GitHub/OpenSlides/docs/models.yml", "rb") as x:
-    #     models_yml = x.read()
+    # Retrieve models.yml from local file or GitHub
+    if os.path.isfile(SOURCE):
+        with open(SOURCE, "rb") as x:
+            models_yml = x.read()
+    else:
+        models_yml = requests.get(SOURCE).content
 
     # Fix broken keys
     models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())
@@ -195,6 +196,7 @@ class Attribute(Node):
     read_only: bool = False
     default: Any = None
     on_delete: Optional[OnDelete] = None
+    equal_fields: Optional[Union[str, List[str]]] = None
     contraints: Dict[str, Any]
 
     is_template: bool = False
@@ -231,6 +233,7 @@ class Attribute(Node):
                 self.required = value.get("required", False)
                 self.read_only = value.get("read_only", False)
                 self.default = value.get("default")
+                self.equal_fields = value.get("equal_fields")
                 for k, v in value.items():
                     if k not in (
                         "type",
@@ -239,6 +242,7 @@ class Attribute(Node):
                         "read_only",
                         "default",
                         "on_delete",
+                        "equal_fields",
                         "items",
                     ):
                         self.contraints[k] = v
@@ -272,6 +276,8 @@ class Attribute(Node):
             properties += "read_only=True, "
         if self.default is not None:
             properties += f"default={json.dumps(self.default)}, "
+        if self.equal_fields is not None:
+            properties += f"equal_fields={json.dumps(self.equal_fields)}, "
         if self.contraints:
             properties += f"constraints={json.dumps(self.contraints)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):

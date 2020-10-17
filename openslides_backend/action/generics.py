@@ -34,10 +34,11 @@ class CreateAction(Action):
         """
         data = []
         for instance in payload:
-            # Primary instance manipilation for defaults and extra fields.
+            # Primary instance manipulation for defaults and extra fields.
             instance = self.set_defaults(instance)
             instance = self.validate_fields(instance)
             instance = self.update_instance(instance)
+            instance = self.validate_relation_fields(instance)
 
             # Collect relation fields and also check structured relations and template fields.
             relation_fields = []
@@ -149,9 +150,10 @@ class UpdateAction(Action):
         for instance in payload:
             # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
 
-            # Primary instance manipilation for defaults and extra fields.
+            # Primary instance manipulation for defaults and extra fields.
             instance = self.validate_fields(instance)
             instance = self.update_instance(instance)
+            instance = self.validate_relation_fields(instance)
 
             if not isinstance(instance.get("id"), int):
                 raise TypeError(
@@ -211,7 +213,7 @@ class UpdateAction(Action):
                                     replacement
                                 )
             for k, v in additional_instance_fields.items():
-                # instance.update(...) but with type changeing from set to list
+                # instance.update(...) but with type changing from set to list
                 instance[k] = list(v)
 
             # Get relations.
@@ -225,6 +227,29 @@ class UpdateAction(Action):
             data.append({"instance": instance, "relations": relations})
 
         return {"data": data}
+
+    def validate_relation_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Fetches missing fields from db for field equality check and removes them after.
+        """
+        missing_fields = [
+            equal_field_name
+            for field_name, field in self.model.get_relation_fields()
+            if field.equal_fields and field_name in instance
+            for equal_field_name in field.equal_fields
+            if equal_field_name not in instance
+        ]
+        if missing_fields:
+            db_instance = self.fetch_model(
+                FullQualifiedId(self.model.collection, instance["id"]), missing_fields
+            )
+        else:
+            db_instance = {}
+        updated_instance = super().validate_fields({**instance, **db_instance})
+        for field_name in missing_fields:
+            if field_name in updated_instance:
+                del updated_instance[field_name]
+        return updated_instance
 
     def create_write_request_elements(
         self, dataset: DataSet
@@ -339,6 +364,11 @@ class DeleteAction(Action):
                                 )
                     else:
                         # field.on_delete == OnDelete.CASCADE
+                        # Extract all foreign keys as fqids from the model
+                        value = db_instance.get(field_name, [])
+                        foreign_fqids = self.get_field_value_as_fqid_list(field, value)
+
+                        # Execute the delete action for all fqids
                         for fqid in foreign_fqids:
                             delete_action_class = actions_map.get(
                                 f"{str(fqid.collection)}.delete"

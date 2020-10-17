@@ -26,16 +26,19 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_correct_plus_next_previous(self) -> None:
         self.create_model(
             "motion_workflow/110",
-            {"name": "name_Ycefgee", "state_ids": [111, 112, 113]},
+            {"name": "name_Ycefgee", "state_ids": [111, 112, 113], "meeting_id": 1},
         )
         self.create_model(
-            "motion_state/111", {"name": "name_srtgb123", "workflow_id": 110}
+            "motion_state/111",
+            {"name": "name_srtgb123", "workflow_id": 110, "meeting_id": 1},
         )
         self.create_model(
-            "motion_state/112", {"name": "name_srtfg112", "workflow_id": 110}
+            "motion_state/112",
+            {"name": "name_srtfg112", "workflow_id": 110, "meeting_id": 1},
         )
         self.create_model(
-            "motion_state/113", {"name": "name_srtfg113", "workflow_id": 110}
+            "motion_state/113",
+            {"name": "name_srtfg113", "workflow_id": 110, "meeting_id": 1},
         )
         response = self.client.post(
             "/",

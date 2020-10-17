@@ -4,7 +4,7 @@ from typing import Any, Dict
 from ...models.models import MotionChangeRecommendation
 from ..action_set import ActionSet
 from ..default_schema import DefaultSchema
-from ..generics import CreateAction, DeleteAction, UpdateAction
+from ..generics import CreateAction
 from ..register import register_action_set
 
 
@@ -16,9 +16,7 @@ class MotionChangeRecommendationCreateAction(CreateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         set creation_time
-        set default to type
         """
-        instance["type"] = instance.get("type", 0)
         instance["creation_time"] = int(time())
         return instance
 
@@ -44,8 +42,5 @@ class MotionChangeRecommendationActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(MotionChangeRecommendation()).get_delete_schema()
-    routes = {
-        "create": MotionChangeRecommendationCreateAction,
-        "update": UpdateAction,
-        "delete": DeleteAction,
-    }
+
+    CreateActionClass = MotionChangeRecommendationCreateAction

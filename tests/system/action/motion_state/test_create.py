@@ -3,7 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionStateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("motion_workflow/42", {"name": "test_name_fjwnq8d8tje8"})
+        self.create_model("meeting/1", {})
+        self.create_model(
+            "motion_workflow/42", {"name": "test_name_fjwnq8d8tje8", "meeting_id": 1}
+        )
         response = self.client.post(
             "/",
             json=[
@@ -21,7 +24,10 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("merge_amendment_into_final") == 0
 
     def test_create_enum_fields(self) -> None:
-        self.create_model("motion_workflow/42", {"name": "test_name_fjwnq8d8tje8"})
+        self.create_model("meeting/1", {})
+        self.create_model(
+            "motion_workflow/42", {"name": "test_name_fjwnq8d8tje8", "meeting_id": 1}
+        )
         response = self.client.post(
             "/",
             json=[

@@ -1,11 +1,11 @@
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionCategoryActionTest(BaseActionTestCase):
+class MotionCommentCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model("meeting/111", {"name": "name_m123etrd"})
         self.create_model("motion/357", {"title": "title_YIDYXmKj", "meeting_id": 111})
-        self.create_model("motion_comment_section/78", {})
+        self.create_model("motion_comment_section/78", {"meeting_id": 111})
         response = self.client.post(
             "/",
             json=[

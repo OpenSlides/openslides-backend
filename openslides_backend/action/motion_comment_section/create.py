@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 from ...models.models import MotionCommentSection
 from ..default_schema import DefaultSchema
 from ..generics import CreateAction
@@ -17,10 +15,3 @@ class MotionCommentSectionCreateAction(CreateAction):
         required_properties=["name", "meeting_id"],
         optional_properties=["read_group_ids", "write_group_ids"],
     )
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        set default weight to instance.
-        """
-        instance["weight"] = instance.get("weight", 0)
-        return instance

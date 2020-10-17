@@ -21,7 +21,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_create_good_case_all_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("group/23", {"name": "name_IIwngcUT"})
+        self.create_model("group/23", {"name": "name_IIwngcUT", "meeting_id": 222})
         response = self.client.post(
             "/",
             json=[
