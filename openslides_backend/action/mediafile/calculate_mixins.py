@@ -10,7 +10,6 @@ class MediafileCalculatedFieldsMixin(BaseAction):
 
     def calculate_inherited_groups(
         self,
-        id_: int,
         access_group_ids: List[int],
         parent_has_inherited_access_groups: Optional[bool],
         parent_inherited_access_group_ids: Optional[List[int]],

@@ -1,6 +1,6 @@
 from ..base import DummyAction
 from ..register import register_action
-from . import delete, set_as_font, set_as_logo, update  # noqa
+from . import create_directory, delete, set_as_font, set_as_logo, update  # noqa
 
 
 @register_action("mediafile.create")
