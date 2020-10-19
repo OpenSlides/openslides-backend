@@ -7,6 +7,7 @@ from ...shared.filters import Filter as FilterInterface
 from ...shared.filters import FilterData
 from ...shared.interfaces import Event, WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
+from .deleted_models_behaviour import DeletedModelsBehaviour
 
 GetManyRequestData = TypedDict(
     "GetManyRequestData",
@@ -91,7 +92,7 @@ class Get(Command):
         fqid: FullQualifiedId,
         mappedFields: List[str] = None,
         position: int = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
     ) -> None:
         self.fqid = fqid
         self.mappedFields = mappedFields
@@ -120,7 +121,7 @@ class GetMany(Command):
         get_many_requests: List[GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
     ) -> None:
         self.get_many_requests = get_many_requests
         self.mapped_fields = mapped_fields
@@ -154,7 +155,7 @@ class GetAll(Command):
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
     ) -> None:
         self.collection = collection
         self.mapped_fields = mapped_fields

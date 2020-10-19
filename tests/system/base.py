@@ -3,7 +3,10 @@ from unittest import TestCase
 
 from werkzeug.wrappers import Response
 
-from openslides_backend.services.datastore.interface import Datastore
+from openslides_backend.services.datastore.interface import (
+    Datastore,
+    DeletedModelsBehaviour,
+)
 from openslides_backend.shared.exceptions import DatabaseException
 from openslides_backend.shared.interfaces import (
     Event,
@@ -29,17 +32,23 @@ class BaseSystemTestCase(TestCase):
             print(response.data)
         self.assertEqual(response.status_code, code)
 
-    def create_model(self, fqid: str, data: Dict[str, Any]) -> None:
+    def create_model(
+        self, fqid: str, data: Dict[str, Any], deleted: bool = False
+    ) -> None:
         data["id"] = get_id_from_fqid(fqid)
         request = WriteRequestElement(
             events=[Event(type="create", fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
         )
+        if deleted:
+            request["events"].append(Event(type="delete", fqid=get_fqid(fqid)))
         self.datastore.write(request)
 
     def get_model(self, fqid: str) -> Dict[str, Any]:
-        model = self.datastore.get(get_fqid(fqid), get_deleted_models=3)
+        model = self.datastore.get(
+            get_fqid(fqid), get_deleted_models=DeletedModelsBehaviour.ALL_MODELS
+        )
         self.assertTrue(model)
         self.assertEqual(model.get("id"), get_id_from_fqid(fqid))
         return model

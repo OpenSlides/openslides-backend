@@ -177,3 +177,26 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         assert model_12.get("weight") == 6
         assert model_12.get("parent_id") == 1
         assert model_12.get("child_ids") == []
+
+    def test_with_deleted_model(self) -> None:
+        self.create_model("meeting/222", {"motion_category_ids": [2, 3]})
+        self.create_model("motion_category/1", {"meeting_id": 222}, deleted=True)
+        self.create_model("motion_category/2", {"meeting_id": 222})
+        self.create_model("motion_category/3", {"meeting_id": 222})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion_category.sort",
+                    "data": [{"meeting_id": 222, "tree": [{"id": 2}, {"id": 3}]}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        assert "Action handled successfully" in str(response.data)
+        category_1 = self.get_model("motion_category/1")
+        assert category_1.get("weight") is None
+        category_2 = self.get_model("motion_category/2")
+        assert category_2.get("weight") == 2
+        category_3 = self.get_model("motion_category/3")
+        assert category_3.get("weight") == 4
