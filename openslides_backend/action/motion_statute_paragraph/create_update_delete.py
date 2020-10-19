@@ -12,7 +12,7 @@ class MotionStatuteParagraphActionSet(ActionSet):
 
     model = MotionStatuteParagraph()
     create_schema = DefaultSchema(MotionStatuteParagraph()).get_create_schema(
-        required_properties=["meeting_id", "title"], optional_properties=["text"],
+        required_properties=["meeting_id", "title", "text"], optional_properties=[],
     )
     update_schema = DefaultSchema(MotionStatuteParagraph()).get_update_schema(
         optional_properties=["title"]

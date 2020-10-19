@@ -9,7 +9,9 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_statute_paragraph.create",
-                    "data": [{"meeting_id": 42, "title": "test_Xcdfgee"}],
+                    "data": [
+                        {"meeting_id": 42, "title": "test_Xcdfgee", "text": "blablabla"}
+                    ],
                 }
             ],
         )
@@ -18,6 +20,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         model = self.get_model("motion_statute_paragraph/1")
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("weight") == 0
+        assert model.get("text") == "blablabla"
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -25,7 +28,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
             str(response.data),
         )
 
@@ -42,6 +45,6 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'meeting_id\\', \\'title\\'] properties",
+            "data[0] must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
             str(response.data),
         )
