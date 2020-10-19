@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import Any, Dict, List, Sequence, Tuple
 
 from mypy_extensions import TypedDict
@@ -8,17 +7,12 @@ from ...shared.filters import Filter
 from ...shared.interfaces import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
 from .commands import GetManyRequest
+from .deleted_models_behaviour import DeletedModelsBehaviour
 
 PartialModel = Dict[str, Any]
 Found = TypedDict("Found", {"exists": bool})
 Count = TypedDict("Count", {"count": int})
 Aggregate = Dict[str, Any]  # TODO: This interface seams to be wrong.
-
-
-class DeletedModelsBehaviour(Enum):
-    NO_DELETED = 1
-    ONLY_DELETED = 2
-    ALL_MODELS = 3
 
 
 class Datastore(Protocol):
@@ -34,7 +28,7 @@ class Datastore(Protocol):
         fqid: FullQualifiedId,
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> PartialModel:
         ...
@@ -44,7 +38,7 @@ class Datastore(Protocol):
         get_many_requests: List[GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
@@ -53,7 +47,7 @@ class Datastore(Protocol):
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         ...
@@ -63,6 +57,7 @@ class Datastore(Protocol):
         collection: Collection,
         filter: Filter,
         mapped_fields: List[str] = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         ...

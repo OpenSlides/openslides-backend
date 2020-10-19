@@ -4,10 +4,11 @@ import simplejson as json
 from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatabaseException
-from ...shared.filters import Filter
+from ...shared.filters import And, Filter, FilterOperator
 from ...shared.interfaces import LoggingModule, WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from . import commands
+from .deleted_models_behaviour import DeletedModelsBehaviour
 from .http_engine import HTTPEngine as Engine
 from .interface import Aggregate, Count, Found, PartialModel
 
@@ -59,7 +60,7 @@ class Adapter:
         fqid: FullQualifiedId,
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> PartialModel:
         if lock_result and mapped_fields is not None:
@@ -88,7 +89,7 @@ class Adapter:
         get_many_requests: List[commands.GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
@@ -131,7 +132,7 @@ class Adapter:
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
-        get_deleted_models: int = None,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         if lock_result and mapped_fields is not None:
@@ -162,10 +163,19 @@ class Adapter:
         collection: Collection,
         filter: Filter,
         mapped_fields: List[str] = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         if lock_result and mapped_fields is not None:
             mapped_fields.extend(("id", "meta_position"))
+        # by default, only filter for existing models
+        if get_deleted_models != DeletedModelsBehaviour.ALL_MODELS:
+            deleted_models_filter = FilterOperator(
+                "meta_deleted",
+                "=",
+                get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED,
+            )
+            filter = And(filter, deleted_models_filter)
         command = commands.Filter(
             collection=collection, filter=filter, mapped_fields=mapped_fields
         )
