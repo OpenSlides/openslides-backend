@@ -12,7 +12,7 @@ from ..register import register_action
 
 
 @register_action("speaker.speak")
-class SpeakerSort(Action):
+class SpeakerSpeak(Action):
     """
     Action to let speakers speak.
     """
@@ -35,8 +35,10 @@ class SpeakerSort(Action):
                 FullQualifiedId(
                     Collection("list_of_speakers"), this_speaker["list_of_speakers_id"]
                 ),
-                mapped_fields=["speaker_ids"],
+                mapped_fields=["speaker_ids", "closed"],
             )
+            if list_of_speakers.get("closed"):
+                raise ActionException("The list of speakers is closed.")
             gmr = GetManyRequest(
                 self.model.collection,
                 list_of_speakers["speaker_ids"],
