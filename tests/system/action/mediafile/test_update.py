@@ -58,6 +58,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "title": "title_srtgb199",
                 "child_ids": [111],
                 "inherited_access_group_ids": [8],
+                "has_inherited_access_groups": True,
             },
         )
         self.create_model(
@@ -89,6 +90,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "child_ids": [111],
                 "access_group_ids": [],
                 "inherited_access_group_ids": [],
+                "has_inherited_access_groups": False,
             },
         )
         self.create_model(
@@ -121,6 +123,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "child_ids": [111],
                 "inherited_access_group_ids": [2, 4],
                 "access_group_ids": [2, 4],
+                "has_inherited_access_groups": True,
             },
         )
         self.create_model(
@@ -153,6 +156,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "child_ids": [111],
                 "inherited_access_group_ids": [],
                 "access_group_ids": [],
+                "has_inherited_access_groups": False,
             },
         )
         self.create_model(
@@ -190,6 +194,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "child_ids": [111],
                 "inherited_access_group_ids": [1, 2],
                 "access_group_ids": [1, 2],
+                "has_inherited_access_groups": True,
             },
         )
         self.create_model(
@@ -227,6 +232,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "child_ids": [111],
                 "inherited_access_group_ids": [1, 2],
                 "access_group_ids": [1, 2],
+                "has_inherited_access_groups": True,
             },
         )
         self.create_model(
@@ -246,6 +252,37 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assertEqual(response.status_code, 200)
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [3]
+        assert model.get("inherited_access_group_ids") == []
+        assert model.get("has_inherited_access_groups") is True
+
+    def test_update_parent_inherited_true(self) -> None:
+        self.create_model(
+            "mediafile/110",
+            {
+                "title": "title_srtgb199",
+                "child_ids": [111],
+                "inherited_access_group_ids": [],
+                "access_group_ids": [],
+                "has_inherited_access_groups": True,
+            },
+        )
+        self.create_model(
+            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "mediafile.update",
+                    "data": [
+                        {"id": 111, "title": "title_Xcdfgee", "access_group_ids": []}
+                    ],
+                }
+            ],
+        )
+        self.assertEqual(response.status_code, 200)
+        model = self.get_model("mediafile/111")
+        assert model.get("access_group_ids") == []
         assert model.get("inherited_access_group_ids") == []
         assert model.get("has_inherited_access_groups") is True
 

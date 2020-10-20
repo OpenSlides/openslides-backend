@@ -31,7 +31,7 @@ class MediafileUpdate(UpdateAction):
         if mediafile.get("parent_id") is not None:
             parent = self.database.get(
                 FullQualifiedId(Collection("mediafile"), mediafile["parent_id"]),
-                ["inherited_access_group_ids"],
+                ["inherited_access_group_ids", "has_inherited_access_groups"],
             )
             if not parent.get("inherited_access_group_ids"):
                 instance["inherited_access_group_ids"] = instance["access_group_ids"]
@@ -45,10 +45,9 @@ class MediafileUpdate(UpdateAction):
                     for id_ in instance["access_group_ids"]
                     if id_ in parent["inherited_access_group_ids"]
                 ]
-            instance["has_inherited_access_groups"] = (
-                len(instance["inherited_access_group_ids"]) > 0
-                or len(parent["inherited_access_group_ids"]) > 0
-            )
+            instance["has_inherited_access_groups"] = len(
+                instance["inherited_access_group_ids"]
+            ) > 0 or parent.get("has_inherited_access_groups")
         else:
             instance["inherited_access_group_ids"] = instance["access_group_ids"]
             instance["has_inherited_access_groups"] = (
