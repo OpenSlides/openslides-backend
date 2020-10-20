@@ -31,6 +31,7 @@ RelationsElement = TypedDict(
         "value": Optional[
             Union[int, FullQualifiedId, List[int], List[FullQualifiedId]]
         ],
+        "modified_element": Union[int, FullQualifiedId],
     },
 )
 Relations = Dict[FullQualifiedField, RelationsElement]
@@ -375,9 +376,10 @@ class RelationsHandler:
                         raise ActionException(message)
                 else:
                     assert self.type in ("1:m", "m:n")
-                    value_to_be_added = self.id
-                    new_value = rel.get(related_name, []) + [value_to_be_added]
-                rel_element = RelationsElement(type="add", value=new_value)
+                    new_value = rel.get(related_name, []) + [self.id]
+                rel_element = RelationsElement(
+                    type="add", value=new_value, modified_element=self.id
+                )
             else:
                 assert rel_id in remove
                 if (
@@ -394,11 +396,12 @@ class RelationsHandler:
                     new_value = None
                 else:
                     assert self.type in ("1:m", "m:n")
-                    value_to_be_removed = self.id
                     new_value = rel[related_name]
                     assert isinstance(new_value, list)
-                    new_value.remove(value_to_be_removed)
-                rel_element = RelationsElement(type="remove", value=new_value)
+                    new_value.remove(self.id)
+                rel_element = RelationsElement(
+                    type="remove", value=new_value, modified_element=self.id
+                )
             if isinstance(rel_id, int):
                 assert isinstance(self.field.to, Collection)
                 fqfield = FullQualifiedField(self.field.to, rel_id, related_name)
@@ -419,11 +422,12 @@ class RelationsHandler:
         for rel_id, rel in sorted(rels.items(), key=lambda item: item[0]):
             new_value: Optional[Union[FullQualifiedId, List[FullQualifiedId]]]
             if rel_id in add:
+                value_to_be_added = FullQualifiedId(
+                    collection=self.field.own_collection, id=self.id
+                )
                 if self.type in ("1:1", "m:1"):
                     if rel.get(related_name) is None:
-                        new_value = FullQualifiedId(
-                            collection=self.field.own_collection, id=self.id
-                        )
+                        new_value = value_to_be_added
                     else:
                         if isinstance(rel_id, int):
                             msg = KEYSEPARATOR.join(
@@ -438,11 +442,10 @@ class RelationsHandler:
                         raise ActionException(message)
                 else:
                     assert self.type in ("1:m", "m:n")
-                    value_to_be_added = FullQualifiedId(
-                        collection=self.field.own_collection, id=self.id
-                    )
                     new_value = rel.get(related_name, []) + [value_to_be_added]
-                rel_element = RelationsElement(type="add", value=new_value)
+                rel_element = RelationsElement(
+                    type="add", value=new_value, modified_element=value_to_be_added
+                )
             else:
                 assert rel_id in remove
                 if (
@@ -456,17 +459,19 @@ class RelationsHandler:
                         "long as there are some required related objects."
                     )
                 assert rel_id in remove
+                value_to_be_removed = FullQualifiedId(
+                    collection=self.field.own_collection, id=self.id
+                )
                 if self.type in ("1:1", "m:1"):
                     new_value = None
                 else:
                     assert self.type in ("1:m", "m:n")
-                    value_to_be_removed = FullQualifiedId(
-                        collection=self.field.own_collection, id=self.id
-                    )
                     new_value = rel[related_name]
                     assert isinstance(new_value, list)
                     new_value.remove(value_to_be_removed)
-                rel_element = RelationsElement(type="remove", value=new_value)
+                rel_element = RelationsElement(
+                    type="remove", value=new_value, modified_element=value_to_be_removed
+                )
             if isinstance(rel_id, int):
                 assert isinstance(self.field.to, Collection)
                 fqfield = FullQualifiedField(self.field.to, rel_id, related_name)

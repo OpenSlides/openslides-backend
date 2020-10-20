@@ -18,7 +18,11 @@ class RelationHandlerTest(BaseRelationsTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_oo"): {"type": "add", "value": 1}
+            get_fqfield("fake_model_b/2/fake_model_a_oo"): {
+                "type": "add",
+                "value": 1,
+                "modified_element": 1,
+            }
         }
         assert result == expected
 
@@ -36,7 +40,11 @@ class RelationHandlerTest(BaseRelationsTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_oo"): {"type": "add", "value": 1}
+            get_fqfield("fake_model_b/3/fake_model_a_oo"): {
+                "type": "add",
+                "value": 1,
+                "modified_element": 1,
+            }
         }
         assert result == expected
 
@@ -56,6 +64,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
             get_fqfield("fake_model_b/2/fake_model_a_oo"): {
                 "type": "remove",
                 "value": None,
+                "modified_element": 1,
             }
         }
         assert result == expected
@@ -73,7 +82,11 @@ class RelationHandlerTest(BaseRelationsTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_mo"): {"type": "add", "value": [1]}
+            get_fqfield("fake_model_b/2/fake_model_a_mo"): {
+                "type": "add",
+                "value": [1],
+                "modified_element": 1,
+            }
         }
         assert result == expected
 
@@ -94,6 +107,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
             get_fqfield("fake_model_b/3/fake_model_a_mo"): {
                 "type": "add",
                 "value": [1, 2],
+                "modified_element": 2,
             }
         }
         assert result == expected
@@ -114,6 +128,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
             get_fqfield("fake_model_b/2/fake_model_a_mo"): {
                 "type": "remove",
                 "value": [],
+                "modified_element": 1,
             }
         }
         assert result == expected
@@ -131,7 +146,11 @@ class RelationHandlerTest(BaseRelationsTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_mm"): {"type": "add", "value": [1]}
+            get_fqfield("fake_model_b/2/fake_model_a_mm"): {
+                "type": "add",
+                "value": [1],
+                "modified_element": 1,
+            }
         }
         assert result == expected
 
@@ -152,6 +171,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
             get_fqfield("fake_model_b/3/fake_model_a_mm"): {
                 "type": "add",
                 "value": [1, 2],
+                "modified_element": 2,
             }
         }
         assert result == expected
@@ -172,6 +192,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
             get_fqfield("fake_model_b/2/fake_model_a_mm"): {
                 "type": "remove",
                 "value": [],
+                "modified_element": 1,
             }
         }
         assert result == expected

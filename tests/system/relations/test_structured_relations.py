@@ -31,6 +31,7 @@ class StructuredRelationTester(BaseRelationsTestCase):
                 get_fqfield(f"fake_model_a/333/fake_model_b_{meeting_id}_ids"): {
                     "type": "add",
                     "value": [111],
+                    "modified_element": 111,
                 }
             },
         )
@@ -59,6 +60,7 @@ class StructuredRelationTester(BaseRelationsTestCase):
                 get_fqfield(f"fake_model_a/333/fake_model_c_{meeting_id}_ids"): {
                     "type": "add",
                     "value": [444],
+                    "modified_element": 444,
                 }
             },
         )
