@@ -63,11 +63,14 @@ class Adapter:
         get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> PartialModel:
-        if lock_result and mapped_fields is not None:
-            mapped_fields.append("meta_position")
+        mapped_fields_set = set()
+        if mapped_fields:
+            mapped_fields_set.update(mapped_fields)
+            if lock_result:
+                mapped_fields_set.add("meta_position")
         command = commands.Get(
             fqid=fqid,
-            mappedFields=mapped_fields,
+            mapped_fields=mapped_fields_set,
             position=position,
             get_deleted_models=get_deleted_models,
         )
@@ -99,7 +102,7 @@ class Adapter:
         if lock_result:
             for get_many_request in get_many_requests:
                 if get_many_request.mapped_fields is not None:
-                    get_many_request.mapped_fields.append("meta_position")
+                    get_many_request.mapped_fields.add("meta_position")
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
@@ -135,11 +138,14 @@ class Adapter:
         get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
-        if lock_result and mapped_fields is not None:
-            mapped_fields.extend(("id", "meta_position"))
+        mapped_fields_set = set()
+        if mapped_fields:
+            mapped_fields_set.update(mapped_fields)
+            if lock_result:
+                mapped_fields_set.update(("id", "meta_position"))
         command = commands.GetAll(
             collection=collection,
-            mapped_fields=mapped_fields,
+            mapped_fields=mapped_fields_set,
             get_deleted_models=get_deleted_models,
         )
         self.logger.debug(
@@ -166,8 +172,11 @@ class Adapter:
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
-        if lock_result and mapped_fields is not None:
-            mapped_fields.extend(("id", "meta_position"))
+        mapped_fields_set = set()
+        if mapped_fields:
+            mapped_fields_set.update(mapped_fields)
+            if lock_result:
+                mapped_fields_set.update(("id", "meta_position"))
         # by default, only filter for existing models
         if get_deleted_models != DeletedModelsBehaviour.ALL_MODELS:
             deleted_models_filter = FilterOperator(
@@ -177,7 +186,7 @@ class Adapter:
             )
             filter = And(filter, deleted_models_filter)
         command = commands.Filter(
-            collection=collection, filter=filter, mapped_fields=mapped_fields
+            collection=collection, filter=filter, mapped_fields=mapped_fields_set
         )
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {command.data}"

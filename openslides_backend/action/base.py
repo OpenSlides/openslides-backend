@@ -138,7 +138,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     raise NotImplementedError()
                 fqids = self.get_field_value_as_fqid_list(field, instance[field_name])
                 for fqid in fqids:
-                    related_model = self.fetch_model(fqid, deepcopy(field.equal_fields))
+                    related_model = self.fetch_model(fqid, field.equal_fields)
                     for equal_field_name in field.equal_fields:
                         if instance.get(equal_field_name) != related_model.get(
                             equal_field_name
