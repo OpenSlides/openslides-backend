@@ -22,13 +22,14 @@ class DefaultSchema:
         additional_optional_fields: Dict[str, Any] = {},
         title: Optional[str] = None,
         description: Optional[str] = None,
+        single_item: bool = False,
     ) -> Schema:
         """
         Returns a default schema with properties and required properties as given.
         The additional_fields can be used to add additional field definitions to a
         payload which are not present in the model.
         """
-        return {
+        schema = {
             "$schema": schema_version,
             "title": title,
             "description": description,
@@ -49,6 +50,9 @@ class DefaultSchema:
             "minItems": 1,
             "uniqueItems": True,
         }
+        if single_item:
+            schema["maxItems"] = 1
+        return schema
 
     def get_create_schema(
         self,

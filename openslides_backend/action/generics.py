@@ -28,7 +28,6 @@ class CreateAction(Action):
     def create_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
-
         Just fetches new id, uses given instance and calculates (reverse)
         relations.
         """
@@ -140,6 +139,13 @@ class UpdateAction(Action):
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         return self.update_action_prepare_dataset(payload)
 
+    def get_updated_instances(self, payload: ActionPayload) -> List[Dict[str, Any]]:
+        """
+        By default, this does nothing. Override in subclasses to adjust the updates
+        to the instances.
+        """
+        return payload
+
     def update_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
         Prepares dataset from payload.
@@ -147,7 +153,8 @@ class UpdateAction(Action):
         Uses the input and calculates (reverse) relations.
         """
         data = []
-        for instance in payload:
+        updated_instances = self.get_updated_instances(payload)
+        for instance in updated_instances:
             # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
 
             # Primary instance manipulation for defaults and extra fields.
