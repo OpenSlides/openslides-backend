@@ -22,6 +22,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
+        assert model.get("inherited_access_group_ids") == [7]
+        assert model.get("has_inherited_access_groups") is True
 
     def test_update_parent(self) -> None:
         self.create_model("group/7", {"name": "group_LxAHErRs", "user_ids": []})
