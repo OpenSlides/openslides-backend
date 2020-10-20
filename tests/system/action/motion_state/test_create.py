@@ -94,7 +94,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0].css_class must be one of [\\'gray\\', \\'red\\', \\'green\\', \\'lightblue\\', \\'yellow\\']",
+            "data[0].css_class must be one of [\\'grey\\', \\'red\\', \\'green\\', \\'lightblue\\', \\'yellow\\']",
             str(response.data),
         )
 

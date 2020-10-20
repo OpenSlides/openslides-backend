@@ -1242,7 +1242,7 @@ class MotionState(Model):
     name = fields.CharField(required=True)
     recommendation_label = fields.CharField()
     css_class = fields.CharField(
-        constraints={"enum": ["gray", "red", "green", "lightblue", "yellow"]}
+        constraints={"enum": ["grey", "red", "green", "lightblue", "yellow"]}
     )
     restrictions = fields.CharArrayField(
         in_array_constraints={
