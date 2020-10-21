@@ -24,15 +24,23 @@ class MotionResetStateAction(UpdateAction):
         motion = self.database.get(
             FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
         )
-        if motion.get("state_id"):
-            old_state = self.database.get(
-                FullQualifiedId(Collection("motion_state"), motion["state_id"]),
-                ["first_state_of_workflow_id"],
+        if not motion.get("state_id"):
+            raise ActionException(f"Motion {instance['id']} has no state.")
+
+        old_state = self.database.get(
+            FullQualifiedId(Collection("motion_state"), motion["state_id"]),
+            ["workflow_id"],
+        )
+        if not old_state.get("workflow_id"):
+            raise ActionException(f"State {motion['state_id']} has no workflow.")
+
+        workflow = self.database.get(
+            FullQualifiedId(Collection("motion_workflow"), old_state["workflow_id"]),
+            ["first_state_id"],
+        )
+        if not workflow.get("first_state_id"):
+            raise ActionException(
+                f"State {old_state['workflow_id']} has no first_state_id."
             )
-            if old_state.get("first_state_of_workflow_id"):
-                instance["state_id"] = old_state["first_state_of_workflow_id"]
-            else:
-                raise ActionException("State need a first_state_of_workflow_id.")
-        else:
-            raise ActionException("A motion needs a state.")
+        instance["state_id"] = workflow.get("first_state_id")
         return instance
