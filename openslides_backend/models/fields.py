@@ -3,9 +3,16 @@ from typing import Any, Dict, List, Union
 
 import bleach
 
-from ..shared.patterns import Collection, FullQualifiedId, string_to_fqid
-
-Schema = Dict[str, Any]
+from ..shared.patterns import Collection, string_to_fqid
+from ..shared.schema import (
+    fqid_list_schema,
+    id_list_schema,
+    optional_fqid_schema,
+    optional_id_schema,
+    required_fqid_schema,
+    required_id_schema,
+)
+from ..shared.typing import Schema
 
 
 class OnDelete(Enum):
@@ -282,20 +289,17 @@ class RelationField(BaseRelationField):
 
     def get_schema(self) -> Schema:
         if self.required:
-            return self.extend_schema(super().get_schema(), type="integer", mininum=1)
-        return self.extend_schema(super().get_schema(), type=["integer", "null"])
+            schema = required_id_schema
+        else:
+            schema = optional_id_schema
+        return self.extend_schema(super().get_schema(), **schema)
 
 
 class RelationListField(BaseRelationField):
     is_list_field = True
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(
-            super().get_schema(),
-            type="array",
-            items={"type": "integer", "minimum": 1},
-            uniqueItems=True,
-        )
+        return self.extend_schema(super().get_schema(), **id_list_schema)
 
 
 class BaseGenericRelationField(BaseRelationField):
@@ -306,12 +310,11 @@ class GenericRelationField(BaseGenericRelationField):
     is_list_field = False
 
     def get_schema(self) -> Schema:
-        schema = self.extend_schema(
-            super().get_schema(), type="string", pattern=FullQualifiedId.REGEX
-        )
         if self.required:
-            schema = self.extend_schema(schema, minLength=1)
-        return schema
+            schema = required_fqid_schema
+        else:
+            schema = optional_fqid_schema
+        return self.extend_schema(super().get_schema(), **schema)
 
     def validate(self, value: Any) -> Any:
         assert not isinstance(value, list)
@@ -322,12 +325,7 @@ class GenericRelationListField(BaseGenericRelationField):
     is_list_field = True
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(
-            super().get_schema(),
-            type="array",
-            items={"type": "string", "pattern": FullQualifiedId.REGEX},
-            uniqueItems=True,
-        )
+        return self.extend_schema(super().get_schema(), **fqid_list_schema)
 
     def validate(self, value: Any) -> Any:
         assert isinstance(value, list)

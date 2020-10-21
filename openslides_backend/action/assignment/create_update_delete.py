@@ -13,29 +13,12 @@ from ..list_of_speakers.list_of_speakers_creation import (
 )
 from ..register import register_action_set
 
-create_schema = DefaultSchema(Assignment()).get_create_schema(
-    required_properties=["title", "meeting_id"],
-    optional_properties=[
-        "description",
-        "open_posts",
-        "phase",
-        "default_poll_description",
-        "number_poll_candidates",
-        "attachment_ids",
-        "tag_ids",
-    ],
-)
-
-create_schema["items"]["properties"].update(agenda_creation_properties)
-
 
 class AssignmentCreate(
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,
 ):
-    model = Assignment()
-    schema = create_schema
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
 
@@ -46,7 +29,19 @@ class AssignmentActionSet(ActionSet):
     """
 
     model = Assignment()
-    create_schema = create_schema
+    create_schema = DefaultSchema(Assignment()).get_create_schema(
+        required_properties=["title", "meeting_id"],
+        optional_properties=[
+            "description",
+            "open_posts",
+            "phase",
+            "default_poll_description",
+            "number_poll_candidates",
+            "attachment_ids",
+            "tag_ids",
+        ],
+        additional_optional_fields=agenda_creation_properties,
+    )
     update_schema = DefaultSchema(Assignment()).get_update_schema(
         optional_properties=[
             "title",

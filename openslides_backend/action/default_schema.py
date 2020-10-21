@@ -1,7 +1,8 @@
-from typing import Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 
 from ..models.base import Model
 from ..shared.schema import schema_version
+from ..shared.typing import Schema
 from .sort_generic import sort_node_schema
 
 
@@ -17,11 +18,15 @@ class DefaultSchema:
         self,
         required_properties: Iterable[str] = [],
         optional_properties: Iterable[str] = [],
+        additional_required_fields: Dict[str, Any] = {},
+        additional_optional_fields: Dict[str, Any] = {},
         title: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> Dict:
+    ) -> Schema:
         """
         Returns a default schema with properties and required properties as given.
+        The additional_fields can be used to add additional field definitions to a
+        payload which are not present in the model.
         """
         return {
             "$schema": schema_version,
@@ -30,10 +35,15 @@ class DefaultSchema:
             "type": "array",
             "items": {
                 "type": "object",
-                "properties": self.model.get_properties(
-                    *required_properties, *optional_properties
-                ),
-                "required": list(required_properties),
+                "properties": {
+                    **self.model.get_properties(
+                        *required_properties, *optional_properties
+                    ),
+                    **additional_required_fields,
+                    **additional_optional_fields,
+                },
+                "required": list(required_properties)
+                + list(additional_required_fields.keys()),
                 "additionalProperties": False,
             },
             "minItems": 1,
@@ -44,10 +54,14 @@ class DefaultSchema:
         self,
         required_properties: Iterable[str] = [],
         optional_properties: Iterable[str] = [],
-    ) -> Dict:
+        additional_required_fields: Dict[str, Any] = {},
+        additional_optional_fields: Dict[str, Any] = {},
+    ) -> Schema:
         return self.get_default_schema(
             required_properties,
             optional_properties,
+            additional_required_fields,
+            additional_optional_fields,
             title=f"{self.model} create schema",
             description=f"An array of new {self.model} objects.",
         )
@@ -56,7 +70,9 @@ class DefaultSchema:
         self,
         required_properties: Iterable[str] = [],
         optional_properties: Iterable[str] = [],
-    ) -> Dict:
+        additional_required_fields: Dict[str, Any] = {},
+        additional_optional_fields: Dict[str, Any] = {},
+    ) -> Schema:
         """
         Returns a default update schema with properties as given. The required
         property 'id' is added.
@@ -64,11 +80,13 @@ class DefaultSchema:
         return self.get_default_schema(
             ["id"] + list(required_properties),
             optional_properties,
+            additional_required_fields,
+            additional_optional_fields,
             title=f"{self.model} update schema",
             description=f"An array of {self.model} objects to be (partially) updated.",
         )
 
-    def get_delete_schema(self) -> Dict:
+    def get_delete_schema(self) -> Schema:
         """
         Returns a default delete schema.
         """
@@ -83,7 +101,7 @@ class DefaultSchema:
         item_schema: Dict,
         title: Optional[str] = None,
         description: Optional[str] = None,
-    ) -> Dict:
+    ) -> Schema:
         return {
             "$schema": schema_version,
             "title": title,
@@ -94,7 +112,7 @@ class DefaultSchema:
             "maxItems": 1,
         }
 
-    def get_tree_sort_schema(self) -> Dict:
+    def get_tree_sort_schema(self) -> Schema:
         """
         Returns a default tree sort schema.
         """
@@ -125,7 +143,7 @@ class DefaultSchema:
 
     def get_linear_sort_schema(
         self, id_field_to_sort: str, id_field_main: str = "meeting_id"
-    ) -> Dict:
+    ) -> Schema:
         """
         Returns a default linear sort schema.
         """

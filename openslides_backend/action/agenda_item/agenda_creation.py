@@ -2,6 +2,7 @@ from typing import Any, Dict, Type
 
 from ...models.models import AgendaItem
 from ...shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ...shared.schema import optional_id_schema
 from ..base import Action
 
 AGENDA_PREFIX = "agenda_"
@@ -22,8 +23,7 @@ agenda_creation_properties = {
     },
     f"{AGENDA_PREFIX}parent_id": {
         "description": "The id of the parent agenda item.",
-        "type": ["integer", "null"],
-        "minimum": 1,
+        **optional_id_schema,
     },
     f"{AGENDA_PREFIX}comment": {
         "description": "The comment of the agenda item.",

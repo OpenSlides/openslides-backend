@@ -4,7 +4,7 @@ import fastjsonschema
 
 from ..models.models import Mediafile
 from ..shared.patterns import FullQualifiedId
-from ..shared.schema import schema_version
+from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
@@ -14,7 +14,7 @@ check_mediafile_id_schema = fastjsonschema.compile(
         "type": "object",
         "title": "check_mediafile_id data",
         "description": "Schema to validate the check_mediafile_id presenter data.",
-        "properties": {"mediafile_id": {"type": "integer", "minimum": 1}},
+        "properties": {"mediafile_id": required_id_schema},
         "required": ["mediafile_id"],
         "additionalProperties": False,
     }
