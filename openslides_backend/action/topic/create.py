@@ -15,13 +15,6 @@ from ..list_of_speakers.list_of_speakers_creation import (
 )
 from ..register import register_action
 
-create_schema = DefaultSchema(Topic()).get_create_schema(
-    required_properties=["meeting_id", "title"],
-    optional_properties=["text", "attachment_ids"],
-)
-
-create_schema["items"]["properties"].update(agenda_creation_properties)
-
 
 @register_action("topic.create")
 class TopicCreate(
@@ -34,7 +27,11 @@ class TopicCreate(
     """
 
     model = Topic()
-    schema = create_schema
+    schema = DefaultSchema(Topic()).get_create_schema(
+        required_properties=["meeting_id", "title"],
+        optional_properties=["text", "attachment_ids"],
+        additional_optional_fields=agenda_creation_properties,
+    )
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
     def check_dependant_action_execution_agenda_item(
