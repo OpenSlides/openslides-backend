@@ -13,7 +13,7 @@ from ..models.fields import (
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
-from ..shared.patterns import FullQualifiedId
+from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .action_interface import ActionPayload
 from .relations import Relations, RelationsHandler
@@ -191,11 +191,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
         By default it calls self.create_instance_write_request_element and uses
         get_relations_updates() for relations.
         """
+        modified_relation_fields: Dict[FullQualifiedField, Any] = {}
         for element in dataset["data"]:
             instance_write_request_element = self.create_instance_write_request_element(
                 element
             )
-            for relation in self.get_relations_updates(element):
+            for relation in self.get_relations_updates(
+                element, modified_relation_fields
+            ):
                 instance_write_request_element = merge_write_request_elements(
                     (instance_write_request_element, relation)
                 )
@@ -210,7 +213,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         raise NotImplementedError
 
     def get_relations_updates(
-        self, element: Any, model: Model = None
+        self,
+        element: Any,
+        modified_relation_fields: Dict[FullQualifiedField, Any],
+        model: Model = None,
     ) -> Iterable[WriteRequestElement]:
         """
         Creates write request elements (with update events) for all relations.
@@ -218,16 +224,34 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if model is None:
             model = self.model
         for fqfield, data in element["relations"].items():
-            event = Event(
-                type="update",
-                fqid=FullQualifiedId(fqfield.collection, fqfield.id),
-                fields={fqfield.field: data["value"]},
-            )
+            if fqfield not in modified_relation_fields:
+                modified_relation_fields[fqfield] = data["value"]
+            else:
+                # multiple updates on one fqfield can only happen for list fields
+                assert isinstance(modified_relation_fields[fqfield], list)
+                if data["type"] == "add":
+                    modified_relation_fields[fqfield].append(data["modified_element"])
+                else:
+                    # data["type"] == "remove"
+                    try:
+                        modified_relation_fields[fqfield].remove(
+                            data["modified_element"]
+                        )
+                    except ValueError:
+                        raise ActionException(
+                            f"Can't update relations in {self.name}: {str(data['modified_element'])}"
+                            f" is not in {str(modified_relation_fields[fqfield])} (FQField: {fqfield}"
+                        )
             if data["type"] == "add":
                 info_text = f"Object attached to {model}"
             else:
                 # data["type"] == "remove"
                 info_text = f"Object attachment to {model} reset"
+            event = Event(
+                type="update",
+                fqid=FullQualifiedId(fqfield.collection, fqfield.id),
+                fields={fqfield.field: modified_relation_fields[fqfield]},
+            )
             yield WriteRequestElement(
                 events=[event],
                 information={
