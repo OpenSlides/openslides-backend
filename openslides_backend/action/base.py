@@ -1,3 +1,4 @@
+import re
 from copy import deepcopy
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 
@@ -9,6 +10,7 @@ from ..models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
     BaseTemplateField,
+    BaseTemplateRelationField,
 )
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
@@ -133,23 +135,70 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Validates all relation fields according to the model definition.
         """
         for field_name, field in self.model.get_relation_fields():
-            if field_name in instance and field.equal_fields:
-                if isinstance(field, BaseTemplateField):
-                    raise NotImplementedError()
-                fqids = self.get_field_value_as_fqid_list(field, instance[field_name])
-                for fqid in fqids:
-                    related_model = self.fetch_model(fqid, field.equal_fields)
-                    for equal_field_name in field.equal_fields:
-                        if instance.get(equal_field_name) != related_model.get(
-                            equal_field_name
-                        ):
-                            raise ActionException(
-                                f"The field {equal_field_name} must be equal "
-                                f"but differs on {fqid}: "
-                                f"{str(instance.get(equal_field_name))} != "
-                                f"{str(related_model.get(equal_field_name))}"
-                            )
+            if field.equal_fields:
+                if field_name in instance:
+                    fields = [field_name]
+                elif isinstance(field, BaseTemplateRelationField):
+                    fields = [
+                        instance_field
+                        for instance_field, replacement in self.get_structured_fields_in_instance(
+                            field_name, field, instance
+                        )
+                    ]
+                else:
+                    continue
+                for instance_field in fields:
+                    self.check_equal_fields(field, instance, instance_field)
         return instance
+
+    def check_equal_fields(
+        self,
+        field: BaseRelationField,
+        instance: Dict[str, Any],
+        instance_field: str,
+        additional_equal_fields: List[str] = [],
+    ) -> None:
+        """
+        Asserts that all fields given in field.equal_fields + additional_equal_fields
+        are the same in instance and the model referenced by the name instance_field
+        of the given field.
+        """
+        fqids = self.get_field_value_as_fqid_list(field, instance[instance_field])
+        equal_fields = field.equal_fields + additional_equal_fields
+        for fqid in fqids:
+            related_model = self.fetch_model(fqid, equal_fields)
+            for equal_field_name in equal_fields:
+                if instance.get(equal_field_name) != related_model.get(
+                    equal_field_name
+                ):
+                    raise ActionException(
+                        f"The field {equal_field_name} must be equal "
+                        f"but differs on {fqid}: "
+                        f"{str(instance.get(equal_field_name))} != "
+                        f"{str(related_model.get(equal_field_name))}"
+                    )
+
+    def get_structured_fields_in_instance(
+        self, field_name: str, field: BaseTemplateField, instance: Dict[str, Any]
+    ) -> List[Tuple[str, str]]:
+        """
+        Finds the given field in the given instance and returns the names as well as
+        the used replacements of it.
+        """
+        structured_fields: List[Tuple[str, str]] = []
+        for instance_field in instance.keys():
+            regex = (
+                r"^"
+                + field_name[: field.index]
+                + r"\$"
+                + r"([^_]*)"
+                + field_name[field.index :]
+                + r"$"
+            )
+            match = re.match(regex, instance_field)
+            if match:
+                structured_fields.append((instance_field, match.group(1)))
+        return structured_fields
 
     def get_field_value_as_fqid_list(
         self, field: BaseRelationField, value: Any

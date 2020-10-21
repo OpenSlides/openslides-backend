@@ -1,4 +1,8 @@
+import re
+
 KEYSEPARATOR = "/"
+
+ID_PATTERN = re.compile(r"[1-9]\d*")
 
 
 class Collection:
