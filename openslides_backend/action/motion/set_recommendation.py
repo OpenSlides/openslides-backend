@@ -22,17 +22,21 @@ class MotionSetRecommendationAction(UpdateAction):
         Check recommendation workflow_id and recommendation_label.
         """
         motion = self.database.get(
-            FullQualifiedId(Collection("motion"), instance["id"]), ["workflow_id"]
+            FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
         )
-        state = self.database.get(
+        current_state = self.database.get(
+            FullQualifiedId(Collection("motion_state"), motion["state_id"]),
+            ["workflow_id"],
+        )
+        recommendation_state = self.database.get(
             FullQualifiedId(Collection("motion_state"), instance["recommendation_id"]),
             ["workflow_id", "recommendation_label"],
         )
-        if state.get("workflow_id") != motion.get("workflow_id"):
+        if current_state.get("workflow_id") != recommendation_state.get("workflow_id"):
             raise ActionException(
                 "Cannot set recommendation. State is from a different workflow as motion."
             )
-        if state.get("recommendation_label") is None:
+        if recommendation_state.get("recommendation_label") is None:
             raise ActionException(
                 "Recommendation_label of a recommendation must be set."
             )
