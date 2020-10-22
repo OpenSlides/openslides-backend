@@ -23,6 +23,10 @@ class ActionException(View400Exception):
     pass
 
 
+class NoContentException(BackendBaseException):
+    pass
+
+
 class PresenterException(View400Exception):
     pass
 

@@ -416,6 +416,12 @@ class DeleteAction(Action):
 
         return {"data": data}
 
+    def update_instances(self, payload: ActionPayload) -> ActionPayload:
+        """
+        This method can be overwritten to update the payload.
+        """
+        return payload
+
     def create_write_request_elements(
         self, dataset: DataSet
     ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:

@@ -9,6 +9,7 @@ from ..presenter.presenter import PresenterHandler
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.wsgi import Headers, RequestBody, ResponseBody, View
+from ..shared.exceptions import NoContentException
 
 
 class BaseView(View):
@@ -65,9 +66,15 @@ class ActionView(BaseView):
 
         # Handle request.
         handler: Action = ActionHandler(logging=self.logging, services=self.services)
-        response = handler.handle_request(payload, user_id)
-
-        # Finish request.
+        try:
+            result = handler.handle_request(payload, user_id)
+        except NoContentException:
+            result = [
+                {
+                    "success": True,
+                    "message": "Action handled successfully. Nothing to do.",
+                }
+            ]
         self.logger.debug("Action request finished successfully.")
         return response, access_token
 
