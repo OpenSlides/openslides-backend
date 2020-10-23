@@ -1,1 +1,1 @@
-from . import create_update_delete, sort, speak  # noqa
+from . import create_update_delete, end_speach, sort, speak  # noqa

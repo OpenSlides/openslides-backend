@@ -139,12 +139,12 @@ class UpdateAction(Action):
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         return self.update_action_prepare_dataset(payload)
 
-    def get_updated_instances(self, payload: ActionPayload) -> List[Dict[str, Any]]:
+    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
         """
         By default, this does nothing. Override in subclasses to adjust the updates
         to the instances.
         """
-        return payload
+        yield from payload
 
     def update_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
@@ -153,8 +153,7 @@ class UpdateAction(Action):
         Uses the input and calculates (reverse) relations.
         """
         data = []
-        updated_instances = self.get_updated_instances(payload)
-        for instance in updated_instances:
+        for instance in self.get_updated_instances(payload):
             # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
 
             # Primary instance manipulation for defaults and extra fields.
