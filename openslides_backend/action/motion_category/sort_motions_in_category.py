@@ -15,10 +15,11 @@ class MotionCategorySortMotionInCategorySort(LinearSortMixin, Action):
     schema = DefaultSchema(Motion()).get_linear_sort_schema("motion_ids", "id")
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        # payload is an array with exactly one item
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
         return self.sort_linear(
-            nodes=payload[0]["motion_ids"],
-            filter_id=payload[0]["id"],
+            nodes=instance["motion_ids"],
+            filter_id=instance["id"],
             filter_str="category_id",
             weight_key="category_weight",
         )

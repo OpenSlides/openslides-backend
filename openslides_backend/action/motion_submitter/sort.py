@@ -17,9 +17,10 @@ class MotionSubmitterSort(LinearSortMixin, Action):
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        # payload is an array with exactly one item
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
         return self.sort_linear(
-            nodes=payload[0]["motion_submitter_ids"],
-            filter_id=payload[0]["motion_id"],
+            nodes=instance["motion_submitter_ids"],
+            filter_id=instance["motion_id"],
             filter_str="motion_id",
         )

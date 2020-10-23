@@ -1,5 +1,4 @@
 import time
-from typing import Any, Dict, Iterable
 
 from ...models.models import Speaker
 from ...shared.exceptions import ActionException
@@ -23,7 +22,7 @@ class SpeakerEndSpeach(UpdateAction):
         description="Schema to stop a speaker's speach.",
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:
             speaker = self.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),

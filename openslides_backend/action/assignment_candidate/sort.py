@@ -17,9 +17,10 @@ class AssignmentCandidateSort(LinearSortMixin, Action):
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        # payload is an array with exactly one item
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
         return self.sort_linear(
-            nodes=payload[0]["candidate_ids"],
-            filter_id=payload[0]["assignment_id"],
+            nodes=instance["candidate_ids"],
+            filter_id=instance["assignment_id"],
             filter_str="assignment_id",
         )

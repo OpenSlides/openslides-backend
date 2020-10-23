@@ -6,14 +6,6 @@ from ..action.action import Payload as ActionPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
-from ..shared.exceptions import (
-    ActionException,
-    AuthenticationException,
-    DatabaseException,
-    PermissionDenied,
-    PresenterException,
-    ViewException,
-)
 from ..shared.interfaces import (
     Headers,
     LoggingModule,
@@ -42,12 +34,9 @@ class BaseView(View):
         """
         Returns user id from authentication service using HTTP headers.
         """
-        try:
-            user_id, access_token = self.services.authentication().authenticate(
-                headers, cookies
-            )
-        except AuthenticationException as exception:
-            raise ViewException(exception.message, status_code=400)
+        user_id, access_token = self.services.authentication().authenticate(
+            headers, cookies
+        )
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 
@@ -81,13 +70,9 @@ class ActionView(BaseView):
 
         # Handle request.
         handler: Action = ActionHandler(logging=self.logging, services=self.services)
-        try:
-            result = handler.handle_request(payload, user_id)
-        except (ActionException, DatabaseException) as exception:
-            raise ViewException(exception.message, status_code=400)
-        except PermissionDenied as exception:
-            raise ViewException(exception.message, status_code=403)
+        result = handler.handle_request(payload, user_id)
 
+        # Finish request.
         self.logger.debug("Action request finished successfully.")
         return result, access_token
 
@@ -124,10 +109,9 @@ class PresenterView(BaseView):
         handler: Presenter = PresenterHandler(
             logging=self.logging, services=self.services,
         )
-        try:
-            presenter_response = handler.handle_request(payload, user_id)
-        except (PresenterException, DatabaseException) as exception:
-            raise ViewException(exception.message, status_code=400)
+        presenter_response = handler.handle_request(payload, user_id)
+
+        # Finish request.
         self.logger.debug("Presenter request finished successfully. Send response now.")
         return presenter_response, access_token
 
