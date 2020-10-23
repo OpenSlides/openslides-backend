@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 from ...models.models import AgendaItem
 from ...shared.exceptions import ActionException
@@ -31,7 +31,7 @@ class AgendaItemAssign(UpdateAction):
         single_item=True,
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> List[Dict[str, Any]]:
+    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
         return self.prepare_assign_data(
             parent_id=payload[0]["parent_id"],
             ids=payload[0]["ids"],
@@ -40,7 +40,7 @@ class AgendaItemAssign(UpdateAction):
 
     def prepare_assign_data(
         self, parent_id: Optional[int], ids: List[int], meeting_id: int
-    ) -> List[Dict[str, Any]]:
+    ) -> Iterable[Dict[str, Any]]:
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.database.filter(
             collection=self.model.collection,
@@ -48,32 +48,29 @@ class AgendaItemAssign(UpdateAction):
             mapped_fields=["id"],
             lock_result=True,
         )
-        updated_instances = []
 
         if parent_id is None:
             for id_ in ids:
                 if id_ not in db_instances:
                     raise ActionException(f"Id {id_} not in db_instances.")
-                updated_instances.append({"id": id_, "parent_id": None})
-            return updated_instances
-
-        # calc the ancesters of parent id
-        ancesters = [parent_id]
-        grandparent = self.database.get(
-            FullQualifiedId(self.model.collection, parent_id), ["parent_id"]
-        )
-        while grandparent.get("parent_id") is not None:
-            gp_parent_id = grandparent["parent_id"]
-            ancesters.append(gp_parent_id)
+                yield {"id": id_, "parent_id": None}
+        else:
+            # Calculate the ancesters of parent
+            ancesters = [parent_id]
             grandparent = self.database.get(
-                FullQualifiedId(self.model.collection, gp_parent_id), ["parent_id"]
+                FullQualifiedId(self.model.collection, parent_id), ["parent_id"]
             )
-        for id_ in ids:
-            if id_ in ancesters:
-                raise ActionException(
-                    f"Assigning item {id_} to one of its children is not possible."
+            while grandparent.get("parent_id") is not None:
+                gp_parent_id = grandparent["parent_id"]
+                ancesters.append(gp_parent_id)
+                grandparent = self.database.get(
+                    FullQualifiedId(self.model.collection, gp_parent_id), ["parent_id"]
                 )
-            if id_ not in db_instances:
-                raise ActionException(f"Id {id_} not in db_instances.")
-            updated_instances.append({"id": id_, "parent_id": parent_id})
-        return updated_instances
+            for id_ in ids:
+                if id_ in ancesters:
+                    raise ActionException(
+                        f"Assigning item {id_} to one of its children is not possible."
+                    )
+                if id_ not in db_instances:
+                    raise ActionException(f"Id {id_} not in db_instances.")
+                yield {"id": id_, "parent_id": parent_id}
