@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Set, Tuple, Type
@@ -11,7 +10,7 @@ from ..models.fields import (
 )
 from ..shared.exceptions import ActionException
 from ..shared.interfaces import Event, WriteRequestElement
-from ..shared.patterns import FullQualifiedId
+from ..shared.patterns import ID_PATTERN, FullQualifiedId
 from ..shared.typing import DeletedModel, ModelMap
 from .actions_map import actions_map
 from .base import Action, ActionPayload, DataSet, merge_write_request_elements
@@ -43,34 +42,30 @@ class CreateAction(Action):
             relation_fields = []
             additional_instance_fields: Dict[str, List[str]] = defaultdict(list)
             for field_name, field in self.model.get_relation_fields():
-                for instance_field in instance.keys():
-                    if field_name == instance_field:
-                        if field.structured_relation:
-                            if instance.get(field.structured_relation[0]) is None:
-                                raise ActionException(
-                                    "You must give both a relation field "
-                                    "with structured_relation and its corresponding "
-                                    "foreign key field."
-                                )
-                        relation_fields.append((field_name, field))
-                    elif isinstance(field, BaseTemplateRelationField):
-                        regex = (
-                            r"^"
-                            + field_name[: field.index]
-                            + r"\$"
-                            + r"(\d+)"
-                            + field_name[field.index :]
-                            + r"$"
-                        )
-                        match = re.match(regex, instance_field)
-                        if not match:
-                            continue
+                if field_name in instance:
+                    if field.structured_relation:
+                        if instance.get(field.structured_relation[0]) is None:
+                            raise ActionException(
+                                "You must give both a relation field "
+                                "with structured_relation and its corresponding "
+                                "foreign key field."
+                            )
+                    relation_fields.append((field_name, field))
+                elif isinstance(field, BaseTemplateRelationField):
+                    structured_fields = self.get_structured_fields_in_instance(
+                        field_name, field, instance
+                    )
+                    for instance_field, replacement in structured_fields:
+                        if not ID_PATTERN.match(replacement):
+                            raise ActionException(
+                                "Template relation fields can only use replacements which are ids."
+                            )
                         relation_fields.append((instance_field, field))
                         template_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
                         )
                         additional_instance_fields[template_field_name].append(
-                            match.group(1)
+                            replacement
                         )
             instance.update(additional_instance_fields)
 
@@ -170,33 +165,28 @@ class UpdateAction(Action):
             relation_fields = []
             additional_instance_fields: Dict[str, Set[str]] = defaultdict(set)
             for field_name, field in self.model.get_relation_fields():
-                for instance_field in instance.keys():
-                    if field_name == instance_field:
-                        if field.structured_relation:
-                            if instance.get(field.structured_relation[0]) is not None:
-                                raise ActionException(
-                                    "You must not try to update both a relation field "
-                                    "with structured_relation and its corresponding "
-                                    "foreign key field."
-                                )
-                        relation_fields.append((field_name, field))
-                    elif isinstance(field, BaseTemplateRelationField):
-                        regex = (
-                            r"^"
-                            + field_name[: field.index]
-                            + r"\$"
-                            + r"(\d+)"
-                            + field_name[field.index :]
-                            + r"$"
-                        )
-                        match = re.match(regex, instance_field)
-                        if not match:
-                            continue
+                if field_name in instance:
+                    if field.structured_relation:
+                        if instance.get(field.structured_relation[0]) is not None:
+                            raise ActionException(
+                                "You must not try to update both a relation field "
+                                "with structured_relation and its corresponding "
+                                "foreign key field."
+                            )
+                    relation_fields.append((field_name, field))
+                elif isinstance(field, BaseTemplateRelationField):
+                    structured_fields = self.get_structured_fields_in_instance(
+                        field_name, field, instance
+                    )
+                    for instance_field, replacement in structured_fields:
+                        if not ID_PATTERN.match(replacement):
+                            raise ActionException(
+                                "Template relation fields can only use replacements which are ids."
+                            )
                         relation_fields.append((instance_field, field))
                         template_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
                         )
-                        replacement = match.group(1)
                         template_field_db_value = set(
                             self.fetch_model(
                                 fqid=FullQualifiedId(
