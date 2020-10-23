@@ -277,7 +277,11 @@ class UpdateAction(Action):
         """
         fqid = FullQualifiedId(self.model.collection, element["instance"]["id"])
         information = {fqid: ["Object updated"]}
-        fields = {k: v for k, v in element["instance"].items() if k != "id"}
+        fields = {
+            k: v
+            for k, v in element["instance"].items()
+            if k != "id" and not k.startswith("meta_")
+        }
         event = Event(type="update", fqid=fqid, fields=fields)
         return WriteRequestElement(
             events=[event], information=information, user_id=self.user_id

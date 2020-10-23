@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import simplejson as json
 from mypy_extensions import TypedDict
@@ -22,12 +22,20 @@ class GetManyRequest:
     datastore.
     """
 
+    mapped_fields: Optional[Set[str]]
+
     def __init__(
-        self, collection: Collection, ids: List[int], mapped_fields: List[str] = None,
+        self,
+        collection: Collection,
+        ids: List[int],
+        mapped_fields: Union[Set[str], List[str]] = None,
     ) -> None:
         self.collection = collection
         self.ids = ids
-        self.mapped_fields = mapped_fields
+        if isinstance(mapped_fields, list):
+            self.mapped_fields = set(mapped_fields)
+        else:
+            self.mapped_fields = mapped_fields
 
     def to_dict(self) -> GetManyRequestData:
         result: GetManyRequestData = {
@@ -35,7 +43,7 @@ class GetManyRequest:
             "ids": self.ids,
         }
         if self.mapped_fields is not None:
-            result["mapped_fields"] = self.mapped_fields
+            result["mapped_fields"] = list(self.mapped_fields)
         return result
 
 
@@ -90,20 +98,20 @@ class Get(Command):
     def __init__(
         self,
         fqid: FullQualifiedId,
-        mappedFields: List[str] = None,
+        mapped_fields: Set[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = None,
     ) -> None:
         self.fqid = fqid
-        self.mappedFields = mappedFields
+        self.mapped_fields = mapped_fields
         self.position = position
         self.get_deleted_models = get_deleted_models
 
     def get_raw_data(self) -> CommandData:
         result: CommandData = {}
         result["fqid"] = str(self.fqid)
-        if self.mappedFields is not None:
-            result["mapped_fields"] = self.mappedFields
+        if self.mapped_fields is not None:
+            result["mapped_fields"] = list(self.mapped_fields)
         if self.position is not None:
             result["position"] = self.position
         if self.get_deleted_models is not None:
@@ -119,7 +127,7 @@ class GetMany(Command):
     def __init__(
         self,
         get_many_requests: List[GetManyRequest],
-        mapped_fields: List[str] = None,
+        mapped_fields: Set[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = None,
     ) -> None:
@@ -138,7 +146,7 @@ class GetMany(Command):
         )
         result["requests"] = requests
         if self.mapped_fields is not None:
-            result["mapped_fields"] = self.mapped_fields
+            result["mapped_fields"] = list(self.mapped_fields)
         if self.position is not None:
             result["position"] = self.position
         if self.get_deleted_models is not None:
@@ -154,7 +162,7 @@ class GetAll(Command):
     def __init__(
         self,
         collection: Collection,
-        mapped_fields: List[str] = None,
+        mapped_fields: Set[str] = None,
         get_deleted_models: DeletedModelsBehaviour = None,
     ) -> None:
         self.collection = collection
@@ -165,7 +173,7 @@ class GetAll(Command):
         result: CommandData = {}
         result["collection"] = str(self.collection)
         if self.mapped_fields is not None:
-            result["mapped_fields"] = self.mapped_fields
+            result["mapped_fields"] = list(self.mapped_fields)
         if self.get_deleted_models is not None:
             result["get_deleted_models"] = self.get_deleted_models
         return result
@@ -262,7 +270,7 @@ class Filter(Command):
         self,
         collection: Collection,
         filter: FilterInterface,
-        mapped_fields: List[str] = None,
+        mapped_fields: Set[str] = None,
     ) -> None:
         self.collection = collection
         self.filter = filter
@@ -274,7 +282,7 @@ class Filter(Command):
             "filter": self.filter.to_dict(),
         }
         if self.mapped_fields is not None:
-            result["mapped_fields"] = self.mapped_fields
+            result["mapped_fields"] = list(self.mapped_fields)
         return result
 
 
