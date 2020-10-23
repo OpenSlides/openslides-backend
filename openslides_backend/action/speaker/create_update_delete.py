@@ -1,24 +1,27 @@
 from ...models.models import Speaker
-from ..action_set import ActionSet
-from ..create_action_with_inferred_meeting import (
-    get_create_action_with_inferred_meeting,
-)
+from ..create_action_with_inferred_meeting import CreateActionWithInferredMeeting
 from ..default_schema import DefaultSchema
-from ..register import register_action_set
+from ..generics import DeleteAction, UpdateAction
+from ..register import register_action
 
 
-@register_action_set("speaker")
-class SpeakerActionSet(ActionSet):
-    """
-    Actions to create, update and delete speaker.
-    """
-
+@register_action("speaker.create")
+class SpeakerCreateAction(CreateActionWithInferredMeeting):
     model = Speaker()
-    create_schema = DefaultSchema(Speaker()).get_create_schema(
+    relation_field_for_meeting = "list_of_speakers_id"
+    schema = DefaultSchema(Speaker()).get_create_schema(
         required_properties=["list_of_speakers_id", "user_id"],
         optional_properties=["marked"],
     )
-    update_schema = DefaultSchema(Speaker()).get_update_schema(["marked"])
-    delete_schema = DefaultSchema(Speaker()).get_delete_schema()
 
-    CreateActionClass = get_create_action_with_inferred_meeting("list_of_speakers_id")
+
+@register_action("speaker.update")
+class SpeakerUpdate(UpdateAction):
+    model = Speaker()
+    schema = DefaultSchema(Speaker()).get_update_schema(["marked"])
+
+
+@register_action("speaker.delete")
+class SpeakerDeleteAction(DeleteAction):
+    model = Speaker()
+    schema = DefaultSchema(Speaker()).get_delete_schema()
