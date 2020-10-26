@@ -22,6 +22,27 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         assert model.get("motion_id") == 357
         assert model.get("user_id") == 78
 
+    def test_create_not_unique(self) -> None:
+        self.create_model("meeting/111", {"name": "name_m123etrd"})
+        self.create_model("motion/357", {"title": "title_YIDYXmKj", "meeting_id": 111})
+        self.create_model(
+            "user/78", {"username": "username_loetzbfg", "meeting_id": 111}
+        )
+        self.create_model(
+            "motion_submitter/12", {"motion_id": 357, "user_id": 78, "meeting_id": 111}
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion_submitter.create",
+                    "data": [{"motion_id": 357, "user_id": 78}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "(user_id, motion_id) must be unique." in str(response.data)
+
     def test_create_empty_data(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "motion_submitter.create", "data": [{}]}],
