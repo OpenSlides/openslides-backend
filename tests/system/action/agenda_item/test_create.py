@@ -56,6 +56,38 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["weight"], 0)
         self.assertFalse(agenda_item.get("closed"))
 
+    def test_create_parent_weight(self) -> None:
+        self.create_model("meeting/1", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 1})
+        self.create_model(
+            "agenda_item/42", {"comment": "test", "meeting_id": 1, "weight": 10}
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {
+                            "content_object_id": "topic/1",
+                            "comment": "test_comment_oiuoitesfd",
+                            "type": 2,
+                            "parent_id": 42,
+                            "duration": 360,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        agenda_item = self.get_model("agenda_item/43")
+        self.assertEqual(agenda_item["comment"], "test_comment_oiuoitesfd")
+        self.assertEqual(agenda_item["type"], 2)
+        self.assertEqual(agenda_item["parent_id"], 42)
+        self.assertEqual(agenda_item["duration"], 360)
+        self.assertEqual(agenda_item["weight"], 11)
+        self.assertFalse(agenda_item.get("closed"))
+
     def test_create_content_object_does_not_exist(self) -> None:
         response = self.client.post(
             "/",
