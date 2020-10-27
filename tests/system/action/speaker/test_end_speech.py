@@ -10,7 +10,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {"user_id": 7, "list_of_speakers_id": 23, "begin_time": 10000},
         )
         response = self.client.post(
-            "/", json=[{"action": "speaker.end_speach", "data": [{"id": 890}]}],
+            "/", json=[{"action": "speaker.end_speech", "data": [{"id": 890}]}],
         )
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
@@ -24,7 +24,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {"user_id": 7, "list_of_speakers_id": 23, "begin_time": 10000},
         )
         response = self.client.post(
-            "/", json=[{"action": "speaker.end_speach", "data": [{"id": 889}]}],
+            "/", json=[{"action": "speaker.end_speech", "data": [{"id": 889}]}],
         )
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")
@@ -44,7 +44,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             },
         )
         response = self.client.post(
-            "/", json=[{"action": "speaker.end_speach", "data": [{"id": 890}]}],
+            "/", json=[{"action": "speaker.end_speech", "data": [{"id": 890}]}],
         )
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")
@@ -61,7 +61,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             "speaker/890", {"user_id": 7, "list_of_speakers_id": 23},
         )
         response = self.client.post(
-            "/", json=[{"action": "speaker.end_speach", "data": [{"id": 890}]}],
+            "/", json=[{"action": "speaker.end_speech", "data": [{"id": 890}]}],
         )
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")

@@ -10,7 +10,7 @@ from ..generics import UpdateAction
 from ..register import register_action
 
 
-@register_action("speaker.end_speach")
+@register_action("speaker.end_speech")
 class SpeakerEndSpeach(UpdateAction):
     """
     Action to stop speakers.
