@@ -1,6 +1,6 @@
 from ..base import DummyAction
 from ..register import register_action
-from . import set_as_font  # noqa
+from . import set_as_font, set_as_logo  # noqa
 
 
 @register_action("mediafile.create")
@@ -20,9 +20,4 @@ class MediafileDelete(DummyAction):
 
 @register_action("mediafile.move")
 class MediafileMove(DummyAction):
-    pass
-
-
-@register_action("mediafile.set_as_logo")
-class MediafileSetAsFont(DummyAction):
     pass
