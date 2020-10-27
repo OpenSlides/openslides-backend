@@ -1,5 +1,6 @@
 from ..base import DummyAction
 from ..register import register_action
+from . import set_as_font  # noqa
 
 
 @register_action("mediafile.create")
