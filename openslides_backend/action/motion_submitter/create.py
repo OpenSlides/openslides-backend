@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from ...models.models import MotionSubmitter
 from ...shared.exceptions import ActionException
+from ...shared.filters import And, FilterOperator
 from ...shared.patterns import Collection, FullQualifiedId
 from ..create_action_with_inferred_meeting import CreateActionWithInferredMeetingMixin
 from ..default_schema import DefaultSchema
@@ -36,4 +37,15 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
             raise ActionException(
                 "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match."
             )
+
+        # check, if (user_id, motion_id) already in the databse.
+        filter = And(
+            FilterOperator("user_id", "=", instance["user_id"]),
+            FilterOperator("motion_id", "=", instance["motion_id"]),
+        )
+        another_exist = self.database.exists(
+            collection=self.model.collection, filter=filter
+        )
+        if another_exist["exists"]:
+            raise ActionException("(user_id, motion_id) must be unique.")
         return instance
