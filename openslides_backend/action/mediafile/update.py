@@ -1,14 +1,14 @@
 from typing import Any, Dict
 
 from ...models.models import Mediafile
-from ...shared.patterns import Collection, FullQualifiedId
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
+from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 
 @register_action("mediafile.update")
-class MediafileUpdate(UpdateAction):
+class MediafileUpdate(MediafileCalculatedFieldsMixin, UpdateAction):
     """
     Action to update a mediafile.
     """
@@ -25,33 +25,11 @@ class MediafileUpdate(UpdateAction):
         """
         if instance.get("access_group_ids") is None:
             return instance
-        mediafile = self.database.get(
-            FullQualifiedId(Collection("mediafile"), instance["id"]), ["parent_id"]
+        (
+            instance["has_inherited_access_groups"],
+            instance["inherited_access_group_ids"],
+        ) = self.calculate_inherited_groups(
+            instance["id"], instance["access_group_ids"]
         )
-        if mediafile.get("parent_id") is not None:
-            parent = self.database.get(
-                FullQualifiedId(Collection("mediafile"), mediafile["parent_id"]),
-                ["inherited_access_group_ids", "has_inherited_access_groups"],
-            )
-            if not parent.get("inherited_access_group_ids"):
-                instance["inherited_access_group_ids"] = instance["access_group_ids"]
-            elif not instance["access_group_ids"]:
-                instance["inherited_access_group_ids"] = parent[
-                    "inherited_access_group_ids"
-                ]
-            else:
-                instance["inherited_access_group_ids"] = [
-                    id_
-                    for id_ in instance["access_group_ids"]
-                    if id_ in parent["inherited_access_group_ids"]
-                ]
-            instance["has_inherited_access_groups"] = len(
-                instance["inherited_access_group_ids"]
-            ) > 0 or parent.get("has_inherited_access_groups")
-        else:
-            instance["inherited_access_group_ids"] = instance["access_group_ids"]
-            instance["has_inherited_access_groups"] = (
-                len(instance["inherited_access_group_ids"]) > 0
-            )
 
         return instance
