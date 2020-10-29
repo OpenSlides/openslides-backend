@@ -37,6 +37,23 @@ jobs:
 
     - name: Run tests
       run: dev/run-tests.sh
+  
+  check-models-checksum:
+    name: Check the checksum of the models.yml
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install requirements
+      run: pip install --requirement dev/requirements_development.txt
+
+    - name: Check checksum
+      run: make check-models
 
   check-coding-style-black:
     name: Check coding style with black

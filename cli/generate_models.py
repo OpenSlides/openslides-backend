@@ -1,5 +1,7 @@
+import hashlib
 import os
 import string
+import sys
 from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Union
 
@@ -96,6 +98,15 @@ def main() -> None:
     else:
         models_yml = requests.get(SOURCE).content
 
+    # calc checksum to assert the models.py is up-to-date
+    checksum = hashlib.md5(models_yml).hexdigest()
+
+    if len(sys.argv) > 1 and sys.argv[1] == "check":
+        from openslides_backend.models.models import MODELS_YML_CHECKSUM
+
+        assert checksum == MODELS_YML_CHECKSUM
+        sys.exit(0)
+
     # Fix broken keys
     models_yml = models_yml.replace(" yes:".encode(), ' "yes":'.encode())
     models_yml = models_yml.replace(" no:".encode(), ' "no":'.encode())
@@ -104,6 +115,7 @@ def main() -> None:
     MODELS = yaml.safe_load(models_yml)
     with open(DESTINATION, "w") as dest:
         dest.write(FILE_TEMPLATE)
+        dest.write("\nMODELS_YML_CHECKSUM = " + json.dumps(checksum) + "\n")
         for collection, fields in MODELS.items():
             model = Model(collection, fields)
             dest.write(model.get_code())
