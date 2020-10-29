@@ -6,7 +6,7 @@ class MediafileSetAsFontActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_meeting222"})
         self.create_model(
             "mediafile/17",
-            {"is_directory": False, "mimetype": "font/otf", "meeting_id": 222},
+            {"is_directory": False, "mimetype": "font/woff", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -22,7 +22,7 @@ class MediafileSetAsFontActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_meeting222"})
         self.create_model(
             "mediafile/17",
-            {"is_directory": True, "mimetype": "font/otf", "meeting_id": 222},
+            {"is_directory": True, "mimetype": "font/ttf", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
