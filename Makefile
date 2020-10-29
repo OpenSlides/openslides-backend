@@ -24,6 +24,9 @@ generate-models:
 	PYTHONPATH=. python cli/generate_models.py
 	black openslides_backend/models/models.py
 
+check-models:
+	PYTHONPATH=. python cli/generate_models.py check
+
 run-debug:
 	OPENSLIDES_BACKEND_DEBUG=1 python -m openslides_backend
 
