@@ -31,7 +31,12 @@ class MediafileSetAsFontAction(UpdateAction):
         meeting_id = mediafile["meeting_id"]
         if mediafile.get("is_directory"):
             raise ActionException("Cannot set a directory as font.")
-        if mediafile.get("mimetype") not in ["font/otf", "font/ttf"]:
+        if mediafile.get("mimetype") not in [
+            "font/ttf",
+            "font/woff",
+            "application/font-woff",
+            "application/font-sfnt",
+        ]:
             raise ActionException("Cannot set a non font as font.")
         instance[f"used_as_font_${place}_in_meeting_id"] = meeting_id
         del instance["place"]
