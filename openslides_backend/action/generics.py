@@ -45,6 +45,11 @@ class CreateAction(GenericBaseAction):
             # Primary instance manipulation for defaults and extra fields.
             instance = self.set_defaults(instance)
             instance = self.validate_fields(instance)
+
+            # Fetch new id to have it available in update_instance method
+            new_id = self.database.reserve_id(collection=self.model.collection)
+            instance["id"] = new_id
+
             instance = self.update_instance(instance)
             instance = self.validate_relation_fields(instance)
 
@@ -79,10 +84,6 @@ class CreateAction(GenericBaseAction):
                             replacement
                         )
             instance.update(additional_instance_fields)
-
-            # Get new id.
-            new_id = self.database.reserve_id(collection=self.model.collection)
-            instance["id"] = new_id
 
             # Get relations.
             relations = self.get_relations(

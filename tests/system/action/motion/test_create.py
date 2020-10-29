@@ -23,7 +23,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                             "workflow_id": 12,
                             "agenda_create": True,
                             "text": "test",
-                            "reason": "test",
                         }
                     ],
                 }
@@ -151,7 +150,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                             "meeting_id": 222,
                             "workflow_id": 12,
                             "text": "test",
-                            "reason": "test",
                         }
                     ],
                 }
@@ -178,12 +176,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 {
                     "action": "motion.create",
                     "data": [
-                        {
-                            "title": "title_test1",
-                            "meeting_id": 222,
-                            "text": "test",
-                            "reason": "test",
-                        }
+                        {"title": "title_test1", "meeting_id": 222, "text": "test"}
                     ],
                 }
             ],
@@ -199,12 +192,16 @@ class MotionCreateActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion.create",
-                    "data": [{"title": "test_Xcdfgee", "meeting_id": 222}],
+                    "data": [
+                        {"title": "test_Xcdfgee", "meeting_id": 222, "text": "text"}
+                    ],
                 }
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Cannot calculate state_id." in str(response.data)
+        assert "No matching default workflow defined on this meeting" in str(
+            response.data
+        )
 
     def test_correct_origin_id_set(self) -> None:
         self.create_model("meeting/221", {"name": "name_XDAddEAW", "committee_id": 53})
@@ -241,7 +238,6 @@ class MotionCreateActionTest(BaseActionTestCase):
                             "meeting_id": 222,
                             "origin_id": 12,
                             "text": "test",
-                            "reason": "test",
                         }
                     ],
                 }
@@ -283,7 +279,12 @@ class MotionCreateActionTest(BaseActionTestCase):
                 {
                     "action": "motion.create",
                     "data": [
-                        {"title": "test_Xcdfgee", "meeting_id": 222, "origin_id": 12}
+                        {
+                            "title": "test_Xcdfgee",
+                            "text": "text",
+                            "meeting_id": 222,
+                            "origin_id": 12,
+                        }
                     ],
                 }
             ],
@@ -291,20 +292,22 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Committee id 52 not in []" in str(response.data)
 
-    def test_create_good_special_fields_1(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
+    def test_create_missing_text(self) -> None:
+        self.create_model("meeting/222", {})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion.create",
+                    "data": [{"title": "test_Xcdfgee", "meeting_id": 222}],
+                }
+            ],
         )
-        self.create_model(
-            "motion_state/34", {"name": "name_state34", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion/1",
-            {"title": "title_eJveLQIh", "sort_child_ids": [], "meeting_id": 222},
-        )
+        self.assert_status_code(response, 400)
+        assert "Text is required" in str(response.data)
 
+    def test_create_with_amendment_paragraphs(self) -> None:
+        self.create_model("meeting/222", {})
         response = self.client.post(
             "/",
             json=[
@@ -314,37 +317,37 @@ class MotionCreateActionTest(BaseActionTestCase):
                         {
                             "title": "test_Xcdfgee",
                             "meeting_id": 222,
-                            "workflow_id": 12,
-                            "lead_motion_id": 1,
-                            "text": "text_test1",
-                            "reason": "reason_test1",
+                            "text": "text",
+                            "amendment_paragraphs": {"4": "text"},
                         }
                     ],
                 }
             ],
         )
-        self.assert_status_code(response, 200)
-        model = self.get_model("motion/2")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 222
-        assert model.get("lead_motion_id") == 1
-        assert model.get("text") == "text_test1"
-        assert model.get("reason") == "reason_test1"
+        self.assert_status_code(response, 400)
+        assert "give amendment_paragraphs in this context" in str(response.data)
 
-    def test_create_good_special_fields_2(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
+    def test_create_reason_missing(self) -> None:
+        self.create_model("meeting/222", {"motions_reason_required": True})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion.create",
+                    "data": [
+                        {"title": "test_Xcdfgee", "meeting_id": 222, "text": "text"}
+                    ],
+                }
+            ],
         )
-        self.create_model(
-            "motion_state/34", {"name": "name_state34", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion_statute_paragraph/1",
-            {"title": "title_eJveLQIh", "meeting_id": 222},
-        )
+        self.assert_status_code(response, 400)
+        assert "Reason is required" in str(response.data)
 
+    def test_create_lead_motion_and_statute_paragraph_id_given(self) -> None:
+        self.create_model("meeting/222", {})
+        self.create_model(
+            "motion_statute_paragraph/1", {"meeting_id": 222},
+        )
         response = self.client.post(
             "/",
             json=[
@@ -354,117 +357,53 @@ class MotionCreateActionTest(BaseActionTestCase):
                         {
                             "title": "test_Xcdfgee",
                             "meeting_id": 222,
-                            "workflow_id": 12,
+                            "text": "text",
+                            "lead_motion_id": 1,
                             "statute_paragraph_id": 1,
-                            "reason": "reason_test2",
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "both of lead_motion_id and statute_paragraph_id." in str(response.data)
+
+    def test_create_with_submitters(self) -> None:
+        self.create_model("meeting/222", {})
+        self.create_model(
+            "motion_workflow/12",
+            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
+        )
+        self.create_model(
+            "motion_state/34", {"name": "name_state34", "meeting_id": 222}
+        )
+        self.create_model("user/56", {})
+        self.create_model("user/57", {})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion.create",
+                    "data": [
+                        {
+                            "title": "test_Xcdfgee",
+                            "meeting_id": 222,
+                            "workflow_id": 12,
+                            "text": "text",
+                            "submitter_ids": [56, 57],
                         }
                     ],
                 }
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion/1")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 222
-        assert model.get("statute_paragraph_id") == 1
-        assert model.get("reason") == "reason_test2"
-
-    def test_create_good_special_fields_missing_1(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34", {"name": "name_state34", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion/1", {"title": "title_eJveLQIh", "meeting_id": 222},
-        )
-
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "lead_motion_id": 1,
-                            "text": "text_kXTvKvjc",
-                        }
-                    ],
-                }
-            ],
-        )
-        self.assert_status_code(response, 400)
-        assert "reason is required in this context." in str(response.data)
-
-    def test_create_good_special_fields_missing_2(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34", {"name": "name_state34", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion/1", {"title": "title_eJveLQIh", "meeting_id": 222},
-        )
-
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "lead_motion_id": 1,
-                            "reason": "resaon_kXTvKvjc",
-                        }
-                    ],
-                }
-            ],
-        )
-        self.assert_status_code(response, 400)
-        assert "Text or amendment_paragraph is required in this context." in str(
-            response.data
-        )
-
-    def test_create_good_special_fields_missing_3(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34", {"name": "name_state34", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion/1", {"title": "title_eJveLQIh", "meeting_id": 222},
-        )
-
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "reason": "reason_kXTvKvjc",
-                        }
-                    ],
-                }
-            ],
-        )
-        self.assert_status_code(response, 400)
-        assert "text is required in this context." in str(response.data)
+        motion = self.get_model("motion/1")
+        assert motion.get("submitter_ids") == [1, 2]
+        submitter_1 = self.get_model("motion_submitter/1")
+        assert submitter_1.get("meeting_id") == 222
+        assert submitter_1.get("user_id") == 56
+        assert submitter_1.get("motion_id") == 1
+        submitter_2 = self.get_model("motion_submitter/2")
+        assert submitter_2.get("meeting_id") == 222
+        assert submitter_2.get("user_id") == 57
+        assert submitter_2.get("motion_id") == 1
