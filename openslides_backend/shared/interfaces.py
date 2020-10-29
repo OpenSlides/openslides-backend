@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
+from werkzeug.datastructures import Headers
 
 from .patterns import FullQualifiedId
 
@@ -52,15 +53,6 @@ class Services(Protocol):  # pragma: no cover
     datastore: Any
 
 
-class Headers(Protocol):  # pragma: no cover
-    """
-    Interface for headers used in authentication adapter.
-    """
-
-    def to_wsgi_list(self) -> List:
-        ...
-
-
 # TODO Use proper type here: Body is ActionPayload or PresenterPayload
 RequestBody = Any
 ResponseBody = Optional[List[Any]]
@@ -77,7 +69,7 @@ class View(Protocol):  # pragma: no cover
         ...
 
     def dispatch(
-        self, body: RequestBody, headers: Headers
+        self, body: RequestBody, headers: Headers, cookies: Dict[str, str]
     ) -> Tuple[ResponseBody, Optional[str]]:
         ...
 
@@ -93,18 +85,6 @@ class WSGIApplication(Protocol):  # pragma: no cover
     def __call__(
         self, environ: WSGIEnvironment, start_response: StartResponse
     ) -> Iterable[bytes]:
-        ...
-
-
-class Authentication(Protocol):  # pragma: no cover
-    """
-    Interface for authentication adapter used in views.
-    """
-
-    def __init__(self, authentication_url: str, logging: LoggingModule) -> None:
-        ...
-
-    def get_user(self, headers: Headers) -> Tuple[int, Optional[str]]:
         ...
 
 

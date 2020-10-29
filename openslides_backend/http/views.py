@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from ..action import Action
 from ..action.action import ActionHandler
@@ -20,10 +20,11 @@ from ..shared.interfaces import (
     RequestBody,
     ResponseBody,
     Services,
+    View,
 )
 
 
-class BaseView:
+class BaseView(View):
     """
     Base class for views of this service.
 
@@ -42,13 +43,18 @@ class BaseView:
         Returns user id from authentication service using HTTP headers.
         """
         try:
-            user_id, access_token = self.services.authentication().get_user(
+            user_id, access_token = self.services.authentication().authenticate(
                 headers, cookies
             )
         except AuthenticationException as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
+
+    def dispatch(
+        self, body: RequestBody, headers: Headers, cookies: Dict
+    ) -> Tuple[ResponseBody, Optional[str]]:
+        raise NotImplementedError()
 
 
 class ActionView(BaseView):
@@ -61,7 +67,7 @@ class ActionView(BaseView):
 
     def dispatch(
         self, body: RequestBody, headers: Headers, cookies: Dict
-    ) -> Tuple[ResponseBody, str]:
+    ) -> Tuple[ResponseBody, Optional[str]]:
         """
         Dispatches request to the viewpoint.
         """
@@ -102,7 +108,7 @@ class PresenterView(BaseView):
 
     def dispatch(
         self, body: RequestBody, headers: Headers, cookies: Dict
-    ) -> Tuple[ResponseBody, str]:
+    ) -> Tuple[ResponseBody, Optional[str]]:
         """
         Dispatches request to the viewpoint.
         """

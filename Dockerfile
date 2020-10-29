@@ -1,7 +1,7 @@
 FROM python:3.8.5-slim-buster
 
 RUN apt-get -y update && apt-get -y upgrade && \
-    apt-get install --no-install-recommends -y curl
+    apt-get install --no-install-recommends -y curl git
 
 WORKDIR /app
 
