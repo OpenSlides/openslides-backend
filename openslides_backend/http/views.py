@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from ..action import Action
 from ..action.action import ActionHandler
@@ -20,10 +20,11 @@ from ..shared.interfaces import (
     RequestBody,
     ResponseBody,
     Services,
+    View,
 )
 
 
-class BaseView:
+class BaseView(View):
     """
     Base class for views of this service.
 
@@ -35,16 +36,25 @@ class BaseView:
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 
-    def get_user_id_from_headers(self, headers: Headers) -> Tuple[int, str]:
+    def get_user_id_from_headers(
+        self, headers: Headers, cookies: Dict
+    ) -> Tuple[int, str]:
         """
         Returns user id from authentication service using HTTP headers.
         """
         try:
-            user_id, access_token = self.services.authentication().get_user(headers)
+            user_id, access_token = self.services.authentication().authenticate(
+                headers, cookies
+            )
         except AuthenticationException as exception:
             raise ViewException(exception.message, status_code=400)
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
+
+    def dispatch(
+        self, body: RequestBody, headers: Headers, cookies: Dict
+    ) -> Tuple[ResponseBody, Optional[str]]:
+        raise NotImplementedError()
 
 
 class ActionView(BaseView):
@@ -55,14 +65,16 @@ class ActionView(BaseView):
 
     method = "POST"
 
-    def dispatch(self, body: RequestBody, headers: Headers) -> Tuple[ResponseBody, str]:
+    def dispatch(
+        self, body: RequestBody, headers: Headers, cookies: Dict
+    ) -> Tuple[ResponseBody, Optional[str]]:
         """
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching action request.")
 
         # Get user id.
-        user_id, access_token = self.get_user_id_from_headers(headers)
+        user_id, access_token = self.get_user_id_from_headers(headers, cookies)
 
         # Setup payload.
         payload: ActionPayload = body
@@ -94,14 +106,16 @@ class PresenterView(BaseView):
 
     method = "POST"
 
-    def dispatch(self, body: RequestBody, headers: Headers) -> Tuple[ResponseBody, str]:
+    def dispatch(
+        self, body: RequestBody, headers: Headers, cookies: Dict
+    ) -> Tuple[ResponseBody, Optional[str]]:
         """
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching presenter request.")
 
         # Get user_id.
-        user_id, access_token = self.get_user_id_from_headers(headers)
+        user_id, access_token = self.get_user_id_from_headers(headers, cookies)
 
         # Setup payload.
         payload: PresenterPayload = body

@@ -2,10 +2,6 @@ from typing import Dict, Optional, Protocol, Tuple
 
 from ...shared.interfaces import Headers
 
-GUEST_USER_ID = 0
-
-AUTHENTICATION_HEADER = "Authentication"
-
 
 class AuthenticationService(Protocol):
     """
