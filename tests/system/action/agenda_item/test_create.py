@@ -1,3 +1,4 @@
+from openslides_backend.models.models import AgendaItem
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -19,6 +20,8 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertFalse(model.get("meta_deleted"))
         self.assertEqual(model.get("meeting_id"), 2)
         self.assertEqual(model.get("content_object_id"), "topic/1")
+        self.assertEqual(model.get("type"), AgendaItem.AGENDA_ITEM)
+        self.assertEqual(model.get("weight"), 10000)
 
         model = self.get_model("meeting/2")
         self.assertEqual(model.get("agenda_item_ids"), [1])
@@ -53,7 +56,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["type"], 2)
         self.assertEqual(agenda_item["parent_id"], 42)
         self.assertEqual(agenda_item["duration"], 360)
-        self.assertEqual(agenda_item["weight"], 0)
+        self.assertEqual(agenda_item["weight"], 10000)
         self.assertFalse(agenda_item.get("closed"))
 
     def test_create_parent_weight(self) -> None:

@@ -21,6 +21,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         model = self.get_model("motion_submitter/1")
         assert model.get("motion_id") == 357
         assert model.get("user_id") == 78
+        assert model.get("weight") == 10000
 
     def test_create_not_unique(self) -> None:
         self.create_model("meeting/111", {"name": "name_m123etrd"})

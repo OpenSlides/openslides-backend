@@ -21,6 +21,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         model = self.get_model("assignment_candidate/1")
         assert model.get("user_id") == 110
         assert model.get("assignment_id") == 111
+        assert model.get("weight") == 10000
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(

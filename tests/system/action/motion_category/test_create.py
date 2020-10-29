@@ -29,6 +29,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         assert model.get("prefix") == "prefix_niqCxoXA"
         assert model.get("meeting_id") == 222
         assert model.get("parent_id") == 123
+        assert model.get("weight") == 10000
         meeting = self.get_model("meeting/222")
         assert meeting.get("motion_category_ids") == [124]
 

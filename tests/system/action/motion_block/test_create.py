@@ -24,7 +24,7 @@ class MotionBlockActionTest(BaseActionTestCase):
             {
                 "id": 1,
                 "type": 1,
-                "weight": 0,
+                "weight": 10000,
                 "meeting_id": 42,
                 "content_object_id": "motion_block/1",
                 "meta_deleted": False,

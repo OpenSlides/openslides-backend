@@ -729,7 +729,7 @@ class AgendaItem(Model):
     level = fields.IntegerField(
         read_only=True, constraints={"description": "Calculated by the server"}
     )
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     content_object_id = fields.GenericRelationField(
         to=[
             Collection("motion"),
@@ -826,7 +826,7 @@ class Speaker(Model):
     id = fields.IntegerField()
     begin_time = fields.TimestampField(read_only=True)
     end_time = fields.TimestampField(read_only=True)
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     marked = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
         to=Collection("list_of_speakers"),
@@ -916,10 +916,10 @@ class Motion(Model):
     )
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()
-    category_weight = fields.IntegerField(default=0)
+    category_weight = fields.IntegerField(default=10000)
     state_extension = fields.CharField()
     recommendation_extension = fields.CharField()
-    sort_weight = fields.IntegerField(default=0)
+    sort_weight = fields.IntegerField(default=10000)
     created = fields.TimestampField(read_only=True)
     last_modified = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
@@ -1070,7 +1070,7 @@ class MotionSubmitter(Model):
     verbose_name = "motion submitter"
 
     id = fields.IntegerField()
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     user_id = fields.RelationField(
         to=Collection("user"),
         related_name="submitted_motion_$_ids",
@@ -1113,7 +1113,7 @@ class MotionCommentSection(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     comment_ids = fields.RelationListField(
         to=Collection("motion_comment"),
         related_name="section_id",
@@ -1144,7 +1144,7 @@ class MotionCategory(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     prefix = fields.CharField(required=True)
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     level = fields.IntegerField(
         read_only=True, constraints={"description": "Calculated field."}
     )
@@ -1340,7 +1340,7 @@ class MotionStatuteParagraph(Model):
     id = fields.IntegerField()
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     motion_ids = fields.RelationListField(
         to=Collection("motion"),
         related_name="statute_paragraph_id",
@@ -1462,8 +1462,8 @@ class Assignment(Model):
     id = fields.IntegerField()
     title = fields.CharField(required=True)
     description = fields.HTMLStrictField()
-    open_posts = fields.IntegerField(constraints={"minimum": 0})
-    phase = fields.IntegerField(constraints={"enum": [1, 2, 3]})
+    open_posts = fields.IntegerField(default=0, constraints={"minimum": 0})
+    phase = fields.IntegerField(default=1, constraints={"enum": [1, 2, 3]})
     default_poll_description = fields.CharField()
     number_poll_candidates = fields.BooleanField()
     candidate_ids = fields.RelationListField(
@@ -1527,7 +1527,7 @@ class AssignmentCandidate(Model):
     verbose_name = "assignment candidate"
 
     id = fields.IntegerField()
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     assignment_id = fields.RelationField(
         to=Collection("assignment"),
         related_name="candidate_ids",
@@ -1609,7 +1609,7 @@ class AssignmentOption(Model):
     yes = fields.DecimalField()
     no = fields.DecimalField()
     abstain = fields.DecimalField()
-    weight = fields.IntegerField(default=0)
+    weight = fields.IntegerField(default=10000)
     poll_id = fields.RelationField(
         to=Collection("assignment_poll"),
         related_name="option_ids",

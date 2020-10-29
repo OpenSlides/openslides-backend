@@ -17,7 +17,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         model = self.get_model("motion_comment_section/1")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
-        assert model.get("weight") == 0
+        assert model.get("weight") == 10000
 
     def test_create_good_case_all_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -42,7 +42,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         model = self.get_model("motion_comment_section/1")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
-        assert model.get("weight") == 0
+        assert model.get("weight") == 10000
         assert model.get("read_group_ids") == [23]
         assert model.get("write_group_ids") == [23]
 
