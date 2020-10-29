@@ -16,7 +16,16 @@ from .actions_map import actions_map
 from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
 
-class CreateAction(Action):
+class GenericBaseAction(Action):
+    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
+        """
+        By default, this does nothing. Override in subclasses to adjust the updates
+        to the instances.
+        """
+        yield from payload
+
+
+class CreateAction(GenericBaseAction):
     """
     Generic create action.
     """
@@ -31,7 +40,7 @@ class CreateAction(Action):
         relations.
         """
         data = []
-        for instance in payload:
+        for instance in self.get_updated_instances(payload):
             # Primary instance manipulation for defaults and extra fields.
             instance = self.set_defaults(instance)
             instance = self.validate_fields(instance)
@@ -126,20 +135,13 @@ class CreateAction(Action):
         )
 
 
-class UpdateAction(Action):
+class UpdateAction(GenericBaseAction):
     """
     Generic update action.
     """
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         return self.update_action_prepare_dataset(payload)
-
-    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
-        """
-        By default, this does nothing. Override in subclasses to adjust the updates
-        to the instances.
-        """
-        yield from payload
 
     def update_action_prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
@@ -284,7 +286,7 @@ class UpdateAction(Action):
         )
 
 
-class DeleteAction(Action):
+class DeleteAction(GenericBaseAction):
     """
     Generic delete action.
     """
@@ -307,7 +309,7 @@ class DeleteAction(Action):
         """
 
         data = []
-        for instance in payload:
+        for instance in self.get_updated_instances(payload):
             # TODO: Check if instance exists in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
 
             # Update instance (by default this does nothing)
