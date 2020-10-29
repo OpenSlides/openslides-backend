@@ -54,4 +54,4 @@ class TopicSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
         self.assertEqual(agenda_item["type"], 2)
         self.assertEqual(agenda_item["duration"], 60)
-        self.assertEqual(agenda_item["weight"], 0)
+        self.assertEqual(agenda_item["weight"], 10000)

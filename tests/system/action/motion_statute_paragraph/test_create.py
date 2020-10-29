@@ -19,7 +19,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_statute_paragraph/1")
         model = self.get_model("motion_statute_paragraph/1")
         assert model.get("title") == "test_Xcdfgee"
-        assert model.get("weight") == 0
+        assert model.get("weight") == 10000
         assert model.get("text") == "blablabla"
 
     def test_create_empty_data(self) -> None:
