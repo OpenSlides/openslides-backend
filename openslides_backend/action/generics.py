@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable, List, Set, Tuple, Type
 from ..models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
+    BaseTemplateField,
     BaseTemplateRelationField,
     OnDelete,
 )
@@ -50,8 +51,8 @@ class CreateAction(GenericBaseAction):
             # Collect relation fields and also check structured relations and template fields.
             relation_fields = []
             additional_instance_fields: Dict[str, List[str]] = defaultdict(list)
-            for field_name, field in self.model.get_relation_fields():
-                if field_name in instance:
+            for field_name, field in self.model.get_fields():
+                if isinstance(field, BaseRelationField) and field_name in instance:
                     if field.structured_relation:
                         if instance.get(field.structured_relation[0]) is None:
                             raise ActionException(
@@ -60,16 +61,17 @@ class CreateAction(GenericBaseAction):
                                 "foreign key field."
                             )
                     relation_fields.append((field_name, field))
-                elif isinstance(field, BaseTemplateRelationField):
+                elif isinstance(field, BaseTemplateField):
                     structured_fields = self.get_structured_fields_in_instance(
                         field_name, field, instance
                     )
                     for instance_field, replacement in structured_fields:
-                        if not ID_PATTERN.match(replacement):
-                            raise ActionException(
-                                "Template relation fields can only use replacements which are ids."
-                            )
-                        relation_fields.append((instance_field, field))
+                        if isinstance(field, BaseTemplateRelationField):
+                            if not ID_PATTERN.match(replacement):
+                                raise ActionException(
+                                    "Template relation fields can only use replacements which are ids."
+                                )
+                            relation_fields.append((instance_field, field))
                         template_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
                         )
@@ -166,8 +168,8 @@ class UpdateAction(GenericBaseAction):
             # Collect relation fields and also check structured relations and template fields.
             relation_fields = []
             additional_instance_fields: Dict[str, Set[str]] = defaultdict(set)
-            for field_name, field in self.model.get_relation_fields():
-                if field_name in instance:
+            for field_name, field in self.model.get_fields():
+                if isinstance(field, BaseRelationField) and field_name in instance:
                     if field.structured_relation:
                         if instance.get(field.structured_relation[0]) is not None:
                             raise ActionException(
@@ -176,16 +178,17 @@ class UpdateAction(GenericBaseAction):
                                 "foreign key field."
                             )
                     relation_fields.append((field_name, field))
-                elif isinstance(field, BaseTemplateRelationField):
+                elif isinstance(field, BaseTemplateField):
                     structured_fields = self.get_structured_fields_in_instance(
                         field_name, field, instance
                     )
                     for instance_field, replacement in structured_fields:
-                        if not ID_PATTERN.match(replacement):
-                            raise ActionException(
-                                "Template relation fields can only use replacements which are ids."
-                            )
-                        relation_fields.append((instance_field, field))
+                        if isinstance(field, BaseTemplateRelationField):
+                            if not ID_PATTERN.match(replacement):
+                                raise ActionException(
+                                    "Template relation fields can only use replacements which are ids."
+                                )
+                            relation_fields.append((instance_field, field))
                         template_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
                         )
