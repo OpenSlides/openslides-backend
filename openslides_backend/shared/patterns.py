@@ -2,7 +2,8 @@ import re
 
 KEYSEPARATOR = "/"
 
-ID_PATTERN = re.compile(r"[1-9]\d*")
+ID_REGEX = r"[1-9]\d*"
+ID_PATTERN = re.compile(ID_REGEX)
 
 
 class Collection:
