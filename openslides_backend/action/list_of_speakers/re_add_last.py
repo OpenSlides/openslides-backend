@@ -56,13 +56,12 @@ class ListOfSpeakersReAddLastAction(Action):
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:
         for element in dataset["data"]:
-            action = SpeakerCreateAction(self.permission, self.database)
-            yield from action.perform(
+            yield from self.execute_other_action(
+                SpeakerCreateAction,
                 [
                     {
                         "list_of_speakers_id": element["list_of_speakers"]["id"],
                         "user_id": element["last_speaker"]["user_id"],
                     }
                 ],
-                self.user_id,
             )

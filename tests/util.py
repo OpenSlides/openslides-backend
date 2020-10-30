@@ -1,6 +1,11 @@
+from typing import Any
+
+import requests
+from authlib.constants import AUTHENTICATION_HEADER, REFRESH_ID
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
+from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.interfaces import WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
@@ -11,8 +16,34 @@ from openslides_backend.shared.patterns import (
 
 
 class Client(WerkzeugClient):
-    def __init__(self, application: WSGIApplication):
+    def __init__(
+        self, application: WSGIApplication, username: str = None, password: str = None
+    ):
         super().__init__(application, BaseResponse)
+
+        # login admin
+        if username and password is not None:
+            auth_url = application.services.authentication().auth_url
+            url = f"{auth_url}/login"
+            try:
+                response = requests.post(
+                    url, json={"username": username, "password": password}
+                )
+            except requests.exceptions.ConnectionError as e:
+                raise AuthenticationException(
+                    f"Cannot reach the authentication service on {url}. Error: {e}"
+                )
+            assert response.status_code == 200
+            # save access token and refresh id for subsequent requests
+            self.set_cookie("localhost", REFRESH_ID, response.cookies.get(REFRESH_ID))
+            self.headers = {
+                AUTHENTICATION_HEADER: response.headers[AUTHENTICATION_HEADER]
+            }
+        else:
+            self.headers = {}
+
+    def post(self, *args: Any, **kwargs: Any) -> Any:
+        return super().post(*args, headers=self.headers, **kwargs)
 
 
 def get_fqid(value: str) -> FullQualifiedId:

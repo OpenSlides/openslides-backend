@@ -19,7 +19,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
@@ -46,7 +46,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
@@ -80,7 +80,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
@@ -113,7 +113,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model_child = self.get_model("mediafile/111")
         assert model_child.get("access_group_ids") == []
         assert model_child.get("inherited_access_group_ids") == []
@@ -147,7 +147,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == []
         assert model.get("inherited_access_group_ids") == [2, 4]
@@ -185,7 +185,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [3, 6]
         assert model.get("inherited_access_group_ids") == [3, 6]
@@ -224,7 +224,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [2, 3]
         assert model.get("inherited_access_group_ids") == [2]
@@ -259,7 +259,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [3]
         assert model.get("inherited_access_group_ids") == []
@@ -291,7 +291,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == []
         assert model.get("inherited_access_group_ids") == []
@@ -339,7 +339,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
@@ -378,7 +378,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
@@ -426,7 +426,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]

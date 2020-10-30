@@ -1,5 +1,4 @@
 from collections import defaultdict
-from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Set, Tuple, Type
 
 from ..models.fields import (
@@ -336,9 +335,7 @@ class DeleteAction(GenericBaseAction):
             relation_fields: List[Tuple[str, BaseRelationField]] = []
             # Gather all delete actions with payload and also all models to be deleted
             delete_actions: List[Tuple[Type[Action], ActionPayload]] = []
-            additional_relation_models: ModelMap = deepcopy(
-                self.additional_relation_models
-            )
+            additional_relation_models: ModelMap = {}
             for field_name, field in self.model.get_relation_fields():
                 if field.structured_relation or field.structured_tag:
                     # TODO: We do not fully support these fields. So silently skip them.
@@ -413,11 +410,10 @@ class DeleteAction(GenericBaseAction):
 
             # Add additional relation models and execute all previously gathered delete actions
             for delete_action_class, payload in delete_actions:
-                delete_action = delete_action_class(
-                    self.permission, self.database, additional_relation_models
-                )
                 self.additional_write_requests.extend(
-                    delete_action.perform(payload, self.user_id)
+                    self.execute_other_action(
+                        delete_action_class, payload, additional_relation_models
+                    )
                 )
 
             # Get relations.

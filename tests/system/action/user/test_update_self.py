@@ -23,7 +23,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("username") == "username_Xcdfgee"
         assert model.get("about_me") == "&lt;b&gt;about_me ertz&lt;/b&gt;"

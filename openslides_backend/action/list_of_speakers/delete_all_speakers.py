@@ -40,8 +40,5 @@ class ListOfSpeakersDeleteAllSpeakersAction(Action):
         self, dataset: DataSet
     ) -> Iterable[WriteRequestElement]:
         for element in dataset["data"]:
-            action = SpeakerDeleteAction(self.permission, self.database)
-            yield from action.perform(
-                [{"id": speaker_id} for speaker_id in element["speaker_ids"]],
-                self.user_id,
-            )
+            payload = [{"id": speaker_id} for speaker_id in element["speaker_ids"]]
+            yield from self.execute_other_action(SpeakerDeleteAction, payload)

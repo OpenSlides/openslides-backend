@@ -23,9 +23,7 @@ class CreateActionWithDependencies(CreateAction):
         yield from super().create_write_request_elements(dataset)
 
         for element in dataset["data"]:
-            # Merge additional_relation_models for possible nesting.
             additional_relation_models = {
-                **self.additional_relation_models,
                 FullQualifiedId(self.model.collection, element["new_id"]): element[
                     "instance"
                 ],
@@ -48,12 +46,9 @@ class CreateActionWithDependencies(CreateAction):
                     self, special_payload_method_name, self.get_dependent_action_payload
                 )
                 payload = [payload_method(element, ActionClass)]
-                action = ActionClass(
-                    self.permission,
-                    self.database,
-                    additional_relation_models,
+                yield from self.execute_other_action(
+                    ActionClass, payload, additional_relation_models
                 )
-                yield from action.perform(payload, self.user_id)
 
     def check_dependant_action_execution(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]

@@ -16,7 +16,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("username") == "username_Xcdfgee"
 
@@ -94,7 +94,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("vote_weight") == "1.500000"
 
@@ -112,7 +112,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("vote_weight") == "10.500000"
 
@@ -130,7 +130,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         model = self.get_model("user/111")
         assert model.get("vote_weight") is None
 
@@ -148,7 +148,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 400)
+        self.assert_status_code(response, 400)
         model = self.get_model("user/111")
         assert model.get("vote_weight") is None
 

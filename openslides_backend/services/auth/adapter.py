@@ -1,7 +1,7 @@
 from typing import Dict, Optional, Tuple
 
 from authlib import AuthHandler
-from authlib.constants import AUTHENTICATION_HEADER  # noqa
+from authlib.constants import ANONYMOUS_USER, AUTHENTICATION_HEADER  # noqa
 from authlib.exceptions import AuthenticateException, InvalidCredentialsException
 
 from ...shared.exceptions import AuthenticationException as BackendAuthException
@@ -16,6 +16,7 @@ class AuthenticationHTTPAdapter(AuthenticationService):
 
     def __init__(self, authentication_url: str, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
+        self.auth_url = authentication_url
         self.auth_handler = AuthHandler(authentication_url, self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
 
@@ -37,7 +38,10 @@ class AuthenticationHTTPAdapter(AuthenticationService):
             raise BackendAuthException(e.message)
 
     def hash(self, toHash: str) -> str:
-        return self.auth_handler.hash(toHash)
+        return self.auth_handler.hash(toHash).decode("utf-8")
 
-    def is_equals(self, hash: str, toCompare: str) -> bool:
-        return self.auth_handler.is_equals(hash, toCompare)
+    def is_equals(self, toHash: str, toCompare: str) -> bool:
+        return self.auth_handler.is_equals(toHash, toCompare.encode("utf-8"))
+
+    def is_anonymous(self, user_id: int) -> bool:
+        return user_id == ANONYMOUS_USER
