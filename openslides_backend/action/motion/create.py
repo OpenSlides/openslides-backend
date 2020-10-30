@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List
 from ...models.models import Motion
 from ...shared.exceptions import ActionException
 from ...shared.interfaces import WriteRequestElement
-from ...shared.patterns import ID_REGEX, Collection, FullQualifiedId
+from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.schema import id_list_schema, optional_id_schema
 from ..agenda_item.agenda_creation import (
     CreateActionWithAgendaItemMixin,
@@ -15,10 +15,18 @@ from ..create_action_with_dependencies import CreateActionWithDependencies
 from ..default_schema import DefaultSchema
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from ..register import register_action
+from .amendment_paragraphs_mixin import (
+    AmendmentParagraphsMixin,
+    amendment_paragraphs_schema,
+)
 
 
 @register_action("motion.create")
-class MotionCreate(CreateActionWithDependencies, CreateActionWithAgendaItemMixin):
+class MotionCreate(
+    CreateActionWithDependencies,
+    CreateActionWithAgendaItemMixin,
+    AmendmentParagraphsMixin,
+):
     """
     Create Action for motions.
     """
@@ -45,11 +53,7 @@ class MotionCreate(CreateActionWithDependencies, CreateActionWithAgendaItemMixin
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "amendment_paragraphs": {
-                "type": "object",
-                "patternProperties": {ID_REGEX: {"type": "string"}},
-                "additionalProperties": False,
-            },
+            "amendment_paragraphs": amendment_paragraphs_schema,
             "submitter_ids": id_list_schema,
             **agenda_creation_properties,
         },
@@ -150,10 +154,7 @@ class MotionCreate(CreateActionWithDependencies, CreateActionWithAgendaItemMixin
                 )
 
         # replace amendment_paragraphs
-        if instance.get("amendment_paragraphs"):
-            amendment_paragraphs = instance.pop("amendment_paragraphs")
-            for paragraph_number, text in amendment_paragraphs.items():
-                instance[f"amendment_paragraph_${paragraph_number}"] = text
+        self.handle_amendment_paragraphs(instance)
 
         # create submitters
         submitter_ids = instance.pop("submitter_ids", None)

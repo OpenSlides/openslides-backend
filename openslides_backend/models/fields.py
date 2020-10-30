@@ -1,8 +1,6 @@
 from enum import Enum
 from typing import Any, Dict, List, Union
 
-import bleach
-
 from ..shared.patterns import Collection, string_to_fqid
 from ..shared.schema import (
     fqid_list_schema,
@@ -13,6 +11,11 @@ from ..shared.schema import (
     required_id_schema,
 )
 from ..shared.typing import Schema
+from ..shared.util import (
+    ALLOWED_HTML_TAGS_PERMISSIVE,
+    ALLOWED_HTML_TAGS_STRICT,
+    validate_html,
+)
 
 
 class OnDelete(Enum):
@@ -94,76 +97,11 @@ class HTMLStrictField(TextField):
     Field for restricted HTML.
     """
 
-    ALLOWED_HTML_TAGS_STRICT = [
-        "a",
-        "img",  # links and images
-        "br",
-        "p",
-        "span",
-        "blockquote",  # text layout
-        "strike",
-        "del",
-        "ins",
-        "strong",
-        "u",
-        "em",
-        "sup",
-        "sub",
-        "pre",  # text formating
-        "h1",
-        "h2",
-        "h3",
-        "h4",
-        "h5",
-        "h6",  # headings
-        "ol",
-        "ul",
-        "li",  # lists
-        "table",
-        "caption",
-        "thead",
-        "tbody",
-        "th",
-        "tr",
-        "td",  # tables
-        "div",
-    ]
-
-    ALLOWED_STYLES = [
-        "color",
-        "background-color",
-        "height",
-        "width",
-        "text-align",
-        "vertical-align",
-        "float",
-        "text-decoration",
-        "margin",
-        "padding",
-        "line-height",
-        "max-width",
-        "min-width",
-        "max-height",
-        "min-height",
-        "overflow",
-        "word-break",
-        "word-wrap",
-    ]
-
     def validate(self, html: str) -> str:
-        def allow_all(tag: str, name: str, value: str) -> bool:
-            return True
-
-        html = html.replace("\t", "")
-        return bleach.clean(
-            html,
-            tags=self.get_allowed_tags(),
-            attributes=allow_all,
-            styles=self.ALLOWED_STYLES,
-        )
+        return validate_html(html, self.get_allowed_tags())
 
     def get_allowed_tags(self) -> List[str]:
-        return self.ALLOWED_HTML_TAGS_STRICT
+        return ALLOWED_HTML_TAGS_STRICT
 
 
 class HTMLPermissiveField(HTMLStrictField):
@@ -171,10 +109,8 @@ class HTMLPermissiveField(HTMLStrictField):
     HTML field which can also contain video tags.
     """
 
-    ALLOWED_HTML_TAGS_PERMISSIVE = ["video"]
-
     def get_allowed_tags(self) -> List[str]:
-        return super().get_allowed_tags() + self.ALLOWED_HTML_TAGS_PERMISSIVE
+        return ALLOWED_HTML_TAGS_PERMISSIVE
 
 
 class FloatField(Field):
