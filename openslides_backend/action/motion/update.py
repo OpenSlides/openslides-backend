@@ -37,11 +37,6 @@ class MotionSupport(DummyAction):
     pass
 
 
-@register_action("motion.follow_recommendation")
-class MotionFollowRecommendation(DummyAction):
-    pass
-
-
 @register_action("motion.manage_comments")
 class MotionManageComments(DummyAction):
     pass
