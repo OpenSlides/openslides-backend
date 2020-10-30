@@ -10,7 +10,7 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
             "/",
             json=[
                 {
-                    "action": "motion_category.sort_motions_in_categories",
+                    "action": "motion_category.sort_motions_in_category",
                     "data": [{"id": 222, "motion_ids": [32, 31]}],
                 }
             ],
@@ -28,7 +28,7 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
             "/",
             json=[
                 {
-                    "action": "motion_category.sort_motions_in_categories",
+                    "action": "motion_category.sort_motions_in_category",
                     "data": [{"id": 222, "motion_ids": [32, 31]}],
                 }
             ],
@@ -45,7 +45,7 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
             "/",
             json=[
                 {
-                    "action": "motion_category.sort_motions_in_categories",
+                    "action": "motion_category.sort_motions_in_category",
                     "data": [{"id": 222, "motion_ids": [32, 31]}],
                 }
             ],
