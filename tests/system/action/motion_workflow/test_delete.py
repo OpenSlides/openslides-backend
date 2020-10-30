@@ -17,21 +17,24 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.create_model("motion_workflow/2", {"meeting_id": 90})
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_workflow/111")
 
     def test_delete_with_states(self) -> None:
         self.create_model(
-            "meeting/1", {"motion_workflow_ids": [2, 100]},
+            "meeting/1",
+            {"motion_workflow_ids": [2, 100]},
         )
         self.create_model("motion_workflow/2", {"meeting_id": 1, "state_ids": [3]})
         self.create_model("motion_state/3", {"workflow_id": 2})
         # needed because you can't delete the last workflow of a meeting
         self.create_model("motion_workflow/100", {"meeting_id": 1})
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 2}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 2}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_workflow/2")
@@ -40,7 +43,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_workflow/112", {"name": "name_srtgb123"})
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/112")
@@ -59,7 +63,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
         )
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
@@ -79,7 +84,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
         )
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
@@ -100,7 +106,8 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             "motion_workflow/111", {"name": "name_srtgb123", "meeting_id": 90}
         )
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
@@ -108,11 +115,13 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
 
     def test_delete_last_workflow(self) -> None:
         self.create_model(
-            "meeting/1", {"motion_workflow_ids": [1]},
+            "meeting/1",
+            {"motion_workflow_ids": [1]},
         )
         self.create_model("motion_workflow/1", {"meeting_id": 1})
         response = self.client.post(
-            "/", json=[{"action": "motion_workflow.delete", "data": [{"id": 1}]}],
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/1")

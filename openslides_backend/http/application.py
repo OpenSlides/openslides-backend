@@ -100,7 +100,8 @@ class OpenSlidesBackendWSGIApplication:
         """
         health_info = self.view(self.logging, self.services).get_health_info()
         return Response(
-            json.dumps({"healthinfo": health_info}), content_type="application/json",
+            json.dumps({"healthinfo": health_info}),
+            content_type="application/json",
         )
 
     def wsgi_application(

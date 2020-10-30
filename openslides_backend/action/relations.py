@@ -227,7 +227,10 @@ class RelationsHandler:
         return related_name
 
     def search_structured_relation(
-        self, structured_relation: List[str], collection: Collection, id: int,
+        self,
+        structured_relation: List[str],
+        collection: Collection,
+        id: int,
     ) -> str:
         """
         Recursive helper method to walk down the structured_relation field name list.
@@ -237,7 +240,8 @@ class RelationsHandler:
         value = self.obj.get(field_name)
         if value is None:
             db_instance = self.database.get(
-                fqid=FullQualifiedId(collection, id), mapped_fields=[field_name],
+                fqid=FullQualifiedId(collection, id),
+                mapped_fields=[field_name],
             )
             value = db_instance.get(field_name)
         if value is None:

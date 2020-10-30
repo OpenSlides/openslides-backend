@@ -12,7 +12,8 @@ class AssignmentCandidateCreate(CreateActionWithInferredMeeting):
 
     model = AssignmentCandidate()
     schema = DefaultSchema(AssignmentCandidate()).get_create_schema(
-        required_properties=["assignment_id", "user_id"], optional_properties=[],
+        required_properties=["assignment_id", "user_id"],
+        optional_properties=[],
     )
 
     relation_field_for_meeting = "assignment_id"

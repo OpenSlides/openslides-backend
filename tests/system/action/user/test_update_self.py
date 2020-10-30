@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class UserUpdateSelfActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123"},
+            "user/111",
+            {"username": "username_srtgb123"},
         )
         response = self.client.post(
             "/",
@@ -30,7 +31,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123"},
+            "user/111",
+            {"username": "username_srtgb123"},
         )
         response = self.client.post(
             "/",

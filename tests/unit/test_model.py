@@ -36,7 +36,8 @@ class FakeModel2(Model):
 
     id = fields.IntegerField(required=True)
     relation_field = fields.RelationField(
-        to=Collection("fake_model"), related_name="fake_model_2_ids",
+        to=Collection("fake_model"),
+        related_name="fake_model_2_ids",
     )
     generic_relation_field = fields.RelationField(
         to=Collection("fake_model"),

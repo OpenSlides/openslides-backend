@@ -9,7 +9,8 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
         )
         self.create_model("motion_submitter/111", {"weight": 10, "motion_id": 12})
         response = self.client.post(
-            "/", json=[{"action": "motion_submitter.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_submitter.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_submitter/111")
@@ -17,7 +18,8 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_submitter/112", {"weight": 10})
         response = self.client.post(
-            "/", json=[{"action": "motion_submitter.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "motion_submitter.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_submitter/112")

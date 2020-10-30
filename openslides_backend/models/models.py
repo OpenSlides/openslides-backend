@@ -914,7 +914,8 @@ class Motion(Model):
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
     amendment_paragraph_ = fields.TemplateHTMLStrictField(
-        replacement="paragraph_number", index=20,
+        replacement="paragraph_number",
+        index=20,
     )
     modified_final_version = fields.HTMLStrictField()
     reason = fields.HTMLStrictField()

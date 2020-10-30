@@ -22,14 +22,16 @@ class GeneralActionWSGITester(BaseActionTestCase):
 
     def test_request_fuzzy_body(self) -> None:
         response = self.client.post(
-            "/", json={"fuzzy_key_Eeng7pha3a": "fuzzy_value_eez3Ko6quu"},
+            "/",
+            json={"fuzzy_key_Eeng7pha3a": "fuzzy_value_eez3Ko6quu"},
         )
         self.assert_status_code(response, 400)
         self.assertIn("data must be array", str(response.data))
 
     def test_request_fuzzy_body_2(self) -> None:
         response = self.client.post(
-            "/", json=[{"fuzzy_key_Voh8in7aec": "fuzzy_value_phae3iew4W"}],
+            "/",
+            json=[{"fuzzy_key_Voh8in7aec": "fuzzy_value_phae3iew4W"}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -39,7 +41,8 @@ class GeneralActionWSGITester(BaseActionTestCase):
 
     def test_request_no_existing_action(self) -> None:
         response = self.client.post(
-            "/", json=[{"action": "fuzzy_action_hamzaeNg4a", "data": [{}]}],
+            "/",
+            json=[{"action": "fuzzy_action_hamzaeNg4a", "data": [{}]}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(

@@ -41,7 +41,10 @@ class OpenSlidesBackendWSGI(containers.DeclarativeContainer):
     services = providers.DependenciesContainer()
 
     setup = providers.Factory(
-        OpenSlidesBackendWSGIApplication, logging=logging, view=view, services=services,
+        OpenSlidesBackendWSGIApplication,
+        logging=logging,
+        view=view,
+        services=services,
     )
 
 

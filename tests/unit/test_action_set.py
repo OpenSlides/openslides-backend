@@ -35,7 +35,8 @@ class ActionSetTester(TestCase):
                 ),
             )
             self.assertIn(
-                route, ("create", "update", "delete"),
+                route,
+                ("create", "update", "delete"),
             )
 
     def test_dummy_action_set_types(self) -> None:

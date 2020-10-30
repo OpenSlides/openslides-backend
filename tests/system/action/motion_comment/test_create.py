@@ -25,7 +25,8 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
-            "/", json=[{"action": "motion_comment.create", "data": [{}]}],
+            "/",
+            json=[{"action": "motion_comment.create", "data": [{}]}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(

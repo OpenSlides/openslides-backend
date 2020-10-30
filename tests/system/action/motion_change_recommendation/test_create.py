@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def test_create_good_required_fields(self) -> None:
         self.create_model(
-            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233",
+            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",
@@ -33,7 +34,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_create_good_all_fields(self) -> None:
         self.create_model(
-            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233",
+            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",
@@ -69,7 +71,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
-            "/", json=[{"action": "motion_change_recommendation.create", "data": [{}]}],
+            "/",
+            json=[{"action": "motion_change_recommendation.create", "data": [{}]}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -79,7 +82,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_create_wrong_field(self) -> None:
         self.create_model(
-            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233",
+            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",
@@ -106,7 +110,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_create_title_change_recommendation(self) -> None:
         self.create_model(
-            "motion/233", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/233",
+            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         response = self.client.post(
             "/",

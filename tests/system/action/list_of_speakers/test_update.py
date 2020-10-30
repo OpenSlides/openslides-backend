@@ -5,7 +5,8 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "list_of_speakers/111", {"closed": False, "meeting_id": 222},
+            "list_of_speakers/111",
+            {"closed": False, "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -24,7 +25,8 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "list_of_speakers/111", {"closed": False, "meeting_id": 222},
+            "list_of_speakers/111",
+            {"closed": False, "meeting_id": 222},
         )
 
         response = self.client.post(

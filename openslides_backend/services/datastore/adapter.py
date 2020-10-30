@@ -207,7 +207,10 @@ class Adapter:
         return response2
 
     def exists(
-        self, collection: Collection, filter: Filter, lock_result: bool = False,
+        self,
+        collection: Collection,
+        filter: Filter,
+        lock_result: bool = False,
     ) -> Found:
         command = commands.Exists(collection=collection, filter=filter)
         self.logger.debug(
@@ -222,7 +225,10 @@ class Adapter:
         return {"exists": response["exists"]}
 
     def count(
-        self, collection: Collection, filter: Filter, lock_result: bool = False,
+        self,
+        collection: Collection,
+        filter: Filter,
+        lock_result: bool = False,
     ) -> Count:
         command = commands.Count(collection=collection, filter=filter)
         self.logger.debug(
@@ -260,7 +266,9 @@ class Adapter:
         return response
 
     def update_locked_fields(
-        self, key: Union[FullQualifiedId, FullQualifiedField], position: int,
+        self,
+        key: Union[FullQualifiedId, FullQualifiedField],
+        position: int,
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or

@@ -13,7 +13,8 @@ class AssignmentCandidateSort(LinearSortMixin, Action):
 
     model = AssignmentCandidate()
     schema = DefaultSchema(AssignmentCandidate()).get_linear_sort_schema(
-        "candidate_ids", "assignment_id",
+        "candidate_ids",
+        "assignment_id",
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:

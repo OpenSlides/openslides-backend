@@ -103,10 +103,12 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
     def test_assign_multiple_payload_items(self) -> None:
         self.create_model("meeting/222", {})
         self.create_model(
-            "agenda_item/7", {"meeting_id": 222},
+            "agenda_item/7",
+            {"meeting_id": 222},
         )
         self.create_model(
-            "agenda_item/8", {"meeting_id": 222},
+            "agenda_item/8",
+            {"meeting_id": 222},
         )
         response = self.client.post(
             "/",

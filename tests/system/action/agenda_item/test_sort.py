@@ -60,7 +60,8 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         }
 
         response = self.client.post(
-            "/", json=[{"action": "agenda_item.sort", "data": [valid_data]}],
+            "/",
+            json=[{"action": "agenda_item.sort", "data": [valid_data]}],
         )
         self.assert_status_code(response, 200)
         fqids_in_preorder = [
@@ -93,7 +94,8 @@ class AgendaItemSortActionTest(BaseActionTestCase):
             ],
         }
         response = self.client.post(
-            "/", json=[{"action": "agenda_item.sort", "data": [not_tree_data]}],
+            "/",
+            json=[{"action": "agenda_item.sort", "data": [not_tree_data]}],
         )
         self.assert_status_code(response, 400)
         assert "Duplicate id in sort tree: 12" in str(response.data)
@@ -116,7 +118,8 @@ class AgendaItemSortActionTest(BaseActionTestCase):
             ],
         }
         response = self.client.post(
-            "/", json=[{"action": "agenda_item.sort", "data": [circle_data]}],
+            "/",
+            json=[{"action": "agenda_item.sort", "data": [circle_data]}],
         )
         self.assert_status_code(response, 400)
         assert "Duplicate id in sort tree: 1" in str(response.data)
@@ -132,7 +135,8 @@ class AgendaItemSortActionTest(BaseActionTestCase):
             "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}]}],
         }
         response = self.client.post(
-            "/", json=[{"action": "agenda_item.sort", "data": [small_tree_data]}],
+            "/",
+            json=[{"action": "agenda_item.sort", "data": [small_tree_data]}],
         )
         self.assert_status_code(response, 200)
         model_1 = self.get_model("agenda_item/1")

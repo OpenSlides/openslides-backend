@@ -9,16 +9,20 @@ class AgendaItemNumberingTester(BaseActionTestCase):
 
     def test_numbering(self) -> None:
         self.create_model(
-            "meeting/1", {"agenda_item_ids": [1, 2, 3]},
+            "meeting/1",
+            {"agenda_item_ids": [1, 2, 3]},
         )
         self.create_model(
-            "agenda_item/1", {"meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/1",
+            {"meeting_id": 1, "weight": 10, "type": 1},
         )
         self.create_model(
-            "agenda_item/2", {"meeting_id": 1, "weight": 10, "parent_id": 1, "type": 1},
+            "agenda_item/2",
+            {"meeting_id": 1, "weight": 10, "parent_id": 1, "type": 1},
         )
         self.create_model(
-            "agenda_item/3", {"meeting_id": 1, "parent_id": 1, "weight": 10, "type": 1},
+            "agenda_item/3",
+            {"meeting_id": 1, "parent_id": 1, "weight": 10, "type": 1},
         )
         response = self.client.post(
             "/",
@@ -34,13 +38,16 @@ class AgendaItemNumberingTester(BaseActionTestCase):
 
     def test_numbering_without_parents(self) -> None:
         self.create_model(
-            "meeting/1", {"agenda_item_ids": [1, 2]},
+            "meeting/1",
+            {"agenda_item_ids": [1, 2]},
         )
         self.create_model(
-            "agenda_item/1", {"meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/1",
+            {"meeting_id": 1, "weight": 10, "type": 1},
         )
         self.create_model(
-            "agenda_item/2", {"meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/2",
+            {"meeting_id": 1, "weight": 10, "type": 1},
         )
         response = self.client.post(
             "/",
@@ -54,10 +61,12 @@ class AgendaItemNumberingTester(BaseActionTestCase):
 
     def test_numbering_with_non_public_items(self) -> None:
         self.create_model(
-            "meeting/1", {"agenda_item_ids": [1, 2]},
+            "meeting/1",
+            {"agenda_item_ids": [1, 2]},
         )
         self.create_model(
-            "agenda_item/1", {"meeting_id": 1, "weight": 10, "type": 1},
+            "agenda_item/1",
+            {"meeting_id": 1, "weight": 10, "type": 1},
         )
         self.create_model(
             "agenda_item/2",

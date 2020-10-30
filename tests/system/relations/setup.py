@@ -67,7 +67,9 @@ class FakeModelB(Model):
     id = fields.IntegerField()
 
     meeting_id = fields.RelationField(
-        to=Collection("meeting"), related_name="fake_model_b_ids", required=True,
+        to=Collection("meeting"),
+        related_name="fake_model_b_ids",
+        required=True,
     )
 
     fake_model_a_oo = fields.RelationField(
@@ -80,13 +82,16 @@ class FakeModelB(Model):
         to=Collection("fake_model_a"), related_name="fake_model_b_mm"
     )
     fake_model_a_generic_oo = fields.GenericRelationField(
-        to=[Collection("fake_model_a")], related_name="fake_model_b_generic_oo",
+        to=[Collection("fake_model_a")],
+        related_name="fake_model_b_generic_oo",
     )
     fake_model_a_generic_mo = fields.GenericRelationListField(
-        to=[Collection("fake_model_a")], related_name="fake_model_b_generic_om",
+        to=[Collection("fake_model_a")],
+        related_name="fake_model_b_generic_om",
     )
     fake_model_a_generic_mm = fields.GenericRelationListField(
-        to=[Collection("fake_model_a")], related_name="fake_model_b_generic_mm",
+        to=[Collection("fake_model_a")],
+        related_name="fake_model_b_generic_mm",
     )
 
     structured_relation_field = fields.RelationField(
@@ -96,7 +101,8 @@ class FakeModelB(Model):
     )
 
     fake_model_c_ids = fields.RelationListField(
-        to=Collection("fake_model_c"), related_name="foreign_key_field",
+        to=Collection("fake_model_c"),
+        related_name="foreign_key_field",
     )
 
 
@@ -108,7 +114,8 @@ class FakeModelC(Model):
 
     # nested structured field
     foreign_key_field = fields.RelationField(
-        to=Collection("fake_model_b"), related_name="fake_model_c_ids",
+        to=Collection("fake_model_b"),
+        related_name="fake_model_c_ids",
     )
     structured_relation_field = fields.RelationField(
         to=Collection("fake_model_a"),

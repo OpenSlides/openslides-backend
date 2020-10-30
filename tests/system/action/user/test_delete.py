@@ -5,7 +5,8 @@ class UserDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.create_model("user/111", {"username": "username_srtgb123"})
         response = self.client.post(
-            "/", json=[{"action": "user.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "user.delete", "data": [{"id": 111}]}],
         )
 
         self.assert_status_code(response, 200)
@@ -14,7 +15,8 @@ class UserDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.create_model("user/112", {"username": "username_srtgb123"})
         response = self.client.post(
-            "/", json=[{"action": "user.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "user.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         model = self.get_model("user/112")
@@ -32,7 +34,8 @@ class UserDeleteActionTest(BaseActionTestCase):
         self.create_model("group/456", {"meeting_id": 42, "user_ids": [111, 222]})
         self.create_model("meeting/42", {"group_ids": [456]})
         response = self.client.post(
-            "/", json=[{"action": "user.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "user.delete", "data": [{"id": 111}]}],
         )
 
         self.assert_status_code(response, 200)

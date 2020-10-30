@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class UserUpdateTemporaryActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -22,7 +23,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
     def test_update_all_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         self.create_model(
             "group/7", {"name": "name_group7", "user_ids": [], "meeting_id": 222}
@@ -80,7 +82,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
 
     def test_update_vote_weight(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -97,7 +100,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
 
     def test_update_vote_weight_two_digits(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -114,7 +118,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
 
     def test_update_vote_weight_invalid_number(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -131,7 +136,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
 
     def test_update_vote_weight_invalid_string(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -148,7 +154,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 222},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
         )
         response = self.client.post(
             "/",
@@ -167,7 +174,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.create_model("meeting/1", {})
         self.create_model("meeting/2", {})
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 1},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 1},
         )
         response = self.client.post(
             "/",
@@ -189,7 +197,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.create_model("meeting/1", {})
         self.create_model("group/2", {"meeting_id": 2})
         self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 1},
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 1},
         )
         response = self.client.post(
             "/",
@@ -202,7 +211,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field meeting_id must be equal but differs", str(response.data),
+            "The field meeting_id must be equal but differs",
+            str(response.data),
         )
         model = self.get_model("user/111")
         assert model.get("group_$222_ids") is None

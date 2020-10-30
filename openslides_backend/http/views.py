@@ -122,7 +122,8 @@ class PresenterView(BaseView):
 
         # Handle request.
         handler: Presenter = PresenterHandler(
-            logging=self.logging, services=self.services,
+            logging=self.logging,
+            services=self.services,
         )
         try:
             presenter_response = handler.handle_request(payload, user_id)
