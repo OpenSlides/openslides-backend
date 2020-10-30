@@ -20,7 +20,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("meeting_id") == 110
         assert model.get("open_posts") == 0
-        assert model.get("phase") == 1
+        assert model.get("phase") == 0
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 110)
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
