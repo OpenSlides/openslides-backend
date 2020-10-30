@@ -2,7 +2,6 @@ import time
 from typing import Any, Dict
 
 from ...models.models import Motion
-from ..base import DummyAction
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
@@ -29,24 +28,3 @@ class MotionUpdate(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["last_modified"] = round(time.time())
         return instance
-
-
-@register_action("motion.support")
-class MotionSupport(DummyAction):
-    # TODO: Support and unsupport
-    pass
-
-
-@register_action("motion.manage_comments")
-class MotionManageComments(DummyAction):
-    pass
-
-
-@register_action("motion.numbering_in_category")
-class MotionNumberingInCategory(DummyAction):
-    pass
-
-
-@register_action("motion.create_poll")
-class MotionCreatePoll(DummyAction):
-    pass

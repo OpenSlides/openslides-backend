@@ -1,5 +1,5 @@
 from ...models.models import Motion
-from ..base import Action, ActionPayload, DataSet, DummyAction
+from ..base import Action, ActionPayload, DataSet
 from ..default_schema import DefaultSchema
 from ..register import register_action
 from ..sort_generic import TreeSortMixin
@@ -23,8 +23,3 @@ class MotionSort(TreeSortMixin, Action):
             parent_id_key="sort_parent_id",
             children_ids_key="sort_children_ids",
         )
-
-
-@register_action("motion.sort_in_category")
-class MotionSortInCategory(DummyAction):
-    pass
