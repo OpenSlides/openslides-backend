@@ -17,6 +17,7 @@ class MediafileSetAsLogoActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/17")
         assert model.get("used_as_logo_$1_in_meeting_id") == 222
+        assert model.get("used_as_logo_$_in_meeting_id") == ["1"]
 
     def test_set_as_logo_wrong_directory(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})

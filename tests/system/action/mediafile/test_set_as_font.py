@@ -17,6 +17,7 @@ class MediafileSetAsFontActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/17")
         assert model.get("used_as_font_$1_in_meeting_id") == 222
+        assert model.get("used_as_font_$_in_meeting_id") == ["1"]
 
     def test_set_as_font_wrong_directory(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
