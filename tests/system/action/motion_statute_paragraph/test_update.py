@@ -9,7 +9,9 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "motion_statute_paragraph.update",
-                    "data": [{"id": 111, "title": "title_Xcdfgee"}],
+                    "data": [
+                        {"id": 111, "title": "title_Xcdfgee", "text": "text_blablabla"}
+                    ],
                 }
             ],
         )
@@ -17,6 +19,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_statute_paragraph/111")
         model = self.get_model("motion_statute_paragraph/111")
         assert model.get("title") == "title_Xcdfgee"
+        assert model.get("text") == "text_blablabla"
 
     def test_update_wrong_id(self) -> None:
         self.create_model("motion_statute_paragraph/111", {"title": "title_srtgb123"})
