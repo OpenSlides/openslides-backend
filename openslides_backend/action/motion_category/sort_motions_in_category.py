@@ -5,8 +5,8 @@ from ..register import register_action
 from ..sort_generic import LinearSortMixin
 
 
-@register_action("motion_category.sort_motions_in_categories")
-class MotionCategorySortMotionInCategoriesSort(LinearSortMixin, Action):
+@register_action("motion_category.sort_motions_in_category")
+class MotionCategorySortMotionInCategorySort(LinearSortMixin, Action):
     """
     Action to motion category sort motions in categories.
     """
