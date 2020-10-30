@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "3ad8c9afbbe1b0162829abfb71aae784"
+MODELS_YML_CHECKSUM = "0dac254918292749e16477d156eab57c"
 
 
 class Organisation(Model):
@@ -1465,7 +1465,7 @@ class Assignment(Model):
     title = fields.CharField(required=True)
     description = fields.HTMLStrictField()
     open_posts = fields.IntegerField(default=0, constraints={"minimum": 0})
-    phase = fields.IntegerField(default=1, constraints={"enum": [1, 2, 3]})
+    phase = fields.IntegerField(default=0, constraints={"enum": [0, 1, 2]})
     default_poll_description = fields.CharField()
     number_poll_candidates = fields.BooleanField()
     candidate_ids = fields.RelationListField(
