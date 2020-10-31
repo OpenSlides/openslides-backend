@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional
+from typing import List, Optional
 
 from ...models.models import AgendaItem
 from ...shared.exceptions import ActionException
@@ -31,16 +31,18 @@ class AgendaItemAssign(UpdateAction):
         single_item=True,
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
-        return self.prepare_assign_data(
-            parent_id=payload[0]["parent_id"],
-            ids=payload[0]["ids"],
-            meeting_id=payload[0]["meeting_id"],
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
+        yield from self.prepare_assign_data(
+            parent_id=instance["parent_id"],
+            ids=instance["ids"],
+            meeting_id=instance["meeting_id"],
         )
 
     def prepare_assign_data(
         self, parent_id: Optional[int], ids: List[int], meeting_id: int
-    ) -> Iterable[Dict[str, Any]]:
+    ) -> ActionPayload:
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.database.filter(
             collection=self.model.collection,

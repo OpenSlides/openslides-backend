@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Any, Iterable, Union
 
@@ -74,6 +75,8 @@ class OpenSlidesBackendWSGIApplication:
                 request_body, request.headers, request.cookies
             )
         except ViewException as exception:
+            if os.environ.get("OPENSLIDES_BACKEND_RAISE_4XX"):
+                raise exception
             if exception.status_code == 400:
                 return BadRequest(exception.message)
             elif exception.status_code == 403:

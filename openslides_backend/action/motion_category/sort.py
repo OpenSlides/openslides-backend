@@ -15,10 +15,11 @@ class MotionCategorySort(TreeSortMixin, Action):
     schema = DefaultSchema(MotionCategory()).get_tree_sort_schema()
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        # payload is an array with exactly one item
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
         return self.sort_tree(
-            nodes=payload[0]["tree"],
-            meeting_id=payload[0]["meeting_id"],
+            nodes=instance["tree"],
+            meeting_id=instance["meeting_id"],
             weight_key="weight",
             parent_id_key="parent_id",
             children_ids_key="child_ids",

@@ -7,31 +7,33 @@ class BackendBaseException(Exception):
         self.message = message
 
 
-class AuthenticationException(BackendBaseException):
-    pass
-
-
 class ViewException(BackendBaseException):
-    def __init__(self, message: str, status_code: int) -> None:
-        self.message = message
-        self.status_code = status_code
+    status_code: int
 
 
-class ActionException(BackendBaseException):
+class View400Exception(ViewException):
+    status_code = 400
+
+
+class AuthenticationException(View400Exception):
     pass
 
 
-class PresenterException(BackendBaseException):
+class ActionException(View400Exception):
     pass
 
 
-class PermissionDenied(BackendBaseException):
+class PresenterException(View400Exception):
     pass
 
 
-class DatabaseException(BackendBaseException):
+class DatabaseException(View400Exception):
     pass
 
 
-class EventStoreException(BackendBaseException):
+class EventStoreException(View400Exception):
     pass
+
+
+class PermissionDenied(ViewException):
+    status_code = 403

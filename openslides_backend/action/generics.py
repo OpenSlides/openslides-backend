@@ -18,7 +18,7 @@ from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
 
 class GenericBaseAction(Action):
-    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         """
         By default, this does nothing. Override in subclasses to adjust the updates
         to the instances.
@@ -319,7 +319,7 @@ class DeleteAction(GenericBaseAction):
             # Update instance (by default this does nothing)
             instance = self.update_instance(instance)
 
-            # fetch db instance with all relevant fields
+            # Fetch db instance with all relevant fields
             relevant_fields = [
                 field_name
                 for field_name, field in self.model.get_relation_fields()
@@ -444,7 +444,7 @@ class DeleteAction(GenericBaseAction):
             self.additional_write_requests
             + [element for element in super().create_write_request_elements(dataset)]
         )
-        # remove double entries and updates for deleted models
+        # Remove double entries and updates for deleted models
         events: List[Event] = []
         deleted: List[FullQualifiedId] = []
         for event in write_request_element["events"]:

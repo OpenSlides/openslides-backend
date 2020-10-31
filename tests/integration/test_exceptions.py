@@ -3,7 +3,7 @@ from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from openslides_backend.shared.exceptions import ViewException
+from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendWSGI
 
@@ -27,7 +27,7 @@ class TestHttpExceptions(TestCase):
         self.client = Client(self.application)
 
     def test_bad_request(self) -> None:
-        self.view.dispatch.side_effect = ViewException("test", 400)
+        self.view.dispatch.side_effect = ActionException("test")
         response = self.client.post("/", json=[{"action": "agenda_item.create"}])
         self.assertEqual(response.status_code, 400)
         self.view.dispatch.assert_called()
@@ -35,7 +35,7 @@ class TestHttpExceptions(TestCase):
         self.assertEqual(data.get("message"), "test")
 
     def test_forbidden(self) -> None:
-        self.view.dispatch.side_effect = ViewException("test", 403)
+        self.view.dispatch.side_effect = PermissionDenied("test")
         response = self.client.post("/", json=[{"action": "agenda_item.create"}])
         self.assertEqual(response.status_code, 403)
         self.view.dispatch.assert_called()

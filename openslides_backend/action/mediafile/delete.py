@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List
+from typing import List
 
 from ...models.models import Mediafile
 from ...shared.patterns import Collection, FullQualifiedId
@@ -17,13 +17,9 @@ class MediafileDelete(DeleteAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_delete_schema()
 
-    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
-        new_payload = []
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:
-            new_payload.extend(
-                [{"id": id_} for id_ in self.get_tree_ids(instance["id"])]
-            )
-        return new_payload
+            yield from ({"id": id_} for id_ in self.get_tree_ids(instance["id"]))
 
     def get_tree_ids(self, id_: int) -> List[int]:
         tree_ids = [id_]

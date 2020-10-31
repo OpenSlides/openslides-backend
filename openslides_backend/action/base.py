@@ -109,6 +109,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         raise NotImplementedError
 
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+        """
+        By default this does nothing. Override in subclasses to adjust the updates
+        to all instances of the payload.
+        """
+        yield from payload
+
+    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validates all model fields according to the model definition.
+        """
+        for field_name, field in self.model.get_fields():
+            if field_name in instance:
+                instance[field_name] = field.validate(instance[field_name])
+        return instance
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Updates one instance of the payload. This can be overridden by custom
@@ -119,15 +135,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         This is called after initial validation, but before additional relation
         validation.
         """
-        return instance
-
-    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validates all model fields according to the model definition.
-        """
-        for field_name, field in self.model.get_fields():
-            if field_name in instance:
-                instance[field_name] = field.validate(instance[field_name])
         return instance
 
     def validate_relation_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:

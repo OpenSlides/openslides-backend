@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ...models.models import Mediafile
 from ...shared.patterns import FullQualifiedId
@@ -20,17 +20,14 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
         optional_properties=["title", "access_group_ids"]
     )
 
-    def get_updated_instances(
-        self, instances: ActionPayload
-    ) -> Iterable[Dict[str, Any]]:
+    def get_updated_instances(self, instances: ActionPayload) -> ActionPayload:
         """
         Calculate inherited_access_group_ids and inherited_access_group_ids, if
         access_group_ids are given.
         """
-        new_instances: ActionPayload = []
         for instance in instances:
             if instance.get("access_group_ids") is None:
-                new_instances.append(instance)
+                yield instance
                 continue
             mediafile = self.database.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["parent_id"]
@@ -50,24 +47,20 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                     parent.get("has_inherited_access_groups"),
                     parent.get("inherited_access_group_ids"),
                 )
-                new_instances.append(instance)
+                yield instance
 
-                # handle children
-                new_instances.extend(
-                    self.handle_children(
-                        instance,
-                        instance["has_inherited_access_groups"],
-                        instance["inherited_access_group_ids"],
-                    )
+                # Handle children
+                yield from self.handle_children(
+                    instance,
+                    instance["has_inherited_access_groups"],
+                    instance["inherited_access_group_ids"],
                 )
             else:
                 instance["inherited_access_group_ids"] = instance["access_group_ids"]
                 instance["has_inherited_access_groups"] = bool(
                     instance["inherited_access_group_ids"]
                 )
-                new_instances.append(instance)
-
-        return new_instances
+                yield instance
 
     def handle_children(
         self,
@@ -75,7 +68,6 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
         parent_has_inherited_access_groups: Optional[bool],
         parent_inherited_access_group_ids: Optional[List[int]],
     ) -> ActionPayload:
-        result = []
         mediafile = self.database.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["child_ids"]
         )
@@ -107,12 +99,9 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                     or child.get("inherited_access_group_ids")
                     != new_instance["inherited_access_group_ids"]
                 ):
-                    result.append(new_instance)
-                    result.extend(
-                        self.handle_children(
-                            new_instance,
-                            new_instance["has_inherited_access_groups"],
-                            new_instance["inherited_access_group_ids"],
-                        )
+                    yield new_instance
+                    yield from self.handle_children(
+                        new_instance,
+                        new_instance["has_inherited_access_groups"],
+                        new_instance["inherited_access_group_ids"],
                     )
-        return result

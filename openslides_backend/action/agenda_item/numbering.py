@@ -22,7 +22,9 @@ class AgendaItemNumbering(Action):
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         # Overwrite parent prepare_dataset
         # Fetch all agenda items for this meeting from database.
-        meeting_id = payload[0]["meeting_id"]
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
+        meeting_id = instance["meeting_id"]
         agenda_items = self.database.filter(
             collection=self.model.collection,
             filter=FilterOperator("meeting_id", "=", meeting_id),

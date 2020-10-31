@@ -70,7 +70,11 @@ The action component listens to port 9002. The presenter component listens to po
 
 * OPENSLIDES_BACKEND_DEBUG
 
-  Use a truthy value to set loglevel to debug and activate Gunicorn's reload mechanism. Default: 0
+  Set this variable to set loglevel to debug and activate Gunicorn's reload mechanism.
+
+* OPENSLIDES_BACKEND_RAISE_4XX
+
+  Set this variable to raise HTTP 400 and 403 as exceptions instead of valid HTTP responses.
 
 * AUTH_PROTOCOL
 

@@ -1,5 +1,5 @@
 from ...models.models import Motion
-from ..base import Action, ActionPayload, DataSet, DummyAction
+from ..base import Action, ActionPayload, DataSet
 from ..default_schema import DefaultSchema
 from ..register import register_action
 from ..sort_generic import TreeSortMixin
@@ -15,16 +15,12 @@ class MotionSort(TreeSortMixin, Action):
     schema = DefaultSchema(Motion()).get_tree_sort_schema()
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
-        # payload is an array with exactly one item
+        # Payload is an iterable with exactly one item
+        instance = next(iter(payload))
         return self.sort_tree(
-            nodes=payload[0]["tree"],
-            meeting_id=payload[0]["meeting_id"],
+            nodes=instance["tree"],
+            meeting_id=instance["meeting_id"],
             weight_key="sort_weight",
             parent_id_key="sort_parent_id",
             children_ids_key="sort_children_ids",
         )
-
-
-@register_action("motion.sort_in_category")
-class MotionSortInCategory(DummyAction):
-    pass

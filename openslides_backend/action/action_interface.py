@@ -1,9 +1,9 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
-ActionPayload = List[Dict[str, Any]]
+ActionPayload = Iterable[Dict[str, Any]]
 ActionPayloadWithLabel = TypedDict(
     "ActionPayloadWithLabel", {"action": str, "data": ActionPayload}
 )
