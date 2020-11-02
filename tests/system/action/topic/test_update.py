@@ -24,7 +24,8 @@ class TopicUpdateTest(BaseActionTestCase):
         self.create_model("topic/1", {"title": "test", "meeting_id": 1})
         self.create_model("tag/1", {"name": "tag", "meeting_id": 1})
         response = self.client.post(
-            "/", json=[{"action": "topic.update", "data": [{"id": 1, "tag_ids": [1]}]}],
+            "/",
+            json=[{"action": "topic.update", "data": [{"id": 1, "tag_ids": [1]}]}],
         )
         self.assert_status_code(response, 200)
         topic = self.get_model("topic/1")
@@ -33,7 +34,8 @@ class TopicUpdateTest(BaseActionTestCase):
     def test_update_tag_ids_remove(self) -> None:
         self.test_update_tag_ids_add()
         response = self.client.post(
-            "/", json=[{"action": "topic.update", "data": [{"id": 1, "tag_ids": []}]}],
+            "/",
+            json=[{"action": "topic.update", "data": [{"id": 1, "tag_ids": []}]}],
         )
         self.assert_status_code(response, 200)
         topic = self.get_model("topic/1")

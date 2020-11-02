@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
-            "motion/25", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/25",
+            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         self.create_model(
             "motion_change_recommendation/111",
@@ -38,7 +39,8 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
-            "motion/25", {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            "motion/25",
+            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
         )
         self.create_model(
             "motion_change_recommendation/111",

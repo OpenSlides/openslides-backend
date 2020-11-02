@@ -49,7 +49,9 @@ class CreateActionWithDependencies(CreateAction):
                 )
                 payload = [payload_method(element, ActionClass)]
                 action = ActionClass(
-                    self.permission, self.database, additional_relation_models,
+                    self.permission,
+                    self.database,
+                    additional_relation_models,
                 )
                 yield from action.perform(payload, self.user_id)
 

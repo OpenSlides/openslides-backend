@@ -5,7 +5,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.create_model("topic/111", {"title": "title_srtgb123"})
         response = self.client.post(
-            "/", json=[{"action": "topic.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "topic.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/111")
@@ -13,7 +14,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.create_model("topic/112", {"title": "title_srtgb123"})
         response = self.client.post(
-            "/", json=[{"action": "topic.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "topic.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("topic/112")
@@ -28,7 +30,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "list_of_speakers/222", {"closed": False, "content_object_id": "topic/111"},
+            "list_of_speakers/222",
+            {"closed": False, "content_object_id": "topic/111"},
         )
         self.create_model(
             "agenda_item/333",
@@ -38,7 +41,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
             },
         )
         response = self.client.post(
-            "/", json=[{"action": "topic.delete", "data": [{"id": 111}]}],
+            "/",
+            json=[{"action": "topic.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/111")
@@ -57,7 +61,8 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("topic/1")
         self.assert_model_exists("list_of_speakers/1")
         response = self.client.post(
-            "/", json=[{"action": "topic.delete", "data": [{"id": 1}]}],
+            "/",
+            json=[{"action": "topic.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/1")

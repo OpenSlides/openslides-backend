@@ -70,7 +70,7 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check black
-      run: black --check --diff openslides_backend/ tests/
+      run: black --check --diff openslides_backend/ tests/ cli/ --exclude tests/integration/old
 
   check-coding-style-isort:
     name: Check coding style with isort
@@ -87,7 +87,7 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check isort
-      run: isort --check-only --diff openslides_backend/ tests/
+      run: isort --check-only --diff openslides_backend/ tests/ cli/
 
   check-coding-style-flake8:
     name: Check coding style with flake8
@@ -104,7 +104,7 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check flake8
-      run: flake8 openslides_backend/ tests/
+      run: flake8 openslides_backend/ tests/ cli/
 
   check-coding-style-mypy:
     name: Check coding style with mypy
@@ -121,4 +121,4 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check mypy
-      run: mypy openslides_backend/ tests/
+      run: mypy openslides_backend/ tests/ cli/

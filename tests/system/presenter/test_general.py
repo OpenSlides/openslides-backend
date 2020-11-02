@@ -26,9 +26,11 @@ class GeneralPresenterWSGITester(BasePresenterTestCase):
 
     def test_request_fuzzy(self) -> None:
         response = self.client.post(
-            "/", json=[{"presenter": "non_existing_presenter"}],
+            "/",
+            json=[{"presenter": "non_existing_presenter"}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Presenter non_existing_presenter does not exist.", str(response.data),
+            "Presenter non_existing_presenter does not exist.",
+            str(response.data),
         )

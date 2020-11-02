@@ -119,7 +119,9 @@ class AgendaTree:
         yield from yield_items(root_items)
 
     def number_all(
-        self, numeral_system: str = "arabic", agenda_number_prefix: str = None,
+        self,
+        numeral_system: str = "arabic",
+        agenda_number_prefix: str = None,
     ) -> Dict[int, str]:
         """
         Auto numbering of the agenda according to the numeral_system. Manually

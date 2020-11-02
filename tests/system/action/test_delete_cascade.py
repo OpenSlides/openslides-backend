@@ -80,7 +80,8 @@ class TestDeleteCascade(BaseActionTestCase):
         self.create_model("fake_model_cd_a/1", {"fake_model_cd_b": 1})
         self.create_model("fake_model_cd_b/1", {"fake_model_cd_a": 1})
         response = self.client.post(
-            "/", json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
+            "/",
+            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("fake_model_cd_a/1")
@@ -93,7 +94,8 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         self.create_model("fake_model_cd_c/1", {"fake_model_cd_c_cascaded": 1})
         response = self.client.post(
-            "/", json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
+            "/",
+            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("fake_model_cd_a/1")
@@ -107,7 +109,8 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         self.create_model("fake_model_cd_c/1", {"fake_model_cd_c_protected": 1})
         response = self.client.post(
-            "/", json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
+            "/",
+            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("fake_model_cd_a/1")
@@ -125,7 +128,8 @@ class TestDeleteCascade(BaseActionTestCase):
             "fake_model_cd_c/1", {"fake_model_cd_a": 1, "fake_model_cd_c_protected": 1}
         )
         response = self.client.post(
-            "/", json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
+            "/",
+            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("fake_model_cd_a/1")

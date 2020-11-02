@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class UserUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123"},
+            "user/111",
+            {"username": "username_srtgb123"},
         )
         response = self.client.post(
             "/",
@@ -21,7 +22,8 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_some_more_fields(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123"},
+            "user/111",
+            {"username": "username_srtgb123"},
         )
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
         self.create_model("committee/78", {"name": "name_xXRGTLAJ"})
@@ -53,7 +55,8 @@ class UserUpdateActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
-            "user/111", {"username": "username_srtgb123"},
+            "user/111",
+            {"username": "username_srtgb123"},
         )
         response = self.client.post(
             "/",

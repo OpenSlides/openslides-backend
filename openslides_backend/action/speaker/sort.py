@@ -13,7 +13,8 @@ class SpeakerSort(LinearSortMixin, Action):
 
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_linear_sort_schema(
-        "speaker_ids", "list_of_speakers_id",
+        "speaker_ids",
+        "list_of_speakers_id",
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:

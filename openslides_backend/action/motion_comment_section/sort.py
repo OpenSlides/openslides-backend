@@ -13,7 +13,8 @@ class MotionCommentSectionSort(LinearSortMixin, Action):
 
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_linear_sort_schema(
-        "motion_comment_section_ids", "meeting_id",
+        "motion_comment_section_ids",
+        "meeting_id",
     )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:

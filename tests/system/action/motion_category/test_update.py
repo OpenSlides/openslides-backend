@@ -6,7 +6,8 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
 
         self.create_model(
-            "motion/89", {"name": "name_morZjXig", "meeting_id": 222},
+            "motion/89",
+            {"name": "name_morZjXig", "meeting_id": 222},
         )
         self.create_model(
             "motion_category/111",

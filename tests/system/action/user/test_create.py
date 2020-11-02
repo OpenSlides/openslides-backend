@@ -43,11 +43,13 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
-            "/", json=[{"action": "user.create", "data": [{}]}],
+            "/",
+            json=[{"action": "user.create", "data": [{}]}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'username\\'] properties", str(response.data),
+            "data[0] must contain [\\'username\\'] properties",
+            str(response.data),
         )
 
     def test_create_wrong_field(self) -> None:

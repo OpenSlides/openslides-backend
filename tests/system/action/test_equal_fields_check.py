@@ -12,10 +12,12 @@ class FakeModelEFA(Model):
     verbose_name = "fake model for equal field check a"
 
     b_id = fields.RelationField(
-        to=Collection("fake_model_ef_b"), related_name="reference_field",
+        to=Collection("fake_model_ef_b"),
+        related_name="reference_field",
     )
     c_id = fields.RelationField(
-        to=Collection("fake_model_ef_c"), related_name="reference_field",
+        to=Collection("fake_model_ef_c"),
+        related_name="reference_field",
     )
 
 
@@ -57,15 +59,21 @@ class FakeModelEFC(Model):
         to=Collection("fake_model_ef_a"), related_name="c_id"
     )
 
-    b_id = fields.RelationField(to=Collection("fake_model_ef_b"), related_name="c_id",)
+    b_id = fields.RelationField(
+        to=Collection("fake_model_ef_b"),
+        related_name="c_id",
+    )
     b_ids = fields.RelationListField(
-        to=Collection("fake_model_ef_b"), related_name="c_ids",
+        to=Collection("fake_model_ef_b"),
+        related_name="c_ids",
     )
     b_generic_id = fields.GenericRelationField(
-        to=[Collection("fake_model_ef_b")], related_name="c_generic_id",
+        to=[Collection("fake_model_ef_b")],
+        related_name="c_generic_id",
     )
     b_generic_ids = fields.GenericRelationListField(
-        to=[Collection("fake_model_ef_b")], related_name="c_generic_ids",
+        to=[Collection("fake_model_ef_b")],
+        related_name="c_generic_ids",
     )
 
 
@@ -112,7 +120,8 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal", str(response.data),
+            "The field reference_field must be equal",
+            str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
 
@@ -158,7 +167,8 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal", str(response.data),
+            "The field reference_field must be equal",
+            str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
 
@@ -196,7 +206,8 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal", str(response.data),
+            "The field reference_field must be equal",
+            str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
 
@@ -234,6 +245,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal", str(response.data),
+            "The field reference_field must be equal",
+            str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")

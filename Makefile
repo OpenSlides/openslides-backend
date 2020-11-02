@@ -3,7 +3,7 @@
 all: black isort flake8 mypy
 
 black:
-	black openslides_backend/ tests/ cli/
+	black openslides_backend/ tests/ cli/ --exclude tests/integration/old
 
 isort:
 	isort openslides_backend/ tests/ cli/

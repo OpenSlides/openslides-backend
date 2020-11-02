@@ -5,7 +5,8 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_update_correct_all_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "motion_comment_section/111", {"name": "name_srtgb123", "meeting_id": 222},
+            "motion_comment_section/111",
+            {"name": "name_srtgb123", "meeting_id": 222},
         )
         self.create_model("group/23", {"name": "name_asdfetza"})
         response = self.client.post(

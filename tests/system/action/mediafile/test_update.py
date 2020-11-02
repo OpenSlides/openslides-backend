@@ -5,7 +5,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model("group/7", {"name": "group_LxAHErRs", "user_ids": []})
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123"},
+            "mediafile/111",
+            {"title": "title_srtgb123"},
         )
         response = self.client.post(
             "/",
@@ -31,7 +32,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "mediafile/110", {"title": "title_srtgb199", "child_ids": [111]}
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -64,7 +66,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -96,7 +99,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -129,7 +133,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -162,7 +167,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -200,7 +206,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -238,7 +245,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -269,7 +277,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123", "parent_id": 110},
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
         )
         response = self.client.post(
             "/",
@@ -290,7 +299,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
-            "mediafile/111", {"title": "title_srtgb123"},
+            "mediafile/111",
+            {"title": "title_srtgb123"},
         )
         response = self.client.post(
             "/",

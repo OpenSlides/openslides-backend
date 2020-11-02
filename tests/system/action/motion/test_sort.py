@@ -60,7 +60,8 @@ class MotionSortActionTest(BaseActionTestCase):
         }
 
         response = self.client.post(
-            "/", json=[{"action": "motion.sort", "data": [valid_data]}],
+            "/",
+            json=[{"action": "motion.sort", "data": [valid_data]}],
         )
         self.assert_status_code(response, 200)
         fqids_in_preorder = [
@@ -93,7 +94,8 @@ class MotionSortActionTest(BaseActionTestCase):
             ],
         }
         response = self.client.post(
-            "/", json=[{"action": "motion.sort", "data": [not_tree_data]}],
+            "/",
+            json=[{"action": "motion.sort", "data": [not_tree_data]}],
         )
         self.assert_status_code(response, 400)
         assert "Duplicate id in sort tree: 12" in str(response.data)
@@ -116,7 +118,8 @@ class MotionSortActionTest(BaseActionTestCase):
             ],
         }
         response = self.client.post(
-            "/", json=[{"action": "motion.sort", "data": [circle_data]}],
+            "/",
+            json=[{"action": "motion.sort", "data": [circle_data]}],
         )
         self.assert_status_code(response, 400)
         assert "Duplicate id in sort tree: 1" in str(response.data)
@@ -132,7 +135,8 @@ class MotionSortActionTest(BaseActionTestCase):
             "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}]}],
         }
         response = self.client.post(
-            "/", json=[{"action": "motion.sort", "data": [small_tree_data]}],
+            "/",
+            json=[{"action": "motion.sort", "data": [small_tree_data]}],
         )
         self.assert_status_code(response, 200)
         model_1 = self.get_model("motion/1")
@@ -159,7 +163,8 @@ class MotionSortActionTest(BaseActionTestCase):
             "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}, {"id": 111}]}],
         }
         response = self.client.post(
-            "/", json=[{"action": "motion.sort", "data": [data]}],
+            "/",
+            json=[{"action": "motion.sort", "data": [data]}],
         )
         self.assert_status_code(response, 400)
         assert "Id in sort tree does not exist: 111" in str(response.data)

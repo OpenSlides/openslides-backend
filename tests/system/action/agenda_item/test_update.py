@@ -6,7 +6,8 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model("topic/102", {"name": "topic_kHemtGYY"})
         self.create_model(
-            "agenda_item/111", {"item_number": 101, "duration": 600},
+            "agenda_item/111",
+            {"item_number": 101, "duration": 600},
         )
         response = self.client.post(
             "/",

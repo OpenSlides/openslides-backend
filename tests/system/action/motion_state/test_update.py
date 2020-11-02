@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
-            "motion_workflow/110", {"name": "name_Ycefgee", "state_ids": [111]},
+            "motion_workflow/110",
+            {"name": "name_Ycefgee", "state_ids": [111]},
         )
         self.create_model(
             "motion_state/111", {"name": "name_srtgb123", "workflow_id": 110}
@@ -62,10 +63,12 @@ class MotionStateActionTest(BaseActionTestCase):
 
     def test_update_wrong_workflow_mismatch(self) -> None:
         self.create_model(
-            "motion_workflow/110", {"name": "name_Ycefgee", "state_ids": [111, 112]},
+            "motion_workflow/110",
+            {"name": "name_Ycefgee", "state_ids": [111, 112]},
         )
         self.create_model(
-            "motion_workflow/90", {"name": "name_Ycefgee", "state_ids": [113]},
+            "motion_workflow/90",
+            {"name": "name_Ycefgee", "state_ids": [113]},
         )
         self.create_model(
             "motion_state/111", {"name": "name_srtgb123", "workflow_id": 110}

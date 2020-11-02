@@ -6,10 +6,12 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         self.create_model("workflow/34", {})
         self.create_model("motion_state/66", {"motion_ids": [22], "workflow_id": 34})
         self.create_model(
-            "motion_state/77", {"workflow_id": 34, "recommendation_label": "blablabal"},
+            "motion_state/77",
+            {"workflow_id": 34, "recommendation_label": "blablabal"},
         )
         self.create_model(
-            "motion/22", {"meeting_id": 222, "state_id": 66},
+            "motion/22",
+            {"meeting_id": 222, "state_id": 66},
         )
         response = self.client.post(
             "/",
@@ -28,10 +30,12 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         self.create_model("workflow/34", {})
         self.create_model("motion_state/66", {"motion_ids": [22], "workflow_id": 34})
         self.create_model(
-            "motion_state/77", {"workflow_id": 34},
+            "motion_state/77",
+            {"workflow_id": 34},
         )
         self.create_model(
-            "motion/22", {"meeting_id": 222, "state_id": 66},
+            "motion/22",
+            {"meeting_id": 222, "state_id": 66},
         )
         response = self.client.post(
             "/",
@@ -55,7 +59,8 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             {"workflow_id": 123, "recommendation_label": "blablabal"},
         )
         self.create_model(
-            "motion/22", {"meeting_id": 222, "state_id": 66},
+            "motion/22",
+            {"meeting_id": 222, "state_id": 66},
         )
         response = self.client.post(
             "/",

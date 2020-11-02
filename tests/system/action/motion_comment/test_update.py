@@ -4,7 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCommentUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model(
-            "motion_comment/111", {"comment": "comment_srtgb123"},
+            "motion_comment/111",
+            {"comment": "comment_srtgb123"},
         )
         response = self.client.post(
             "/",
@@ -21,7 +22,8 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
-            "motion_comment/111", {"comment": "comment_srtgb123"},
+            "motion_comment/111",
+            {"comment": "comment_srtgb123"},
         )
         response = self.client.post(
             "/",
