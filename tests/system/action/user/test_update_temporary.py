@@ -42,7 +42,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                             "first_name": "first_name",
                             "last_name": "last_name",
                             "is_active": True,
-                            "is_committee": True,
+                            "is_physical_person": False,
                             "about_me": "about_me",
                             "gender": "gender",
                             "comment": "comment",
@@ -66,7 +66,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("first_name") == "first_name"
         assert model.get("last_name") == "last_name"
         assert model.get("is_active") is True
-        assert model.get("is_committee") is True
+        assert model.get("is_physical_person") is False
         assert model.get("about_me") == "about_me"
         assert model.get("gender") == "gender"
         assert model.get("comment") == "comment"

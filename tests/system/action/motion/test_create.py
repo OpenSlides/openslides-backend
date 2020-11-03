@@ -99,7 +99,8 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
-            "/", json=[{"action": "motion.create", "data": [{}]}],
+            "/",
+            json=[{"action": "motion.create", "data": [{}]}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -346,7 +347,8 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_lead_motion_and_statute_paragraph_id_given(self) -> None:
         self.create_model("meeting/222", {})
         self.create_model(
-            "motion_statute_paragraph/1", {"meeting_id": 222},
+            "motion_statute_paragraph/1",
+            {"meeting_id": 222},
         )
         response = self.client.post(
             "/",

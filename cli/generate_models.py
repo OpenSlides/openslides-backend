@@ -6,7 +6,6 @@ from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Union
 
 import requests
-import simplejson as json
 import yaml
 
 from openslides_backend.models.fields import OnDelete
@@ -115,7 +114,7 @@ def main() -> None:
     MODELS = yaml.safe_load(models_yml)
     with open(DESTINATION, "w") as dest:
         dest.write(FILE_TEMPLATE)
-        dest.write("\nMODELS_YML_CHECKSUM = " + json.dumps(checksum) + "\n")
+        dest.write("\nMODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         for collection, fields in MODELS.items():
             model = Model(collection, fields)
             dest.write(model.get_code())
@@ -287,15 +286,13 @@ class Attribute(Node):
         if self.read_only:
             properties += "read_only=True, "
         if self.default is not None:
-            properties += f"default={json.dumps(self.default)}, "
+            properties += f"default={repr(self.default)}, "
         if self.equal_fields is not None:
-            properties += f"equal_fields={json.dumps(self.equal_fields)}, "
+            properties += f"equal_fields={repr(self.equal_fields)}, "
         if self.contraints:
-            properties += f"constraints={json.dumps(self.contraints)}, "
+            properties += f"constraints={repr(self.contraints)}, "
         if self.in_array_constraints and self.type in ("string[]", "number[]"):
-            properties += (
-                f"in_array_constraints={json.dumps(self.in_array_constraints)}"
-            )
+            properties += f"in_array_constraints={repr(self.in_array_constraints)}"
         return self.FIELD_TEMPLATE.substitute(
             dict(
                 field_name=field_name,
@@ -313,7 +310,7 @@ class Attribute(Node):
         if self.fields.required:
             properties += "required=True, "
         if self.contraints:
-            properties += f"constraints={json.dumps(self.contraints)}"
+            properties += f"constraints={repr(self.contraints)}"
         return self.FIELD_TEMPLATE.substitute(
             dict(field_name=field_name, field_class=field_class, properties=properties)
         )
@@ -349,9 +346,7 @@ class To(Node):
             properties += "generic_relation=True, "
         if self.field.type == "structured-relation":
             assert self.field.replacement is not None
-            structured_relation = json.dumps(
-                self.field.through + [self.field.replacement]
-            )
+            structured_relation = repr(self.field.through + [self.field.replacement])
             properties += f"structured_relation={structured_relation}, "
         if self.field.type == "structured-tag":
             assert not self.field.through

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0dac254918292749e16477d156eab57c"
+MODELS_YML_CHECKSUM = "df8e60ef3a17cd35ece83ffe0fd57657"
 
 
 class Organisation(Model):
@@ -45,7 +45,7 @@ class User(Model):
     first_name = fields.CharField()
     last_name = fields.CharField()
     is_active = fields.BooleanField()
-    is_committee = fields.BooleanField()
+    is_physical_person = fields.BooleanField(default=True)
     password = fields.CharField()
     default_password = fields.CharField()
     about_me = fields.HTMLStrictField()
@@ -559,18 +559,18 @@ class Meeting(Model):
         on_delete=fields.OnDelete.CASCADE,
     )
     logo__id = fields.TemplateRelationField(
-        replacement="location",
+        replacement="place",
         index=5,
         to=Collection("mediafile"),
         related_name="used_as_logo_$_in_meeting_id",
-        structured_tag="location",
+        structured_tag="place",
     )
     font__id = fields.TemplateRelationField(
-        replacement="location",
+        replacement="place",
         index=5,
         to=Collection("mediafile"),
         related_name="used_as_font_$_in_meeting_id",
-        structured_tag="location",
+        structured_tag="place",
     )
     committee_id = fields.RelationField(
         to=Collection("committee"), related_name="meeting_ids", required=True
@@ -1732,18 +1732,18 @@ class Mediafile(Model):
         to=Collection("meeting"), related_name="mediafile_ids", required=True
     )
     used_as_logo__in_meeting_id = fields.TemplateRelationField(
-        replacement="location",
+        replacement="place",
         index=13,
         to=Collection("meeting"),
         related_name="logo_$_id",
-        structured_tag="location",
+        structured_tag="place",
     )
     used_as_font__in_meeting_id = fields.TemplateRelationField(
-        replacement="location",
+        replacement="place",
         index=13,
         to=Collection("meeting"),
         related_name="font_$_id",
-        structured_tag="location",
+        structured_tag="place",
     )
 
 
