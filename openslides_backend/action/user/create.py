@@ -18,7 +18,7 @@ class UserCreate(CreateAction):
             "first_name",
             "last_name",
             "is_active",
-            "is_committee",
+            "is_physical_person",
             "default_password",
             "about_me",
             "gender",
