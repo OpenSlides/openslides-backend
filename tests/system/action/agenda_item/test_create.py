@@ -152,3 +152,163 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("agenda_item/1")
+
+    def test_create_calc_fields_no_parent_agenda_type(self) -> None:
+        self.create_model("meeting/2", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 2})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {"content_object_id": "topic/1", "type": AgendaItem.AGENDA_ITEM}
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/1")
+        assert model.get("is_internal") is False
+        assert model.get("is_hidden") is False
+
+    def test_create_calc_fields_no_parent_hidden_type(self) -> None:
+        self.create_model("meeting/2", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 2})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {"content_object_id": "topic/1", "type": AgendaItem.HIDDEN_ITEM}
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/1")
+        assert model.get("is_internal") is False
+        assert model.get("is_hidden") is True
+
+    def test_create_calc_fields_no_parent_internal_type(self) -> None:
+        self.create_model("meeting/2", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 2})
+        self.create_model("topic/2", {"name": "test", "meeting_id": 2})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {
+                            "content_object_id": "topic/1",
+                            "type": AgendaItem.INTERNAL_ITEM,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/1")
+        assert model.get("is_internal") is True
+        assert model.get("is_hidden") is False
+
+    def test_create_calc_fields_parent_agenda_internal(self) -> None:
+        self.create_model("meeting/2", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 2})
+        self.create_model(
+            "agenda_item/3",
+            {
+                "content_object_id": "topic/2",
+                "type": AgendaItem.AGENDA_ITEM,
+                "meeting_id": 2,
+                "is_internal": False,
+                "is_hidden": False,
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {
+                            "content_object_id": "topic/1",
+                            "type": AgendaItem.INTERNAL_ITEM,
+                            "parent_id": 3,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/4")
+        assert model.get("is_internal") is True
+        assert model.get("is_hidden") is False
+
+    def test_create_calc_fields_parent_internal_internal(self) -> None:
+        self.create_model("meeting/2", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 2})
+        self.create_model(
+            "agenda_item/3",
+            {
+                "content_object_id": "topic/2",
+                "type": AgendaItem.INTERNAL_ITEM,
+                "meeting_id": 2,
+                "is_internal": True,
+                "is_hidden": False,
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {
+                            "content_object_id": "topic/1",
+                            "type": AgendaItem.INTERNAL_ITEM,
+                            "parent_id": 3,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/4")
+        assert model.get("is_internal") is True
+        assert model.get("is_hidden") is False
+
+    def test_create_calc_fields_parent_internal_hidden(self) -> None:
+        self.create_model("meeting/2", {"name": "test"})
+        self.create_model("topic/1", {"name": "test", "meeting_id": 2})
+        self.create_model(
+            "agenda_item/3",
+            {
+                "content_object_id": "topic/2",
+                "type": AgendaItem.INTERNAL_ITEM,
+                "meeting_id": 2,
+                "is_internal": True,
+                "is_hidden": False,
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.create",
+                    "data": [
+                        {
+                            "content_object_id": "topic/1",
+                            "type": AgendaItem.HIDDEN_ITEM,
+                            "parent_id": 3,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/4")
+        assert model.get("is_internal") is True
+        assert model.get("is_hidden") is True

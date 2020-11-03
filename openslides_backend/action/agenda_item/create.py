@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from ...models.models import AgendaItem
 from ...shared.patterns import Collection, FullQualifiedId
+from ..base import ActionPayload
 from ..create_action_with_inferred_meeting import CreateActionWithInferredMeeting
 from ..default_schema import DefaultSchema
 from ..register import register_action
@@ -43,3 +44,20 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             return instance
         instance["weight"] = parent["weight"] + 1
         return instance
+
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+        for instance in payload:
+            if instance.get("parent_id") is None:
+                parent = {"is_hidden": False, "is_internal": False}
+            else:
+                parent = self.database.get(
+                    FullQualifiedId(self.model.collection, instance["parent_id"]),
+                    ["is_hidden", "is_internal"],
+                )
+            instance["is_hidden"] = instance.get(
+                "type"
+            ) == AgendaItem.HIDDEN_ITEM or parent.get("is_hidden", False)
+            instance["is_internal"] = instance.get(
+                "type"
+            ) == AgendaItem.INTERNAL_ITEM or parent.get("is_internal", False)
+        return payload
