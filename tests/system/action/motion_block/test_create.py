@@ -25,6 +25,7 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "id": 1,
                 "is_hidden": False,
                 "is_internal": False,
+                "level": 0,
                 "type": 1,
                 "weight": 10000,
                 "meeting_id": 42,

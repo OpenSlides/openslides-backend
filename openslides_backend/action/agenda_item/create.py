@@ -49,15 +49,18 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
         for instance in payload:
             if instance.get("parent_id") is None:
                 parent = {"is_hidden": False, "is_internal": False}
+                instance["level"] = 0
             else:
                 parent = self.database.get(
                     FullQualifiedId(self.model.collection, instance["parent_id"]),
-                    ["is_hidden", "is_internal"],
+                    ["is_hidden", "is_internal", "level"],
                 )
+                instance["level"] = parent.get("level", 0) + 1
             instance["is_hidden"] = instance.get(
                 "type"
             ) == AgendaItem.HIDDEN_ITEM or parent.get("is_hidden", False)
             instance["is_internal"] = instance.get(
                 "type"
             ) == AgendaItem.INTERNAL_ITEM or parent.get("is_internal", False)
+
         return payload
