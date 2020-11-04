@@ -31,7 +31,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")
         self.assertTrue(model.get("end_time") is None)
-        self.assertTrue("MODEL_DOES_NOT_EXIST" in str(response.data))
+        self.assertTrue("Model \\'speaker/889\\' does not exist." in str(response.data))
 
     def test_existing_speaker(self) -> None:
         self.create_model("user/7", {"username": "test_username1"})

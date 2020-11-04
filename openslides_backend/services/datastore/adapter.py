@@ -44,14 +44,27 @@ class Adapter:
                 raise DatabaseException(error_message)
         else:
             payload = None
-        self.logger.debug(f"Get repsonse with status code {status_code}: {payload}")
+        self.logger.debug(f"Get response with status code {status_code}: {payload}")
         if status_code >= 400:
             error_message = f"Datastore service sends HTTP {status_code}."
             additional_error_message = (
                 payload.get("error") if isinstance(payload, dict) else None
             )
             if additional_error_message is not None:
-                error_message = " ".join((error_message, str(additional_error_message)))
+                if (
+                    additional_error_message.get("type_verbose")
+                    == "MODEL_DOES_NOT_EXIST"
+                ):
+                    error_message = " ".join(
+                        (
+                            error_message,
+                            f"Model '{additional_error_message.get('fqid')}' does not exist.",
+                        )
+                    )
+                else:
+                    error_message = " ".join(
+                        (error_message, str(additional_error_message))
+                    )
             raise DatabaseException(error_message)
         return payload
 
