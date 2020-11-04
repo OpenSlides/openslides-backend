@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "df8e60ef3a17cd35ece83ffe0fd57657"
+MODELS_YML_CHECKSUM = "4ac6a53470ed308f2e9af42cc966930a"
 
 
 class Organisation(Model):
@@ -1245,7 +1245,8 @@ class MotionState(Model):
     name = fields.CharField(required=True)
     recommendation_label = fields.CharField()
     css_class = fields.CharField(
-        constraints={"enum": ["grey", "red", "green", "lightblue", "yellow"]}
+        default="lightblue",
+        constraints={"enum": ["grey", "red", "green", "lightblue", "yellow"]},
     )
     restrictions = fields.CharArrayField(
         in_array_constraints={
