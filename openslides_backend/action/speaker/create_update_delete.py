@@ -1,4 +1,9 @@
+from typing import Any, Dict
+
 from ...models.models import Speaker
+from ...shared.exceptions import ActionException
+from ...shared.filters import And, FilterOperator
+from ...shared.patterns import Collection
 from ..create_action_with_inferred_meeting import CreateActionWithInferredMeeting
 from ..default_schema import DefaultSchema
 from ..generics import DeleteAction, UpdateAction
@@ -13,6 +18,28 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         required_properties=["list_of_speakers_id", "user_id"],
         optional_properties=["marked"],
     )
+
+    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Checks that a new speaker does not already exist on the list of speaker as
+        comming speaker (with begin_time == None)
+        """
+        filter_obj = And(
+            FilterOperator("list_of_speakers_id", "=", instance["list_of_speakers_id"]),
+            FilterOperator("begin_time", "=", None),
+        )
+        speakers = self.datastore.filter(
+            collection=Collection("speaker"),
+            filter=filter_obj,
+            mapped_fields=["user_id"],
+            lock_result=True,
+        )
+        for speaker in speakers.values():
+            if speaker["user_id"] == instance["user_id"]:
+                raise ActionException(
+                    f"User {instance['user_id']} is already on the list of speakers."
+                )
+        return super().validate_fields(instance)
 
 
 @register_action("speaker.update")

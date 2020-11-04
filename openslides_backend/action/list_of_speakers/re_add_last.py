@@ -34,8 +34,8 @@ class ListOfSpeakersReAddLastAction(Action):
                 raise ActionException(
                     f"List of speakers {instance['id']} has no speakers."
                 )
-            filter_obj = FilterOperator("end_time", ">", 0)
-            speakers = sorted(
+            filter_obj = FilterOperator("end_time", "!=", None)
+            last_speakers = sorted(
                 self.datastore.filter(
                     Collection("speaker"),
                     filter_obj,
@@ -45,10 +45,10 @@ class ListOfSpeakersReAddLastAction(Action):
                 key=lambda speaker: speaker["end_time"],
                 reverse=True,
             )
-            if not speakers:
+            if not last_speakers:
                 raise ActionException("There is no last speaker that can be re-added.")
             data.append(
-                {"list_of_speakers": list_of_speakers, "last_speaker": speakers[0]}
+                {"list_of_speakers": list_of_speakers, "last_speaker": last_speakers[0]}
             )
         return {"data": data}
 
