@@ -22,6 +22,7 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("restrictions") == []
         assert model.get("merge_amendment_into_final") == 0
+        assert model.get("css_class") == "lightblue"
 
     def test_create_enum_fields(self) -> None:
         self.create_model("meeting/1", {})
