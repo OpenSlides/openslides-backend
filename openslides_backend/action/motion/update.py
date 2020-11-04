@@ -5,10 +5,14 @@ from ...models.models import Motion
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
+from .amendment_paragraphs_mixin import (
+    AmendmentParagraphsMixin,
+    amendment_paragraphs_schema,
+)
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction):
+class MotionUpdate(UpdateAction, AmendmentParagraphsMixin):
     """
     Action to update motions.
     """
@@ -20,11 +24,14 @@ class MotionUpdate(UpdateAction):
             "number",
             "text",
             "reason",
-            "amendment_paragraph_",
             "modified_final_version",
-        ]
+        ],
+        additional_optional_fields={
+            "amendment_paragraphs": amendment_paragraphs_schema
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["last_modified"] = round(time.time())
+        self.handle_amendment_paragraphs(instance)
         return instance
