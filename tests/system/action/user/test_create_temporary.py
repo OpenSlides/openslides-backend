@@ -14,7 +14,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/1")
+        model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
         assert model.get("is_physical_person") is True
@@ -52,7 +52,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/1")
+        model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
         assert model.get("title") == "title"
@@ -96,7 +96,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "A temporary user can only be present in its respective meeting.",
             str(response.data),
         )
-        self.assert_model_not_exists("user/1")
+        self.assert_model_not_exists("user/27")
 
     def test_create_invalid_group(self) -> None:
         self.create_model("meeting/1", {})
@@ -117,7 +117,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "The field meeting_id must be equal but differs",
             str(response.data),
         )
-        self.assert_model_not_exists("user/1")
+        self.assert_model_not_exists("user/27")
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -129,7 +129,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "data[0] must contain [\\'meeting_id\\', \\'username\\'] properties",
             str(response.data),
         )
-        self.assert_model_not_exists("user/1")
+        self.assert_model_not_exists("user/27")
 
     def test_create_wrong_field(self) -> None:
         self.create_model("meeting/222", {"name": "name_shjeuazu"})
@@ -153,4 +153,4 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "data[0] must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
-        self.assert_model_not_exists("user/1")
+        self.assert_model_not_exists("user/27")

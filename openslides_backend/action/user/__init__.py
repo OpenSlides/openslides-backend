@@ -5,6 +5,7 @@ from . import (  # noqa
     create_temporary,
     delete,
     delete_temporary,
+    set_password_self,
     update,
     update_self,
     update_temporary,

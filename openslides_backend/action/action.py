@@ -113,9 +113,9 @@ class ActionHandler(HandlerBase):
             if action is None or action.internal:
                 raise ActionException(f"Action {action_name} does not exist.")
             self.logger.debug(f"Perform action {action_name}.")
-            write_request_elements = action(self.permission, self.database).perform(
-                element["data"], self.user_id
-            )
+            write_request_elements = action(
+                self.permission, self.database, self.auth
+            ).perform(element["data"], self.user_id)
             self.logger.debug(
                 f"Prepared write request element {write_request_elements}."
             )

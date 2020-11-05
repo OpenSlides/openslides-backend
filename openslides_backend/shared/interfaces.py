@@ -79,6 +79,8 @@ class WSGIApplication(Protocol):  # pragma: no cover
     Interface for main WSGI application class.
     """
 
+    services: Any
+
     def __init__(self, logging: LoggingModule, view: View, services: Services) -> None:
         ...
 

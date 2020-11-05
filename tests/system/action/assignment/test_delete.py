@@ -8,7 +8,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
             "/",
             json=[{"action": "assignment.delete", "data": [{"id": 111}]}],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         self.assert_model_deleted("assignment/111")
 
     def test_delete_correct_cascading(self) -> None:

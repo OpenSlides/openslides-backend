@@ -32,7 +32,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assertEqual(response.status_code, 200)
+        self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
         assert model.get("title") == "title_bDFsWtKL"
         assert model.get("number") == "124"

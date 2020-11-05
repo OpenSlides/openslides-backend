@@ -6,16 +6,6 @@ from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 
-from ..util import Client
-
-
-def create_action_test_client() -> Client:
-    return Client(create_action_test_application())
-
-
-def create_presenter_test_client() -> Client:
-    return Client(create_presenter_test_application())
-
 
 def create_action_test_application() -> WSGIApplication:
     return create_test_application(ActionView)

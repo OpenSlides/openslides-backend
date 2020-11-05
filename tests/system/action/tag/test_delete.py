@@ -33,13 +33,11 @@ class TagDeleteTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_not_exists("tag/112")
-        topic = self.get_model("topic/222")
-        self.assertEqual(
-            topic,
+        self.assert_model_exists(
+            "topic/222",
             {
                 "id": 222,
                 "meta_deleted": False,
-                "meta_position": 3,
                 "title": "test_title_ertgd590854398",
                 "tag_ids": [],
             },

@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 import fastjsonschema
 from mypy_extensions import TypedDict
@@ -12,6 +12,7 @@ from ..models.fields import (
     BaseTemplateField,
     BaseTemplateRelationField,
 )
+from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import Datastore
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces import Event, Permission, WriteRequestElement
@@ -66,10 +67,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self,
         permission: Permission,
         database: Datastore,
+        auth: AuthenticationService,
         additional_relation_models: ModelMap = {},
     ) -> None:
         self.permission = permission
         self.database = database
+        self.auth = auth
         self.additional_relation_models = additional_relation_models
 
     def perform(
@@ -347,6 +350,27 @@ class Action(BaseAction, metaclass=SchemaProvider):
             result = handler.perform()
             relations.update(result)
         return relations
+
+    def execute_other_action(
+        self,
+        ActionClass: Type["Action"],
+        payload: ActionPayload,
+        additional_relation_models: ModelMap = {},
+    ) -> Iterable[WriteRequestElement]:
+        """
+        Executes the given action class as a dependent action with the given payload
+        and the given addtional relation models. Merges its own additional relation
+        models into it.
+        The action is fully executed, so this returns the WriteRequestElements that it
+        produces.
+        """
+        action = ActionClass(
+            self.permission,
+            self.database,
+            self.auth,
+            {**self.additional_relation_models, **additional_relation_models},
+        )
+        return action.perform(payload, self.user_id)
 
 
 class DummyAction(Action):

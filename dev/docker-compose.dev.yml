@@ -17,6 +17,8 @@ services:
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer
+            - AUTH_HOST=auth
+            - AUTH_PATH=/system/auth
         depends_on:
             - reader
             - writer
@@ -75,6 +77,7 @@ services:
             - redis
             - cache
         networks:
+            - datastore
             - auth
             - redis
             - cache

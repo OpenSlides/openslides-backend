@@ -3,6 +3,7 @@ from unittest import TestCase
 
 from werkzeug.wrappers import Response
 
+from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import (
     Datastore,
     DeletedModelsBehaviour,
@@ -13,16 +14,33 @@ from openslides_backend.shared.interfaces import (
     WriteRequestElement,
     WSGIApplication,
 )
-from tests.system.util import Client
-from tests.util import get_fqid, get_id_from_fqid
+from tests.util import Client, get_fqid, get_id_from_fqid
+
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "admin"
 
 
 class BaseSystemTestCase(TestCase):
+    app: WSGIApplication
+    auth: AuthenticationService
+    datastore: Datastore
+    client: Client
+
     def setUp(self) -> None:
-        app = self.get_application()
-        self.client = Client(app)
-        self.datastore: Datastore = app.services.datastore()  # type: ignore
+        self.app = self.get_application()
+        self.services = self.app.services  # type: ignore
+        self.auth = self.services.authentication()
+        self.datastore = self.services.datastore()
         self.datastore.truncate_db()
+
+        self.create_model(
+            "user/1",
+            {"username": ADMIN_USERNAME, "password": self.auth.hash(ADMIN_PASSWORD)},
+        )
+        self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
+
+    def create_client(self, username: str, password: str) -> Client:
+        return Client(self.app, username, password)
 
     def get_application(self) -> WSGIApplication:
         raise NotImplementedError()
@@ -43,6 +61,14 @@ class BaseSystemTestCase(TestCase):
         )
         if deleted:
             request["events"].append(Event(type="delete", fqid=get_fqid(fqid)))
+        self.datastore.write(request)
+
+    def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
+        request = WriteRequestElement(
+            events=[Event(type="update", fqid=get_fqid(fqid), fields=data)],
+            information={},
+            user_id=0,
+        )
         self.datastore.write(request)
 
     def get_model(self, fqid: str) -> Dict[str, Any]:

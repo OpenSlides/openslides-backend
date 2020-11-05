@@ -159,16 +159,17 @@ class MotionCreate(
         # create submitters
         submitter_ids = instance.pop("submitter_ids", None)
         if submitter_ids:
-            action = MotionSubmitterCreateAction(
-                self.permission,
-                self.database,
-                {FullQualifiedId(self.model.collection, instance["id"]): instance},
-            )
+            additional_relation_models = {
+                FullQualifiedId(self.model.collection, instance["id"]): instance
+            }
             payload = []
             for user_id in submitter_ids:
                 payload.append({"motion_id": instance["id"], "user_id": user_id})
-            result = action.perform(payload, self.user_id)
-            self.additional_write_requests.extend(result)
+            self.additional_write_requests.extend(
+                self.execute_other_action(
+                    MotionSubmitterCreateAction, payload, additional_relation_models
+                )
+            )
 
         return instance
 
