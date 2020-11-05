@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "4ac6a53470ed308f2e9af42cc966930a"
+MODELS_YML_CHECKSUM = "a67eed44e63daa65abb46235a184d63f"
 
 
 class Organisation(Model):
@@ -1297,6 +1297,7 @@ class MotionState(Model):
     first_state_of_workflow_id = fields.RelationField(
         to=Collection("motion_workflow"),
         related_name="first_state_id",
+        on_delete=fields.OnDelete.PROTECT,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
@@ -1684,8 +1685,11 @@ class Mediafile(Model):
     mimetype = fields.CharField()
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
-    has_inherited_access_groups = fields.BooleanField(
-        read_only=True, constraints={"description": "Calculated field."}
+    is_public = fields.BooleanField(
+        read_only=True,
+        constraints={
+            "description": "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
+        },
     )
     inherited_access_group_ids = fields.RelationListField(
         to=Collection("group"),

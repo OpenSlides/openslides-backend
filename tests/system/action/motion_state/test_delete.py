@@ -47,6 +47,6 @@ class MotionStateActionTest(BaseActionTestCase):
             json=[{"action": "motion_state.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
-        assert "You cannot delete the first state of the workflow." in str(
+        assert "you have to delete the related motion_workflow first." in str(
             response.data
         )

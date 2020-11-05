@@ -3,13 +3,13 @@ from typing import Any, Dict
 from ...models.models import MotionState
 from ...services.datastore.interface import GetManyRequest
 from ...shared.exceptions import ActionException
-from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.patterns import Collection
 from ..action_set import ActionSet
 from ..create_action_with_inferred_meeting import (
     get_create_action_with_inferred_meeting,
 )
 from ..default_schema import DefaultSchema
-from ..generics import DeleteAction, UpdateAction
+from ..generics import UpdateAction
 from ..register import register_action_set
 
 
@@ -38,21 +38,6 @@ class MotionStateUpdate(UpdateAction):
                     f"Cannot update: found states from different workflows ({workflow_id}, {state['workflow_id']})"
                 )
 
-        return instance
-
-
-class MotionStateDelete(DeleteAction):
-    """
-    Action to delete a motion state.
-    """
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        motion_state = self.database.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
-            ["first_state_of_workflow_id"],
-        )
-        if motion_state.get("first_state_of_workflow_id"):
-            raise ActionException("You cannot delete the first state of the workflow.")
         return instance
 
 
@@ -100,4 +85,3 @@ class MotionStateActionSet(ActionSet):
 
     CreateActionClass = get_create_action_with_inferred_meeting("workflow_id")
     UpdateActionClass = MotionStateUpdate
-    DeleteActionClass = MotionStateDelete
