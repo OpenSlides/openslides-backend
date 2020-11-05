@@ -36,6 +36,9 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
             json=[{"action": "assignment_candidate.delete", "data": [{"id": 111}]}],
         )
         self.assert_status_code(response, 400)
+        assert "Model \\'assignment_candidate/111\\' does not exist." in str(
+            response.data
+        )
         model = self.get_model("assignment_candidate/112")
         assert model.get("user_id") == 110
         assert model.get("assignment_id") == 111
