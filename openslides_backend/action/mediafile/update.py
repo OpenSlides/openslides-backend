@@ -42,7 +42,6 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                     instance["has_inherited_access_groups"],
                     instance["inherited_access_group_ids"],
                 ) = self.calculate_inherited_groups(
-                    instance["id"],
                     instance["access_group_ids"],
                     parent.get("has_inherited_access_groups"),
                     parent.get("inherited_access_group_ids"),
@@ -87,7 +86,6 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                     new_instance["has_inherited_access_groups"],
                     new_instance["inherited_access_group_ids"],
                 ) = self.calculate_inherited_groups(
-                    child_id,
                     child.get("access_group_ids", []),
                     parent_has_inherited_access_groups,
                     parent_inherited_access_group_ids,
