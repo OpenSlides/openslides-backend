@@ -23,6 +23,9 @@ class MotionBlockActionTest(BaseActionTestCase):
             self.get_model(f"agenda_item/{model['agenda_item_id']}"),
             {
                 "id": 1,
+                "is_hidden": False,
+                "is_internal": False,
+                "level": 0,
                 "type": 1,
                 "weight": 10000,
                 "meeting_id": 42,
