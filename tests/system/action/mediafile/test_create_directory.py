@@ -37,7 +37,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         self.create_model("meeting/110", {"name": "meeting110"})
         self.create_model(
             "mediafile/110",
-            {"title": "title_srtgb199", "child_ids": [111], "meeting_id": 110},
+            {"title": "title_srtgb199", "meeting_id": 110},
         )
         response = self.client.post(
             "/",
@@ -74,7 +74,6 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             "mediafile/110",
             {
                 "title": "title_srtgb199",
-                "child_ids": [111],
                 "inherited_access_group_ids": [8],
                 "has_inherited_access_groups": True,
                 "meeting_id": 110,
