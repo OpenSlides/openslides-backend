@@ -4,7 +4,7 @@ from typing import Iterable
 from ...models.models import Speaker
 from ...services.datastore.interface import GetManyRequest
 from ...shared.exceptions import ActionException
-from ...shared.interfaces import Event
+from ...shared.interfaces.event import Event
 from ...shared.patterns import Collection, FullQualifiedId
 from ..base import Action, ActionPayload, DataSet, WriteRequestElement
 from ..default_schema import DefaultSchema
@@ -44,7 +44,7 @@ class SpeakerSpeak(Action):
                 list_of_speakers["speaker_ids"],
                 ["begin_time", "end_time"],
             )
-            speakers = self.database.get_many([gmr])
+            speakers = self.datastore.get_many([gmr])
             now = round(time.time())
             current_speaker = None
             for speaker_id, speaker in speakers[self.model.collection].items():

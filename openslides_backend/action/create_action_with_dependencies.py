@@ -1,6 +1,6 @@
 from typing import Any, Dict, Iterable, List, Type
 
-from ..shared.interfaces import WriteRequestElement
+from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedId
 from .base import Action, DataSet
 from .generics import CreateAction

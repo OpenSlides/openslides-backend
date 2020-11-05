@@ -1,9 +1,10 @@
 from typing import Type
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 from openslides_backend.environment import get_environment
 from openslides_backend.http.views import ActionView, PresenterView
-from openslides_backend.shared.interfaces import View, WSGIApplication
+from openslides_backend.services.media.interface import MediaService
+from openslides_backend.shared.interfaces.wsgi import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 
 
@@ -26,6 +27,8 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
         },
         logging=MagicMock(),
     )
+    mock_media_service = Mock(MediaService)
+    services.media = MagicMock(return_value=mock_media_service)
 
     # Create WSGI application instance. Inject logging module, view class and services container.
     application_factory = OpenSlidesBackendWSGI(

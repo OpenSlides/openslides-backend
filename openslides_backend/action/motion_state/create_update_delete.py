@@ -27,7 +27,7 @@ class MotionStateUpdate(UpdateAction):
         state_ids.extend(instance.get("previous_state_ids", []))
 
         gmr = GetManyRequest(Collection("motion_state"), state_ids, ["workflow_id"])
-        db_states = self.database.get_many([gmr])
+        db_states = self.datastore.get_many([gmr])
         states = db_states.get(Collection("motion_state"), {}).values()
         workflow_id = None
         for state in states:

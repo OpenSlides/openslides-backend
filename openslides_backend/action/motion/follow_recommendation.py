@@ -19,7 +19,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
         If motion has a recommendation_id, set the state to it and
         set state_extension.
         """
-        motion = self.database.get(
+        motion = self.datastore.get(
             FullQualifiedId(Collection("motion"), instance["id"]),
             ["recommendation_id", "recommendation_extension"],
         )
@@ -27,7 +27,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             raise ActionException("Cannot set an empty recommendation.")
         instance["state_id"] = motion["recommendation_id"]
         instance = super().update_instance(instance)
-        recommendation = self.database.get(
+        recommendation = self.datastore.get(
             FullQualifiedId(Collection("motion_state"), motion["recommendation_id"]),
             ["show_state_extension_field", "show_recommendation_extension_field"],
         )

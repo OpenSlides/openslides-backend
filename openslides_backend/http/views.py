@@ -6,14 +6,9 @@ from ..action.action import Payload as ActionPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
-from ..shared.interfaces import (
-    Headers,
-    LoggingModule,
-    RequestBody,
-    ResponseBody,
-    Services,
-    View,
-)
+from ..shared.interfaces.logging import LoggingModule
+from ..shared.interfaces.services import Services
+from ..shared.interfaces.wsgi import Headers, RequestBody, ResponseBody, View
 
 
 class BaseView(View):
@@ -30,7 +25,7 @@ class BaseView(View):
 
     def get_user_id_from_headers(
         self, headers: Headers, cookies: Dict
-    ) -> Tuple[int, str]:
+    ) -> Tuple[int, Optional[str]]:
         """
         Returns user id from authentication service using HTTP headers.
         """

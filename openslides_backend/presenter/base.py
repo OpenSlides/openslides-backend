@@ -2,9 +2,11 @@ from typing import Any, Callable, Optional
 
 from fastjsonschema import JsonSchemaException
 
-from ..services.datastore.interface import Datastore
+from ..services.datastore.interface import DatastoreService
+from ..services.permission.interface import PermissionService
 from ..shared.exceptions import PresenterException
-from ..shared.interfaces import LoggingModule, Permission
+from ..shared.interfaces.logging import LoggingModule
+from ..shared.interfaces.services import Services
 
 
 class BasePresenter:
@@ -13,21 +15,21 @@ class BasePresenter:
     """
 
     data: Any
-    permission: Permission
-    database: Datastore
+    permission: PermissionService
+    datastore: DatastoreService
     logging: LoggingModule
     schema: Optional[Callable[[Any], None]] = None
 
     def __init__(
         self,
         data: Any,
-        permission: Permission,
-        datastore: Datastore,
+        services: Services,
         logging: LoggingModule,
     ):
         self.data = data
-        self.permission = permission
-        self.datastore = datastore
+        self.services = services
+        self.permission = self.services.permission()
+        self.datastore = self.services.datastore()
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 

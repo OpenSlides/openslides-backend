@@ -4,7 +4,7 @@ from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter
-from ...shared.interfaces import WriteRequestElement
+from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
 from .commands import GetManyRequest
 from .deleted_models_behaviour import DeletedModelsBehaviour
@@ -15,7 +15,7 @@ Count = TypedDict("Count", {"count": int})
 Aggregate = Dict[str, Any]  # TODO: This interface seams to be wrong.
 
 
-class Datastore(Protocol):
+class DatastoreService(Protocol):
     """
     Datastore defines the interface to the datastore.
     """

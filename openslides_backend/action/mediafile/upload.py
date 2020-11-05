@@ -2,7 +2,6 @@ import mimetypes
 from typing import Any, Dict
 
 from ...models.models import Mediafile
-from ...services.mediaservice.mediaservice import Mediaservice
 from ...shared.exceptions import ActionException
 from ...shared.patterns import FullQualifiedId
 from ..base import ActionPayload, DataSet
@@ -31,7 +30,7 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
         Check if parent is a directory.
         """
         if instance.get("parent_id"):
-            parent_mediafile = self.database.get(
+            parent_mediafile = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
                 [
                     "is_directory",
@@ -46,7 +45,6 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
                     instance["has_inherited_access_groups"],
                     instance["inherited_access_group_ids"],
                 ) = self.calculate_inherited_groups(
-                    10000,  # TODO remove this in future versions.
                     instance["access_group_ids"],
                     parent_mediafile.get("has_inherited_access_groups"),
                     parent_mediafile.get("inherited_access_group_ids"),
@@ -67,5 +65,4 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
         return dataset
 
     def upload_file(self, id_: int, file_: str, mimetype: str) -> None:
-        ms = Mediaservice()
-        ms.upload(file_, id_, mimetype)
+        self.media.upload(file_, id_, mimetype)

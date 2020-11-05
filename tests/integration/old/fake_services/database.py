@@ -92,9 +92,9 @@ OLD_TESTDATA = {
 }  # type: Dict[str, Dict[int, Dict[str, Any]]]
 
 
-class DatabaseTestAdapter:
+class DatastoreTestAdapter:
     """
-    Test adapter for database (read) queries.
+    Test adapter for datastore (read) queries.
     See openslides_backend.adapters.interface.Datastore for implementation.
     """
 
@@ -114,7 +114,7 @@ class DatabaseTestAdapter:
         else:
             if not kwargs.get("old_style_testing"):
                 raise ValueError(
-                    "DatabaseTestAdapter should be used with datastore_content or with old_style_testing set to True."
+                    "DatastoreTestAdapter should be used with datastore_content or with old_style_testing set to True."
                 )
             self.initial_data = deepcopy(OLD_TESTDATA)
 

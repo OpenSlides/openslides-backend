@@ -2,7 +2,8 @@ from typing import Iterable
 
 from ...models.models import AgendaItem
 from ...shared.filters import FilterOperator
-from ...shared.interfaces import Event, WriteRequestElement
+from ...shared.interfaces.event import Event
+from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import FullQualifiedId
 from ..base import Action, ActionPayload, DataSet
 from ..default_schema import DefaultSchema
@@ -21,11 +22,11 @@ class AgendaItemNumbering(Action):
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         # Overwrite parent prepare_dataset
-        # Fetch all agenda items for this meeting from database.
+        # Fetch all agenda items for this meeting from datastore.
         # Payload is an iterable with exactly one item
         instance = next(iter(payload))
         meeting_id = instance["meeting_id"]
-        agenda_items = self.database.filter(
+        agenda_items = self.datastore.filter(
             collection=self.model.collection,
             filter=FilterOperator("meeting_id", "=", meeting_id),
             mapped_fields=["item_number", "parent_id", "weight", "type"],

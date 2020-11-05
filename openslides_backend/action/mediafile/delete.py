@@ -23,7 +23,7 @@ class MediafileDelete(DeleteAction):
 
     def get_tree_ids(self, id_: int) -> List[int]:
         tree_ids = [id_]
-        node = self.database.get(
+        node = self.datastore.get(
             FullQualifiedId(Collection("mediafile"), id_), ["child_ids"]
         )
         if node.get("child_ids"):

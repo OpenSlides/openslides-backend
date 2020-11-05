@@ -50,7 +50,7 @@ class CreateActionWithAgendaItemMixin(Action):
     def check_dependant_action_execution_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
-        meeting = self.database.get(
+        meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), element["instance"]["meeting_id"]),
             ["agenda_item_creation"],
             lock_result=True,

@@ -29,7 +29,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
         """
         instance = self.update_instance_with_meeting_id(instance)
         motion_meeting_id = instance["meeting_id"]  # meeting_id is set from motion
-        user_meeting_id = self.database.get(
+        user_meeting_id = self.datastore.get(
             FullQualifiedId(Collection("user"), instance["user_id"]), ["meeting_id"]
         ).get("meeting_id")
 
@@ -43,7 +43,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
             FilterOperator("user_id", "=", instance["user_id"]),
             FilterOperator("motion_id", "=", instance["motion_id"]),
         )
-        another_exist = self.database.exists(
+        another_exist = self.datastore.exists(
             collection=self.model.collection, filter=filter
         )
         if another_exist["exists"]:

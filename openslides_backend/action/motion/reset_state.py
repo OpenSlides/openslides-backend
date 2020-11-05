@@ -21,20 +21,20 @@ class MotionResetStateAction(UpdateAction):
         """
         Set state_id to motion_state.first_state_of_workflow_id.
         """
-        motion = self.database.get(
+        motion = self.datastore.get(
             FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
         )
         if not motion.get("state_id"):
             raise ActionException(f"Motion {instance['id']} has no state.")
 
-        old_state = self.database.get(
+        old_state = self.datastore.get(
             FullQualifiedId(Collection("motion_state"), motion["state_id"]),
             ["workflow_id"],
         )
         if not old_state.get("workflow_id"):
             raise ActionException(f"State {motion['state_id']} has no workflow.")
 
-        workflow = self.database.get(
+        workflow = self.datastore.get(
             FullQualifiedId(Collection("motion_workflow"), old_state["workflow_id"]),
             ["first_state_id"],
         )

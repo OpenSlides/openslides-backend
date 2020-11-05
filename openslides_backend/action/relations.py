@@ -13,7 +13,11 @@ from ..models.fields import (
     TemplateRelationField,
     TemplateRelationListField,
 )
-from ..services.datastore.interface import GetManyRequest, PartialModel
+from ..services.datastore.interface import (
+    DatastoreService,
+    GetManyRequest,
+    PartialModel,
+)
 from ..shared.exceptions import ActionException
 from ..shared.patterns import (
     KEYSEPARATOR,
@@ -56,7 +60,7 @@ class RelationsHandler:
 
     def __init__(
         self,
-        database: Any,  # TODO: Use a database connection here.
+        datastore: DatastoreService,
         model: Model,
         id: int,
         field: BaseRelationField,
@@ -66,7 +70,7 @@ class RelationsHandler:
         only_remove: bool = False,
         additional_relation_models: ModelMap = {},
     ) -> None:
-        self.database = database
+        self.datastore = datastore
         self.model = model
         self.id = id
         self.field = field
@@ -148,7 +152,7 @@ class RelationsHandler:
                         ].get(related_name)
                     }
                 else:
-                    related_model = self.database.get(
+                    related_model = self.datastore.get(
                         related_model_fqid,
                         mapped_fields=[related_name],
                         lock_result=True,
@@ -160,7 +164,7 @@ class RelationsHandler:
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
             ids = list(add | remove)
-            response = self.database.get_many(
+            response = self.datastore.get_many(
                 get_many_requests=[
                     GetManyRequest(self.field.to, ids, mapped_fields=[related_name])
                 ],
@@ -239,14 +243,14 @@ class RelationsHandler:
         # Try to find the field in self.obj. If this does not work, fetch it from DB.
         value = self.obj.get(field_name)
         if value is None:
-            db_instance = self.database.get(
+            db_instance = self.datastore.get(
                 fqid=FullQualifiedId(collection, id),
                 mapped_fields=[field_name],
             )
             value = db_instance.get(field_name)
         if value is None:
             raise ValueError(
-                f"The field {field_name} for {collection} must not be empty in database."
+                f"The field {field_name} for {collection} must not be empty in datastore."
             )
         if structured_relation:
             new_collection = model_registry[collection]().get_field(field_name).to
@@ -273,10 +277,10 @@ class RelationsHandler:
         elif self.only_remove:
             raise NotImplementedError
         else:
-            # We have to compare with the current database state.
+            # We have to compare with the current datastore state.
 
-            # Retrieve current object from database
-            current_obj = self.database.get(
+            # Retrieve current object from datastore
+            current_obj = self.datastore.get(
                 FullQualifiedId(self.model.collection, self.id),
                 mapped_fields=[self.field_name],
                 lock_result=True,
@@ -320,10 +324,10 @@ class RelationsHandler:
         elif self.only_remove:
             raise NotImplementedError
         else:
-            # We have to compare with the current database state.
+            # We have to compare with the current datastore state.
 
-            # Retrieve current object from database
-            current_obj = self.database.get(
+            # Retrieve current object from datastore
+            current_obj = self.datastore.get(
                 FullQualifiedId(self.model.collection, self.id),
                 mapped_fields=[self.field_name],
                 lock_result=True,

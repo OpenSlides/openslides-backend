@@ -4,7 +4,7 @@ import fastjsonschema
 from fastjsonschema import JsonSchemaException
 
 from ..shared.exceptions import PresenterException
-from ..shared.handlers import Base as HandlerBase
+from ..shared.handlers.base_handler import BaseHandler
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter_interface import Payload, PresenterResponse
@@ -52,7 +52,7 @@ payload_schema = fastjsonschema.compile(
 )
 
 
-class PresenterHandler(HandlerBase):
+class PresenterHandler(BaseHandler):
     """
     Presenter handler. It is the concret implementation of Presenter interface.
     """
@@ -97,8 +97,7 @@ class PresenterHandler(HandlerBase):
             if PresenterClass is not None:
                 presenter_instance = PresenterClass(
                     presenter_blob.get("data"),
-                    self.permission,
-                    self.database,
+                    self.services,
                     self.logging,
                 )
                 presenter_instance.validate()

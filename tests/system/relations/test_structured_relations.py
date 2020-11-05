@@ -17,7 +17,7 @@ class StructuredRelationTester(BaseRelationsTestCase):
             FakeModelB().get_field("structured_relation_field"),
         )
         relations_handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelB(),
             id=111,
             field=field,
@@ -46,7 +46,7 @@ class StructuredRelationTester(BaseRelationsTestCase):
             FakeModelC().get_field("structured_relation_field"),
         )
         relations_handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelC(),
             id=444,
             field=field,

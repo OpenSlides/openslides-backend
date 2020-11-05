@@ -36,7 +36,7 @@ class ListOfSpeakersReAddLastAction(Action):
                 )
             filter_obj = FilterOperator("end_time", ">", 0)
             speakers = sorted(
-                self.database.filter(
+                self.datastore.filter(
                     Collection("speaker"),
                     filter_obj,
                     mapped_fields=["end_time", "user_id"],

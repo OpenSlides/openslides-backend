@@ -29,11 +29,11 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
             if instance.get("access_group_ids") is None:
                 yield instance
                 continue
-            mediafile = self.database.get(
+            mediafile = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["parent_id"]
             )
             if mediafile.get("parent_id"):
-                parent = self.database.get(
+                parent = self.datastore.get(
                     FullQualifiedId(self.model.collection, mediafile["parent_id"]),
                     ["has_inherited_access_groups", "inherited_access_group_ids"],
                 )
@@ -67,12 +67,12 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
         parent_has_inherited_access_groups: Optional[bool],
         parent_inherited_access_group_ids: Optional[List[int]],
     ) -> ActionPayload:
-        mediafile = self.database.get(
+        mediafile = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["child_ids"]
         )
         if mediafile.get("child_ids"):
             for child_id in mediafile["child_ids"]:
-                child = self.database.get(
+                child = self.datastore.get(
                     FullQualifiedId(self.model.collection, child_id),
                     [
                         "access_group_ids",

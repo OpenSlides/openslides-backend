@@ -21,12 +21,12 @@ class MotionSetStateAction(UpdateAction):
         """
         Check if the state_id is from a previous or next state.
         """
-        motion = self.database.get(
+        motion = self.datastore.get(
             FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
         )
         state_id = motion["state_id"]
 
-        motion_state = self.database.get(
+        motion_state = self.datastore.get(
             FullQualifiedId(Collection("motion_state"), state_id),
             ["next_state_ids", "previous_state_ids"],
         )

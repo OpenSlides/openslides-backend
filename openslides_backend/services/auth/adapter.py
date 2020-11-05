@@ -5,7 +5,8 @@ from authlib.constants import ANONYMOUS_USER, AUTHENTICATION_HEADER  # noqa
 from authlib.exceptions import AuthenticateException, InvalidCredentialsException
 
 from ...shared.exceptions import AuthenticationException as BackendAuthException
-from ...shared.interfaces import Headers, LoggingModule
+from ...shared.interfaces.logging import LoggingModule
+from ...shared.interfaces.wsgi import Headers
 from .interface import AuthenticationService
 
 

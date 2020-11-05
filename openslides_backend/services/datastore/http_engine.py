@@ -2,8 +2,8 @@ from typing import Optional, Tuple
 
 import requests
 
-from ...shared.exceptions import DatabaseException
-from ...shared.interfaces import LoggingModule
+from ...shared.exceptions import DatastoreException
+from ...shared.interfaces.logging import LoggingModule
 
 
 class HTTPEngine:
@@ -48,5 +48,5 @@ class HTTPEngine:
             response = requests.post(url=url, data=data, headers=self.headers)
         except requests.exceptions.ConnectionError as e:
             error_message = f"Cannot reach the datastore service on {url}. Error: {e}"
-            raise DatabaseException(error_message)
+            raise DatastoreException(error_message)
         return response.content, response.status_code

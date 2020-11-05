@@ -1,13 +1,13 @@
 import base64
-from unittest.mock import patch
 
 from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileUploadActionTest(BaseActionTestCase):
-    @patch("openslides_backend.action.mediafile.upload.Mediaservice")
-    def test_create(self, mock) -> None:
+    def test_create(self) -> None:
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        filename = "fn_jumbo.txt"
+        file_content = base64.b64encode(b"testtesttest").decode()
         response = self.client.post(
             "/",
             json=[
@@ -17,8 +17,8 @@ class MediafileUploadActionTest(BaseActionTestCase):
                         {
                             "title": "title_xXRGTLAJ",
                             "meeting_id": 110,
-                            "filename": "fn_jumbo.txt",
-                            "file": base64.b64encode(b"testtesttest").decode(),
+                            "filename": filename,
+                            "file": file_content,
                         }
                     ],
                 }
@@ -28,12 +28,13 @@ class MediafileUploadActionTest(BaseActionTestCase):
         mediafile = self.get_model("mediafile/1")
         assert mediafile.get("title") == "title_xXRGTLAJ"
         assert mediafile.get("meeting_id") == 110
-        assert mediafile.get("filename") == "fn_jumbo.txt"
+        assert mediafile.get("filename") == filename
         assert mediafile.get("file") is None
+        self.media.upload.assert_called_with(file_content, 1, "text/plain")
 
-    @patch("openslides_backend.action.mediafile.upload.Mediaservice")
-    def test_create_cannot_guess_mimetype(self, mock) -> None:
+    def test_create_cannot_guess_mimetype(self) -> None:
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        file_content = base64.b64encode(b"testtesttest").decode()
         response = self.client.post(
             "/",
             json=[
@@ -44,7 +45,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                             "title": "title_xXRGTLAJ",
                             "meeting_id": 110,
                             "filename": "fn_jumbo.tasdde",
-                            "file": base64.b64encode(b"testtesttest").decode(),
+                            "file": file_content,
                         }
                     ],
                 }
@@ -52,9 +53,10 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Cannot guess mimetype for fn_jumbo.tasdde." in str(response.data)
+        self.assert_model_not_exists("mediafile/1")
+        self.media.upload.assert_not_called()
 
-    @patch("openslides_backend.action.mediafile.upload.Mediaservice")
-    def test_create_access_group(self, mock) -> None:
+    def test_create_access_group(self) -> None:
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
         self.create_model(
             "mediafile/10",
@@ -66,6 +68,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "meeting_id": 110,
             },
         )
+        file_content = base64.b64encode(b"testtesttest").decode()
         response = self.client.post(
             "/",
             json=[
@@ -76,7 +79,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                             "title": "title_xXRGTLAJ",
                             "meeting_id": 110,
                             "filename": "fn_jumbo.txt",
-                            "file": base64.b64encode(b"testtesttest").decode(),
+                            "file": file_content,
                             "parent_id": 10,
                             "access_group_ids": [],
                         }
@@ -92,3 +95,4 @@ class MediafileUploadActionTest(BaseActionTestCase):
         assert mediafile.get("file") is None
         assert mediafile.get("has_inherited_access_groups") is True
         assert mediafile.get("inherited_access_group_ids") == []
+        self.media.upload.assert_called_with(file_content, 11, "text/plain")

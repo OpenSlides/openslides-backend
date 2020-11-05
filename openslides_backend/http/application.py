@@ -10,7 +10,7 @@ from werkzeug.wrappers.json import JSONMixin
 
 from ..services.auth.adapter import AUTHENTICATION_HEADER
 from ..shared.exceptions import ViewException
-from ..shared.interfaces import StartResponse, WSGIEnvironment
+from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
 from .http_exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
 
 health_route = re.compile("^/health$")

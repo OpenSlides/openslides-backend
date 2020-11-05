@@ -4,10 +4,12 @@ from unittest.mock import Mock
 import simplejson as json
 
 from openslides_backend.services.datastore import commands
-from openslides_backend.services.datastore.adapter import Adapter
+from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.filters import FilterOperator, Or
-from openslides_backend.shared.interfaces import WriteRequestElement
+from openslides_backend.shared.interfaces.write_request_element import (
+    WriteRequestElement,
+)
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 
@@ -15,7 +17,7 @@ class DatastoreAdapterTester(TestCase):
     def setUp(self) -> None:
         self.engine = Mock()
         log = Mock()
-        self.db = Adapter(self.engine, log)
+        self.db = DatastoreAdapter(self.engine, log)
 
     def test_get(self) -> None:
         fqid = FullQualifiedId(Collection("fakeModel"), 1)

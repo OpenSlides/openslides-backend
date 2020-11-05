@@ -21,14 +21,14 @@ class MotionSetRecommendationAction(UpdateAction):
         """
         Check recommendation workflow_id and recommendation_label.
         """
-        motion = self.database.get(
+        motion = self.datastore.get(
             FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
         )
-        current_state = self.database.get(
+        current_state = self.datastore.get(
             FullQualifiedId(Collection("motion_state"), motion["state_id"]),
             ["workflow_id"],
         )
-        recommendation_state = self.database.get(
+        recommendation_state = self.datastore.get(
             FullQualifiedId(Collection("motion_state"), instance["recommendation_id"]),
             ["workflow_id", "recommendation_label"],
         )
