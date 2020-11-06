@@ -76,22 +76,6 @@ The action component listens to port 9002. The presenter component listens to po
 
   Set this variable to raise HTTP 400 and 403 as exceptions instead of valid HTTP responses.
 
-* AUTH_PROTOCOL
-
-  Protocol of authentication service. Default: http
-
-* AUTH_HOST
-
-  Host of authentication service. Default: localhost
-
-* AUTH_PORT
-
-  Port of authentication service. Default: 9004
-
-* AUTH_PATH
-
-  Path of authentication service. Default is an empty string.
-
 * PERMISSION_PROTOCOL
 
   Protocol of permission service. Default: http

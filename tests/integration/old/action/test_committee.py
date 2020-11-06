@@ -218,7 +218,8 @@ class CommitteeCreateActionWSGITester(BaseCommitteeCreateActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
@@ -243,6 +244,7 @@ class CommitteeCreateActionWSGITesterNoPermission(BaseCommitteeCreateActionTeste
             )
         )
         response = client.post(
-            "/", json=[{"action": "committee.create", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "committee.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)

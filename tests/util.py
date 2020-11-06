@@ -23,8 +23,10 @@ class Client(WerkzeugClient):
 
         # login admin
         if username and password is not None:
-            auth_url = application.services.authentication().auth_url
-            url = f"{auth_url}/login"
+            auth_endpoint = (
+                application.services.authentication().auth_handler.http_handler.get_endpoint()
+            )
+            url = f"{auth_endpoint}/system/auth/login"
             try:
                 response = requests.post(
                     url, json={"username": username, "password": password}

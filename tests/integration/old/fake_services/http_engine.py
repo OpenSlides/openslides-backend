@@ -69,7 +69,9 @@ class HTTPTestEngine:
         result: Dict[int, Dict[str, Any]] = defaultdict(dict)
         for instance_id in ids:
             for fqfield, value in self.search(
-                collection, instance_id, mapped_fields=mapped_fields,
+                collection,
+                instance_id,
+                mapped_fields=mapped_fields,
             ):
                 assert instance_id == fqfield.id
                 result[instance_id][fqfield.field] = value
