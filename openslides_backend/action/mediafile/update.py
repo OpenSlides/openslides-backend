@@ -35,15 +35,15 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
             if mediafile.get("parent_id"):
                 parent = self.database.get(
                     FullQualifiedId(self.model.collection, mediafile["parent_id"]),
-                    ["has_inherited_access_groups", "inherited_access_group_ids"],
+                    ["is_public", "inherited_access_group_ids"],
                 )
 
                 (
-                    instance["has_inherited_access_groups"],
+                    instance["is_public"],
                     instance["inherited_access_group_ids"],
                 ) = self.calculate_inherited_groups(
                     instance["access_group_ids"],
-                    parent.get("has_inherited_access_groups"),
+                    parent.get("is_public"),
                     parent.get("inherited_access_group_ids"),
                 )
                 yield instance
@@ -51,20 +51,18 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                 # Handle children
                 yield from self.handle_children(
                     instance,
-                    instance["has_inherited_access_groups"],
+                    instance["is_public"],
                     instance["inherited_access_group_ids"],
                 )
             else:
                 instance["inherited_access_group_ids"] = instance["access_group_ids"]
-                instance["has_inherited_access_groups"] = bool(
-                    instance["inherited_access_group_ids"]
-                )
+                instance["is_public"] = not bool(instance["inherited_access_group_ids"])
                 yield instance
 
     def handle_children(
         self,
         instance: Dict[str, Any],
-        parent_has_inherited_access_groups: Optional[bool],
+        parent_is_public: Optional[bool],
         parent_inherited_access_group_ids: Optional[List[int]],
     ) -> ActionPayload:
         mediafile = self.database.get(
@@ -77,29 +75,28 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                     [
                         "access_group_ids",
                         "child_ids",
-                        "has_inherited_access_groups",
+                        "is_public",
                         "inherited_access_group_ids",
                     ],
                 )
                 new_instance = {"id": child_id}
                 (
-                    new_instance["has_inherited_access_groups"],
+                    new_instance["is_public"],
                     new_instance["inherited_access_group_ids"],
                 ) = self.calculate_inherited_groups(
                     child.get("access_group_ids", []),
-                    parent_has_inherited_access_groups,
+                    parent_is_public,
                     parent_inherited_access_group_ids,
                 )
 
                 if (
-                    child.get("has_inherited_access_groups")
-                    != new_instance["has_inherited_access_groups"]
+                    child.get("is_public") != new_instance["is_public"]
                     or child.get("inherited_access_group_ids")
                     != new_instance["inherited_access_group_ids"]
                 ):
                     yield new_instance
                     yield from self.handle_children(
                         new_instance,
-                        new_instance["has_inherited_access_groups"],
+                        new_instance["is_public"],
                         new_instance["inherited_access_group_ids"],
                     )

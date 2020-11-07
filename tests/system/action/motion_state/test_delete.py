@@ -19,3 +19,34 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_state/112")
+
+    def test_delete_first_state(self) -> None:
+        self.create_model(
+            "meeting/110", {"name": "name_meeting110", "motion_state_ids": [111]}
+        )
+        self.create_model(
+            "motion_workflow/1112",
+            {
+                "name": "name_XZwyPWxb",
+                "first_state": 111,
+                "meeting_id": 110,
+                "state_ids": [111],
+            },
+        )
+        self.create_model(
+            "motion_state/111",
+            {
+                "name": "name_srtgb123",
+                "first_state_of_workflow_id": 1112,
+                "workflow_id": 1112,
+                "meeting_id": 110,
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[{"action": "motion_state.delete", "data": [{"id": 111}]}],
+        )
+        self.assert_status_code(response, 400)
+        assert "you have to delete the related motion_workflow first." in str(
+            response.data
+        )

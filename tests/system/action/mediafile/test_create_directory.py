@@ -28,7 +28,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("access_group_ids") == [7]
         assert model.get("is_directory") is True
         assert model.get("inherited_access_group_ids") == [7]
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False
 
     def test_create_directory_parent(self) -> None:
         self.create_model(
@@ -60,7 +60,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
         assert model.get("inherited_access_group_ids") == [7]
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False
 
     def test_create_directory_parent_inherited_list(self) -> None:
         self.create_model(
@@ -75,7 +75,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             {
                 "title": "title_srtgb199",
                 "inherited_access_group_ids": [8],
-                "has_inherited_access_groups": True,
+                "is_public": False,
                 "meeting_id": 110,
             },
         )
@@ -100,7 +100,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("access_group_ids") == [7]
         assert model.get("inherited_access_group_ids") == []
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False
 
     def test_create_directory_parent_case1(self) -> None:
         self.create_model(
@@ -110,6 +110,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "child_ids": [111],
                 "access_group_ids": [],
                 "inherited_access_group_ids": [],
+                "is_public": True,
                 "meeting_id": 110,
             },
         )
@@ -134,7 +135,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         model_child = self.get_model("mediafile/111")
         assert model_child.get("access_group_ids") == []
         assert model_child.get("inherited_access_group_ids") == []
-        assert model_child.get("has_inherited_access_groups") is False
+        assert model_child.get("is_public") is True
 
     def test_create_directory_parent_case2(self) -> None:
         self.create_model(
@@ -174,7 +175,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == []
         assert model.get("inherited_access_group_ids") == [2, 4]
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False
 
     def test_create_directory_parent_case3(self) -> None:
         self.create_model(
@@ -214,7 +215,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [3, 6]
         assert model.get("inherited_access_group_ids") == [3, 6]
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False
 
     def test_create_directory_parent_case4(self) -> None:
         self.create_model(
@@ -257,7 +258,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [2, 3]
         assert model.get("inherited_access_group_ids") == [2]
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False
 
     def test_create_directory_parent_case5(self) -> None:
         self.create_model(
@@ -276,7 +277,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "title": "title_srtgb199",
                 "child_ids": [111],
                 "inherited_access_group_ids": [1, 2],
-                "has_inherited_access_groups": True,
+                "is_public": False,
                 "access_group_ids": [1, 2],
                 "meeting_id": 110,
             },
@@ -301,4 +302,4 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         model = self.get_model("mediafile/111")
         assert model.get("access_group_ids") == [3]
         assert model.get("inherited_access_group_ids") == []
-        assert model.get("has_inherited_access_groups") is True
+        assert model.get("is_public") is False

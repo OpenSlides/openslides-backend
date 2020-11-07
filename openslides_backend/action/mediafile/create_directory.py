@@ -29,20 +29,18 @@ class MediafileUpdate(MediafileCalculatedFieldsMixin, CreateAction):
         if instance.get("parent_id") is not None:
             parent = self.database.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
-                ["has_inherited_access_groups", "inherited_access_group_ids"],
+                ["is_public", "inherited_access_group_ids"],
             )
 
             (
-                instance["has_inherited_access_groups"],
+                instance["is_public"],
                 instance["inherited_access_group_ids"],
             ) = self.calculate_inherited_groups(
                 instance["access_group_ids"],
-                parent.get("has_inherited_access_groups"),
+                parent.get("is_public"),
                 parent.get("inherited_access_group_ids"),
             )
         else:
             instance["inherited_access_group_ids"] = instance["access_group_ids"]
-            instance["has_inherited_access_groups"] = bool(
-                instance["inherited_access_group_ids"]
-            )
+            instance["is_public"] = not bool(instance["inherited_access_group_ids"])
         return instance
