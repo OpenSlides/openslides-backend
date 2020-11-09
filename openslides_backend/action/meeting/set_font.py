@@ -1,22 +1,26 @@
 from typing import Any, Dict
 
-from ...models.models import Mediafile
+from ...models.models import Meeting
 from ...shared.exceptions import ActionException
-from ...shared.patterns import FullQualifiedId
+from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.schema import required_id_schema
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
 
 
-@register_action("mediafile.set_as_font")
-class MediafileSetAsFontAction(UpdateAction):
+@register_action("meeting.set_font")
+class MeetingSetFontAction(UpdateAction):
     """
     Action to set a mediafile as font.
     """
 
-    model = Mediafile()
-    schema = DefaultSchema(Mediafile()).get_update_schema(
-        additional_required_fields={"place": {"type": "string"}},
+    model = Meeting()
+    schema = DefaultSchema(Meeting()).get_update_schema(
+        additional_required_fields={
+            "place": {"type": "string", "minLength": 1},
+            "mediafile_id": required_id_schema,
+        }
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -24,11 +28,10 @@ class MediafileSetAsFontAction(UpdateAction):
         Checks is_directory and mimetype and sets font.
         """
         mediafile = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            FullQualifiedId(Collection("mediafile"), instance["mediafile_id"]),
             ["is_directory", "mimetype", "meeting_id"],
         )
         place = instance["place"]
-        meeting_id = mediafile["meeting_id"]
         if mediafile.get("is_directory"):
             raise ActionException("Cannot set a directory as font.")
         if mediafile.get("mimetype") not in [
@@ -38,6 +41,7 @@ class MediafileSetAsFontAction(UpdateAction):
             "application/font-sfnt",
         ]:
             raise ActionException("Cannot set a non font as font.")
-        instance[f"used_as_font_${place}_in_meeting_id"] = meeting_id
+        instance[f"font_${place}_id"] = instance["mediafile_id"]
         del instance["place"]
+        del instance["mediafile_id"]
         return instance
