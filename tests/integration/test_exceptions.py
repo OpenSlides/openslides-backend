@@ -4,7 +4,7 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
-from openslides_backend.shared.interfaces import View, WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendWSGI
 
 from ..util import Client

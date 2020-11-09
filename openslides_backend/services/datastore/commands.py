@@ -5,7 +5,8 @@ from mypy_extensions import TypedDict
 
 from ...shared.filters import Filter as FilterInterface
 from ...shared.filters import FilterData
-from ...shared.interfaces import Event, WriteRequestElement
+from ...shared.interfaces.event import Event
+from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
 from .deleted_models_behaviour import DeletedModelsBehaviour
 

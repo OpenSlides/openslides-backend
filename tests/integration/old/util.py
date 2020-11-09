@@ -4,13 +4,13 @@ from unittest.mock import MagicMock
 from dependency_injector import containers, providers
 
 from openslides_backend.http.views import ActionView, PresenterView
-from openslides_backend.services.datastore.adapter import Adapter
+from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.shared.interfaces import View, WSGIApplication
 from openslides_backend.shared.patterns import FullQualifiedField
 from openslides_backend.wsgi import OpenSlidesBackendWSGI
 
 from .fake_services.authentication import AuthenticationTestAdapter
-from .fake_services.database import DatabaseTestAdapter
+from .fake_services.datastore import DatastoreTestAdapter
 from .fake_services.http_engine import HTTPTestEngine
 from .fake_services.permission import PermissionTestAdapter
 
@@ -24,7 +24,7 @@ class FakeServices(containers.DeclarativeContainer):
     expected_write_data = providers.Configuration("expected_write_data")
     permission = providers.Singleton(PermissionTestAdapter, superuser)
     engine = providers.Singleton(HTTPTestEngine, datastore_content, expected_write_data)
-    datastore = providers.Factory(Adapter, engine, logging)
+    datastore = providers.Factory(DatastoreAdapter, engine, logging)
 
 
 def create_test_application_with_fake(
@@ -70,7 +70,7 @@ class FakeServicesOld(containers.DeclarativeContainer):
     authentication = providers.Singleton(AuthenticationTestAdapter, config.user_id)
     superuser = providers.Configuration("superuser")
     permission = providers.Singleton(PermissionTestAdapter, superuser)
-    datastore = providers.Singleton(DatabaseTestAdapter, old_style_testing=True)
+    datastore = providers.Singleton(DatastoreTestAdapter, old_style_testing=True)
 
 
 def create_test_application_old(

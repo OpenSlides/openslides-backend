@@ -44,7 +44,7 @@ class AgendaItemAssign(UpdateAction):
         self, parent_id: Optional[int], ids: List[int], meeting_id: int
     ) -> ActionPayload:
         filter = FilterOperator("meeting_id", "=", meeting_id)
-        db_instances = self.database.filter(
+        db_instances = self.datastore.filter(
             collection=self.model.collection,
             filter=filter,
             mapped_fields=["id"],
@@ -59,13 +59,13 @@ class AgendaItemAssign(UpdateAction):
         else:
             # Calculate the ancesters of parent
             ancesters = [parent_id]
-            grandparent = self.database.get(
+            grandparent = self.datastore.get(
                 FullQualifiedId(self.model.collection, parent_id), ["parent_id"]
             )
             while grandparent.get("parent_id") is not None:
                 gp_parent_id = grandparent["parent_id"]
                 ancesters.append(gp_parent_id)
-                grandparent = self.database.get(
+                grandparent = self.datastore.get(
                     FullQualifiedId(self.model.collection, gp_parent_id), ["parent_id"]
                 )
             for id_ in ids:

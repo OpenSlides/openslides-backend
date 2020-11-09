@@ -6,7 +6,7 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Client, get_fqfield, get_fqid
 
-from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.datastore import DatastoreTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
 from ..util import create_test_application_with_fake as create_test_application
 
@@ -29,7 +29,7 @@ class MeetingCreateActionUnitTester(BaseMeetingCreateActionTester):
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("create")(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -76,7 +76,7 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("create")(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_empty(self) -> None:
@@ -261,7 +261,7 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("update")(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -281,7 +281,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("update")(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -389,7 +389,7 @@ class MeetingDeleteActionUnitTester(BaseMeetingDeleteActionTester):
         user_id = 7121641734
         self.action = MeetingActionSet.get_action("delete")(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -427,7 +427,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
         self.user_id = 7121641734
         self.action = MeetingActionSet.get_action("delete")(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_correct_1(self) -> None:

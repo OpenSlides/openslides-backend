@@ -8,7 +8,7 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Client, get_fqfield, get_fqid
 
-from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.datastore import DatastoreTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
 from ..util import create_test_application_old as create_test_application
 
@@ -47,7 +47,7 @@ class TopicCreateActionUnitTester(BaseTopicCreateActionTester):
         user_id = 5968705978
         self.action = TopicCreate(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -158,7 +158,7 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
         self.user_id = 5968705978
         self.action = TopicCreate(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_empty(self) -> None:
@@ -483,7 +483,7 @@ class TopicUpdateActionUnitTester(BaseTopicUpdateActionTester):
 
         self.action = TopicUpdate(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -600,7 +600,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
         self.user_id = 5968705978
         self.action = TopicUpdate(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_empty(self) -> None:
@@ -910,7 +910,7 @@ class TopicDeleteActionUnitTester(BaseTopicDeleteActionTester):
         user_id = 5968705978
         self.action = TopicDelete(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -1010,7 +1010,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
         self.user_id = 5968705978
         self.action = TopicDelete(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_empty(self) -> None:

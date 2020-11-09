@@ -23,7 +23,7 @@ class MediafileSetAsFontAction(UpdateAction):
         """
         Checks is_directory and mimetype and sets font.
         """
-        mediafile = self.database.get(
+        mediafile = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
             ["is_directory", "mimetype", "meeting_id"],
         )

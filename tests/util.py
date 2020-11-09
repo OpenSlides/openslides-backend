@@ -6,7 +6,7 @@ from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
 from openslides_backend.shared.exceptions import AuthenticationException
-from openslides_backend.shared.interfaces import WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     Collection,

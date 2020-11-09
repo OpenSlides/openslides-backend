@@ -9,7 +9,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_b/2", {})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_oo,
@@ -31,7 +31,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/2", {"fake_model_b_oo": 3})
         self.create_model("fake_model_b/3", {"fake_model_a_oo": 2})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_oo,
@@ -52,7 +52,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {"fake_model_b_oo": 2})
         self.create_model("fake_model_b/2", {"fake_model_a_oo": 1})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_oo,
@@ -73,7 +73,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_b/2", {})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_om,
@@ -95,7 +95,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/2", {})
         self.create_model("fake_model_b/3", {"fake_model_a_mo": [1]})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=2,
             field=FakeModelA.fake_model_b_om,
@@ -116,7 +116,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {"fake_model_b_om": 2})
         self.create_model("fake_model_b/2", {"fake_model_a_mo": [1]})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_om,
@@ -137,7 +137,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_b/2", {})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_mm,
@@ -159,7 +159,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/2", {})
         self.create_model("fake_model_b/3", {"fake_model_a_mm": [1]})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=2,
             field=FakeModelA.fake_model_b_mm,
@@ -180,7 +180,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {"fake_model_b_mm": [2]})
         self.create_model("fake_model_b/2", {"fake_model_a_mm": [1]})
         handler = RelationsHandler(
-            database=self.datastore,
+            datastore=self.datastore,
             model=FakeModelA(),
             id=1,
             field=FakeModelA.fake_model_b_mm,

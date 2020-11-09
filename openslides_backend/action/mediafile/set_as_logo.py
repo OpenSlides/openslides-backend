@@ -23,7 +23,7 @@ class MediafileSetAsLogoAction(UpdateAction):
         """
         Checks is_directory and mimetype and sets logo.
         """
-        mediafile = self.database.get(
+        mediafile = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
             ["is_directory", "mimetype", "meeting_id"],
         )

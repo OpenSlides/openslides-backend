@@ -3,20 +3,21 @@ from typing import Any, Dict, List, Sequence, Union
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
-from ...shared.exceptions import DatabaseException
+from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator
-from ...shared.interfaces import LoggingModule, WriteRequestElement
+from ...shared.interfaces.logging import LoggingModule
+from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from . import commands
 from .deleted_models_behaviour import DeletedModelsBehaviour
 from .http_engine import HTTPEngine as Engine
-from .interface import Aggregate, Count, Found, PartialModel
+from .interface import Aggregate, Count, DatastoreService, Found, PartialModel
 
 # TODO: Use proper typing here.
 DatastoreResponse = Any
 
 
-class Adapter:
+class DatastoreAdapter(DatastoreService):
     """
     Adapter to connect to readable and writeable datastore.
     """
@@ -41,7 +42,7 @@ class Adapter:
                 payload = json.loads(content)
             except JSONDecodeError:
                 error_message = f"Bad response from datastore service. Body does not contain valid JSON. Received: {str(content)}"
-                raise DatabaseException(error_message)
+                raise DatastoreException(error_message)
         else:
             payload = None
         self.logger.debug(f"Get response with status code {status_code}: {payload}")
@@ -65,7 +66,7 @@ class Adapter:
                     error_message = " ".join(
                         (error_message, str(additional_error_message))
                     )
-            raise DatabaseException(error_message)
+            raise DatastoreException(error_message)
         return payload
 
     def get(
@@ -94,7 +95,7 @@ class Adapter:
         if lock_result:
             instance_position = response.get("meta_position")
             if instance_position is None:
-                raise DatabaseException(
+                raise DatastoreException(
                     "Response from datastore does not contain field 'meta_position' but this is required."
                 )
             self.update_locked_fields(fqid, instance_position)
@@ -135,7 +136,7 @@ class Adapter:
                 if lock_result:
                     instance_position = value.get("meta_position")
                     if instance_position is None:
-                        raise DatabaseException(
+                        raise DatastoreException(
                             "Response from datastore does not contain field 'meta_position' but this is required."
                         )
                     fqid = FullQualifiedId(collection, instance_id)
@@ -170,7 +171,7 @@ class Adapter:
                 instance_id = item.get("id")
                 instance_position = item.get("meta_position")
                 if instance_id is None or instance_position is None:
-                    raise DatabaseException(
+                    raise DatastoreException(
                         "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
                     )
                 fqid = FullQualifiedId(collection=collection, id=instance_id)
@@ -182,7 +183,7 @@ class Adapter:
         collection: Collection,
         filter: Filter,
         mapped_fields: List[str] = None,
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         mapped_fields_set = set()
@@ -209,7 +210,7 @@ class Adapter:
             for instance_id, item in response.items():
                 instance_position = item.get("meta_position")
                 if instance_id is None or instance_position is None:
-                    raise DatabaseException(
+                    raise DatastoreException(
                         "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
                     )
                 fqid = FullQualifiedId(collection=collection, id=instance_id)
@@ -233,7 +234,7 @@ class Adapter:
         if lock_result:
             position = response.get("position")
             if position is None:
-                raise DatabaseException("Invalid response from datastore.")
+                raise DatastoreException("Invalid response from datastore.")
             raise NotImplementedError("Locking is not implemented")
         return {"exists": response["exists"]}
 

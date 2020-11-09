@@ -5,15 +5,15 @@ from werkzeug.wrappers import Response
 
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import (
-    Datastore,
+    DatastoreService,
     DeletedModelsBehaviour,
 )
-from openslides_backend.shared.exceptions import DatabaseException
-from openslides_backend.shared.interfaces import (
-    Event,
+from openslides_backend.shared.exceptions import DatastoreException
+from openslides_backend.shared.interfaces.event import Event
+from openslides_backend.shared.interfaces.write_request_element import (
     WriteRequestElement,
-    WSGIApplication,
 )
+from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from tests.util import Client, get_fqid, get_id_from_fqid
 
 ADMIN_USERNAME = "admin"
@@ -23,13 +23,15 @@ ADMIN_PASSWORD = "admin"
 class BaseSystemTestCase(TestCase):
     app: WSGIApplication
     auth: AuthenticationService
-    datastore: Datastore
+    datastore: DatastoreService
     client: Client
+    media: Any  # needed because it is mocked and has magic methods
 
     def setUp(self) -> None:
         self.app = self.get_application()
-        self.services = self.app.services  # type: ignore
+        self.services = self.app.services
         self.auth = self.services.authentication()
+        self.media = self.services.media()
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
 
@@ -87,7 +89,7 @@ class BaseSystemTestCase(TestCase):
                 self.assertEqual(model.get(field_name), value)
 
     def assert_model_not_exists(self, fqid: str) -> None:
-        with self.assertRaises(DatabaseException):
+        with self.assertRaises(DatastoreException):
             self.get_model(fqid)
 
     def assert_model_deleted(self, fqid: str) -> None:

@@ -6,7 +6,7 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Client, get_fqfield, get_fqid
 
-from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.datastore import DatastoreTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
 from ..util import create_test_application_with_fake as create_test_application
 
@@ -30,7 +30,7 @@ class CommitteeCreateActionUnitTester(BaseCommitteeCreateActionTester):
         }
         self.action = CommitteeCreate(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
         self.action.user_id = user_id
 
@@ -81,7 +81,7 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
         }
         self.action = CommitteeCreate(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(datastore_content=self.datastore_content),
+            DatastoreTestAdapter(datastore_content=self.datastore_content),
         )
 
     def test_perform_empty(self) -> None:

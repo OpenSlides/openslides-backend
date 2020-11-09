@@ -7,6 +7,7 @@ Environment = TypedDict(
     {
         "authentication_url": str,
         "permission_url": str,
+        "media_url": str,
         "datastore_reader_url": str,
         "datastore_writer_url": str,
     },
@@ -21,6 +22,10 @@ DEFAULTS = {
     "PERMISSION_HOST": "localhost",
     "PERMISSION_PORT": "9005",
     "PERMISSION_PATH": "",
+    "MEDIA_PROTOCOL": "http",
+    "MEDIA_HOST": "localhost",
+    "MEDIA_PORT": "9006",
+    "MEDIA_PATH": "/internal/media",
     "DATASTORE_READER_PROTOCOL": "http",
     "DATASTORE_READER_HOST": "localhost",
     "DATASTORE_READER_PORT": "9010",
@@ -39,6 +44,7 @@ def get_environment() -> Environment:
     return Environment(
         authentication_url=get_endpoint("AUTH"),
         permission_url=get_endpoint("PERMISSION"),
+        media_url=get_endpoint("MEDIA"),
         datastore_reader_url=get_endpoint("DATASTORE_READER"),
         datastore_writer_url=get_endpoint("DATASTORE_WRITER"),
     )

@@ -3,8 +3,8 @@ from typing import Dict, Iterable, List, Tuple, Union
 import fastjsonschema
 
 from ..shared.exceptions import ActionException, EventStoreException
-from ..shared.handlers import Base as HandlerBase
-from ..shared.interfaces import WriteRequestElement
+from ..shared.handlers.base_handler import BaseHandler
+from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.schema import schema_version
 from .action_interface import ActionResult, Payload
 from .actions_map import actions_map
@@ -41,7 +41,7 @@ payload_schema = fastjsonschema.compile(
 )
 
 
-class ActionHandler(HandlerBase):
+class ActionHandler(BaseHandler):
     """
     Action handler. It is the concret implementation of Action interface.
     """
@@ -78,7 +78,7 @@ class ActionHandler(HandlerBase):
 
         # Send events to datastore
         try:
-            self.database.write(write_request_element)
+            self.datastore.write(write_request_element)
         except EventStoreException as exception:
             raise ActionException(exception.message)
 
@@ -113,9 +113,9 @@ class ActionHandler(HandlerBase):
             if action is None or action.internal:
                 raise ActionException(f"Action {action_name} does not exist.")
             self.logger.debug(f"Perform action {action_name}.")
-            write_request_elements = action(
-                self.permission, self.database, self.auth
-            ).perform(element["data"], self.user_id)
+            write_request_elements = action(self.services).perform(
+                element["data"], self.user_id
+            )
             self.logger.debug(
                 f"Prepared write request element {write_request_elements}."
             )

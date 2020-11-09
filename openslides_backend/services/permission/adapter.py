@@ -1,7 +1,9 @@
 from typing import Any
 
+from .interface import PermissionService
 
-class PermissionHTTPAdapter:
+
+class PermissionHTTPAdapter(PermissionService):
     """
     Adapter to connect to permission service.
     """

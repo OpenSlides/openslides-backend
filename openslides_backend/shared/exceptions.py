@@ -27,7 +27,11 @@ class PresenterException(View400Exception):
     pass
 
 
-class DatabaseException(View400Exception):
+class ServiceException(View400Exception):
+    pass
+
+
+class DatastoreException(ServiceException):
     pass
 
 

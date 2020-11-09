@@ -1,6 +1,6 @@
 from typing import Dict, Optional, Protocol, Tuple
 
-from ...shared.interfaces import Headers
+from ...shared.interfaces.wsgi import Headers
 
 
 class AuthenticationService(Protocol):

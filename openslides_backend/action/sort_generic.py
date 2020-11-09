@@ -5,7 +5,8 @@ import fastjsonschema
 from ..models.base import Model
 from ..shared.exceptions import ActionException
 from ..shared.filters import FilterOperator
-from ..shared.interfaces import Event, WriteRequestElement
+from ..shared.interfaces.event import Event
+from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedId
 from ..shared.schema import schema_version
 from .base import Action, BaseAction, DataSet
@@ -62,7 +63,7 @@ class TreeSortMixin(BaseAction):
 
         # Get all item ids to verify, that the user send all ids.
         filter = FilterOperator("meeting_id", "=", meeting_id)
-        db_instances = self.database.filter(
+        db_instances = self.datastore.filter(
             collection=self.model.collection,
             filter=filter,
             mapped_fields=["id"],
@@ -153,7 +154,7 @@ class LinearSortMixin(Action):
         self, nodes: List, filter_id: int, filter_str: str, weight_key: str = "weight"
     ) -> DataSet:
         filter = FilterOperator(filter_str, "=", filter_id)
-        db_instances = self.database.filter(
+        db_instances = self.datastore.filter(
             collection=self.model.collection,
             filter=filter,
             mapped_fields=["id"],

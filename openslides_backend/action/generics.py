@@ -9,7 +9,8 @@ from ..models.fields import (
     OnDelete,
 )
 from ..shared.exceptions import ActionException
-from ..shared.interfaces import Event, WriteRequestElement
+from ..shared.interfaces.event import Event
+from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import ID_PATTERN, FullQualifiedId
 from ..shared.typing import DeletedModel, ModelMap
 from .actions_map import actions_map
@@ -46,7 +47,7 @@ class CreateAction(GenericBaseAction):
             instance = self.validate_fields(instance)
 
             # Fetch new id to have it available in update_instance method
-            new_id = self.database.reserve_id(collection=self.model.collection)
+            new_id = self.datastore.reserve_id(collection=self.model.collection)
             instance["id"] = new_id
 
             instance = self.update_instance(instance)
@@ -324,7 +325,7 @@ class DeleteAction(GenericBaseAction):
                 for field_name, field in self.model.get_relation_fields()
                 if field.on_delete != OnDelete.SET_NULL
             ]
-            db_instance = self.database.get(
+            db_instance = self.datastore.get(
                 fqid=FullQualifiedId(self.model.collection, instance["id"]),
                 mapped_fields=relevant_fields,
                 lock_result=True,
@@ -391,7 +392,7 @@ class DeleteAction(GenericBaseAction):
                         raw_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
                         )
-                        db_instance = self.database.get(
+                        db_instance = self.datastore.get(
                             fqid=FullQualifiedId(self.model.collection, instance["id"]),
                             mapped_fields=[raw_field_name],
                             lock_result=True,

@@ -29,7 +29,7 @@ class UserSetPasswordSelf(UpdateAction):
         old_pw = instance.pop("old_password")
         new_pw = instance.pop("new_password")
 
-        db_instance = self.database.get(
+        db_instance = self.datastore.get(
             FullQualifiedId(self.model.collection, self.user_id), ["password"]
         )
 

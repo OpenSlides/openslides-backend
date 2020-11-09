@@ -27,7 +27,7 @@ class MediafileUpdate(MediafileCalculatedFieldsMixin, CreateAction):
         """
         instance["is_directory"] = True
         if instance.get("parent_id") is not None:
-            parent = self.database.get(
+            parent = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
                 ["is_public", "inherited_access_group_ids"],
             )

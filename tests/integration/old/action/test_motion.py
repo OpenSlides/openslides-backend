@@ -9,7 +9,7 @@ from openslides_backend.shared.exceptions import ActionException, PermissionDeni
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Client, get_fqfield, get_fqid
 
-from ..fake_services.database import DatabaseTestAdapter
+from ..fake_services.datastore import DatastoreTestAdapter
 from ..fake_services.permission import PermissionTestAdapter
 from ..util import create_test_application_old as create_test_application
 
@@ -38,7 +38,7 @@ class MotionUpdateActionUnitTester(BaseMotionUpdateActionTester):
         user_id = 7826715669
         self.action = MotionUpdate(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -71,7 +71,7 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
         self.user_id = 7826715669
         self.action = MotionUpdate(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -142,7 +142,7 @@ class MotionUpdateMetadataActionUnitTester(BaseMotionUpdateMetadataActionTester)
         user_id = 7826715669
         self.action = MotionUpdateMetadata(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -201,7 +201,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
         self.user_id = 7826715669
         self.action = MotionUpdateMetadata(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -309,7 +309,7 @@ class MotionDeleteActionUnitTester(BaseMotionDeleteActionTester):
         user_id = 7826715669
         self.action = MotionDelete(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -386,7 +386,7 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
         self.user_id = 7826715669
         self.action = MotionDelete(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:
@@ -520,7 +520,7 @@ class MotionSortActionUnitTester(BaseMotionSortActionTester):
         user_id = 7826715669
         self.action = MotionSort(
             PermissionTestAdapter(superuser=user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
         self.action.user_id = user_id
 
@@ -606,7 +606,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
         self.user_id = 7826715669
         self.action = MotionSort(
             PermissionTestAdapter(superuser=self.user_id),
-            DatabaseTestAdapter(old_style_testing=True),
+            DatastoreTestAdapter(old_style_testing=True),
         )
 
     def test_perform_correct_1(self) -> None:

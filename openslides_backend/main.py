@@ -8,7 +8,8 @@ from typing import Any
 
 from gunicorn.app.base import BaseApplication
 
-from .shared.interfaces import LoggingModule, WSGIApplication
+from .shared.interfaces.logging import LoggingModule
+from .shared.interfaces.wsgi import WSGIApplication
 
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".

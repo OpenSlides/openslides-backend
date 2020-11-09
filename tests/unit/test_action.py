@@ -1,7 +1,9 @@
 from unittest import TestCase
 
 from openslides_backend.action.base import merge_write_request_elements
-from openslides_backend.shared.interfaces import WriteRequestElement
+from openslides_backend.shared.interfaces.write_request_element import (
+    WriteRequestElement,
+)
 
 from ..util import get_fqid
 

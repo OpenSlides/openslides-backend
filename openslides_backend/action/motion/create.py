@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, List
 
 from ...models.models import Motion
 from ...shared.exceptions import ActionException
-from ...shared.interfaces import WriteRequestElement
+from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.schema import id_list_schema, optional_id_schema
 from ..agenda_item.agenda_creation import (
@@ -92,7 +92,7 @@ class MotionCreate(
                 )
 
         # fetch all needed settings and check reason
-        meeting = self.database.get(
+        meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
             [
                 "motions_default_workflow_id",
@@ -116,7 +116,7 @@ class MotionCreate(
             else:
                 workflow_id = meeting.get("motions_default_workflow_id")
         if workflow_id:
-            workflow = self.database.get(
+            workflow = self.datastore.get(
                 FullQualifiedId(Collection("motion_workflow"), workflow_id),
                 ["first_state_id"],
             )
@@ -128,19 +128,19 @@ class MotionCreate(
 
         # check for origin_id
         if instance.get("origin_id"):
-            meeting = self.database.get(
+            meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
                 ["committee_id"],
             )
-            forwarded_from = self.database.get(
+            forwarded_from = self.datastore.get(
                 FullQualifiedId(Collection("motion"), instance["origin_id"]),
                 ["meeting_id"],
             )
-            forwarded_from_meeting = self.database.get(
+            forwarded_from_meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), forwarded_from["meeting_id"]),
                 ["committee_id"],
             )
-            committee = self.database.get(
+            committee = self.datastore.get(
                 FullQualifiedId(
                     Collection("committee"), forwarded_from_meeting["committee_id"]
                 ),

@@ -13,9 +13,13 @@ from ..models.fields import (
     BaseTemplateRelationField,
 )
 from ..services.auth.interface import AuthenticationService
-from ..services.datastore.interface import Datastore
+from ..services.datastore.interface import DatastoreService
+from ..services.media.interface import MediaService
+from ..services.permission.interface import PermissionService
 from ..shared.exceptions import ActionException, PermissionDenied
-from ..shared.interfaces import Event, Permission, WriteRequestElement
+from ..shared.interfaces.event import Event
+from ..shared.interfaces.services import Services
+from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .action_interface import ActionPayload
@@ -47,8 +51,11 @@ class BaseAction:  # pragma: no cover
     Abstract base class for an action.
     """
 
-    permission: Permission
-    database: Datastore
+    services: Services
+    permission: PermissionService
+    datastore: DatastoreService
+    auth: AuthenticationService
+    media: MediaService
     user_id: int
 
 
@@ -65,14 +72,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def __init__(
         self,
-        permission: Permission,
-        database: Datastore,
-        auth: AuthenticationService,
+        services: Services,
         additional_relation_models: ModelMap = {},
     ) -> None:
-        self.permission = permission
-        self.database = database
-        self.auth = auth
+        self.services = services
+        self.permission = services.permission()
+        self.datastore = services.datastore()
+        self.auth = services.authentication()
+        self.media = services.media()
         self.additional_relation_models = additional_relation_models
 
     def perform(
@@ -107,7 +114,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:
         """
-        Prepares dataset from payload. Also fires all necessary database
+        Prepares dataset from payload. Also fires all necessary datastore
         queries.
         """
         raise NotImplementedError
@@ -228,7 +235,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self, fqid: FullQualifiedId, mapped_fields: List[str] = []
     ) -> Dict[str, Any]:
         """
-        Helper method to retrieve an instance from database or
+        Helper method to retrieve an instance from datastore or
         additional_relation_models dictionary.
         """
         if fqid in self.additional_relation_models:
@@ -238,7 +245,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             else:
                 return additional_model
         else:
-            return self.database.get(fqid, mapped_fields, lock_result=True)
+            return self.datastore.get(fqid, mapped_fields, lock_result=True)
 
     def create_write_request_elements(
         self, dataset: DataSet
@@ -337,7 +344,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         relations: Relations = {}
         for field_name, field in relation_fields:
             handler = RelationsHandler(
-                self.database,
+                self.datastore,
                 model,
                 id,
                 field,
@@ -365,9 +372,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         produces.
         """
         action = ActionClass(
-            self.permission,
-            self.database,
-            self.auth,
+            self.services,
             {**self.additional_relation_models, **additional_relation_models},
         )
         return action.perform(payload, self.user_id)

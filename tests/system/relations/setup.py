@@ -5,7 +5,7 @@ from openslides_backend.action.generics import CreateAction, UpdateAction
 from openslides_backend.action.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.shared.interfaces import WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import Collection
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application

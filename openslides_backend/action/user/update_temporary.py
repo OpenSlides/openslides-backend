@@ -39,7 +39,7 @@ class UserUpdateTemporary(UpdateAction, TemporaryUserMixin):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        db_instance = self.database.get(
+        db_instance = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["meeting_id"]
         )
         if not db_instance.get("meeting_id"):
