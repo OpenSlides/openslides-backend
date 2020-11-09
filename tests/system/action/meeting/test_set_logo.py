@@ -1,8 +1,8 @@
 from tests.system.action.base import BaseActionTestCase
 
 
-class MediafileSetAsLogoActionTest(BaseActionTestCase):
-    def test_set_as_logo_correct(self) -> None:
+class MeetingSetLogoActionTest(BaseActionTestCase):
+    def test_set_logo_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
         self.create_model(
             "mediafile/17",
@@ -11,15 +11,17 @@ class MediafileSetAsLogoActionTest(BaseActionTestCase):
         response = self.client.post(
             "/",
             json=[
-                {"action": "mediafile.set_as_logo", "data": [{"id": 17, "place": "1"}]}
+                {
+                    "action": "meeting.set_logo",
+                    "data": [{"id": 222, "mediafile_id": 17, "place": "1"}],
+                }
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("mediafile/17")
-        assert model.get("used_as_logo_$1_in_meeting_id") == 222
-        assert model.get("used_as_logo_$_in_meeting_id") == ["1"]
+        model = self.get_model("meeting/222")
+        assert model.get("logo_$1_id") == 17
 
-    def test_set_as_logo_wrong_directory(self) -> None:
+    def test_set_logo_wrong_directory(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
         self.create_model(
             "mediafile/17",
@@ -28,13 +30,16 @@ class MediafileSetAsLogoActionTest(BaseActionTestCase):
         response = self.client.post(
             "/",
             json=[
-                {"action": "mediafile.set_as_logo", "data": [{"id": 17, "place": "1"}]}
+                {
+                    "action": "meeting.set_logo",
+                    "data": [{"id": 222, "mediafile_id": 17, "place": "1"}],
+                }
             ],
         )
         self.assert_status_code(response, 400)
         assert "Cannot set a directory as logo." in str(response.data)
 
-    def test_set_as_logo_wrong_no_image(self) -> None:
+    def test_set_logo_wrong_no_image(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
         self.create_model(
             "mediafile/17",
@@ -43,7 +48,10 @@ class MediafileSetAsLogoActionTest(BaseActionTestCase):
         response = self.client.post(
             "/",
             json=[
-                {"action": "mediafile.set_as_logo", "data": [{"id": 17, "place": "1"}]}
+                {
+                    "action": "meeting.set_logo",
+                    "data": [{"id": 222, "mediafile_id": 17, "place": "1"}],
+                }
             ],
         )
         self.assert_status_code(response, 400)
