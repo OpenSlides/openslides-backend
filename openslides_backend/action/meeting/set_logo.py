@@ -27,7 +27,7 @@ class MeetingSetLogoAction(UpdateAction):
         """
         Checks is_directory and mimetype and sets logo.
         """
-        mediafile = self.database.get(
+        mediafile = self.datastore.get(
             FullQualifiedId(Collection("mediafile"), instance["mediafile_id"]),
             ["is_directory", "mimetype", "meeting_id"],
         )
