@@ -18,6 +18,7 @@ def prepare_actions_map() -> None:
         assignment_poll,
         assignment_vote,
         committee,
+        group,
         list_of_speakers,
         mediafile,
         meeting,
