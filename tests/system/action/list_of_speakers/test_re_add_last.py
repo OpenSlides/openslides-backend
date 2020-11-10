@@ -69,7 +69,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_no_last_speaker(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "user/42", {"username": "test_username42", "speaker_222_ids": [222]}
+            "user/42", {"username": "test_username42", "speaker_222_ids": [223]}
         )
         self.create_model(
             "list_of_speakers/111",
@@ -86,4 +86,35 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertTrue(
             "There is no last speaker that can be re-added." in str(response.data)
+        )
+
+    def test_last_speaker_also_in_waiting_list(self) -> None:
+        self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
+        self.create_model(
+            "user/42", {"username": "test_username42", "speaker_222_ids": [223, 224]}
+        )
+        self.create_model(
+            "list_of_speakers/111",
+            {"closed": False, "meeting_id": 222, "speaker_ids": [223, 224]},
+        )
+        self.create_model(
+            "speaker/223",
+            {
+                "list_of_speakers_id": 111,
+                "user_id": 42,
+                "begin_time": 3000,
+                "end_time": 4000,
+            },
+        )
+        self.create_model(
+            "speaker/224",
+            {"list_of_speakers_id": 111, "user_id": 42},
+        )
+        response = self.client.post(
+            "/",
+            json=[{"action": "list_of_speakers.re_add_last", "data": [{"id": 111}]}],
+        )
+        self.assert_status_code(response, 400)
+        self.assertTrue(
+            "User 42 is already on the list of speakers." in str(response.data)
         )

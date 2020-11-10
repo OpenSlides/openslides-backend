@@ -51,3 +51,23 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "data[0] must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
             str(response.data),
         )
+
+    def test_create_already_exist(self) -> None:
+        self.create_model("meeting/7844", {"name": "name_asdewqasd"})
+        self.create_model("user/7", {"username": "test_username1", "speakers_id": [42]})
+        self.create_model(
+            "list_of_speakers/23", {"speaker_ids": [42], "meeting_id": 7844}
+        )
+        self.create_model("speaker/42", {"user_id": 7, "list_of_speakers_id": 23})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "speaker.create",
+                    "data": [{"user_id": 7, "list_of_speakers_id": 23}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        list_of_speakers = self.get_model("list_of_speakers/23")
+        assert list_of_speakers.get("speaker_ids") == [42]
