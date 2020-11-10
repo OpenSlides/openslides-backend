@@ -15,10 +15,9 @@ class AuthenticationHTTPAdapter(AuthenticationService):
     Adapter to connect to authentication service.
     """
 
-    def __init__(self, authentication_url: str, logging: LoggingModule) -> None:
+    def __init__(self, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
-        self.auth_url = authentication_url
-        self.auth_handler = AuthHandler(authentication_url, self.logger.debug)
+        self.auth_handler = AuthHandler(self.logger.debug)
         self.headers = {"Content-Type": "application/json"}
 
     def authenticate(

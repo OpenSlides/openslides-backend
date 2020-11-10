@@ -119,7 +119,8 @@ class MotionUpdateActionWSGITester(BaseMotionUpdateActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application)
         response = client.post(
-            "/", json=[{"action": "motion.update", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "motion.update", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
@@ -250,7 +251,8 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
             },
         ]
         self.assertEqual(
-            list(write_request_elements), expected,
+            list(write_request_elements),
+            expected,
         )
 
     def test_perform_correct_2(self) -> None:
@@ -282,7 +284,8 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
             }
         ]
         self.assertEqual(
-            list(write_request_elements), expected,
+            list(write_request_elements),
+            expected,
         )
 
     def test_perform_no_permission_1(self) -> None:
@@ -451,7 +454,8 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
             },
         ]
         self.assertEqual(
-            list(write_request_elements), expected,
+            list(write_request_elements),
+            expected,
         )
 
 
@@ -466,7 +470,8 @@ class MotionDeleteActionWSGITester(BaseMotionDeleteActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application)
         response = client.post(
-            "/", json=[{"action": "motion.delete", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "motion.delete", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
@@ -691,7 +696,8 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
             },
         ]
         self.assertEqual(
-            list(write_request_elements), expected,
+            list(write_request_elements),
+            expected,
         )
 
     def test_perform_correct_2(self) -> None:
@@ -776,7 +782,8 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
             },
         ]
         self.assertEqual(
-            list(write_request_elements), expected,
+            list(write_request_elements),
+            expected,
         )
 
 
@@ -791,6 +798,7 @@ class MotionSortActionWSGITester(BaseMotionSortActionTester):
     def test_wsgi_request_correct_1(self) -> None:
         client = Client(self.application)
         response = client.post(
-            "/", json=[{"action": "motion.sort", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "motion.sort", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)

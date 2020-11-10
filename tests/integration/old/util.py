@@ -74,7 +74,9 @@ class FakeServicesOld(containers.DeclarativeContainer):
 
 
 def create_test_application_old(
-    user_id: int, view_name: str, superuser: int,
+    user_id: int,
+    view_name: str,
+    superuser: int,
 ) -> WSGIApplication:
     """
     Application factory function to create a new instance of the application.

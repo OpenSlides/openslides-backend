@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Protocol, Tuple
+from typing import Any, Dict, Optional, Protocol, Tuple
 
 from ...shared.interfaces.wsgi import Headers
 
@@ -8,7 +8,7 @@ class AuthenticationService(Protocol):
     Interface of the Auth Service.
     """
 
-    auth_url: str
+    auth_handler: Any
 
     def authenticate(
         self, headers: Headers, cookies: Dict[str, str]

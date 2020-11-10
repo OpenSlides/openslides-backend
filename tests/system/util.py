@@ -20,7 +20,6 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
     environment = get_environment()
     services = OpenSlidesBackendServices(
         config={
-            "authentication_url": environment["authentication_url"],
             "permission_url": environment["permission_url"],
             "datastore_reader_url": environment["datastore_reader_url"],
             "datastore_writer_url": environment["datastore_writer_url"],

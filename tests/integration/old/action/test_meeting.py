@@ -215,7 +215,8 @@ class MeetingCreateActionWSGITester(BaseMeetingCreateActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
@@ -237,7 +238,8 @@ class MeetingCreateActionWSGITesterNoPermission(BaseMeetingCreateActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.create", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "meeting.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)
 
@@ -271,7 +273,8 @@ class MeetingUpdateActionUnitTester(BaseMeetingUpdateActionTester):
     def test_prepare_dataset_1(self) -> None:
         dataset = self.action.prepare_dataset(self.valid_payload_1)
         self.assertEqual(
-            dataset["data"], [{"instance": self.valid_payload_1[0], "relations": {}}],
+            dataset["data"],
+            [{"instance": self.valid_payload_1[0], "relations": {}}],
         )
 
 
@@ -336,7 +339,8 @@ class MeetingUpdateActionWSGITester(BaseMeetingUpdateActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "meeting.update", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
@@ -358,7 +362,8 @@ class MeetingUpdateActionWSGITesterNoPermission(BaseMeetingUpdateActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.update", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "meeting.update", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)
 
@@ -508,7 +513,8 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
 
@@ -524,7 +530,8 @@ class MeetingDeleteActionWSGITester(BaseMeetingDeleteActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
+            "/",
+            json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -551,7 +558,8 @@ class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
+            "/",
+            json=[{"action": "meeting.delete", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 403)
 
@@ -567,6 +575,7 @@ class MeetingDeleteActionWSGITesterNoPermission(BaseMeetingDeleteActionTester):
             )
         )
         response = client.post(
-            "/", json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
+            "/",
+            json=[{"action": "meeting.delete", "data": self.invalid_payload_1}],
         )
         self.assert_status_code(response, 403)
