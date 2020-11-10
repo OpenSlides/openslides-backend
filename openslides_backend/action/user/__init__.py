@@ -6,6 +6,7 @@ from . import (  # noqa
     delete,
     delete_temporary,
     reset_password_to_default,
+    reset_password_to_default_temporary,
     set_password,
     set_password_self,
     update,
@@ -21,9 +22,4 @@ class UserResetPassword(DummyAction):
 
 @register_action("user.set_password_temporary")
 class UserSetPasswordTemporary(DummyAction):
-    pass
-
-
-@register_action("user.reset_passsword_to_default_temporary")
-class UserSetPasswordToDefaultTemporary(DummyAction):
     pass
