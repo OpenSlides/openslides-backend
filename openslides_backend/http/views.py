@@ -65,11 +65,11 @@ class ActionView(BaseView):
 
         # Handle request.
         handler: Action = ActionHandler(logging=self.logging, services=self.services)
-        result = handler.handle_request(payload, user_id)
+        response = handler.handle_request(payload, user_id)
 
         # Finish request.
         self.logger.debug("Action request finished successfully.")
-        return result, access_token
+        return response, access_token
 
     def get_health_info(self) -> Dict[str, Any]:
         """

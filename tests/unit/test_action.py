@@ -73,7 +73,7 @@ class ActionBaseTester(TestCase):
         self.assertEqual(result, expected)
 
     def test_merge_write_request_elements_different_users(self) -> None:
-        self.write_request_element_2["user_id"] = 5955333405
+        self.write_request_element_2.user_id = 5955333405
         with self.assertRaises(ValueError) as context_manager:
             merge_write_request_elements(
                 (self.write_request_element_1, self.write_request_element_2)

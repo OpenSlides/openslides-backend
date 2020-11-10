@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, List, Optional, Text, Tuple
+from typing import Any, Callable, Dict, Iterable, Optional, Text, Tuple
 
 from typing_extensions import Protocol
 from werkzeug.datastructures import Headers
@@ -11,9 +11,9 @@ StartResponse = Callable
 WSGIEnvironment = Dict[Text, Any]
 
 
-# TODO Use proper type here: Body is ActionPayload or PresenterPayload
+# TODO Use proper type here.
 RequestBody = Any
-ResponseBody = Optional[List[Any]]
+ResponseBody = Any
 
 
 class View(Protocol):  # pragma: no cover

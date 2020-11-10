@@ -62,7 +62,7 @@ class BaseSystemTestCase(TestCase):
             user_id=0,
         )
         if deleted:
-            request["events"].append(Event(type="delete", fqid=get_fqid(fqid)))
+            request.events.append(Event(type="delete", fqid=get_fqid(fqid)))
         self.datastore.write(request)
 
     def update_model(self, fqid: str, data: Dict[str, Any]) -> None:

@@ -1,14 +1,18 @@
-from typing import Dict, List, TypedDict
+from dataclasses import dataclass
+from typing import Dict, List
 
 from ..patterns import FullQualifiedId
 from .event import Event
 
+Information = Dict[FullQualifiedId, List[str]]
 
-class WriteRequestElement(TypedDict):
+
+@dataclass
+class WriteRequestElement:
     """
-    Write request element that can be sent to the event store.
+    Write request element that can be sent to the datastore.
     """
 
     events: List[Event]
-    information: Dict[FullQualifiedId, List[str]]
+    information: Information
     user_id: int

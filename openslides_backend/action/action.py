@@ -1,4 +1,4 @@
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import fastjsonschema
 
@@ -6,7 +6,12 @@ from ..shared.exceptions import ActionException, EventStoreException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.schema import schema_version
-from .action_interface import ActionResult, Payload
+from .action_interface import (
+    ActionResponse,
+    ActionResponseResults,
+    ActionResponseResultsElement,
+    Payload,
+)
 from .actions_map import actions_map
 from .base import merge_write_request_elements
 
@@ -57,7 +62,7 @@ class ActionHandler(BaseHandler):
             else:
                 yield name, action.schema
 
-    def handle_request(self, payload: Payload, user_id: int) -> List[ActionResult]:
+    def handle_request(self, payload: Payload, user_id: int) -> ActionResponse:
         """
         Takes payload and user id and handles this request by validating and
         parsing all actions. In the end it sends everything to the event store.
@@ -74,7 +79,7 @@ class ActionHandler(BaseHandler):
         # store for some time if event store sends ModelLocked Exception
 
         # Parse actions and creates events
-        write_request_element = self.parse_actions(payload)
+        write_request_element, results = self.parse_actions(payload)
 
         # Send events to datastore
         try:
@@ -86,9 +91,9 @@ class ActionHandler(BaseHandler):
         # TODO: This is a fake result because in this place all actions were
         # always successful.
         self.logger.debug("Request was successful. Send response now.")
-        return [
-            ActionResult(success=True, message="Action handled successfully")
-        ] * len(payload)
+        return ActionResponse(
+            success=True, message="Actions handled successfully", results=results
+        )
 
     def validate(self, payload: Payload) -> None:
         """
@@ -98,27 +103,36 @@ class ActionHandler(BaseHandler):
         self.logger.debug("Validate actions request.")
         payload_schema(payload)
 
-    def parse_actions(self, payload: Payload) -> WriteRequestElement:
+    def parse_actions(
+        self, payload: Payload
+    ) -> Tuple[WriteRequestElement, ActionResponseResults]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
         """
         all_write_request_elements: List[WriteRequestElement] = []
+        all_action_response_results: ActionResponseResults = []
         for element in payload:
-            self.logger.debug(
-                f"Actions map contains the following actions: {actions_map}."
-            )
             action_name = element["action"]
             action = actions_map.get(action_name)
             if action is None or action.internal:
                 raise ActionException(f"Action {action_name} does not exist.")
             self.logger.debug(f"Perform action {action_name}.")
-            write_request_elements = action(self.services).perform(
+            action_results = action(self.services).perform(
                 element["data"], self.user_id
             )
-            self.logger.debug(
-                f"Prepared write request element {write_request_elements}."
-            )
-            all_write_request_elements.extend(write_request_elements)
+            response_elements: List[Optional[ActionResponseResultsElement]] = []
+            for item in action_results:
+                if isinstance(item, WriteRequestElement):
+                    self.logger.debug(f"Prepared write request element {item}.")
+                    all_write_request_elements.append(item)
+                else:
+                    # item = cast(ActionResponseResultsElement, item)
+                    self.logger.debug(f"Got action response element {item}.")
+                    response_elements.append(item)
+            all_action_response_results.append(response_elements or None)
         self.logger.debug("Write request is ready.")
-        return merge_write_request_elements(all_write_request_elements)
+        return (
+            merge_write_request_elements(all_write_request_elements),
+            all_action_response_results,
+        )
