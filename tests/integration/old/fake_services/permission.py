@@ -1,4 +1,6 @@
-from typing import Any
+from typing import Any, Dict, List
+
+from openslides_backend.services.permission.interface import NotAllowed
 
 
 class PermissionTestAdapter:
@@ -8,8 +10,13 @@ class PermissionTestAdapter:
     implementation.
     """
 
-    def __init__(self, superuser: int, *args: Any, **kwargs: Any) -> None:
-        self.superuser = superuser
+    def __init__(self, superuser_id: int, *args: Any, **kwargs: Any) -> None:
+        self.superuser_id = superuser_id
 
-    def check_action(self, user_id: int, action: str, data: Any) -> bool:
-        return user_id == self.superuser
+    def is_allowed(
+        self, name: str, user_id: int, data: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        if user_id == self.superuser_id:
+            return [{} for _ in data]
+        else:
+            raise NotAllowed("Not the superuser")

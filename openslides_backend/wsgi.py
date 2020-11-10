@@ -22,7 +22,9 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
     config = providers.Configuration("config")
     logging = providers.Object(0)
     authentication = providers.Singleton(AuthenticationHTTPAdapter, logging)
-    permission = providers.Singleton(PermissionHTTPAdapter, config.permission_url)
+    permission = providers.Singleton(
+        PermissionHTTPAdapter, config.permission_url, logging
+    )
     media = providers.Singleton(MediaServiceAdapter, config.media_url, logging)
     engine = providers.Singleton(
         HTTPEngine, config.datastore_reader_url, config.datastore_writer_url, logging

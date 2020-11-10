@@ -16,7 +16,7 @@ DEFAULTS = {
     "PERMISSION_PROTOCOL": "http",
     "PERMISSION_HOST": "localhost",
     "PERMISSION_PORT": "9005",
-    "PERMISSION_PATH": "",
+    "PERMISSION_PATH": "/internal/permission",
     "MEDIA_PROTOCOL": "http",
     "MEDIA_HOST": "localhost",
     "MEDIA_PORT": "9006",
