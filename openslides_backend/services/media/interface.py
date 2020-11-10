@@ -1,5 +1,3 @@
-from typing import Dict, Optional
-
 from typing_extensions import Protocol
 
 
@@ -13,5 +11,5 @@ class MediaService(Protocol):
         file: str,
         id: int,
         mimetype: str,
-    ) -> Optional[Dict[str, str]]:
+    ) -> None:
         ...
