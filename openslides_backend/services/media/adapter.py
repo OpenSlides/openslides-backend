@@ -1,5 +1,3 @@
-from typing import Dict, Optional
-
 import requests
 
 from ...shared.exceptions import ServiceException
@@ -14,16 +12,16 @@ class MediaServiceAdapter(MediaService):
 
     def __init__(self, media_url: str, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
-        self.media_url = media_url
+        self.media_url = media_url + "/upload"
 
-    def upload(self, file: str, id: int, mimetype: str) -> Optional[Dict[str, str]]:
+    def upload(self, file: str, id: int, mimetype: str) -> None:
         payload = {"file": file, "id": id, "mimetype": mimetype}
-        self.logger.debug(f"Starting upload of file '{file}'")
+        self.logger.debug("Starting upload of file")
         try:
             response = requests.post(self.media_url, json=payload)
         except requests.exceptions.ConnectionError:
             raise ServiceException("Connect to mediaservice failed.")
+
         if response.status_code != 200:
-            raise ServiceException(f"Mediaservice Error: {str(response.json())}")
-        self.logger.debug(f"File '{file}' successfully uploaded to the media service")
-        return response.json()
+            raise ServiceException(f"Mediaservice Error: {str(response.content)}")
+        self.logger.debug("File successfully uploaded to the media service")
