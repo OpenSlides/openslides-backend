@@ -67,3 +67,11 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/1")
         self.assert_model_deleted("list_of_speakers/1")
+
+    def test_example_data(self) -> None:
+        self.load_example_data()
+        response = self.client.post(
+            "/",
+            json=[{"action": "topic.delete", "data": [{"id": 1}]}],
+        )
+        self.assert_status_code(response, 200)

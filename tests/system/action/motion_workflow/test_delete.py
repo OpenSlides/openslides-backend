@@ -125,3 +125,20 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/1")
+
+    def test_example_data(self) -> None:
+        self.load_example_data()
+        self.update_model(
+            "motion_workflow/2", {"default_statute_amendment_workflow_meeting_id": None}
+        )
+        self.update_model(
+            "motion_workflow/1", {"default_statute_amendment_workflow_meeting_id": 1}
+        )
+        self.update_model(
+            "meeting/1", {"motions_default_statute_amendment_workflow_id": 1}
+        )
+        response = self.client.post(
+            "/",
+            json=[{"action": "motion_workflow.delete", "data": [{"id": 2}]}],
+        )
+        self.assert_status_code(response, 200)

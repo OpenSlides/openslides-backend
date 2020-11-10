@@ -26,7 +26,7 @@ from ..shared.patterns import (
     FullQualifiedId,
     string_to_fqid,
 )
-from ..shared.typing import ModelMap
+from ..shared.typing import DeletedModel, ModelMap
 
 RelationsElement = TypedDict(
     "RelationsElement",
@@ -404,9 +404,12 @@ class RelationsHandler:
                     new_value = None
                 else:
                     assert self.type in ("1:m", "m:n")
-                    new_value = rel[related_name]
-                    assert isinstance(new_value, list)
-                    new_value.remove(self.id)
+                    if isinstance(rel, DeletedModel):
+                        new_value = []
+                    else:
+                        new_value = rel[related_name]
+                        assert isinstance(new_value, list)
+                        new_value.remove(self.id)
                 rel_element = RelationsElement(
                     type="remove", value=new_value, modified_element=self.id
                 )
