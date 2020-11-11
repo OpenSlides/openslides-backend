@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ...models.models import User
+from ...shared.exceptions import ActionException
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
@@ -11,6 +14,15 @@ class UserUpdate(UpdateAction):
     """
 
     model = User()
-    schema = DefaultSchema(User()).get_update_schema(
+    schema = DefaultSchema(User()).get_default_schema(
         optional_properties=["username", "about_me", "email"]
     )
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set id = user_id.
+        """
+        if self.auth.is_anonymous(self.user_id):
+            raise ActionException("Can't update for anonymous")
+        instance["id"] = self.user_id
+        return instance
