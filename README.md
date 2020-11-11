@@ -128,6 +128,9 @@ The action component listens to port 9002. The presenter component listens to po
 
   Gunicorn worker timeout in seconds. Default: 30
 
+* AUTH_HOST and AUTH_PORT
+
+  Implicitly used by the authlib to get the endpoint for the auth-service
 
 # Some curl examples
 
