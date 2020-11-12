@@ -37,7 +37,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Cannot set a directory as logo." in str(response.data)
+        assert "Cannot set a directory." in str(response.data)
 
     def test_set_logo_wrong_no_image(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
@@ -55,4 +55,4 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Cannot set a non image as logo." in str(response.data)
+        assert "Invalid mimetype" in str(response.data)

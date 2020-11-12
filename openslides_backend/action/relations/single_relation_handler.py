@@ -217,7 +217,7 @@ class SingleRelationHandler:
             return self.prepare_result_to_fqid(add, remove, rels, related_name)
 
         result = self.prepare_result_to_id(add, remove, rels, related_name)
-        if not self.field.structured_relation:
+        if not self.field.structured_relation and not self.field.structured_tag:
             return result
         else:
             assert ids is not None
