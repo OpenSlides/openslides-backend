@@ -7,7 +7,6 @@ from ..models.fields import (
     BaseRelationField,
     GenericRelationField,
     GenericRelationListField,
-    OnDelete,
     RelationField,
     RelationListField,
     TemplateRelationField,
@@ -390,16 +389,6 @@ class RelationsHandler:
                 )
             else:
                 assert rel_id in remove
-                if (
-                    self.type in ("1:1", "m:1")
-                    and self.reverse_field.on_delete == OnDelete.PROTECT
-                ):
-                    # Hint: There is no on_delete behavior in m:n cases. The reverse
-                    # field is always nullable. We just modifiy the related field list.
-                    raise ActionException(
-                        f"You are not allowed to delete {self.model} {self.id} as "
-                        "long as there are some required related objects."
-                    )
                 if self.type in ("1:1", "m:1"):
                     new_value = None
                 else:
@@ -458,17 +447,6 @@ class RelationsHandler:
                     type="add", value=new_value, modified_element=value_to_be_added
                 )
             else:
-                assert rel_id in remove
-                if (
-                    self.type in ("1:1", "m:1")
-                    and self.reverse_field.on_delete == OnDelete.PROTECT
-                ):
-                    # Hint: There is no on_delete behavior in m:n cases. The reverse
-                    # field is always nullable. We just modifiy the related field list.
-                    raise ActionException(
-                        f"You are not allowed to delete {self.model} {self.id} as "
-                        "long as there are some required related objects."
-                    )
                 assert rel_id in remove
                 value_to_be_removed = FullQualifiedId(
                     collection=self.field.own_collection, id=self.id

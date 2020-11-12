@@ -311,8 +311,9 @@ class DeleteAction(Action):
                 for field_name, field in self.model.get_relation_fields()
                 if field.on_delete != OnDelete.SET_NULL
             ]
+            this_fqid = FullQualifiedId(self.model.collection, instance["id"])
             db_instance = self.datastore.get(
-                fqid=FullQualifiedId(self.model.collection, instance["id"]),
+                fqid=this_fqid,
                 mapped_fields=relevant_fields,
                 lock_result=True,
             )
@@ -322,7 +323,7 @@ class DeleteAction(Action):
             relation_fields: List[Tuple[str, BaseRelationField]] = []
             # Gather all delete actions with payload and also all models to be deleted
             delete_actions: List[Tuple[Type[Action], ActionPayload]] = []
-            additional_relation_models: ModelMap = {}
+            additional_relation_models: ModelMap = {this_fqid: DeletedModel()}
             for field_name, field in self.model.get_relation_fields():
                 if field.structured_relation or field.structured_tag:
                     # TODO: We do not fully support these fields. So silently skip them.
@@ -350,7 +351,7 @@ class DeleteAction(Action):
                             ):
                                 raise ActionException(
                                     f"You can not delete {self.model} with id {instance['id']}, "
-                                    f"because you have to delete the related {str(field.to)} first."
+                                    f"because you have to delete the related model {fqid} first."
                                 )
                     else:
                         # field.on_delete == OnDelete.CASCADE
