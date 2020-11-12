@@ -15,7 +15,7 @@ class AgendaItemSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Action handled successfully" in str(response.data)
+        assert "Actions handled successfully" in str(response.data)
         model_22 = self.get_model("agenda_item/22")
         assert model_22.get("weight") == 2
         assert model_22.get("parent_id") is None

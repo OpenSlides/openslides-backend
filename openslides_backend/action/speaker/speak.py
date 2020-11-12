@@ -1,11 +1,12 @@
 import time
-from typing import Iterable
+from typing import Iterable, Union
 
 from ...models.models import Speaker
 from ...services.datastore.interface import GetManyRequest
 from ...shared.exceptions import ActionException
 from ...shared.interfaces.event import Event
 from ...shared.patterns import Collection, FullQualifiedId
+from ..action_interface import ActionResponseResultsElement
 from ..base import Action, ActionPayload, DataSet, WriteRequestElement
 from ..default_schema import DefaultSchema
 from ..register import register_action
@@ -68,7 +69,7 @@ class SpeakerSpeak(Action):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         for element in dataset["data"]:
             for item in ("instance", "current_speaker"):
                 if element.get(item):

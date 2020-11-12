@@ -15,7 +15,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Action handled successfully" in str(response.data)
+        assert "Actions handled successfully" in str(response.data)
         model_22 = self.get_model("motion_category/22")
         assert model_22.get("weight") == 2
         assert model_22.get("parent_id") is None
@@ -197,7 +197,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Action handled successfully" in str(response.data)
+        assert "Actions handled successfully" in str(response.data)
         category_1 = self.get_model("motion_category/1")
         assert category_1.get("weight") is None
         category_2 = self.get_model("motion_category/2")

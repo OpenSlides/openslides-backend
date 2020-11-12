@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Set
+from typing import Any, Dict, Iterable, List, Set, Union
 
 import fastjsonschema
 
@@ -9,6 +9,7 @@ from ..shared.interfaces.event import Event
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedId
 from ..shared.schema import schema_version
+from .action_interface import ActionResponseResultsElement
 from .base import Action, BaseAction, DataSet
 
 sort_node_schema = {
@@ -134,7 +135,7 @@ class TreeSortMixin(BaseAction):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         for id, instance in dataset["data"].items():
             fqid = FullQualifiedId(self.model.collection, id)
             information = {fqid: ["Object sorted"]}
@@ -177,7 +178,7 @@ class LinearSortMixin(Action):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         for id, instance in dataset["data"].items():
             fqid = FullQualifiedId(self.model.collection, id)
             information = {fqid: ["Object sorted"]}

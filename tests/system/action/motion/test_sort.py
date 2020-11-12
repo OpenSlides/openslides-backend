@@ -15,7 +15,7 @@ class MotionSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Action handled successfully" in str(response.data)
+        assert "Actions handled successfully" in str(response.data)
         model_22 = self.get_model("motion/22")
         assert model_22.get("sort_weight") == 2
         assert model_22.get("sort_parent_id") is None

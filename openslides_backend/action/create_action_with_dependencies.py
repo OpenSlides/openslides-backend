@@ -1,7 +1,8 @@
-from typing import Any, Dict, Iterable, List, Type
+from typing import Any, Dict, Iterable, List, Type, Union
 
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedId
+from .action_interface import ActionResponseResultsElement
 from .base import Action, DataSet
 from .generics import CreateAction
 
@@ -18,7 +19,7 @@ class CreateActionWithDependencies(CreateAction):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         # Yield write request elements of this create action.
         yield from super().create_write_request_elements(dataset)
 

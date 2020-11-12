@@ -303,7 +303,7 @@ class TopicCreateActionWSGITester(BaseTopicCreateActionTester):
             json=[{"action": "topic.create", "data": self.valid_payload_1}],
         )
         self.assert_status_code(response, 200)
-        self.assertIn("Action handled successfully", str(response.data))
+        self.assertIn("Actions handled successfully", str(response.data))
 
     def test_wsgi_request_correct_2(self) -> None:
         expected_write_data = json.dumps(  # noqa: F841

@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Set, Tuple, Type
+from typing import Any, Dict, Iterable, List, Set, Tuple, Type, Union
 
 from ..models.fields import (
     BaseGenericRelationField,
@@ -13,6 +13,7 @@ from ..shared.interfaces.event import Event
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import ID_PATTERN, FullQualifiedId
 from ..shared.typing import DeletedModel, ModelMap
+from .action_interface import ActionResponseResultsElement
 from .actions_map import actions_map
 from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
@@ -108,22 +109,22 @@ class CreateAction(GenericBaseAction):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         yield from self.create_action_create_write_request_elements(dataset)
 
     def create_action_create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         yield from super().create_write_request_elements(dataset)
 
     def create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
-        return self.create_action_create_instance_write_request_element(element)
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+        yield from self.create_action_create_instance_write_request_element(element)
 
     def create_action_create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
 
@@ -133,9 +134,11 @@ class CreateAction(GenericBaseAction):
         fqid = FullQualifiedId(self.model.collection, element["new_id"])
         information = {fqid: ["Object created"]}
         event = Event(type="create", fqid=fqid, fields=element["instance"])
-        return WriteRequestElement(
+        yield WriteRequestElement(
             events=[event], information=information, user_id=self.user_id
         )
+        response_info: ActionResponseResultsElement = {"id": fqid.id}
+        yield response_info
 
 
 class UpdateAction(GenericBaseAction):
@@ -255,22 +258,22 @@ class UpdateAction(GenericBaseAction):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         yield from self.update_action_create_write_request_elements(dataset)
 
     def update_action_create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         yield from super().create_write_request_elements(dataset)
 
     def create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
-        return self.update_action_create_instance_write_request_element(element)
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+        yield from self.update_action_create_instance_write_request_element(element)
 
     def update_action_create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
 
@@ -285,7 +288,7 @@ class UpdateAction(GenericBaseAction):
             if k != "id" and not k.startswith("meta_")
         }
         event = Event(type="update", fqid=fqid, fields=fields)
-        return WriteRequestElement(
+        yield WriteRequestElement(
             events=[event], information=information, user_id=self.user_id
         )
 
@@ -431,36 +434,45 @@ class DeleteAction(GenericBaseAction):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         yield from self.delete_action_create_write_request_elements(dataset)
 
     def delete_action_create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+        items = super().create_write_request_elements(dataset)
+        # Pre-yield non write request elements, i. e. action response results elements.
+        write_request_elements = []
+        for item in items:
+            if not isinstance(item, WriteRequestElement):
+                yield item
+            else:
+                write_request_elements.append(item)
         write_request_element = merge_write_request_elements(
-            self.additional_write_requests
-            + [element for element in super().create_write_request_elements(dataset)]
+            self.additional_write_requests + write_request_elements
         )
         # Remove double entries and updates for deleted models
         events: List[Event] = []
         deleted: List[FullQualifiedId] = []
-        for event in write_request_element["events"]:
+        for event in write_request_element.events:
             if event["fqid"] in deleted:
                 continue
             if event["type"] == "delete":
                 deleted.append(event["fqid"])
             events.append(event)
-        write_request_element["events"] = events
-        return [write_request_element]
+        write_request_element.events = events
+
+        # Finally yield the merged write request element.
+        yield write_request_element
 
     def create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
-        return self.delete_action_create_instance_write_request_element(element)
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+        yield from self.delete_action_create_instance_write_request_element(element)
 
     def delete_action_create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
 
@@ -470,6 +482,6 @@ class DeleteAction(GenericBaseAction):
         fqid = FullQualifiedId(self.model.collection, element["instance"]["id"])
         information = {fqid: ["Object deleted"]}
         event = Event(type="delete", fqid=fqid)
-        return WriteRequestElement(
+        yield WriteRequestElement(
             events=[event], information=information, user_id=self.user_id
         )

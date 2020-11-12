@@ -306,20 +306,20 @@ class Write(Command):
     """
 
     def __init__(
-        self, write_request: WriteRequestElement, locked_fields: Dict[str, int]
+        self, write_request_element: WriteRequestElement, locked_fields: Dict[str, int]
     ) -> None:
-        self.write_request = write_request
+        self.write_request_element = write_request_element
         self.locked_fields = locked_fields
 
     @property
     def data(self) -> str:
         information = {}
-        for fqid, value in self.write_request["information"].items():
+        for fqid, value in self.write_request_element.information.items():
             information[str(fqid)] = value
         stringified_write_request_element: StringifiedWriteRequestElement = {
-            "events": self.write_request["events"],
+            "events": self.write_request_element.events,
             "information": information,
-            "user_id": self.write_request["user_id"],
+            "user_id": self.write_request_element.user_id,
             "locked_fields": self.locked_fields,
         }
         # TODO: REMOVE locked_fields in business logic

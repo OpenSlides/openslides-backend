@@ -216,14 +216,16 @@ class DatastoreAdapterTester(TestCase):
         assert new_id == 42
 
     def test_write(self) -> None:
-        write_request: WriteRequestElement = {
-            "events": [],
-            "information": {},
-            "user_id": 42,
-        }
-        command = commands.Write(write_request=write_request, locked_fields={})
+        write_request_element = WriteRequestElement(
+            events=[],
+            information={},
+            user_id=42,
+        )
+        command = commands.Write(
+            write_request_element=write_request_element, locked_fields={}
+        )
         self.engine.retrieve.return_value = "", 200
-        self.db.write(write_request=write_request)
+        self.db.write(write_request_element=write_request_element)
         assert (
             command.data
             == '{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}'

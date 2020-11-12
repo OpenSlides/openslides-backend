@@ -1,10 +1,11 @@
-from typing import Iterable
+from typing import Iterable, Union
 
 from ...models.models import AgendaItem
 from ...shared.filters import FilterOperator
 from ...shared.interfaces.event import Event
 from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import FullQualifiedId
+from ..action_interface import ActionResponseResultsElement
 from ..base import Action, ActionPayload, DataSet
 from ..default_schema import DefaultSchema
 from ..register import register_action
@@ -45,7 +46,7 @@ class AgendaItemNumbering(Action):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         information = {}
         events = []
         for instance_id, item_number in dataset["data"].items():

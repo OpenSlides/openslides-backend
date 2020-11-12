@@ -1,8 +1,9 @@
-from typing import Iterable
+from typing import Iterable, Union
 
 from ...models.models import ListOfSpeakers
 from ...shared.exceptions import ActionException
 from ...shared.patterns import FullQualifiedId
+from ..action_interface import ActionResponseResultsElement
 from ..base import Action, ActionPayload, DataSet, WriteRequestElement
 from ..default_schema import DefaultSchema
 from ..register import register_action
@@ -38,7 +39,7 @@ class ListOfSpeakersDeleteAllSpeakersAction(Action):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         for element in dataset["data"]:
             payload = [{"id": speaker_id} for speaker_id in element["speaker_ids"]]
             yield from self.execute_other_action(SpeakerDeleteAction, payload)

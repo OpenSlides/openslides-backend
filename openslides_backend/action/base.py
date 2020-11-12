@@ -1,6 +1,6 @@
 import re
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 import fastjsonschema
 from mypy_extensions import TypedDict
@@ -22,7 +22,7 @@ from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
-from .action_interface import ActionPayload
+from .action_interface import ActionPayload, ActionResponseResultsElement
 from .relations import Relations, RelationsHandler
 
 DataSetElement = TypedDict(
@@ -84,7 +84,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def perform(
         self, payload: ActionPayload, user_id: int
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         """
         Entrypoint to perform the action.
         """
@@ -92,7 +92,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.validate(deepcopy(payload))
         self.check_permissions(payload)
         dataset = self.prepare_dataset(payload)
-        return self.create_write_request_elements(dataset)
+        yield from self.create_write_request_elements(dataset)
 
     def validate(self, payload: ActionPayload) -> None:
         """
@@ -249,30 +249,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         """
-        Takes dataset and creates write request elements that can be sent to event
-        store.
+        Takes dataset and creates write request elements that can be sent to
+        datastore.
 
-        By default it calls self.create_instance_write_request_element and uses
+        By default it yields self.create_instance_write_request_element and uses
         get_relations_updates() for relations.
         """
         modified_relation_fields: Dict[FullQualifiedField, Any] = {}
         for element in dataset["data"]:
-            instance_write_request_element = self.create_instance_write_request_element(
-                element
-            )
-            for relation in self.get_relations_updates(
-                element, modified_relation_fields
-            ):
-                instance_write_request_element = merge_write_request_elements(
-                    (instance_write_request_element, relation)
-                )
-            yield instance_write_request_element
+            yield from self.create_instance_write_request_element(element)
+            yield from self.get_relations_updates(element, modified_relation_fields)
 
     def create_instance_write_request_element(
         self, element: Any
-    ) -> WriteRequestElement:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
         """
@@ -375,7 +367,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.services,
             {**self.additional_relation_models, **additional_relation_models},
         )
-        return action.perform(payload, self.user_id)
+        action_results = action.perform(payload, self.user_id)
+        for item in action_results:
+            # We strip off items of type ActionResponseResultsElement because
+            # we do not want such response information in the real action response.
+            if isinstance(item, WriteRequestElement):
+                yield item
 
 
 class DummyAction(Action):
@@ -387,7 +384,7 @@ class DummyAction(Action):
 
     def perform(
         self, payload: ActionPayload, user_id: int
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         raise NotImplementedError(
             "This action has to be implemented but is still missing."
         )
@@ -403,16 +400,16 @@ def merge_write_request_elements(
     information: Dict[FullQualifiedId, List[str]] = {}
     user_id: Optional[int] = None
     for element in write_request_elements:
-        events.extend(element["events"])
-        for fqid, info_text in element["information"].items():
+        events.extend(element.events)
+        for fqid, info_text in element.information.items():
             if information.get(fqid) is None:
                 information[fqid] = info_text
             else:
                 information[fqid].extend(info_text)
         if user_id is None:
-            user_id = element["user_id"]
+            user_id = element.user_id
         else:
-            if user_id != element["user_id"]:
+            if user_id != element.user_id:
                 raise ValueError(
                     "You can not merge two write request elements of different users."
                 )

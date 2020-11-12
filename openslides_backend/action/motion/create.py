@@ -1,10 +1,11 @@
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Union
 
 from ...models.models import Motion
 from ...shared.exceptions import ActionException
 from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.schema import id_list_schema, optional_id_schema
+from ..action_interface import ActionResponseResultsElement
 from ..agenda_item.agenda_creation import (
     CreateActionWithAgendaItemMixin,
     agenda_creation_properties,
@@ -175,7 +176,7 @@ class MotionCreate(
 
     def create_write_request_elements(
         self, dataset: DataSet
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
         # first write motion, then submitters
         yield from super().create_write_request_elements(dataset)
         yield from self.additional_write_requests
