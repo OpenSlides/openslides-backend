@@ -1,5 +1,11 @@
+import base64
 import mimetypes
-from typing import Any, Dict
+from io import BytesIO
+from time import time
+from typing import Any, Dict, TypedDict
+
+from PyPDF2 import PdfFileReader
+from PyPDF2.utils import PdfReadError
 
 from ...models.models import Mediafile
 from ...shared.exceptions import ActionException
@@ -9,6 +15,15 @@ from ..default_schema import DefaultSchema
 from ..generics import CreateAction
 from ..register import register_action
 from .calculate_mixins import MediafileCalculatedFieldsMixin
+
+PDFInformation = TypedDict(
+    "PDFInformation",
+    {
+        "pages": int,
+        "encrypted": bool,
+    },
+    total=False,
+)
 
 
 @register_action("mediafile.upload")
@@ -25,16 +40,21 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Upload file into mediaservice.
-        Check if parent is a directory.
-        """
+        instance["create_timestamp"] = time()
+        instance["mimetype"] = mimetypes.guess_type(instance["filename"])[0]
+        if instance["mimetype"] is None:
+            raise ActionException(f"Cannot guess mimetype for {instance['filename']}.")
+        decoded_file = base64.b64decode(instance["file"])
+        instance["filesize"] = len(decoded_file)
+        if instance["mimetype"] == "application/pdf":
+            instance["pdf_information"] = self.get_pdf_information(decoded_file)
+
         if instance.get("parent_id"):
             parent_mediafile = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
                 [
                     "is_directory",
-                    "has_inherited_access_groups",
+                    "is_public",
                     "inherited_access_group_ids",
                 ],
             )
@@ -42,11 +62,11 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
                 raise ActionException("Cannot have a non directory parent.")
             if instance.get("access_group_ids") is not None:
                 (
-                    instance["has_inherited_access_groups"],
+                    instance["is_public"],
                     instance["inherited_access_group_ids"],
                 ) = self.calculate_inherited_groups(
                     instance["access_group_ids"],
-                    parent_mediafile.get("has_inherited_access_groups"),
+                    parent_mediafile.get("is_public"),
                     parent_mediafile.get("inherited_access_group_ids"),
                 )
         return instance
@@ -56,13 +76,21 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
         for instance in dataset["data"]:
             file_ = instance["instance"].pop("file")
             id_ = instance["new_id"]
-            mimetype = mimetypes.guess_type(instance["instance"]["filename"])[0]
-            if mimetype is None:
-                raise ActionException(
-                    f"Cannot guess mimetype for {instance['instance']['filename']}."
-                )
-            self.upload_file(id_, file_, mimetype)
+            mimetype_ = instance["instance"]["mimetype"]
+            self.upload_file(id_, file_, mimetype_)
         return dataset
 
     def upload_file(self, id_: int, file_: str, mimetype: str) -> None:
         self.media.upload(file_, id_, mimetype)
+
+    def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:
+        bytes_io = BytesIO(file_bytes)
+        try:
+            pdf = PdfFileReader(bytes_io)
+            return {"pages": pdf.getNumPages()}
+        except PdfReadError:
+            # File could be encrypted but not be detected by PyPDF.
+            return {
+                "pages": 0,
+                "encrypted": True,
+            }
