@@ -392,7 +392,7 @@ class DummyAction(Action):
 
 def merge_write_request_elements(
     write_request_elements: Iterable[WriteRequestElement],
-) -> WriteRequestElement:
+) -> Optional[WriteRequestElement]:
     """
     Merges the given write request elements to one big write request element.
     """
@@ -413,6 +413,11 @@ def merge_write_request_elements(
                 raise ValueError(
                     "You can not merge two write request elements of different users."
                 )
-    if user_id is None:
-        raise ValueError("At least one of the given user ids must not be None.")
-    return WriteRequestElement(events=events, information=information, user_id=user_id)
+    if events:
+        if user_id is None:
+            raise ValueError("At least one of the given user ids must not be None.")
+        return WriteRequestElement(
+            events=events, information=information, user_id=user_id
+        )
+    else:
+        return None

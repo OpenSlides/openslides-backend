@@ -16,7 +16,6 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Nothing to do." in str(response.data)
 
     def test_one_los_empty(self) -> None:
         self.create_model("list_of_speakers/11", {"meeting_id": 110, "speaker_ids": []})
@@ -33,7 +32,6 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Nothing to do." in str(response.data)
 
     def test_1_los_1_speaker(self) -> None:
         self.create_model(

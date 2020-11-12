@@ -1,8 +1,8 @@
 from typing import Any, Dict, Iterable
 
 from ...models.models import Meeting, Speaker
-from ...shared.exceptions import NoContentException
-from ...shared.patterns import Collection, FullQualifiedId
+from ...services.datastore.commands import GetManyRequest
+from ...shared.patterns import Collection
 from ..default_schema import DefaultSchema
 from ..generics import ActionPayload, DeleteAction
 from ..register import register_action
@@ -23,20 +23,22 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
 
     def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
         new_payload = []
-        for instance in payload:
-            meeting = self.database.get(
-                FullQualifiedId(Collection("meeting"), instance["id"]),
-                ["list_of_speakers_ids"],
-            )
-            if not meeting.get("list_of_speakers_ids"):
-                continue
-            for los in meeting["list_of_speakers_ids"]:
-                list_of_speakers = self.database.get(
-                    FullQualifiedId(Collection("list_of_speakers"), los),
-                    ["speaker_ids"],
-                )
-                for speaker in list_of_speakers.get("speaker_ids", []):
-                    new_payload.append({"id": speaker})
-        if not new_payload:
-            raise NoContentException("No speakers to delete.")
+        meeting_ids = [instance["id"] for instance in payload]
+        get_many_request = GetManyRequest(
+            Collection("meeting"), meeting_ids, ["list_of_speakers_ids"]
+        )
+        gm_result = self.datastore.get_many([get_many_request])
+        meetings = gm_result.get(Collection("meeting"), {})
+
+        los_ids = []
+        for meeting in meetings.values():
+            los_ids.extend(meeting.get("list_of_speakers_ids", []))
+        get_many_request = GetManyRequest(
+            Collection("list_of_speakers"), los_ids, ["speaker_ids"]
+        )
+        gm_result = self.datastore.get_many([get_many_request])
+        lists_of_speakers = gm_result.get(Collection("list_of_speakers"), {})
+        for los in lists_of_speakers.values():
+            for speaker in los.get("speaker_ids", []):
+                new_payload.append({"id": speaker})
         return new_payload

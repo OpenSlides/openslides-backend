@@ -416,12 +416,6 @@ class DeleteAction(Action):
 
         return {"data": data}
 
-    def update_instances(self, payload: ActionPayload) -> ActionPayload:
-        """
-        This method can be overwritten to update the payload.
-        """
-        return payload
-
     def create_write_request_elements(
         self, dataset: DataSet
     ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
@@ -441,19 +435,20 @@ class DeleteAction(Action):
         write_request_element = merge_write_request_elements(
             self.additional_write_requests + write_request_elements
         )
-        # Remove double entries and updates for deleted models
-        events: List[Event] = []
-        deleted: List[FullQualifiedId] = []
-        for event in write_request_element.events:
-            if event["fqid"] in deleted:
-                continue
-            if event["type"] == "delete":
-                deleted.append(event["fqid"])
-            events.append(event)
-        write_request_element.events = events
+        if write_request_element:
+            # Remove double entries and updates for deleted models
+            events: List[Event] = []
+            deleted: List[FullQualifiedId] = []
+            for event in write_request_element.events:
+                if event["fqid"] in deleted:
+                    continue
+                if event["type"] == "delete":
+                    deleted.append(event["fqid"])
+                events.append(event)
+            write_request_element.events = events
 
-        # Finally yield the merged write request element.
-        yield write_request_element
+            # Finally yield the merged write request element.
+            yield write_request_element
 
     def create_instance_write_request_element(
         self, element: Any

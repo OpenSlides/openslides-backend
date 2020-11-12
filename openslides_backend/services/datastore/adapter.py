@@ -117,6 +117,7 @@ class DatastoreAdapter(DatastoreService):
             for get_many_request in get_many_requests:
                 if get_many_request.mapped_fields is not None:
                     get_many_request.mapped_fields.add("meta_position")
+
         command = commands.GetMany(
             get_many_requests=get_many_requests,
             mapped_fields=mapped_fields,
