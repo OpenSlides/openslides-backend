@@ -18,6 +18,8 @@ services:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer
             - AUTH_HOST=auth
+            - AUTH_TOKEN_KEY=Authentication
+            - AUTH_COOKIE_KEY=refreshId
         depends_on:
             - reader
             - writer
