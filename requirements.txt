@@ -8,4 +8,4 @@ dependency_injector==3.44.0
 Werkzeug==1.0.1
 gunicorn==20.0.4
 bleach==3.2.1
-git+git://github.com/OpenSlides/openslides-auth-service@a0942237aec45a968ef7b0d0e3829d966f65747a#egg=authlib&subdirectory=auth/libraries/pip-auth # authlib
+git+git://github.com/OpenSlides/openslides-auth-service#egg=authlib&subdirectory=auth/libraries/pip-auth # authlib
