@@ -208,7 +208,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 r"^"
                 + field_name[: field.index]
                 + r"\$"
-                + r"([^_]*)"
+                + r"(.*)"
                 + field_name[field.index :]
                 + r"$"
             )
