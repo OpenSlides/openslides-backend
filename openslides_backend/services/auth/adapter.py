@@ -38,10 +38,10 @@ class AuthenticationHTTPAdapter(AuthenticationService):
             raise BackendAuthException(e.message)
 
     def hash(self, toHash: str) -> str:
-        return self.auth_handler.hash(toHash).decode("utf-8")
+        return self.auth_handler.hash(toHash)
 
     def is_equals(self, toHash: str, toCompare: str) -> bool:
-        return self.auth_handler.is_equals(toHash, toCompare.encode("utf-8"))
+        return self.auth_handler.is_equals(toHash, toCompare)
 
     def is_anonymous(self, user_id: int) -> bool:
         return user_id == ANONYMOUS_USER
