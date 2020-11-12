@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a67eed44e63daa65abb46235a184d63f"
+MODELS_YML_CHECKSUM = "6cf8b3890d54df948b55df7de309d209"
 
 
 class Organisation(Model):
@@ -620,10 +620,14 @@ class Group(Model):
         structured_relation=["meeting_id"],
     )
     default_group_for_meeting_id = fields.RelationField(
-        to=Collection("meeting"), related_name="default_group_id"
+        to=Collection("meeting"),
+        related_name="default_group_id",
+        on_delete=fields.OnDelete.PROTECT,
     )
     superadmin_group_for_meeting_id = fields.RelationField(
-        to=Collection("meeting"), related_name="superadmin_group_id"
+        to=Collection("meeting"),
+        related_name="superadmin_group_id",
+        on_delete=fields.OnDelete.PROTECT,
     )
     mediafile_access_group_ids = fields.RelationListField(
         to=Collection("mediafile"),
