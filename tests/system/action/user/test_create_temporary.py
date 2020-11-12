@@ -22,6 +22,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
     def test_create_all_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_shjeuazu"})
         self.create_model("group/1", {"meeting_id": 222})
+        self.create_model("user/7", {})
         response = self.client.post(
             "/",
             json=[
@@ -46,13 +47,14 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
                             "is_present_in_meeting_ids": [222],
                             "default_password": "password",
                             "group_ids": [1],
+                            "vote_delegations_from_ids": [7],
                         }
                     ],
                 }
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/2")
+        model = self.get_model("user/8")
         assert model.get("username") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
         assert model.get("title") == "title"
@@ -72,6 +74,9 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert model.get("group_$222_ids") == [1]
         assert model.get("group_$_ids") == ["222"]
         assert model.get("group_ids") is None
+        assert model.get("vote_delegations_$222_from_ids") == [7]
+        assert model.get("vote_delegations_$_from_ids") == ["222"]
+        assert model.get("vote_delegations_from_ids") is None
 
     def test_create_invalid_present_meeting(self) -> None:
         self.create_model("meeting/1", {})
@@ -96,7 +101,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "A temporary user can only be present in its respective meeting.",
             str(response.data),
         )
-        self.assert_model_not_exists("user/27")
+        self.assert_model_not_exists("user/2")
 
     def test_create_invalid_group(self) -> None:
         self.create_model("meeting/1", {})
@@ -117,7 +122,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "The field meeting_id must be equal but differs",
             str(response.data),
         )
-        self.assert_model_not_exists("user/27")
+        self.assert_model_not_exists("user/2")
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -129,7 +134,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "data[0] must contain [\\'meeting_id\\', \\'username\\'] properties",
             str(response.data),
         )
-        self.assert_model_not_exists("user/27")
+        self.assert_model_not_exists("user/2")
 
     def test_create_wrong_field(self) -> None:
         self.create_model("meeting/222", {"name": "name_shjeuazu"})
@@ -153,4 +158,28 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             "data[0] must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
-        self.assert_model_not_exists("user/27")
+        self.assert_model_not_exists("user/2")
+
+    def test_create_invalid_vote_delegation(self) -> None:
+        self.create_model("meeting/222", {})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.create_temporary",
+                    "data": [
+                        {
+                            "username": "test_Xcdfgee",
+                            "meeting_id": 222,
+                            "vote_delegations_from_ids": [7],
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following users were not found",
+            str(response.data),
+        )
+        self.assert_model_not_exists("user/2")

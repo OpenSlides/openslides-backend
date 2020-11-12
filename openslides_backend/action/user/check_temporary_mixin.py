@@ -11,8 +11,10 @@ class CheckTemporaryMixin(BaseAction):
     """
 
     def check_for_temporary(self, instance: Dict[str, Any]) -> None:
-        user = self.datastore.get(
-            FullQualifiedId(Collection("user"), instance["id"]), ["meeting_id"]
-        )
-        if not user.get("meeting_id"):
+        if "meeting_id" not in instance:
+            db_instance = self.datastore.get(
+                FullQualifiedId(Collection("user"), instance["id"]), ["meeting_id"]
+            )
+            instance["meeting_id"] = db_instance.get("meeting_id")
+        if not instance.get("meeting_id"):
             raise ActionException(f"User {instance['id']} is not temporary.")
