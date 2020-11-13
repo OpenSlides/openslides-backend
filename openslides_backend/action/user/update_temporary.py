@@ -1,17 +1,16 @@
 from typing import Any, Dict
 
 from ...models.models import User
-from ...shared.exceptions import ActionException
-from ...shared.patterns import FullQualifiedId
 from ...shared.schema import id_list_schema
 from ..default_schema import DefaultSchema
 from ..generics import UpdateAction
 from ..register import register_action
+from .check_temporary_mixin import CheckTemporaryMixin
 from .temporary_user_mixin import TemporaryUserMixin
 
 
 @register_action("user.update_temporary")
-class UserUpdateTemporary(UpdateAction, TemporaryUserMixin):
+class UserUpdateTemporary(UpdateAction, TemporaryUserMixin, CheckTemporaryMixin):
     """
     Action to update a user.
     """
@@ -39,12 +38,7 @@ class UserUpdateTemporary(UpdateAction, TemporaryUserMixin):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        db_instance = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["meeting_id"]
-        )
-        if not db_instance.get("meeting_id"):
-            raise ActionException(f"User {instance['id']} is not temporary.")
-        instance["meeting_id"] = db_instance["meeting_id"]
+        self.check_for_temporary(instance)
         instance = self.update_instance_temporary_user(instance)
         # remove meeting_id again to not write it to db
         del instance["meeting_id"]
