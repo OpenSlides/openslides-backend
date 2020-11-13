@@ -23,6 +23,6 @@ RUN chmod 777 /root
 EXPOSE 9002
 EXPOSE 9003
 
-ENV OS4_DEVELOPMENT 1
+ENV OPENSLIDES_DEVELOPMENT 1
 
 CMD [ "python", "-m", "openslides_backend" ]
