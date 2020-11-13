@@ -35,7 +35,7 @@ class CheckMediafileId(BasePresenter):
             mapped_fields=["filename", "is_directory"],
         )
 
-        if not mediafile or mediafile["is_directory"]:
+        if not mediafile or mediafile.get("is_directory"):
             return {"ok": False}
 
         # TODO: Call to the permission service.
