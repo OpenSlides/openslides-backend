@@ -8,6 +8,7 @@ from typing import Any
 
 from gunicorn.app.base import BaseApplication
 
+from .shared.env import is_dev_mode
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
 
@@ -29,7 +30,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
         # Setup global loglevel.
-        if os.environ.get("OPENSLIDES_BACKEND_DEBUG"):
+        if is_dev_mode():
             logging.basicConfig(level=logging.DEBUG)
         logger = logging.getLogger(__name__)
         self.view_name = view_name
@@ -41,7 +42,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         super().__init__(*args, **kwargs)
 
     def load_config(self) -> None:
-        loglevel = "debug" if os.environ.get("OPENSLIDES_BACKEND_DEBUG") else "info"
+        loglevel = "debug" if is_dev_mode() else "info"
         options = {
             "bind": DEFAULT_ADDRESSES[self.view_name],
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/

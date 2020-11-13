@@ -18,16 +18,7 @@ from .actions_map import actions_map
 from .base import Action, ActionPayload, DataSet, merge_write_request_elements
 
 
-class GenericBaseAction(Action):
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
-        """
-        By default, this does nothing. Override in subclasses to adjust the updates
-        to the instances.
-        """
-        yield from payload
-
-
-class CreateAction(GenericBaseAction):
+class CreateAction(Action):
     """
     Generic create action.
     """
@@ -137,7 +128,7 @@ class CreateAction(GenericBaseAction):
         yield response_info
 
 
-class UpdateAction(GenericBaseAction):
+class UpdateAction(Action):
     """
     Generic update action.
     """
@@ -285,7 +276,7 @@ class UpdateAction(GenericBaseAction):
         )
 
 
-class DeleteAction(GenericBaseAction):
+class DeleteAction(Action):
     """
     Generic delete action.
     """
