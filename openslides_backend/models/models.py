@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "6cf8b3890d54df948b55df7de309d209"
+MODELS_YML_CHECKSUM = "d5b4408aadf18c025ff717b615fd600d"
 
 
 class Organisation(Model):
@@ -214,7 +214,7 @@ class Committee(Model):
     meeting_ids = fields.RelationListField(
         to=Collection("meeting"),
         related_name="committee_id",
-        on_delete=fields.OnDelete.CASCADE,
+        on_delete=fields.OnDelete.PROTECT,
     )
     template_meeting_id = fields.RelationField(
         to=Collection("meeting"), related_name="template_for_committee_id"

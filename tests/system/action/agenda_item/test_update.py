@@ -58,3 +58,31 @@ class AgendaItemActionTest(BaseActionTestCase):
         assert model.get("type") == AgendaItem.HIDDEN_ITEM
         assert model.get("weight") == 333
         assert model.get("tag_ids") == [1]
+
+    def test_update_type_change_with_children(self) -> None:
+        self.create_model(
+            "agenda_item/111",
+            {"item_number": 101, "duration": 600, "child_ids": [222]},
+        )
+        self.create_model(
+            "agenda_item/222",
+            {"type": AgendaItem.AGENDA_ITEM, "item_number": 102, "parent_id": 111},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "agenda_item.update",
+                    "data": [{"id": 111, "type": AgendaItem.HIDDEN_ITEM}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("agenda_item/111")
+        assert model.get("type") == AgendaItem.HIDDEN_ITEM
+        assert model.get("is_hidden") is True
+        assert model.get("is_internal") is False
+        child_model = self.get_model("agenda_item/222")
+        assert child_model.get("type") == AgendaItem.AGENDA_ITEM
+        assert child_model.get("is_hidden") is True
+        assert child_model.get("is_internal") is False
