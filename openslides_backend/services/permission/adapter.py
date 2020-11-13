@@ -18,10 +18,10 @@ class PermissionHTTPAdapter(PermissionService):
         self.logger = logging.getLogger(__name__)
 
     def is_allowed(
-        self, name: str, user_id: int, dataList: List[Dict[str, Any]]
+        self, name: str, user_id: int, data_list: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         payload = json.dumps(
-            {"name": name, "user_id": user_id, "data": dataList}, separators=(",", ":")
+            {"name": name, "user_id": user_id, "data": data_list}, separators=(",", ":")
         )
 
         try:
@@ -56,7 +56,7 @@ class PermissionHTTPAdapter(PermissionService):
                 self.logger.warning(
                     f"Action {name} has no permission check. Return a default-true."
                 )
-                return [{} for _ in dataList]
+                return [{} for _ in data_list]
 
             raise NotAllowed(reason, error_index)
 

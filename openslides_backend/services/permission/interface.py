@@ -14,7 +14,7 @@ class PermissionService(Protocol):
     """
 
     def is_allowed(
-        self, name: str, user_id: int, dataList: List[Dict[str, Any]]
+        self, name: str, user_id: int, data_list: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
         Checks, if the user is allowed to execute the `name` with the list of data.
