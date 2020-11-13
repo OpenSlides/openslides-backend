@@ -29,6 +29,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.create_model(
             "group/7", {"name": "name_group7", "user_ids": [], "meeting_id": 222}
         )
+        self.create_model("user/7", {})
         response = self.client.post(
             "/",
             json=[
@@ -53,6 +54,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                             "is_present_in_meeting_ids": [222],
                             "default_password": "password",
                             "group_ids": [7],
+                            "vote_delegations_from_ids": [7],
                         }
                     ],
                 }
@@ -79,6 +81,9 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("group_$222_ids") == [7]
         assert model.get("group_$_ids") == ["222"]
         assert model.get("group_ids") is None
+        assert model.get("vote_delegations_$222_from_ids") == [7]
+        assert model.get("vote_delegations_$_from_ids") == ["222"]
+        assert model.get("vote_delegations_from_ids") is None
 
     def test_update_vote_weight(self) -> None:
         self.create_model(
@@ -218,3 +223,33 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("group_$222_ids") is None
         assert model.get("group_$_ids") is None
         assert model.get("group_ids") is None
+
+    def test_update_invalid_vote_delegation(self) -> None:
+        self.create_model("meeting/222", {})
+        self.create_model(
+            "user/111",
+            {"meeting_id": 222},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update_temporary",
+                    "data": [
+                        {
+                            "id": 111,
+                            "vote_delegations_from_ids": [7],
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following users were not found",
+            str(response.data),
+        )
+        model = self.get_model("user/111")
+        assert model.get("vote_delegations_$222_from_ids") is None
+        assert model.get("vote_delegations_$_from_ids") is None
+        assert model.get("vote_delegations_from_ids") is None

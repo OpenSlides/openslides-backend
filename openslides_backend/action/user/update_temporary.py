@@ -34,7 +34,10 @@ class UserUpdateTemporary(UpdateAction, TemporaryUserMixin, CheckTemporaryMixin)
             "is_present_in_meeting_ids",
             "default_password",
         ],
-        additional_optional_fields={"group_ids": id_list_schema},
+        additional_optional_fields={
+            "group_ids": id_list_schema,
+            "vote_delegations_from_ids": id_list_schema,
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
