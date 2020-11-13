@@ -11,7 +11,7 @@ from ..models.fields import (
 from ..shared.exceptions import ActionException
 from ..shared.interfaces.event import Event
 from ..shared.interfaces.write_request_element import WriteRequestElement
-from ..shared.patterns import ID_PATTERN, FullQualifiedId
+from ..shared.patterns import FullQualifiedId
 from ..shared.typing import DeletedModel, ModelMap
 from .action_interface import ActionResponseResultsElement
 from .actions_map import actions_map
@@ -73,10 +73,6 @@ class CreateAction(GenericBaseAction):
                     )
                     for instance_field, replacement in structured_fields:
                         if isinstance(field, BaseTemplateRelationField):
-                            if not ID_PATTERN.match(replacement):
-                                raise ActionException(
-                                    "Template relation fields can only use replacements which are ids."
-                                )
                             relation_fields.append((instance_field, field))
                         template_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
@@ -188,10 +184,6 @@ class UpdateAction(GenericBaseAction):
                     )
                     for instance_field, replacement in structured_fields:
                         if isinstance(field, BaseTemplateRelationField):
-                            if not ID_PATTERN.match(replacement):
-                                raise ActionException(
-                                    "Template relation fields can only use replacements which are ids."
-                                )
                             relation_fields.append((instance_field, field))
                         template_field_name = (
                             field_name[: field.index] + "$" + field_name[field.index :]
