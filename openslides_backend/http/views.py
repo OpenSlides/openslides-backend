@@ -67,7 +67,6 @@ class ActionView(BaseView):
         handler: Action = ActionHandler(logging=self.logging, services=self.services)
         response = handler.handle_request(payload, user_id)
 
-        # Finish request.
         self.logger.debug("Action request finished successfully.")
         return response, access_token
 

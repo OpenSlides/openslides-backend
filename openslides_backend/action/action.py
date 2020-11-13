@@ -82,10 +82,11 @@ class ActionHandler(BaseHandler):
         write_request_element, results = self.parse_actions(payload)
 
         # Send events to datastore
-        try:
-            self.datastore.write(write_request_element)
-        except EventStoreException as exception:
-            raise ActionException(exception.message)
+        if write_request_element:
+            try:
+                self.datastore.write(write_request_element)
+            except EventStoreException as exception:
+                raise ActionException(exception.message)
 
         # Return action result
         # TODO: This is a fake result because in this place all actions were
@@ -105,7 +106,7 @@ class ActionHandler(BaseHandler):
 
     def parse_actions(
         self, payload: Payload
-    ) -> Tuple[WriteRequestElement, ActionResponseResults]:
+    ) -> Tuple[Optional[WriteRequestElement], ActionResponseResults]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
