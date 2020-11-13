@@ -21,7 +21,9 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_comment_section/112")
 
     def test_delete_existing_comments(self) -> None:
-        self.create_model("motion_comment/79", {"name": "name_lkztu23d"})
+        self.create_model(
+            "motion_comment/79", {"name": "name_lkztu23d", "motion_id": 17}
+        )
         self.create_model(
             "motion_comment_section/1141",
             {"name": "name_srtgb123", "comment_ids": [79]},
@@ -33,3 +35,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_comment_section/1141")
+        assert (
+            'This section has still comments in motion \\\\"17\\\\". Please remove all comments before deletion.'
+            in str(response.data)
+        )

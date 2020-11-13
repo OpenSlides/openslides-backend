@@ -8,7 +8,7 @@ from ..models.fields import (
     BaseTemplateRelationField,
     OnDelete,
 )
-from ..shared.exceptions import ActionException
+from ..shared.exceptions import ActionException, ProtectedModelsException
 from ..shared.interfaces.event import Event
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.patterns import FullQualifiedId
@@ -306,6 +306,7 @@ class DeleteAction(Action):
             instance = self.update_instance(instance)
 
             # Fetch db instance with all relevant fields
+            this_fqid = FullQualifiedId(self.model.collection, instance["id"])
             relevant_fields = [
                 field_name
                 for field_name, field in self.model.get_relation_fields()
@@ -345,14 +346,15 @@ class DeleteAction(Action):
                         ]
 
                     if field.on_delete == OnDelete.PROTECT:
-                        for fqid in foreign_fqids:
+                        protected_fqids = [
+                            fqid
+                            for fqid in foreign_fqids
                             if not isinstance(
                                 self.additional_relation_models.get(fqid), DeletedModel
-                            ):
-                                raise ActionException(
-                                    f"You can not delete {self.model} with id {instance['id']}, "
-                                    f"because you have to delete the related model {fqid} first."
-                                )
+                            )
+                        ]
+                        if protected_fqids:
+                            raise ProtectedModelsException(this_fqid, protected_fqids)
                     else:
                         # field.on_delete == OnDelete.CASCADE
                         # Extract all foreign keys as fqids from the model
@@ -397,12 +399,20 @@ class DeleteAction(Action):
                         relation_fields.append((field_name, field))
 
             # Add additional relation models and execute all previously gathered delete actions
+            # catch all protected models exception to gather all protected fqids
+            all_protected_fqids: List[FullQualifiedId] = []
             for delete_action_class, payload in delete_actions:
-                self.additional_write_requests.extend(
-                    self.execute_other_action(
-                        delete_action_class, payload, additional_relation_models
+                try:
+                    self.additional_write_requests.extend(
+                        self.execute_other_action(
+                            delete_action_class, payload, additional_relation_models
+                        )
                     )
-                )
+                except ProtectedModelsException as e:
+                    all_protected_fqids.extend(e.fqids)
+
+            if all_protected_fqids:
+                raise ProtectedModelsException(this_fqid, all_protected_fqids)
 
             # Get relations.
             relations = self.get_relations(
