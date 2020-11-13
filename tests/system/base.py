@@ -1,6 +1,8 @@
 from typing import Any, Dict
 from unittest import TestCase
 
+import requests
+import simplejson as json
 from werkzeug.wrappers import Response
 
 from openslides_backend.services.auth.interface import AuthenticationService
@@ -25,7 +27,8 @@ class BaseSystemTestCase(TestCase):
     auth: AuthenticationService
     datastore: DatastoreService
     client: Client
-    media: Any  # needed because it is mocked and has magic methods
+    media: Any  # Any is needed because it is mocked and has magic methods
+    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json"
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -40,6 +43,17 @@ class BaseSystemTestCase(TestCase):
             {"username": ADMIN_USERNAME, "password": self.auth.hash(ADMIN_PASSWORD)},
         )
         self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
+
+    def load_example_data(self) -> None:
+        """
+        Useful for debug purposes when an action fails with the example data.
+        Do NOT use in final tests since it takes a long time.
+        """
+        self.datastore.truncate_db()
+        example_data = json.loads(requests.get(self.EXAMPLE_DATA).content)
+        for collection, models in example_data.items():
+            for model in models:
+                self.create_model(f"{collection}/{model['id']}", model)
 
     def create_client(self, username: str, password: str) -> Client:
         return Client(self.app, username, password)

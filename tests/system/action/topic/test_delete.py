@@ -67,3 +67,43 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/1")
         self.assert_model_deleted("list_of_speakers/1")
+
+    def test_delete_with_agenda_item_and_filled_los(self) -> None:
+        self.create_model(
+            "meeting/1",
+            {
+                "agenda_item_ids": [3, 14],
+                "list_of_speakers_ids": [3],
+                "topic_ids": [1],
+            },
+        )
+        self.create_model(
+            "topic/1", {"agenda_item_id": 3, "list_of_speakers_id": 3, "meeting_id": 1}
+        )
+        self.create_model(
+            "agenda_item/3",
+            {"content_object_id": "topic/1", "meeting_id": 1},
+        )
+        self.create_model(
+            "list_of_speakers/3",
+            {"content_object_id": "topic/1", "speaker_ids": [1, 2], "meeting_id": 1},
+        )
+        self.create_model(
+            "speaker/1",
+            {"list_of_speakers_id": 3, "user_id": 1},
+        )
+        self.create_model(
+            "speaker/2",
+            {"list_of_speakers_id": 3, "user_id": 2},
+        )
+        self.create_model("user/2", {})
+        response = self.client.post(
+            "/",
+            json=[{"action": "topic.delete", "data": [{"id": 1}]}],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("topic/1")
+        self.assert_model_deleted("agenda_item/3")
+        self.assert_model_deleted("list_of_speakers/3")
+        self.assert_model_deleted("speaker/1")
+        self.assert_model_deleted("speaker/2")
