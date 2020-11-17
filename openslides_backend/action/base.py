@@ -15,7 +15,7 @@ from ..models.fields import (
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
-from ..services.permission.interface import PermissionService
+from ..services.permission.interface import NotAllowed, PermissionService
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces.event import Event
 from ..shared.interfaces.services import Services
@@ -107,9 +107,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service.
         """
-        if not self.permission.check_action(self.user_id, self.name, payload):
+        try:
+            self.additions = self.permission.is_allowed(
+                self.name, self.user_id, list(payload)
+            )
+        except NotAllowed as e:
             raise PermissionDenied(
-                f"You are not allowed to perform action {self.name}."
+                f"You are not allowed to perform action {self.name}: {e.reason}"
             )
 
     def prepare_dataset(self, payload: ActionPayload) -> DataSet:

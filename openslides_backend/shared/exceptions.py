@@ -35,6 +35,10 @@ class DatastoreException(ServiceException):
     pass
 
 
+class PermissionException(ServiceException):
+    pass
+
+
 class EventStoreException(View400Exception):
     pass
 

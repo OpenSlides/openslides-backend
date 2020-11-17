@@ -1,4 +1,11 @@
-from typing import Any, Protocol
+from typing import Any, Dict, List, Optional, Protocol
+
+
+class NotAllowed(Exception):
+    def __init__(self, reason: str, error_index: Optional[int]):
+        self.reason = reason
+        self.error_index = error_index
+        super().__init__(reason)
 
 
 class PermissionService(Protocol):
@@ -6,7 +13,11 @@ class PermissionService(Protocol):
     Interface of the permission service.
     """
 
-    def check_action(self, user_id: int, action: str, data: Any) -> bool:
+    def is_allowed(
+        self, name: str, user_id: int, data_list: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """
-        Check if the given action with the given data is allowed for the fiven user.
+        Checks, if the user is allowed to execute the `name` with the list of data.
+        If it is allowed, additional information will be returned for each data. If not, NotAllowed
+        will be thrown providing more information.
         """
