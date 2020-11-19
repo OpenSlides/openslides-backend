@@ -40,7 +40,11 @@ class BaseSystemTestCase(TestCase):
 
         self.create_model(
             "user/1",
-            {"username": ADMIN_USERNAME, "password": self.auth.hash(ADMIN_PASSWORD)},
+            {
+                "username": ADMIN_USERNAME,
+                "password": self.auth.hash(ADMIN_PASSWORD),
+                "is_active": True,
+            },
         )
         self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
 
