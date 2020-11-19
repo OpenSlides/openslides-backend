@@ -326,9 +326,6 @@ class DeleteAction(Action):
             delete_actions: List[Tuple[Type[Action], ActionPayload]] = []
             additional_relation_models: ModelMap = {this_fqid: DeletedModel()}
             for field_name, field in self.model.get_relation_fields():
-                if field.structured_relation or field.structured_tag:
-                    # TODO: We do not fully support these fields. So silently skip them.
-                    continue
                 # Check on_delete.
                 if field.on_delete != OnDelete.SET_NULL:
                     if isinstance(field, BaseTemplateRelationField):
@@ -389,6 +386,7 @@ class DeleteAction(Action):
                         for replacement in db_instance.get(raw_field_name, []):
                             structured_field_name = (
                                 field_name[: field.index]
+                                + "$"
                                 + replacement
                                 + field_name[field.index :]
                             )

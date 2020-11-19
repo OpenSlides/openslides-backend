@@ -67,3 +67,7 @@ def get_fqfield(value: str) -> FullQualifiedField:
 def get_id_from_fqid(fqid: str) -> int:
     id = fqid.split(KEYSEPARATOR)[1]
     return int(id)
+
+
+def get_collection_from_fqid(fqid: str) -> Collection:
+    return Collection(fqid.split(KEYSEPARATOR)[0])

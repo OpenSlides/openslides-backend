@@ -3,7 +3,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_set_recommendation_correct(self) -> None:
-        self.create_model("workflow/34", {})
+        self.create_model("motion_workflow/34", {})
         self.create_model("motion_state/66", {"motion_ids": [22], "workflow_id": 34})
         self.create_model(
             "motion_state/77",
@@ -27,7 +27,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         assert model.get("recommendation_id") == 77
 
     def test_set_recommendation_missing_recommendation_label(self) -> None:
-        self.create_model("workflow/34", {})
+        self.create_model("motion_workflow/34", {})
         self.create_model("motion_state/66", {"motion_ids": [22], "workflow_id": 34})
         self.create_model(
             "motion_state/77",
@@ -52,7 +52,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_set_recommendation_not_matching_workflow_ids(self) -> None:
-        self.create_model("workflow/34", {})
+        self.create_model("motion_workflow/34", {})
         self.create_model("motion_state/66", {"motion_ids": [22], "workflow_id": 34})
         self.create_model(
             "motion_state/77",

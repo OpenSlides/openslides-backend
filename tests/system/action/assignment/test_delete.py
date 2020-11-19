@@ -15,7 +15,6 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         self.create_model(
             "assignment/111",
             {
-                "name": "name_srtgb123",
                 "list_of_speakers_id": 222,
                 "agenda_item_id": 333,
             },

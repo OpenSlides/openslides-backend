@@ -22,11 +22,11 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_delete_existing_comments(self) -> None:
         self.create_model(
-            "motion_comment/79", {"name": "name_lkztu23d", "motion_id": 17}
+            "motion_comment/79", {"motion_id": 17}
         )
         self.create_model(
             "motion_comment_section/1141",
-            {"name": "name_srtgb123", "comment_ids": [79]},
+            {"comment_ids": [79]},
         )
 
         response = self.client.post(

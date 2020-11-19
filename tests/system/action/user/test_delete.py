@@ -28,7 +28,7 @@ class UserDeleteActionTest(BaseActionTestCase):
             {
                 "username": "username_srtgb123",
                 "group_$_ids": ["42"],
-                "group_42_ids": [456],
+                "group_$42_ids": [456],
             },
         )
         self.create_model("group/456", {"meeting_id": 42, "user_ids": [111, 222]})

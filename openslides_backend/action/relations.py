@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from mypy_extensions import TypedDict
@@ -5,6 +6,7 @@ from mypy_extensions import TypedDict
 from ..models.base import Model, model_registry
 from ..models.fields import (
     BaseRelationField,
+    BaseTemplateField,
     GenericRelationField,
     GenericRelationListField,
     RelationField,
@@ -32,9 +34,9 @@ RelationsElement = TypedDict(
     {
         "type": str,
         "value": Optional[
-            Union[int, FullQualifiedId, List[int], List[FullQualifiedId]]
+            Union[int, FullQualifiedId, List[int], List[FullQualifiedId], List[str]]
         ],
-        "modified_element": Union[int, FullQualifiedId],
+        "modified_element": Union[int, FullQualifiedId, str],
     },
 )
 Relations = Dict[FullQualifiedField, RelationsElement]
@@ -98,7 +100,9 @@ class RelationsHandler:
             related_name = self.field.related_name.replace("$", "", 1)
         else:
             related_name = self.field.related_name
-        return model_registry[reverse_collection]().get_field(related_name)
+        field = model_registry[reverse_collection]().get_field(related_name)
+        assert isinstance(field, BaseRelationField)
+        return field
 
     def get_field_type(self) -> str:
         if isinstance(self.field, RelationField) or isinstance(
@@ -122,9 +126,11 @@ class RelationsHandler:
         if isinstance(self.field, TemplateRelationField) or isinstance(
             self.field, TemplateRelationListField
         ):
+            # TODO: The first check might return a false result if the replacement
+            # starts with an underscore
             if self.field_name.find("$_") > -1 or self.field_name[-1] == "$":
                 raise ValueError(
-                    "You can not handle raw template fields here. Use then with "
+                    "You can not handle raw template fields here. Use them with "
                     "populated replacements."
                 )
 
@@ -169,8 +175,7 @@ class RelationsHandler:
                 ],
                 lock_result=True,
             )
-            # TODO: Check if the datastore really sends such an empty response.
-            id_rels = response[self.field.to] if self.field.to in response else {}
+            id_rels = response.get(self.field.to, {})
 
             # Switch type of values that represent a FQID
             # only in non-reverse generic relation case.
@@ -202,7 +207,76 @@ class RelationsHandler:
 
         if self.field.generic_relation:
             return self.prepare_result_to_fqid(add, remove, rels, related_name)
-        return self.prepare_result_to_id(add, remove, rels, related_name)
+        elif self.field.structured_relation:
+            # also update the template field
+            # TODO: seems very hacky, maybe find a cleaner way to unify the field handling
+            result_structured_field = self.prepare_result_to_id(
+                add, remove, rels, related_name
+            )
+            assert isinstance(self.field.to, Collection)
+            response = self.datastore.get_many(
+                get_many_requests=[
+                    GetManyRequest(
+                        self.field.to, ids, mapped_fields=[self.field.related_name]
+                    )
+                ],
+                lock_result=True,
+            )
+            db_rels = response.get(self.field.to, {})
+            result_template_field: Relations = {}
+            for fqfield, rel_update in result_structured_field.items():
+                field = self.get_reverse_field()
+                assert isinstance(field, BaseTemplateField)
+                regex = (
+                    r"^"
+                    + self.field.related_name[: field.index]
+                    + r"\$"
+                    + r"(.*)"
+                    + self.field.related_name[
+                        field.index + 1 :
+                    ]  # field.related_name is stored with the $
+                    + r"$"
+                )
+                match = re.match(regex, related_name)
+                if not match:
+                    raise ActionException(
+                        "Structured field has invalid format: " + related_name
+                    )
+                replacement = match.group(1)
+                cur_value = db_rels[fqfield.id].get(self.field.related_name, [])
+                if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
+                    self.type in ("1:m", "m:n") and rel_update["value"] == []
+                ):
+                    # field was emptied, so we have to remove the replacement
+                    cur_value.remove(replacement)
+                    rel_element = RelationsElement(
+                        type="remove", value=cur_value, modified_element=replacement
+                    )
+                elif rel_update["type"] == "add" and (
+                    self.type in ("1:1", "m:1")
+                    or (
+                        self.type in ("1:m", "m:n")
+                        and isinstance(rel_update["value"], List)
+                        and len(rel_update["value"]) == 1
+                    )
+                ):
+                    # replacement was added just now, so we have to add it to the template field
+                    rel_element = RelationsElement(
+                        type="add",
+                        value=cur_value + [replacement],
+                        modified_element=replacement,
+                    )
+                else:
+                    # nothing to do, replacement already existed and still exists; skip
+                    continue
+                result_template_field[
+                    FullQualifiedField(
+                        fqfield.collection, fqfield.id, self.field.related_name
+                    )
+                ] = rel_element
+            return {**result_structured_field, **result_template_field}
+        else:
+            return self.prepare_result_to_id(add, remove, rels, related_name)
 
     def prepare_new_relation_ids(self) -> Union[List[int], List[FullQualifiedId]]:
         value = self.obj.get(self.field_name)
@@ -226,7 +300,7 @@ class RelationsHandler:
             replacement = self.search_structured_relation(
                 list(self.field.structured_relation), self.model.collection, self.id
             )
-            related_name = self.field.related_name.replace("$", replacement)
+            related_name = self.field.related_name.replace("$", "$" + replacement)
         return related_name
 
     def search_structured_relation(
@@ -252,7 +326,9 @@ class RelationsHandler:
                 f"The field {field_name} for {collection} must not be empty in datastore."
             )
         if structured_relation:
-            new_collection = model_registry[collection]().get_field(field_name).to
+            new_field = model_registry[collection]().get_field(field_name)
+            assert isinstance(new_field, BaseRelationField)
+            new_collection = new_field.to
             assert isinstance(new_collection, Collection)
             return self.search_structured_relation(
                 structured_relation, new_collection, value

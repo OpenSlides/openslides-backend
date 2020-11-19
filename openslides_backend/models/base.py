@@ -1,9 +1,9 @@
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Tuple, Type
 
 from ..shared.patterns import Collection
 from . import fields
 
-model_registry = {}
+model_registry: Dict[Collection, Type["Model"]] = {}
 
 
 class ModelMetaClass(type):

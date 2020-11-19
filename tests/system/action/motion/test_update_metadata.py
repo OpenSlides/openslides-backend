@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionUpdateMetadataActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model("meeting/2538", {"name": "name_jkPIYjFz"})
-        self.create_model("motion/111", {"name": "name_srtgb123", "meeting_id": 2538})
+        self.create_model("motion/111", {"meeting_id": 2538})
         self.create_model("motion_category/4", {"name": "name_GdPzDztT"})
         self.create_model("motion_block/51", {"title": "title_ddyvpXch"})
 
@@ -43,7 +43,6 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
         self.create_model(
             "motion/111",
             {
-                "name": "name_srtgb123",
                 "meeting_id": 2538,
                 "state_id": 88,
                 "recommendation_id": 88,
@@ -89,7 +88,6 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
         self.create_model(
             "motion/111",
             {
-                "name": "name_srtgb123",
                 "meeting_id": 2538,
                 "state_id": 88,
                 "recommendation_id": 88,
@@ -123,7 +121,7 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
         assert model.get("recommendation_id") == 88
 
     def test_update_wrong_id(self) -> None:
-        self.create_model("motion/111", {"name": "name_srtgb123"})
+        self.create_model("motion/111", {})
         response = self.client.post(
             "/",
             json=[
@@ -135,5 +133,4 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         model = self.get_model("motion/111")
-        assert model.get("name") == "name_srtgb123"
         assert model.get("state_extension") is None

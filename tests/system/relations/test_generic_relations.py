@@ -30,7 +30,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_a/2", {"fake_model_b_generic_oo": 3})
         self.create_model(
-            "fake_model_b/3", {"fake_model_a_generic_oo": get_fqid("fake_model_a/2")}
+            "fake_model_b/3", {"fake_model_a_generic_oo": "fake_model_a/2"}
         )
         handler = RelationsHandler(
             datastore=self.datastore,
@@ -53,7 +53,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_O2O_delete(self) -> None:
         self.create_model("fake_model_a/1", {"fake_model_b_generic_oo": 2})
         self.create_model(
-            "fake_model_b/2", {"fake_model_a_generic_oo": get_fqid("fake_model_a/1")}
+            "fake_model_b/2", {"fake_model_a_generic_oo": "fake_model_a/1"}
         )
         handler = RelationsHandler(
             datastore=self.datastore,
@@ -98,7 +98,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {"fake_model_b_generic_om": 3})
         self.create_model("fake_model_a/2", {})
         self.create_model(
-            "fake_model_b/3", {"fake_model_a_generic_mo": [get_fqid("fake_model_a/1")]}
+            "fake_model_b/3", {"fake_model_a_generic_mo": ["fake_model_a/1"]}
         )
         handler = RelationsHandler(
             datastore=self.datastore,
@@ -121,7 +121,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_O2M_delete(self) -> None:
         self.create_model("fake_model_a/1", {"fake_model_b_generic_om": 2})
         self.create_model(
-            "fake_model_b/2", {"fake_model_a_generic_mo": [get_fqid("fake_model_a/1")]}
+            "fake_model_b/2", {"fake_model_a_generic_mo": ["fake_model_a/1"]}
         )
         handler = RelationsHandler(
             datastore=self.datastore,
@@ -166,7 +166,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model("fake_model_a/1", {"fake_model_b_generic_mm": [3]})
         self.create_model("fake_model_a/2", {})
         self.create_model(
-            "fake_model_b/3", {"fake_model_a_generic_mm": [get_fqid("fake_model_a/1")]}
+            "fake_model_b/3", {"fake_model_a_generic_mm": ["fake_model_a/1"]}
         )
         handler = RelationsHandler(
             datastore=self.datastore,
@@ -189,7 +189,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_M2M_delete(self) -> None:
         self.create_model("fake_model_a/1", {"fake_model_b_generic_mm": [2]})
         self.create_model(
-            "fake_model_b/2", {"fake_model_a_generic_mm": [get_fqid("fake_model_a/1")]}
+            "fake_model_b/2", {"fake_model_a_generic_mm": ["fake_model_a/1"]}
         )
         handler = RelationsHandler(
             datastore=self.datastore,

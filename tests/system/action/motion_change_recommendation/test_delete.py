@@ -3,7 +3,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.create_model("motion_change_recommendation/111", {"name": "name_srtgb123"})
+        self.create_model("motion_change_recommendation/111", {})
         response = self.client.post(
             "/",
             json=[
@@ -14,7 +14,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         self.assert_model_deleted("motion_change_recommendation/111")
 
     def test_delete_wrong_id(self) -> None:
-        self.create_model("motion_change_recommendation/112", {"name": "name_srtgb123"})
+        self.create_model("motion_change_recommendation/112", {})
         response = self.client.post(
             "/",
             json=[

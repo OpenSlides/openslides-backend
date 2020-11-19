@@ -3,7 +3,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionBlockActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.create_model("motion_block/111", {"name": "name_srtgb123"})
+        self.create_model("motion_block/111", {})
         response = self.client.post(
             "/",
             json=[{"action": "motion_block.delete", "data": [{"id": 111}]}],
@@ -12,7 +12,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.assert_model_deleted("motion_block/111")
 
     def test_delete_wrong_id(self) -> None:
-        self.create_model("motion_block/112", {"name": "name_srtgb123"})
+        self.create_model("motion_block/112", {})
         response = self.client.post(
             "/",
             json=[{"action": "motion_block.delete", "data": [{"id": 111}]}],
@@ -24,7 +24,6 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.create_model(
             "motion_block/111",
             {
-                "name": "name_srtgb123",
                 "list_of_speakers_id": 222,
                 "agenda_item_id": 333,
             },

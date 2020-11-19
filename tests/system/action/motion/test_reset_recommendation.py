@@ -6,7 +6,7 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_state/77",
-            {"name": "test1", "motion_id": 22, "motion_recommendation_ids": [22]},
+            {"name": "test1", "motion_recommendation_ids": [22]},
         )
         self.create_model(
             "motion/22", {"meeting_id": 222, "title": "test1", "recommendation_id": 77}
@@ -22,7 +22,7 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_state/77",
-            {"name": "test1", "motion_id": 22, "motion_recommendation_ids": [22]},
+            {"name": "test1", "motion_recommendation_ids": [22]},
         )
         self.create_model(
             "motion/22",
@@ -39,7 +39,7 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_state/77",
-            {"name": "test1", "motion_id": 22, "motion_recommendation_ids": [22]},
+            {"name": "test1", "motion_recommendation_ids": [22]},
         )
         self.create_model(
             "motion/23", {"meeting_id": 222, "title": "test1", "recommendation_id": 77}

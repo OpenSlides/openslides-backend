@@ -1,4 +1,4 @@
-from .setup import BaseRelationsTestCase
+from .setup import BaseRelationsTestCase, FakeModelA, FakeModelB, FakeModelC  # noqa
 
 
 class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):

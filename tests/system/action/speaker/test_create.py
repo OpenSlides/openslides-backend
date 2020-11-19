@@ -2,9 +2,9 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class SpeakerCreateActionTest(BaseActionTestCase):
-    def test_create(self) -> None:
+    def test_createx(self) -> None:
         self.create_model("meeting/7844", {"name": "name_asdewqasd"})
-        self.create_model("user/7", {"username": "test_username1", "speakers_id": []})
+        self.create_model("user/7", {"username": "test_username1"})
         self.create_model(
             "list_of_speakers/23", {"speaker_ids": [], "meeting_id": 7844}
         )
@@ -24,6 +24,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         assert speaker.get("weight") == 10000
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [1]
+        user = self.get_model("user/7")
+        assert user.get("speaker_$7844_ids") == [1]
+        assert user.get("speaker_$_ids") == ["7844"]
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -54,7 +57,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_already_exist(self) -> None:
         self.create_model("meeting/7844", {"name": "name_asdewqasd"})
-        self.create_model("user/7", {"username": "test_username1", "speakers_id": [42]})
+        self.create_model(
+            "user/7", {"username": "test_username1", "speaker_$7844_ids": [42]}
+        )
         self.create_model(
             "list_of_speakers/23", {"speaker_ids": [42], "meeting_id": 7844}
         )

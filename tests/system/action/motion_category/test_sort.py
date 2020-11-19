@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySortActionTest(BaseActionTestCase):
     def test_sort_singe_node_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion_category/22", {"meeting_id": 222, "title": "test1"})
+        self.create_model("motion_category/22", {"meeting_id": 222})
         response = self.client.post(
             "/",
             json=[
@@ -23,8 +23,8 @@ class MotionCategorySortActionTest(BaseActionTestCase):
 
     def test_sort_not_all_sorted(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion_category/22", {"meeting_id": 222, "title": "test1"})
-        self.create_model("motion_category/23", {"meeting_id": 222, "title": "test"})
+        self.create_model("motion_category/22", {"meeting_id": 222})
+        self.create_model("motion_category/23", {"meeting_id": 222})
         response = self.client.post(
             "/",
             json=[
@@ -39,24 +39,12 @@ class MotionCategorySortActionTest(BaseActionTestCase):
 
     def test_sort_complex_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_category/1", {"meeting_id": 222, "title": "test_root"}
-        )
-        self.create_model(
-            "motion_category/11", {"meeting_id": 222, "title": "test_1_1"}
-        )
-        self.create_model(
-            "motion_category/12", {"meeting_id": 222, "title": "test_1_2"}
-        )
-        self.create_model(
-            "motion_category/21", {"meeting_id": 222, "title": "test_2_1"}
-        )
-        self.create_model(
-            "motion_category/22", {"meeting_id": 222, "title": "test_2_2"}
-        )
-        self.create_model(
-            "motion_category/23", {"meeting_id": 222, "title": "test_2_3"}
-        )
+        self.create_model("motion_category/1", {"meeting_id": 222})
+        self.create_model("motion_category/11", {"meeting_id": 222})
+        self.create_model("motion_category/12", {"meeting_id": 222})
+        self.create_model("motion_category/21", {"meeting_id": 222})
+        self.create_model("motion_category/22", {"meeting_id": 222})
+        self.create_model("motion_category/23", {"meeting_id": 222})
 
         valid_data = {
             "meeting_id": 222,
@@ -92,15 +80,9 @@ class MotionCategorySortActionTest(BaseActionTestCase):
 
     def test_sort_not_a_tree(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_category/1", {"meeting_id": 222, "title": "test_root"}
-        )
-        self.create_model(
-            "motion_category/11", {"meeting_id": 222, "title": "test_1_1"}
-        )
-        self.create_model(
-            "motion_category/12", {"meeting_id": 222, "title": "test_1_2"}
-        )
+        self.create_model("motion_category/1", {"meeting_id": 222})
+        self.create_model("motion_category/11", {"meeting_id": 222})
+        self.create_model("motion_category/12", {"meeting_id": 222})
 
         not_tree_data = {
             "meeting_id": 222,
@@ -120,15 +102,9 @@ class MotionCategorySortActionTest(BaseActionTestCase):
 
     def test_sort_circle_fail(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_category/1", {"meeting_id": 222, "title": "test_root"}
-        )
-        self.create_model(
-            "motion_category/11", {"meeting_id": 222, "title": "test_1_1"}
-        )
-        self.create_model(
-            "motion_category/12", {"meeting_id": 222, "title": "test_1_2"}
-        )
+        self.create_model("motion_category/1", {"meeting_id": 222})
+        self.create_model("motion_category/11", {"meeting_id": 222})
+        self.create_model("motion_category/12", {"meeting_id": 222})
 
         circle_data = {
             "meeting_id": 222,
@@ -150,15 +126,9 @@ class MotionCategorySortActionTest(BaseActionTestCase):
 
     def test_small_tree_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_category/1", {"meeting_id": 222, "title": "test_root"}
-        )
-        self.create_model(
-            "motion_category/11", {"meeting_id": 222, "title": "test_1_1"}
-        )
-        self.create_model(
-            "motion_category/12", {"meeting_id": 222, "title": "test_1_2"}
-        )
+        self.create_model("motion_category/1", {"meeting_id": 222})
+        self.create_model("motion_category/11", {"meeting_id": 222})
+        self.create_model("motion_category/12", {"meeting_id": 222})
 
         small_tree_data = {
             "meeting_id": 222,

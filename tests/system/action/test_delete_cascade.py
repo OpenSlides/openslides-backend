@@ -10,6 +10,7 @@ from .base import BaseActionTestCase
 class FakeModelCDA(Model):
     collection = Collection("fake_model_cd_a")
     verbose_name = "fake model for cascade deletion a"
+    id = fields.IntegerField()
 
     fake_model_cd_b = fields.RelationField(
         to=Collection("fake_model_cd_b"),
@@ -26,6 +27,7 @@ class FakeModelCDA(Model):
 class FakeModelCDB(Model):
     collection = Collection("fake_model_cd_b")
     verbose_name = "fake model for cascade deletion b"
+    id = fields.IntegerField()
 
     fake_model_cd_a = fields.RelationField(
         to=Collection("fake_model_cd_a"), related_name="fake_model_cd_b"
@@ -45,6 +47,7 @@ class FakeModelCDB(Model):
 class FakeModelCDC(Model):
     collection = Collection("fake_model_cd_c")
     verbose_name = "fake model for cascade deletion c"
+    id = fields.IntegerField()
 
     fake_model_cd_a = fields.RelationField(
         to=Collection("fake_model_cd_a"), related_name="fake_model_cd_c"
@@ -92,7 +95,7 @@ class TestDeleteCascade(BaseActionTestCase):
         self.create_model(
             "fake_model_cd_b/1", {"fake_model_cd_a": 1, "fake_model_cd_c_cascade": 1}
         )
-        self.create_model("fake_model_cd_c/1", {"fake_model_cd_c_cascaded": 1})
+        self.create_model("fake_model_cd_c/1", {"fake_model_cd_b_cascaded": 1})
         response = self.client.post(
             "/",
             json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
@@ -107,7 +110,7 @@ class TestDeleteCascade(BaseActionTestCase):
         self.create_model(
             "fake_model_cd_b/1", {"fake_model_cd_a": 1, "fake_model_cd_c_protect": 1}
         )
-        self.create_model("fake_model_cd_c/1", {"fake_model_cd_c_protected": 1})
+        self.create_model("fake_model_cd_c/1", {"fake_model_cd_b_protected": 1})
         response = self.client.post(
             "/",
             json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
@@ -125,7 +128,7 @@ class TestDeleteCascade(BaseActionTestCase):
             "fake_model_cd_b/1", {"fake_model_cd_a": 1, "fake_model_cd_c_protect": 1}
         )
         self.create_model(
-            "fake_model_cd_c/1", {"fake_model_cd_a": 1, "fake_model_cd_c_protected": 1}
+            "fake_model_cd_c/1", {"fake_model_cd_a": 1, "fake_model_cd_b_protected": 1}
         )
         response = self.client.post(
             "/",

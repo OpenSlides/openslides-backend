@@ -28,7 +28,7 @@ class MotionStateActionTest(BaseActionTestCase):
             "motion_workflow/1112",
             {
                 "name": "name_XZwyPWxb",
-                "first_state": 111,
+                "first_state_id": 111,
                 "meeting_id": 110,
                 "state_ids": [111],
             },

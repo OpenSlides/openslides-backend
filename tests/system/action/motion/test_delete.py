@@ -3,7 +3,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.create_model("motion/111", {"title": "title_srtgb123"})
+        self.create_model("meeting/98", {"motion_ids": [111]})
+        self.create_model("motion/111", {"title": "title_srtgb123", "meeting_id": 98})
         response = self.client.post(
             "/",
             json=[{"action": "motion.delete", "data": [{"id": 111}]}],
@@ -21,12 +22,14 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("motion/112")
 
     def test_delete_correct_cascading(self) -> None:
+        self.create_model("meeting/98", {"motion_ids": [111]})
         self.create_model(
             "motion/111",
             {
                 "title": "title_srtgb123",
                 "list_of_speakers_id": 222,
                 "agenda_item_id": 333,
+                "meeting_id": 98,
             },
         )
         self.create_model(
