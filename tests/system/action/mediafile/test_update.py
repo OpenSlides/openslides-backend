@@ -26,6 +26,39 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         assert model.get("inherited_access_group_ids") == [7]
         assert model.get("is_public") is False
 
+    def test_update_children(self) -> None:
+        self.create_model("group/7", {"name": "group_LxAHErRs", "user_ids": []})
+        self.create_model(
+            "mediafile/110",
+            {
+                "title": "title_ekxORNiV",
+                "child_ids": [111],
+                "is_public": False,
+                "inherited_access_group_ids": [7],
+                "access_group_ids": [7],
+            },
+        )
+        self.create_model(
+            "mediafile/111",
+            {"title": "title_srtgb123", "parent_id": 110},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "mediafile.update",
+                    "data": [
+                        {"id": 110, "title": "title_Xcdfgee", "access_group_ids": [7]}
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("mediafile/111")
+        assert model.get("title") == "title_srtgb123"
+        assert model.get("inherited_access_group_ids") == [7]
+        assert model.get("is_public") is False
+
     def test_update_parent(self) -> None:
         self.create_model("group/7", {"name": "group_LxAHErRs", "user_ids": []})
         self.create_model(
