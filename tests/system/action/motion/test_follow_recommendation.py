@@ -117,5 +117,4 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
             "/",
             json=[{"action": "motion.follow_recommendation", "data": [{"id": 22}]}],
         )
-        self.assert_status_code(response, 400)
-        assert "Cannot set an empty recommendation." in str(response.data)
+        self.assert_status_code(response, 200)

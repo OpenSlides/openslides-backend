@@ -1,7 +1,6 @@
 from typing import Iterable, Union
 
 from ...models.models import ListOfSpeakers
-from ...shared.exceptions import ActionException
 from ...shared.patterns import FullQualifiedId
 from ..action_interface import ActionResponseResultsElement
 from ..base import Action, ActionPayload, DataSet, WriteRequestElement
@@ -31,9 +30,7 @@ class ListOfSpeakersDeleteAllSpeakersAction(Action):
                 mapped_fields=["speaker_ids"],
             )
             if not list_of_speakers.get("speaker_ids"):
-                raise ActionException(
-                    f"List of speakers {instance['id']} has no speakers."
-                )
+                continue
             data.append(list_of_speakers)
         return {"data": data}
 
