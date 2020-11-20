@@ -18,6 +18,7 @@ COPY Makefile Makefile
 COPY setup.cfg .
 
 RUN chmod 777 -R .
+RUN chmod 777 /root
 
 EXPOSE 9002
 EXPOSE 9003
