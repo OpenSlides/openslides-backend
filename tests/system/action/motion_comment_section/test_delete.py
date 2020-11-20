@@ -21,9 +21,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.assert_model_exists("motion_comment_section/112")
 
     def test_delete_existing_comments(self) -> None:
-        self.create_model(
-            "motion_comment/79", {"motion_id": 17}
-        )
+        self.create_model("motion_comment/79", {"motion_id": 17})
         self.create_model(
             "motion_comment_section/1141",
             {"comment_ids": [79]},

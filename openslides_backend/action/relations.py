@@ -7,6 +7,7 @@ from ..models.base import Model, model_registry
 from ..models.fields import (
     BaseRelationField,
     BaseTemplateField,
+    BaseTemplateRelationField,
     GenericRelationField,
     GenericRelationListField,
     RelationField,
@@ -90,6 +91,10 @@ class RelationsHandler:
         self.type = self.get_field_type()
 
     def get_reverse_field(self) -> BaseRelationField:
+        """
+        Returns the reverse field of this relation field. In case of reverse generic relation
+        we just take the first existing reverse field.
+        """
         reverse_collection = self.field.to
         if isinstance(reverse_collection, list):
             reverse_collection = reverse_collection[0]
@@ -105,6 +110,9 @@ class RelationsHandler:
         return field
 
     def get_field_type(self) -> str:
+        """
+        Returns one of the following types: 1:1, 1:m, m:1 or m:n
+        """
         if isinstance(self.field, RelationField) or isinstance(
             self.field, GenericRelationField
         ):
@@ -120,14 +128,18 @@ class RelationsHandler:
             return "m:n"
 
     def perform(self) -> Relations:
+        """
+        Main method of this handler. It calculates which relation fields have to be updated
+        according to the changes in self.field.
+        """
+        # Prepare the new value of our field and the real field name of the reverse field.
         rel_ids = self.prepare_new_relation_ids()
         related_name = self.get_related_name()
 
+        # Just check if we have an invalid use case here.
         if isinstance(self.field, TemplateRelationField) or isinstance(
             self.field, TemplateRelationListField
         ):
-            # TODO: The first check might return a false result if the replacement
-            # starts with an underscore
             if self.field_name.find("$_") > -1 or self.field_name[-1] == "$":
                 raise ValueError(
                     "You can not handle raw template fields here. Use them with "
@@ -137,10 +149,13 @@ class RelationsHandler:
         add: Union[Set[int], Set[FullQualifiedId]]
         remove: Union[Set[int], Set[FullQualifiedId]]
         rels: Union[Dict[int, PartialModel], Dict[FullQualifiedId, PartialModel]]
+        ids: List[int]
 
+        # Now perform everything:
         if isinstance(self.field, GenericRelationField) or isinstance(
             self.field, GenericRelationListField
         ):
+            # Perform generic relation case.
             assert isinstance(self.field.to, list)
             rel_ids = cast(List[FullQualifiedId], rel_ids)
             add, remove = self.relation_diffs_fqid(rel_ids)
@@ -165,6 +180,7 @@ class RelationsHandler:
                 fq_rels[related_model_fqid] = related_model
             rels = fq_rels
         else:
+            # Perform non generic relation case.
             assert isinstance(self.field.to, Collection)
             rel_ids = cast(List[int], rel_ids)
             add, remove = self.relation_diffs(rel_ids)
@@ -205,80 +221,27 @@ class RelationsHandler:
                     )
             rels = id_rels
 
+        # Finally prepare result. We have three cases:
+        #  - Reverse field is a generic relation field.
+        #  - Reverse field is a template field.
+        #  - All other fields.
         if self.field.generic_relation:
             return self.prepare_result_to_fqid(add, remove, rels, related_name)
         elif self.field.structured_relation:
-            # also update the template field
-            # TODO: seems very hacky, maybe find a cleaner way to unify the field handling
             result_structured_field = self.prepare_result_to_id(
                 add, remove, rels, related_name
             )
-            assert isinstance(self.field.to, Collection)
-            response = self.datastore.get_many(
-                get_many_requests=[
-                    GetManyRequest(
-                        self.field.to, ids, mapped_fields=[self.field.related_name]
-                    )
-                ],
-                lock_result=True,
+            assert ids is not None
+            result_template_field = self.prepare_result_template_field(
+                result_structured_field, related_name, ids
             )
-            db_rels = response.get(self.field.to, {})
-            result_template_field: Relations = {}
-            for fqfield, rel_update in result_structured_field.items():
-                field = self.get_reverse_field()
-                assert isinstance(field, BaseTemplateField)
-                regex = (
-                    r"^"
-                    + self.field.related_name[: field.index]
-                    + r"\$"
-                    + r"(.*)"
-                    + self.field.related_name[
-                        field.index + 1 :
-                    ]  # field.related_name is stored with the $
-                    + r"$"
-                )
-                match = re.match(regex, related_name)
-                if not match:
-                    raise ActionException(
-                        "Structured field has invalid format: " + related_name
-                    )
-                replacement = match.group(1)
-                cur_value = db_rels[fqfield.id].get(self.field.related_name, [])
-                if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
-                    self.type in ("1:m", "m:n") and rel_update["value"] == []
-                ):
-                    # field was emptied, so we have to remove the replacement
-                    cur_value.remove(replacement)
-                    rel_element = RelationsElement(
-                        type="remove", value=cur_value, modified_element=replacement
-                    )
-                elif rel_update["type"] == "add" and (
-                    self.type in ("1:1", "m:1")
-                    or (
-                        self.type in ("1:m", "m:n")
-                        and isinstance(rel_update["value"], List)
-                        and len(rel_update["value"]) == 1
-                    )
-                ):
-                    # replacement was added just now, so we have to add it to the template field
-                    rel_element = RelationsElement(
-                        type="add",
-                        value=cur_value + [replacement],
-                        modified_element=replacement,
-                    )
-                else:
-                    # nothing to do, replacement already existed and still exists; skip
-                    continue
-                result_template_field[
-                    FullQualifiedField(
-                        fqfield.collection, fqfield.id, self.field.related_name
-                    )
-                ] = rel_element
             return {**result_structured_field, **result_template_field}
-        else:
-            return self.prepare_result_to_id(add, remove, rels, related_name)
+        return self.prepare_result_to_id(add, remove, rels, related_name)
 
     def prepare_new_relation_ids(self) -> Union[List[int], List[FullQualifiedId]]:
+        """
+        Get the new value of our field as list. The list may be empty.
+        """
         value = self.obj.get(self.field_name)
         if value is None:
             rel_ids = []
@@ -294,14 +257,29 @@ class RelationsHandler:
         return rel_ids
 
     def get_related_name(self) -> str:
-        if self.field.structured_relation is None:
-            related_name = self.field.related_name
-        else:
+        """
+        Get the field name of the reverse field. In case of a structured field it is
+        populated with the replacement (either some id e. g. of a meeting or some tag).
+        """
+        if self.field.structured_relation is None and self.field.structured_tag is None:
+            return self.field.related_name
+        if self.field.structured_relation:
             replacement = self.search_structured_relation(
                 list(self.field.structured_relation), self.model.collection, self.id
             )
-            related_name = self.field.related_name.replace("$", "$" + replacement)
-        return related_name
+            return self.field.related_name.replace("$", "$" + replacement)
+        assert (
+            self.field.structured_tag
+            and isinstance(self.field, BaseTemplateRelationField)
+            and isinstance(self.reverse_field, BaseTemplateRelationField)
+        )
+        replacement = self.field.get_replacement(self.field_name)
+        return (
+            self.field.related_name[: self.reverse_field.index]
+            + "$"
+            + replacement
+            + self.field.related_name[self.reverse_field.index + 1 :]
+        )
 
     def search_structured_relation(
         self,
@@ -438,6 +416,11 @@ class RelationsHandler:
         rels: Union[Dict[int, PartialModel], Dict[FullQualifiedId, PartialModel]],
         related_name: str,
     ) -> Relations:
+        """
+        Final method to prepare the result i. e. the new value of the relation field.
+
+        Here the new value contains one or more ids.
+        """
         relations: Relations = {}
         for rel_id, rel in sorted(rels.items(), key=lambda item: str(item[0])):
             new_value: Optional[Union[int, List[int]]]
@@ -494,6 +477,11 @@ class RelationsHandler:
         rels: Union[Dict[int, Any], Dict[FullQualifiedId, Any]],
         related_name: str,
     ) -> Relations:
+        """
+        Final method to prepare the result i. e. the new value of the relation field.
+
+        Here the new value contains one or more FQIDs.
+        """
         relations: Relations = {}
         for rel_id, rel in sorted(rels.items(), key=lambda item: item[0]):
             new_value: Optional[Union[FullQualifiedId, List[FullQualifiedId]]]
@@ -545,3 +533,65 @@ class RelationsHandler:
                 fqfield = FullQualifiedField(rel_id.collection, rel_id.id, related_name)
             relations[fqfield] = rel_element
         return relations
+
+    def prepare_result_template_field(
+        self, result_structured_field: Relations, related_name: str, ids: List[int]
+    ) -> Relations:
+        """
+        We also have to update the raw template field.
+
+        TODO: This seems very hacky, maybe find a cleaner way to unify the field handling.
+        """
+        assert isinstance(self.field.to, Collection)
+        response = self.datastore.get_many(
+            get_many_requests=[
+                GetManyRequest(
+                    self.field.to, ids, mapped_fields=[self.field.related_name]
+                )
+            ],
+            lock_result=True,
+        )
+        db_rels = response.get(self.field.to, {})
+        result_template_field: Relations = {}
+        for fqfield, rel_update in result_structured_field.items():
+            assert isinstance(self.reverse_field, BaseTemplateField)
+            match = re.match(
+                self.reverse_field.get_regex(self.field.related_name), related_name
+            )
+            if not match:
+                raise ActionException(
+                    "Structured field has invalid format: " + related_name
+                )
+            replacement = self.reverse_field.get_replacement(related_name)
+            current_value = db_rels[fqfield.id].get(self.field.related_name, [])
+            if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
+                self.type in ("1:m", "m:n") and rel_update["value"] == []
+            ):
+                # The field was emptied, so we have to remove the replacement.
+                current_value.remove(replacement)
+                rel_element = RelationsElement(
+                    type="remove", value=current_value, modified_element=replacement
+                )
+            elif rel_update["type"] == "add" and (
+                self.type in ("1:1", "m:1")
+                or (
+                    self.type in ("1:m", "m:n")
+                    and isinstance(rel_update["value"], List)
+                    and len(rel_update["value"]) == 1
+                )
+            ):
+                # The replacement was added just now, so we have to add it to the template field.
+                rel_element = RelationsElement(
+                    type="add",
+                    value=current_value + [replacement],
+                    modified_element=replacement,
+                )
+            else:
+                # Nothing to do, replacement already existed and still exists. Skip.
+                continue
+            result_template_field[
+                FullQualifiedField(
+                    fqfield.collection, fqfield.id, self.field.related_name
+                )
+            ] = rel_element
+        return result_template_field

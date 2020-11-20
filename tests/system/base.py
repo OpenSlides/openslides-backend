@@ -105,15 +105,9 @@ class BaseSystemTestCase(TestCase):
             if "$" in field_name:
                 for model_field_name, model_field in model.get_fields():
                     if isinstance(model_field, BaseTemplateField):
-                        regex = (
-                            r"^"
-                            + model_field_name[: model_field.index]
-                            + r"\$"
-                            + r"(.*)"
-                            + model_field_name[model_field.index :]
-                            + r"$"
+                        match = re.match(
+                            model_field.get_regex(model_field_name), field_name
                         )
-                        match = re.match(regex, field_name)
                         if match:
                             if match.group(1):
                                 # structured tag/relation

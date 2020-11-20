@@ -32,7 +32,6 @@ class TopicSystemTest(BaseActionTestCase):
             "list_of_speakers/1", {"content_object_id": "topic/42"}
         )
         r = json.loads(response.data)
-        print(r)
         self.assertTrue(r["success"])
         self.assertEqual(r["message"], "Actions handled successfully")
         self.assertEqual(r["results"], [[{"id": 42}]])
