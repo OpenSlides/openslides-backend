@@ -28,7 +28,7 @@ check-models:
 	PYTHONPATH=. python cli/generate_models.py check
 
 run-debug:
-	OS4_DEVELOPMENT=1 python -m openslides_backend
+	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend
 
 pip-check:
 	pip-check

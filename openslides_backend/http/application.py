@@ -9,6 +9,7 @@ from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin
 
 from ..services.auth.adapter import AUTHENTICATION_HEADER
+from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
 from .http_exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
@@ -75,7 +76,8 @@ class OpenSlidesBackendWSGIApplication:
                 request_body, request.headers, request.cookies
             )
         except ViewException as exception:
-            if os.environ.get("OPENSLIDES_BACKEND_RAISE_4XX"):
+            env_var = os.environ.get("OPENSLIDES_BACKEND_RAISE_4XX", "off")
+            if is_truthy(env_var):
                 raise exception
             if exception.status_code == 400:
                 return BadRequest(exception.message)
