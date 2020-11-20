@@ -48,6 +48,6 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "You can not delete motion state with id 111, because you have to delete the related model motion_workflow/1112 first."
+            "You can not delete motion_state/111 because you have to delete the following related models first: [FQId motion_workflow/1112]"
             in str(response.data)
         )
