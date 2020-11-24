@@ -52,6 +52,7 @@ class TreeSortMixin(BaseAction):
         weight_key: str,
         parent_id_key: str,
         children_ids_key: str,
+        set_level: bool = False,
     ) -> DataSet:
         """
         Sorts the all model objects represented in a tree of ids. The request
@@ -130,7 +131,8 @@ class TreeSortMixin(BaseAction):
             raise ActionException(
                 f"Did not recieve {len(all_model_ids)} ids, got {len(ids_found)}."
             )
-
+        if set_level:
+            self.set_level_main(nodes_to_update, parent_id_key)
         return {"data": nodes_to_update}
 
     def create_write_request_elements(
@@ -144,6 +146,23 @@ class TreeSortMixin(BaseAction):
             yield WriteRequestElement(
                 events=[event], information=information, user_id=self.user_id
             )
+
+    def set_level_main(
+        self, nodes_to_update: Dict[int, Dict[str, Any]], parent_id_key: str
+    ) -> None:
+        for id_ in nodes_to_update:
+            self.set_level_helper(id_, nodes_to_update, parent_id_key)
+
+    def set_level_helper(
+        self, id_: int, nodes_to_update: Dict[int, Dict[str, Any]], parent_id_key: str
+    ) -> None:
+        if nodes_to_update[id_][parent_id_key] is None:
+            nodes_to_update[id_]["level"] = 0
+        else:
+            parent_id = nodes_to_update[id_][parent_id_key]
+            if nodes_to_update[parent_id].get("level") is None:
+                self.set_level_helper(parent_id, nodes_to_update, parent_id_key)
+            nodes_to_update[id_]["level"] = nodes_to_update[parent_id]["level"] + 1
 
 
 class LinearSortMixin(Action):
