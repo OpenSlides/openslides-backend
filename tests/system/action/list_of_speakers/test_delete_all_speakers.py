@@ -3,13 +3,17 @@ from tests.system.action.base import BaseActionTestCase
 
 class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
     def test_delete_all_correct(self) -> None:
-        self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
+        self.create_model(
+            "meeting/222", {"name": "name_xQyvfmsS", "speaker_ids": list(range(1, 11))}
+        )
         self.create_model(
             "list_of_speakers/111",
             {"closed": False, "meeting_id": 222, "speaker_ids": list(range(1, 11))},
         )
         for i in range(1, 11):
-            self.create_model(f"speaker/{i}", {"list_of_speakers_id": 111})
+            self.create_model(
+                f"speaker/{i}", {"list_of_speakers_id": 111, "meeting_id": 222}
+            )
         response = self.client.post(
             "/",
             json=[

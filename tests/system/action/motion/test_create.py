@@ -57,7 +57,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.create_model("user/47", {"username": "username_47", "meeting_id": 222})
         self.create_model("tag/56", {"name": "name_56", "meeting_id": 222})
-        self.create_model("mediafile/8", {"name": "name_8", "meeting_id": 222})
+        self.create_model("mediafile/8", {"meeting_id": 222})
 
         response = self.client.post(
             "/",

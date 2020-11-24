@@ -208,15 +208,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         structured_fields: List[Tuple[str, str]] = []
         for instance_field in instance.keys():
-            regex = (
-                r"^"
-                + field_name[: field.index]
-                + r"\$"
-                + r"(.*)"
-                + field_name[field.index :]
-                + r"$"
-            )
-            match = re.match(regex, instance_field)
+            match = re.match(field.get_regex(field_name), instance_field)
             if match:
                 structured_fields.append((instance_field, match.group(1)))
         return structured_fields

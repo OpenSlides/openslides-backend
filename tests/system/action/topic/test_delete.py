@@ -75,6 +75,7 @@ class TopicDeleteActionTest(BaseActionTestCase):
                 "agenda_item_ids": [3, 14],
                 "list_of_speakers_ids": [3],
                 "topic_ids": [1],
+                "speaker_ids": [1, 2],
             },
         )
         self.create_model(
@@ -90,13 +91,14 @@ class TopicDeleteActionTest(BaseActionTestCase):
         )
         self.create_model(
             "speaker/1",
-            {"list_of_speakers_id": 3, "user_id": 1},
+            {"list_of_speakers_id": 3, "user_id": 1, "meeting_id": 1},
         )
         self.create_model(
             "speaker/2",
-            {"list_of_speakers_id": 3, "user_id": 2},
+            {"list_of_speakers_id": 3, "user_id": 2, "meeting_id": 1},
         )
-        self.create_model("user/2", {})
+        self.update_model("user/1", {"speaker_$1_ids": [1], "speaker_$_ids": ["1"]})
+        self.create_model("user/2", {"speaker_$1_ids": [2], "speaker_$_ids": ["1"]})
         response = self.client.post(
             "/",
             json=[{"action": "topic.delete", "data": [{"id": 1}]}],
@@ -107,3 +109,6 @@ class TopicDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("list_of_speakers/3")
         self.assert_model_deleted("speaker/1")
         self.assert_model_deleted("speaker/2")
+        user_1 = self.get_model("user/1")
+        assert user_1.get("speaker_$1_ids") == []
+        assert user_1.get("speaker_$_ids") == []

@@ -3,9 +3,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
     def test_sort_correct_1(self) -> None:
-        self.create_model("motion_category/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/31", {"category_id": 222, "name": "name_loisueb"})
-        self.create_model("motion/32", {"category_id": 222, "name": "name_blanumop"})
+        self.create_model("motion_category/222", {})
+        self.create_model("motion/31", {"category_id": 222})
+        self.create_model("motion/32", {"category_id": 222})
         response = self.client.post(
             "/",
             json=[
@@ -22,8 +22,8 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
         assert model_32.get("category_weight") == 1
 
     def test_sort_missing_model(self) -> None:
-        self.create_model("motion_category/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/31", {"category_id": 222, "name": "name_loisueb"})
+        self.create_model("motion_category/222", {})
+        self.create_model("motion/31", {"category_id": 222})
         response = self.client.post(
             "/",
             json=[
@@ -37,10 +37,10 @@ class MotionCategorySortMotionsInCategoriesActionTest(BaseActionTestCase):
         assert "Id 32 not in db_instances." in str(response.data)
 
     def test_sort_another_section_db(self) -> None:
-        self.create_model("motion_category/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/31", {"category_id": 222, "name": "name_loisueb"})
-        self.create_model("motion/32", {"category_id": 222, "name": "name_blanumop"})
-        self.create_model("motion/33", {"category_id": 222, "name": "name_polusiem"})
+        self.create_model("motion_category/222", {})
+        self.create_model("motion/31", {"category_id": 222})
+        self.create_model("motion/32", {"category_id": 222})
+        self.create_model("motion/33", {"category_id": 222})
         response = self.client.post(
             "/",
             json=[

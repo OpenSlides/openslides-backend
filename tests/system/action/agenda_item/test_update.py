@@ -4,10 +4,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class AgendaItemActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
-        self.create_model("topic/102", {"name": "topic_kHemtGYY"})
+        self.create_model("topic/102", {})
         self.create_model(
             "agenda_item/111",
-            {"item_number": 101, "duration": 600},
+            {"item_number": "101", "duration": 600},
         )
         response = self.client.post(
             "/",
@@ -62,11 +62,11 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_type_change_with_children(self) -> None:
         self.create_model(
             "agenda_item/111",
-            {"item_number": 101, "duration": 600, "child_ids": [222]},
+            {"item_number": "101", "duration": 600, "child_ids": [222]},
         )
         self.create_model(
             "agenda_item/222",
-            {"type": AgendaItem.AGENDA_ITEM, "item_number": 102, "parent_id": 111},
+            {"type": AgendaItem.AGENDA_ITEM, "item_number": "102", "parent_id": 111},
         )
         response = self.client.post(
             "/",

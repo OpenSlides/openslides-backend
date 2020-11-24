@@ -8,6 +8,8 @@ from .setup import BaseRelationsTestCase, FakeModelB, FakeModelC
 
 
 class StructuredRelationTester(BaseRelationsTestCase):
+    maxDiff = None
+
     def test_simple_structured_relation(self) -> None:
         meeting_id = 222
         self.create_model("fake_model_a/333", {})
@@ -28,11 +30,16 @@ class StructuredRelationTester(BaseRelationsTestCase):
         self.assertEqual(
             result,
             {
-                get_fqfield(f"fake_model_a/333/fake_model_b_{meeting_id}_ids"): {
+                get_fqfield("fake_model_a/333/fake_model_b_$_ids"): {
+                    "type": "add",
+                    "value": [str(meeting_id)],
+                    "modified_element": str(meeting_id),
+                },
+                get_fqfield(f"fake_model_a/333/fake_model_b_${meeting_id}_ids"): {
                     "type": "add",
                     "value": [111],
                     "modified_element": 111,
-                }
+                },
             },
         )
 
@@ -57,10 +64,15 @@ class StructuredRelationTester(BaseRelationsTestCase):
         self.assertEqual(
             result,
             {
-                get_fqfield(f"fake_model_a/333/fake_model_c_{meeting_id}_ids"): {
+                get_fqfield("fake_model_a/333/fake_model_c_$_ids"): {
+                    "type": "add",
+                    "value": [str(meeting_id)],
+                    "modified_element": str(meeting_id),
+                },
+                get_fqfield(f"fake_model_a/333/fake_model_c_${meeting_id}_ids"): {
                     "type": "add",
                     "value": [444],
                     "modified_element": 444,
-                }
+                },
             },
         )

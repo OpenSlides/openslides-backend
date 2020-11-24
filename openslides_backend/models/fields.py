@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from typing import Any, Dict, List, Union
 
@@ -279,10 +280,36 @@ class OrganisationField(RelationField):
 
 
 class BaseTemplateField(Field):
+
+    STRUCTURED_FIELD_REGEX = re.compile(
+        r"^[a-z][a-z0-9_]*_\$([a-z0-9]+)(_[a-z0-9_]+|)$"
+    )
+
     def __init__(self, **kwargs: Any) -> None:
         self.replacement = kwargs.pop("replacement")
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
+
+    def get_regex(self, field_name: str) -> str:
+        offset = 0
+        if field_name.find("$") > -1:
+            offset = 1
+        return (
+            r"^"
+            + field_name[: self.index]
+            + r"\$"
+            + r"(.*)"
+            + field_name[self.index + offset :]
+            + r"$"
+        )
+
+    def get_replacement(self, field_name: str) -> str:
+        match = self.STRUCTURED_FIELD_REGEX.match(field_name)
+        if not match:
+            raise ValueError(
+                f"{field_name} does not contain a valid replacement for a structured field."
+            )
+        return match.group(1)
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):

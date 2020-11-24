@@ -37,9 +37,10 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.create_model(
             "list_of_speakers/11", {"meeting_id": 110, "speaker_ids": [1]}
         )
-        self.create_model("speaker/1", {"list_of_speakers_id": 11})
+        self.create_model("speaker/1", {"list_of_speakers_id": 11, "meeting_id": 110})
         self.create_model(
-            "meeting/110", {"name": "name_srtgb123", "list_of_speakers_ids": [11]}
+            "meeting/110",
+            {"name": "name_srtgb123", "list_of_speakers_ids": [11], "speaker_ids": [1]},
         )
         response = self.client.post(
             "/",
@@ -57,10 +58,15 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.create_model(
             "list_of_speakers/11", {"meeting_id": 110, "speaker_ids": [1, 2]}
         )
-        self.create_model("speaker/1", {"list_of_speakers_id": 11})
-        self.create_model("speaker/2", {"list_of_speakers_id": 11})
+        self.create_model("speaker/1", {"list_of_speakers_id": 11, "meeting_id": 110})
+        self.create_model("speaker/2", {"list_of_speakers_id": 11, "meeting_id": 110})
         self.create_model(
-            "meeting/110", {"name": "name_srtgb123", "list_of_speakers_ids": [11]}
+            "meeting/110",
+            {
+                "name": "name_srtgb123",
+                "list_of_speakers_ids": [11],
+                "speaker_ids": [1, 2],
+            },
         )
         response = self.client.post(
             "/",
@@ -79,16 +85,20 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.create_model(
             "list_of_speakers/11", {"meeting_id": 110, "speaker_ids": [1, 2]}
         )
-        self.create_model("speaker/1", {"list_of_speakers_id": 11})
-        self.create_model("speaker/2", {"list_of_speakers_id": 11})
+        self.create_model("speaker/1", {"list_of_speakers_id": 11, "meeting_id": 110})
+        self.create_model("speaker/2", {"list_of_speakers_id": 11, "meeting_id": 110})
         self.create_model("list_of_speakers/12", {"meeting_id": 110, "speaker_ids": []})
         self.create_model(
             "list_of_speakers/13", {"meeting_id": 110, "speaker_ids": [3]}
         )
-        self.create_model("speaker/3", {"list_of_speakers_id": 13})
+        self.create_model("speaker/3", {"list_of_speakers_id": 13, "meeting_id": 110})
         self.create_model(
             "meeting/110",
-            {"name": "name_srtgb123", "list_of_speakers_ids": [11, 12, 13]},
+            {
+                "name": "name_srtgb123",
+                "list_of_speakers_ids": [11, 12, 13],
+                "speaker_ids": [1, 2, 3],
+            },
         )
 
         response = self.client.post(

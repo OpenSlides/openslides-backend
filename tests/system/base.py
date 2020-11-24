@@ -1,10 +1,14 @@
-from typing import Any, Dict
+import re
+from typing import Any, Dict, Optional
 from unittest import TestCase
 
 import requests
 import simplejson as json
+from fastjsonschema import validate
 from werkzeug.wrappers import Response
 
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import (
     DatastoreService,
@@ -16,7 +20,8 @@ from openslides_backend.shared.interfaces.write_request_element import (
     WriteRequestElement,
 )
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from tests.util import Client, get_fqid, get_id_from_fqid
+from openslides_backend.shared.typing import Schema
+from tests.util import Client, get_collection_from_fqid, get_fqid, get_id_from_fqid
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
@@ -74,6 +79,7 @@ class BaseSystemTestCase(TestCase):
         self, fqid: str, data: Dict[str, Any], deleted: bool = False
     ) -> None:
         data["id"] = get_id_from_fqid(fqid)
+        self.validate_fields(fqid, data)
         request = WriteRequestElement(
             events=[Event(type="create", fqid=get_fqid(fqid), fields=data)],
             information={},
@@ -84,12 +90,40 @@ class BaseSystemTestCase(TestCase):
         self.datastore.write(request)
 
     def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
+        self.validate_fields(fqid, data)
         request = WriteRequestElement(
             events=[Event(type="update", fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
         )
         self.datastore.write(request)
+
+    def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
+        model = model_registry[get_collection_from_fqid(fqid)]()
+        for field_name, value in fields.items():
+            schema: Optional[Schema] = None
+            if "$" in field_name:
+                for model_field_name, model_field in model.get_fields():
+                    if isinstance(model_field, BaseTemplateField):
+                        match = re.match(
+                            model_field.get_regex(model_field_name), field_name
+                        )
+                        if match:
+                            if match.group(1):
+                                # structured tag/relation
+                                schema = model_field.get_schema()
+                            else:
+                                # template field, we don't have a schema for this since
+                                # it is never written directly
+                                schema = {
+                                    "type": ["array", "null"],
+                                    "items": {"type": "string"},
+                                }
+                            break
+                assert schema
+            else:
+                schema = model.get_field(field_name).get_schema()
+            validate(schema, value)
 
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(

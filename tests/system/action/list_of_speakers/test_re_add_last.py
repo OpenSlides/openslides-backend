@@ -5,13 +5,13 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "user/42", {"username": "test_username42", "speaker_222_ids": [222]}
+            "user/42", {"username": "test_username42", "speaker_$222_ids": [222]}
         )
         self.create_model(
-            "user/43", {"username": "test_username43", "speaker_222_ids": [223]}
+            "user/43", {"username": "test_username43", "speaker_$222_ids": [223]}
         )
         self.create_model(
-            "user/44", {"username": "test_username43", "speaker_222_ids": [224]}
+            "user/44", {"username": "test_username43", "speaker_$222_ids": [224]}
         )
         self.create_model(
             "list_of_speakers/111",
@@ -51,7 +51,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         self.assertTrue(model.get("end_time") is None)
         self.assertEqual(model.get("user_id"), 43)
         model = self.get_model("user/43")
-        self.assertEqual(model.get("speaker_222_ids"), [223, 225])
+        self.assertEqual(model.get("speaker_$222_ids"), [223, 225])
 
     def test_no_speakers(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
@@ -69,7 +69,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_no_last_speaker(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "user/42", {"username": "test_username42", "speaker_222_ids": [223]}
+            "user/42", {"username": "test_username42", "speaker_$222_ids": [223]}
         )
         self.create_model(
             "list_of_speakers/111",
@@ -91,7 +91,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_last_speaker_also_in_waiting_list(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(
-            "user/42", {"username": "test_username42", "speaker_222_ids": [223, 224]}
+            "user/42", {"username": "test_username42", "speaker_$222_ids": [223, 224]}
         )
         self.create_model(
             "list_of_speakers/111",

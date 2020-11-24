@@ -10,6 +10,7 @@ from .base import BaseActionTestCase
 class FakeModelEFA(Model):
     collection = Collection("fake_model_ef_a")
     verbose_name = "fake model for equal field check a"
+    id = fields.IntegerField()
 
     b_id = fields.RelationField(
         to=Collection("fake_model_ef_b"),
@@ -24,6 +25,7 @@ class FakeModelEFA(Model):
 class FakeModelEFB(Model):
     collection = Collection("fake_model_ef_b")
     verbose_name = "fake model for equal field check b"
+    id = fields.IntegerField()
 
     reference_field = fields.RelationField(
         to=Collection("fake_model_ef_a"), related_name="b_id"
@@ -54,6 +56,7 @@ class FakeModelEFB(Model):
 class FakeModelEFC(Model):
     collection = Collection("fake_model_ef_c")
     verbose_name = "fake model for equal field check c"
+    id = fields.IntegerField()
 
     reference_field = fields.RelationField(
         to=Collection("fake_model_ef_a"), related_name="c_id"
