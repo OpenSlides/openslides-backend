@@ -20,6 +20,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         assert model_22.get("weight") == 2
         assert model_22.get("parent_id") is None
         assert model_22.get("child_ids") == []
+        assert model_22.get("level") == 0
 
     def test_sort_not_all_sorted(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -77,6 +78,12 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             model = self.get_model(fqid)
             assert model.get("weight") == weight
             weight += 2
+        assert self.get_model("motion_category/1").get("level") == 0
+        assert self.get_model("motion_category/11").get("level") == 1
+        assert self.get_model("motion_category/12").get("level") == 1
+        assert self.get_model("motion_category/21").get("level") == 2
+        assert self.get_model("motion_category/22").get("level") == 2
+        assert self.get_model("motion_category/23").get("level") == 2
 
     def test_sort_not_a_tree(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -143,14 +150,17 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         assert model_1.get("weight") == 2
         assert model_1.get("parent_id") is None
         assert model_1.get("child_ids") == [11, 12]
+        assert model_1.get("level") == 0
         model_11 = self.get_model("motion_category/11")
         assert model_11.get("weight") == 4
         assert model_11.get("parent_id") == 1
         assert model_11.get("child_ids") == []
+        assert model_11.get("level") == 1
         model_12 = self.get_model("motion_category/12")
         assert model_12.get("weight") == 6
         assert model_12.get("parent_id") == 1
         assert model_12.get("child_ids") == []
+        assert model_12.get("level") == 1
 
     def test_with_deleted_model(self) -> None:
         self.create_model("meeting/222", {"motion_category_ids": [2, 3]})

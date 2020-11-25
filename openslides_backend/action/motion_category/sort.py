@@ -23,4 +23,5 @@ class MotionCategorySort(TreeSortMixin, Action):
             weight_key="weight",
             parent_id_key="parent_id",
             children_ids_key="child_ids",
+            set_level=True,
         )
