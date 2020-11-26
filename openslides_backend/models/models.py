@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "d5b4408aadf18c025ff717b615fd600d"
+MODELS_YML_CHECKSUM = "c538757cfd1540c5e8063855112ce033"
 
 
 class Organisation(Model):
@@ -909,6 +909,7 @@ class Motion(Model):
 
     id = fields.IntegerField()
     number = fields.CharField()
+    number_value = fields.IntegerField()
     sequential_number = fields.IntegerField(
         read_only=True,
         constraints={

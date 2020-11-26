@@ -6,10 +6,11 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.reset_state")
-class MotionResetStateAction(UpdateAction):
+class MotionResetStateAction(UpdateAction, SetNumberMixin):
     """
     Reset motion state action.
     """
@@ -22,7 +23,15 @@ class MotionResetStateAction(UpdateAction):
         Set state_id to motion_state.first_state_of_workflow_id.
         """
         motion = self.datastore.get(
-            FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
+            FullQualifiedId(Collection("motion"), instance["id"]),
+            [
+                "state_id",
+                "meeting_id",
+                "lead_motion_id",
+                "category_id",
+                "number",
+                "number_value",
+            ],
         )
         if not motion.get("state_id"):
             raise ActionException(f"Motion {instance['id']} has no state.")
@@ -43,4 +52,13 @@ class MotionResetStateAction(UpdateAction):
                 f"State {old_state['workflow_id']} has no first_state_id."
             )
         instance["state_id"] = workflow.get("first_state_id")
+        self.set_number(
+            instance,
+            motion["meeting_id"],
+            instance["state_id"],
+            motion.get("lead_motion_id"),
+            motion.get("category_id"),
+            motion.get("number"),
+            motion.get("number_value"),
+        )
         return instance

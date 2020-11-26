@@ -19,6 +19,7 @@ from .amendment_paragraphs_mixin import (
     amendment_paragraphs_schema,
 )
 from .sequence_numbers_mixin import SequenceNumbersMixin
+from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.create")
@@ -27,6 +28,7 @@ class MotionCreate(
     CreateActionWithAgendaItemMixin,
     AmendmentParagraphsMixin,
     SequenceNumbersMixin,
+    SetNumberMixin,
 ):
     """
     Create Action for motions.
@@ -171,5 +173,12 @@ class MotionCreate(
         timestamp = round(time.time())
         instance["created"] = timestamp
         instance["last_modified"] = timestamp
+        self.set_number(
+            instance,
+            instance["meeting_id"],
+            instance["state_id"],
+            instance.get("lead_motion_id"),
+            instance.get("category_id"),
+        )
 
         return instance
