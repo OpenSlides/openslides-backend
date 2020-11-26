@@ -36,6 +36,7 @@ def prepare_actions_map() -> None:
         motion_vote,
         motion_workflow,
         personal_note,
+        role,
         speaker,
         tag,
         topic,
