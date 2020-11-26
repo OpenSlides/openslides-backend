@@ -1,8 +1,10 @@
 from typing import Dict, Type
 
 from ..models.base import Model
-from .base import Action
-from .generics import CreateAction, DeleteAction, UpdateAction
+from .action import Action
+from .generics.create import CreateAction
+from .generics.delete import DeleteAction
+from .generics.update import UpdateAction
 
 
 class ActionSet:

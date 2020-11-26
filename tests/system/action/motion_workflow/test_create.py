@@ -28,7 +28,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\', \\'meeting_id\\'] properties",
+            "data must contain [\\'name\\', \\'meeting_id\\'] properties",
             str(response.data),
         )
 
@@ -44,6 +44,6 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\', \\'meeting_id\\'] properties",
+            "data must contain [\\'name\\', \\'meeting_id\\'] properties",
             str(response.data),
         )

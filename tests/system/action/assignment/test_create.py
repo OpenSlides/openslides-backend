@@ -163,7 +163,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'title\\', \\'meeting_id\\'] properties",
+            "data must contain [\\'title\\', \\'meeting_id\\'] properties",
             str(response.data),
         )
 
@@ -186,6 +186,6 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must not contain {\\'wrong_field\\'} properties",
+            "data must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )

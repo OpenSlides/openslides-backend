@@ -1,5 +1,4 @@
-import re
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from unittest import TestCase
 
 import requests
@@ -15,12 +14,11 @@ from openslides_backend.services.datastore.interface import (
     DeletedModelsBehaviour,
 )
 from openslides_backend.shared.exceptions import DatastoreException
-from openslides_backend.shared.interfaces.event import Event
+from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request_element import (
     WriteRequestElement,
 )
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from openslides_backend.shared.typing import Schema
 from tests.util import Client, get_collection_from_fqid, get_fqid, get_id_from_fqid
 
 ADMIN_USERNAME = "admin"
@@ -81,18 +79,18 @@ class BaseSystemTestCase(TestCase):
         data["id"] = get_id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         request = WriteRequestElement(
-            events=[Event(type="create", fqid=get_fqid(fqid), fields=data)],
+            events=[Event(type=EventType.Create, fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
         )
         if deleted:
-            request.events.append(Event(type="delete", fqid=get_fqid(fqid)))
+            request.events.append(Event(type=EventType.Delete, fqid=get_fqid(fqid)))
         self.datastore.write(request)
 
     def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
         self.validate_fields(fqid, data)
         request = WriteRequestElement(
-            events=[Event(type="update", fqid=get_fqid(fqid), fields=data)],
+            events=[Event(type=EventType.Update, fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
         )
@@ -101,28 +99,14 @@ class BaseSystemTestCase(TestCase):
     def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
         model = model_registry[get_collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
-            schema: Optional[Schema] = None
-            if "$" in field_name:
-                for model_field_name, model_field in model.get_fields():
-                    if isinstance(model_field, BaseTemplateField):
-                        match = re.match(
-                            model_field.get_regex(model_field_name), field_name
-                        )
-                        if match:
-                            if match.group(1):
-                                # structured tag/relation
-                                schema = model_field.get_schema()
-                            else:
-                                # template field, we don't have a schema for this since
-                                # it is never written directly
-                                schema = {
-                                    "type": ["array", "null"],
-                                    "items": {"type": "string"},
-                                }
-                            break
-                assert schema
+            field = model.get_field(field_name)
+            if isinstance(field, BaseTemplateField) and "$_" in field_name:
+                schema = {
+                    "type": ["array", "null"],
+                    "items": {"type": "string"},
+                }
             else:
-                schema = model.get_field(field_name).get_schema()
+                schema = field.get_schema()
             validate(schema, value)
 
     def get_model(self, fqid: str) -> Dict[str, Any]:

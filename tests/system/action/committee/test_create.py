@@ -73,9 +73,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must not contain {\\'wrong_field\\'} properties",
+            "data must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
+        self.assert_model_not_exists("committee/1")
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -83,19 +84,17 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'organisation_id\\', \\'name\\'] properties",
+            "data must contain [\\'organisation_id\\', \\'name\\'] properties",
             str(response.data),
         )
+        self.assert_model_not_exists("committee/1")
 
     def test_create_empty_data_list(self) -> None:
         response = self.client.post(
             "/", json=[{"action": "committee.create", "data": []}]
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "data[0].data must contain at least 1 items",
-            str(response.data),
-        )
+        self.assert_status_code(response, 200)
+        self.assert_model_not_exists("committee/1")
 
     def test_not_existing_organisation(self) -> None:
         response = self.client.post(
@@ -112,6 +111,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             "instance of organisation that does not exist",
             str(response.data),
         )
+        self.assert_model_not_exists("committee/1")
 
     def test_not_existing_user(self) -> None:
         self.create_model("organisation/1", {"name": "test_organisation1"})
@@ -135,3 +135,4 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn("instance of user that does not exist", str(response.data))
+        self.assert_model_not_exists("committee/1")

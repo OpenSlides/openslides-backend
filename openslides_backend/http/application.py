@@ -22,8 +22,6 @@ class Request(JSONMixin, WerkzeugRequest):
     Customized request object. We use the JSONMixin here.
     """
 
-    pass
-
 
 class OpenSlidesBackendWSGIApplication:
     """

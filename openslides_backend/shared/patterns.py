@@ -1,4 +1,5 @@
 import re
+from typing import Union
 
 KEYSEPARATOR = "/"
 
@@ -98,3 +99,10 @@ def string_to_fqid(fqid: str) -> FullQualifiedId:
     """
     collection, id = fqid.split(KEYSEPARATOR)
     return FullQualifiedId(Collection(collection), int(id))
+
+
+def to_fqid(fqid: Union[str, FullQualifiedId]) -> FullQualifiedId:
+    if isinstance(fqid, FullQualifiedId):
+        return fqid
+    else:
+        return string_to_fqid(fqid)

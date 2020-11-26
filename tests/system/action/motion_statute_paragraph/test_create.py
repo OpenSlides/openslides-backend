@@ -29,7 +29,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
+            "data must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
             str(response.data),
         )
 
@@ -46,6 +46,6 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
+            "data must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
             str(response.data),
         )

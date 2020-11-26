@@ -3,8 +3,10 @@ from typing import Dict
 from unittest import TestCase
 
 from openslides_backend.action.action_set import ActionSet
-from openslides_backend.action.generics import CreateAction, DeleteAction, UpdateAction
-from openslides_backend.action.register import register_action_set
+from openslides_backend.action.generics.create import CreateAction
+from openslides_backend.action.generics.delete import DeleteAction
+from openslides_backend.action.generics.update import UpdateAction
+from openslides_backend.action.util.register import register_action_set
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 

@@ -1,4 +1,5 @@
-from typing import Dict, Iterable, Tuple, Type
+import re
+from typing import Dict, Iterable, Optional, Type
 
 from ..shared.patterns import Collection
 from . import fields
@@ -10,7 +11,7 @@ class ModelMetaClass(type):
     """
     Metaclass for Model base class (see below).
 
-    This metaclass ensures that relation fields get attributes set so that they
+    This metaclass ensures that all fields get attributes set so that they
     know its own collection and its own field name.
 
     It also creates the registry for models and collections.
@@ -21,11 +22,18 @@ class ModelMetaClass(type):
             metaclass, class_name, class_parents, class_attributes
         )
         if class_name != "Model":
+            new_class.field_prefix_map = {}
             for attr_name in class_attributes:
                 attr = getattr(new_class, attr_name)
-                if isinstance(attr, fields.BaseRelationField):
+                if isinstance(attr, fields.Field):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
+
+                    # save normal field name
+                    new_class.field_prefix_map[attr_name] = attr
+                    if isinstance(attr, fields.BaseTemplateField):
+                        prefix = attr_name[: attr.index]
+                        new_class.field_prefix_map[prefix] = attr
             model_registry[new_class.collection] = new_class
         return new_class
 
@@ -38,6 +46,9 @@ class Model(metaclass=ModelMetaClass):
     collection: Collection
     verbose_name: str
 
+    # saves all fields with their respective unique prefix for easier access
+    field_prefix_map: Dict[str, fields.BaseRelationField]
+
     def __str__(self) -> str:
         return self.verbose_name
 
@@ -45,29 +56,42 @@ class Model(metaclass=ModelMetaClass):
         """
         Returns the requested model field.
         """
-        for model_field_name, model_field in self.get_fields():
-            if model_field_name == field_name:
-                return model_field
+        field = self.try_get_field(field_name)
+        if field:
+            return field
         else:
             raise ValueError(f"Model {self} has no field {field_name}.")
 
-    def get_fields(self) -> Iterable[Tuple[str, fields.Field]]:
+    def has_field(self, field_name: str) -> bool:
+        return bool(self.try_get_field(field_name))
+
+    def try_get_field(self, field_name: str) -> Optional[fields.Field]:
+        prefix = field_name.split("$")[0]
+        if prefix not in self.field_prefix_map:
+            return None
+
+        field = self.field_prefix_map[prefix]
+        if isinstance(field, fields.BaseTemplateField):
+            if "$" in field_name and not re.match(field.get_regex(), field_name):
+                return None
+        return field
+
+    def get_fields(self) -> Iterable[fields.Field]:
         """
         Yields all fields in form of a tuple containing field name and field.
         """
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
             if isinstance(attr, fields.Field):
-                yield attr_name, attr
+                yield attr
 
-    def get_relation_fields(self) -> Iterable[Tuple[str, fields.BaseRelationField]]:
+    def get_relation_fields(self) -> Iterable[fields.BaseRelationField]:
         """
-        Yields all relation fields (using BaseRelationField) in form of a tuple
-        containing field name and field.
+        Yields all relation fields (using BaseRelationField).
         """
-        for model_field_name, model_field in self.get_fields():
+        for model_field in self.get_fields():
             if isinstance(model_field, fields.BaseRelationField):
-                yield model_field_name, model_field
+                yield model_field
 
     def get_schema(self, field: str) -> fields.Schema:
         """

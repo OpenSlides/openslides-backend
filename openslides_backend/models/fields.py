@@ -30,6 +30,10 @@ class Field:
     Base class for model fields. Subclasses extend the schema.
     """
 
+    # set by the using model
+    own_collection: Collection
+    own_field_name: str
+
     def __init__(
         self,
         required: bool = False,
@@ -137,8 +141,6 @@ class TimestampField(IntegerField):
     Used to represent a UNIX timestamp.
     """
 
-    pass
-
 
 class ArrayField(Field):
     """
@@ -172,8 +174,6 @@ class NumberArrayField(ArrayField):
 
 
 class BaseRelationField(Field):
-    own_collection: Collection
-    own_field_name: str
     is_list_field: bool
 
     def __init__(
@@ -281,30 +281,29 @@ class OrganisationField(RelationField):
 
 class BaseTemplateField(Field):
 
-    STRUCTURED_FIELD_REGEX = re.compile(
-        r"^[a-z][a-z0-9_]*_\$([a-z0-9]+)(_[a-z0-9_]+|)$"
-    )
+    replacement: str
+    index: int
 
     def __init__(self, **kwargs: Any) -> None:
         self.replacement = kwargs.pop("replacement")
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
 
-    def get_regex(self, field_name: str) -> str:
+    def get_regex(self) -> str:
         offset = 0
-        if field_name.find("$") > -1:
+        if self.own_field_name.find("$") > -1:
             offset = 1
         return (
             r"^"
-            + field_name[: self.index]
+            + self.own_field_name[: self.index]
             + r"\$"
-            + r"(.*)"
-            + field_name[self.index + offset :]
+            + r"([a-zA-Z0-9_\-]*)"
+            + self.own_field_name[self.index + offset :]
             + r"$"
         )
 
     def get_replacement(self, field_name: str) -> str:
-        match = self.STRUCTURED_FIELD_REGEX.match(field_name)
+        match = re.match(self.get_regex(), field_name)
         if not match:
             raise ValueError(
                 f"{field_name} does not contain a valid replacement for a structured field."

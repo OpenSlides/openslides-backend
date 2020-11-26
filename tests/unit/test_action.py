@@ -1,6 +1,7 @@
 from unittest import TestCase
 
-from openslides_backend.action.base import merge_write_request_elements
+from openslides_backend.action.action import merge_write_request_elements
+from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request_element import (
     WriteRequestElement,
 )
@@ -21,7 +22,7 @@ class ActionBaseTester(TestCase):
         self.write_request_element_1 = WriteRequestElement(
             events=[
                 {
-                    "type": "create",
+                    "type": EventType.Create,
                     "fqid": get_fqid("collection_Chebie1jie/42"),
                     "fields": {"field_aeXahloPh1": "test_value_lah8chiiLi"},
                 }
@@ -34,7 +35,7 @@ class ActionBaseTester(TestCase):
         self.write_request_element_2 = WriteRequestElement(
             events=[
                 {
-                    "type": "update",
+                    "type": EventType.Delete,
                     "fqid": get_fqid("collection_Chebie1jie/42"),
                     "fields": {"field_ade8neipaiG": "test_value_zeeto6Aine"},
                 }
@@ -52,12 +53,12 @@ class ActionBaseTester(TestCase):
         expected = WriteRequestElement(
             events=[
                 {
-                    "type": "create",
+                    "type": EventType.Create,
                     "fqid": get_fqid("collection_Chebie1jie/42"),
                     "fields": {"field_aeXahloPh1": "test_value_lah8chiiLi"},
                 },
                 {
-                    "type": "update",
+                    "type": EventType.Delete,
                     "fqid": get_fqid("collection_Chebie1jie/42"),
                     "fields": {"field_ade8neipaiG": "test_value_zeeto6Aine"},
                 },

@@ -62,7 +62,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\', \\'workflow_id\\'] properties",
+            "data must contain [\\'name\\', \\'workflow_id\\'] properties",
             str(response.data),
         )
 
@@ -78,7 +78,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\', \\'workflow_id\\'] properties",
+            "data must contain [\\'name\\', \\'workflow_id\\'] properties",
             str(response.data),
         )
 
@@ -96,7 +96,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0].css_class must be one of [\\'grey\\', \\'red\\', \\'green\\', \\'lightblue\\', \\'yellow\\']",
+            "data.css_class must be one of [\\'grey\\', \\'red\\', \\'green\\', \\'lightblue\\', \\'yellow\\']",
             str(response.data),
         )
 
@@ -118,6 +118,6 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0].restrictions[0] must be one of [\\'motions.can_see_internal\\', \\'motions.can_manage_metadata\\', \\'motions.can_manage\\', \\'is_submitter\\']",
+            "data.restrictions[0] must be one of [\\'motions.can_see_internal\\', \\'motions.can_manage_metadata\\', \\'motions.can_manage\\', \\'is_submitter\\']",
             str(response.data),
         )
