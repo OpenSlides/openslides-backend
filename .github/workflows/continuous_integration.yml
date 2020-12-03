@@ -53,6 +53,7 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check checksum
+      continue-on-error: true
       run: make check-models
 
   check-coding-style-black:
