@@ -178,8 +178,8 @@ class BaseRelationField(Field):
 
     def __init__(
         self,
-        to: Union[Collection, List[Collection]],
-        related_name: str,
+        to: Union[Collection, List[Union[Collection, Dict[str, object]]]],
+        related_name: str = "",
         structured_relation: List[str] = None,
         structured_tag: str = None,
         generic_relation: bool = False,
