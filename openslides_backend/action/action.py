@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 
@@ -297,9 +296,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         structured_fields: List[Tuple[str, str]] = []
         for instance_field in instance:
-            match = re.match(field.get_regex(), instance_field)
-            if match:
-                structured_fields.append((instance_field, match.group(1)))
+            replacement = field.try_get_replacement(instance_field)
+            if replacement:
+                structured_fields.append((instance_field, replacement))
         return structured_fields
 
     def get_field_value_as_fqid_list(

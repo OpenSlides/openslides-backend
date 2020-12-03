@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from ..shared.patterns import Collection, string_to_fqid
 from ..shared.schema import (
@@ -290,6 +290,7 @@ class BaseTemplateField(Field):
         super().__init__(**kwargs)
 
     def get_regex(self) -> str:
+        """ For internal usage. To find the replacement, please use [try_]get_replacement """
         offset = 0
         if self.own_field_name.find("$") > -1:
             offset = 1
@@ -303,12 +304,26 @@ class BaseTemplateField(Field):
         )
 
     def get_replacement(self, field_name: str) -> str:
-        match = re.match(self.get_regex(), field_name)
-        if not match:
+        replacement = self.try_get_replacement(field_name)
+        if not replacement:
             raise ValueError(
                 f"{field_name} does not contain a valid replacement for a structured field."
             )
-        return match.group(1)
+        return replacement
+
+    def try_get_replacement(self, field_name: str) -> Optional[str]:
+        match = re.match(self.get_regex(), field_name)
+        if not match:
+            return None
+        else:
+            replacement = match.group(1)
+            if not replacement:
+                raise ValueError(
+                    "You try to get the replacement of a template field: " + field_name
+                )
+            if replacement.startswith("_"):
+                raise ValueError(f"Replacements must not start with '_': {field_name}")
+            return replacement
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):

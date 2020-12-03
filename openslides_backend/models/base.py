@@ -72,6 +72,7 @@ class Model(metaclass=ModelMetaClass):
 
         field = self.field_prefix_map[prefix]
         if isinstance(field, fields.BaseTemplateField):
+            # we use the regex here since we want to also match template fields
             if "$" in field_name and not re.match(field.get_regex(), field_name):
                 return None
         return field
