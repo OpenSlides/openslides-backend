@@ -1,7 +1,10 @@
 from typing import Any
 from unittest import TestCase
 
-from openslides_backend.action.agenda_item.agenda_tree import AgendaTree, to_roman
+from openslides_backend.action.actions.agenda_item.agenda_tree import (
+    AgendaTree,
+    to_roman,
+)
 from openslides_backend.models.models import AgendaItem
 
 

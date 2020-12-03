@@ -1,7 +1,7 @@
 from unittest import TestCase
 from unittest.mock import MagicMock
 
-from openslides_backend.action.register import _register_action
+from openslides_backend.action.util.register import _register_action
 
 
 class ActionRegisterTest(TestCase):

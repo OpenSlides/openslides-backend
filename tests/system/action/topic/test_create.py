@@ -89,10 +89,104 @@ class TopicSystemTest(BaseActionTestCase):
         self.assertEqual(topic.get("meeting_id"), 1)
         self.assertEqual(topic.get("agenda_item_id"), 1)
         self.assertTrue(topic.get("agenda_type") is None)
-        self.assert_model_exists("agenda_item/1")
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
         self.assertEqual(agenda_item["type"], 2)
         self.assertEqual(agenda_item["duration"], 60)
         self.assertEqual(agenda_item["weight"], 10000)
+
+    def test_create_multiple(self) -> None:
+        self.create_model("meeting/1", {})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "topic.create",
+                    "data": [
+                        {
+                            "meeting_id": 1,
+                            "title": "A",
+                            "agenda_type": 1,
+                            "agenda_weight": 1000,
+                        },
+                        {
+                            "meeting_id": 1,
+                            "title": "B",
+                            "agenda_type": 1,
+                            "agenda_weight": 1001,
+                        },
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/1")
+        topic = self.get_model("topic/1")
+        self.assertEqual(topic.get("agenda_item_id"), 1)
+        agenda_item = self.get_model("agenda_item/1")
+        self.assertEqual(agenda_item.get("meeting_id"), 1)
+        self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
+        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("weight"), 1000)
+        topic = self.get_model("topic/2")
+        self.assertEqual(topic.get("agenda_item_id"), 2)
+        agenda_item = self.get_model("agenda_item/2")
+        self.assertEqual(agenda_item.get("meeting_id"), 1)
+        self.assertEqual(agenda_item.get("content_object_id"), "topic/2")
+        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("weight"), 1001)
+        meeting = self.get_model("meeting/1")
+        self.assertEqual(meeting.get("topic_ids"), [1, 2])
+        self.assertEqual(meeting.get("agenda_item_ids"), [1, 2])
+        self.assertEqual(meeting.get("list_of_speakers_ids"), [1, 2])
+
+    def test_create_multiple_with_multiple_actions(self) -> None:
+        self.create_model("meeting/1", {})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "topic.create",
+                    "data": [
+                        {
+                            "meeting_id": 1,
+                            "title": "A",
+                            "agenda_type": 1,
+                            "agenda_weight": 1000,
+                        },
+                    ],
+                },
+                {
+                    "action": "topic.create",
+                    "data": [
+                        {
+                            "meeting_id": 1,
+                            "title": "B",
+                            "agenda_type": 1,
+                            "agenda_weight": 1001,
+                        },
+                    ],
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("topic/1")
+        topic = self.get_model("topic/1")
+        self.assertEqual(topic.get("agenda_item_id"), 1)
+        agenda_item = self.get_model("agenda_item/1")
+        self.assertEqual(agenda_item.get("meeting_id"), 1)
+        self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
+        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("weight"), 1000)
+        topic = self.get_model("topic/2")
+        self.assertEqual(topic.get("agenda_item_id"), 2)
+        agenda_item = self.get_model("agenda_item/2")
+        self.assertEqual(agenda_item.get("meeting_id"), 1)
+        self.assertEqual(agenda_item.get("content_object_id"), "topic/2")
+        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("weight"), 1001)
+        meeting = self.get_model("meeting/1")
+        self.assertEqual(meeting.get("topic_ids"), [1, 2])
+        self.assertEqual(meeting.get("agenda_item_ids"), [1, 2])
+        self.assertEqual(meeting.get("list_of_speakers_ids"), [1, 2])

@@ -27,7 +27,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'content_object_id\\'] properties",
+            "data must contain [\\'content_object_id\\'] properties",
             str(response.data),
         )
 

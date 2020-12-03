@@ -63,7 +63,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'name\\', \\'prefix\\', \\'meeting_id\\'] properties",
+            "data must contain [\\'name\\', \\'prefix\\', \\'meeting_id\\'] properties",
             str(response.data),
         )
 
@@ -86,7 +86,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must not contain {\\'wrong_field\\'} properties",
+            "data must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
 

@@ -1,4 +1,6 @@
-from openslides_backend.action.relations import RelationsHandler
+from openslides_backend.action.relations.single_relation_handler import (
+    SingleRelationHandler,
+)
 from tests.util import get_fqfield, get_fqid
 
 from .setup import BaseRelationsTestCase, FakeModelA
@@ -8,13 +10,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_O2O_empty(self) -> None:
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_b/2", {})
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_oo,
             field_name="fake_model_b_generic_oo",
-            obj={"fake_model_b_generic_oo": 2},
+            instance={"id": 1, "fake_model_b_generic_oo": 2},
         )
         result = handler.perform()
         expected = {
@@ -32,13 +32,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/3", {"fake_model_a_generic_oo": "fake_model_a/2"}
         )
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_oo,
             field_name="fake_model_b_generic_oo",
-            obj={"fake_model_b_generic_oo": 3},
+            instance={"id": 1, "fake_model_b_generic_oo": 3},
         )
         result = handler.perform()
         expected = {
@@ -55,13 +53,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/2", {"fake_model_a_generic_oo": "fake_model_a/1"}
         )
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_oo,
             field_name="fake_model_b_generic_oo",
-            obj={"fake_model_b_generic_oo": None},
+            instance={"id": 1, "fake_model_b_generic_oo": None},
         )
         result = handler.perform()
         expected = {
@@ -76,13 +72,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_O2M_empty(self) -> None:
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_b/2", {})
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_om,
             field_name="fake_model_b_generic_om",
-            obj={"fake_model_b_generic_om": 2},
+            instance={"id": 1, "fake_model_b_generic_om": 2},
         )
         result = handler.perform()
         expected = {
@@ -100,13 +94,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/3", {"fake_model_a_generic_mo": ["fake_model_a/1"]}
         )
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=2,
             field=FakeModelA.fake_model_b_generic_om,
             field_name="fake_model_b_generic_om",
-            obj={"fake_model_b_generic_om": 3},
+            instance={"id": 2, "fake_model_b_generic_om": 3},
         )
         result = handler.perform()
         expected = {
@@ -123,13 +115,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/2", {"fake_model_a_generic_mo": ["fake_model_a/1"]}
         )
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_om,
             field_name="fake_model_b_generic_om",
-            obj={"fake_model_b_generic_om": None},
+            instance={"id": 1, "fake_model_b_generic_om": None},
         )
         result = handler.perform()
         expected = {
@@ -144,13 +134,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
     def test_generic_M2M_empty(self) -> None:
         self.create_model("fake_model_a/1", {})
         self.create_model("fake_model_b/2", {})
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_mm,
             field_name="fake_model_b_generic_mm",
-            obj={"fake_model_b_generic_mm": [2]},
+            instance={"id": 1, "fake_model_b_generic_mm": [2]},
         )
         result = handler.perform()
         expected = {
@@ -168,13 +156,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/3", {"fake_model_a_generic_mm": ["fake_model_a/1"]}
         )
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=2,
             field=FakeModelA.fake_model_b_generic_mm,
             field_name="fake_model_b_generic_mm",
-            obj={"fake_model_b_generic_mm": [3]},
+            instance={"id": 2, "fake_model_b_generic_mm": [3]},
         )
         result = handler.perform()
         expected = {
@@ -191,13 +177,11 @@ class GenericRelationsTest(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/2", {"fake_model_a_generic_mm": ["fake_model_a/1"]}
         )
-        handler = RelationsHandler(
+        handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelA(),
-            id=1,
             field=FakeModelA.fake_model_b_generic_mm,
             field_name="fake_model_b_generic_mm",
-            obj={"fake_model_b_generic_mm": []},
+            instance={"id": 1, "fake_model_b_generic_mm": []},
         )
         result = handler.perform()
         expected = {

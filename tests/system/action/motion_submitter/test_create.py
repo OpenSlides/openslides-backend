@@ -51,7 +51,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'motion_id\\', \\'user_id\\'] properties",
+            "data must contain [\\'motion_id\\', \\'user_id\\'] properties",
             str(response.data),
         )
 
@@ -78,7 +78,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must not contain {\\'wrong_field\\'} properties",
+            "data must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
 

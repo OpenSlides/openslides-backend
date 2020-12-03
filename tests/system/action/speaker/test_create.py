@@ -35,7 +35,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
+            "data must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
             str(response.data),
         )
 
@@ -51,7 +51,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
+            "data must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
             str(response.data),
         )
 

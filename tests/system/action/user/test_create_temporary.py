@@ -131,7 +131,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'meeting_id\\', \\'username\\'] properties",
+            "data must contain [\\'meeting_id\\', \\'username\\'] properties",
             str(response.data),
         )
         self.assert_model_not_exists("user/2")
@@ -155,7 +155,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must not contain {\\'wrong_field\\'} properties",
+            "data must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
         self.assert_model_not_exists("user/2")

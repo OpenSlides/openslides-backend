@@ -1,5 +1,6 @@
-from openslides_backend.action.generics import CreateAction, UpdateAction
-from openslides_backend.action.register import register_action
+from openslides_backend.action.generics.create import CreateAction
+from openslides_backend.action.generics.update import UpdateAction
+from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection

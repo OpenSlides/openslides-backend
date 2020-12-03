@@ -1,6 +1,8 @@
 from typing import cast
 
-from openslides_backend.action.relations import RelationsHandler
+from openslides_backend.action.relations.single_relation_handler import (
+    SingleRelationHandler,
+)
 from openslides_backend.models import fields
 from tests.util import get_fqfield
 
@@ -18,13 +20,11 @@ class StructuredRelationTester(BaseRelationsTestCase):
             fields.BaseRelationField,
             FakeModelB().get_field("structured_relation_field"),
         )
-        relations_handler = RelationsHandler(
+        relations_handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelB(),
-            id=111,
             field=field,
             field_name="structured_relation_field",
-            obj={"structured_relation_field": 333},
+            instance={"id": 111, "structured_relation_field": 333},
         )
         result = relations_handler.perform()
         self.assertEqual(
@@ -52,13 +52,11 @@ class StructuredRelationTester(BaseRelationsTestCase):
             fields.BaseRelationField,
             FakeModelC().get_field("structured_relation_field"),
         )
-        relations_handler = RelationsHandler(
+        relations_handler = SingleRelationHandler(
             datastore=self.datastore,
-            model=FakeModelC(),
-            id=444,
             field=field,
             field_name="structured_relation_field",
-            obj={"structured_relation_field": 333},
+            instance={"id": 444, "structured_relation_field": 333},
         )
         result = relations_handler.perform()
         self.assertEqual(

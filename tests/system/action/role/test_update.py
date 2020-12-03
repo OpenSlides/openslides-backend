@@ -83,7 +83,7 @@ class RoleUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.ROLE_FQID)
         self.assertCountEqual(model["permissions"], self.ROLE_PERMISSIONS)
         self.assertIn(
-            "data[0].permissions must be array",
+            "data.permissions must be array",
             str(response.data),
         )
 
@@ -105,7 +105,7 @@ class RoleUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must not contain {\\'superadmin_role_for_organisation_id\\'} properties",
+            "data must not contain {\\'superadmin_role_for_organisation_id\\'} properties",
             str(response.data),
         )
 

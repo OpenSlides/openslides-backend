@@ -144,7 +144,6 @@ class Node:
     """
 
     # Empty parent class perhaps to be used later.
-    pass
 
 
 class Model(Node):

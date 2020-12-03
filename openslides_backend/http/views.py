@@ -1,8 +1,7 @@
 from typing import Any, Dict, Optional, Tuple
 
-from ..action import Action
-from ..action.action import ActionHandler
-from ..action.action import Payload as ActionPayload
+from ..action.action_handler import ActionHandler
+from ..action.util.typing import Payload as ActionPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
@@ -64,7 +63,7 @@ class ActionView(BaseView):
         payload: ActionPayload = body
 
         # Handle request.
-        handler: Action = ActionHandler(logging=self.logging, services=self.services)
+        handler = ActionHandler(logging=self.logging, services=self.services)
         response = handler.handle_request(payload, user_id)
 
         self.logger.debug("Action request finished successfully.")
