@@ -33,10 +33,14 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("meeting/222")
-        assert model.get("logo_$place_id") is None
-        assert model.get("logo_$other_id") == 17
-        assert model.get("logo_$_id") == ["other"]
+        meeting = self.get_model("meeting/222")
+        assert meeting.get("logo_$place_id") is None
+        assert meeting.get("logo_$other_id") == 17
+        assert meeting.get("logo_$_id") == ["other"]
+        mediafile = self.get_model("mediafile/17")
+        assert mediafile.get("used_as_logo_$place_in_meeting_id") is None
+        assert mediafile.get("used_as_logo_$other_in_meeting_id") == 222
+        assert mediafile.get("used_as_logo_$_in_meeting_id") == ["other"]
 
     def test_unset_with_underscore(self) -> None:
         self.create_model(
@@ -67,6 +71,9 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("meeting/222")
-        assert model.get("logo_$web_header_id") is None
-        assert model.get("logo_$_id") == []
+        meeting = self.get_model("meeting/222")
+        assert meeting.get("logo_$web_header_id") is None
+        assert meeting.get("logo_$_id") == []
+        mediafile = self.get_model("mediafile/17")
+        assert mediafile.get("used_as_logo_$web_header_in_meeting_id") is None
+        assert mediafile.get("used_as_logo_$_in_meeting_id") == []
