@@ -14,7 +14,14 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         )
         self.create_model(
             "mediafile/17",
-            {"is_directory": False, "mimetype": "image/png", "meeting_id": 222},
+            {
+                "is_directory": False,
+                "mimetype": "image/png",
+                "meeting_id": 222,
+                "used_as_logo_$place_in_meeting_id": 222,
+                "used_as_logo_$other_in_meeting_id": 222,
+                "used_as_logo_$_in_meeting_id": ["place", "other"],
+            },
         )
         response = self.client.post(
             "/",
@@ -42,7 +49,13 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         )
         self.create_model(
             "mediafile/17",
-            {"is_directory": False, "mimetype": "image/png", "meeting_id": 222},
+            {
+                "is_directory": False,
+                "mimetype": "image/png",
+                "meeting_id": 222,
+                "used_as_logo_$web_header_in_meeting_id": 222,
+                "used_as_logo_$_in_meeting_id": ["web_header"],
+            },
         )
         response = self.client.post(
             "/",

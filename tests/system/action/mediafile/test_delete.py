@@ -81,3 +81,25 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("mediafile/110")
         self.assert_model_deleted("mediafile/112")
         self.assert_model_deleted("mediafile/113")
+
+    def test_delete_check_relations(self) -> None:
+        self.create_model(
+            "meeting/111", {"logo_$place_id": 222, "logo_$_id": ["place"]}
+        )
+        self.create_model(
+            "mediafile/222",
+            {
+                "used_as_logo_$place_in_meeting_id": 111,
+                "used_as_logo_$_in_meeting_id": ["place"],
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[{"action": "mediafile.delete", "data": [{"id": 222}]}],
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("mediafile/222")
+        meeting = self.get_model("meeting/111")
+        assert meeting.get("logo_$place_id") is None
+        assert meeting.get("logo_$_id") == []
