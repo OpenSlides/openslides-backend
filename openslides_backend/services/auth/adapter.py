@@ -1,8 +1,14 @@
 from typing import Dict, Optional, Tuple
+from urllib import parse
 
-from authlib import AuthHandler
-from authlib.constants import ANONYMOUS_USER, AUTHENTICATION_HEADER  # noqa
-from authlib.exceptions import AuthenticateException, InvalidCredentialsException
+from authlib import (
+    ANONYMOUS_USER,
+    COOKIE_NAME,
+    HEADER_NAME,
+    AuthenticateException,
+    AuthHandler,
+    InvalidCredentialsException,
+)
 
 from ...shared.exceptions import AuthenticationException as BackendAuthException
 from ...shared.interfaces.logging import LoggingModule
@@ -32,7 +38,9 @@ class AuthenticationHTTPAdapter(AuthenticationService):
             f"Start request to authentication service with the following data: {headers}"
         )
         try:
-            return self.auth_handler.authenticate(headers, cookies)
+            access_token = headers.get(HEADER_NAME, None)
+            cookie = cookies.get(COOKIE_NAME, "")
+            return self.auth_handler.authenticate(access_token, parse.unquote(cookie))
         except (AuthenticateException, InvalidCredentialsException) as e:
             self.logger.debug(f"Error in auth service: {e.message}")
             raise BackendAuthException(e.message)

@@ -8,7 +8,7 @@ from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
 from werkzeug.wrappers.json import JSONMixin
 
-from ..services.auth.adapter import AUTHENTICATION_HEADER
+from ..services.auth.adapter import HEADER_NAME
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
@@ -93,7 +93,7 @@ class OpenSlidesBackendWSGIApplication:
         )
         response = Response(json.dumps(response_body), content_type="application/json")
         if access_token is not None:
-            response.headers[AUTHENTICATION_HEADER] = access_token
+            response.headers[HEADER_NAME] = access_token
         return response
 
     def health_info(self, request: Request) -> Union[Response, HTTPException]:
