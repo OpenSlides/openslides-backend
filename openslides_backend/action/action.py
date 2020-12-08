@@ -77,7 +77,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     ) -> None:
         self.services = services
         self.permission = services.permission()
-        self.datastore = services.datastore()
+        self.datastore = relation_manager.datastore
         self.auth = services.authentication()
         self.media = services.media()
         self.relation_manager = relation_manager

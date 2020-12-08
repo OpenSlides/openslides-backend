@@ -7,7 +7,12 @@ from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request_element import WriteRequestElement
-from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ...shared.patterns import (
+    Collection,
+    CollectionField,
+    FullQualifiedField,
+    FullQualifiedId,
+)
 from . import commands
 from .deleted_models_behaviour import DeletedModelsBehaviour
 from .http_engine import HTTPEngine as Engine
@@ -22,7 +27,7 @@ class DatastoreAdapter(DatastoreService):
     Adapter to connect to readable and writeable datastore.
     """
 
-    # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
+    # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
     locked_fields: Dict[str, int]
 
     def __init__(self, engine: Engine, logging: LoggingModule) -> None:
@@ -268,8 +273,16 @@ class DatastoreAdapter(DatastoreService):
         return response
 
     def max(
-        self, collection: Collection, filter: Filter, field: str, type: str = None
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        type: str = None,
+        lock_result: bool = False,
     ) -> Aggregate:
+        """
+        Per default records, marked as deleted, are counted
+        """
         # TODO: This method does not reflect the position of the fetched objects.
         command = commands.Max(
             collection=collection, filter=filter, field=field, type=type
@@ -278,23 +291,22 @@ class DatastoreAdapter(DatastoreService):
             f"Start MAX request to datastore with the following data: {command.data}"
         )
         response = self.retrieve(command)
+        if lock_result:
+            self.update_locked_fields(
+                CollectionField(collection, field), response.get("position")
+            )
         return response
 
     def update_locked_fields(
         self,
-        key: Union[FullQualifiedId, FullQualifiedField],
+        key: Union[FullQualifiedId, FullQualifiedField, CollectionField],
         position: int,
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or
-        FQField. If there is an existing value we take the smaller one.
+        FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
-        current_position = self.locked_fields.get(str(key))
-        if current_position is None:
-            new_position = position
-        else:
-            new_position = min(position, current_position)
-        self.locked_fields[str(key)] = new_position
+        self.locked_fields[str(key)] = position
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)

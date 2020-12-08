@@ -1,8 +1,9 @@
+from copy import deepcopy
 from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import fastjsonschema
 
-from ..shared.exceptions import ActionException, EventStoreException
+from ..shared.exceptions import ActionException, DatastoreException, EventStoreException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.schema import schema_version
@@ -48,6 +49,8 @@ class ActionHandler(BaseHandler):
     Action handler. It is the concret implementation of Action interface.
     """
 
+    MAX_RETRY = 3
+
     @classmethod
     def get_actions_dev_status(cls) -> Iterable[Tuple[str, Union[str, Dict]]]:
         """
@@ -72,19 +75,25 @@ class ActionHandler(BaseHandler):
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)
 
-        # TODO: Start a loop here and retry parsing actions and writing to event
-        # store for some time if event store sends ModelLocked Exception
+        retried = 0
+        payload_copy = deepcopy(payload)
+        while True:
+            # Parse actions and creates events
+            write_request_element, results = self.parse_actions(payload)
 
-        # Parse actions and creates events
-        write_request_element, results = self.parse_actions(payload)
-
-        # Send events to datastore
-        if write_request_element:
-            try:
-                self.datastore.write(write_request_element)
-            except EventStoreException as exception:
-                raise ActionException(exception.message)
-
+            # Send events to datastore
+            if write_request_element:
+                try:
+                    self.datastore.write(write_request_element)
+                except DatastoreException as exception:
+                    retried += 1
+                    payload = deepcopy(payload_copy)
+                    if retried > self.MAX_RETRY:
+                        raise ActionException(exception.message)
+                    continue
+                except EventStoreException as exception:
+                    raise ActionException(exception.message)
+            break
         # Return action result
         # TODO: This is a fake result because in this place all actions were
         # always successful.
