@@ -1,7 +1,7 @@
 from typing import Any
 
 import requests
-from authlib.constants import AUTHENTICATION_HEADER, REFRESH_ID
+from authlib import COOKIE_NAME, HEADER_NAME
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.wrappers import BaseResponse
 
@@ -37,10 +37,8 @@ class Client(WerkzeugClient):
                 )
             assert response.status_code == 200
             # save access token and refresh id for subsequent requests
-            self.set_cookie("localhost", REFRESH_ID, response.cookies.get(REFRESH_ID))
-            self.headers = {
-                AUTHENTICATION_HEADER: response.headers[AUTHENTICATION_HEADER]
-            }
+            self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
+            self.headers = {HEADER_NAME: response.headers[HEADER_NAME]}
         else:
             self.headers = {}
 
