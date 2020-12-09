@@ -17,6 +17,7 @@ from .amendment_paragraphs_mixin import (
     AmendmentParagraphsMixin,
     amendment_paragraphs_schema,
 )
+from .sequence_numbers_mixin import SequenceNumbersMixin
 
 
 @register_action("motion.create")
@@ -24,6 +25,7 @@ class MotionCreate(
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     AmendmentParagraphsMixin,
+    SequenceNumbersMixin,
 ):
     """
     Create Action for motions.
@@ -163,4 +165,5 @@ class MotionCreate(
                 MotionSubmitterCreateAction, payload, additional_relation_models
             )
 
+        instance["sequence_number"] = self.get_sequence_number(instance["meeting_id"])
         return instance

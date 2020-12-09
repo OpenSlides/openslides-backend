@@ -78,7 +78,12 @@ class DatastoreService(Protocol):
         ...
 
     def max(
-        self, collection: Collection, filter: Filter, field: str, type: str = None
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        type: str = None,
+        lock_result: bool = False,
     ) -> Aggregate:
         ...
 

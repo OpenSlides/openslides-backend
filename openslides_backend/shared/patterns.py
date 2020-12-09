@@ -92,6 +92,31 @@ class FullQualifiedField:
         return FullQualifiedId(collection=self.collection, id=self.id)
 
 
+class CollectionField:
+    """
+    The key used in the key-value store i. e. the datastore, e. g.
+    motion/sequence_number
+    """
+
+    def __init__(self, collection: Collection, field: str) -> None:
+        self.collection = collection
+        self.field = field
+
+    def __str__(self) -> str:
+        return KEYSEPARATOR.join((str(self.collection), self.field))
+
+    def __repr__(self) -> str:
+        return f"CollField {str(self)}"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CollectionField):
+            return NotImplemented
+        return self.collection == other.collection and self.field == other.field
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+
 def string_to_fqid(fqid: str) -> FullQualifiedId:
     """
     Converts an Fqid as a string to a FullQualifiedId object.
