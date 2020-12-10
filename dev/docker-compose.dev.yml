@@ -9,6 +9,7 @@ services:
         ports:
             - "9002:9002"
             - "9003:9003"
+            - "5678:5678"
         command: sleep infinity
         volumes:
             - ../openslides_backend:/app/openslides_backend

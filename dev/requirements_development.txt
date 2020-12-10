@@ -8,5 +8,6 @@ pytest-cov==2.10.1
 pyyaml==5.3.1
 pip-check==2.6
 autoflake==1.4
+debugpy==1.2.1
 
 --requirement ../requirements.txt
