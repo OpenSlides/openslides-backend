@@ -32,6 +32,7 @@ def test_good():
     }
     resp = requests.post(UPLOAD_URL, json=payload)
     assert resp.status_code == 200
+    assert resp.text == ""
 
     get_response = requests.get(GET_URL + "4")
     assert get_response.status_code == 200

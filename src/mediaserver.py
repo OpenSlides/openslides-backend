@@ -98,10 +98,10 @@ def file_post(file_type):
         raise BadRequestError(
             f"The post request.data is not in right format: {request.data}"
         )
-    app.logger.debug(f"to database media {file_id} {mimetype}")
+    app.logger.debug(f"to database {file_type} {file_id} {mimetype}")
     global database
     database.set_mediafile(file_id, file_type, file_data, mimetype)
-    return f"Mediaserver: add {file_id} to db", 200
+    return "", 200
 
 
 def shutdown(database):
