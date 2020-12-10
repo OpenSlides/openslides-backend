@@ -4,7 +4,7 @@ import json
 
 from flask import Flask, Response, jsonify, request
 
-from .auth import AUTH_HEADER, check_mediafile_id
+from .auth import AUTH_HEADER, check_file_id
 from .config_handling import init_config
 from .database import Database
 from .exceptions import BadRequestError, HttpError, NotFoundError
@@ -32,20 +32,31 @@ def handle_view_error(error):
 
 @app.route("/system/media/get/<int:mediafile_id>")
 def serve(mediafile_id):
-    # get mediafile id
+    return serve_files(mediafile_id, "mediafile")
+
+
+@app.route("/system/media/get_resource/<int:resource_id>")
+def serve_resource(resource_id):
+    return serve_files(resource_id, "resource")
+
+
+def serve_files(file_id, file_type):
+    # get file id
     presenter_headers = dict(request.headers)
     del_keys = [key for key in presenter_headers if "content" in key]
     for key in del_keys:
         del presenter_headers[key]
-    ok, filename, auth_header = check_mediafile_id(mediafile_id, app, presenter_headers)
+    ok, filename, auth_header = check_file_id(
+        file_id, file_type, app, presenter_headers
+    )
     if not ok:
         raise NotFoundError()
 
-    app.logger.debug(f'Filename for "{mediafile_id}" is {filename}')
+    app.logger.debug(f'Filename for "{file_id}" is {filename}')
 
     # Query file from db
     global database
-    data, mimetype = database.get_mediafile(mediafile_id)
+    data, mimetype = database.get_file(file_id, file_type)
 
     # Send data (chunked)
     def chunked(size, source):
