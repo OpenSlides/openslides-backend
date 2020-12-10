@@ -71,28 +71,37 @@ def serve_files(file_id, file_type):
     return response
 
 
-@app.route("/internal/media/upload/", methods=["POST"])
+@app.route("/internal/media/upload_mediafile/", methods=["POST"])
 def media_post():
+    return file_post("mediafile")
+
+
+@app.route("/internal/media/upload_resource/", methods=["POST"])
+def resource_post():
+    return file_post("resource")
+
+
+def file_post(file_type):
     try:
         decoded = request.data.decode()
         dejson = json.loads(decoded)
     except Exception:
         raise BadRequestError("request.data is not json")
     try:
-        media = base64.b64decode(dejson["file"].encode())
+        file_data = base64.b64decode(dejson["file"].encode())
     except Exception:
         raise BadRequestError("cannot decode base64 file")
     try:
-        media_id = int(dejson["id"])
+        file_id = int(dejson["id"])
         mimetype = dejson["mimetype"]
     except Exception:
         raise BadRequestError(
             f"The post request.data is not in right format: {request.data}"
         )
-    app.logger.debug(f"to database media {media_id} {mimetype}")
+    app.logger.debug(f"to database media {file_id} {mimetype}")
     global database
-    database.set_mediafile(media_id, media, mimetype)
-    return f"Mediaserver: add {media_id} to db", 200
+    database.set_mediafile(file_id, file_type, file_data, mimetype)
+    return f"Mediaserver: add {file_id} to db", 200
 
 
 def shutdown(database):

@@ -5,8 +5,8 @@ import psycopg2
 import pytest
 import requests
 
-UPLOAD_URL = "http://media:9006/internal/media/upload/"
-GET_URL = "http://media:9006/system/media/get/"
+UPLOAD_URL = "http://media:9006/internal/media/upload_resource/"
+GET_URL = "http://media:9006/system/media/get_resource/"
 
 
 @pytest.fixture(autouse=True)
@@ -21,7 +21,7 @@ def reset_db():
     )
     with conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM mediafile_data WHERE id NOT IN (2, 3)")
+            cur.execute("DELETE FROM resource_data WHERE id NOT IN (2, 3)")
 
 
 def test_good():
