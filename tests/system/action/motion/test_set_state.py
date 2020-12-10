@@ -7,6 +7,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_model(
             "motion_state/76",
             {
+                "meeting_id": 222,
                 "name": "test0",
                 "motion_ids": [],
                 "next_state_ids": [77],
@@ -16,6 +17,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_model(
             "motion_state/77",
             {
+                "meeting_id": 222,
                 "name": "test1",
                 "motion_ids": [22],
                 "first_state_of_workflow_id": 76,
@@ -39,6 +41,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_model(
             "motion_state/76",
             {
+                "meeting_id": 222,
                 "name": "test0",
                 "motion_ids": [],
                 "next_state_ids": [],
@@ -48,6 +51,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_model(
             "motion_state/77",
             {
+                "meeting_id": 222,
                 "name": "test1",
                 "motion_ids": [22],
                 "first_state_of_workflow_id": 76,
@@ -71,6 +75,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_model(
             "motion_state/76",
             {
+                "meeting_id": 222,
                 "name": "test0",
                 "motion_ids": [],
                 "next_state_ids": [],
@@ -80,6 +85,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.create_model(
             "motion_state/77",
             {
+                "meeting_id": 222,
                 "name": "test1",
                 "motion_ids": [22],
                 "first_state_of_workflow_id": 76,

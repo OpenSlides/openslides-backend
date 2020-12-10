@@ -8,7 +8,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             "motion_comment_section/111",
             {"name": "name_srtgb123", "meeting_id": 222},
         )
-        self.create_model("group/23", {"name": "name_asdfetza"})
+        self.create_model("group/23", {"meeting_id": 222, "name": "name_asdfetza"})
         response = self.client.post(
             "/",
             json=[
@@ -34,8 +34,8 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_update_wrong_id(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
-        self.create_model("group/23", {"name": "name_asdfetza"})
-        self.create_model("group/24", {"name": "name_faofetza"})
+        self.create_model("group/23", {"meeting_id": 222, "name": "name_asdfetza"})
+        self.create_model("group/24", {"meeting_id": 222, "name": "name_faofetza"})
         self.create_model(
             "motion_comment_section/111",
             {"name": "name_srtgb123", "meeting_id": 222, "read_group_ids": [23]},
