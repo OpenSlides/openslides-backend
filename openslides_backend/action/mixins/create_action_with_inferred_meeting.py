@@ -23,8 +23,8 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
         if isinstance(field, BaseGenericRelationField):
             fqid = id
         else:
-            assert not isinstance(field.to, list)  # for mypy
-            fqid = FullQualifiedId(field.to, id)
+            assert len(field.to) == 1
+            fqid = FullQualifiedId(field.get_target_collection(), id)
         # Fetch meeting_id
         related_model = self.fetch_model(fqid, ["meeting_id"])
         if not related_model.get("meeting_id"):

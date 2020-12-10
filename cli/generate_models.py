@@ -2,6 +2,7 @@ import hashlib
 import os
 import string
 import sys
+from collections import ChainMap
 from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Union
 
@@ -9,7 +10,7 @@ import requests
 import yaml
 
 from openslides_backend.models.fields import OnDelete
-from openslides_backend.shared.patterns import KEYSEPARATOR
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
 
@@ -235,7 +236,7 @@ class Attribute(Node):
                 self.is_template = True
                 self.replacement = value.get("replacement")
                 inner_value = value.get("fields")
-                assert not is_inner_attribute and self.replacement and inner_value
+                assert not is_inner_attribute and inner_value
                 self.fields = type(self)(inner_value, is_inner_attribute=True)
             else:
                 if self.type in RELATION_FIELD_CLASSES.keys():
@@ -306,7 +307,9 @@ class Attribute(Node):
     def get_code_for_template(self, field_name: str, index: int) -> str:
         assert self.fields is not None
         field_class = f"Template{self.FIELD_CLASSES[self.fields.type]}"
-        properties = f'replacement="{self.replacement}", index={index}, '
+        properties = f"index={index}, "
+        if self.replacement:
+            properties += f'replacement="{self.replacement}",'
         if self.fields.to:
             properties += self.fields.to.get_properties()
         if self.fields.required:
@@ -319,127 +322,29 @@ class Attribute(Node):
 
 
 class To(Node):
-    collection: Union[str, List[str], List[Dict]]
-    field: "RelatedField"
+    to: Dict[Collection, str]  # collection <-> field_name
 
     def __init__(self, value: Union[str, Dict]) -> None:
         if isinstance(value, str):
-            collection, related_field = value.split(KEYSEPARATOR)
-            self.collection = collection
-            self.field = RelatedField(related_field)
+            self.to = self.parse_collectionfield(value)
+        elif isinstance(value, list):
+            self.to = dict(ChainMap(*[self.parse_collectionfield(cf) for cf in value]))
         else:
-            self.collection = value.get("collection", "") or value.get(
-                "collections", ""
-            )
-            if (
-                not isinstance(self.collection, list)
-                or len(self.collection) == 0
-                or not isinstance(self.collection[0], dict)
-            ):
-                self.field = RelatedField(value.get("field", {}))
-        assert self.collection
+            assert isinstance(value, dict)
+            collections = value.get("collections")
+            assert isinstance(collections, list)
+            self.to = {Collection(c): value["field"] for c in collections}
 
-    def _get_collection_list_structure(self) -> List[Dict]:
-        if isinstance(self.collection, str):
-            return [
-                {
-                    "collection": self.collection,
-                    "field": self.field,
-                    "fields_dict": {"name": self.field.name},
-                }
-            ]
-        assert isinstance(self.collection, list)
-        if isinstance(self.collection[0], str):
-            assert all([isinstance(c, str) for c in self.collection])
-            return [
-                {
-                    "collection": c,
-                    "field": self.field,
-                    "fields_dict": {"name": self.field.name},
-                }
-                for c in self.collection
-            ]
-        assert all([isinstance(c, dict) for c in self.collection])
-        return [
-            {
-                "collection": c.get("collection"),
-                "field": RelatedField(c.get("field", {})),
-                "fields_dict": (
-                    c.get("field")
-                    if isinstance(c.get("field"), dict)
-                    else {"name": c.get("field")}
-                ),
-            }
-            for c in self.collection
-            if isinstance(c, dict)
-        ]
+    def parse_collectionfield(self, collectionfield: str) -> Dict[Collection, str]:
+        """
+        Parses the given collectionfield into its parts and returns a dict consisting of a single
+        respective entry.
+        """
+        collection, field = collectionfield.split(KEYSEPARATOR)
+        return {Collection(collection): field}
 
     def get_properties(self) -> str:
-        self.collection_list = self._get_collection_list_structure()
-        coll_list = []
-        for collection in self.collection_list:
-            name = collection["collection"]
-            field = collection["field"]
-            fields_dict = collection["fields_dict"]
-            collstr = (
-                f'{{"collection":Collection("{collection.get("collection")}"), '
-                + '"field":{'
-                + ", ".join([f'"{k}":"{v}"' for k, v in fields_dict.items()])
-                + self.get_additional_properties(name, field)
-                + "}}"
-            )
-            coll_list.append(collstr)
-        properties = "to=[" + ", ".join(coll_list) + "],"
-        return properties
-
-    def get_additional_properties(self, name: str, field: "RelatedField") -> str:
-        properties = ""
-        if self.reverse_is_generic(name, field):
-            properties += '"generic_relation":True, '
-        if field.type == "structured-relation":
-            assert field.replacement is not None
-            structured_relation = repr(field.through + [field.replacement])
-            properties += f'"structured_relation":"{structured_relation}", '
-        elif field.type == "structured-tag":
-            assert not field.through
-            properties += f'"structured_tag":"{field.replacement}", '
-        if properties:
-            properties = ", " + properties
-        return properties
-
-    def reverse_is_generic(self, collection: str, field: "RelatedField") -> bool:
-        related_type = Attribute(get_model_field(collection, field.name)).type
-        is_generic = related_type in ("generic-relation", "generic-relation-list")
-        if is_generic:
-            assert field.type not in (
-                "generic-relation",
-                "generic-relation-list",
-                "structured-relation",
-                "structured-tag",
-            )
-        return is_generic
-
-
-class RelatedField(Node):
-    name: str
-    type: Optional[str] = None
-    replacement: Optional[str] = None
-    through: List[str]
-
-    def __init__(self, value: Union[str, Dict]) -> None:
-        if isinstance(value, str):
-            self.name = value
-        else:
-            self.name = value.get("name", "")
-            self.type = value.get("type")
-            self.replacement = value.get("replacement")
-            self.through = value.get("through", [])
-        assert self.name
-        if self.type:
-            assert (
-                self.type in ("structured-relation", "structured-tag")
-                and self.replacement
-            )
+        return "to=" + repr(self.to) + ","
 
 
 if __name__ == "__main__":

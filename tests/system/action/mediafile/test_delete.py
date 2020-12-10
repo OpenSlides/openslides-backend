@@ -28,7 +28,8 @@ class MediafileDeleteActionTest(BaseActionTestCase):
             {"title": "title_srtgb123", "is_directory": True, "child_ids": [110]},
         )
         self.create_model(
-            "mediafile/110", {"title": "title_ghjeu212", "is_directory": False}
+            "mediafile/110",
+            {"title": "title_ghjeu212", "is_directory": False, "parent_id": 112},
         )
         response = self.client.post(
             "/",
@@ -45,11 +46,21 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
         self.create_model(
             "mediafile/110",
-            {"title": "title_ghjeu212", "is_directory": True, "child_ids": [113]},
+            {
+                "title": "title_ghjeu212",
+                "is_directory": True,
+                "child_ids": [113],
+                "parent_id": 112,
+            },
         )
         self.create_model(
             "mediafile/113",
-            {"title": "title_del2", "is_directory": False, "child_ids": []},
+            {
+                "title": "title_del2",
+                "is_directory": False,
+                "child_ids": [],
+                "parent_id": 110,
+            },
         )
         response = self.client.post(
             "/",
@@ -67,11 +78,21 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
         self.create_model(
             "mediafile/110",
-            {"title": "title_ghjeu212", "is_directory": False, "child_ids": []},
+            {
+                "title": "title_ghjeu212",
+                "is_directory": False,
+                "child_ids": [],
+                "parent_id": 112,
+            },
         )
         self.create_model(
             "mediafile/113",
-            {"title": "title_del2", "is_directory": False, "child_ids": []},
+            {
+                "title": "title_del2",
+                "is_directory": False,
+                "child_ids": [],
+                "parent_id": 112,
+            },
         )
         response = self.client.post(
             "/",

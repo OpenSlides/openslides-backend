@@ -93,7 +93,7 @@ class RoleCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "instance of organisation that does not exist",
+            "Model \\'organisation/1\\' does not exist.",
             str(response.data),
         )
         self.assert_model_not_exists("role/1")

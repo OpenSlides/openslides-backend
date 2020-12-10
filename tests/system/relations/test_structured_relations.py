@@ -47,7 +47,9 @@ class StructuredRelationTester(BaseRelationsTestCase):
         meeting_id = 222
         self.create_model("fake_model_a/333", {})
         self.create_model("fake_model_b/111", {"meeting_id": meeting_id})
-        self.create_model("fake_model_c/444", {"foreign_key_field": 111})
+        self.create_model(
+            "fake_model_c/444", {"meeting_id": meeting_id, "foreign_key_field": 111}
+        )
         field = cast(
             fields.BaseRelationField,
             FakeModelC().get_field("structured_relation_field"),

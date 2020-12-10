@@ -178,44 +178,29 @@ class BaseRelationField(Field):
 
     def __init__(
         self,
-        to: Union[Collection, List[Union[Collection, Dict[str, object]]]],
-        related_name: str = "",
-        structured_relation: List[str] = None,
-        structured_tag: str = None,
-        generic_relation: bool = False,
+        to: Dict[Collection, str],
         on_delete: OnDelete = OnDelete.SET_NULL,
         equal_fields: Union[str, List[str]] = [],
         **kwargs: Any,
     ) -> None:
         super().__init__(**kwargs)
-        if structured_relation is not None or structured_tag is not None:
-            assert not (structured_relation is not None and structured_tag is not None)
-            assert structured_relation != []
-            if "$" not in related_name:
-                raise ValueError(
-                    "Setting structured_relation or structured_tag requires a $ in related_name."
-                )
-        else:
-            if "$" in related_name:
-                raise ValueError(
-                    "A $ in related name requires setting structured_relation or structured_tag."
-                )
         self.to = to
-        self.related_name = related_name
-        self.structured_relation = structured_relation
-        self.structured_tag = structured_tag
-        self.generic_relation = generic_relation
         self.on_delete = on_delete
         if isinstance(equal_fields, list):
             self.equal_fields = equal_fields
         else:
             self.equal_fields = [equal_fields]
 
+    def get_target_collection(self) -> Collection:
+        """
+        Should only be used for non-generic relations to fetch the single target collection.
+        Returns the first collection of the relation.
+        """
+        return next(iter(self.to.keys()))
+
     def __str__(self) -> str:
         return (
-            f"{self.__class__.__name__}(to={self.to}, related_name={self.related_name}, "
-            f"structured_relation={self.structured_relation}, structured_tag={self.structured_tag}, "
-            f"generic_relation={self.generic_relation}, is_list_field={self.is_list_field}, "
+            f"{self.__class__.__name__}(to={self.to}, is_list_field={self.is_list_field}, "
             f"on_delete={self.on_delete}, required={self.required}, "
             f"constraints={self.constraints}, equal_fields={self.equal_fields})"
         )
@@ -281,25 +266,22 @@ class OrganisationField(RelationField):
 
 class BaseTemplateField(Field):
 
-    replacement: str
+    replacement: Optional[str]
     index: int
 
     def __init__(self, **kwargs: Any) -> None:
-        self.replacement = kwargs.pop("replacement")
+        self.replacement = kwargs.pop("replacement", None)
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
 
     def get_regex(self) -> str:
         """ For internal usage. To find the replacement, please use [try_]get_replacement """
-        offset = 0
-        if self.own_field_name.find("$") > -1:
-            offset = 1
         return (
             r"^"
             + self.own_field_name[: self.index]
             + r"\$"
             + r"([a-zA-Z0-9_\-]*)"
-            + self.own_field_name[self.index + offset :]
+            + self.own_field_name[self.index :]
             + r"$"
         )
 
@@ -320,6 +302,10 @@ class BaseTemplateField(Field):
             if not replacement:
                 raise ValueError(
                     "You try to get the replacement of a template field: " + field_name
+                )
+            if self.replacement and not replacement.isnumeric():
+                raise ValueError(
+                    f"Replacements for Structured Relation Fields must be ids. Invalid replacement: {replacement}"
                 )
             if replacement.startswith("_"):
                 raise ValueError(f"Replacements must not start with '_': {field_name}")
