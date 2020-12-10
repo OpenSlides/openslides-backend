@@ -1,4 +1,3 @@
-import re
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 from mypy_extensions import TypedDict
@@ -562,11 +561,7 @@ class SingleRelationHandler:
         result_template_field: Relations = {}
         for fqfield, rel_update in result_structured_field.items():
             assert isinstance(self.reverse_field, BaseTemplateField)
-            match = re.match(self.reverse_field.get_regex(), related_name)
-            if not match:
-                raise ActionException(
-                    "Structured field has invalid format: " + related_name
-                )
+            # assert that the related name contains a valid replacement
             replacement = self.reverse_field.get_replacement(related_name)
             current_value = db_rels[fqfield.id].get(self.field.related_name, [])
             if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
