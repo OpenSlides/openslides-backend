@@ -5,8 +5,12 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model("meeting/2538", {"name": "name_jkPIYjFz"})
         self.create_model("motion/111", {"meeting_id": 2538})
-        self.create_model("motion_category/4", {"name": "name_GdPzDztT"})
-        self.create_model("motion_block/51", {"title": "title_ddyvpXch"})
+        self.create_model(
+            "motion_category/4", {"meeting_id": 2538, "name": "name_GdPzDztT"}
+        )
+        self.create_model(
+            "motion_block/51", {"meeting_id": 2538, "title": "title_ddyvpXch"}
+        )
 
         response = self.client.post(
             "/",

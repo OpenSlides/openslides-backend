@@ -80,7 +80,7 @@ class UpdateAction(Action):
             )
         else:
             db_instance = {}
-        updated_instance = super().validate_fields({**instance, **db_instance})
+        updated_instance = super().validate_relation_fields({**instance, **db_instance})
         for field_name in missing_fields:
             if field_name in updated_instance:
                 del updated_instance[field_name]

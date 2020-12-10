@@ -6,11 +6,17 @@ class MotionResetStateActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_workflow/1",
-            {"name": "test1", "state_ids": [76, 77], "first_state_id": 76},
+            {
+                "meeting_id": 222,
+                "name": "test1",
+                "state_ids": [76, 77],
+                "first_state_id": 76,
+            },
         )
         self.create_model(
             "motion_state/76",
             {
+                "meeting_id": 222,
                 "name": "test0",
                 "motion_ids": [],
                 "workflow_id": 1,
@@ -19,7 +25,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
         )
         self.create_model(
             "motion_state/77",
-            {"name": "test1", "motion_ids": [22], "workflow_id": 1},
+            {"meeting_id": 222, "name": "test1", "motion_ids": [22], "workflow_id": 1},
         )
         self.create_model(
             "motion/22", {"meeting_id": 222, "title": "test1", "state_id": 77}
@@ -35,15 +41,15 @@ class MotionResetStateActionTest(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_workflow/1",
-            {"name": "test1", "state_ids": [76, 77]},
+            {"meeting_id": 222, "name": "test1", "state_ids": [76, 77]},
         )
         self.create_model(
             "motion_state/76",
-            {"name": "test0", "motion_ids": [], "workflow_id": 1},
+            {"meeting_id": 222, "name": "test0", "motion_ids": [], "workflow_id": 1},
         )
         self.create_model(
             "motion_state/77",
-            {"name": "test1", "motion_ids": [22], "workflow_id": 1},
+            {"meeting_id": 222, "name": "test1", "motion_ids": [22], "workflow_id": 1},
         )
         self.create_model(
             "motion/22", {"meeting_id": 222, "title": "test1", "state_id": 77}
