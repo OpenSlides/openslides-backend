@@ -1,8 +1,11 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionResetStateActionTest(BaseActionTestCase):
     def test_reset_state_correct(self) -> None:
+        check_time = round(time.time())
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_workflow/1",
@@ -39,6 +42,7 @@ class MotionResetStateActionTest(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("number") == "001"
+        assert model.get("last_modified", 0) >= check_time
 
     def test_reset_state_correct_number_value(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})

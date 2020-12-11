@@ -1,3 +1,4 @@
+import time
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
@@ -69,6 +70,7 @@ class MotionCategoryNumberMotions(UpdateAction):
                     "id": motion_id,
                     "number": number,
                     "number_value": number_value,
+                    "last_modified": round(time.time()),
                 }
 
     def init_memory(self, main_category_id: int) -> None:

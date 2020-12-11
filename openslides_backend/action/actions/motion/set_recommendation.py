@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -40,4 +41,5 @@ class MotionSetRecommendationAction(UpdateAction):
             raise ActionException(
                 "Recommendation_label of a recommendation must be set."
             )
+        instance["last_modified"] = round(time.time())
         return instance

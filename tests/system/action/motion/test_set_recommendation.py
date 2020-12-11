@@ -1,8 +1,11 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_set_recommendation_correct(self) -> None:
+        check_time = round(time.time())
         self.create_model(
             "motion_workflow/34",
             {
@@ -33,6 +36,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("recommendation_id") == 77
+        assert model.get("last_modified", 0) >= check_time
 
     def test_set_recommendation_missing_recommendation_label(self) -> None:
         self.create_model(

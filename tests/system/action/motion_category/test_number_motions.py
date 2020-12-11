@@ -1,8 +1,11 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCategoryNumberMotionsTest(BaseActionTestCase):
     def test_good_single_motion(self) -> None:
+        check_time = round(time.time())
         self.create_model(
             "meeting/1",
             {"name": "meeting_1", "motion_category_ids": [111], "motion_ids": [69]},
@@ -36,6 +39,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         motion_69 = self.get_model("motion/69")
         assert motion_69.get("number") == "prefix_A1"
+        assert motion_69.get("last_modified", 0) >= check_time
 
     def test_two_motions(self) -> None:
         self.create_model(

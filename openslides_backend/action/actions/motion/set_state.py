@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -58,4 +59,5 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin):
             motion.get("number"),
             motion.get("number_value"),
         )
+        instance["last_modified"] = round(time.time())
         return instance
