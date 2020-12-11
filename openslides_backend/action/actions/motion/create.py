@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -166,4 +167,9 @@ class MotionCreate(
             )
 
         instance["sequence_number"] = self.get_sequence_number(instance["meeting_id"])
+        # set created and last_modified
+        timestamp = round(time.time())
+        instance["created"] = timestamp
+        instance["last_modified"] = timestamp
+
         return instance
