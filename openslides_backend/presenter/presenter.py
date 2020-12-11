@@ -98,6 +98,7 @@ class PresenterHandler(BaseHandler):
                 presenter_instance = PresenterClass(
                     presenter_blob.get("data"),
                     self.services,
+                    self.datastore,
                     self.logging,
                 )
                 presenter_instance.validate()

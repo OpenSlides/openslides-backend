@@ -119,8 +119,8 @@ class CollectionField:
 
 def string_to_fqid(fqid: str) -> FullQualifiedId:
     """
-    Converts an Fqid as a string to a FullQualifiedId object.
-    Assumes the string is a valid fqid.
+    Converts an FQId as a string to a FullQualifiedId object.
+    Assumes the string is a valid FQId.
     """
     collection, id = fqid.split(KEYSEPARATOR)
     return FullQualifiedId(Collection(collection), int(id))
@@ -129,5 +129,4 @@ def string_to_fqid(fqid: str) -> FullQualifiedId:
 def to_fqid(fqid: Union[str, FullQualifiedId]) -> FullQualifiedId:
     if isinstance(fqid, FullQualifiedId):
         return fqid
-    else:
-        return string_to_fqid(fqid)
+    return string_to_fqid(fqid)

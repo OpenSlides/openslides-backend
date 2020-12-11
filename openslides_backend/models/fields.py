@@ -275,7 +275,9 @@ class BaseTemplateField(Field):
         super().__init__(**kwargs)
 
     def get_regex(self) -> str:
-        """ For internal usage. To find the replacement, please use [try_]get_replacement """
+        """
+        For internal usage. To find the replacement, please use [try_]get_replacement.
+        """
         return (
             r"^"
             + self.own_field_name[: self.index]
@@ -297,19 +299,18 @@ class BaseTemplateField(Field):
         match = re.match(self.get_regex(), field_name)
         if not match:
             return None
-        else:
-            replacement = match.group(1)
-            if not replacement:
-                raise ValueError(
-                    "You try to get the replacement of a template field: " + field_name
-                )
-            if self.replacement and not replacement.isnumeric():
-                raise ValueError(
-                    f"Replacements for Structured Relation Fields must be ids. Invalid replacement: {replacement}"
-                )
-            if replacement.startswith("_"):
-                raise ValueError(f"Replacements must not start with '_': {field_name}")
-            return replacement
+        replacement = match.group(1)
+        if not replacement:
+            raise ValueError(
+                "You try to get the replacement of a template field: " + field_name
+            )
+        if self.replacement and not replacement.isnumeric():
+            raise ValueError(
+                f"Replacements for Structured Relation Fields must be ids. Invalid replacement: {replacement}"
+            )
+        if replacement.startswith("_"):
+            raise ValueError(f"Replacements must not start with '_': {field_name}")
+        return replacement
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):

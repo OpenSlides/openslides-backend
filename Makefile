@@ -8,7 +8,8 @@ black:
 	black $(paths) --exclude tests/integration/old
 
 autoflake:
-	autoflake -r -i -v --remove-all-unused-imports --ignore-init-module-imports $(paths)
+	autoflake --verbose --in-place --remove-all-unused-imports \
+	--ignore-init-module-imports --recursive $(paths)
 
 isort:
 	isort $(paths)
