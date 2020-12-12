@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
 import fastjsonschema
 
@@ -17,11 +17,18 @@ from .util.typing import (
     Payload,
 )
 
+action_payload_schema = {
+    "$schema": schema_version,
+    "title": "Action payload",
+    "type": "array",
+    "items": {"type": "object"},
+}
+
 payload_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
         "title": "Schema for action API",
-        "description": "An array of actions.",
+        "description": "An array of actions",
         "type": "array",
         "items": {
             "type": "object",
@@ -31,11 +38,7 @@ payload_schema = fastjsonschema.compile(
                     "type": "string",
                     "minLength": 1,
                 },
-                "data": {
-                    "description": "Data for the action (array)",
-                    "type": "array",
-                    "items": {"type": "object"},
-                },
+                "data": action_payload_schema,
             },
             "required": ["action", "data"],
             "additionalProperties": False,
@@ -60,7 +63,11 @@ class ActionHandler(BaseHandler):
             if getattr(action, "is_dummy", False):
                 yield name, "Not implemented"
             else:
-                yield name, action.schema
+                schema: Dict[str, Any] = deepcopy(action_payload_schema)
+                schema["items"] = action.schema
+                if action.is_singular:
+                    schema["maxItems"] = 1
+                yield name, schema
 
     def handle_request(self, payload: Payload, user_id: int) -> ActionResponse:
         """

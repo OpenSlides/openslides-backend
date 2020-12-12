@@ -17,7 +17,7 @@ class AgendaItemSort(TreeSortMixin, SingularActionMixin, UpdateAction):
     schema = DefaultSchema(AgendaItem()).get_tree_sort_schema()
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
-        self.assert_singular_payload(payload)
+        payload = super().get_updated_instances(payload)
         # Payload is an iterable with exactly one item
         instance = next(iter(payload))
         yield from self.sort_tree(

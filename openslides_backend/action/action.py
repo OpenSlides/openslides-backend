@@ -59,6 +59,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     schema: Dict
     schema_validator: Callable[[Dict[str, Any]], None]
+    is_singular: bool = False
     internal: bool = False
     relation_manager: RelationManager
 
