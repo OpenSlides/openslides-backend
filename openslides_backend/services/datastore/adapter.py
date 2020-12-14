@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Sequence, Union
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
-from ...shared.exceptions import DatastoreException
+from ...shared.exceptions import DatastoreException, DatastoreModelLockedException
 from ...shared.filters import And, Filter, FilterOperator
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request_element import WriteRequestElement
@@ -57,7 +57,15 @@ class DatastoreAdapter(DatastoreService):
                 payload.get("error") if isinstance(payload, dict) else None
             )
             if additional_error_message is not None:
-                if (
+                if additional_error_message.get("type_verbose") == "MODEL_LOCKED":
+                    error_message = " ".join(
+                        (
+                            error_message,
+                            f"MODEL_LOCKED Exception for key {additional_error_message.get('key')}",
+                        )
+                    )
+                    raise DatastoreModelLockedException(error_message)
+                elif (
                     additional_error_message.get("type_verbose")
                     == "MODEL_DOES_NOT_EXIST"
                 ):
@@ -213,14 +221,21 @@ class DatastoreAdapter(DatastoreService):
         )
         response = self.retrieve(command)
         if lock_result:
+            max_position = 0
             for instance_id, item in response.items():
                 instance_position = item.get("meta_position")
                 if instance_id is None or instance_position is None:
                     raise DatastoreException(
                         "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
                     )
+                if instance_position > max_position:
+                    max_position = instance_position
                 fqid = FullQualifiedId(collection=collection, id=instance_id)
                 self.update_locked_fields(fqid, instance_position)
+                # TODO: max_position should come from response: max from collection or collection/meeting or collection/filter-criteria
+                self.update_locked_fields(
+                    CollectionField(collection, "id"), max_position
+                )
         response2 = dict()
         for key in response:
             response2[int(key)] = response[key]
@@ -330,6 +345,12 @@ class DatastoreAdapter(DatastoreService):
             f"Write request: {write_request_element}"
         )
         self.retrieve(command)
+
+    def write_original(self, write_request_element: WriteRequestElement) -> None:
+        """
+        Dummy for monkeypatching the write
+        """
+        pass
 
     def truncate_db(self) -> None:
         command = commands.TruncateDb()

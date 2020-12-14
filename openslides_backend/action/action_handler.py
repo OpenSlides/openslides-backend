@@ -3,7 +3,12 @@ from typing import Dict, Iterable, List, Optional, Tuple, Union
 
 import fastjsonschema
 
-from ..shared.exceptions import ActionException, DatastoreException, EventStoreException
+from ..shared.exceptions import (
+    ActionException,
+    DatastoreException,
+    DatastoreModelLockedException,
+    EventStoreException,
+)
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.schema import schema_version
@@ -85,12 +90,14 @@ class ActionHandler(BaseHandler):
             if write_request_element:
                 try:
                     self.datastore.write(write_request_element)
-                except DatastoreException as exception:
+                except DatastoreModelLockedException as exception:
                     retried += 1
                     payload = deepcopy(payload_copy)
                     if retried > self.MAX_RETRY:
                         raise ActionException(exception.message)
                     continue
+                except DatastoreException as exception:
+                    raise ActionException(exception.message)
                 except EventStoreException as exception:
                     raise ActionException(exception.message)
             break

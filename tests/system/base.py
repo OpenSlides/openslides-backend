@@ -21,6 +21,8 @@ from openslides_backend.shared.interfaces.write_request_element import (
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from tests.util import Client, get_collection_from_fqid, get_fqid, get_id_from_fqid
 
+from .action.lock import OSTestThread
+
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 
@@ -131,3 +133,24 @@ class BaseSystemTestCase(TestCase):
     def assert_model_deleted(self, fqid: str) -> None:
         model = self.get_model(fqid)
         self.assertTrue(model.get("meta_deleted"))
+
+    def assert_thread_exception(self, thread: OSTestThread, text: str) -> None:
+        if hasattr(thread, "exc") and isinstance(thread.exc, Exception):
+            message = str(thread.exc)
+            if text not in message:
+                standardMsg = f"Exception with '{text}' expected, but Exception with '{message}' found"
+                self.fail(self._formatMessage(None, standardMsg))
+        else:
+            raise Exception(f"Thread {thread.name}: Exception with '{text}' not raised")
+
+    def assert_no_thread_exception(self, thread: OSTestThread) -> None:
+        if hasattr(thread, "exc") and isinstance(thread.exc, Exception):
+            raise thread.exc
+
+    def assert_model_locked_thrown_in_thread(self, thread: OSTestThread) -> None:
+        if thread.model_locked_counter == 0:
+            raise (
+                Exception(
+                    f"Thread {thread.name}: The DatastoreModelLockedException has never been thrown"
+                )
+            )

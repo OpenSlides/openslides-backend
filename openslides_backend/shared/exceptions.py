@@ -50,6 +50,10 @@ class DatastoreException(ServiceException):
     pass
 
 
+class DatastoreModelLockedException(ServiceException):
+    pass
+
+
 class PermissionException(ServiceException):
     pass
 
