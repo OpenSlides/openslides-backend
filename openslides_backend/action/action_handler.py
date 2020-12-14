@@ -78,6 +78,7 @@ class ActionHandler(BaseHandler):
         retried = 0
         payload_copy = deepcopy(payload)
         while True:
+            self.datastore.reset_locked_fields()
             # Parse actions and creates events
             write_request_element, results = self.parse_actions(payload)
 

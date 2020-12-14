@@ -99,6 +99,9 @@ class DatastoreService(Protocol):
     def truncate_db(self) -> None:
         ...
 
+    def reset_locked_fields(self) -> None:
+        ...
+
 
 class Engine(Protocol):
     """

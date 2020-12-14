@@ -221,6 +221,16 @@ class DatastoreAdapter(DatastoreService):
                     )
                 fqid = FullQualifiedId(collection=collection, id=instance_id)
                 self.update_locked_fields(fqid, instance_position)
+            # TODO: collection_position should come from response: from collection or collection/meeting or collection/filter-criteria
+            # Replace and delete method get_lock_position_for_collection_id
+            if len(response.items()):
+                collection_position = self.get_lock_position_for_collection_id(
+                    collection, filter
+                )
+                self.update_locked_fields(
+                    CollectionField(collection, "id"), collection_position
+                )
+
         response2 = dict()
         for key in response:
             response2[int(key)] = response[key]
@@ -304,9 +314,14 @@ class DatastoreAdapter(DatastoreService):
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or
-        FQField. To work properly in case of retry/reread we have to accept the new value always.
+        FQField. If there is an existing value we take the smaller one.
         """
-        self.locked_fields[str(key)] = position
+        current_position = self.locked_fields.get(str(key))
+        if current_position is None:
+            new_position = position
+        else:
+            new_position = min(position, current_position)
+        self.locked_fields[str(key)] = new_position
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)
@@ -335,3 +350,20 @@ class DatastoreAdapter(DatastoreService):
         command = commands.TruncateDb()
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
+
+    def reset_locked_fields(self) -> None:
+        self.locked_fields.clear()
+
+    def get_lock_position_for_collection_id(
+        self, collection: Collection, filter: Filter
+    ) -> int:
+        """
+        Use this temporary to fix tests. Needs to be replaced in DatastorerFilter.filter
+        when datastore-command retrieves the correct collection_position
+        """
+        command = commands.Max(collection=collection, filter=filter, field="id")
+        self.logger.debug(
+            f"Start MAX request for collection to datastore with the following data: {command.data}"
+        )
+        response = self.retrieve(command)
+        return response.get("position")
