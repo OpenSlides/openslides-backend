@@ -1,1 +1,6 @@
-from . import create_update_delete, sort, sort_motions_in_category  # noqa
+from . import (  # noqa
+    create_update_delete,
+    number_motions,
+    sort,
+    sort_motions_in_category,
+)
