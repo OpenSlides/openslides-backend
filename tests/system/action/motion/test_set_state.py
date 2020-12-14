@@ -26,7 +26,8 @@ class MotionSetStateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "motion/22", {"meeting_id": 222, "title": "test1", "state_id": 77}
+            "motion/22",
+            {"meeting_id": 222, "title": "test1", "state_id": 77, "number_value": 23},
         )
         response = self.client.post(
             "/",
@@ -35,6 +36,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
+        assert model.get("number_value") == 23
 
     def test_set_state_correct_next_state(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -60,7 +62,8 @@ class MotionSetStateActionTest(BaseActionTestCase):
             },
         )
         self.create_model(
-            "motion/22", {"meeting_id": 222, "title": "test1", "state_id": 77}
+            "motion/22",
+            {"meeting_id": 222, "title": "test1", "state_id": 77, "number": "A021"},
         )
         response = self.client.post(
             "/",
@@ -69,6 +72,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
+        assert model.get("number") == "A021"
 
     def test_set_state_wrong_not_in_next_or_previous(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})

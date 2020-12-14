@@ -6,10 +6,11 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.set_state")
-class MotionSetStateAction(UpdateAction):
+class MotionSetStateAction(UpdateAction, SetNumberMixin):
     """
     Set the state in a motion.
     """
@@ -22,7 +23,15 @@ class MotionSetStateAction(UpdateAction):
         Check if the state_id is from a previous or next state.
         """
         motion = self.datastore.get(
-            FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
+            FullQualifiedId(Collection("motion"), instance["id"]),
+            [
+                "state_id",
+                "meeting_id",
+                "lead_motion_id",
+                "category_id",
+                "number",
+                "number_value",
+            ],
         )
         state_id = motion["state_id"]
 
@@ -38,4 +47,15 @@ class MotionSetStateAction(UpdateAction):
             raise ActionException(
                 f"State '{instance['state_id']}' is not in next or previous states of the state '{state_id}'."
             )
+        # Set number code.
+
+        self.set_number(
+            instance,
+            motion["meeting_id"],
+            instance["state_id"],
+            motion.get("lead_motion_id"),
+            motion.get("category_id"),
+            motion.get("number"),
+            motion.get("number_value"),
+        )
         return instance
