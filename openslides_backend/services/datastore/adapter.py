@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Sequence, Union
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
-from ...shared.exceptions import DatastoreException
+from ...shared.exceptions import DatastoreException, DatastoreModelLockedException
 from ...shared.filters import And, Filter, FilterOperator
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request_element import WriteRequestElement
@@ -57,7 +57,15 @@ class DatastoreAdapter(DatastoreService):
                 payload.get("error") if isinstance(payload, dict) else None
             )
             if additional_error_message is not None:
-                if (
+                if additional_error_message.get("type_verbose") == "MODEL_LOCKED":
+                    error_message = " ".join(
+                        (
+                            error_message,
+                            f"MODEL_LOCKED Exception for key {additional_error_message.get('key')}",
+                        )
+                    )
+                    raise DatastoreModelLockedException(error_message)
+                elif (
                     additional_error_message.get("type_verbose")
                     == "MODEL_DOES_NOT_EXIST"
                 ):
@@ -345,6 +353,12 @@ class DatastoreAdapter(DatastoreService):
             f"Write request: {write_request_element}"
         )
         self.retrieve(command)
+
+    def write_original(self, write_request_element: WriteRequestElement) -> None:
+        """
+        Dummy for monkeypatching the write
+        """
+        pass
 
     def truncate_db(self) -> None:
         command = commands.TruncateDb()
