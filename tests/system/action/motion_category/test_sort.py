@@ -1,8 +1,16 @@
+import threading
+from typing import cast
+
 from tests.system.action.base import BaseActionTestCase
+from tests.system.action.lock import (
+    OSTestThread,
+    monkeypatch_datastore_adapter_write,
+    pytest_thread_local,
+)
 
 
 class MotionCategorySortActionTest(BaseActionTestCase):
-    def test_sort_singe_node_correct(self) -> None:
+    def test_sort_single_node_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model("motion_category/22", {"meeting_id": 222})
         response = self.client.post(
@@ -184,3 +192,88 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         assert category_2.get("weight") == 2
         category_3 = self.get_model("motion_category/3")
         assert category_3.get("weight") == 4
+
+    def test_sort_single_node_race_condition(self) -> None:
+        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model("motion_category/22", {"meeting_id": 222})
+
+        with monkeypatch_datastore_adapter_write():
+            testlock = threading.Lock()
+            sync_event = threading.Event()
+            thread1 = OSTestThread(
+                target=thread_method_sorting,
+                kwargs={
+                    "test_instance": self,
+                    "testlock": testlock,
+                    "name": "Interrupted Sorting Thread",
+                    "sync_event": sync_event,
+                },
+            )
+            thread2 = OSTestThread(
+                target=thread_method_extra_category,
+                kwargs={
+                    "test_instance": self,
+                    "name": "Passing extra category-Thread",
+                },
+            )
+
+            testlock.acquire()
+            thread1.start()
+            sync_event.wait()
+            thread2.start()
+            thread2.join()
+            testlock.release()
+            thread1.join()
+
+        self.assert_model_locked_thrown_in_thread(thread1)
+        self.assert_no_thread_exception(thread2)
+        self.assert_thread_exception(thread1, "Did not recieve 2 ids, got 1")
+
+
+def thread_method_sorting(
+    test_instance: MotionCategorySortActionTest,
+    testlock: threading.Lock,
+    name: str,
+    sync_event: threading.Event = None,
+) -> None:
+    if testlock:
+        pytest_thread_local.testlock = testlock
+    if sync_event:
+        pytest_thread_local.sync_event = sync_event
+    pytest_thread_local.count_model_locked = True
+    pytest_thread_local.name = name
+
+    response = test_instance.client.post(
+        "/",
+        json=[
+            {
+                "action": "motion_category.sort",
+                "data": [{"meeting_id": 222, "tree": [{"id": 22}]}],
+            }
+        ],
+    )
+
+    cast(OSTestThread, threading.current_thread()).check_response(response)
+
+
+def thread_method_extra_category(
+    test_instance: MotionCategorySortActionTest,
+    name: str,
+) -> None:
+    pytest_thread_local.name = name
+    response = test_instance.client.post(
+        "/",
+        json=[
+            {
+                "action": "motion_category.create",
+                "data": [
+                    {
+                        "name": "test_Xcdfgee",
+                        "prefix": "prefix_niqCxoXA",
+                        "meeting_id": 222,
+                    }
+                ],
+            }
+        ],
+    )
+    cast(OSTestThread, threading.current_thread()).check_response(response)

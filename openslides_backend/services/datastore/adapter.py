@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Sequence, Union
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
-from ...shared.exceptions import DatastoreException
+from ...shared.exceptions import DatastoreException, DatastoreModelLockedException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request_element import WriteRequestElement
@@ -57,7 +57,15 @@ class DatastoreAdapter(DatastoreService):
                 payload.get("error") if isinstance(payload, dict) else None
             )
             if additional_error_message is not None:
-                if (
+                if additional_error_message.get("type_verbose") == "MODEL_LOCKED":
+                    error_message = " ".join(
+                        (
+                            error_message,
+                            f"MODEL_LOCKED Exception for key {additional_error_message.get('key')}",
+                        )
+                    )
+                    raise DatastoreModelLockedException(error_message)
+                elif (
                     additional_error_message.get("type_verbose")
                     == "MODEL_DOES_NOT_EXIST"
                 ):
@@ -297,9 +305,14 @@ class DatastoreAdapter(DatastoreService):
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or
-        FQField. To work properly in case of retry/reread we have to accept the new value always.
+        FQField. If there is an existing value we take the smaller one.
         """
-        self.locked_fields[str(key)] = position
+        current_position = self.locked_fields.get(str(key))
+        if current_position is None:
+            new_position = position
+        else:
+            new_position = min(position, current_position)
+        self.locked_fields[str(key)] = new_position
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)
@@ -324,7 +337,30 @@ class DatastoreAdapter(DatastoreService):
         )
         self.retrieve(command)
 
+    def write_original(self, write_request_element: WriteRequestElement) -> None:
+        """
+        Dummy for monkeypatching the write
+        """
+        pass
+
     def truncate_db(self) -> None:
         command = commands.TruncateDb()
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
+
+    def reset_locked_fields(self) -> None:
+        self.locked_fields.clear()
+
+    def get_lock_position_for_collection_id(
+        self, collection: Collection, filter: Filter
+    ) -> int:
+        """
+        Use this temporary to fix tests. Needs to be replaced in DatastorerFilter.filter
+        when datastore-command retrieves the correct collection_position
+        """
+        command = commands.Max(collection=collection, filter=filter, field="id")
+        self.logger.debug(
+            f"Start MAX request for collection to datastore with the following data: {command.data}"
+        )
+        response = self.retrieve(command)
+        return response.get("position")

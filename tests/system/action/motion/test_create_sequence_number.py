@@ -1,7 +1,9 @@
 import threading
+from typing import cast
 
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.lock import (
+    OSTestThread,
     monkeypatch_datastore_adapter_write,
     pytest_thread_local,
 )
@@ -186,7 +188,7 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         with monkeypatch_datastore_adapter_write():
             testlock = threading.Lock()
             sync_event = threading.Event()
-            thread1 = threading.Thread(
+            thread1 = OSTestThread(
                 target=thread_method,
                 kwargs={
                     "test_instance": self,
@@ -196,16 +198,16 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
                     "testlock": testlock,
                     "name": "Interrupted Thread",
                     "sync_event": sync_event,
+                    "count_model_locked": True,
                 },
             )
-            thread2 = threading.Thread(
+            thread2 = OSTestThread(
                 target=thread_method,
                 kwargs={
                     "test_instance": self,
                     "motion_title": "Passing motion",
                     "meeting_id": 222,
                     "workflow_id": 13,
-                    "testlock": None,
                     "name": "Passing Thread",
                 },
             )
@@ -218,6 +220,9 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
             testlock.release()
             thread1.join()
 
+        self.assert_model_locked_thrown_in_thread(thread1)
+        self.assert_no_thread_exception(thread2)
+        self.assert_no_thread_exception(thread1)
         self.assert_model_not_exists("motion/1")
         model2 = self.get_model("motion/2")
         model3 = self.get_model("motion/3")
@@ -230,14 +235,16 @@ def thread_method(
     meeting_id: int,
     workflow_id: int,
     motion_title: str,
-    testlock: threading.Lock,
     name: str,
+    testlock: threading.Lock = None,
     sync_event: threading.Event = None,
+    count_model_locked: bool = False,
 ) -> None:
     if testlock:
         pytest_thread_local.testlock = testlock
     if sync_event:
         pytest_thread_local.sync_event = sync_event
+    pytest_thread_local.count_model_locked = count_model_locked
     pytest_thread_local.name = name
     response = test_instance.client.post(
         "/",
@@ -256,4 +263,4 @@ def thread_method(
         ],
     )
 
-    test_instance.assert_status_code(response, 200)
+    cast(OSTestThread, threading.current_thread()).check_response(response)

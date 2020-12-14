@@ -236,3 +236,8 @@ class DatastoreAdapterTester(TestCase):
             command.data
             == '{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}'
         )
+
+    def test_reset_locked_fields(self) -> None:
+        self.db.locked_fields = {"a": 1}
+        self.db.reset_locked_fields()
+        assert not self.db.locked_fields
