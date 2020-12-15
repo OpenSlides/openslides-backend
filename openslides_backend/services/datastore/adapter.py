@@ -222,6 +222,7 @@ class DatastoreAdapter(DatastoreService):
                 fqid = FullQualifiedId(collection=collection, id=instance_id)
                 self.update_locked_fields(fqid, instance_position)
             # TODO: collection_position should come from response: from collection or collection/meeting or collection/filter-criteria
+            # Replace and delete method get_lock_position_for_collection_id
             if len(response.items()):
                 collection_position = self.get_lock_position_for_collection_id(
                     collection, filter
@@ -356,6 +357,10 @@ class DatastoreAdapter(DatastoreService):
     def get_lock_position_for_collection_id(
         self, collection: Collection, filter: Filter
     ) -> int:
+        """
+        Use this temporary to fix tests. Needs to be replaced in DatastorerFilter.filter
+        when datastore-command retrieves the correct collection_position
+        """
         command = commands.Max(collection=collection, filter=filter, field="id")
         self.logger.debug(
             f"Start MAX request for collection to datastore with the following data: {command.data}"
