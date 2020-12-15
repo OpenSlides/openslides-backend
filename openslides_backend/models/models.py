@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "9f43df95f7475dab8494846e05524976"
+MODELS_YML_CHECKSUM = "bb590d43ec70144d22566f624ef4f2f5"
 
 
 class Organisation(Model):
@@ -960,7 +960,7 @@ class MotionCategory(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
-    prefix = fields.CharField(required=True)
+    prefix = fields.CharField()
     weight = fields.IntegerField(default=10000)
     level = fields.IntegerField(
         read_only=True, constraints={"description": "Calculated field."}
