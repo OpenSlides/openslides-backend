@@ -8,6 +8,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             {
                 "title": "motion_1",
                 "meeting_id": 1,
+                "state_id": 1,
             },
         )
         self.create_model(
@@ -16,6 +17,15 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "name": "name_meeting_1",
                 "motion_ids": [1],
                 "motions_supporters_min_amount": 0,
+            },
+        )
+        self.create_model(
+            "motion_state/1",
+            {
+                "name": "state_1",
+                "allow_support": False,
+                "motion_ids": [1],
+                "meeting_id": 1,
             },
         )
         response = self.client.post(
