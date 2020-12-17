@@ -13,13 +13,11 @@ class FakeModelCDA(Model):
     id = fields.IntegerField()
 
     fake_model_cd_b = fields.RelationField(
-        to=Collection("fake_model_cd_b"),
-        related_name="fake_model_cd_a",
+        to={Collection("fake_model_cd_b"): "fake_model_cd_a"},
         on_delete=fields.OnDelete.CASCADE,
     )
     fake_model_cd_c = fields.RelationField(
-        to=Collection("fake_model_cd_c"),
-        related_name="fake_model_cd_a",
+        to={Collection("fake_model_cd_c"): "fake_model_cd_a"},
         on_delete=fields.OnDelete.CASCADE,
     )
 
@@ -30,16 +28,14 @@ class FakeModelCDB(Model):
     id = fields.IntegerField()
 
     fake_model_cd_a = fields.RelationField(
-        to=Collection("fake_model_cd_a"), related_name="fake_model_cd_b"
+        to={Collection("fake_model_cd_a"): "fake_model_cd_b"}
     )
     fake_model_cd_c_protect = fields.RelationField(
-        to=Collection("fake_model_cd_c"),
-        related_name="fake_model_cd_b_protected",
+        to={Collection("fake_model_cd_c"): "fake_model_cd_b_protected"},
         on_delete=fields.OnDelete.PROTECT,
     )
     fake_model_cd_c_cascade = fields.RelationField(
-        to=Collection("fake_model_cd_c"),
-        related_name="fake_model_cd_b_cascaded",
+        to={Collection("fake_model_cd_c"): "fake_model_cd_b_cascaded"},
         on_delete=fields.OnDelete.CASCADE,
     )
 
@@ -50,13 +46,13 @@ class FakeModelCDC(Model):
     id = fields.IntegerField()
 
     fake_model_cd_a = fields.RelationField(
-        to=Collection("fake_model_cd_a"), related_name="fake_model_cd_c"
+        to={Collection("fake_model_cd_a"): "fake_model_cd_c"}
     )
     fake_model_cd_b_protected = fields.RelationField(
-        to=Collection("fake_model_cd_b"), related_name="fake_model_cd_c_protect"
+        to={Collection("fake_model_cd_b"): "fake_model_cd_c_protect"}
     )
     fake_model_cd_b_cascaded = fields.RelationField(
-        to=Collection("fake_model_cd_b"), related_name="fake_model_cd_c_cascade"
+        to={Collection("fake_model_cd_b"): "fake_model_cd_c_cascade"}
     )
 
 

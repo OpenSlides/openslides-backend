@@ -62,9 +62,10 @@ class DeleteAction(Action):
                 if not isinstance(foreign_fqids, list):
                     foreign_fqids = [foreign_fqids]
                 if not isinstance(field, BaseGenericRelationField):
-                    assert not isinstance(field.to, list)
+                    assert len(field.to) == 1
                     foreign_fqids = [
-                        FullQualifiedId(field.to, id) for id in foreign_fqids
+                        FullQualifiedId(field.get_target_collection(), id)
+                        for id in foreign_fqids
                     ]
 
                 if field.on_delete == OnDelete.PROTECT:

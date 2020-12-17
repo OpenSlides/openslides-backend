@@ -19,10 +19,10 @@ class FakeModel(Model):
         required=True, constraints={"description": "The text of this fake model."}
     )
     fake_model_2_ids = fields.RelationListField(
-        to=Collection("fake_model_2"), related_name="relation_field"
+        to={Collection("fake_model_2"): "relation_field"}
     )
     fake_model_2_generic_ids = fields.GenericRelationListField(
-        to=[Collection("fake_model_2")], related_name="generic_relation_field"
+        to={Collection("fake_model_2"): "generic_relation_field"}
     )
 
 
@@ -36,13 +36,10 @@ class FakeModel2(Model):
 
     id = fields.IntegerField(required=True)
     relation_field = fields.RelationField(
-        to=Collection("fake_model"),
-        related_name="fake_model_2_ids",
+        to={Collection("fake_model"): "fake_model_2_ids"},
     )
     generic_relation_field = fields.RelationField(
-        to=Collection("fake_model"),
-        related_name="fake_model_2_generic_ids",
-        generic_relation=True,
+        to={Collection("fake_model"): "fake_model_2_generic_ids"},
     )
 
 
@@ -90,18 +87,3 @@ class ModelBaseTester(TestCase):
     def test_get_field_unknown_field(self) -> None:
         with self.assertRaises(ValueError):
             FakeModel().get_field("Unknown field")
-
-    def test_structured_relation_init(self) -> None:
-        with self.assertRaises(ValueError):
-            fields.RelationField(
-                to=Collection("fake_model_tahheque7O"),
-                related_name="invalid_related_name",
-                structured_relation=["invalid_structured_relation"],
-            )
-
-    def test_structured_relation_init_2(self) -> None:
-        with self.assertRaises(ValueError):
-            fields.RelationField(
-                to=Collection("fake_model_tahheque7O"),
-                related_name="invalid_related_name_with_$",
-            )

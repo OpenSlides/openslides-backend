@@ -108,6 +108,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You try to reference an instance of meeting that does not exist.",
+            "Model \\'meeting/222\\' does not exist",
             str(response.data),
         )

@@ -19,7 +19,7 @@ class TypesTester(TestCase):
 
     def test_collection_repr(self) -> None:
         collection = Collection("collection_yag3Boaqui")
-        self.assertEqual(repr(collection), "Collection collection_yag3Boaqui")
+        self.assertEqual(repr(collection), "Collection('collection_yag3Boaqui')")
 
     def test_collection_comparing(self) -> None:
         collection_1 = Collection("collection_aeboo3ieSh")
@@ -36,7 +36,9 @@ class TypesTester(TestCase):
 
     def test_full_qualified_id_repr(self) -> None:
         fqid = FullQualifiedId(Collection("collection_oozaiX1pee"), 7099085886)
-        self.assertEqual(repr(fqid), "FQId collection_oozaiX1pee/7099085886")
+        self.assertEqual(
+            repr(fqid), "FullQualifiedId('collection_oozaiX1pee/7099085886')"
+        )
 
     def test_full_qualified_id_comparing(self) -> None:
         fqid_1 = FullQualifiedId(Collection("collection_reeyie3Woo"), 2133862900)
@@ -60,7 +62,8 @@ class TypesTester(TestCase):
             Collection("collection_yaiS2uthi8"), 78718784720, "field_ueth3Rohv8"
         )
         self.assertEqual(
-            repr(fqfield), "FQField collection_yaiS2uthi8/78718784720/field_ueth3Rohv8"
+            repr(fqfield),
+            "FullQualifiedField('collection_yaiS2uthi8/78718784720/field_ueth3Rohv8')",
         )
 
     def test_full_qualified_field_comparing(self) -> None:

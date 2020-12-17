@@ -14,12 +14,10 @@ class FakeModelEFA(Model):
     id = fields.IntegerField()
 
     b_id = fields.RelationField(
-        to=Collection("fake_model_ef_b"),
-        related_name="reference_field",
+        to={Collection("fake_model_ef_b"): "reference_field"},
     )
     c_id = fields.RelationField(
-        to=Collection("fake_model_ef_c"),
-        related_name="reference_field",
+        to={Collection("fake_model_ef_c"): "reference_field"},
     )
 
 
@@ -28,28 +26,22 @@ class FakeModelEFB(Model):
     verbose_name = "fake model for equal field check b"
     id = fields.IntegerField()
 
-    reference_field = fields.RelationField(
-        to=Collection("fake_model_ef_a"), related_name="b_id"
-    )
+    reference_field = fields.RelationField(to={Collection("fake_model_ef_a"): "b_id"})
 
     c_id = fields.RelationField(
-        to=Collection("fake_model_ef_c"),
-        related_name="b_id",
+        to={Collection("fake_model_ef_c"): "b_id"},
         equal_fields="reference_field",
     )
     c_ids = fields.RelationListField(
-        to=Collection("fake_model_ef_c"),
-        related_name="b_ids",
+        to={Collection("fake_model_ef_c"): "b_ids"},
         equal_fields="reference_field",
     )
     c_generic_id = fields.GenericRelationField(
-        to=[Collection("fake_model_ef_c")],
-        related_name="b_generic_id",
+        to={Collection("fake_model_ef_c"): "b_generic_id"},
         equal_fields="reference_field",
     )
     c_generic_ids = fields.GenericRelationListField(
-        to=[Collection("fake_model_ef_c")],
-        related_name="b_generic_ids",
+        to={Collection("fake_model_ef_c"): "b_generic_ids"},
         equal_fields="reference_field",
     )
 
@@ -59,25 +51,19 @@ class FakeModelEFC(Model):
     verbose_name = "fake model for equal field check c"
     id = fields.IntegerField()
 
-    reference_field = fields.RelationField(
-        to=Collection("fake_model_ef_a"), related_name="c_id"
-    )
+    reference_field = fields.RelationField(to={Collection("fake_model_ef_a"): "c_id"})
 
     b_id = fields.RelationField(
-        to=Collection("fake_model_ef_b"),
-        related_name="c_id",
+        to={Collection("fake_model_ef_b"): "c_id"},
     )
     b_ids = fields.RelationListField(
-        to=Collection("fake_model_ef_b"),
-        related_name="c_ids",
+        to={Collection("fake_model_ef_b"): "c_ids"},
     )
     b_generic_id = fields.GenericRelationField(
-        to=[Collection("fake_model_ef_b")],
-        related_name="c_generic_id",
+        to={Collection("fake_model_ef_b"): "c_generic_id"},
     )
     b_generic_ids = fields.GenericRelationListField(
-        to=[Collection("fake_model_ef_b")],
-        related_name="c_generic_ids",
+        to={Collection("fake_model_ef_b"): "c_generic_ids"},
     )
 
 
@@ -130,9 +116,9 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         self.assert_model_not_exists("fake_model_ef_b/1")
 
     def test_simple_update_pass(self) -> None:
-        self.create_model("fake_model_ef_a/1", {"c_id": 1})
+        self.create_model("fake_model_ef_a/1", {"b_id": 1, "c_id": 1})
         self.create_model("fake_model_ef_b/1", {"reference_field": 1, "c_id": 1})
-        self.create_model("fake_model_ef_c/1", {"reference_field": 1})
+        self.create_model("fake_model_ef_c/1", {"reference_field": 1, "b_id": 1})
         self.create_model("fake_model_ef_c/2", {"reference_field": 1})
         response = self.client.post(
             "/",

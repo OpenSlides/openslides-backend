@@ -20,7 +20,7 @@ class Collection:
         return self.collection
 
     def __repr__(self) -> str:
-        return f"Collection {str(self)}"
+        return f"Collection({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Collection):
@@ -47,7 +47,7 @@ class FullQualifiedId:
         return KEYSEPARATOR.join((str(self.collection), str(self.id)))
 
     def __repr__(self) -> str:
-        return f"FQId {str(self)}"
+        return f"FullQualifiedId({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullQualifiedId):
@@ -73,7 +73,7 @@ class FullQualifiedField:
         return KEYSEPARATOR.join((str(self.collection), str(self.id), self.field))
 
     def __repr__(self) -> str:
-        return f"FQField {str(self)}"
+        return f"FullQualifiedField({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullQualifiedField):
@@ -106,7 +106,7 @@ class CollectionField:
         return KEYSEPARATOR.join((str(self.collection), self.field))
 
     def __repr__(self) -> str:
-        return f"CollField {str(self)}"
+        return f"CollectionField({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CollectionField):

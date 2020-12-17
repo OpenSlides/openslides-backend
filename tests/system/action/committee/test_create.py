@@ -108,7 +108,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "instance of organisation that does not exist",
+            "Model \\'organisation/1\\' does not exist.",
             str(response.data),
         )
         self.assert_model_not_exists("committee/1")
@@ -134,5 +134,5 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn("instance of user that does not exist", str(response.data))
+        self.assertIn("does not exist", str(response.data))
         self.assert_model_not_exists("committee/1")

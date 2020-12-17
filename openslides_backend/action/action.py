@@ -311,8 +311,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
             else:
                 value = [value]
         if not isinstance(field, BaseGenericRelationField):
-            assert not isinstance(field.to, list)
-            value = [FullQualifiedId(field.to, id) for id in value]
+            assert (
+                len(field.to) == 1
+            )  # non-generic fields can only have one target collection
+            value = [FullQualifiedId(field.get_target_collection(), id) for id in value]
         return value
 
     def fetch_model(

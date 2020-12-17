@@ -2,6 +2,7 @@ import hashlib
 import os
 import string
 import sys
+from collections import ChainMap
 from textwrap import dedent, indent
 from typing import Any, Dict, List, Optional, Union
 
@@ -9,7 +10,7 @@ import requests
 import yaml
 
 from openslides_backend.models.fields import OnDelete
-from openslides_backend.shared.patterns import KEYSEPARATOR
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/models.yml"
 
@@ -90,8 +91,11 @@ def main() -> None:
 
     global MODELS
 
-    # Retrieve models.yml from local file or GitHub
-    if os.path.isfile(SOURCE):
+    # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
+    if len(sys.argv) > 1 and sys.argv[1] != "check":
+        with open(sys.argv[1], "rb") as x:
+            models_yml = x.read()
+    elif os.path.isfile(SOURCE):
         with open(SOURCE, "rb") as x:
             models_yml = x.read()
     else:
@@ -232,7 +236,7 @@ class Attribute(Node):
                 self.is_template = True
                 self.replacement = value.get("replacement")
                 inner_value = value.get("fields")
-                assert not is_inner_attribute and self.replacement and inner_value
+                assert not is_inner_attribute and inner_value
                 self.fields = type(self)(inner_value, is_inner_attribute=True)
             else:
                 if self.type in RELATION_FIELD_CLASSES.keys():
@@ -303,7 +307,9 @@ class Attribute(Node):
     def get_code_for_template(self, field_name: str, index: int) -> str:
         assert self.fields is not None
         field_class = f"Template{self.FIELD_CLASSES[self.fields.type]}"
-        properties = f'replacement="{self.replacement}", index={index}, '
+        properties = f"index={index}, "
+        if self.replacement:
+            properties += f'replacement="{self.replacement}",'
         if self.fields.to:
             properties += self.fields.to.get_properties()
         if self.fields.required:
@@ -316,77 +322,29 @@ class Attribute(Node):
 
 
 class To(Node):
-    collection: Union[str, List[str]]
-    field: "RelatedField"
+    to: Dict[Collection, str]  # collection <-> field_name
 
     def __init__(self, value: Union[str, Dict]) -> None:
         if isinstance(value, str):
-            collection, related_field = value.split(KEYSEPARATOR)
-            self.collection = collection
-            self.field = RelatedField(related_field)
+            self.to = self.parse_collectionfield(value)
+        elif isinstance(value, list):
+            self.to = dict(ChainMap(*[self.parse_collectionfield(cf) for cf in value]))
         else:
-            self.collection = value.get("collection", "")
-            self.field = RelatedField(value.get("field", {}))
-        assert self.collection
+            assert isinstance(value, dict)
+            collections = value.get("collections")
+            assert isinstance(collections, list)
+            self.to = {Collection(c): value["field"] for c in collections}
+
+    def parse_collectionfield(self, collectionfield: str) -> Dict[Collection, str]:
+        """
+        Parses the given collectionfield into its parts and returns a dict consisting of a single
+        respective entry.
+        """
+        collection, field = collectionfield.split(KEYSEPARATOR)
+        return {Collection(collection): field}
 
     def get_properties(self) -> str:
-        if isinstance(self.collection, str):
-            to_value = f'Collection("{self.collection}")'
-        else:
-            to_value = (
-                "["
-                + ", ".join(
-                    [f'Collection("{collection}")' for collection in self.collection]
-                )
-                + "]"
-            )
-        properties = f'to={to_value}, related_name="{self.field.name}", '
-        if self.reverse_is_generic():
-            properties += "generic_relation=True, "
-        if self.field.type == "structured-relation":
-            assert self.field.replacement is not None
-            structured_relation = repr(self.field.through + [self.field.replacement])
-            properties += f"structured_relation={structured_relation}, "
-        if self.field.type == "structured-tag":
-            assert not self.field.through
-            properties += f'structured_tag="{self.field.replacement}", '
-        return properties
-
-    def reverse_is_generic(self) -> bool:
-        if isinstance(self.collection, list):
-            return False
-        related_type = Attribute(get_model_field(self.collection, self.field.name)).type
-        is_generic = related_type in ("generic-relation", "generic-relation-list")
-        if is_generic:
-            assert self.field.type not in (
-                "generic-relation",
-                "generic-relation-list",
-                "structured-relation",
-                "structured-tag",
-            )
-        return is_generic
-
-
-class RelatedField(Node):
-    name: str
-    type: Optional[str] = None
-    replacement: Optional[str] = None
-    through: List[str]
-
-    def __init__(self, value: Union[str, Dict]) -> None:
-        if isinstance(value, str):
-            self.name = value
-        else:
-            self.name = value.get("name", "")
-            self.type = value.get("type")
-            self.replacement = value.get("replacement")
-            self.through = value.get("through", [])
-        assert self.name
-        if self.type:
-            assert (
-                self.type in ("structured-relation", "structured-tag")
-                and self.replacement
-            )
+        return "to=" + repr(self.to) + ","
 
 
 if __name__ == "__main__":
