@@ -119,6 +119,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         assert model.get("supporter_ids") == [1]
         user_1 = self.get_model("user/1")
         assert user_1.get("supported_motion_$1_ids") == [1]
+        assert user_1.get("supported_motion_$_ids") == ["1"]
 
     def test_unsupport(self) -> None:
         self.update_model(
@@ -165,6 +166,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
         assert model.get("supporter_ids") == []
         user_1 = self.get_model("user/1")
         assert user_1.get("supported_motion_$1_ids") == []
+        assert user_1.get("supported_motion_$_ids") == []
 
     def test_unsupport_no_change(self) -> None:
         self.create_model(
