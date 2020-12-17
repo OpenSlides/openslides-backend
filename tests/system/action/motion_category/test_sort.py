@@ -10,7 +10,7 @@ from tests.system.action.lock import (
 
 
 class MotionCategorySortActionTest(BaseActionTestCase):
-    def test_sort_singe_node_correct(self) -> None:
+    def test_sort_single_node_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model("motion_category/22", {"meeting_id": 222})
         response = self.client.post(
