@@ -4,21 +4,28 @@ from typing import Any, Dict
 from ....models.models import MotionChangeRecommendation
 from ...action_set import ActionSet
 from ...generics.create import CreateAction
+from ...mixins.create_action_with_inferred_meeting import (
+    CreateActionWithInferredMeetingMixin,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
 
 
-class MotionChangeRecommendationCreateAction(CreateAction):
+class MotionChangeRecommendationCreateAction(
+    CreateActionWithInferredMeetingMixin, CreateAction
+):
     """
     Action to create motion change recommendation
     """
+
+    relation_field_for_meeting = "motion_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         set creation_time
         """
         instance["creation_time"] = int(time())
-        return instance
+        return self.update_instance_with_meeting_id(instance)
 
 
 @register_action_set("motion_change_recommendation")

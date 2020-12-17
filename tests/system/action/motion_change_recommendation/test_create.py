@@ -3,9 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def test_create_good_required_fields(self) -> None:
+        self.create_model("meeting/1", {"motion_ids": [233]})
         self.create_model(
             "motion/233",
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            {"meeting_id": 1},
         )
         response = self.client.post(
             "/",
@@ -30,12 +31,14 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("text") == "text_DvLXGcdW"
         assert model.get("motion_id") == 233
         assert model.get("type") == 0
+        assert model.get("meeting_id") == 1
         assert int(str(model.get("creation_time"))) > 1600246886
 
     def test_create_good_all_fields(self) -> None:
+        self.create_model("meeting/1", {"motion_ids": [233]})
         self.create_model(
             "motion/233",
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            {"meeting_id": 1},
         )
         response = self.client.post(
             "/",
@@ -67,6 +70,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("internal") is True
         assert model.get("type") == 0
         assert model.get("other_description") == "other_description_iuDguxZp"
+        assert model.get("meeting_id") == 1
         assert int(str(model.get("creation_time"))) > 1600246886
 
     def test_create_empty_data(self) -> None:
@@ -81,9 +85,10 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
+        self.create_model("meeting/1", {"motion_ids": [233]})
         self.create_model(
             "motion/233",
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            {"meeting_id": 1},
         )
         response = self.client.post(
             "/",
@@ -109,9 +114,10 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         )
 
     def test_create_title_change_recommendation(self) -> None:
+        self.create_model("meeting/1", {"motion_ids": [233]})
         self.create_model(
             "motion/233",
-            {"title": "title_pheK0Ja3ai", "statute_paragraph_id": None},
+            {"meeting_id": 1},
         )
         response = self.client.post(
             "/",
