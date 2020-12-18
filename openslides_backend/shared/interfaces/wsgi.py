@@ -1,8 +1,8 @@
 from typing import Any, Callable, Dict, Iterable, Optional, Text, Tuple
 
 from typing_extensions import Protocol
-from werkzeug.datastructures import Headers
 
+from . import Headers
 from .logging import LoggingModule
 from .services import Services
 
