@@ -34,6 +34,11 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert model.get("meeting_id") == 222
         assert model.get("created") is not None
         assert model.get("created") == model.get("last_modified")
+        assert model.get("submitter_ids") == [1]
+        submitter = self.get_model("motion_submitter/1")
+        assert submitter.get("user_id") == 1
+        assert submitter.get("meeting_id") == 222
+        assert submitter.get("motion_id") == 1
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 222)
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
