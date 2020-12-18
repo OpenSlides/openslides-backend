@@ -1,8 +1,11 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionFollowRecommendationActionText(BaseActionTestCase):
     def test_follow_recommendation_correct(self) -> None:
+        check_time = round(time.time())
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_state/76",
@@ -45,6 +48,7 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("state_extension") == "test_test_test"
+        assert model.get("last_modified", 0) >= check_time
 
     def test_follow_recommendation_not_neighbour(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})

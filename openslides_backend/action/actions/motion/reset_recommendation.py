@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -20,4 +21,5 @@ class MotionResetRecommendationAction(UpdateAction):
         Set recommendation to None.
         """
         instance["recommendation_id"] = None
+        instance["last_modified"] = round(time.time())
         return instance

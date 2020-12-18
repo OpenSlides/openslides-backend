@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -48,4 +49,5 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             and recommendation.get("show_recommendation_extension_field")
         ):
             instance["state_extension"] = recommendation_extension
+        instance["last_modified"] = round(time.time())
         return instance

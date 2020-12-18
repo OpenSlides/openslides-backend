@@ -1,8 +1,11 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSetStateActionTest(BaseActionTestCase):
     def test_set_state_correct_previous_state(self) -> None:
+        check_time = round(time.time())
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         self.create_model(
             "motion_state/76",
@@ -37,6 +40,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("number_value") == 23
+        assert model.get("last_modified", 0) >= check_time
 
     def test_set_state_correct_next_state(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
