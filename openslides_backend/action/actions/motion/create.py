@@ -157,16 +157,17 @@ class MotionCreate(
 
         # create submitters
         submitter_ids = instance.pop("submitter_ids", None)
-        if submitter_ids:
-            additional_relation_models = {
-                FullQualifiedId(self.model.collection, instance["id"]): instance
-            }
-            payload = []
-            for user_id in submitter_ids:
-                payload.append({"motion_id": instance["id"], "user_id": user_id})
-            self.execute_other_action(
-                MotionSubmitterCreateAction, payload, additional_relation_models
-            )
+        if not submitter_ids:
+            submitter_ids = [self.user_id]
+        additional_relation_models = {
+            FullQualifiedId(self.model.collection, instance["id"]): instance
+        }
+        payload = []
+        for user_id in submitter_ids:
+            payload.append({"motion_id": instance["id"], "user_id": user_id})
+        self.execute_other_action(
+            MotionSubmitterCreateAction, payload, additional_relation_models
+        )
 
         instance["sequence_number"] = self.get_sequence_number(instance["meeting_id"])
         # set created and last_modified
