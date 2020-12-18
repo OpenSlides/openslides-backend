@@ -1,8 +1,5 @@
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
-from openslides_backend.action.util import (  # noqa  Important to prevent circular imports
-    actions_map,
-)
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
