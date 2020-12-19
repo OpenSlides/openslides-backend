@@ -18,7 +18,7 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
     schema = DefaultSchema(AgendaItem()).get_default_schema(["meeting_id"])
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
-        self.assert_singular_payload(payload)
+        payload = super().get_updated_instances(payload)
         # Fetch all agenda items for this meeting from datastore.
         # Payload is an iterable with exactly one item
         instance = next(iter(payload))

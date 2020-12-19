@@ -4,32 +4,10 @@ import fastjsonschema
 
 from ...shared.exceptions import ActionException
 from ...shared.filters import FilterOperator
-from ...shared.schema import schema_version
 from ..action import BaseAction
+from ..util.default_schema import sort_node_schema
 from ..util.typing import ActionPayload
 
-sort_node_schema = {
-    "$schema": schema_version,
-    "title": "Sort node schema",
-    "id": "tree_sort_node",
-    "description": "A node inside a sort tree.",
-    "type": "object",
-    "properties": {
-        "id": {
-            "description": "The id of the instance.",
-            "type": "integer",
-            "minimum": 1,
-        },
-        "children": {
-            "type": "array",
-            "items": {"type": "object", "$ref": "tree_sort_node"},
-            "minItems": 1,
-            "uniqueItems": True,
-        },
-    },
-    "required": ["id"],
-    "additionalProperties": False,
-}
 validate_sort_node = fastjsonschema.compile(sort_node_schema)
 
 

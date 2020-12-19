@@ -3,7 +3,29 @@ from typing import Any, Dict, Iterable, Optional
 from ...models.base import Model
 from ...shared.schema import schema_version
 from ...shared.typing import Schema
-from ..mixins.tree_sort_mixin import sort_node_schema
+
+sort_node_schema = {
+    "$schema": schema_version,
+    "title": "Sort node schema",
+    "id": "tree_sort_node",
+    "description": "A node inside a sort tree.",
+    "type": "object",
+    "properties": {
+        "id": {
+            "description": "The id of the instance.",
+            "type": "integer",
+            "minimum": 1,
+        },
+        "children": {
+            "type": "array",
+            "items": {"type": "object", "$ref": "tree_sort_node"},
+            "minItems": 1,
+            "uniqueItems": True,
+        },
+    },
+    "required": ["id"],
+    "additionalProperties": False,
+}
 
 
 class DefaultSchema:
@@ -56,7 +78,7 @@ class DefaultSchema:
             optional_properties,
             additional_required_fields,
             additional_optional_fields,
-            title=f"{self.model} create schema",
+            title=f"Create schema for single {self.model}",
             description=f"A new {self.model} object.",
         )
 
@@ -76,7 +98,7 @@ class DefaultSchema:
             optional_properties,
             additional_required_fields,
             additional_optional_fields,
-            title=f"{self.model} update schema",
+            title=f"Update schema for single {self.model}",
             description=f"An instance of {self.model} to be (partially) updated.",
         )
 
@@ -86,7 +108,7 @@ class DefaultSchema:
         """
         return self.get_default_schema(
             required_properties=["id"],
-            title=f"{self.model} delete schema",
+            title=f"Delete schema for single {self.model}",
             description=f"An instance of {self.model} to be deleted.",
         )
 
