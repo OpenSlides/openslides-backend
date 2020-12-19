@@ -24,12 +24,13 @@ class BasePresenter:
         self,
         data: Any,
         services: Services,
+        datastore: DatastoreService,
         logging: LoggingModule,
     ):
         self.data = data
         self.services = services
         self.permission = self.services.permission()
-        self.datastore = self.services.datastore()
+        self.datastore = datastore
         self.logging = logging
         self.logger = logging.getLogger(__name__)
 

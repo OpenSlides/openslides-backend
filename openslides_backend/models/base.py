@@ -29,7 +29,7 @@ class ModelMetaClass(type):
                     attr.own_collection = new_class.collection
                     attr.own_field_name = attr_name
 
-                    # save normal field name
+                    # Save field name. For template fields also save prefix.
                     new_class.field_prefix_map[attr_name] = attr
                     if isinstance(attr, fields.BaseTemplateField):
                         prefix = attr_name[: attr.index]
@@ -46,7 +46,9 @@ class Model(metaclass=ModelMetaClass):
     collection: Collection
     verbose_name: str
 
-    # saves all fields with their respective unique prefix for easier access
+    # Saves all fields with their respective unique prefix for easier access.
+    # Template fields are saved twice. Once with the pythonic name from models.py and
+    # once only with the prefix.
     field_prefix_map: Dict[str, fields.BaseRelationField]
 
     def __str__(self) -> str:
@@ -57,22 +59,33 @@ class Model(metaclass=ModelMetaClass):
         Returns the requested model field.
         """
         field = self.try_get_field(field_name)
-        if field:
-            return field
-        else:
+        if not field:
             raise ValueError(f"Model {self} has no field {field_name}.")
+        return field
 
     def has_field(self, field_name: str) -> bool:
+        """
+        Returns True if the model has such a field (including populated template fields).
+        """
         return bool(self.try_get_field(field_name))
 
     def try_get_field(self, field_name: str) -> Optional[fields.Field]:
+        """
+        Returns the field for the given field name. You may give the
+        pythonic field name or even a populated template field.
+
+        E. g. for User the `group__ids` field alais `group_$_ids` field is also found
+        if you look for `group_$42_ids`.
+
+        Returns None if field is not found.
+        """
         prefix = field_name.split("$")[0]
         if prefix not in self.field_prefix_map:
             return None
 
         field = self.field_prefix_map[prefix]
         if isinstance(field, fields.BaseTemplateField):
-            # we use the regex here since we want to also match template fields
+            # We use the regex here since we want to also match template fields.
             if "$" in field_name and not re.match(field.get_regex(), field_name):
                 return None
         return field

@@ -3,7 +3,6 @@ from typing import Any, Dict, Optional, Tuple
 from ..action.action_handler import ActionHandler
 from ..action.util.typing import Payload as ActionPayload
 from ..presenter import Payload as PresenterPayload
-from ..presenter import Presenter
 from ..presenter.presenter import PresenterHandler
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -99,7 +98,7 @@ class PresenterView(BaseView):
         payload: PresenterPayload = body
 
         # Handle request.
-        handler: Presenter = PresenterHandler(
+        handler = PresenterHandler(
             logging=self.logging,
             services=self.services,
         )

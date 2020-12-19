@@ -9,6 +9,8 @@ class BaseHandler:
 
     def __init__(self, services: Services, logging: LoggingModule) -> None:
         self.services = services
-        self.datastore = services.datastore()
         self.logging = logging
         self.logger = logging.getLogger(__name__)
+
+        # Now initialize datastore instance.
+        self.datastore = services.datastore()

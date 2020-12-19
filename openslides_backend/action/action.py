@@ -71,14 +71,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def __init__(
         self,
         services: Services,
+        datastore: DatastoreService,
         relation_manager: RelationManager,
         additional_relation_models: ModelMap = {},
     ) -> None:
         self.services = services
         self.permission = services.permission()
-        self.datastore = relation_manager.datastore
         self.auth = services.authentication()
         self.media = services.media()
+        self.datastore = datastore
         self.relation_manager = relation_manager
         self.additional_relation_models = additional_relation_models
         self.modified_relation_fields = {}
@@ -144,7 +145,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Updates one instance of the payload. This can be overridden by custom
         action classes.
         """
-        return instance
+        return self.update_instance(instance)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -348,6 +349,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         action = ActionClass(
             self.services,
+            self.datastore,
             self.relation_manager,
             {**self.additional_relation_models, **additional_relation_models},
         )

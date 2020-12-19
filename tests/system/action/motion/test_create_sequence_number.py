@@ -183,7 +183,6 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         self.create_workflow(workflow_id=12, meeting_id=222)
         self.create_workflow(workflow_id=13, meeting_id=222)
 
-        # with MonkeyPatch_DatastoreAdapter_write():
         with monkeypatch_datastore_adapter_write():
             testlock = threading.Lock()
             sync_event = threading.Event()
@@ -213,9 +212,7 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
 
             testlock.acquire()
             thread1.start()
-            print("Wait for sync event's True")
             sync_event.wait()
-            print("sync event received")
             thread2.start()
             thread2.join()
             testlock.release()
