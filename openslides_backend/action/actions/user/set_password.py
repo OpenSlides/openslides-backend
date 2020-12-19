@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -17,6 +18,7 @@ class UserSetPasswordAction(UpdateAction):
         required_properties=["password"],
         additional_optional_fields={"set_as_default": {"type": "boolean"}},
     )
+    permission_description = PERMISSION_SPECIAL_CASE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

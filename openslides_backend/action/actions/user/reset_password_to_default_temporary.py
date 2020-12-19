@@ -13,6 +13,8 @@ class UserResetPasswordToDefaultTemporaryAction(
     Action to reset a password to default of a temporary user.
     """
 
+    permission_description = "user.can_manage"
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Check for temporary user and call super().update_instance().

@@ -38,6 +38,7 @@ class UserCreateTemporary(CreateAction, TemporaryUserMixin):
             "vote_delegations_from_ids": id_list_schema,
         },
     )
+    permission_description = "user.can_manage"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         return self.update_instance_temporary_user(instance)

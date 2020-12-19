@@ -1,4 +1,5 @@
 from ....models.models import AssignmentCandidate
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -18,6 +19,7 @@ class AssignmentCandidateSort(LinearSortMixin, SingularActionMixin, UpdateAction
         "candidate_ids",
         "assignment_id",
     )
+    permission_description = PERMISSION_SPECIAL_CASE
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

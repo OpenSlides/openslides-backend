@@ -21,6 +21,7 @@ class GroupSetPermissionAction(UpdateAction):
             "permission": {"type": "string"},
         }
     )
+    permission_description = "user.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:

@@ -82,6 +82,7 @@ class MotionStateActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(MotionState()).get_delete_schema()
+    permission_description = "motion.can_manage"
 
     CreateActionClass = get_create_action_with_inferred_meeting("workflow_id")
     UpdateActionClass = MotionStateUpdate

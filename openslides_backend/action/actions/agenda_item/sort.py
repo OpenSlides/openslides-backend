@@ -15,6 +15,7 @@ class AgendaItemSort(TreeSortMixin, SingularActionMixin, UpdateAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_tree_sort_schema()
+    permission_description = "agenda.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

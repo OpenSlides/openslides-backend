@@ -18,6 +18,7 @@ class MotionCommentSectionSort(LinearSortMixin, SingularActionMixin, UpdateActio
         "motion_comment_section_ids",
         "meeting_id",
     )
+    permission_description = "motion.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

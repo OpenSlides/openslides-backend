@@ -14,3 +14,4 @@ class ListOfSpeakersUpdateAction(UpdateAction):
     schema = DefaultSchema(ListOfSpeakers()).get_update_schema(
         optional_properties=["closed"]
     )
+    permission_description = "agenda.can_manage_list_of_speakers"

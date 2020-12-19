@@ -14,3 +14,4 @@ class MotionWorkflowUpdateAction(UpdateAction):
     schema = DefaultSchema(MotionWorkflow()).get_update_schema(
         optional_properties=["name", "first_state_id"]
     )
+    permission_description = "motion.can_manage"

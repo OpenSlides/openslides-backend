@@ -16,8 +16,9 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
     Reset motion state action.
     """
 
-    schema = DefaultSchema(Motion()).get_update_schema()
     model = Motion()
+    schema = DefaultSchema(Motion()).get_update_schema()
+    permission_description = "motion.can_manage_metadata"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

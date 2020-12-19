@@ -4,6 +4,7 @@ from ....models.models import MotionSubmitter
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeetingMixin,
@@ -22,6 +23,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
     schema = DefaultSchema(MotionSubmitter()).get_create_schema(
         ["motion_id", "user_id"],
     )
+    permission_description = PERMISSION_SPECIAL_CASE
 
     relation_field_for_meeting = "motion_id"
 

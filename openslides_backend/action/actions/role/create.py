@@ -1,4 +1,5 @@
 from ....models.models import Role
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,3 +17,4 @@ class RoleCreate(DeduplicatePermissionsMixin, CreateAction):
         required_properties=["organisation_id", "name"],
         optional_properties=["permissions"],
     )
+    permission_description = PERMISSION_SPECIAL_CASE

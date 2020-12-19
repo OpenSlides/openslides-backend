@@ -15,6 +15,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
+    permission_description = "motions.can_manage_metadata"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         ids = [instance["id"] for instance in payload]

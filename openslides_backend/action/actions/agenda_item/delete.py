@@ -12,3 +12,4 @@ class AgendaItemDelete(DeleteAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_delete_schema()
+    permission_description = "agenda.can_manage"

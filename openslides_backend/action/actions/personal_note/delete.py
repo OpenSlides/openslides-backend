@@ -3,6 +3,7 @@ from typing import Any, Dict
 from ....models.models import PersonalNote
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,6 +17,7 @@ class PersonalNoteDeleteAction(DeleteAction):
 
     model = PersonalNote()
     schema = DefaultSchema(PersonalNote()).get_delete_schema()
+    permission_description = PERMISSION_SPECIAL_CASE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

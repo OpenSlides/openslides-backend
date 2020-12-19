@@ -23,6 +23,7 @@ class ListOfSpeakersReAddLastAction(Action):
         title="Re-add last speaker",
         description="Adds the last speaker as new speaker.",
     )
+    permission_description = "agenda.can_manage_list_of_speakers"
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         list_of_speakers = self.fetch_model(

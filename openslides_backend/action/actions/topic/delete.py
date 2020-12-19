@@ -12,3 +12,4 @@ class TopicDelete(DeleteAction):
 
     model = Topic()
     schema = DefaultSchema(Topic()).get_delete_schema()
+    permission_description = "agenda.can_manage"

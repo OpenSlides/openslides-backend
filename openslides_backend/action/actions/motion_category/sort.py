@@ -15,6 +15,7 @@ class MotionCategorySort(TreeSortMixin, SingularActionMixin, UpdateAction):
 
     model = MotionCategory()
     schema = DefaultSchema(MotionCategory()).get_tree_sort_schema()
+    permission_description = "motion.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

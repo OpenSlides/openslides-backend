@@ -12,3 +12,4 @@ class GroupUpdateAction(UpdateAction):
 
     model = Group()
     schema = DefaultSchema(Group()).get_update_schema(optional_properties=["name"])
+    permission_description = "user.can_manage"

@@ -12,3 +12,4 @@ class GroupDeleteAction(DeleteAction):
 
     model = Group()
     schema = DefaultSchema(Group()).get_delete_schema()
+    permission_description = "user.can_manage"

@@ -38,5 +38,6 @@ class MotionBlockActionSet(ActionSet):
         optional_properties=["title", "internal", "motion_ids"]
     )
     delete_schema = DefaultSchema(MotionBlock()).get_delete_schema()
+    permission_description = "motion.can_manage"
 
     CreateActionClass = MotionBlockCreate

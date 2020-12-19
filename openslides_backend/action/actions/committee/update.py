@@ -1,4 +1,5 @@
 from ....models.models import Committee
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -22,3 +23,4 @@ class CommitteeUpdateAction(UpdateAction):
             "forward_to_committee_ids",
         ]
     )
+    permission_description = PERMISSION_SPECIAL_CASE
