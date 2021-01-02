@@ -19,3 +19,4 @@ class MotionCategoryActionSet(ActionSet):
         optional_properties=["name", "prefix", "motion_ids"]
     )
     delete_schema = DefaultSchema(MotionCategory()).get_delete_schema()
+    permission_description = "motion.can_mange"

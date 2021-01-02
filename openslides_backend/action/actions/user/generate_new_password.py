@@ -2,6 +2,7 @@ import random
 from typing import Any, Dict
 
 from ....models.models import User
+from ...action import PERMISSION_SPECIAL_CASE
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .set_password import UserSetPasswordAction
@@ -11,6 +12,7 @@ from .set_password import UserSetPasswordAction
 class UserGenerateNewPassword(UserSetPasswordAction):
 
     schema = DefaultSchema(User()).get_update_schema()
+    permission_description = PERMISSION_SPECIAL_CASE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

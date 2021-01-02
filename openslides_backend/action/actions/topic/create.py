@@ -32,6 +32,7 @@ class TopicCreate(
         optional_properties=["text", "attachment_ids"],
         additional_optional_fields=agenda_creation_properties,
     )
+    permission_description = "agenda.can_manage"
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
     def check_dependant_action_execution_agenda_item(

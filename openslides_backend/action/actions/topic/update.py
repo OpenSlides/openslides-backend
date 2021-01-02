@@ -14,3 +14,4 @@ class TopicUpdate(UpdateAction):
     schema = DefaultSchema(Topic()).get_update_schema(
         optional_properties=["title", "text", "attachment_ids", "tag_ids"]
     )
+    permission_description = "agenda.can_manage"

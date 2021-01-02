@@ -18,6 +18,7 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         "speaker_ids",
         "list_of_speakers_id",
     )
+    permission_description = "agenda.can_manage_list_of_speakers"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

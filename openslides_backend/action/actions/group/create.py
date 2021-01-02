@@ -15,3 +15,4 @@ class GroupCreate(CreateAction):
         required_properties=["name", "meeting_id"],
         optional_properties=["permissions"],
     )
+    permission_description = "user.can_manage"

@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import fastjsonschema
 
@@ -7,6 +7,7 @@ from ..shared.exceptions import ActionException, DatastoreException, EventStoreE
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request_element import WriteRequestElement
 from ..shared.schema import schema_version
+from . import actions  # noqa
 from .action import merge_write_request_elements
 from .relations.relation_manager import RelationManager
 from .util.actions_map import actions_map
@@ -55,19 +56,24 @@ class ActionHandler(BaseHandler):
     MAX_RETRY = 3
 
     @classmethod
-    def get_actions_dev_status(cls) -> Iterable[Tuple[str, Union[str, Dict]]]:
+    def get_health_info(cls) -> Iterable[Tuple[str, Dict[str, Any]]]:
         """
-        Returns name and development status of all actions
+        Returns name and development status of all actions.
         """
-        for name, action in actions_map.items():
+        for name in sorted(actions_map):
+            action = actions_map[name]
             if getattr(action, "is_dummy", False):
-                yield name, "Not implemented"
+                yield name, dict(status="Not implemented")
             else:
                 schema: Dict[str, Any] = deepcopy(action_payload_schema)
                 schema["items"] = action.schema
                 if action.is_singular:
                     schema["maxItems"] = 1
-                yield name, schema
+                info = dict(
+                    schema=schema,
+                    permission=action.get_permission_description(),
+                )
+                yield name, info
 
     def handle_request(self, payload: Payload, user_id: int) -> ActionResponse:
         """

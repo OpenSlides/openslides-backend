@@ -72,7 +72,7 @@ class ActionView(BaseView):
         """
         Returns some status information. HTTP method is ignored.
         """
-        return {"actions": dict(ActionHandler.get_actions_dev_status())}
+        return dict(actions=dict(ActionHandler.get_health_info()))
 
 
 class PresenterView(BaseView):

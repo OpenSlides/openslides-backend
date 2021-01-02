@@ -15,3 +15,4 @@ class MotionCommentSectionCreateAction(CreateAction):
         required_properties=["name", "meeting_id"],
         optional_properties=["read_group_ids", "write_group_ids"],
     )
+    permission_description = "motion.can_manage"

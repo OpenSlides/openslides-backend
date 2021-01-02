@@ -1,3 +1,5 @@
+import simplejson as json
+
 from .base import BaseActionTestCase
 
 
@@ -53,3 +55,11 @@ class GeneralActionWSGITester(BaseActionTestCase):
         response = self.client.get("/health")
         self.assert_status_code(response, 200)
         self.assertIn("healthinfo", str(response.data))
+        actions = json.loads(response.data)["healthinfo"]["actions"]
+        some_example_actions = (
+            "topic.create",
+            "motion.delete",
+            "user.update_temporary",
+        )
+        for action in some_example_actions:
+            self.assertIn(action, actions.keys())

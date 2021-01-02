@@ -9,6 +9,8 @@ from .generate_new_password import UserGenerateNewPassword
 class UserGenerateNewPasswordTemporaryAction(
     CheckTemporaryMixin, UserGenerateNewPassword
 ):
+    permission_description = "user.can_manage"
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Check for temporary user and calls the super code.

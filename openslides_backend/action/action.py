@@ -23,6 +23,9 @@ from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .util.typing import ActionPayload, ActionResponseResultsElement
 
+PERMISSION_SPECIAL_CASE = "Special business logic"
+GENERIC_PERMISSION = "Generic permission check"
+
 
 class SchemaProvider(type):
     """
@@ -60,6 +63,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema: Dict
     schema_validator: Callable[[Dict[str, Any]], None]
     is_singular: bool = False
+    permission_description: str = ""
     internal: bool = False
     relation_manager: RelationManager
 
@@ -360,6 +364,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
             # we do not want such response information in the real action response.
             if isinstance(item, WriteRequestElement):
                 self.write_request_elements.append(item)
+
+    @classmethod
+    def get_permission_description(cls) -> Dict[str, str]:
+        """
+        Returns a dict with type of permission and eventually the permission string.
+        This is foo.can_manage by default, where foo is the name of the collection
+        this action belongs to.
+        """
+        if not cls.permission_description:
+            return dict(
+                type=GENERIC_PERMISSION,
+                permission=f"{cls.name.split('.')[0]}.can_manage",
+            )
+        if cls.permission_description == PERMISSION_SPECIAL_CASE:
+            return dict(type=PERMISSION_SPECIAL_CASE)
+        return dict(type=GENERIC_PERMISSION, permission=cls.permission_description)
 
 
 class DummyAction(Action):

@@ -33,6 +33,7 @@ class MotionUpdateMetadata(UpdateAction):
         ],
         additional_optional_fields={"workflow_id": optional_id_schema},
     )
+    permission_description = "motion.can_manage_metadata"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get("workflow_id"):

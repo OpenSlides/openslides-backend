@@ -18,6 +18,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
 
     model = MotionWorkflow()
     schema = DefaultSchema(MotionWorkflow()).get_create_schema(["name", "meeting_id"])
+    permission_description = "motion.can_manage"
     dependencies = [MotionStateActionSet.get_action("create")]
 
     def get_dependent_action_payload(

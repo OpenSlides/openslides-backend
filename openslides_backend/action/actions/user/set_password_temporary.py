@@ -11,6 +11,8 @@ class UserSetPasswordTemporaryAction(CheckTemporaryMixin, UserSetPasswordAction)
     Action to set the password of a temporary user.
     """
 
+    permission_description = "user.can_manage"
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Check if a user is a temporary user.

@@ -22,6 +22,7 @@ class SpeakerSpeak(UpdateAction):
         title="Speak schema",
         description="Schema to let a speaker's speach begin.",
     )
+    permission_description = "agenda.can_manage_list_of_speakers"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:

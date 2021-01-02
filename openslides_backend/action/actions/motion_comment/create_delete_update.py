@@ -1,4 +1,5 @@
 from ....models.models import MotionComment
+from ...action import PERMISSION_SPECIAL_CASE
 from ...action_set import ActionSet
 from ...mixins.create_action_with_inferred_meeting import (
     get_create_action_with_inferred_meeting,
@@ -21,5 +22,6 @@ class MotionCommentActionSet(ActionSet):
         optional_properties=["comment"]
     )
     delete_schema = DefaultSchema(MotionComment()).get_delete_schema()
+    permission_description = PERMISSION_SPECIAL_CASE
 
     CreateActionClass = get_create_action_with_inferred_meeting("motion_id")

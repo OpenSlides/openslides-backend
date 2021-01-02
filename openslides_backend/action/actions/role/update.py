@@ -1,4 +1,5 @@
 from ....models.models import Role
+from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -15,3 +16,4 @@ class RoleUpdateAction(DeduplicatePermissionsMixin, UpdateAction):
     schema = DefaultSchema(Role()).get_update_schema(
         optional_properties=["name", "permissions"]
     )
+    permission_description = PERMISSION_SPECIAL_CASE

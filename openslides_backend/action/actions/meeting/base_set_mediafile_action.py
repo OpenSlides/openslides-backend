@@ -24,6 +24,7 @@ class BaseMeetingSetMediafileAction(UpdateAction):
             "mediafile_id": required_id_schema,
         },
     )
+    permission_description = "meeting.can_manage_logos_and_fonts"
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if not self.field or not self.allowed_mimetypes:

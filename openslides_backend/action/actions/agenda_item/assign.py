@@ -30,6 +30,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
             }
         },
     )
+    permission_description = "agenda.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

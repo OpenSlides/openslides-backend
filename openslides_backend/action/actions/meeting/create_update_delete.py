@@ -1,4 +1,5 @@
 from ....models.models import Meeting
+from ...action import PERMISSION_SPECIAL_CASE
 from ...action_set import ActionSet
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
@@ -119,3 +120,4 @@ class MeetingActionSet(ActionSet):
         optional_properties=meeting_settings_keys
     )
     delete_schema = DefaultSchema(Meeting()).get_delete_schema()
+    permission_description = PERMISSION_SPECIAL_CASE
