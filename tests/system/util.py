@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Any, Type, Union
 from unittest.mock import MagicMock, Mock
 
 from openslides_backend.environment import get_environment
@@ -28,6 +28,9 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
         logging=MagicMock(),
     )
     mock_media_service = Mock(MediaService)
+    mock_media_service.upload_resource = Mock(
+        side_effect=side_effect_for_upload_resource_method
+    )
     services.media = MagicMock(return_value=mock_media_service)
     mock_permission_service = Mock(PermissionService)
     mock_permission_service.is_allowed = MagicMock(return_value=True)
@@ -40,3 +43,9 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
     application = application_factory.setup()
 
     return application
+
+
+def side_effect_for_upload_resource_method(
+    *args: Any, **kwargs: Any
+) -> Union[str, None]:
+    return "Mocked error on mimetype 'text/plain'" if args[2] == "text/plain" else None

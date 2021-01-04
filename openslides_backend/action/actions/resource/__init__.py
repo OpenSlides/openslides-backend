@@ -1,1 +1,1 @@
-from . import delete  # noqa
+from . import delete, upload  # noqa

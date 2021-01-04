@@ -13,3 +13,6 @@ class MediaService(Protocol):
         mimetype: str,
     ) -> None:
         ...
+
+    def upload_resource(self, file: str, id: int, mimetype: str) -> str:
+        ...
