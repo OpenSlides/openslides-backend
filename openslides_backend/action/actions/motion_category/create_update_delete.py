@@ -12,8 +12,8 @@ class MotionCategoryActionSet(ActionSet):
 
     model = MotionCategory()
     create_schema = DefaultSchema(MotionCategory()).get_create_schema(
-        required_properties=["name", "prefix", "meeting_id"],
-        optional_properties=["parent_id"],
+        required_properties=["name", "meeting_id"],
+        optional_properties=["parent_id", "prefix"],
     )
     update_schema = DefaultSchema(MotionCategory()).get_update_schema(
         optional_properties=["name", "prefix", "motion_ids"]

@@ -43,7 +43,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "data": [
                         {
                             "name": "test_Xcdfgee",
-                            "prefix": "prefix_niqCxoXA",
                             "meeting_id": 222,
                         }
                     ],
@@ -53,7 +52,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion_category/1")
         assert model.get("name") == "test_Xcdfgee"
-        assert model.get("prefix") == "prefix_niqCxoXA"
         assert model.get("meeting_id") == 222
 
     def test_create_empty_data(self) -> None:
@@ -63,7 +61,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'name\\', \\'prefix\\', \\'meeting_id\\'] properties",
+            "data must contain [\\'name\\', \\'meeting_id\\'] properties",
             str(response.data),
         )
 
@@ -76,7 +74,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "data": [
                         {
                             "name": "test_Xcdfgee",
-                            "prefix": "prefix_niqCxoXA",
                             "meeting_id": 222,
                             "wrong_field": "text_AefohteiF8",
                         }
@@ -99,7 +96,6 @@ class MotionCategorySystemTest(BaseActionTestCase):
                     "data": [
                         {
                             "name": "test_Xcdfgee",
-                            "prefix": "prefix_niqCxoXA",
                             "meeting_id": 222,
                         }
                     ],
