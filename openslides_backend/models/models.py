@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "dc4561f1d7ea5c7ceacac71c824a2343"
+MODELS_YML_CHECKSUM = "dd6056426944f027d5605b9b06f4a0cb"
 
 
 class Organisation(Model):
@@ -836,7 +836,7 @@ class Motion(Model):
         equal_fields="meeting_id",
     )
     supporter_ids = fields.RelationListField(
-        to={Collection("user"): "supported_motion_$_ids"}, equal_fields="meeting_id"
+        to={Collection("user"): "supported_motion_$_ids"}
     )
     poll_ids = fields.RelationListField(
         to={Collection("poll"): "content_object_id"},

@@ -1,5 +1,8 @@
-from . import check_mediafile_id  # noqa
-from . import initial_data  # noqa
-from . import server_time  # noqa
-from . import whoami  # noqa
+from . import (  # noqa
+    check_mediafile_id,
+    check_resource_id,
+    initial_data,
+    server_time,
+    whoami,
+)
 from .presenter_interface import *  # noqa
