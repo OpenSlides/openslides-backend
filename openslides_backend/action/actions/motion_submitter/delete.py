@@ -12,4 +12,4 @@ class MotionSubmitterDeleteAction(DeleteAction):
 
     model = MotionSubmitter()
     schema = DefaultSchema(MotionSubmitter()).get_delete_schema()
-    permission_description = "motion.can_manage"
+    permission_description = "motion.can_manage_metadata"
