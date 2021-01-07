@@ -62,17 +62,14 @@ class ActionHandler(BaseHandler):
         """
         for name in sorted(actions_map):
             action = actions_map[name]
-            if getattr(action, "is_dummy", False):
-                yield name, dict(status="Not implemented")
-            else:
-                schema: Dict[str, Any] = deepcopy(action_payload_schema)
-                schema["items"] = action.schema
-                if action.is_singular:
-                    schema["maxItems"] = 1
-                info = dict(
-                    schema=schema,
-                )
-                yield name, info
+            schema: Dict[str, Any] = deepcopy(action_payload_schema)
+            schema["items"] = action.schema
+            if action.is_singular:
+                schema["maxItems"] = 1
+            info = dict(
+                schema=schema,
+            )
+            yield name, info
 
     def handle_request(self, payload: Payload, user_id: int) -> ActionResponse:
         """
