@@ -1,1 +1,1 @@
-from . import anonymize, create, delete, start  # noqa
+from . import anonymize, create, delete, start, stop  # noqa
