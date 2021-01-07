@@ -60,7 +60,7 @@ class PermissionHTTPAdapter(PermissionService):
 
             raise NotAllowed(reason, error_index)
 
-        additions = content.get("additions")
+        additions = content.get("additions") or []
         if not isinstance(additions, list):
             raise PermissionException("additions must be a list")
 
