@@ -18,7 +18,6 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
         title="Delete all speakers of list of speakers",
         description="Action to remove all speakers from the given list of speakers.",
     )
-    permission_description = "agenda.can_manage_list_of_speakers"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:

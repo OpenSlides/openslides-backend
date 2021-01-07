@@ -16,7 +16,6 @@ class MotionWorkflowDeleteAction(DeleteAction):
 
     model = MotionWorkflow()
     schema = DefaultSchema(MotionWorkflow()).get_delete_schema()
-    permission_description = "motion.can_manage"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

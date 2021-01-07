@@ -24,7 +24,6 @@ class MotionCategoryNumberMotions(UpdateAction):
         description="An object containing an array of main category id.",
         required_properties=["id"],
     )
-    permission_description = "motion.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:

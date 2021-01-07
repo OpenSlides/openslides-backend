@@ -18,7 +18,6 @@ class MeetingUnsetFontAction(UpdateAction):
             "place": {"type": "string", "minLength": 1},
         },
     )
-    permission_description = "meeting.can_manage_logos_and_fonts"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         place = instance.pop("place")

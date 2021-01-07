@@ -27,7 +27,6 @@ class AgendaItemUpdate(UpdateAction):
             "duration",
         ]
     )
-    permission_description = "agenda.can_manage"
 
     def calc_is_internal(
         self, type_: Optional[int], parent_is_internal: Optional[bool]

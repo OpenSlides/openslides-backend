@@ -1,5 +1,4 @@
 from ....models.models import ListOfSpeakers
-from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -13,4 +12,3 @@ class ListOfSpeakersDelete(DeleteAction):
 
     model = ListOfSpeakers()
     schema = DefaultSchema(ListOfSpeakers()).get_delete_schema()
-    permission_description = PERMISSION_SPECIAL_CASE

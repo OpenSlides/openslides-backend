@@ -17,7 +17,6 @@ class MotionSetRecommendationAction(UpdateAction):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(["recommendation_id"])
-    permission_description = "motion.can_manage_metadata"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

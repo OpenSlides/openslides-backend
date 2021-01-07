@@ -3,7 +3,6 @@ from typing import Any, Dict
 from ....models.models import PersonalNote
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeetingMixin,
@@ -23,7 +22,6 @@ class PersonalNoteCreateAction(CreateActionWithInferredMeetingMixin, CreateActio
         required_properties=["content_object_id"],
         optional_properties=["star", "note"],
     )
-    permission_description = PERMISSION_SPECIAL_CASE
     relation_field_for_meeting = "content_object_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

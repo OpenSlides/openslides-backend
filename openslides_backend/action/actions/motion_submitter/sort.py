@@ -17,7 +17,6 @@ class MotionSubmitterSort(LinearSortMixin, SingularActionMixin, UpdateAction):
     schema = DefaultSchema(MotionSubmitter()).get_linear_sort_schema(
         "motion_submitter_ids", "motion_id"
     )
-    permission_description = "motion.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

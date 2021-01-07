@@ -19,4 +19,3 @@ class MotionStatuteParagraphActionSet(ActionSet):
         optional_properties=["title", "text"]
     )
     delete_schema = DefaultSchema(MotionStatuteParagraph()).get_delete_schema()
-    permission_description = "motion.can_manage"

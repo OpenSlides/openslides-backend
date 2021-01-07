@@ -2,7 +2,6 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.patterns import FullQualifiedId
-from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,7 +15,6 @@ class UserResetPasswordToDefaultAction(UpdateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
-    permission_description = PERMISSION_SPECIAL_CASE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

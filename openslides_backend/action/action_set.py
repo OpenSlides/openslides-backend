@@ -24,8 +24,6 @@ class ActionSet:
 
     actions: Dict[str, Type[Action]]
 
-    permission_description: str = ""
-
     @classmethod
     def get_actions(cls) -> Dict[str, Type[Action]]:
         if not hasattr(cls, "actions"):
@@ -41,8 +39,6 @@ class ActionSet:
                         dict(model=cls.model, schema=schema),
                     ),
                 )
-                if cls.permission_description and not clazz.permission_description:
-                    clazz.permission_description = cls.permission_description
                 actions[route] = clazz
             cls.actions = actions
         return cls.actions
