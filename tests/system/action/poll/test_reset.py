@@ -24,7 +24,7 @@ class PollResetActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        
+
         # check if the state has been changed to 1 (Created).
         poll = self.get_model("poll/1")
         assert poll.get("state") == 1
