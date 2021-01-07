@@ -71,7 +71,6 @@ class ActionHandler(BaseHandler):
                     schema["maxItems"] = 1
                 info = dict(
                     schema=schema,
-                    permission=action.get_permission_description(),
                 )
                 yield name, info
 

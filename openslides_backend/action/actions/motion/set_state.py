@@ -4,7 +4,6 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
-from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -19,7 +18,6 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(["state_id"])
-    permission_description = PERMISSION_SPECIAL_CASE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

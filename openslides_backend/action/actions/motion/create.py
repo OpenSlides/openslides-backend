@@ -5,7 +5,6 @@ from ....models.models import Motion
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import id_list_schema, optional_id_schema
-from ...action import PERMISSION_SPECIAL_CASE
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -62,7 +61,6 @@ class MotionCreate(
             **agenda_creation_properties,
         },
     )
-    permission_description = PERMISSION_SPECIAL_CASE
     dependencies = [AgendaItemCreate]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

@@ -1,5 +1,4 @@
 from ....models.models import User
-from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -35,4 +34,3 @@ class UserCreate(CreateAction):
             "committee_as_manager_ids",
         ],
     )
-    permission_description = PERMISSION_SPECIAL_CASE

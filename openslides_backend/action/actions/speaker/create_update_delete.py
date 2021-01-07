@@ -4,7 +4,6 @@ from ....models.models import Speaker
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection
-from ...action import PERMISSION_SPECIAL_CASE
 from ...generics.delete import DeleteAction
 from ...generics.update import UpdateAction
 from ...mixins.create_action_with_inferred_meeting import (
@@ -22,7 +21,6 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         required_properties=["list_of_speakers_id", "user_id"],
         optional_properties=["marked"],
     )
-    permission_description = PERMISSION_SPECIAL_CASE
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -51,11 +49,9 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
 class SpeakerUpdate(UpdateAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(["marked"])
-    permission_description = "agenda.can_manage_list_of_speakers"
 
 
 @register_action("speaker.delete")
 class SpeakerDeleteAction(DeleteAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_delete_schema()
-    permission_description = PERMISSION_SPECIAL_CASE

@@ -22,7 +22,6 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
     schema = DefaultSchema(MotionSubmitter()).get_create_schema(
         ["motion_id", "user_id"],
     )
-    permission_description = "motion.can_manage_metadata"
 
     relation_field_for_meeting = "motion_id"
 

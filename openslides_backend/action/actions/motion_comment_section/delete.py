@@ -17,7 +17,6 @@ class MotionCommentSectionDeleteAction(DeleteAction):
 
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_delete_schema()
-    permission_description = "motion.can_manage"
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         try:

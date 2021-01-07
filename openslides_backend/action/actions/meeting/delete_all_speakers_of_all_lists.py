@@ -21,7 +21,6 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
         title="Delete all speakers of all list of a meeting.",
         description="An array of meeting objects which speakers to be deleted",
     )
-    permission_description = "agenda.can_manage_list_of_speakers"
 
     def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
         new_payload = []

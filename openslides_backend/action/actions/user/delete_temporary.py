@@ -15,7 +15,6 @@ class UserDeleteTemporary(CheckTemporaryMixin, DeleteAction):
 
     model = User()
     schema = DefaultSchema(User()).get_delete_schema()
-    permission_description = "user.can_manage"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         self.check_for_temporary(instance)

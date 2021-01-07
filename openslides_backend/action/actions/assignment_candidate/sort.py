@@ -18,7 +18,6 @@ class AssignmentCandidateSort(LinearSortMixin, SingularActionMixin, UpdateAction
         "candidate_ids",
         "assignment_id",
     )
-    permission_description = "assignment.can_manage"
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         payload = super().get_updated_instances(payload)

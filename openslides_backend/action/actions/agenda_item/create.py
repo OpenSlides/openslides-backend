@@ -28,7 +28,6 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "weight",
         ],
     )
-    permission_description = "agenda.can_manage"
 
     relation_field_for_meeting = "content_object_id"
 
