@@ -30,7 +30,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("line_to") == 234
         assert model.get("text") == "text_DvLXGcdW"
         assert model.get("motion_id") == 233
-        assert model.get("type") == 0
+        assert model.get("type") == "replacement"
         assert model.get("meeting_id") == 1
         assert int(str(model.get("creation_time"))) > 1600246886
 
@@ -53,7 +53,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                             "motion_id": 233,
                             "rejected": False,
                             "internal": True,
-                            "type": 0,
+                            "type": "replacement",
                             "other_description": "other_description_iuDguxZp",
                         }
                     ],
@@ -68,7 +68,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("motion_id") == 233
         assert model.get("rejected") is False
         assert model.get("internal") is True
-        assert model.get("type") == 0
+        assert model.get("type") == "replacement"
         assert model.get("other_description") == "other_description_iuDguxZp"
         assert model.get("meeting_id") == 1
         assert int(str(model.get("creation_time"))) > 1600246886

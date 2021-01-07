@@ -36,7 +36,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
                             "title": "title_Xcdfgee",
                             "description": "text_test1",
                             "open_posts": 12,
-                            "phase": 1,
+                            "phase": "search",
                             "default_poll_description": "text_test2",
                             "number_poll_candidates": True,
                         }
@@ -49,7 +49,7 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         assert model.get("title") == "title_Xcdfgee"
         assert model.get("description") == "text_test1"
         assert model.get("open_posts") == 12
-        assert model.get("phase") == 1
+        assert model.get("phase") == "search"
         assert model.get("default_poll_description") == "text_test2"
         assert model.get("number_poll_candidates") is True
 

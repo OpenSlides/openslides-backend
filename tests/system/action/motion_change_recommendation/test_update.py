@@ -22,7 +22,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
                             "text": "text_zzTWoMte",
                             "rejected": False,
                             "internal": True,
-                            "type": 1,
+                            "type": "insertion",
                             "other_description": "other_description_IClpabuM",
                         }
                     ],
@@ -34,7 +34,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("text") == "text_zzTWoMte"
         assert model.get("rejected") is False
         assert model.get("internal") is True
-        assert model.get("type") == 1
+        assert model.get("type") == "insertion"
         assert model.get("other_description") == "other_description_IClpabuM"
 
     def test_update_wrong_id(self) -> None:

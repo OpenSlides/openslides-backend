@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "dd6056426944f027d5605b9b06f4a0cb"
+MODELS_YML_CHECKSUM = "9f43df95f7475dab8494846e05524976"
 
 
 class Organisation(Model):
@@ -249,8 +249,8 @@ class Meeting(Model):
     agenda_item_creation = fields.CharField(
         constraints={"enum": ["always", "never", "default_yes", "default_no"]}
     )
-    agenda_new_items_default_visibility = fields.IntegerField(
-        constraints={"enum": [1, 2, 3]}
+    agenda_new_items_default_visibility = fields.CharField(
+        constraints={"enum": ["common", "internal", "hidden"]}
     )
     agenda_show_internal_items_on_projector = fields.BooleanField()
     list_of_speakers_amount_last_on_projector = fields.IntegerField(
@@ -310,7 +310,6 @@ class Meeting(Model):
     )
     motions_amendments_multiple_paragraphs = fields.BooleanField()
     motions_supporters_min_amount = fields.IntegerField(constraints={"minimum": 0})
-    motions_supporters_enable_autoremove = fields.BooleanField()
     motions_export_title = fields.CharField()
     motions_export_preamble = fields.CharField()
     motions_export_submitter_recommendation = fields.BooleanField()
@@ -516,8 +515,8 @@ class Meeting(Model):
     default_group_id = fields.RelationField(
         to={Collection("group"): "default_group_for_meeting_id"}, required=True
     )
-    superadmin_group_id = fields.RelationField(
-        to={Collection("group"): "superadmin_group_for_meeting_id"}
+    admin_group_id = fields.RelationField(
+        to={Collection("group"): "admin_group_for_meeting_id"}
     )
 
 
@@ -533,9 +532,8 @@ class Group(Model):
         to={Collection("meeting"): "default_group_id"},
         on_delete=fields.OnDelete.PROTECT,
     )
-    superadmin_group_for_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "superadmin_group_id"},
-        on_delete=fields.OnDelete.PROTECT,
+    admin_group_for_meeting_id = fields.RelationField(
+        to={Collection("meeting"): "admin_group_id"}, on_delete=fields.OnDelete.PROTECT
     )
     mediafile_access_group_ids = fields.RelationListField(
         to={Collection("mediafile"): "access_group_ids"}, equal_fields="meeting_id"
@@ -614,7 +612,9 @@ class AgendaItem(Model):
     item_number = fields.CharField()
     comment = fields.CharField()
     closed = fields.BooleanField()
-    type = fields.IntegerField(default=1, constraints={"enum": [1, 2, 3]})
+    type = fields.CharField(
+        default="common", constraints={"enum": ["common", "internal", "hidden"]}
+    )
     duration = fields.IntegerField(
         constraints={"description": "Given in seconds", "minimum": 0}
     )
@@ -657,9 +657,9 @@ class AgendaItem(Model):
         to={Collection("meeting"): "agenda_item_ids"}, required=True
     )
 
-    AGENDA_ITEM = 1
-    INTERNAL_ITEM = 2
-    HIDDEN_ITEM = 3
+    AGENDA_ITEM = "common"
+    INTERNAL_ITEM = "internal"
+    HIDDEN_ITEM = "hidden"
 
 
 class ListOfSpeakers(Model):
@@ -1018,7 +1018,10 @@ class MotionChangeRecommendation(Model):
     id = fields.IntegerField()
     rejected = fields.BooleanField()
     internal = fields.BooleanField()
-    type = fields.IntegerField(default=0, constraints={"enum": [0, 1, 2, 3]})
+    type = fields.CharField(
+        default="replacement",
+        constraints={"enum": ["replacement", "insertion", "deletion", "other"]},
+    )
     other_description = fields.CharField()
     line_from = fields.IntegerField(constraints={"minimum": 0})
     line_to = fields.IntegerField(constraints={"minimum": 0})
@@ -1048,9 +1051,9 @@ class MotionState(Model):
     restrictions = fields.CharArrayField(
         in_array_constraints={
             "enum": [
-                "motions.can_see_internal",
-                "motions.can_manage_metadata",
-                "motions.can_manage",
+                "motion.can_see_internal",
+                "motion.can_manage_metadata",
+                "motion.can_manage",
                 "is_submitter",
             ]
         }
@@ -1060,8 +1063,9 @@ class MotionState(Model):
     allow_submitter_edit = fields.BooleanField()
     set_number = fields.BooleanField()
     show_state_extension_field = fields.BooleanField()
-    merge_amendment_into_final = fields.IntegerField(
-        default=0, constraints={"enum": [-1, 0, 1]}
+    merge_amendment_into_final = fields.CharField(
+        default="undefined",
+        constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
     show_recommendation_extension_field = fields.BooleanField()
     next_state_ids = fields.RelationListField(
@@ -1154,7 +1158,10 @@ class Poll(Model):
     pollmethod = fields.CharField(
         required=True, constraints={"enum": ["Y", "YN", "YNA", "N"]}
     )
-    state = fields.IntegerField(default=1, constraints={"enum": [1, 2, 3, 4]})
+    state = fields.CharField(
+        default="created",
+        constraints={"enum": ["created", "started", "finished", "published"]},
+    )
     min_votes_amount = fields.IntegerField(default=1)
     max_votes_amount = fields.IntegerField(default=1)
     global_yes = fields.BooleanField(default=False)
@@ -1259,7 +1266,9 @@ class Assignment(Model):
     title = fields.CharField(required=True)
     description = fields.HTMLStrictField()
     open_posts = fields.IntegerField(default=0, constraints={"minimum": 0})
-    phase = fields.IntegerField(default=0, constraints={"enum": [0, 1, 2]})
+    phase = fields.CharField(
+        default="search", constraints={"enum": ["search", "voting", "finished"]}
+    )
     default_poll_description = fields.CharField()
     number_poll_candidates = fields.BooleanField()
     candidate_ids = fields.RelationListField(

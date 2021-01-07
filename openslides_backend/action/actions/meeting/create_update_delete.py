@@ -65,7 +65,6 @@ meeting_settings_keys = [
     "motions_amendments_text_mode",
     "motions_amendments_multiple_paragraphs",
     "motions_supporters_min_amount",
-    "motions_supporters_enable_autoremove",
     "motions_export_title",
     "motions_export_preamble",
     "motions_export_submitter_recommendation",

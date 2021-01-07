@@ -20,7 +20,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("meeting_id") == 110
         assert model.get("open_posts") == 0
-        assert model.get("phase") == 0
+        assert model.get("phase") == "search"
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 110)
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
@@ -135,7 +135,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
                             "meeting_id": 110,
                             "description": "text_test1",
                             "open_posts": 12,
-                            "phase": 1,
+                            "phase": "search",
                             "default_poll_description": "text_test2",
                             "number_poll_candidates": True,
                         }
@@ -149,7 +149,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         assert model.get("meeting_id") == 110
         assert model.get("description") == "text_test1"
         assert model.get("open_posts") == 12
-        assert model.get("phase") == 1
+        assert model.get("phase") == "search"
         assert model.get("default_poll_description") == "text_test2"
         assert model.get("number_poll_candidates") is True
         agenda_item = self.get_model("agenda_item/1")

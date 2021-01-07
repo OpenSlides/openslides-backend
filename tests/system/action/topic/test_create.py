@@ -1,5 +1,6 @@
 import simplejson as json
 
+from openslides_backend.models.models import AgendaItem
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -76,7 +77,7 @@ class TopicSystemTest(BaseActionTestCase):
                         {
                             "meeting_id": 1,
                             "title": "test",
-                            "agenda_type": 2,
+                            "agenda_type": AgendaItem.INTERNAL_ITEM,
                             "agenda_duration": 60,
                         }
                     ],
@@ -92,7 +93,7 @@ class TopicSystemTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
-        self.assertEqual(agenda_item["type"], 2)
+        self.assertEqual(agenda_item["type"], AgendaItem.INTERNAL_ITEM)
         self.assertEqual(agenda_item["duration"], 60)
         self.assertEqual(agenda_item["weight"], 10000)
 
@@ -107,13 +108,13 @@ class TopicSystemTest(BaseActionTestCase):
                         {
                             "meeting_id": 1,
                             "title": "A",
-                            "agenda_type": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
                             "agenda_weight": 1000,
                         },
                         {
                             "meeting_id": 1,
                             "title": "B",
-                            "agenda_type": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
                             "agenda_weight": 1001,
                         },
                     ],
@@ -127,14 +128,14 @@ class TopicSystemTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
-        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("type"), AgendaItem.AGENDA_ITEM)
         self.assertEqual(agenda_item.get("weight"), 1000)
         topic = self.get_model("topic/2")
         self.assertEqual(topic.get("agenda_item_id"), 2)
         agenda_item = self.get_model("agenda_item/2")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/2")
-        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("type"), AgendaItem.AGENDA_ITEM)
         self.assertEqual(agenda_item.get("weight"), 1001)
         meeting = self.get_model("meeting/1")
         self.assertEqual(meeting.get("topic_ids"), [1, 2])
@@ -152,7 +153,7 @@ class TopicSystemTest(BaseActionTestCase):
                         {
                             "meeting_id": 1,
                             "title": "A",
-                            "agenda_type": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
                             "agenda_weight": 1000,
                         },
                     ],
@@ -163,7 +164,7 @@ class TopicSystemTest(BaseActionTestCase):
                         {
                             "meeting_id": 1,
                             "title": "B",
-                            "agenda_type": 1,
+                            "agenda_type": AgendaItem.AGENDA_ITEM,
                             "agenda_weight": 1001,
                         },
                     ],
@@ -177,14 +178,14 @@ class TopicSystemTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
-        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("type"), AgendaItem.AGENDA_ITEM)
         self.assertEqual(agenda_item.get("weight"), 1000)
         topic = self.get_model("topic/2")
         self.assertEqual(topic.get("agenda_item_id"), 2)
         agenda_item = self.get_model("agenda_item/2")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/2")
-        self.assertEqual(agenda_item.get("type"), 1)
+        self.assertEqual(agenda_item.get("type"), AgendaItem.AGENDA_ITEM)
         self.assertEqual(agenda_item.get("weight"), 1001)
         meeting = self.get_model("meeting/1")
         self.assertEqual(meeting.get("topic_ids"), [1, 2])
