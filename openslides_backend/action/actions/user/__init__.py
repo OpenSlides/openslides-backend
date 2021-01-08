@@ -10,6 +10,7 @@ from . import (  # noqa
     set_password,
     set_password_self,
     set_password_temporary,
+    set_present,
     update,
     update_self,
     update_temporary,
