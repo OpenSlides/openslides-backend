@@ -2,8 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import ListOfSpeakers, Speaker
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator
-from ....shared.patterns import FullQualifiedId
+from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,61 +22,52 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        # Check if list of speakers has speakers.
+        # Fetch all speakers.
         list_of_speakers_id = instance["id"]
-        list_of_speakers = self.fetch_model(
-            FullQualifiedId(ListOfSpeakers().collection, list_of_speakers_id),
-            mapped_fields=["speaker_ids"],
+        speakers = self.datastore.filter(
+            self.model.collection,
+            FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+            mapped_fields=["end_time", "user_id", "weight"],
+            lock_result=True,
         )
-        if not list_of_speakers.get("speaker_ids"):
+        if not speakers:
             raise ActionException(
                 f"List of speakers {list_of_speakers_id} has no speakers."
             )
 
-        # Fetch last speaker.
-        last_speakers = sorted(
-            self.datastore.filter(
-                self.model.collection,
-                FilterOperator("end_time", "!=", None),
-                mapped_fields=["end_time", "user_id"],
-                lock_result=True,
-            ).items(),
-            key=lambda item: item[1]["end_time"],
-            reverse=True,
-        )
-        if not last_speakers:
+        # Get last speaker.
+        last_speaker_id, last_speaker = None, None
+        lowest_weight = None
+        for speaker_id, speaker in speakers.items():
+            speaker_weight = speaker.get("weight") or 0
+            if lowest_weight is None:
+                lowest_weight = speaker_weight
+            else:
+                lowest_weight = min(lowest_weight, speaker_weight)
+
+            if speaker.get("end_time") is not None:
+                if last_speaker_id is None:
+                    last_speaker_id, last_speaker = speaker_id, speaker
+                else:
+                    if last_speaker["end_time"] < speaker["end_time"]:
+                        last_speaker_id, last_speaker = speaker_id, speaker
+        if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
-        last_speaker = last_speakers[0][1]
-        last_speaker.update({"id": last_speakers[0][0]})
+        assert isinstance(lowest_weight, int)
 
-        # Check if this last speaker is already on the list of coming speakers.
-        if self.datastore.exists(
-            self.model.collection,
-            And(
-                FilterOperator("begin_time", "=", None),
-                FilterOperator("user_id", "=", last_speaker["user_id"]),
-            ),
-        )["exists"]:
-            raise ActionException(
-                f"User {last_speaker['user_id']} is already on the list of speakers."
-            )
-
-        # Fetch all speakers and sort them.
-        all_speakers = sorted(
-            self.datastore.filter(
-                self.model.collection,
-                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
-                mapped_fields=["weight", "user_id"],
-                lock_result=True,
-            ).values(),
-            key=lambda speaker: speaker.get("weight") or 0,
-        )
-        weight = all_speakers[0]["weight"] or 0
+        for speaker in speakers.values():
+            if (
+                speaker.get("end_time") is None
+                and speaker["user_id"] == last_speaker["user_id"]
+            ):
+                raise ActionException(
+                    f"User {last_speaker['user_id']} is already on the list of speakers."
+                )
 
         # Return new instance to the generic part of the UpdateAction.
         return {
-            "id": last_speaker["id"],
+            "id": last_speaker_id,
             "begin_time": None,
             "end_time": None,
-            "weight": weight - 1,
+            "weight": lowest_weight - 1,
         }
