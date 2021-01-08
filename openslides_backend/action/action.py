@@ -13,7 +13,7 @@ from ..models.fields import (
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
-from ..services.permission.interface import NotAllowed, PermissionService
+from ..services.permission.interface import PermissionService
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.services import Services
@@ -116,13 +116,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service.
         """
-        try:
-            self.additions = self.permission.is_allowed(
-                self.name, self.user_id, list(payload)
-            )
-        except NotAllowed as e:
+        if not self.permission.is_allowed(self.name, self.user_id, list(payload)):
             raise PermissionDenied(
-                f"You are not allowed to perform action {self.name}: {e.reason}"
+                f"You are not allowed to perform action {self.name}."
             )
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:

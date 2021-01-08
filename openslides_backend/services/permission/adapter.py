@@ -5,7 +5,7 @@ import requests
 
 from ...shared.exceptions import PermissionException
 from ...shared.interfaces.logging import LoggingModule
-from .interface import NotAllowed, PermissionService
+from .interface import PermissionService
 
 
 class PermissionHTTPAdapter(PermissionService):
@@ -19,7 +19,7 @@ class PermissionHTTPAdapter(PermissionService):
 
     def is_allowed(
         self, name: str, user_id: int, data_list: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    ) -> bool:
         payload = json.dumps(
             {"name": name, "user_id": user_id, "data": data_list}, separators=(",", ":")
         )
@@ -36,38 +36,17 @@ class PermissionHTTPAdapter(PermissionService):
             )
 
         content = response.json()
-        self.logger.debug(f"Permission service response: {str(content)}")
+        self.logger.debug(
+            f"Permission service response with status code {response.status_code}: {str(content)}"
+        )
 
-        if "error" in content:
-            type = content["error"]["type"]
-            msg = content["error"]["msg"]
-            raise PermissionException(f"Error in permission service. {type}: {msg}")
+        if response.status_code >= 400:
+            error_message = f"Permission service sends HTTP {response.status_code} with the following content: {str(content)}."
+            raise PermissionException(error_message)
 
-        allowed = content.get("allowed", False)
+        if not isinstance(content, bool):
+            raise PermissionException(
+                f"Bad response from permission service: {str(content)}."
+            )
 
-        if not allowed:
-            reason = content.get("reason")
-            error_index = content.get("error_index")
-            if error_index < 0:
-                error_index = None
-
-            # TODO: dev only. Log about missing perms check
-            if "no such query" in reason:
-                self.logger.warning(
-                    f"Action {name} has no permission check. Return a default-true."
-                )
-                return [{} for _ in data_list]
-
-            raise NotAllowed(reason, error_index)
-
-        additions = content.get("additions") or []
-        if not isinstance(additions, list):
-            raise PermissionException("additions must be a list")
-
-        for i in range(len(additions)):
-            if additions[i] is None:
-                additions[i] = {}
-            if not isinstance(additions[i], dict):
-                raise PermissionError(f"Addition {i} is not a dict")
-
-        return additions
+        return content
