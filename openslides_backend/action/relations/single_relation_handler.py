@@ -290,9 +290,10 @@ class SingleRelationHandler:
         if not isinstance(related_field, BaseTemplateField):
             return field_name
         else:
-            replacement_field = related_field.replacement
-            if replacement_field:
-                # We have a structured relation, insert replacement
+            if not isinstance(self.field, BaseTemplateField):
+                # We have a one-sided structured relation, insert replacement
+                replacement_field = related_field.replacement
+                assert replacement_field
                 replacement = self.instance.get(replacement_field)
                 if replacement is None:
                     # replacement field was not fetched from db yet
@@ -305,7 +306,6 @@ class SingleRelationHandler:
             else:
                 # We have a structured tag. Extract the replacement directly from
                 # the field name
-                assert isinstance(self.field, BaseTemplateField)
                 replacement = self.field.get_replacement(self.field_name)
             return (
                 field_name[: related_field.index]

@@ -53,6 +53,64 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("committee_as_member_ids") == [78]
         assert model.get("committee_as_manager_ids") == [78]
 
+    def test_update_group_ids(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        self.create_model(
+            "group/11",
+            {"meeting_id": 1},
+        )
+        self.create_model(
+            "group/22",
+            {"meeting_id": 2},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update",
+                    "data": [{"id": 111, "group_ids": [11, 22]}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/111")
+        assert user.get("group_$1_ids") == [11]
+        assert user.get("group_$2_ids") == [22]
+        assert set(user.get("group_$_ids", [])) == {"1", "2"}
+        group1 = self.get_model("group/11")
+        assert group1.get("user_ids") == [111]
+        group2 = self.get_model("group/22")
+        assert group2.get("user_ids") == [111]
+
+    def test_update_vote_delegations(self) -> None:
+        self.create_model(
+            "user/111",
+            {},
+        )
+        self.create_model(
+            "user/222",
+            {},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update",
+                    "data": [{"id": 111, "vote_delegations_from_ids": {42: [222]}}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/111")
+        assert user.get("vote_delegations_$42_from_ids") == [222]
+        assert user.get("vote_delegations_$_from_ids") == ["42"]
+        user = self.get_model("user/222")
+        assert user.get("vote_delegated_$42_to_id") == 111
+        assert user.get("vote_delegated_$_to_id") == ["42"]
+
     def test_update_wrong_id(self) -> None:
         self.create_model(
             "user/111",

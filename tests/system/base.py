@@ -100,7 +100,9 @@ class BaseSystemTestCase(TestCase):
         model = model_registry[get_collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
             field = model.get_field(field_name)
-            if isinstance(field, BaseTemplateField) and "$_" in field_name:
+            if isinstance(field, BaseTemplateField) and (
+                "$_" in field_name or field_name.endswith("$")
+            ):
                 schema = {
                     "type": ["array", "null"],
                     "items": {"type": "string"},

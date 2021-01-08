@@ -11,7 +11,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "text": "<i>test</i>",
                 "reason": "<b>test2</b>",
                 "modified_final_version": "blablabla",
-                "amendment_paragraph_$": '["3"]',
+                "amendment_paragraph_$": ["3"],
                 "amendment_paragraph_$3": "testtesttest",
             },
         )
@@ -42,7 +42,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("reason") == "reason_ukWqADfE"
         assert model.get("modified_final_version") == "mfv_ilVvBsUi"
         assert model.get("amendment_paragraph_$3") == "&lt;html&gt;test&lt;/html&gt;"
-        assert model.get("amendment_paragraph_$") == '["3"]'
+        assert model.get("amendment_paragraph_$") == ["3"]
 
     def test_update_wrong_id(self) -> None:
         self.create_model(
