@@ -1,63 +1,73 @@
-from typing import Any, Dict, Iterable
+from typing import Any, Dict
 
-from ....models.models import ListOfSpeakers
+from ....models.models import ListOfSpeakers, Speaker
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.interfaces.write_request_element import WriteRequestElement
-from ....shared.patterns import Collection, FullQualifiedId
-from ...action import Action
+from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..speaker.create_update_delete import SpeakerCreateAction
 
 
 @register_action("list_of_speakers.re_add_last")
-class ListOfSpeakersReAddLastAction(Action):
+class ListOfSpeakersReAddLastAction(UpdateAction):
     """
     Action to re-add the last speaker to the list.
     """
 
-    model = ListOfSpeakers()
+    model = Speaker()
     schema = DefaultSchema(ListOfSpeakers()).get_default_schema(
         required_properties=["id"],
         title="Re-add last speaker",
-        description="Adds the last speaker as new speaker.",
+        description="Moves the last speaker back to the top of the list.",
     )
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        list_of_speakers = self.fetch_model(
-            FullQualifiedId(self.model.collection, instance["id"]),
-            mapped_fields=["id", "speaker_ids"],
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        # Fetch all speakers.
+        list_of_speakers_id = instance["id"]
+        speakers = self.datastore.filter(
+            self.model.collection,
+            FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+            mapped_fields=["end_time", "user_id", "weight"],
+            lock_result=True,
         )
-        if not list_of_speakers.get("speaker_ids"):
-            raise ActionException(f"List of speakers {instance['id']} has no speakers.")
-        filter_obj = FilterOperator("end_time", "!=", None)
-        last_speakers = sorted(
-            self.datastore.filter(
-                Collection("speaker"),
-                filter_obj,
-                mapped_fields=["end_time", "user_id"],
-                lock_result=True,
-            ).values(),
-            key=lambda speaker: speaker["end_time"],
-            reverse=True,
-        )
-        if not last_speakers:
-            raise ActionException("There is no last speaker that can be re-added.")
-        self.execute_other_action(
-            SpeakerCreateAction,
-            [
-                {
-                    "list_of_speakers_id": list_of_speakers["id"],
-                    "user_id": last_speakers[0]["user_id"],
-                }
-            ],
-        )
-        return instance
+        if not speakers:
+            raise ActionException(
+                f"List of speakers {list_of_speakers_id} has no speakers."
+            )
 
-    def create_write_request_elements(
-        self, instance: Dict[str, Any]
-    ) -> Iterable[WriteRequestElement]:
-        # we do not create write requests here since everything was delegated to the
-        # speaker.create action
-        return []
+        # Get last speaker.
+        last_speaker_id, last_speaker = None, None
+        lowest_weight = None
+        for speaker_id, speaker in speakers.items():
+            speaker_weight = speaker.get("weight") or 0
+            if lowest_weight is None:
+                lowest_weight = speaker_weight
+            else:
+                lowest_weight = min(lowest_weight, speaker_weight)
+
+            if speaker.get("end_time") is not None:
+                if last_speaker_id is None:
+                    last_speaker_id, last_speaker = speaker_id, speaker
+                else:
+                    if last_speaker["end_time"] < speaker["end_time"]:
+                        last_speaker_id, last_speaker = speaker_id, speaker
+        if last_speaker is None:
+            raise ActionException("There is no last speaker that can be re-added.")
+        assert isinstance(lowest_weight, int)
+
+        for speaker in speakers.values():
+            if (
+                speaker.get("end_time") is None
+                and speaker["user_id"] == last_speaker["user_id"]
+            ):
+                raise ActionException(
+                    f"User {last_speaker['user_id']} is already on the list of speakers."
+                )
+
+        # Return new instance to the generic part of the UpdateAction.
+        return {
+            "id": last_speaker_id,
+            "begin_time": None,
+            "end_time": None,
+            "weight": lowest_weight - 1,
+        }

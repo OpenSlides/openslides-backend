@@ -45,13 +45,14 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("list_of_speakers/111")
-        self.assertEqual(model.get("speaker_ids"), [222, 223, 224, 225])
-        model = self.get_model("speaker/225")
+        self.assertEqual(model.get("speaker_ids"), [222, 223, 224])
+        model = self.get_model("speaker/223")
         self.assertTrue(model.get("begin_time") is None)
         self.assertTrue(model.get("end_time") is None)
         self.assertEqual(model.get("user_id"), 43)
+        self.assertEqual(model.get("weight"), -1)
         model = self.get_model("user/43")
-        self.assertEqual(model.get("speaker_$222_ids"), [223, 225])
+        self.assertEqual(model.get("speaker_$222_ids"), [223])
 
     def test_no_speakers(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
