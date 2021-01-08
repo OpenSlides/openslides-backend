@@ -14,7 +14,7 @@ agenda_creation_properties = {
     },
     f"{AGENDA_PREFIX}type": {
         "description": "The type of the agenda item (common, internal, hidden).",
-        "type": "integer",
+        "type": "string",
         "enum": [
             AgendaItem.AGENDA_ITEM,
             AgendaItem.INTERNAL_ITEM,

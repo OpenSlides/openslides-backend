@@ -43,7 +43,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                         {
                             "content_object_id": "topic/1",
                             "comment": "test_comment_oiuoitesfd",
-                            "type": 2,
+                            "type": AgendaItem.INTERNAL_ITEM,
                             "parent_id": 42,
                             "duration": 360,
                         }
@@ -54,7 +54,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         agenda_item = self.get_model("agenda_item/43")
         self.assertEqual(agenda_item["comment"], "test_comment_oiuoitesfd")
-        self.assertEqual(agenda_item["type"], 2)
+        self.assertEqual(agenda_item["type"], "internal")
         self.assertEqual(agenda_item["parent_id"], 42)
         self.assertEqual(agenda_item["duration"], 360)
         self.assertEqual(agenda_item["weight"], 10000)
@@ -76,7 +76,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
                         {
                             "content_object_id": "topic/1",
                             "comment": "test_comment_oiuoitesfd",
-                            "type": 2,
+                            "type": "internal",
                             "parent_id": 42,
                             "duration": 360,
                         }
@@ -87,7 +87,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         agenda_item = self.get_model("agenda_item/43")
         self.assertEqual(agenda_item["comment"], "test_comment_oiuoitesfd")
-        self.assertEqual(agenda_item["type"], 2)
+        self.assertEqual(agenda_item["type"], AgendaItem.INTERNAL_ITEM)
         self.assertEqual(agenda_item["parent_id"], 42)
         self.assertEqual(agenda_item["duration"], 360)
         self.assertEqual(agenda_item["weight"], 11)

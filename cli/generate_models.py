@@ -169,9 +169,9 @@ class Model(Node):
     ADDITIONAL_MODEL_CODE = {
         "agenda_item": dedent(
             """
-            AGENDA_ITEM = 1
-            INTERNAL_ITEM = 2
-            HIDDEN_ITEM = 3
+            AGENDA_ITEM = "common"
+            INTERNAL_ITEM = "internal"
+            HIDDEN_ITEM = "hidden"
             """
         ),
     }

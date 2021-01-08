@@ -40,7 +40,7 @@ class AgendaTree:
         )
 
     def get_root_and_children(
-        self, only_item_type: int = None
+        self, only_item_type: str = None
     ) -> Tuple[Iterable[SerializedAgendaItem], Dict[int, List[SerializedAgendaItem]]]:
         """
         Returns an iterable with all root items and a dictonary where the key is an
@@ -61,7 +61,7 @@ class AgendaTree:
                 root_items.append(item)
         return root_items, item_children
 
-    def get_tree(self, only_item_type: int = None) -> Iterable[TreeElement]:
+    def get_tree(self, only_item_type: str = None) -> Iterable[TreeElement]:
         """
         Generator that yields dictonaries. Each dictonary has two keys, id
         and children, where id is the id of one agenda item and children is a

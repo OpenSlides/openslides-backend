@@ -21,7 +21,7 @@ class MotionStateActionTest(BaseActionTestCase):
         model = self.get_model("motion_state/1")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("restrictions") == []
-        assert model.get("merge_amendment_into_final") == 0
+        assert model.get("merge_amendment_into_final") == "undefined"
         assert model.get("css_class") == "lightblue"
 
     def test_create_enum_fields(self) -> None:
@@ -40,7 +40,7 @@ class MotionStateActionTest(BaseActionTestCase):
                             "workflow_id": 42,
                             "css_class": "red",
                             "restrictions": ["is_submitter"],
-                            "merge_amendment_into_final": -1,
+                            "merge_amendment_into_final": "do_not_merge",
                         }
                     ],
                 }
@@ -53,7 +53,7 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("workflow_id") == 42
         assert model.get("css_class") == "red"
         assert model.get("restrictions") == ["is_submitter"]
-        assert model.get("merge_amendment_into_final") == -1
+        assert model.get("merge_amendment_into_final") == "do_not_merge"
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -118,6 +118,6 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.restrictions[0] must be one of [\\'motions.can_see_internal\\', \\'motions.can_manage_metadata\\', \\'motions.can_manage\\', \\'is_submitter\\']",
+            "data.restrictions[0] must be one of [\\'motion.can_see_internal\\', \\'motion.can_manage_metadata\\', \\'motion.can_manage\\', \\'is_submitter\\']",
             str(response.data),
         )

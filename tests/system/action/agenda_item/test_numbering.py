@@ -14,15 +14,25 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         )
         self.create_model(
             "agenda_item/1",
-            {"meeting_id": 1, "weight": 10, "type": 1},
+            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
         )
         self.create_model(
             "agenda_item/2",
-            {"meeting_id": 1, "weight": 10, "parent_id": 1, "type": 1},
+            {
+                "meeting_id": 1,
+                "weight": 10,
+                "parent_id": 1,
+                "type": AgendaItem.AGENDA_ITEM,
+            },
         )
         self.create_model(
             "agenda_item/3",
-            {"meeting_id": 1, "parent_id": 1, "weight": 10, "type": 1},
+            {
+                "meeting_id": 1,
+                "parent_id": 1,
+                "weight": 10,
+                "type": AgendaItem.AGENDA_ITEM,
+            },
         )
         response = self.client.post(
             "/",
@@ -43,11 +53,11 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         )
         self.create_model(
             "agenda_item/1",
-            {"meeting_id": 1, "weight": 10, "type": 1},
+            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
         )
         self.create_model(
             "agenda_item/2",
-            {"meeting_id": 1, "weight": 10, "type": 1},
+            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
         )
         response = self.client.post(
             "/",
@@ -66,7 +76,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         )
         self.create_model(
             "agenda_item/1",
-            {"meeting_id": 1, "weight": 10, "type": 1},
+            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
         )
         self.create_model(
             "agenda_item/2",

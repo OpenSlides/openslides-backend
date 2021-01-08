@@ -1,3 +1,4 @@
+from openslides_backend.models.models import AgendaItem
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -25,7 +26,7 @@ class MotionBlockActionTest(BaseActionTestCase):
                 "is_hidden": False,
                 "is_internal": False,
                 "level": 0,
-                "type": 1,
+                "type": AgendaItem.AGENDA_ITEM,
                 "weight": 10000,
                 "meeting_id": 42,
                 "content_object_id": "motion_block/1",
