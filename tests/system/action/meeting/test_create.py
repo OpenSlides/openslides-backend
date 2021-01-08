@@ -54,5 +54,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("url_name") == "JWdYZqDX"
         assert meeting.get("enable_anonymous") is False
         assert meeting.get("guest_ids") == [2]
+        assert meeting.get("user_ids") == [2]
         user_2 = self.get_model("user/2")
         assert user_2.get("guest_meeting_ids") == [1]

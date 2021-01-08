@@ -40,6 +40,11 @@ class UserCreateActionTest(BaseActionTestCase):
         assert model.get("guest_meeting_ids") == [110, 111]
         assert model.get("committee_as_member_ids") == [78]
         assert model.get("committee_as_manager_ids") == [79]
+        # check meeting.user_ids
+        meeting = self.get_model("meeting/110")
+        assert meeting.get("user_ids") == [2]
+        meeting = self.get_model("meeting/111")
+        assert meeting.get("user_ids") == [2]
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(

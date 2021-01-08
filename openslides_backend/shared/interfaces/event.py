@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, Dict, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, Union
 
 from ..patterns import FullQualifiedId
 
@@ -10,11 +10,21 @@ class EventType(str, Enum):
     Delete = "delete"
 
 
+ListFields = TypedDict(
+    "ListFields",
+    {
+        "add": Dict[str, List[Union[int, str]]],
+        "remove": Dict[str, List[Union[int, str]]],
+    },
+)
+
+
 class Event(TypedDict, total=False):
     """
     Event as part of a write request element.
     """
 
     type: EventType
-    fields: Optional[Dict[str, Any]]
     fqid: FullQualifiedId
+    fields: Optional[Dict[str, Any]]
+    list_fields: Optional[ListFields]

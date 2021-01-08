@@ -1,5 +1,16 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import fastjsonschema
 
@@ -15,12 +26,13 @@ from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
 from ..shared.exceptions import ActionException, PermissionDenied
-from ..shared.interfaces.event import Event, EventType
+from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
+from .relations.single_relation_handler import ListUpdateElement, RelationsElement
 from .util.typing import ActionPayload, ActionResponseResultsElement
 
 PERMISSION_SPECIAL_CASE = "Special business logic"
@@ -161,19 +173,34 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Creates write request elements (with update events) for all relations.
         """
         relation_updates = self.relation_manager.get_relation_updates(
-            self.model, instance, self.additional_relation_models
+            self.model, instance, self.name, self.additional_relation_models
         )
+        fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
-            if data["type"] == "add":
-                info_text = f"Object attached to {fqfield.collection}"
-            else:
-                # data["type"] == "remove"
-                info_text = f"Object attachment to {fqfield.collection} reset"
+            list_fields: Optional[ListFields] = None
+            if data["type"] in ("add", "remove"):
+                data = cast(RelationsElement, data)
+                fields = {fqfield.field: data["value"]}
+                if data["type"] == "add":
+                    info_text = f"Object attached to {fqfield.collection}"
+                else:
+                    info_text = f"Object attachment to {fqfield.collection} reset"
+            elif data["type"] == "list_update":
+                data = cast(ListUpdateElement, data)
+                info_text = "Object updated"
+                fields = None
+                list_fields_tmp = {}
+                if data["add"]:
+                    list_fields_tmp["add"] = {fqfield.field: data["add"]}
+                if data["remove"]:
+                    list_fields_tmp["remove"] = {fqfield.field: data["remove"]}
+                list_fields = cast(ListFields, list_fields_tmp)
             yield self.build_write_request(
                 EventType.Update,
                 FullQualifiedId(fqfield.collection, fqfield.id),
                 info_text,
-                {fqfield.field: data["value"]},
+                fields,
+                list_fields,
             )
 
     def build_write_request(
@@ -182,6 +209,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         fqid: FullQualifiedId,
         information: str,
         fields: Optional[Dict[str, Any]] = None,
+        list_fields: Optional[ListFields] = None,
     ) -> WriteRequest:
         """
         Helper function to create a WriteRequest.
@@ -189,8 +217,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         event = Event(
             type=type,
             fqid=fqid,
-            fields=fields,
         )
+        if fields:
+            event["fields"] = fields
+        if list_fields:
+            event["list_fields"] = list_fields
         return WriteRequest(
             events=[event],
             information={fqid: [information]},
@@ -201,21 +232,21 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self, instance: Dict[str, Any]
     ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         """
-        Creates a write request element for one instance of the current model.
+        Creates write requests for one instance of the current model.
         """
         raise NotImplementedError
 
     def process_write_requests(
         self,
     ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
-        # Pre-yield non write request elements, i. e. action response results elements.
+        # Pre-yield non write requests, i. e. action response results elements.
         write_requests: List[WriteRequest] = []
         for item in self.write_requests:
             if not isinstance(item, WriteRequest):
                 yield item
             else:
                 write_requests.append(item)
-        # merge all actual write request elements
+        # merge all actual write requests
         write_request = merge_write_requests(write_requests)
         if write_request:
             # sort events: create - update - delete
@@ -226,7 +257,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for type in (EventType.Create, EventType.Update, EventType.Delete):
                 write_request.events.extend(events_by_type[type])
 
-            # Finally yield the merged write request element.
+            # Finally yield the merged write request.
             yield write_request
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:

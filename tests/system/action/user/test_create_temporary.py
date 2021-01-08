@@ -77,6 +77,9 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_delegations_$222_from_ids") == [7]
         assert model.get("vote_delegations_$_from_ids") == ["222"]
         assert model.get("vote_delegations_from_ids") is None
+        # check meeting.user_ids
+        meeting = self.get_model("meeting/222")
+        assert meeting.get("user_ids") == [8]
 
     def test_create_invalid_present_meeting(self) -> None:
         self.create_model("meeting/1", {})

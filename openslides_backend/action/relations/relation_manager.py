@@ -1,17 +1,24 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, cast
 
-from ...models.base import Model
-from ...models.fields import BaseRelationField
+from ...models.base import Model, model_registry
+from ...models.fields import BaseRelationField, Field
 from ...services.datastore.interface import DatastoreService
 from ...shared.patterns import FullQualifiedField
 from ...shared.typing import ModelMap
-from .single_relation_handler import Relations, RelationsElement, SingleRelationHandler
+from .calculated_field_handlers_map import calculated_field_handlers_map
+from .single_relation_handler import (
+    ListUpdateElement,
+    RelationsElement,
+    RelationUpdateElement,
+    RelationUpdates,
+    SingleRelationHandler,
+)
 
 
 class RelationManager:
     datastore: DatastoreService
 
-    relation_field_updates: Dict[FullQualifiedField, Any]
+    relation_field_updates: RelationUpdates
 
     def __init__(self, datastore: DatastoreService) -> None:
         self.datastore = datastore
@@ -21,15 +28,23 @@ class RelationManager:
         self,
         model: Model,
         instance: Dict[str, Any],
+        action: str,
         additional_relation_models: ModelMap = {},
-    ) -> Dict[FullQualifiedField, RelationsElement]:
+    ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
-        relations: Relations = {}
+        # breakpoint()
+        relations: RelationUpdates = {}
         for field_name in instance:
             if not model.has_field(field_name):
                 continue
             field = model.get_field(field_name)
+
+            # process calculated fields handlers
+            self.call_calculated_field_handlers(
+                relations, field, field_name, instance, action
+            )
+
             # only relations are handled here
             if not isinstance(field, BaseRelationField):
                 continue
@@ -46,26 +61,90 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-                if fqfield not in self.relation_field_updates or not isinstance(
-                    relations_element["value"], list
-                ):
-                    # first time this fqfield is encountered: add it to the dict
-                    # OR override of simple field, which is just saved as well
-                    self.relation_field_updates[fqfield] = relations_element["value"]
-                else:
-                    # list field is updated, merge updates
-                    if relations_element["type"] == "add":
-                        self.relation_field_updates[fqfield].append(
-                            relations_element["modified_element"]
-                        )
-                    else:
-                        try:
-                            self.relation_field_updates[fqfield].remove(
-                                relations_element["modified_element"]
-                            )
-                        except ValueError:
-                            # value was already removed
-                            continue
-                    relations_element["value"] = self.relation_field_updates[fqfield]
-                relations[fqfield] = relations_element
+                self.process_relation_element(fqfield, relations_element, relations)
+
+                # call calculated field handlers again on updated related field
+                related_field_name = fqfield.field
+                related_model = model_registry[fqfield.collection]()
+                related_field = related_model.get_field(related_field_name)
+                related_instance = {
+                    "id": fqfield.id,
+                    related_field_name: relations_element["value"],
+                }
+                self.call_calculated_field_handlers(
+                    relations,
+                    related_field,
+                    related_field_name,
+                    related_instance,
+                    action,
+                )
+
         return relations
+
+    def call_calculated_field_handlers(
+        self,
+        relations: RelationUpdates,
+        field: Field,
+        field_name: str,
+        instance: Dict[str, Any],
+        action: str,
+    ) -> None:
+        for calculated_field_handler_class in calculated_field_handlers_map[field]:
+            handler_instance = calculated_field_handler_class(self.datastore)
+            result = handler_instance.process_field(field, field_name, instance, action)
+            for fqfield, relations_element in result.items():
+                self.process_relation_element(fqfield, relations_element, relations)
+
+    def process_relation_element(
+        self,
+        fqfield: FullQualifiedField,
+        relation_update_element: RelationUpdateElement,
+        relations: RelationUpdates,
+    ) -> None:
+        relations_element = cast(RelationsElement, relation_update_element)
+        if fqfield in self.relation_field_updates and (
+            "value" not in relations_element
+            or isinstance(relations_element["value"], list)
+        ):
+            relation_update_element = self.merge_relation_elements(
+                self.relation_field_updates[fqfield], relation_update_element
+            )
+        relations[fqfield] = self.relation_field_updates[
+            fqfield
+        ] = relation_update_element
+
+    def merge_relation_elements(
+        self,
+        a: RelationUpdateElement,
+        b: RelationUpdateElement,
+    ) -> RelationUpdateElement:
+        # list field is updated, merge updates
+        if a["type"] in ("add", "remove"):
+            a = cast(RelationsElement, a)
+            assert isinstance(a["value"], list)
+            new_value: List[Any] = a["value"]
+            if b["type"] == "add":
+                b = cast(RelationsElement, b)
+                new_value.append(b["modified_element"])
+            elif b["type"] == "remove":
+                b = cast(RelationsElement, b)
+                new_value = [x for x in new_value if x != b["modified_element"]]
+            else:
+                b = cast(ListUpdateElement, b)
+                new_value = [x for x in new_value if x not in b.get("remove", [])]
+                new_value.extend(b.get("add", []))
+            a["value"] = new_value
+        elif b["type"] == "list_update":
+            a = cast(ListUpdateElement, a)
+            b = cast(ListUpdateElement, b)
+            new_add: List[Any] = a.get("add", [])
+            new_remove: List[Any] = a.get("remove", [])
+            new_add = [x for x in new_add if x not in b.get("remove", [])]
+            new_add += [x for x in b.get("add", []) if x not in new_add]
+            new_remove = [x for x in new_remove if x not in new_add]
+            new_remove += [x for x in b.get("remove", []) if x not in new_remove]
+            a["add"] = new_add
+            a["remove"] = new_remove
+        else:
+            raise NotImplementedError()
+        return a

@@ -40,18 +40,27 @@ from ...shared.patterns import (
 )
 from ...shared.typing import DeletedModel, ModelMap
 
-ListType = Union[List[int], List[str], List[FullQualifiedId]]
+Identifier = Union[int, str, FullQualifiedId]
+IdentifierList = Union[List[int], List[str], List[FullQualifiedId]]
 RelationsElement = TypedDict(
     "RelationsElement",
     {
         "type": str,
-        "value": Optional[
-            Union[int, FullQualifiedId, List[int], List[FullQualifiedId], List[str]]
-        ],
-        "modified_element": Union[int, FullQualifiedId, str],
+        "value": Optional[Union[Identifier, IdentifierList]],
+        "modified_element": Identifier,
     },
 )
+ListUpdateElement = TypedDict(
+    "ListUpdateElement",
+    {
+        "type": str,
+        "add": IdentifierList,
+        "remove": IdentifierList,
+    },
+)
+RelationUpdateElement = Union[RelationsElement, ListUpdateElement]
 Relations = Dict[FullQualifiedField, RelationsElement]
+RelationUpdates = Dict[FullQualifiedField, RelationUpdateElement]
 
 
 class SingleRelationHandler:
@@ -247,11 +256,11 @@ class SingleRelationHandler:
         Get the given value of our field as a list. The list may be empty.
         Transform all to fqids to handle everything in the same fashion.
         """
-        id_list: ListType
+        id_list: IdentifierList
         if value is None:
             id_list = []  # type: ignore  # see https://github.com/python/mypy/issues/2164
         elif not isinstance(value, list):
-            value_arr = cast(ListType, [value])
+            value_arr = cast(IdentifierList, [value])
             id_list = value_arr
         else:
             id_list = value

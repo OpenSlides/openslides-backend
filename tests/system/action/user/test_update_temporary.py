@@ -84,6 +84,9 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_delegations_$222_from_ids") == [7]
         assert model.get("vote_delegations_$_from_ids") == ["222"]
         assert model.get("vote_delegations_from_ids") is None
+        # check meeting.user_ids
+        meeting = self.get_model("meeting/222")
+        assert meeting.get("user_ids") == [111]
 
     def test_update_vote_weight(self) -> None:
         self.create_model(
