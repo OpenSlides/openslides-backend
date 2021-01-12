@@ -9,17 +9,23 @@ class Database:
         self.config = app.config
         self.logger = app.logger
         self.connection = None
-        self.cache = LRUCache(self.logger, 20)
+        self.cache_mediafile = LRUCache(self.logger, 20)
+        self.cache_resource = LRUCache(self.logger, 20)
 
-    def get_mediafile(self, media_id):
-        if self.cache.has_media_id(media_id):
-            return self.cache.get_media(media_id)
+    def get_file(self, file_id, file_type):
+        if file_type == "mediafile" and self.cache_mediafile.has_media_id(file_id):
+            return self.cache_mediafile.get_media(file_id)
+        elif file_type == "resource" and self.cache_resource.has_media_id(file_id):
+            return self.cache_resource.get_media(file_id)
         while True:
             connection = self.get_connection()
             try:
                 with connection:
-                    media = self._query(connection, media_id)
-                    self.cache.set_media(media_id, media)
+                    media = self._query(connection, file_id, file_type)
+                    if file_type == "mediafile":
+                        self.cache_mediafile.set_media(file_id, media)
+                    elif file_type == "resource":
+                        self.cache_resource.set_media(file_id, media)
                     return media
             except psycopg2.InterfaceError:
                 if self.connection:
@@ -30,24 +36,26 @@ class Database:
                 self.logger.error(f"Error during retrieving a mediafile: " f"{repr(e)}")
                 raise ServerError(f"Database error {e.pgcode}: {e.pgerror}")
 
-    def _query(self, connection, media_id):
+    def _query(self, connection, file_id, file_type):
         with connection.cursor() as cur:
-            cur.execute(
-                "SELECT data, mimetype FROM mediafile_data WHERE id=%s", [media_id]
-            )
+            if file_type == "mediafile":
+                fetch_query = "SELECT data, mimetype FROM mediafile_data WHERE id=%s"
+            elif file_type == "resource":
+                fetch_query = "SELECT data, mimetype FROM resource_data WHERE id=%s"
+            cur.execute(fetch_query, [file_id])
             row = cur.fetchone()
             if not row:
                 raise ServerError(
-                    f"The mediafile with id {media_id} could not be found."
+                    f"The {file_type} with id {file_id} could not be found."
                 )
             return (row[0], row[1])
 
-    def set_mediafile(self, media_id, media, mimetype):
+    def set_mediafile(self, file_id, file_type, media, mimetype):
         while True:
             try:
                 connection = self.get_connection()
                 with connection:
-                    self._insert(connection, media_id, media, mimetype)
+                    self._insert(connection, file_id, file_type, media, mimetype)
                 break
             except psycopg2.InterfaceError:
                 if self.connection:
@@ -58,12 +66,21 @@ class Database:
                 self.logger.error(f"Error during inserting a mediafile: {repr(e)}")
                 raise ServerError(f"Database error {e.pgcode}: {e.pgerror}")
 
-    def _insert(self, connection, media_id, media, mimetype):
+    def _insert(self, connection, file_id, file_type, media, mimetype):
+        if file_type == "mediafile":
+            insert_sql = (
+                "INSERT INTO mediafile_data (id, data, mimetype) "
+                " VALUES (%s, %s, %s)"
+            )
+        elif file_type == "resource":
+            insert_sql = (
+                "INSERT INTO resource_data (id, data, mimetype) " " VALUES (%s, %s, %s)"
+            )
+
         with connection.cursor() as cur:
             cur.execute(
-                "INSERT INTO mediafile_data (id, data, mimetype) "
-                " VALUES (%s, %s, %s)",
-                (media_id, media, mimetype),
+                insert_sql,
+                (file_id, media, mimetype),
             )
 
     def get_connection(self):

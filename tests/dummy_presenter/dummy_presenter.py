@@ -9,34 +9,37 @@ app.logger.info("Started Dummy-Presenter")
 @app.route("/system/presenter", methods=["POST"])
 def dummy_presenter():
     app.logger.debug(f"dummy_presenter gets: {request.json}")
-    mediafile_id = request.json[0]["data"]["mediafile_id"]
+    if request.json[0]["presenter"] == "check_mediafile_id":
+        file_id = request.json[0]["data"]["mediafile_id"]
+    elif request.json[0]["presenter"] == "check_resource_id":
+        file_id = request.json[0]["data"]["resource_id"]
 
     # Valid response from presenter, but not found in DB
-    if mediafile_id == 1:
+    if file_id == 1:
         return jsonify([{"ok": True, "filename": "Does not exist"}])
 
     # OK-cases for dummy data
-    if mediafile_id == 2:
+    if file_id == 2:
         return jsonify([{"ok": True, "filename": "A.txt"}])
-    if mediafile_id == 3:
+    if file_id == 3:
         return jsonify([{"ok": True, "filename": "in.jpg"}])
 
     # OK-cases for uploaded data
-    if mediafile_id in (4, 5, 6, 7):
-        return jsonify([{"ok": True, "filename": str(mediafile_id)}])
+    if file_id in (4, 5, 6, 7):
+        return jsonify([{"ok": True, "filename": str(file_id)}])
 
     # invalid responses
-    if mediafile_id == 10:
+    if file_id == 10:
         return jsonify([None])
-    if mediafile_id == 11:
+    if file_id == 11:
         return "some text"
-    if mediafile_id == 12:
+    if file_id == 12:
         return "An error", 500
-    if mediafile_id == 13:
+    if file_id == 13:
         return {"ok": False}
-    if mediafile_id == 14:
+    if file_id == 14:
         return jsonify([{"ok": True}])
 
     # not found or no perms
-    if mediafile_id == 20:
+    if file_id == 20:
         return jsonify([{"ok": False}])

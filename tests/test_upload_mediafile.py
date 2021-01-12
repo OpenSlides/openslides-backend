@@ -5,7 +5,7 @@ import psycopg2
 import pytest
 import requests
 
-UPLOAD_URL = "http://media:9006/internal/media/upload/"
+UPLOAD_URL = "http://media:9006/internal/media/upload_mediafile/"
 GET_URL = "http://media:9006/system/media/get/"
 
 
@@ -32,6 +32,7 @@ def test_good():
     }
     resp = requests.post(UPLOAD_URL, json=payload)
     assert resp.status_code == 200
+    assert resp.text == ""
 
     get_response = requests.get(GET_URL + "4")
     assert get_response.status_code == 200

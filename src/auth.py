@@ -5,16 +5,19 @@ from .exceptions import ServerError
 AUTH_HEADER = "Authentication"
 
 
-def check_mediafile_id(mediafile_id, app, presenter_headers):
+def check_file_id(file_id, file_type, app, presenter_headers):
     """
     Returns a triple: ok, filename, auth_header.
     filename is given, if ok=True. If ok=false, the user has no perms.
     if auth_header is returned, it must be set in the response.
     """
     presenter_url = get_presenter_url(app)
-    payload = [
-        {"presenter": "check_mediafile_id", "data": {"mediafile_id": mediafile_id}}
-    ]
+    if file_type == "mediafile":
+        payload = [
+            {"presenter": "check_mediafile_id", "data": {"mediafile_id": file_id}}
+        ]
+    elif file_type == "resource":
+        payload = [{"presenter": "check_resource_id", "data": {"resource_id": file_id}}]
     app.logger.debug(f"Send check request: {presenter_url}: {payload}")
 
     try:
