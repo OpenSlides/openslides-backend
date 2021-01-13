@@ -23,11 +23,11 @@ class PollResetAction(UpdateAction):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state"]
         )
-        if poll.get("state") != 4:
+        if poll.get("state") != "published":
             raise ActionException(
-                f"Cannot reset poll {instance['id']}, because it is not in state 4 (Published)."
+                f"Cannot reset poll {instance['id']}, because it is not in state published."
             )
-        instance["state"] = 1
+        instance["state"] = "created"
         self.delete_all_votes(instance["id"])
         return instance
 

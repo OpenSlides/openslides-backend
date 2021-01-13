@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 class PollResetActionTest(BaseActionTestCase):
     def test_reset_correct(self) -> None:
         self.create_model(
-            "poll/1", {"state": 4, "option_ids": [1], "global_option_id": 2}
+            "poll/1", {"state": "published", "option_ids": [1], "global_option_id": 2}
         )
         self.create_model("option/1", {"vote_ids": [1, 2], "poll_id": 1})
         self.create_model(
@@ -27,7 +27,7 @@ class PollResetActionTest(BaseActionTestCase):
 
         # check if the state has been changed to 1 (Created).
         poll = self.get_model("poll/1")
-        assert poll.get("state") == 1
+        assert poll.get("state") == "created"
 
         # check if the votes are deleted
         self.assert_model_deleted("vote/1")
@@ -41,7 +41,7 @@ class PollResetActionTest(BaseActionTestCase):
         assert option_2.get("vote_ids") == []
 
     def test_reset_wrong_state(self) -> None:
-        self.create_model("poll/1", {"state": 3})
+        self.create_model("poll/1", {"state": "finished"})
         response = self.client.post(
             "/",
             json=[
@@ -53,8 +53,8 @@ class PollResetActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         poll = self.get_model("poll/1")
-        assert poll.get("state") == 3
+        assert poll.get("state") == "finished"
         assert (
-            "Cannot reset poll 1, because it is not in state 4 (Published)."
+            "Cannot reset poll 1, because it is not in state published."
             in response.data.decode()
         )
