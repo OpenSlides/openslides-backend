@@ -8,6 +8,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..vote.delete import VoteDelete
 
 
 @register_action("poll.reset")
@@ -38,7 +39,6 @@ class PollResetAction(UpdateAction):
             option = options[option_id]
             if option.get("vote_ids"):
                 self._delete_votes(option["vote_ids"])
-                self._clear_votes_field(option_id)
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
@@ -60,19 +60,7 @@ class PollResetAction(UpdateAction):
         return options
 
     def _delete_votes(self, vote_ids: List[int]) -> None:
+        payload = []
         for id_ in vote_ids:
-            write_element = self.build_write_request_element(
-                EventType.Delete,
-                FullQualifiedId(Collection("vote"), id_),
-                "Object deleted",
-            )
-            self.datastore.write(write_element)
-
-    def _clear_votes_field(self, option_id: int) -> None:
-        write_element = self.build_write_request_element(
-            EventType.Update,
-            FullQualifiedId(Collection("option"), option_id),
-            "Object updated",
-            {"vote_ids": []},
-        )
-        self.datastore.write(write_element)
+            payload.append({"id": id_})
+        self.execute_other_action(VoteDelete, payload)
