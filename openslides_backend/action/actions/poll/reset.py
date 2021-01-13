@@ -3,7 +3,6 @@ from typing import Any, Dict, List
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.interfaces.event import EventType
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
