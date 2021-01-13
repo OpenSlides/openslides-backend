@@ -17,6 +17,7 @@ meeting_settings_keys = [
     "conference_auto_connect",
     "conference_los_restriction",
     "conference_stream_url",
+    "conference_stream_poster_url",
     "projector_default_countdown_time",
     "projector_countdown_warning_time",
     "export_csv_encoding",
@@ -111,10 +112,23 @@ class MeetingActionSet(ActionSet):
 
     model = Meeting()
     create_schema = DefaultSchema(Meeting()).get_create_schema(
-        required_properties=["committee_id", "name"],
-        optional_properties=[*meeting_settings_keys],
+        required_properties=["committee_id", "name", "welcome_title"],
+        optional_properties=[
+            "welcome_text",
+            "description",
+            "location",
+            "start_time",
+            "end_time",
+            "url_name",
+            "enable_anonymous",
+            "guest_ids",
+        ],
     )
     update_schema = DefaultSchema(Meeting()).get_update_schema(
-        optional_properties=meeting_settings_keys
+        optional_properties=[
+            *meeting_settings_keys,
+            "template_for_committee_id",
+            "guest_ids",
+        ],
     )
     delete_schema = DefaultSchema(Meeting()).get_delete_schema()
