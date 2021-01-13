@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class PollUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
-        self.create_model("poll/1", {"state": 2, "type": "named"})
+        self.create_model("poll/1", {"state": "started", "type": "named"})
         response = self.client.post(
             "/",
             json=[
@@ -30,7 +30,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         assert poll.get("majority_method") == "simple"
 
     def test_catch_not_allowed(self) -> None:
-        self.create_model("poll/1", {"state": 2, "type": "named"})
+        self.create_model("poll/1", {"state": "started", "type": "named"})
         response = self.client.post(
             "/",
             json=[
@@ -59,7 +59,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         ) in response.data.decode()
 
     def test_optional_state_created(self) -> None:
-        self.create_model("poll/1", {"state": 1, "type": "named"})
+        self.create_model("poll/1", {"state": "created", "type": "named"})
         response = self.client.post(
             "/",
             json=[
@@ -91,7 +91,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         assert poll.get("global_abstain") is True
 
     def test_not_allowed_for_analog(self) -> None:
-        self.create_model("poll/1", {"state": 2, "type": "analog"})
+        self.create_model("poll/1", {"state": "started", "type": "analog"})
         response = self.client.post(
             "/",
             json=[
@@ -108,7 +108,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         ) in response.data.decode()
 
     def test_not_allowed_for_non_analog(self) -> None:
-        self.create_model("poll/1", {"state": 2, "type": "named"})
+        self.create_model("poll/1", {"state": "started", "type": "named"})
         response = self.client.post(
             "/",
             json=[
