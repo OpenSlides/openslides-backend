@@ -26,15 +26,11 @@ class OptionUpdateAction(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """Update votes and auto calculate yes, no, abstain."""
 
-        if "Y" in instance:
-            instance["yes"] = instance.pop("Y")
-        if "N" in instance:
-            instance["no"] = instance.pop("N")
-        if "A" in instance:
-            instance["abstain"] = instance.pop("A")
-
         poll_id_option, poll = self._get_poll(instance["id"])
-        print(poll_id_option, poll)
+        if poll_id_option:
+            self._handle_poll_option_data(instance, poll)
+        else:
+            pass
 
         return instance
 
@@ -54,3 +50,24 @@ class OptionUpdateAction(UpdateAction):
         return poll_id_option, self.datastore.get(
             FullQualifiedId(Collection("poll"), poll_id), ["type", "pollmethod"]
         )
+
+    def _handle_poll_option_data(
+        self, instance: Dict[str, Any], poll: Dict[str, Any]
+    ) -> None:
+        data = dict()
+        if "Y" in instance:
+            data["yes"] = instance.pop("Y")
+        if "N" in instance:
+            data["no"] = instance.pop("N")
+        if "A" in instance:
+            data["abstain"] = instance.pop("A")
+
+        if poll.get("type") == "analog":
+            if poll.get("pollmethod") == "N":
+                instance["no"] = data.get("no", "0.000000")
+            else:
+                instance["yes"] = data.get("yes", "0.000000")
+                if poll.get("pollmethod") in ("YN", "YNA"):
+                    instance["no"] = data.get("no", "0.000000")
+                if poll.get("pollmethod") == "YNA":
+                    instance["abstain"] = data.get("abstain", "0.000000")
