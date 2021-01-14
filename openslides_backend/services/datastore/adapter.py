@@ -4,7 +4,7 @@ import simplejson as json
 from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatastoreException
-from ...shared.filters import And, Filter, FilterOperator
+from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request_element import WriteRequestElement
 from ...shared.patterns import (
@@ -188,15 +188,10 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str] = None,
+        mapped_fields: List[str] = [],
         get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
-        mapped_fields_set = set()
-        if mapped_fields:
-            mapped_fields_set.update(mapped_fields)
-            if lock_result:
-                mapped_fields_set.update(("id", "meta_position"))
         # by default, only filter for existing models
         if get_deleted_models != DeletedModelsBehaviour.ALL_MODELS:
             deleted_models_filter = FilterOperator(
@@ -204,27 +199,25 @@ class DatastoreAdapter(DatastoreService):
                 "=",
                 get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED,
             )
-            filter = And(filter, deleted_models_filter)
+            full_filter = And(filter, deleted_models_filter)
         command = commands.Filter(
-            collection=collection, filter=filter, mapped_fields=mapped_fields_set
+            collection=collection, filter=full_filter, mapped_fields=set(mapped_fields)
         )
         self.logger.debug(
             f"Start FILTER request to datastore with the following data: {command.data}"
         )
         response = self.retrieve(command)
+        pos = response["position"]
+        data = response["data"]
+        # TODO: add option to use collectionfield locks
         if lock_result:
-            for instance_id, item in response.items():
-                instance_position = item.get("meta_position")
-                if instance_id is None or instance_position is None:
-                    raise DatastoreException(
-                        "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
-                    )
-                fqid = FullQualifiedId(collection=collection, id=instance_id)
-                self.update_locked_fields(fqid, instance_position)
-        response2 = dict()
-        for key in response:
-            response2[int(key)] = response[key]
-        return response2
+            fields = []
+            filter_visitor(filter, lambda fo: fields.append(fo.field))
+            for field in fields:
+                cf = CollectionField(collection, field)
+                self.update_locked_fields(cf, pos)
+        data = {int(key): val for key, val in data.items()}
+        return data
 
     def exists(
         self,

@@ -92,10 +92,13 @@ class DatastoreAdapterTester(TestCase):
         self.engine.retrieve.return_value = (
             json.dumps(
                 {
-                    "1": {"f": 1, "meta_deleted": False, "meta_position": 1},
-                    "5": {"f": 1, "meta_deleted": False, "meta_position": 5},
-                    "6": {"f": 1, "meta_deleted": False, "meta_position": 6},
-                    "7": {"f": 1, "meta_deleted": False, "meta_position": 7},
+                    "position": 1,
+                    "data": {
+                        "1": {"f": 1, "meta_deleted": False, "meta_position": 1},
+                        "5": {"f": 1, "meta_deleted": False, "meta_position": 5},
+                        "6": {"f": 1, "meta_deleted": False, "meta_position": 6},
+                        "7": {"f": 1, "meta_deleted": False, "meta_position": 7},
+                    },
                 }
             ),
             200,
@@ -117,10 +120,13 @@ class DatastoreAdapterTester(TestCase):
         self.engine.retrieve.return_value = (
             json.dumps(
                 {
-                    "1": {"f": 1, "meta_deleted": False, "meta_position": 1},
-                    "4": {"f": 3, "meta_deleted": False, "meta_position": 4},
-                    "6": {"f": 1, "meta_deleted": False, "meta_position": 6},
-                    "7": {"f": 1, "meta_deleted": False, "meta_position": 7},
+                    "position": 1,
+                    "data": {
+                        "1": {"f": 1, "meta_deleted": False, "meta_position": 1},
+                        "4": {"f": 3, "meta_deleted": False, "meta_position": 4},
+                        "6": {"f": 1, "meta_deleted": False, "meta_position": 6},
+                        "7": {"f": 1, "meta_deleted": False, "meta_position": 7},
+                    },
                 }
             ),
             200,
