@@ -3,6 +3,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import fastjsonschema
 
+from ..shared.env import is_dev_mode
 from ..shared.exceptions import ActionException, DatastoreException, EventStoreException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request_element import WriteRequestElement
@@ -133,7 +134,7 @@ class ActionHandler(BaseHandler):
         for element in payload:
             action_name = element["action"]
             ActionClass = actions_map.get(action_name)
-            if ActionClass is None or ActionClass.internal:
+            if ActionClass is None or (ActionClass.internal and not is_dev_mode()):
                 raise ActionException(f"Action {action_name} does not exist.")
 
             self.logger.debug(f"Perform action {action_name}.")
