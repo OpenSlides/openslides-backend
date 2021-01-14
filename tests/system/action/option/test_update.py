@@ -84,9 +84,12 @@ class OptionUpdateActionTest(BaseActionTestCase):
             "poll/65",
             {
                 "type": "analog",
-                "pollmethod": "YNA",
+                "pollmethod": "Y",
                 "meeting_id": 110,
                 "global_option_id": 57,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
             },
         )
         self.create_model(

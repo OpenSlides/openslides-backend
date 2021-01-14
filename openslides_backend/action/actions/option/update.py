@@ -30,7 +30,7 @@ class OptionUpdateAction(UpdateAction):
         if poll_id_option:
             self._handle_poll_option_data(instance, poll)
         else:
-            pass
+            self._handle_global_option_data(instance, poll)
 
         return instance
 
@@ -48,19 +48,14 @@ class OptionUpdateAction(UpdateAction):
         else:
             raise ActionException("Dont find poll for option")
         return poll_id_option, self.datastore.get(
-            FullQualifiedId(Collection("poll"), poll_id), ["type", "pollmethod"]
+            FullQualifiedId(Collection("poll"), poll_id),
+            ["type", "pollmethod", "global_yes", "global_no", "global_abstain"],
         )
 
     def _handle_poll_option_data(
         self, instance: Dict[str, Any], poll: Dict[str, Any]
     ) -> None:
-        data = dict()
-        if "Y" in instance:
-            data["yes"] = instance.pop("Y")
-        if "N" in instance:
-            data["no"] = instance.pop("N")
-        if "A" in instance:
-            data["abstain"] = instance.pop("A")
+        data = self._get_data(instance)
 
         if poll.get("type") == "analog":
             if poll.get("pollmethod") == "N":
@@ -71,3 +66,39 @@ class OptionUpdateAction(UpdateAction):
                     instance["no"] = data.get("no", "0.000000")
                 if poll.get("pollmethod") == "YNA":
                     instance["abstain"] = data.get("abstain", "0.000000")
+
+    def _handle_global_option_data(
+        self, instance: Dict[str, Any], poll: Dict[str, Any]
+    ) -> None:
+        data = self._get_data(instance)
+
+        if poll.get("type") == "analog":
+            global_yes_enabled = poll.get("global_yes") and poll.get("pollmethod") in (
+                "Y",
+                "N",
+            )
+            if "yes" in data and global_yes_enabled:
+                instance["yes"] = data.get("yes", "0.000000")
+
+            global_no_enabled = poll.get("global_no") and poll.get("pollmethod") in (
+                "Y",
+                "N",
+            )
+            if "no" in data and global_no_enabled:
+                instance["no"] = data.get("no", "0.000000")
+
+            global_abstain_enabled = poll.get("global_abstain") and poll.get(
+                "pollmethod"
+            ) in ("Y", "N")
+            if "abstain" in data and global_abstain_enabled:
+                instance["abstain"] = data.get("abstain", "0.000000")
+
+    def _get_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        data = dict()
+        if "Y" in instance:
+            data["yes"] = instance.pop("Y")
+        if "N" in instance:
+            data["no"] = instance.pop("N")
+        if "A" in instance:
+            data["abstain"] = instance.pop("A")
+        return data
