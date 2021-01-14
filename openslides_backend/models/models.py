@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "bb590d43ec70144d22566f624ef4f2f5"
+MODELS_YML_CHECKSUM = "df12d54abaebd77b643b76b2ba5a971b"
 
 
 class Organisation(Model):
@@ -208,10 +208,12 @@ class Meeting(Model):
     verbose_name = "meeting"
 
     id = fields.IntegerField()
-    welcome_title = fields.CharField()
-    welcome_text = fields.HTMLPermissiveField()
-    name = fields.CharField(constraints={"maxLength": 100})
-    description = fields.CharField(constraints={"maxLength": 100})
+    welcome_title = fields.CharField(default="Welcome to OpenSlides")
+    welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
+    name = fields.CharField(default="OpenSlides", constraints={"maxLength": 100})
+    description = fields.CharField(
+        default="Presentation and assembly system", constraints={"maxLength": 100}
+    )
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
@@ -222,46 +224,57 @@ class Meeting(Model):
     template_for_committee_id = fields.RelationField(
         to={Collection("committee"): "template_meeting_id"}
     )
-    enable_anonymous = fields.BooleanField()
-    conference_show = fields.BooleanField()
-    conference_auto_connect = fields.BooleanField()
-    conference_los_restriction = fields.BooleanField()
+    enable_anonymous = fields.BooleanField(default=False)
+    conference_show = fields.BooleanField(default=False)
+    conference_auto_connect = fields.BooleanField(default=False)
+    conference_los_restriction = fields.BooleanField(default=False)
     conference_stream_url = fields.CharField()
     conference_stream_poster_url = fields.CharField()
-    conference_open_microphone = fields.BooleanField()
-    conference_open_video = fields.BooleanField()
-    conference_auto_connect_next_speakers = fields.BooleanField()
-    projector_default_countdown_time = fields.IntegerField()
-    projector_countdown_warning_time = fields.IntegerField(constraints={"minimum": 0})
+    conference_open_microphone = fields.BooleanField(default=False)
+    conference_open_video = fields.BooleanField(default=False)
+    conference_auto_connect_next_speakers = fields.IntegerField(default=0)
+    projector_default_countdown_time = fields.IntegerField(default=60)
+    projector_countdown_warning_time = fields.IntegerField(
+        default=0, constraints={"minimum": 0}
+    )
     export_csv_encoding = fields.CharField(
-        constraints={"enum": ["utf-8", "iso-8859-15"]}
+        default="utf-8", constraints={"enum": ["utf-8", "iso-8859-15"]}
     )
-    export_csv_separator = fields.CharField()
+    export_csv_separator = fields.CharField(default=",")
     export_pdf_pagenumber_alignment = fields.CharField(
-        constraints={"enum": ["left", "right", "center"]}
+        default="center", constraints={"enum": ["left", "right", "center"]}
     )
-    export_pdf_fontsize = fields.IntegerField(constraints={"enum": [10, 11, 12]})
-    export_pdf_pagesize = fields.CharField(constraints={"enum": ["A4", "A5"]})
-    agenda_show_subtitles = fields.BooleanField()
-    agenda_enable_numbering = fields.BooleanField()
+    export_pdf_fontsize = fields.IntegerField(
+        default=10, constraints={"enum": [10, 11, 12]}
+    )
+    export_pdf_pagesize = fields.CharField(
+        default="A4", constraints={"enum": ["A4", "A5"]}
+    )
+    agenda_show_subtitles = fields.BooleanField(default=False)
+    agenda_enable_numbering = fields.BooleanField(default=True)
     agenda_number_prefix = fields.CharField(constraints={"maxLength": 20})
-    agenda_numeral_system = fields.CharField(constraints={"enum": ["arabic", "roman"]})
+    agenda_numeral_system = fields.CharField(
+        default="arabic", constraints={"enum": ["arabic", "roman"]}
+    )
     agenda_item_creation = fields.CharField(
-        constraints={"enum": ["always", "never", "default_yes", "default_no"]}
+        default="default_yes",
+        constraints={"enum": ["always", "never", "default_yes", "default_no"]},
     )
     agenda_new_items_default_visibility = fields.CharField(
-        constraints={"enum": ["common", "internal", "hidden"]}
+        default="internal", constraints={"enum": ["common", "internal", "hidden"]}
     )
-    agenda_show_internal_items_on_projector = fields.BooleanField()
+    agenda_show_internal_items_on_projector = fields.BooleanField(default=True)
     list_of_speakers_amount_last_on_projector = fields.IntegerField(
-        constraints={"minimum": 0}
+        default=0, constraints={"minimum": 0}
     )
-    list_of_speakers_amount_next_on_projector = fields.BooleanField()
-    list_of_speakers_couple_countdown = fields.BooleanField()
-    list_of_speakers_show_amount_of_speakers_on_slide = fields.BooleanField()
-    list_of_speakers_present_users_only = fields.BooleanField()
-    list_of_speakers_show_first_contribution = fields.BooleanField()
-    list_of_speakers_enable_point_of_order_speakers = fields.BooleanField()
+    list_of_speakers_amount_next_on_projector = fields.IntegerField(default=-1)
+    list_of_speakers_couple_countdown = fields.BooleanField(default=True)
+    list_of_speakers_show_amount_of_speakers_on_slide = fields.BooleanField(
+        default=True
+    )
+    list_of_speakers_present_users_only = fields.BooleanField(default=False)
+    list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
+    list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=False)
     motions_default_workflow_id = fields.RelationField(
         to={Collection("motion_workflow"): "default_workflow_meeting_id"}, required=True
     )
@@ -277,94 +290,105 @@ class Meeting(Model):
         },
         required=True,
     )
-    motions_preamble = fields.CharField()
+    motions_preamble = fields.CharField(default="The assembly may decide")
     motions_default_line_numbering = fields.CharField(
-        constraints={"enum": ["outside", "inline", "none"]}
+        default="outside", constraints={"enum": ["outside", "inline", "none"]}
     )
-    motions_line_length = fields.IntegerField(constraints={"minimium": 40})
-    motions_reason_required = fields.BooleanField()
-    motions_enable_text_on_projector = fields.BooleanField()
-    motions_enable_reason_on_projector = fields.BooleanField()
-    motions_enable_sidebox_on_projector = fields.BooleanField()
-    motions_enable_recommendation_on_projector = fields.BooleanField()
-    motions_show_referring_motions = fields.BooleanField()
-    motions_show_sequential_number = fields.BooleanField()
+    motions_line_length = fields.IntegerField(default=85, constraints={"minimium": 40})
+    motions_reason_required = fields.BooleanField(default=False)
+    motions_enable_text_on_projector = fields.BooleanField(default=True)
+    motions_enable_reason_on_projector = fields.BooleanField(default=True)
+    motions_enable_sidebox_on_projector = fields.BooleanField(default=False)
+    motions_enable_recommendation_on_projector = fields.BooleanField(default=True)
+    motions_show_referring_motions = fields.BooleanField(default=True)
+    motions_show_sequential_number = fields.BooleanField(default=True)
     motions_recommendations_by = fields.CharField()
     motions_statute_recommendations_by = fields.CharField()
     motions_recommendation_text_mode = fields.CharField(
-        constraints={"enum": ["original", "changed", "diff", "agreed"]}
+        default="diff", constraints={"enum": ["original", "changed", "diff", "agreed"]}
     )
-    motions_default_sorting = fields.CharField()
+    motions_default_sorting = fields.CharField(default="identifier")
     motions_number_type = fields.CharField(
-        constraints={"enum": ["per_category", "serially_numbered", "manually"]}
+        default="per_category",
+        constraints={"enum": ["per_category", "serially_numbered", "manually"]},
     )
-    motions_number_min_digits = fields.IntegerField()
-    motions_number_with_blank = fields.BooleanField()
-    motions_statutes_enabled = fields.BooleanField()
-    motions_amendments_enabled = fields.BooleanField()
-    motions_amendments_in_main_list = fields.BooleanField()
-    motions_amendments_of_amendments = fields.BooleanField()
+    motions_number_min_digits = fields.IntegerField(default=1)
+    motions_number_with_blank = fields.BooleanField(default=False)
+    motions_statutes_enabled = fields.BooleanField(default=False)
+    motions_amendments_enabled = fields.BooleanField(default=False)
+    motions_amendments_in_main_list = fields.BooleanField(default=True)
+    motions_amendments_of_amendments = fields.BooleanField(default=False)
     motions_amendments_prefix = fields.CharField()
     motions_amendments_text_mode = fields.CharField(
-        constraints={"enum": ["freestyle", "fulltext", "paragraph"]}
+        default="paragraph",
+        constraints={"enum": ["freestyle", "fulltext", "paragraph"]},
     )
-    motions_amendments_multiple_paragraphs = fields.BooleanField()
-    motions_supporters_min_amount = fields.IntegerField(constraints={"minimum": 0})
-    motions_export_title = fields.CharField()
+    motions_amendments_multiple_paragraphs = fields.BooleanField(default=True)
+    motions_supporters_min_amount = fields.IntegerField(
+        default=0, constraints={"minimum": 0}
+    )
+    motions_export_title = fields.CharField(default="Motions")
     motions_export_preamble = fields.CharField()
-    motions_export_submitter_recommendation = fields.BooleanField()
-    motions_export_follow_recommendation = fields.BooleanField()
+    motions_export_submitter_recommendation = fields.BooleanField(default=False)
+    motions_export_follow_recommendation = fields.BooleanField(default=False)
     motion_poll_ballot_paper_selection = fields.CharField(
+        default="CUSTOM_NUMBER",
         constraints={
             "enum": [
                 "NUMBER_OF_DELEGATES",
                 "NUMBER_OF_ALL_PARTICIPANTS",
                 "CUSTOM_NUMBER",
             ]
-        }
+        },
     )
     motion_poll_ballot_paper_number = fields.IntegerField()
-    motion_poll_default_type = fields.CharField()
-    motion_poll_default_100_percent_base = fields.CharField()
+    motion_poll_default_type = fields.CharField(default="analog")
+    motion_poll_default_100_percent_base = fields.CharField(default="YNA")
     motion_poll_default_majority_method = fields.CharField()
     motion_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_motion_poll_default_id"}
     )
     users_sort_by = fields.CharField(
-        constraints={"enum": ["first_name", "last_name", "number"]}
+        default="first_name",
+        constraints={"enum": ["first_name", "last_name", "number"]},
     )
-    users_enable_presence_view = fields.BooleanField()
-    users_enable_vote_weight = fields.BooleanField()
-    users_allow_self_set_present = fields.BooleanField()
-    users_pdf_welcometitle = fields.CharField()
-    users_pdf_welcometext = fields.CharField()
-    users_pdf_url = fields.CharField()
+    users_enable_presence_view = fields.BooleanField(default=False)
+    users_enable_vote_weight = fields.BooleanField(default=False)
+    users_allow_self_set_present = fields.BooleanField(default=False)
+    users_pdf_welcometitle = fields.CharField(default="Welcome to OpenSlides")
+    users_pdf_welcometext = fields.CharField(
+        default=["Place for your welcome and help text."]
+    )
+    users_pdf_url = fields.CharField(default="http://example.com:8000")
     users_pdf_wlan_ssid = fields.CharField()
     users_pdf_wlan_password = fields.CharField()
     users_pdf_wlan_encryption = fields.CharField(
         constraints={"enum": ["", "WEP", "WPA", "nopass"]}
     )
-    users_email_sender = fields.CharField()
+    users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
-    users_email_subject = fields.CharField()
+    users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.CharField()
-    assignemnts_export_title = fields.CharField()
+    assignemnts_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.CharField()
     assignment_poll_ballot_paper_selection = fields.CharField(
+        default="CUSTOM_NUMBER",
         constraints={
             "enum": [
                 "NUMBER_OF_DELEGATES",
                 "NUMBER_OF_ALL_PARTICIPANTS",
                 "CUSTOM_NUMBER",
             ]
-        }
+        },
     )
-    assignment_poll_ballot_paper_number = fields.IntegerField()
-    assignment_poll_add_candidates_to_list_of_speakers = fields.BooleanField()
-    assignment_poll_sort_poll_result_by_votes = fields.BooleanField()
-    assignment_poll_default_type = fields.CharField()
+    assignment_poll_ballot_paper_number = fields.IntegerField(default=8)
+    assignment_poll_add_candidates_to_list_of_speakers = fields.BooleanField(
+        default=True
+    )
+    assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
+    assignment_poll_default_type = fields.CharField(default="analog")
     assignment_poll_default_method = fields.CharField()
-    assignment_poll_default_100_percent_base = fields.CharField()
+    assignment_poll_default_100_percent_base = fields.CharField(default="YNA")
     assignment_poll_default_majority_method = fields.CharField()
     assignment_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_assignment_poll_default_id"}
@@ -380,9 +404,9 @@ class Meeting(Model):
     )
     poll_ballot_paper_number = fields.IntegerField()
     poll_sort_poll_result_by_votes = fields.BooleanField()
-    poll_default_type = fields.CharField()
+    poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
-    poll_default_100_percent_base = fields.CharField()
+    poll_default_100_percent_base = fields.CharField(default="YNA")
     poll_default_majority_method = fields.CharField()
     poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_poll_default_id"}
