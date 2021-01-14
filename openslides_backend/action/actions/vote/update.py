@@ -9,6 +9,6 @@ class VoteUpdateAction(UpdateAction):
     """
     Internal action to update a vote.
     """
-    model  = Vote()
-    schema = DefaultSchema(Vote()).get_update_schema(
-        required_properties=["weight"])
+
+    model = Vote()
+    schema = DefaultSchema(Vote()).get_update_schema(required_properties=["weight"])

@@ -21,7 +21,12 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 "abstain": "0.000000",
                 "meeting_id": 110,
                 "poll_id": 65,
+                "vote_ids": [22],
             },
+        )
+        self.create_model(
+            "vote/22",
+            {"value": "Y", "weight": "0.000000", "meeting_id": 110, "option_id": 57},
         )
         response = self.client.post(
             "/",

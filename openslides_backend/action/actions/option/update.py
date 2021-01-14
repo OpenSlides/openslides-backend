@@ -1,6 +1,7 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 from ....models.models import Option
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
@@ -26,18 +27,21 @@ class OptionUpdateAction(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """Update votes and auto calculate yes, no, abstain."""
 
-        poll_id_option, poll = self._get_poll(instance["id"])
+        poll_id_option, poll, option = self._get_poll(instance["id"])
         if poll_id_option:
             self._handle_poll_option_data(instance, poll)
         else:
             self._handle_global_option_data(instance, poll)
 
+        id_to_vote = self._fetch_votes(option.get("vote_ids", []))
+        print(id_to_vote)
+
         return instance
 
-    def _get_poll(self, option_id: int) -> Tuple[bool, Dict[str, Any]]:
+    def _get_poll(self, option_id: int) -> Tuple[bool, Dict[str, Any], Dict[str, Any]]:
         option = self.datastore.get(
             FullQualifiedId(self.model.collection, option_id),
-            ["poll_id", "used_as_global_option_in_poll_id"],
+            ["poll_id", "used_as_global_option_in_poll_id", "vote_ids"],
         )
         poll_id_option = False
         if option.get("poll_id"):
@@ -47,9 +51,13 @@ class OptionUpdateAction(UpdateAction):
             poll_id = option["used_as_global_option_in_poll_id"]
         else:
             raise ActionException("Dont find poll for option")
-        return poll_id_option, self.datastore.get(
-            FullQualifiedId(Collection("poll"), poll_id),
-            ["type", "pollmethod", "global_yes", "global_no", "global_abstain"],
+        return (
+            poll_id_option,
+            self.datastore.get(
+                FullQualifiedId(Collection("poll"), poll_id),
+                ["type", "pollmethod", "global_yes", "global_no", "global_abstain"],
+            ),
+            option,
         )
 
     def _handle_poll_option_data(
@@ -102,3 +110,9 @@ class OptionUpdateAction(UpdateAction):
         if "A" in instance:
             data["abstain"] = instance.pop("A")
         return data
+
+    def _fetch_votes(self, vote_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+        get_many_request = GetManyRequest(Collection("vote"), vote_ids, ["value"])
+        gm_result = self.datastore.get_many([get_many_request])
+        votes = gm_result.get(Collection("vote"), {})
+        return votes
