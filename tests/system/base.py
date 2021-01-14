@@ -74,7 +74,7 @@ class BaseSystemTestCase(TestCase):
         self.assertEqual(response.status_code, code)
 
     def create_model(
-        self, fqid: str, data: Dict[str, Any], deleted: bool = False
+        self, fqid: str, data: Dict[str, Any] = {}, deleted: bool = False
     ) -> None:
         data["id"] = get_id_from_fqid(fqid)
         self.validate_fields(fqid, data)
