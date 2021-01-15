@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ....models.models import Option
 from ....services.datastore.commands import GetManyRequest
@@ -34,7 +34,7 @@ class OptionUpdateAction(UpdateAction):
             self._handle_global_option_data(instance, poll)
 
         id_to_vote = self._fetch_votes(option.get("vote_ids", []))
-        print(id_to_vote)
+        print(id_to_vote, self._get_vote_id("Y", id_to_vote))
 
         return instance
 
@@ -116,3 +116,11 @@ class OptionUpdateAction(UpdateAction):
         gm_result = self.datastore.get_many([get_many_request])
         votes = gm_result.get(Collection("vote"), {})
         return votes
+
+    def _get_vote_id(
+        self, search_value: str, id_to_vote: Dict[int, Dict[str, Any]]
+    ) -> Optional[int]:
+        for key, item in id_to_vote.items():
+            if item["value"] == search_value:
+                return key
+        return None
