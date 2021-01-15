@@ -37,6 +37,30 @@ class MotionCategorySystemTest(BaseActionTestCase):
         assert model.get("prefix") == "prefix_sthyAKrW"
         assert model.get("motion_ids") == [89]
 
+    def test_update_delete_prefix(self) -> None:
+        self.create_model("meeting/222")
+        self.create_model(
+            "motion_category/111",
+            {"name": "name_srtgb123", "prefix": "prefix_JmDHFgvH", "meeting_id": 222},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion_category.update",
+                    "data": [
+                        {
+                            "id": 111,
+                            "prefix": None,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion_category/111")
+        assert "prefix" not in model
+
     def test_update_wrong_id(self) -> None:
         self.create_model("meeting/222", {"name": "name_xQyvfmsS"})
         self.create_model(

@@ -107,3 +107,25 @@ class MotionCategorySystemTest(BaseActionTestCase):
             "Model \\'meeting/222\\' does not exist",
             str(response.data),
         )
+
+    def test_create_prefix_none(self) -> None:
+        self.create_model("meeting/222")
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "motion_category.create",
+                    "data": [
+                        {
+                            "name": "test_Xcdfgee",
+                            "meeting_id": 222,
+                            "prefix": None,
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion_category/1")
+        assert model.get("name") == "test_Xcdfgee"
+        assert "prefix" not in model

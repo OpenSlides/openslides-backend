@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 FilterData = Dict[str, Any]
 
@@ -44,3 +44,17 @@ class Not(Filter):
 
     def to_dict(self) -> FilterData:
         return {"not_filter": self.filter.to_dict()}
+
+
+def filter_visitor(filter: Filter, callback: Callable[[FilterOperator], None]) -> None:
+    """
+    Iterates over all nested filters of the given filter and executes the callback on
+    each one FilterOperator that is found.
+    """
+    if isinstance(filter, FilterOperator):
+        callback(filter)
+    elif isinstance(filter, Not):
+        filter_visitor(filter.filter, callback)
+    elif isinstance(filter, (And, Or)):
+        for f in filter.filters:
+            filter_visitor(f, callback)

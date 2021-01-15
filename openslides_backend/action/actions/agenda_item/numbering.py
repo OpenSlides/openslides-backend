@@ -26,7 +26,7 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
         agenda_items = self.datastore.filter(
             collection=self.model.collection,
             filter=FilterOperator("meeting_id", "=", meeting_id),
-            mapped_fields=["item_number", "parent_id", "weight", "type"],
+            mapped_fields=["id", "item_number", "parent_id", "weight", "type"],
             lock_result=True,
         )
 

@@ -56,7 +56,7 @@ class DatastoreService(Protocol):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str] = None,
+        mapped_fields: List[str] = [],
         get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
