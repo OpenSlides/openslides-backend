@@ -7,6 +7,8 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..vote.create import VoteCreate
+from ..vote.update import VoteUpdate
 
 
 @register_action("option.update")
@@ -34,14 +36,59 @@ class OptionUpdateAction(UpdateAction):
             self._handle_global_option_data(instance, poll)
 
         id_to_vote = self._fetch_votes(option.get("vote_ids", []))
-        print(id_to_vote, self._get_vote_id("Y", id_to_vote))
+
+        payload_create = []
+        payload_update = []
+        if "yes" in instance:
+            vote_id = self._get_vote_id("Y", id_to_vote)
+            if vote_id is None:
+                payload_create.append(
+                    {
+                        "option_id": instance["id"],
+                        "value": "Y",
+                        "weight": instance["yes"],
+                        "meeting_id": option["meeting_id"],
+                    }
+                )
+            else:
+                payload_update.append({"id": vote_id, "weight": instance["yes"]})
+        if "no" in instance:
+            vote_id = self._get_vote_id("N", id_to_vote)
+            if vote_id is None:
+                payload_create.append(
+                    {
+                        "option_id": instance["id"],
+                        "value": "N",
+                        "weight": instance["no"],
+                        "meeting_id": option["meeting_id"],
+                    }
+                )
+            else:
+                payload_update.append({"id": vote_id, "weight": instance["no"]})
+        if "abstain" in instance:
+            vote_id = self._get_vote_id("A", id_to_vote)
+            if vote_id is None:
+                payload_create.append(
+                    {
+                        "option_id": instance["id"],
+                        "value": "A",
+                        "weight": instance["abstain"],
+                        "meeting_id": option["meeting_id"],
+                    }
+                )
+            else:
+                payload_update.append({"id": vote_id, "weight": instance["abstain"]})
+        if payload_create:
+            self.execute_other_action(VoteCreate, payload_create)
+        if payload_update:
+            self.execute_other_action(VoteUpdate, payload_update)
 
         return instance
 
     def _get_poll(self, option_id: int) -> Tuple[bool, Dict[str, Any], Dict[str, Any]]:
         option = self.datastore.get(
             FullQualifiedId(self.model.collection, option_id),
-            ["poll_id", "used_as_global_option_in_poll_id", "vote_ids"],
+            ["poll_id", "used_as_global_option_in_poll_id", "vote_ids", "meeting_id"],
         )
         poll_id_option = False
         if option.get("poll_id"):

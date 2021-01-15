@@ -5,7 +5,7 @@ from ...util.register import register_action
 
 
 @register_action("vote.update", internal=True)
-class VoteUpdateAction(UpdateAction):
+class VoteUpdate(UpdateAction):
     """
     Internal action to update a vote.
     """

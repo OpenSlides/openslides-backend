@@ -44,6 +44,18 @@ class OptionUpdateActionTest(BaseActionTestCase):
         assert option.get("yes") == "1.000000"
         assert option.get("no") == "2.000000"
         assert option.get("abstain") == "3.000000"
+        assert option.get("vote_ids") == [22, 23, 24]
+        vote_22 = self.get_model("vote/22")
+        assert vote_22.get("value") == "Y"
+        assert vote_22.get("weight") == "1.000000"
+        vote_23 = self.get_model("vote/23")
+        assert vote_23.get("option_id") == 57
+        assert vote_23.get("value") == "N"
+        assert vote_23.get("weight") == "2.000000"
+        vote_24 = self.get_model("vote/24")
+        assert vote_24.get("option_id") == 57
+        assert vote_24.get("value") == "A"
+        assert vote_24.get("weight") == "3.000000"
 
     def test_update_Y(self) -> None:
         self.create_model("meeting/110", {"name": "meeting_110"})
