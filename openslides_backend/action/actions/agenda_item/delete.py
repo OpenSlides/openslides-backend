@@ -1,12 +1,8 @@
 from typing import Any, Dict
 
 from ....models.models import AgendaItem
-<<<<<<< HEAD
-from ....shared.patterns import KEYSEPARATOR, FullQualifiedId
-=======
 from ....shared.patterns import FullQualifiedId, string_to_fqid
 from ....shared.typing import DeletedModel
->>>>>>> d2c068d92d791e4daba51aae1a4f260e868980c8
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
