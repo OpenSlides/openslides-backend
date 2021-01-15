@@ -20,7 +20,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("agenda_item/112")
 
-    def test_delete_topic(self) -> None:
+    def test_delete_topicx(self) -> None:
         self.create_model("topic/34", {"agenda_item_id": 111})
         self.create_model("agenda_item/111", {"content_object_id": "topic/34"})
         response = self.client.post(
