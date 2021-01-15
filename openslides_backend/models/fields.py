@@ -82,10 +82,9 @@ class BooleanField(Field):
 
 class TextField(Field):
     def get_schema(self) -> Schema:
-        schema = self.extend_schema(super().get_schema(), type="string")
         if self.required:
-            schema = self.extend_schema(schema, minLength=1)
-        return schema
+            return self.extend_schema(super().get_schema(), type="string", minLength=1)
+        return self.extend_schema(super().get_schema(), type=["string", "null"])
 
 
 class CharField(TextField):
@@ -131,9 +130,12 @@ class DecimalField(Field):
     """
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(
+        schema = self.extend_schema(
             super().get_schema(), type="string", pattern=r"^-?(\d|[1-9]\d+)\.\d{6}$"
         )
+        if not self.required:
+            schema["type"] = ["string", "null"]
+        return schema
 
 
 class TimestampField(IntegerField):
@@ -154,7 +156,9 @@ class ArrayField(Field):
         self.in_array_constraints = in_array_constraints
 
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), type="array", default=[])
+        if self.required:
+            return self.extend_schema(super().get_schema(), type="array", default=[])
+        return self.extend_schema(super().get_schema(), type=["array", "null"])
 
 
 class CharArrayField(ArrayField):
