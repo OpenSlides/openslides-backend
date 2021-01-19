@@ -32,7 +32,7 @@ from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
-from .relations.single_relation_handler import ListUpdateElement, RelationsElement
+from .relations.single_relation_handler import ListUpdateElement, FieldUpdateElement
 from .util.typing import ActionPayload, ActionResponseResultsElement
 
 PERMISSION_SPECIAL_CASE = "Special business logic"
@@ -179,7 +179,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for fqfield, data in relation_updates.items():
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
-                data = cast(RelationsElement, data)
+                data = cast(FieldUpdateElement, data)
                 fields = {fqfield.field: data["value"]}
                 if data["type"] == "add":
                     info_text = f"Object attached to {fqfield.collection}"

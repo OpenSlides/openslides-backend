@@ -6,12 +6,12 @@ from ...services.datastore.interface import DatastoreService
 from ...shared.patterns import FullQualifiedField
 from ...shared.typing import ModelMap
 from .calculated_field_handlers_map import calculated_field_handlers_map
-from .single_relation_handler import (
+from .single_relation_handler import SingleRelationHandler
+from .typing import (
     ListUpdateElement,
-    RelationsElement,
+    FieldUpdateElement,
     RelationUpdateElement,
     RelationUpdates,
-    SingleRelationHandler,
 )
 
 
@@ -33,7 +33,6 @@ class RelationManager:
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
-        # breakpoint()
         relations: RelationUpdates = {}
         for field_name in instance:
             if not model.has_field(field_name):
@@ -89,6 +88,10 @@ class RelationManager:
         instance: Dict[str, Any],
         action: str,
     ) -> None:
+        """
+        Calls all registered CalculatedFieldHandlers for the current field and adds the
+        resulting relation updates to the main map.
+        """
         for calculated_field_handler_class in calculated_field_handlers_map[field]:
             handler_instance = calculated_field_handler_class(self.datastore)
             result = handler_instance.process_field(field, field_name, instance, action)
@@ -101,7 +104,12 @@ class RelationManager:
         relation_update_element: RelationUpdateElement,
         relations: RelationUpdates,
     ) -> None:
-        relations_element = cast(RelationsElement, relation_update_element)
+        """
+        Processes the given RelationUpdateElement. If the fqfield is not in relations
+        yet, it can just be added, else the old relation update has to be merged with
+        the new one.
+        """
+        relations_element = cast(FieldUpdateElement, relation_update_element)
         if fqfield in self.relation_field_updates and (
             "value" not in relations_element
             or isinstance(relations_element["value"], list)
@@ -118,16 +126,29 @@ class RelationManager:
         a: RelationUpdateElement,
         b: RelationUpdateElement,
     ) -> RelationUpdateElement:
+        """
+        Merges two given RelationUpdateElements. There are 4 cases:
+        a = b = FieldUpdateElements
+            With the information "add"/"remove" and "modified_element" the new element
+            can be calculated. The new "modified_field_element" is no longer correct,
+            but since it isn't needed later, it doesn't matter.
+        a = FieldUpdateElement, b = ListUpdateElement
+            b can just be applied to a.
+        a = b = ListUpdateElement
+            The two ListUpdateElements can just be combined into one.
+        a = ListUpdateElement, b = FieldUpdateElement
+            Not possible and currently not needed.
+        """
         # list field is updated, merge updates
         if a["type"] in ("add", "remove"):
-            a = cast(RelationsElement, a)
+            a = cast(FieldUpdateElement, a)
             assert isinstance(a["value"], list)
             new_value: List[Any] = a["value"]
             if b["type"] == "add":
-                b = cast(RelationsElement, b)
+                b = cast(FieldUpdateElement, b)
                 new_value.append(b["modified_element"])
             elif b["type"] == "remove":
-                b = cast(RelationsElement, b)
+                b = cast(FieldUpdateElement, b)
                 new_value = [x for x in new_value if x != b["modified_element"]]
             else:
                 b = cast(ListUpdateElement, b)

@@ -2,7 +2,7 @@ from typing import Any
 
 from ...models.fields import Field
 from ...services.datastore.interface import DatastoreService
-from .single_relation_handler import RelationUpdates
+from .typing import RelationUpdates
 
 
 class CalculatedFieldHandler:

@@ -4,13 +4,20 @@ from ...models.fields import Field
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .calculated_field_handler import CalculatedFieldHandler
-from .single_relation_handler import ListUpdateElement, RelationUpdates
+from .typing import ListUpdateElement, RelationUpdates
 
 
 class MeetingUserIdsHandler(CalculatedFieldHandler):
+    """
+    CalculatedFieldsHandler to fill the field meeting.user_ids. It is a union of
+    meeting.temporary_user_ids, meeting.guest_ids and all users in all groups of the
+    meeting. This handles all necessary field updates simultaniously.
+    """
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
+        # Try to fetch db instance to compare if any new ids were added, but only in
+        # non-create cases.
         fqid = FullQualifiedId(field.own_collection, instance["id"])
         if not action.endswith("create"):
             db_instance = self.datastore.get(fqid, [field_name, "meeting_id"])
