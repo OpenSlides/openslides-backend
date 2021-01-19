@@ -86,6 +86,11 @@ class DeleteAction(Action):
 
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:
+                        if isinstance(
+                            self.additional_relation_models.get(fqid), DeletedModel
+                        ):
+                            # skip models that are already deleted
+                            continue
                         delete_action_class = actions_map.get(
                             f"{str(fqid.collection)}.delete"
                         )
