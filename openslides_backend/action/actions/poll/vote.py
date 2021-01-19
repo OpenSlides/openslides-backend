@@ -20,7 +20,7 @@ class PollVote(UpdateAction):
     schema = DefaultSchema(Poll()).get_default_schema(
         title="poll.vote schema",
         description="A schema for the vote action.",
-        required_properties=["id", "meeting_id"],
+        required_properties=["id"],
         additional_required_fields={
             "user_id": required_id_schema,
             "value": {
@@ -52,15 +52,21 @@ class PollVote(UpdateAction):
                 "global_no",
                 "global_abstain",
                 "pollmethod",
+                "voted_ids",
             ],
         )
+        value = instance.pop("value")
+        user_id = instance.pop("user_id")
+
+        # check for double vote
+        if user_id in poll.get("voted_ids", []):
+            raise ActionException("Only one vote per poll per user allowed.")
+        instance["voted_ids"] = poll.get("voted_ids", [])
+        instance["voted_ids"].append(user_id)
 
         # check for analog type
         if poll.get("type") == "analog":
             raise ActionException("poll.vote is not allowed for analog voting.")
-
-        value = instance.pop("value")
-        user_id = instance.pop("user_id")
 
         # handle create the votes.
         if self.check_value_for_option_vote(value):
