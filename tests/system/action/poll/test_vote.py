@@ -61,6 +61,57 @@ class PollVoteTest(BaseActionTestCase):
         assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [1, 2]
 
+    def test_vote_correct_pollmethod_YN(self) -> None:
+        self.create_model("option/11", {"meeting_id": 113, "poll_id": 1})
+        self.create_model("option/12", {"meeting_id": 113, "poll_id": 1})
+        self.create_model("option/13", {"meeting_id": 113, "poll_id": 1})
+        self.create_model(
+            "poll/1",
+            {
+                "title": "my test poll",
+                "option_ids": [11, 12, 13],
+                "pollmethod": "YN",
+                "meeting_id": 113,
+            },
+        )
+        self.create_model("meeting/113", {"name": "my meeting"})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "poll.vote",
+                    "data": [
+                        {
+                            "id": 1,
+                            "meeting_id": 113,
+                            "user_id": 1,
+                            "value": {"11": "Y", "12": "N", "13": "A"},
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        vote = self.get_model("vote/1")
+        assert vote.get("value") == "Y"
+        assert vote.get("option_id") == 11
+        assert vote.get("weight") == "1.000000"
+        assert vote.get("meeting_id") == 113
+        assert vote.get("user_id") == 1
+        vote = self.get_model("vote/2")
+        assert vote.get("value") == "N"
+        assert vote.get("option_id") == 12
+        assert vote.get("weight") == "1.000000"
+        assert vote.get("meeting_id") == 113
+        assert vote.get("user_id") == 1
+        option = self.get_model("option/11")
+        assert option.get("vote_ids") == [1]
+        option = self.get_model("option/12")
+        assert option.get("vote_ids") == [2]
+        user = self.get_model("user/1")
+        assert user.get("vote_$_ids") == ["113", "113"]
+        assert user.get("vote_$113_ids") == [1, 2]
+
     def test_vote_global(self) -> None:
         self.create_model(
             "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}

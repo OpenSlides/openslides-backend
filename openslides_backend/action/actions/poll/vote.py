@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -41,8 +41,6 @@ class PollVote(UpdateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-
-        # check for type analog
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
             [
@@ -56,22 +54,36 @@ class PollVote(UpdateAction):
                 "pollmethod",
             ],
         )
+
+        # check for analog type
         if poll.get("type") == "analog":
             raise ActionException("poll.vote is not allowed for analog voting.")
 
-        # extra validation
         value = instance.pop("value")
         user_id = instance.pop("user_id")
-        if isinstance(value, dict):
-            for key in value:
-                if int(key) not in poll.get("option_ids", []):
-                    raise ActionException(f"Option {key} not in options of the poll.")
+
+        # handle create the votes.
+        if self.check_value_for_option_vote(value):
+            self.validate_option_value(value, poll.get("option_ids", []))
             self.handle_option_value(value, poll, user_id)
 
-        elif isinstance(value, str):
+        elif self.check_value_for_global_vote(value):
             self.handle_global_value(value, poll, user_id)
 
         return instance
+
+    def check_value_for_option_vote(self, value: Union[str, Dict[str, Any]]) -> bool:
+        return isinstance(value, dict)
+
+    def check_value_for_global_vote(self, value: Union[str, Dict[str, Any]]) -> bool:
+        return isinstance(value, str)
+
+    def validate_option_value(
+        self, value: Dict[str, Any], option_ids: List[int]
+    ) -> None:
+        for key in value:
+            if int(key) not in option_ids:
+                raise ActionException(f"Option {key} not in options of the poll.")
 
     def _get_vote_create_payload(
         self,
@@ -92,9 +104,12 @@ class PollVote(UpdateAction):
     def handle_option_value(
         self, value: Dict[str, Any], poll: Dict[str, Any], user_id: int
     ) -> None:
+        # Different poll methods need to be handle in different ways.
+        payload = []
+
+        # handle pollmethod Y and N
         for vote_value in ("Y", "N"):
             if poll.get("pollmethod") == vote_value:
-                payload = []
                 for key in value:
                     weight = "1.000000" if value[key] == 1 else "0.000000"
                     payload.append(
@@ -106,8 +121,34 @@ class PollVote(UpdateAction):
                             weight=weight,
                         )
                     )
-                if payload:
-                    self.execute_other_action(VoteCreate, payload)
+
+        # handle YN, YNA
+        if poll.get("pollmethod") in ("YN", "YNA"):
+            for key in value:
+                if self.check_if_value_allowed_in_pollmethod(
+                    value[key], poll["pollmethod"]
+                ):
+                    payload.append(
+                        self._get_vote_create_payload(
+                            value[key],
+                            user_id,
+                            int(key),
+                            poll["meeting_id"],
+                        )
+                    )
+        if payload:
+            self.execute_other_action(VoteCreate, payload)
+
+    def check_if_value_allowed_in_pollmethod(
+        self, value_str: str, pollmethod: str
+    ) -> bool:
+        """
+        value_str is 'Y' or'N' or 'A'
+        pollmethod is 'YN' or 'YNA'
+        """
+        if value_str == "A" and pollmethod == "YN":
+            return False
+        return True
 
     def handle_global_value(
         self, value: str, poll: Dict[str, Any], user_id: int
