@@ -53,6 +53,7 @@ class PollVote(UpdateAction):
                 "global_yes",
                 "global_no",
                 "global_abstain",
+                "pollmethod",
             ],
         )
         if poll.get("type") == "analog":
@@ -65,23 +66,50 @@ class PollVote(UpdateAction):
             for key in value:
                 if int(key) not in poll.get("option_ids", []):
                     raise ActionException(f"Option {key} not in options of the poll.")
+            self.handle_option_value(value, poll, user_id)
+
         elif isinstance(value, str):
-            self.handle_global_option(value, poll, user_id)
+            self.handle_global_value(value, poll, user_id)
 
         return instance
 
     def _get_vote_create_payload(
-        self, value: str, user_id: int, option_id: int, meeting_id: int
+        self,
+        value: str,
+        user_id: int,
+        option_id: int,
+        meeting_id: int,
+        weight: str = "1.000000",
     ) -> Dict[str, Any]:
         return {
             "value": value,
-            "weight": "1.000000",
+            "weight": weight,
             "user_id": user_id,
             "option_id": option_id,
             "meeting_id": meeting_id,
         }
 
-    def handle_global_option(
+    def handle_option_value(
+        self, value: Dict[str, Any], poll: Dict[str, Any], user_id: int
+    ) -> None:
+        for vote_value in ("Y", "N"):
+            if poll.get("pollmethod") == vote_value:
+                payload = []
+                for key in value:
+                    weight = "1.000000" if value[key] == 1 else "0.000000"
+                    payload.append(
+                        self._get_vote_create_payload(
+                            vote_value,
+                            user_id,
+                            int(key),
+                            poll["meeting_id"],
+                            weight=weight,
+                        )
+                    )
+                if payload:
+                    self.execute_other_action(VoteCreate, payload)
+
+    def handle_global_value(
         self, value: str, poll: Dict[str, Any], user_id: int
     ) -> None:
         for value_check, condition in (
