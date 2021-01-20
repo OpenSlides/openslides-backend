@@ -86,22 +86,6 @@ class PollVote(UpdateAction):
             if int(key) not in self.poll.get("option_ids", []):
                 raise ActionException(f"Option {key} not in options of the poll.")
 
-    def _get_vote_create_payload(
-        self,
-        value: str,
-        user_id: int,
-        option_id: int,
-        meeting_id: int,
-        weight: str,
-    ) -> Dict[str, Any]:
-        return {
-            "value": value,
-            "weight": weight,
-            "user_id": user_id,
-            "option_id": option_id,
-            "meeting_id": meeting_id,
-        }
-
     def handle_option_value(self, value: Dict[str, Any], user_id: int) -> None:
         payload: List[Dict[str, Any]] = []
         self._handle_value_keys(value, user_id, payload)
@@ -124,7 +108,7 @@ class PollVote(UpdateAction):
 
             if self.check_if_value_allowed_in_pollmethod(used_value):
                 payload.append(
-                    self._get_vote_create_payload(
+                    _get_vote_create_payload(
                         used_value,
                         user_id,
                         int(key),
@@ -148,7 +132,7 @@ class PollVote(UpdateAction):
         ):
             if value == value_check and condition:
                 payload = [
-                    self._get_vote_create_payload(
+                    _get_vote_create_payload(
                         value,
                         user_id,
                         self.poll["global_option_id"],
@@ -165,3 +149,19 @@ def check_value_for_option_vote(value: Union[str, Dict[str, Any]]) -> bool:
 
 def check_value_for_global_vote(value: Union[str, Dict[str, Any]]) -> bool:
     return isinstance(value, str)
+
+
+def _get_vote_create_payload(
+    value: str,
+    user_id: int,
+    option_id: int,
+    meeting_id: int,
+    weight: str,
+) -> Dict[str, Any]:
+    return {
+        "value": value,
+        "weight": weight,
+        "user_id": user_id,
+        "option_id": option_id,
+        "meeting_id": meeting_id,
+    }
