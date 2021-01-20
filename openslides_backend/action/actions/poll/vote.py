@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Union
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -92,7 +92,7 @@ class PollVote(UpdateAction):
         user_id: int,
         option_id: int,
         meeting_id: int,
-        weight: str = "1.000000",
+        weight: str,
     ) -> Dict[str, Any]:
         return {
             "value": value,
@@ -103,51 +103,42 @@ class PollVote(UpdateAction):
         }
 
     def handle_option_value(self, value: Dict[str, Any], user_id: int) -> None:
-        # Different poll methods need to be handle in different ways.
-        payload = []
-
-        # handle pollmethod Y and N
-        for vote_value in ("Y", "N"):
-            if self.poll.get("pollmethod") == vote_value:
-                for key in value:
-                    weight = "1.000000" if value[key] == 1 else "0.000000"
-                    payload.append(
-                        self._get_vote_create_payload(
-                            vote_value,
-                            user_id,
-                            int(key),
-                            self.poll["meeting_id"],
-                            weight=weight,
-                        )
-                    )
-
-        # handle YN, YNA
-        if self.poll.get("pollmethod") in ("YN", "YNA"):
-            for key in value:
-                if self.check_if_value_allowed_in_pollmethod(
-                    value[key], self.poll["pollmethod"]
-                ):
-                    payload.append(
-                        self._get_vote_create_payload(
-                            value[key],
-                            user_id,
-                            int(key),
-                            self.poll["meeting_id"],
-                        )
-                    )
+        payload: List[Dict[str, Any]] = []
+        self._handle_value_keys(value, user_id, payload)
         if payload:
             self.execute_other_action(VoteCreate, payload)
 
-    def check_if_value_allowed_in_pollmethod(
-        self, value_str: str, pollmethod: str
-    ) -> bool:
+    def _handle_value_keys(
+        self,
+        value: Dict[str, Any],
+        user_id: int,
+        payload: List[Dict[str, Any]],
+    ) -> None:
+        for key in value:
+            weight = "1.000000"
+            used_value = value[key]
+
+            if self.poll["pollmethod"] in ("Y", "N"):
+                weight = "1.000000" if value[key] == 1 else "0.000000"
+                used_value = self.poll["pollmethod"]
+
+            if self.check_if_value_allowed_in_pollmethod(used_value):
+                payload.append(
+                    self._get_vote_create_payload(
+                        used_value,
+                        user_id,
+                        int(key),
+                        self.poll["meeting_id"],
+                        weight,
+                    )
+                )
+
+    def check_if_value_allowed_in_pollmethod(self, value_str: str) -> bool:
         """
-        value_str is 'Y' or'N' or 'A'
-        pollmethod is 'YN' or 'YNA'
+        value_str is 'Y', 'N' or 'A'
+        pollmethod is 'Y', 'N', 'YN' or 'YNA'
         """
-        if value_str == "A" and pollmethod == "YN":
-            return False
-        return True
+        return value_str in self.poll.get("pollmethod", "")
 
     def handle_global_value(self, value: str, user_id: int) -> None:
         for value_check, condition in (
@@ -162,6 +153,7 @@ class PollVote(UpdateAction):
                         user_id,
                         self.poll["global_option_id"],
                         self.poll["meeting_id"],
+                        "1.000000",
                     )
                 ]
                 self.execute_other_action(VoteCreate, payload)
