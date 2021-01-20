@@ -37,5 +37,11 @@ class PollResetActionTest(BaseActionTestCase):
         # check if the option.vote_ids fields are cleared
         option_1 = self.get_model("option/1")
         assert option_1.get("vote_ids") == []
+        assert option_1.get("yes") == "0.000000"
+        assert option_1.get("no") == "0.000000"
+        assert option_1.get("abstain") == "0.000000"
         option_2 = self.get_model("option/2")
         assert option_2.get("vote_ids") == []
+        assert option_2.get("yes") == "0.000000"
+        assert option_2.get("no") == "0.000000"
+        assert option_2.get("abstain") == "0.000000"

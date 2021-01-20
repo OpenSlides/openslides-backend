@@ -1,1 +1,1 @@
-from . import create, delete  # noqa
+from . import create, delete, set_auto_fields  # noqa
