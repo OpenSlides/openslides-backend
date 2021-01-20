@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 class PollResetActionTest(BaseActionTestCase):
     def test_reset_correct(self) -> None:
         self.create_model(
-            "poll/1", {"state": "published", "option_ids": [1], "global_option_id": 2}
+            "poll/1", {"state": "started", "option_ids": [1], "global_option_id": 2}
         )
         self.create_model("option/1", {"vote_ids": [1, 2], "poll_id": 1})
         self.create_model(
@@ -39,22 +39,3 @@ class PollResetActionTest(BaseActionTestCase):
         assert option_1.get("vote_ids") == []
         option_2 = self.get_model("option/2")
         assert option_2.get("vote_ids") == []
-
-    def test_reset_wrong_state(self) -> None:
-        self.create_model("poll/1", {"state": "finished"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.reset",
-                    "data": [{"id": 1}],
-                }
-            ],
-        )
-        self.assert_status_code(response, 400)
-        poll = self.get_model("poll/1")
-        assert poll.get("state") == "finished"
-        assert (
-            "Cannot reset poll 1, because it is not in state published."
-            in response.data.decode()
-        )

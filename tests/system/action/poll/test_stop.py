@@ -17,7 +17,7 @@ class PollStopActionTest(BaseActionTestCase):
         poll = self.get_model("poll/1")
         assert poll.get("state") == "finished"
 
-    def test_start_wrong_state(self) -> None:
+    def test_stop_wrong_state(self) -> None:
         self.create_model("poll/1", {"state": "published"})
         response = self.client.post(
             "/",

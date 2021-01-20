@@ -2,7 +2,6 @@ from typing import Any, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
-from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -20,13 +19,6 @@ class PollResetAction(UpdateAction):
     schema = DefaultSchema(Poll()).get_update_schema()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["state"]
-        )
-        if poll.get("state") != "published":
-            raise ActionException(
-                f"Cannot reset poll {instance['id']}, because it is not in state published."
-            )
         instance["state"] = "created"
         self.delete_all_votes(instance["id"])
         return instance
