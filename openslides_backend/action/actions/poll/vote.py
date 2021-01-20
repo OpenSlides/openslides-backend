@@ -1,8 +1,9 @@
 from typing import Any, Dict, List, Union
 
 from ....models.models import Poll
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -55,6 +56,9 @@ class PollVote(UpdateAction):
         if self.poll.get("type") == "analog":
             raise ActionException("poll.vote is not allowed for analog voting.")
 
+        self.check_user_entitled_groups(user_id)
+        self.check_user_is_present_in_meeting(user_id)
+
         # handle create the votes.
         if check_value_for_option_vote(value):
             self.validate_option_value(value)
@@ -78,8 +82,30 @@ class PollVote(UpdateAction):
                 "global_abstain",
                 "pollmethod",
                 "voted_ids",
+                "entitled_group_ids",
             ],
         )
+
+    def check_user_entitled_groups(self, user_id: int) -> None:
+        group_ids = self.poll.get("entitled_group_ids", [])
+        gmr = GetManyRequest(
+            Collection("group"),
+            group_ids,
+            ["user_ids"],
+        )
+        result = self.datastore.get_many([gmr])
+        db_groups = result.get(Collection("group"), {})
+        for group in db_groups:
+            if user_id in db_groups[group].get("user_ids", []):
+                return
+        raise ActionException("User is not allowed to vote.")
+
+    def check_user_is_present_in_meeting(self, user_id: int) -> None:
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), user_id), ["is_present_in_meeting_ids"]
+        )
+        if self.poll["meeting_id"] not in user.get("is_present_in_meeting_ids", []):
+            raise ActionException("User is not present in the meeting.")
 
     def validate_option_value(self, value: Dict[str, Any]) -> None:
         for key in value:
