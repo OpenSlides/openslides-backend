@@ -30,6 +30,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_exists(
+            "organisation/1",
+            {
+                "resource_ids": [
+                    1,
+                ]
+            },
+        )
+        self.assert_model_exists(
             "resource/1",
             {
                 "organisation_id": 1,
@@ -42,7 +50,15 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
     def test_upload_and_update(self) -> None:
         token = "mytoken"
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.create_model(
+            "organisation/1",
+            {
+                "name": "test_organisation1",
+                "resource_ids": [
+                    1,
+                ],
+            },
+        )
         self.create_model(
             "resource/1",
             {
@@ -85,17 +101,33 @@ class ResourceUploadActionTest(BaseActionTestCase):
                 "token": token,
             },
         )
+        self.assert_model_exists(
+            "organisation/1",
+            {
+                "resource_ids": [
+                    2,
+                ]
+            },
+        )
 
         self.media.upload_resource.assert_called_with(file_content, 2, used_mimetype)
 
     def test_upload_and_mixed_sep_actions(self) -> None:
         """
-        Test of 2 uploads with separat actions, first on extisting,
+        Test of 2 uploads with separat actions, first on existing,
         second on not existing model instance
         """
         token1 = "t1"
         token2 = "t2"
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.create_model(
+            "organisation/1",
+            {
+                "name": "test_organisation1",
+                "resource_ids": [
+                    1,
+                ],
+            },
+        )
         self.create_model(
             "resource/1",
             {
@@ -143,6 +175,8 @@ class ResourceUploadActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 200)
+        organisation = self.get_model("organisation/1")
+        self.assertCountEqual(organisation["resource_ids"], [2, 3])
         self.assert_model_deleted("resource/1")
         self.assert_model_exists(
             "resource/2",
@@ -172,7 +206,15 @@ class ResourceUploadActionTest(BaseActionTestCase):
         """
         token1 = "t1"
         token2 = "t2"
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.create_model(
+            "organisation/1",
+            {
+                "name": "test_organisation1",
+                "resource_ids": [
+                    1,
+                ],
+            },
+        )
         self.create_model(
             "resource/1",
             {
@@ -215,6 +257,8 @@ class ResourceUploadActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 200)
+        organisation = self.get_model("organisation/1")
+        self.assertCountEqual(organisation["resource_ids"], [2, 3])
         self.assert_model_deleted("resource/1")
         self.assert_model_exists(
             "resource/2",
@@ -239,8 +283,8 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
     def test_error_in_resource_upload(self) -> None:
         self.create_model("organisation/1", {"name": "test_organisation1"})
-        filename = "raises_upload_error.txt"
-        used_mimetype = "text/plain"
+        filename = "raises_upload_error.swf"
+        used_mimetype = "application/x-shockwave-flash"
         token = "mytoken"
         raw_content = b"raising upload error in mock"
         file_content = base64.b64encode(raw_content).decode()
@@ -262,7 +306,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 400)
-        self.assertIn("Mocked error on mimetype \\'text/plain\\'", str(response.data))
+        self.assertIn("Mocked error on media service upload", str(response.data))
         self.assert_model_not_exists("resource/1")
         self.media.upload_resource.assert_called_with(file_content, 1, used_mimetype)
 
@@ -368,7 +412,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            f'Database corrupt: The resource token has to be unique, but I found token \\\\"{token}\\\\" 2 times.',
+            f'Database corrupt: The resource token has to be unique, but there are 2 tokens \\\\"{token}\\\\".',
             str(response.data),
         )
         self.assert_model_exists("resource/1")

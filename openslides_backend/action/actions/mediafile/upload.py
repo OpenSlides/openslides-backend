@@ -71,12 +71,10 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
         file_ = instance.pop("file")
         id_ = instance["id"]
         mimetype_ = instance["mimetype"]
-        # TODO: take care of error handling
-        self.upload_file(id_, file_, mimetype_)
+        msg = self.media.upload_mediafile(file_, id_, mimetype_)
+        if msg:
+            raise ActionException(msg)
         return instance
-
-    def upload_file(self, id_: int, file_: str, mimetype: str) -> None:
-        self.media.upload(file_, id_, mimetype)
 
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:
         bytes_io = BytesIO(file_bytes)
