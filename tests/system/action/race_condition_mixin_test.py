@@ -1,20 +1,21 @@
 import threading
-from typing import Any, Dict, cast, List
-
-from werkzeug.wrappers import Response
+from typing import Any, Dict, List, Tuple, cast
 
 from tests.system.action.base import BaseActionTestCase
-from openslides_backend.models import fields
-from openslides_backend.models.base import Model
-from openslides_backend.shared.patterns import Collection
-from tests.system.action.lock import OSTestThread, pytest_thread_local, monkeypatch_datastore_adapter_write
+from tests.system.action.lock import (
+    OSTestThread,
+    monkeypatch_datastore_adapter_write,
+    pytest_thread_local,
+)
 
 
 class RaceConditionMixinTest(BaseActionTestCase):
-    def setup_test(self):
+    def setup_test(self) -> None:
         ...
 
-    def run_threads(self, post1, post2) -> (OSTestThread):
+    def run_threads(
+        self, post1: List[Dict[str, Any]], post2: List[Dict[str, Any]]
+    ) -> Tuple[OSTestThread, OSTestThread]:
         self.setup_test()
         with monkeypatch_datastore_adapter_write():
             testlock = threading.Lock()

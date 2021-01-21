@@ -171,7 +171,9 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         assert model_12.get("level") == 1
 
     def test_tree_sort_delete_race_condition(self) -> None:
-        self.create_model("meeting/222", {"name": "meeting222", "agenda_item_ids": [1, 11, 12]})
+        self.create_model(
+            "meeting/222", {"name": "meeting222", "agenda_item_ids": [1, 11, 12]}
+        )
         self.create_model("agenda_item/1", {"meeting_id": 222, "comment": "test_root"})
         self.create_model("agenda_item/11", {"meeting_id": 222, "comment": "test_1_1"})
         self.create_model("agenda_item/12", {"meeting_id": 222, "comment": "test_1_2"})

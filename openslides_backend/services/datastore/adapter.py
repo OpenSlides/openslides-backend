@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Sequence, Union
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
+from ...shared.env import is_dev_mode
 from ...shared.exceptions import DatastoreException, DatastoreModelLockedException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.logging import LoggingModule
@@ -327,6 +328,9 @@ class DatastoreAdapter(DatastoreService):
         return self.reserve_ids(collection=collection, amount=1)[0]
 
     def write(self, write_request_element: WriteRequestElement) -> None:
+        if is_dev_mode:
+            for e in write_request_element.events:
+                print(f"ID: {e['fqid']} Type:{e['type']} Fields: {e['fields']}")
         command = commands.Write(
             write_request_element=write_request_element,
             locked_fields=self.locked_fields,
@@ -341,7 +345,6 @@ class DatastoreAdapter(DatastoreService):
         """
         Dummy for monkeypatching the write
         """
-        pass
 
     def truncate_db(self) -> None:
         command = commands.TruncateDb()
