@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any, Dict, List, Union
 
 from ....models.models import Poll
@@ -8,6 +9,7 @@ from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.create import VoteCreate
 
 
@@ -117,6 +119,8 @@ class PollVote(UpdateAction):
         self._handle_value_keys(value, user_id, payload)
         if payload:
             self.execute_other_action(VoteCreate, payload)
+            for data in payload:
+                self.update_option(data["option_id"], data["value"], data["weight"])
 
     def _handle_value_keys(
         self,
@@ -167,6 +171,45 @@ class PollVote(UpdateAction):
                     )
                 ]
                 self.execute_other_action(VoteCreate, payload)
+                self.update_option(
+                    payload[0]["option_id"], payload[0]["value"], payload[0]["weight"]
+                )
+
+    def update_option(
+        self, option_id: int, extra_value: str, extra_weight: str
+    ) -> None:
+        option = self.datastore.get(
+            FullQualifiedId(Collection("option"), option_id), ["vote_ids"]
+        )
+        vote_ids = option.get("vote_ids", [])
+        gmr = GetManyRequest(Collection("vote"), vote_ids, ["weight", "value"])
+        result = self.datastore.get_many([gmr])
+        votes = result.get(Collection("vote"), {})
+
+        yes = Decimal("0.000000")
+        no = Decimal("0.000000")
+        abstain = Decimal("0.000000")
+
+        for key in votes:
+            vote = votes[key]
+            if vote.get("value", "") == "Y":
+                yes += Decimal(vote.get("weight", "0"))
+            elif vote.get("value", "") == "N":
+                no += Decimal(vote.get("weight", "0"))
+            elif vote.get("value", "") == "A":
+                abstain += Decimal(vote.get("weight", "0"))
+
+        if extra_value == "Y":
+            yes += Decimal(extra_weight)
+        elif extra_value == "N":
+            no += Decimal(extra_weight)
+        elif extra_weight == "A":
+            abstain += Decimal(extra_weight)
+
+        payload = [
+            {"id": option_id, "yes": str(yes), "no": str(no), "abstain": str(abstain)}
+        ]
+        self.execute_other_action(OptionSetAutoFields, payload)
 
 
 def check_value_for_option_vote(value: Union[str, Dict[str, Any]]) -> bool:

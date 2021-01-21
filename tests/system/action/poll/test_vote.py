@@ -38,6 +38,9 @@ class PollVoteTest(BaseActionTestCase):
         assert vote.get("user_id") == 1
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
+        assert option.get("yes") == "1.000000"
+        assert option.get("no") == "0.000000"
+        assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
         assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [1]
@@ -59,6 +62,9 @@ class PollVoteTest(BaseActionTestCase):
         assert vote.get("user_id") == 2
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1, 2]
+        assert option.get("yes") == "1.000000"
+        assert option.get("no") == "0.000000"
+        assert option.get("abstain") == "0.000000"
         user = self.get_model("user/2")
         assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [2]
@@ -110,8 +116,14 @@ class PollVoteTest(BaseActionTestCase):
         assert vote.get("user_id") == 1
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
+        assert option.get("yes") == "1.000000"
+        assert option.get("no") == "0.000000"
+        assert option.get("abstain") == "0.000000"
         option = self.get_model("option/12")
         assert option.get("vote_ids") == [2]
+        assert option.get("yes") == "0.000000"
+        assert option.get("no") == "1.000000"
+        assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
         assert user.get("vote_$_ids") == ["113", "113"]
         assert user.get("vote_$113_ids") == [1, 2]
@@ -156,6 +168,9 @@ class PollVoteTest(BaseActionTestCase):
         assert vote.get("user_id") == 1
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
+        assert option.get("yes") == "0.000000"
+        assert option.get("no") == "1.000000"
+        assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
         assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [1]
