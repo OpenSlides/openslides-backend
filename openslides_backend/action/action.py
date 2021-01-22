@@ -116,10 +116,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service.
         """
-        if not self.permission.is_allowed(self.name, self.user_id, list(payload)):
-            raise PermissionDenied(
-                f"You are not allowed to perform action {self.name}."
-            )
+        if not self.internal:
+            if not self.permission.is_allowed(self.name, self.user_id, list(payload)):
+                raise PermissionDenied(
+                    f"You are not allowed to perform action {self.name}."
+                )
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         """
