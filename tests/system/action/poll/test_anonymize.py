@@ -34,5 +34,5 @@ class PollAnonymizeActionTest(BaseActionTestCase):
             vote = self.get_model(fqid)
             assert vote.get("user_id") is None
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ['1']
+        assert user.get("vote_$_ids") == ["1"]
         assert user.get("vote_$1_ids") == []
