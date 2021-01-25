@@ -260,7 +260,12 @@ class DatastoreAdapter(DatastoreService):
         return {"count": response["count"]}
 
     def min(
-        self, collection: Collection, filter: Filter, field: str, type: str = None
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        type: str = None,
+        lock_result: bool = False,
     ) -> Aggregate:
         # TODO: This method does not reflect the position of the fetched objects.
         command = commands.Min(
@@ -270,6 +275,10 @@ class DatastoreAdapter(DatastoreService):
             f"Start MIN request to datastore with the following data: {command.data}"
         )
         response = self.retrieve(command)
+        if lock_result:
+            self.update_locked_fields(
+                CollectionField(collection, field), response.get("position")
+            )
         return response
 
     def max(
