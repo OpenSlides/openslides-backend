@@ -8,6 +8,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
             {
                 "name": "name_asdewqasd",
                 "list_of_speakers_enable_point_of_order_speakers": True,
+                "list_of_speakers_present_users_only": False,
             },
         )
         self.create_model("user/7", {"username": "talking"})
@@ -111,10 +112,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
             "speaker/3",
             {"user_id": 9, "list_of_speakers_id": 23, "point_of_order": True},
         )
-        self.assert_model_exists(
-            "speaker/4",
-            {"user_id": 9, "list_of_speakers_id": 23, "point_of_order": None},
-        )
+        speaker4 = self.get_model("speaker/4")
+        self.assertEqual(speaker4["user_id"], 9)
+        self.assertEqual(speaker4["list_of_speakers_id"], 23)
+        self.assertIn(speaker4.get("point_of_order"), (False, None))
         list_of_speakers = self.get_model("list_of_speakers/23")
         self.assertListEqual(list_of_speakers["speaker_ids"], [1, 2, 3, 4])
         user = self.get_model("user/9")

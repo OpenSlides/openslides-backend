@@ -44,9 +44,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         comming speaker (with begin_time == None), but allows one additional with point_of_order speaker per user
         - checks, if points_of_order are used inthis meeting
         - checks, if user has to be present to be added to the list of speakers
-
         """
-        
         los_fqid = FullQualifiedId(
             Collection("list_of_speakers"), instance["list_of_speakers_id"]
         )
@@ -60,7 +58,9 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 "list_of_speakers_present_users_only",
             ],
         )
-        if instance.get("point_of_order") and not meeting.get("list_of_speakers_enable_point_of_order_speakers"):
+        if instance.get("point_of_order") and not meeting.get(
+            "list_of_speakers_enable_point_of_order_speakers"
+        ):
             raise ActionException(
                 "Point of order speakers are not enabled for this meeting."
             )
@@ -84,9 +84,9 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
             lock_result=True,
         )
         for speaker in speakers.values():
-            if speaker["user_id"] == instance["user_id"] and speaker.get(
-                "point_of_order"
-            ) == instance.get("point_of_order"):
+            if speaker["user_id"] == instance["user_id"] and bool(
+                speaker.get("point_of_order")
+            ) == bool(instance.get("point_of_order")):
                 raise ActionException(
                     f"User {instance['user_id']} is already on the list of speakers."
                 )
