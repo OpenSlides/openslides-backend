@@ -57,3 +57,25 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             "data must not contain {\\'wrong_field\\'} properties",
             str(response.data),
         )
+
+    def test_create_finished(self) -> None:
+        self.create_model("meeting/1333", {"name": "name_JhlFOAfK"})
+        self.create_model("user/110", {"username": "test_Xcdfgee"})
+        self.create_model(
+            "assignment/111",
+            {"title": "title_xTcEkItp", "meeting_id": 1333, "phase": "finished"},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "assignment_candidate.create",
+                    "data": [{"assignment_id": 111, "user_id": 110}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "It is not permitted to add a candidate to a finished assignment!",
+            str(response.data),
+        )
