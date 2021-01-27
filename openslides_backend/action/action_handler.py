@@ -6,10 +6,10 @@ import fastjsonschema
 from ..shared.env import is_dev_mode
 from ..shared.exceptions import ActionException, DatastoreException, EventStoreException
 from ..shared.handlers.base_handler import BaseHandler
-from ..shared.interfaces.write_request_element import WriteRequestElement
+from ..shared.interfaces.write_request import WriteRequest
 from ..shared.schema import schema_version
 from . import actions  # noqa
-from .action import merge_write_request_elements
+from .action import merge_write_requests
 from .relations.relation_manager import RelationManager
 from .util.actions_map import actions_map
 from .util.typing import (
@@ -89,12 +89,12 @@ class ActionHandler(BaseHandler):
         payload_copy = deepcopy(payload)
         while True:
             # Parse actions and creates events
-            write_request_element, results = self.parse_actions(payload)
+            write_request, results = self.parse_actions(payload)
 
             # Send events to datastore
-            if write_request_element:
+            if write_request:
                 try:
-                    self.datastore.write(write_request_element)
+                    self.datastore.write(write_request)
                 except DatastoreException as exception:
                     retried += 1
                     payload = deepcopy(payload_copy)
@@ -122,12 +122,12 @@ class ActionHandler(BaseHandler):
 
     def parse_actions(
         self, payload: Payload
-    ) -> Tuple[Optional[WriteRequestElement], ActionResponseResults]:
+    ) -> Tuple[Optional[WriteRequest], ActionResponseResults]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
         """
-        all_write_request_elements: List[WriteRequestElement] = []
+        all_write_requests: List[WriteRequest] = []
         all_action_response_results: ActionResponseResults = []
         relation_manager = RelationManager(self.datastore)
 
@@ -143,9 +143,9 @@ class ActionHandler(BaseHandler):
 
             response_elements: List[Optional[ActionResponseResultsElement]] = []
             for item in action_results:
-                if isinstance(item, WriteRequestElement):
+                if isinstance(item, WriteRequest):
                     self.logger.debug(f"Prepared write request element {item}.")
-                    all_write_request_elements.append(item)
+                    all_write_requests.append(item)
                 else:
                     # item = cast(ActionResponseResultsElement, item)
                     self.logger.debug(f"Got action response element {item}.")
@@ -154,6 +154,6 @@ class ActionHandler(BaseHandler):
 
         self.logger.debug("Write request is ready.")
         return (
-            merge_write_request_elements(all_write_request_elements),
+            merge_write_requests(all_write_requests),
             all_action_response_results,
         )

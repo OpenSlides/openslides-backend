@@ -6,7 +6,7 @@ from simplejson.errors import JSONDecodeError
 from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.logging import LoggingModule
-from ...shared.interfaces.write_request_element import WriteRequestElement
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
     Collection,
     CollectionField,
@@ -313,14 +313,14 @@ class DatastoreAdapter(DatastoreService):
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
-    def write(self, write_request_element: WriteRequestElement) -> None:
+    def write(self, write_request: WriteRequest) -> None:
         command = commands.Write(
-            write_request_element=write_request_element,
+            write_request=write_request,
             locked_fields=self.locked_fields,
         )
         self.logger.debug(
             f"Start WRITE request to datastore with the following data: "
-            f"Write request: {write_request_element}"
+            f"Write request: {write_request}"
         )
         self.retrieve(command)
 

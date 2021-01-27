@@ -95,10 +95,10 @@ class MeetingCreateActionPerformTester(BaseMeetingCreateActionTester):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
-        result = list(write_request_elements)
+        result = list(write_requests)
         expected = [
             {
                 "events": [
@@ -288,7 +288,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
         )
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -304,7 +304,7 @@ class MeetingUpdateActionPerformTester(BaseMeetingUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
 
@@ -436,7 +436,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
         )
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -458,7 +458,7 @@ class MeetingDeleteActionPerformTester(BaseMeetingDeleteActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_incorrect_1(self) -> None:

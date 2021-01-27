@@ -75,7 +75,7 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
         )
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -105,7 +105,7 @@ class MotionUpdateActionPerformTester(BaseMotionUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        self.assertEqual(list(write_request_elements), expected)
+        self.assertEqual(list(write_requests), expected)
 
 
 class MotionUpdateActionWSGITester(BaseMotionUpdateActionTester):
@@ -206,7 +206,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
         )
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -251,12 +251,12 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
             },
         ]
         self.assertEqual(
-            list(write_request_elements),
+            list(write_requests),
             expected,
         )
 
     def test_perform_correct_2(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
         expected = [
@@ -284,7 +284,7 @@ class MotionUpdateMetadataActionPerformTester(BaseMotionUpdateMetadataActionTest
             }
         ]
         self.assertEqual(
-            list(write_request_elements),
+            list(write_requests),
             expected,
         )
 
@@ -393,7 +393,7 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
         )
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -454,7 +454,7 @@ class MotionDeleteActionPerformTester(BaseMotionDeleteActionTester):
             },
         ]
         self.assertEqual(
-            list(write_request_elements),
+            list(write_requests),
             expected,
         )
 
@@ -615,7 +615,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
         )
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -696,12 +696,12 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
             },
         ]
         self.assertEqual(
-            list(write_request_elements),
+            list(write_requests),
             expected,
         )
 
     def test_perform_correct_2(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
         expected = [
@@ -782,7 +782,7 @@ class MotionSortActionPerformTester(BaseMotionSortActionTester):
             },
         ]
         self.assertEqual(
-            list(write_request_elements),
+            list(write_requests),
             expected,
         )
 

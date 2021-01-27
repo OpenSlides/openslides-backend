@@ -177,24 +177,24 @@ class TopicCreateActionPerformTester(BaseTopicCreateActionTester):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertTrue(len(result) == 2)
 
     def test_perform_correct_2(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertTrue(len(result) == 2)
 
     def test_perform_correct_3(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_3, user_id=self.user_id
         )
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertTrue(len(result) == 2)
 
     def test_perform_no_permission_1(self) -> None:
@@ -626,7 +626,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -645,11 +645,11 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_correct_2(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
         expected = [
@@ -692,11 +692,11 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_correct_3(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_3, user_id=self.user_id
         )
         expected = [
@@ -722,11 +722,11 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_correct_4(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_4, user_id=self.user_id
         )
         expected = [
@@ -752,11 +752,11 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_correct_5(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_5, user_id=self.user_id
         )
         expected = [
@@ -790,7 +790,7 @@ class TopicUpdateActionPerformTester(BaseTopicUpdateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
 
@@ -1048,7 +1048,7 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
             self.action.perform(payload, user_id=self.user_id)
 
     def test_perform_correct_1(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
         expected = [
@@ -1070,14 +1070,14 @@ class TopicDeleteActionPerformTester(BaseTopicDeleteActionTester):
                 "user_id": self.user_id,
             },
         ]
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_correct_2(self) -> None:
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_2, user_id=self.user_id
         )
-        result = list(write_request_elements)
+        result = list(write_requests)
         expected = [
             {
                 "events": [

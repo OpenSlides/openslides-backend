@@ -8,7 +8,7 @@ from ...models.fields import (
 )
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
-from ...shared.interfaces.write_request_element import WriteRequestElement
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ...shared.typing import DeletedModel, ModelMap
 from ..action import Action
@@ -145,9 +145,9 @@ class DeleteAction(Action):
 
         return instance
 
-    def create_write_request_elements(
+    def create_write_requests(
         self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         fqid = FullQualifiedId(self.model.collection, instance["id"])
         information = "Object deleted"
-        yield self.build_write_request_element(EventType.Delete, fqid, information)
+        yield self.build_write_request(EventType.Delete, fqid, information)

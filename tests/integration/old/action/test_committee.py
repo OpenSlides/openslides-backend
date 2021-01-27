@@ -121,10 +121,10 @@ class CommitteeCreateActionPerformTester(BaseCommitteeCreateActionTester):
                 "user_id": self.user_id,
             },
         ]
-        write_request_elements = self.action.perform(
+        write_requests = self.action.perform(
             self.valid_payload_1, user_id=self.user_id
         )
-        result = list(write_request_elements)
+        result = list(write_requests)
         self.assertEqual(result, expected)
 
     def test_perform_no_permission_1(self) -> None:

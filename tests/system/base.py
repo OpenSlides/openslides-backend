@@ -15,9 +15,7 @@ from openslides_backend.services.datastore.interface import (
 )
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.event import Event, EventType
-from openslides_backend.shared.interfaces.write_request_element import (
-    WriteRequestElement,
-)
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from tests.util import Client, get_collection_from_fqid, get_fqid, get_id_from_fqid
 
@@ -78,7 +76,7 @@ class BaseSystemTestCase(TestCase):
     ) -> None:
         data["id"] = get_id_from_fqid(fqid)
         self.validate_fields(fqid, data)
-        request = WriteRequestElement(
+        request = WriteRequest(
             events=[Event(type=EventType.Create, fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
@@ -89,7 +87,7 @@ class BaseSystemTestCase(TestCase):
 
     def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
         self.validate_fields(fqid, data)
-        request = WriteRequestElement(
+        request = WriteRequest(
             events=[Event(type=EventType.Update, fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,

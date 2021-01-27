@@ -6,7 +6,7 @@ from mypy_extensions import TypedDict
 from ...shared.filters import Filter as FilterInterface
 from ...shared.filters import FilterData
 from ...shared.interfaces.event import Event
-from ...shared.interfaces.write_request_element import WriteRequestElement
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from .deleted_models_behaviour import DeletedModelsBehaviour
 
@@ -53,8 +53,8 @@ CommandData = Dict[
 ]
 
 
-StringifiedWriteRequestElement = TypedDict(
-    "StringifiedWriteRequestElement",
+StringifiedWriteRequest = TypedDict(
+    "StringifiedWriteRequest",
     {
         "events": List[Event],
         "information": Dict[str, List[str]],
@@ -306,20 +306,20 @@ class Write(Command):
     """
 
     def __init__(
-        self, write_request_element: WriteRequestElement, locked_fields: Dict[str, int]
+        self, write_request: WriteRequest, locked_fields: Dict[str, int]
     ) -> None:
-        self.write_request_element = write_request_element
+        self.write_request = write_request
         self.locked_fields = locked_fields
 
     @property
     def data(self) -> str:
         information = {}
-        for fqid, value in self.write_request_element.information.items():
+        for fqid, value in self.write_request.information.items():
             information[str(fqid)] = value
-        stringified_write_request_element: StringifiedWriteRequestElement = {
-            "events": self.write_request_element.events,
+        stringified_write_request: StringifiedWriteRequest = {
+            "events": self.write_request.events,
             "information": information,
-            "user_id": self.write_request_element.user_id,
+            "user_id": self.write_request.user_id,
             "locked_fields": self.locked_fields,
         }
         # TODO: REMOVE locked_fields in business logic
@@ -330,9 +330,7 @@ class Write(Command):
                     return str(o)
                 return super().default(o)
 
-        return json.dumps(
-            stringified_write_request_element, cls=WriteRequestJSONEncoder
-        )
+        return json.dumps(stringified_write_request, cls=WriteRequestJSONEncoder)
 
 
 class TruncateDb(Command):

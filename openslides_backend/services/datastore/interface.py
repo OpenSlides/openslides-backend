@@ -4,7 +4,7 @@ from mypy_extensions import TypedDict
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter
-from ...shared.interfaces.write_request_element import WriteRequestElement
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from .commands import GetManyRequest
 from .deleted_models_behaviour import DeletedModelsBehaviour
@@ -93,7 +93,7 @@ class DatastoreService(Protocol):
     def reserve_id(self, collection: Collection) -> int:
         ...
 
-    def write(self, write_request: WriteRequestElement) -> None:
+    def write(self, write_request: WriteRequest) -> None:
         ...
 
     def truncate_db(self) -> None:
