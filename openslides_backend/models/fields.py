@@ -328,5 +328,13 @@ class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
     pass
 
 
+class TemplateCharField(BaseTemplateField, CharField):
+    pass
+
+
+class TemplateDecimalField(BaseTemplateField, DecimalField):
+    pass
+
+
 class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
     pass

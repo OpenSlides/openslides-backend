@@ -15,7 +15,7 @@ class UserUpdate(UpdateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_default_schema(
-        optional_properties=["username", "about_me", "email"]
+        optional_properties=["username", "email"]
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

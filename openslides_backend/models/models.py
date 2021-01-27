@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "df12d54abaebd77b643b76b2ba5a971b"
+MODELS_YML_CHECKSUM = "0ed05c0075814352456f4083a9f93901"
 
 
 class Organisation(Model):
@@ -24,10 +24,6 @@ class Organisation(Model):
     committee_ids = fields.RelationListField(
         to={Collection("committee"): "organisation_id"}
     )
-    role_ids = fields.RelationListField(to={Collection("role"): "organisation_id"})
-    superadmin_role_id = fields.RelationField(
-        to={Collection("role"): "superadmin_role_for_organisation_id"}
-    )
     resource_ids = fields.RelationListField(
         to={Collection("resource"): "organisation_id"}
     )
@@ -46,16 +42,19 @@ class User(Model):
     is_physical_person = fields.BooleanField(default=True)
     password = fields.CharField()
     default_password = fields.CharField()
-    about_me = fields.HTMLStrictField()
     gender = fields.CharField()
-    comment = fields.HTMLStrictField()
-    number = fields.CharField()
-    structure_level = fields.CharField()
     email = fields.CharField()
+    default_number = fields.CharField()
+    default_structure_level = fields.CharField()
+    default_vote_weight = fields.DecimalField()
     last_email_send = fields.CharField()
-    vote_weight = fields.DecimalField()
     is_demo_user = fields.BooleanField(read_only=True)
-    role_id = fields.RelationField(to={Collection("role"): "user_ids"})
+    organisation_management_level = fields.CharField(
+        constraints={
+            "description": "Hierarchical permission level for the whole organisation.",
+            "enum": ["superadmin", "can_manage_organisation", "can_manage_users"],
+        }
+    )
     is_present_in_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "present_user_ids"}
     )
@@ -68,6 +67,21 @@ class User(Model):
     )
     committee_as_manager_ids = fields.RelationListField(
         to={Collection("committee"): "manager_ids"}
+    )
+    comment_ = fields.TemplateHTMLStrictField(
+        index=8,
+    )
+    number_ = fields.TemplateCharField(
+        index=7,
+    )
+    structure_level_ = fields.TemplateCharField(
+        index=16,
+    )
+    about_me_ = fields.TemplateHTMLStrictField(
+        index=9,
+    )
+    vote_weight_ = fields.TemplateDecimalField(
+        index=12,
     )
     group__ids = fields.TemplateRelationListField(
         index=6,
@@ -139,22 +153,6 @@ class User(Model):
         replacement="meeting_id",
         to={Collection("user"): "vote_delegated_$_to_id"},
     )
-
-
-class Role(Model):
-    collection = Collection("role")
-    verbose_name = "role"
-
-    id = fields.IntegerField()
-    name = fields.CharField()
-    permissions = fields.CharArrayField()
-    organisation_id = fields.OrganisationField(
-        to={Collection("organisation"): "role_ids"}
-    )
-    superadmin_role_for_organisation_id = fields.RelationField(
-        to={Collection("organisation"): "superadmin_role_id"}
-    )
-    user_ids = fields.RelationListField(to={Collection("user"): "role_id"})
 
 
 class Resource(Model):
@@ -369,7 +367,7 @@ class Meeting(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.CharField()
-    assignemnts_export_title = fields.CharField(default="Elections")
+    assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.CharField()
     assignment_poll_ballot_paper_selection = fields.CharField(
         default="CUSTOM_NUMBER",

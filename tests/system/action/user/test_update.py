@@ -36,7 +36,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                         {
                             "id": 111,
                             "username": "username_Xcdfgee",
-                            "vote_weight": "1.700000",
+                            "default_vote_weight": "1.700000",
+                            "organisation_management_level": "can_manage_users",
                             "guest_meeting_ids": [110],
                             "committee_as_member_ids": [78],
                             "committee_as_manager_ids": [78],
@@ -48,10 +49,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("username") == "username_Xcdfgee"
-        assert model.get("vote_weight") == "1.700000"
+        assert model.get("default_vote_weight") == "1.700000"
         assert model.get("guest_meeting_ids") == [110]
         assert model.get("committee_as_member_ids") == [78]
         assert model.get("committee_as_manager_ids") == [78]
+        assert model.get("organisation_management_level") == "can_manage_users"
 
     def test_update_group_ids(self) -> None:
         self.create_model("meeting/1")

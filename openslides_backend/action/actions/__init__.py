@@ -28,7 +28,6 @@ def prepare_actions_map() -> None:
         personal_note,
         poll,
         resource,
-        role,
         speaker,
         tag,
         topic,

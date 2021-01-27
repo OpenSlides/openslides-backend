@@ -15,7 +15,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
                     "data": [
                         {
                             "username": "username_Xcdfgee",
-                            "about_me": "<b>about_me ertz</b>",
                             "email": "email1@example.com",
                         }
                     ],
@@ -25,5 +24,4 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
         assert model.get("username") == "username_Xcdfgee"
-        assert model.get("about_me") == "&lt;b&gt;about_me ertz&lt;/b&gt;"
         assert model.get("email") == "email1@example.com"
