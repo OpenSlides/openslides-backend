@@ -8,7 +8,7 @@ Information = Dict[FullQualifiedId, List[str]]
 
 
 @dataclass
-class WriteRequestElement:
+class WriteRequest:
     """
     Write request element that can be sent to the datastore.
     """

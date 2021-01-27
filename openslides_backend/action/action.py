@@ -17,7 +17,7 @@ from ..services.permission.interface import PermissionService
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.services import Services
-from ..shared.interfaces.write_request_element import WriteRequestElement
+from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
@@ -68,9 +68,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     modified_relation_fields: Dict[FullQualifiedField, Any]
 
-    write_request_elements: List[
-        Union[WriteRequestElement, ActionResponseResultsElement]
-    ]
+    write_requests: List[Union[WriteRequest, ActionResponseResultsElement]]
 
     def __init__(
         self,
@@ -87,11 +85,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.relation_manager = relation_manager
         self.additional_relation_models = additional_relation_models
         self.modified_relation_fields = {}
-        self.write_request_elements = []
+        self.write_requests = []
 
     def perform(
         self, payload: ActionPayload, user_id: int
-    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         """
         Entrypoint to perform the action.
         """
@@ -104,13 +102,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for instance in instances:
             instance = self.base_update_instance(instance)
 
-            instance_wre = self.create_write_request_elements(instance)
-            self.write_request_elements.extend(instance_wre)
+            instance_wre = self.create_write_requests(instance)
+            self.write_requests.extend(instance_wre)
 
             relation_updates = self.handle_relation_updates(instance)
-            self.write_request_elements.extend(relation_updates)
+            self.write_requests.extend(relation_updates)
 
-        yield from self.process_write_request_elements()
+        yield from self.process_write_requests()
 
     def check_permissions(self, payload: ActionPayload) -> None:
         """
@@ -158,7 +156,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def handle_relation_updates(
         self,
         instance: Dict[str, Any],
-    ) -> Iterable[WriteRequestElement]:
+    ) -> Iterable[WriteRequest]:
         """
         Creates write request elements (with update events) for all relations.
         """
@@ -171,65 +169,65 @@ class Action(BaseAction, metaclass=SchemaProvider):
             else:
                 # data["type"] == "remove"
                 info_text = f"Object attachment to {fqfield.collection} reset"
-            yield self.build_write_request_element(
+            yield self.build_write_request(
                 EventType.Update,
                 FullQualifiedId(fqfield.collection, fqfield.id),
                 info_text,
                 {fqfield.field: data["value"]},
             )
 
-    def build_write_request_element(
+    def build_write_request(
         self,
         type: EventType,
         fqid: FullQualifiedId,
         information: str,
         fields: Optional[Dict[str, Any]] = None,
-    ) -> WriteRequestElement:
+    ) -> WriteRequest:
         """
-        Helper function to create a WriteRequestElement.
+        Helper function to create a WriteRequest.
         """
         event = Event(
             type=type,
             fqid=fqid,
             fields=fields,
         )
-        return WriteRequestElement(
+        return WriteRequest(
             events=[event],
             information={fqid: [information]},
             user_id=self.user_id,
         )
 
-    def create_write_request_elements(
+    def create_write_requests(
         self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
         """
         raise NotImplementedError
 
-    def process_write_request_elements(
+    def process_write_requests(
         self,
-    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         # Pre-yield non write request elements, i. e. action response results elements.
-        write_request_elements: List[WriteRequestElement] = []
-        for item in self.write_request_elements:
-            if not isinstance(item, WriteRequestElement):
+        write_requests: List[WriteRequest] = []
+        for item in self.write_requests:
+            if not isinstance(item, WriteRequest):
                 yield item
             else:
-                write_request_elements.append(item)
+                write_requests.append(item)
         # merge all actual write request elements
-        write_request_element = merge_write_request_elements(write_request_elements)
-        if write_request_element:
+        write_request = merge_write_requests(write_requests)
+        if write_request:
             # sort events: create - update - delete
             events_by_type: Dict[EventType, List[Event]] = defaultdict(list)
-            for event in write_request_element.events:
+            for event in write_request.events:
                 events_by_type[event["type"]].append(event)
-            write_request_element.events = []
+            write_request.events = []
             for type in (EventType.Create, EventType.Update, EventType.Delete):
-                write_request_element.events.extend(events_by_type[type])
+                write_request.events.extend(events_by_type[type])
 
             # Finally yield the merged write request element.
-            yield write_request_element
+            yield write_request
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -345,7 +343,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Executes the given action class as a dependent action with the given payload
         and the given addtional relation models. Merges its own additional relation
         models into it.
-        The action is fully executed and created WriteRequestElements are appended to
+        The action is fully executed and created WriteRequests are appended to
         this action.
         """
         action = ActionClass(
@@ -358,20 +356,20 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for item in action_results:
             # We strip off items of type ActionResponseResultsElement because
             # we do not want such response information in the real action response.
-            if isinstance(item, WriteRequestElement):
-                self.write_request_elements.append(item)
+            if isinstance(item, WriteRequest):
+                self.write_requests.append(item)
 
 
-def merge_write_request_elements(
-    write_request_elements: Iterable[WriteRequestElement],
-) -> Optional[WriteRequestElement]:
+def merge_write_requests(
+    write_requests: Iterable[WriteRequest],
+) -> Optional[WriteRequest]:
     """
     Merges the given write request elements to one big write request element.
     """
     events: List[Event] = []
     information: Dict[FullQualifiedId, List[str]] = {}
     user_id: Optional[int] = None
-    for element in write_request_elements:
+    for element in write_requests:
         events.extend(element.events)
         for fqid, info_text in element.information.items():
             if information.get(fqid) is None:
@@ -388,8 +386,6 @@ def merge_write_request_elements(
     if events:
         if user_id is None:
             raise ValueError("At least one of the given user ids must not be None.")
-        return WriteRequestElement(
-            events=events, information=information, user_id=user_id
-        )
+        return WriteRequest(events=events, information=information, user_id=user_id)
     else:
         return None

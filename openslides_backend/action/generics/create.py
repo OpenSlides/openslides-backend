@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List, Union
 
 from ...models.fields import BaseTemplateField
 from ...shared.interfaces.event import EventType
-from ...shared.interfaces.write_request_element import WriteRequestElement
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ..action import Action
 from ..util.typing import ActionResponseResultsElement
@@ -57,9 +57,9 @@ class CreateAction(Action):
                 instance[field.own_field_name] = field.default
         return instance
 
-    def create_write_request_elements(
+    def create_write_requests(
         self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
 
@@ -68,9 +68,7 @@ class CreateAction(Action):
         """
         fqid = FullQualifiedId(self.model.collection, instance["id"])
         information = "Object created"
-        yield self.build_write_request_element(
-            EventType.Create, fqid, information, instance
-        )
+        yield self.build_write_request(EventType.Create, fqid, information, instance)
 
         response_info: ActionResponseResultsElement = {"id": fqid.id}
         yield response_info

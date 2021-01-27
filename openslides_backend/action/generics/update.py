@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, Set, Union
 
 from ...models.fields import BaseTemplateField
 from ...shared.interfaces.event import EventType
-from ...shared.interfaces.write_request_element import WriteRequestElement
+from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ..action import Action
 from ..util.typing import ActionResponseResultsElement
@@ -86,9 +86,9 @@ class UpdateAction(Action):
                 del updated_instance[field_name]
         return updated_instance
 
-    def create_write_request_elements(
+    def create_write_requests(
         self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequestElement, ActionResponseResultsElement]]:
+    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         """
         Creates a write request element for one instance of the current model.
 
@@ -100,6 +100,4 @@ class UpdateAction(Action):
         fields = {
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
         }
-        yield self.build_write_request_element(
-            EventType.Update, fqid, information, fields
-        )
+        yield self.build_write_request(EventType.Update, fqid, information, fields)

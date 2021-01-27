@@ -10,7 +10,7 @@ from openslides_backend.services.datastore.interface import (
     PartialModel,
 )
 from openslides_backend.shared.filters import Filter, FilterOperator
-from openslides_backend.shared.interfaces import WriteRequestElement
+from openslides_backend.shared.interfaces import WriteRequest
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 TEST_POSITION = 1
@@ -244,7 +244,7 @@ class DatastoreTestAdapter:
     def reserve_id(self, collection: Collection) -> int:
         return 42
 
-    def write(self, write_request: WriteRequestElement) -> None:
+    def write(self, write_request: WriteRequest) -> None:
         pass
 
     def truncate_db(self) -> None:

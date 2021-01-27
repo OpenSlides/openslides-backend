@@ -7,9 +7,7 @@ from openslides_backend.services.datastore import commands
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.filters import FilterOperator, Or
-from openslides_backend.shared.interfaces.write_request_element import (
-    WriteRequestElement,
-)
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
 
 
@@ -222,16 +220,14 @@ class DatastoreAdapterTester(TestCase):
         assert new_id == 42
 
     def test_write(self) -> None:
-        write_request_element = WriteRequestElement(
+        write_request = WriteRequest(
             events=[],
             information={},
             user_id=42,
         )
-        command = commands.Write(
-            write_request_element=write_request_element, locked_fields={}
-        )
+        command = commands.Write(write_request=write_request, locked_fields={})
         self.engine.retrieve.return_value = "", 200
-        self.db.write(write_request_element=write_request_element)
+        self.db.write(write_request=write_request)
         assert (
             command.data
             == '{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}'

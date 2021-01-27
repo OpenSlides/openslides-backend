@@ -3,9 +3,7 @@ from contextlib import contextmanager
 from typing import Iterator
 
 from openslides_backend.services.datastore.adapter import DatastoreAdapter
-from openslides_backend.shared.interfaces.write_request_element import (
-    WriteRequestElement,
-)
+from openslides_backend.shared.interfaces.write_request import WriteRequest
 
 pytest_thread_local = threading.local()
 
@@ -25,7 +23,7 @@ def monkeypatch_datastore_adapter_write() -> Iterator[None]:
         delattr(DatastoreAdapter, "write_original")
 
 
-def write(self, write_request_element: WriteRequestElement) -> None:  # type: ignore
+def write(self, write_request: WriteRequest) -> None:  # type: ignore
     """
     Wraps the write of the datastore.adapter and stops a thread, if the testlock attribute is set thread-local.
     See example in test_create_sequence_numbers_race_condition
@@ -37,6 +35,6 @@ def write(self, write_request_element: WriteRequestElement) -> None:  # type: ig
         ):
             pytest_thread_local.sync_event.set()
         with pytest_thread_local.testlock:
-            self.write_original(write_request_element)
+            self.write_original(write_request)
     else:
-        self.write_original(write_request_element)
+        self.write_original(write_request)
