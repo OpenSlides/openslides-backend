@@ -12,8 +12,6 @@ from typing import (
     cast,
 )
 
-from mypy_extensions import TypedDict
-
 from ...models.base import model_registry
 from ...models.fields import (
     BaseGenericRelationField,
@@ -39,15 +37,7 @@ from ...shared.patterns import (
     string_to_fqid,
 )
 from ...shared.typing import DeletedModel, ModelMap
-from .typing import (
-    Identifier,
-    IdentifierList,
-    FieldUpdateElement,
-    ListUpdateElement,
-    RelationUpdateElement,
-    RelationFieldUpdates,
-    RelationUpdates,
-)
+from .typing import FieldUpdateElement, IdentifierList, RelationFieldUpdates
 
 
 class SingleRelationHandler:

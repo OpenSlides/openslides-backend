@@ -32,7 +32,7 @@ from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
-from .relations.single_relation_handler import ListUpdateElement, FieldUpdateElement
+from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.typing import ActionPayload, ActionResponseResultsElement
 
 PERMISSION_SPECIAL_CASE = "Special business logic"

@@ -8,8 +8,8 @@ from ...shared.typing import ModelMap
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
 from .typing import (
-    ListUpdateElement,
     FieldUpdateElement,
+    ListUpdateElement,
     RelationUpdateElement,
     RelationUpdates,
 )

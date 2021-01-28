@@ -6,7 +6,6 @@ from ...models.models import Group, Meeting
 from .calculated_field_handler import CalculatedFieldHandler
 from .meeting_user_ids_handler import MeetingUserIdsHandler
 
-
 # This maps all CalculatedFieldsHandlers to the fields for which they need to get the
 # updates. Fill this map if you add more handlers.
 handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {

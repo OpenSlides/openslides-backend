@@ -1,6 +1,6 @@
-from typing import Union, Dict, Optional, List, TypedDict
-from ...shared.patterns import FullQualifiedId, FullQualifiedField
+from typing import Dict, List, Optional, TypedDict, Union
 
+from ...shared.patterns import FullQualifiedField, FullQualifiedId
 
 Identifier = Union[int, str, FullQualifiedId]
 IdentifierList = Union[List[int], List[str], List[FullQualifiedId]]

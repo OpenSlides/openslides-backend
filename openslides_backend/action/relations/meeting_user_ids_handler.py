@@ -13,6 +13,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
     meeting.temporary_user_ids, meeting.guest_ids and all users in all groups of the
     meeting. This handles all necessary field updates simultaniously.
     """
+
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
