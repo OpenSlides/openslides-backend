@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from ..shared.patterns import Collection, string_to_fqid
 from ..shared.schema import (
+    decimal_schema,
     fqid_list_schema,
     id_list_schema,
     optional_fqid_schema,
@@ -130,9 +131,7 @@ class DecimalField(Field):
     """
 
     def get_schema(self) -> Schema:
-        schema = self.extend_schema(
-            super().get_schema(), type="string", pattern=r"^-?(\d|[1-9]\d+)\.\d{6}$"
-        )
+        schema = self.extend_schema(super().get_schema(), **decimal_schema)
         if not self.required:
             schema["type"] = ["string", "null"]
         return schema

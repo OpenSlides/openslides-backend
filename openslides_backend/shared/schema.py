@@ -25,3 +25,5 @@ base_list_schema: Schema = {
 }
 id_list_schema: Schema = {**base_list_schema, "items": required_id_schema}
 fqid_list_schema: Schema = {**base_list_schema, "items": required_fqid_schema}
+
+decimal_schema: Schema = {"type": "string", "pattern": r"^-?(\d|[1-9]\d+)\.\d{6}$"}
