@@ -207,10 +207,7 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The field meeting_id must be equal but differs on motion/2: 1 != 2"
-            in response.data.decode()
-        )
+        assert "requires the following fields to be equal" in response.data.decode()
 
     def test_only_motion_allowed(self) -> None:
         self.create_model("meeting/1", {"name": "name_uZXBoHMp"})

@@ -110,7 +110,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal",
+            "requires the following fields to be equal",
             str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
@@ -157,7 +157,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal",
+            "requires the following fields to be equal",
             str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
@@ -196,7 +196,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal",
+            "requires the following fields to be equal",
             str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
@@ -235,7 +235,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field reference_field must be equal",
+            "requires the following fields to be equal",
             str(response.data),
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
