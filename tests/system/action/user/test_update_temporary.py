@@ -216,7 +216,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The field meeting_id must be equal but differs",
+            "requires the following fields to be equal",
             str(response.data),
         )
         model = self.get_model("user/111")
