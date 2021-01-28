@@ -16,7 +16,7 @@ from ...shared.patterns import (
 from . import commands
 from .deleted_models_behaviour import DeletedModelsBehaviour
 from .http_engine import HTTPEngine as Engine
-from .interface import Aggregate, Count, DatastoreService, Found, PartialModel
+from .interface import Count, DatastoreService, Found, OptionalInt, PartialModel
 
 # TODO: Use proper typing here.
 DatastoreResponse = Any
@@ -266,7 +266,7 @@ class DatastoreAdapter(DatastoreService):
         field: str,
         type: str = None,
         lock_result: bool = False,
-    ) -> Aggregate:
+    ) -> OptionalInt:
         # TODO: This method does not reflect the position of the fetched objects.
         command = commands.Min(
             collection=collection, filter=filter, field=field, type=type
@@ -279,7 +279,7 @@ class DatastoreAdapter(DatastoreService):
             self.update_locked_fields(
                 CollectionField(collection, field), response.get("position")
             )
-        return response
+        return response.get("min")
 
     def max(
         self,
@@ -288,7 +288,7 @@ class DatastoreAdapter(DatastoreService):
         field: str,
         type: str = None,
         lock_result: bool = False,
-    ) -> Aggregate:
+    ) -> OptionalInt:
         """
         Per default records, marked as deleted, are counted
         """
@@ -304,7 +304,7 @@ class DatastoreAdapter(DatastoreService):
             self.update_locked_fields(
                 CollectionField(collection, field), response.get("position")
             )
-        return response
+        return response.get("max")
 
     def update_locked_fields(
         self,

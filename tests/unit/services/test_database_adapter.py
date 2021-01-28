@@ -183,8 +183,8 @@ class DatastoreAdapterTester(TestCase):
         filter = FilterOperator(field, operator, value)
         command = commands.Min(collection=collection, filter=filter, field=field)
         self.engine.retrieve.return_value = json.dumps({"min": 1, "position": 1}), 200
-        agg = self.db.min(collection=collection, filter=filter, field=field)
-        assert agg is not None
+        number = self.db.min(collection=collection, filter=filter, field=field)
+        assert number is not None
         assert command.get_raw_data() == {
             "collection": str(collection),
             "filter": {"field": field, "operator": operator, "value": value},
@@ -200,8 +200,8 @@ class DatastoreAdapterTester(TestCase):
         filter = FilterOperator(field, operator, value)
         command = commands.Max(collection=collection, filter=filter, field=field)
         self.engine.retrieve.return_value = json.dumps({"max": 1, "position": 1}), 200
-        agg = self.db.max(collection=collection, filter=filter, field=field)
-        assert agg is not None
+        number = self.db.max(collection=collection, filter=filter, field=field)
+        assert number is not None
         assert command.get_raw_data() == {
             "collection": str(collection),
             "filter": {"field": field, "operator": operator, "value": value},

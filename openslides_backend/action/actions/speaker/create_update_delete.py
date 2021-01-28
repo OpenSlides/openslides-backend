@@ -25,7 +25,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         if instance.get("point_of_order", False):
-            result = self.datastore.min(
+            weight = self.datastore.min(
                 collection=Collection("speaker"),
                 filter=FilterOperator(
                     "list_of_speakers_id", "=", instance["list_of_speakers_id"]
@@ -34,7 +34,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 type="int",
                 lock_result=True,
             )
-            instance["weight"] = -1 if result["min"] is None else result["min"] - 1
+            instance["weight"] = -1 if weight is None else weight - 1
         return instance
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:

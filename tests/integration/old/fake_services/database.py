@@ -3,10 +3,10 @@ from copy import deepcopy
 from typing import Any, Dict, List, Sequence
 
 from openslides_backend.services.datastore.interface import (
-    Aggregate,
     Count,
     Found,
     GetManyRequest,
+    OptionalInt,
     PartialModel,
 )
 from openslides_backend.shared.filters import Filter, FilterOperator
@@ -230,12 +230,12 @@ class DatastoreTestAdapter:
 
     def min(
         self, collection: Collection, filter: Filter, field: str, type: str = None
-    ) -> Aggregate:
+    ) -> OptionalInt:
         raise NotImplementedError
 
     def max(
         self, collection: Collection, filter: Filter, field: str, type: str = None
-    ) -> Aggregate:
+    ) -> OptionalInt:
         raise NotImplementedError
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
@@ -12,7 +12,7 @@ from .deleted_models_behaviour import DeletedModelsBehaviour
 PartialModel = Dict[str, Any]
 Found = TypedDict("Found", {"exists": bool})
 Count = TypedDict("Count", {"count": int})
-Aggregate = Dict[str, Any]  # TODO: This interface seams to be wrong.
+OptionalInt = Optional[int]
 
 
 class DatastoreService(Protocol):
@@ -79,7 +79,7 @@ class DatastoreService(Protocol):
         field: str,
         type: str = None,
         lock_result: bool = False,
-    ) -> Aggregate:
+    ) -> OptionalInt:
         ...
 
     def max(
@@ -89,7 +89,7 @@ class DatastoreService(Protocol):
         field: str,
         type: str = None,
         lock_result: bool = False,
-    ) -> Aggregate:
+    ) -> OptionalInt:
         ...
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
