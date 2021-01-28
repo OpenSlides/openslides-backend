@@ -2,7 +2,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class SpeakerCreateActionTest(BaseActionTestCase):
-    def test_createx(self) -> None:
+    def test_create(self) -> None:
         self.create_model("meeting/7844", {"name": "name_asdewqasd"})
         self.create_model("user/7", {"username": "test_username1"})
         self.create_model(

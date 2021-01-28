@@ -12,8 +12,6 @@ from typing import (
     cast,
 )
 
-from mypy_extensions import TypedDict
-
 from ...models.base import model_registry
 from ...models.fields import (
     BaseGenericRelationField,
@@ -39,19 +37,7 @@ from ...shared.patterns import (
     string_to_fqid,
 )
 from ...shared.typing import DeletedModel, ModelMap
-
-ListType = Union[List[int], List[str], List[FullQualifiedId]]
-RelationsElement = TypedDict(
-    "RelationsElement",
-    {
-        "type": str,
-        "value": Optional[
-            Union[int, FullQualifiedId, List[int], List[FullQualifiedId], List[str]]
-        ],
-        "modified_element": Union[int, FullQualifiedId, str],
-    },
-)
-Relations = Dict[FullQualifiedField, RelationsElement]
+from .typing import FieldUpdateElement, IdentifierList, RelationFieldUpdates
 
 
 class SingleRelationHandler:
@@ -127,7 +113,7 @@ class SingleRelationHandler:
                 return "m:1"
             return "m:n"
 
-    def perform(self) -> Relations:
+    def perform(self) -> RelationFieldUpdates:
         """
         Main method of this handler. It calculates which relation fields have to be updated
         according to the changes in self.field.
@@ -247,11 +233,11 @@ class SingleRelationHandler:
         Get the given value of our field as a list. The list may be empty.
         Transform all to fqids to handle everything in the same fashion.
         """
-        id_list: ListType
+        id_list: IdentifierList
         if value is None:
             id_list = []  # type: ignore  # see https://github.com/python/mypy/issues/2164
         elif not isinstance(value, list):
-            value_arr = cast(ListType, [value])
+            value_arr = cast(IdentifierList, [value])
             id_list = value_arr
         else:
             id_list = value
@@ -377,17 +363,17 @@ class SingleRelationHandler:
         remove: List[FullQualifiedId],
         rels: Dict[FullQualifiedId, PartialModel],
         related_name: str,
-    ) -> Relations:
+    ) -> RelationFieldUpdates:
         """
         Final method to prepare the result i. e. the new value of the relation field.
         """
-        relations: Relations = {}
+        relations: RelationFieldUpdates = {}
         for fqid, rel in rels.items():
             new_value: Any  # Union[FullQualifiedId, List[FullQualifiedId]]
             own_fqid = FullQualifiedId(collection=self.field.own_collection, id=self.id)
             if fqid in add:
                 new_value = rel[related_name] + [own_fqid]
-                rel_element = RelationsElement(
+                rel_element = FieldUpdateElement(
                     type="add", value=new_value, modified_element=own_fqid
                 )
             else:
@@ -397,7 +383,7 @@ class SingleRelationHandler:
                     own_fqid in new_value
                 ), f"Invalid relation update: {own_fqid} is not in {new_value} (Collectionfield {self.model.collection}/{self.field_name})"
                 new_value.remove(own_fqid)
-                rel_element = RelationsElement(
+                rel_element = FieldUpdateElement(
                     type="remove", value=new_value, modified_element=own_fqid
                 )
             fqfield = FullQualifiedField(fqid.collection, fqid.id, related_name)
@@ -405,8 +391,8 @@ class SingleRelationHandler:
         return relations
 
     def prepare_result_template_field(
-        self, result_structured_field: Relations
-    ) -> Relations:
+        self, result_structured_field: RelationFieldUpdates
+    ) -> RelationFieldUpdates:
         """
         We also have to update the raw template field.
         """
@@ -430,7 +416,7 @@ class SingleRelationHandler:
             lock_result=True,
         )
         db_rels = response.get(collection, {})
-        result_template_field: Relations = {}
+        result_template_field: RelationFieldUpdates = {}
         for fqfield, rel_update in result_structured_field.items():
             current_value = db_rels[fqfield.id].get(template_field_name, [])
             if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
@@ -438,7 +424,7 @@ class SingleRelationHandler:
             ):
                 # The field was emptied, so we have to remove the replacement.
                 current_value.remove(replacement)
-                rel_element = RelationsElement(
+                rel_element = FieldUpdateElement(
                     type="remove", value=current_value, modified_element=replacement
                 )
             elif rel_update["type"] == "add" and (
@@ -450,7 +436,7 @@ class SingleRelationHandler:
                 )
             ):
                 # The replacement was added just now, so we have to add it to the template field.
-                rel_element = RelationsElement(
+                rel_element = FieldUpdateElement(
                     type="add",
                     value=current_value + [replacement],
                     modified_element=replacement,

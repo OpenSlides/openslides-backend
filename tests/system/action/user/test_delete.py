@@ -32,7 +32,7 @@ class UserDeleteActionTest(BaseActionTestCase):
             },
         )
         self.create_model("group/456", {"meeting_id": 42, "user_ids": [111, 222]})
-        self.create_model("meeting/42", {"group_ids": [456]})
+        self.create_model("meeting/42", {"group_ids": [456], "user_ids": [111]})
         response = self.client.post(
             "/",
             json=[{"action": "user.delete", "data": [{"id": 111}]}],
@@ -42,3 +42,6 @@ class UserDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("user/111")
         model = self.get_model("group/456")
         assert model.get("user_ids") == [222]
+        # check meeting.user_ids
+        meeting = self.get_model("meeting/42")
+        assert meeting.get("user_ids") == []

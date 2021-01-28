@@ -54,6 +54,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("committee_as_manager_ids") == [78]
 
     def test_update_group_ids(self) -> None:
+        self.create_model("meeting/1")
+        self.create_model("meeting/2")
         self.create_model(
             "user/111",
             {"username": "username_srtgb123"},
