@@ -1,1 +1,1 @@
-from . import create, delete, remove_user_id  # noqa
+from . import anonymize, create, delete  # noqa

@@ -7,7 +7,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionPayload
-from ..vote.remove_user_id import VoteRemoveUserId
+from ..vote.anonymize import VoteAnonymize
 
 
 @register_action("poll.anonymize")
@@ -28,8 +28,7 @@ class PollAnonymize(UpdateAction):
                 option = options[option_id]
                 if option.get("vote_ids"):
                     self._remove_user_id_from(option["vote_ids"])
-            if False:
-                yield instance
+        return []
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
@@ -53,4 +52,4 @@ class PollAnonymize(UpdateAction):
         payload = []
         for id_ in vote_ids:
             payload.append({"id": id_})
-        self.execute_other_action(VoteRemoveUserId, payload)
+        self.execute_other_action(VoteAnonymize, payload)

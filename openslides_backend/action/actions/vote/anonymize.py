@@ -6,8 +6,8 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("vote.remove_user_id", internal=True)
-class VoteRemoveUserId(UpdateAction):
+@register_action("vote.anonymize", internal=True)
+class VoteAnonymize(UpdateAction):
     """
     Action to anonymize a vote by removing the user ids.
     """
