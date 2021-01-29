@@ -21,9 +21,9 @@ class PollPublishAction(UpdateAction):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state"]
         )
-        if poll.get("state") != "finished":
+        if poll.get("state") != Poll.FINISHED:
             raise ActionException(
                 f"Cannot publish poll {instance['id']}, because it is not in state finished."
             )
-        instance["state"] = "published"
+        instance["state"] = Poll.PUBLISHED
         return instance

@@ -40,7 +40,7 @@ class PollUpdateAction(UpdateAction):
             FullQualifiedId(self.model.collection, instance["id"]), ["state", "type"]
         )
         not_allowed = []
-        if not poll.get("state") == "created":
+        if not poll.get("state") == Poll.CREATED:
             for key in (
                 "pollmethod",
                 "type",
@@ -52,10 +52,10 @@ class PollUpdateAction(UpdateAction):
             ):
                 if key in instance:
                     not_allowed.append(key)
-        if poll.get("state") != "created" or poll.get("type") == "analog":
+        if poll.get("state") != Poll.CREATED or poll.get("type") == Poll.ANALOG_TYPE:
             if "entitled_group_ids" in instance:
                 not_allowed.append("entitled_group_ids")
-        if not poll.get("type") == "analog":
+        if not poll.get("type") == Poll.ANALOG_TYPE:
             for key in (
                 "votesvalid",
                 "votesinvalid",

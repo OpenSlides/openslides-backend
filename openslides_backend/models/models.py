@@ -1264,6 +1264,15 @@ class Poll(Model):
     )
     meeting_id = fields.RelationField(to={Collection("meeting"): "poll_ids"})
 
+    CREATED = "created"
+    STARTED = "started"
+    FINISHED = "finished"
+    PUBLISHED = "published"
+
+    ANALOG_TYPE = "analog"
+    NAMED_TYPE = "named"
+    PSEUDOANONYMOUS_TYPE = "pseudoanonymous"
+
 
 class Option(Model):
     collection = Collection("option")
