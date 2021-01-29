@@ -38,9 +38,7 @@ class MediafileUploadAction(CreateAction):
         instance["filesize"] = len(decoded_file)
         id_ = instance["id"]
         mimetype_ = instance["mimetype"]
-        msg = self.media.upload_resource(file_, id_, mimetype_)
-        if msg:
-            raise ActionException(msg)
+        self.media.upload_resource(file_, id_, mimetype_)
         return instance
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
@@ -64,8 +62,8 @@ class MediafileUploadAction(CreateAction):
                 id = next(iter(results))
                 self.execute_other_action(ResourceDelete, [{"id": id}])
             else:
-                raise ActionException(
-                    f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance["token"]}".'
-                )
+                text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance["token"]}".'
+                self.logger.error(text)
+                raise ActionException(text)
 
         return payload

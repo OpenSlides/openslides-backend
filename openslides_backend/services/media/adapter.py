@@ -1,7 +1,6 @@
-from typing import Union
-
 import requests
 
+from ...shared.exceptions import MediaServiceException
 from ...shared.interfaces.logging import LoggingModule
 from .interface import MediaService
 
@@ -15,9 +14,7 @@ class MediaServiceAdapter(MediaService):
         self.logger = logging.getLogger(__name__)
         self.media_url = media_url + "/"
 
-    def _upload(
-        self, file: str, id: int, mimetype: str, subpath: str
-    ) -> Union[str, None]:
+    def _upload(self, file: str, id: int, mimetype: str, subpath: str) -> None:
         url = self.media_url + subpath
         payload = {"file": file, "id": id, "mimetype": mimetype}
         self.logger.debug("Starting upload of file")
@@ -26,19 +23,18 @@ class MediaServiceAdapter(MediaService):
         except requests.exceptions.ConnectionError:
             msg = "Connect to mediaservice failed."
             self.logger.debug("Upload of file: " + msg)
-            return msg
+            raise MediaServiceException(msg)
 
         if response.status_code != 200:
             msg = f"Mediaservice Error: {str(response.content)}"
             self.logger.debug("Upload of file: " + msg)
-            return msg
+            raise MediaServiceException(msg)
         self.logger.debug("File successfully uploaded to the media service")
-        return None
 
-    def upload_mediafile(self, file: str, id: int, mimetype: str) -> Union[str, None]:
+    def upload_mediafile(self, file: str, id: int, mimetype: str) -> None:
         subpath = "upload_mediafile"
-        return self._upload(file, id, mimetype, subpath)
+        self._upload(file, id, mimetype, subpath)
 
-    def upload_resource(self, file: str, id: int, mimetype: str) -> Union[str, None]:
+    def upload_resource(self, file: str, id: int, mimetype: str) -> None:
         subpath = "upload_resource"
-        return self._upload(file, id, mimetype, subpath)
+        self._upload(file, id, mimetype, subpath)
