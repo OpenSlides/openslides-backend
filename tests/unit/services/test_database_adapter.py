@@ -164,11 +164,11 @@ class DatastoreAdapterTester(TestCase):
         filter = FilterOperator(field, operator, value)
         command = commands.Count(collection=collection, filter=filter)
         self.engine.retrieve.return_value = (
-            json.dumps({"count": True, "position": 1}),
+            json.dumps({"count": 42, "position": 1}),
             200,
         )
         count = self.db.count(collection=collection, filter=filter)
-        assert count is not None
+        assert type(count) == int
         assert command.get_raw_data() == {
             "collection": str(collection),
             "filter": {"field": field, "operator": operator, "value": value},

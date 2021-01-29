@@ -45,9 +45,7 @@ class PersonalNoteCreateAction(CreateActionWithInferredMeetingMixin, CreateActio
                 "content_object_id", "=", str(instance["content_object_id"])
             ),
         )
-        another_exist = self.datastore.exists(
-            collection=self.model.collection, filter=filter_
-        )
-        if another_exist["exists"]:
+        exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
+        if exists:
             raise ActionException("(user_id, content_object_id) must be unique.")
         return instance

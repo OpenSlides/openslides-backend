@@ -67,11 +67,11 @@ class MotionUpdateMetadata(UpdateAction):
             collection, id_ = fqid_str.split(KEYSEPARATOR)
             if collection != "motion":
                 raise ActionException(f"Found {fqid_str} but only motion is allowed.")
-            exists_res = self.datastore.exists(
+            exists = self.datastore.exists(
                 collection=Collection(collection),
                 filter=FilterOperator("id", "=", int(id_)),
             )
-            if exists_res.get("exists"):
+            if exists:
                 recommendation_extension_reference_ids.append(
                     FullQualifiedId(Collection(collection), id_)
                 )

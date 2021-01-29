@@ -123,7 +123,5 @@ class SetNumberMixin(BaseAction):
             FilterOperator("number", "=", number),
             FilterOperator("meta_deleted", "=", False),
         )
-        exists_result = self.datastore.exists(
-            collection=Collection("motion"), filter=filter
-        )
-        return not exists_result.get("exists")
+        exists = self.datastore.exists(collection=Collection("motion"), filter=filter)
+        return not exists

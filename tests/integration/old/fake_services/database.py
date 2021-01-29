@@ -1,14 +1,8 @@
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
-from openslides_backend.services.datastore.interface import (
-    Count,
-    Found,
-    GetManyRequest,
-    OptionalInt,
-    PartialModel,
-)
+from openslides_backend.services.datastore.interface import GetManyRequest, PartialModel
 from openslides_backend.shared.filters import Filter, FilterOperator
 from openslides_backend.shared.interfaces import WriteRequest
 from openslides_backend.shared.patterns import Collection, FullQualifiedId
@@ -220,22 +214,22 @@ class DatastoreTestAdapter:
 
     def exists(
         self, collection: Collection, filter: Filter, lock_result: bool = False
-    ) -> Found:
+    ) -> bool:
         raise NotImplementedError
 
     def count(
         self, collection: Collection, filter: Filter, lock_result: bool = False
-    ) -> Count:
+    ) -> int:
         raise NotImplementedError
 
     def min(
         self, collection: Collection, filter: Filter, field: str, type: str = None
-    ) -> OptionalInt:
+    ) -> Optional[int]:
         raise NotImplementedError
 
     def max(
         self, collection: Collection, filter: Filter, field: str, type: str = None
-    ) -> OptionalInt:
+    ) -> Optional[int]:
         raise NotImplementedError
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
