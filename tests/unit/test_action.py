@@ -29,6 +29,7 @@ class ActionBaseTester(TestCase):
                 get_fqid("collection_Chebie1jie/42"): ["Information text laPu7iepei"]
             },
             user_id=1,
+            locked_fields={},
         )
         self.write_request_2 = WriteRequest(
             events=[
@@ -42,6 +43,7 @@ class ActionBaseTester(TestCase):
                 get_fqid("collection_Chebie1jie/42"): ["Information text eesh7thouY"]
             },
             user_id=1,
+            locked_fields={},
         )
 
     def test_merge_write_requests(self) -> None:
@@ -66,6 +68,7 @@ class ActionBaseTester(TestCase):
                 ]
             },
             user_id=1,
+            locked_fields={},
         )
         self.assertEqual(result, expected)
 

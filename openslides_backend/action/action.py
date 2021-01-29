@@ -226,6 +226,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             events=[event],
             information={fqid: [information]},
             user_id=self.user_id,
+            locked_fields={},
         )
 
     def create_write_requests(
@@ -257,7 +258,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for type in (EventType.Create, EventType.Update, EventType.Delete):
                 write_request.events.extend(events_by_type[type])
 
-            # Finally yield the merged write request.
+            # Get locked_fields and reset them in datastore
+            write_request.locked_fields = self.datastore.locked_fields
+            self.datastore.locked_fields = {}
+
+            # Finally yield the merged write request element.
             yield write_request
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -419,6 +424,8 @@ def merge_write_requests(
     if events:
         if user_id is None:
             raise ValueError("At least one of the given user ids must not be None.")
-        return WriteRequest(events=events, information=information, user_id=user_id)
+        return WriteRequest(
+            events=events, information=information, user_id=user_id, locked_fields={}
+        )
     else:
         return None

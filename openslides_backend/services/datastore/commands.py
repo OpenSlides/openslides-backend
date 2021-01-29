@@ -64,6 +64,9 @@ StringifiedWriteRequest = TypedDict(
 )
 
 
+StringifiedWriteRequests = List[StringifiedWriteRequest]
+
+
 class Command:
     """
     Command is the base class for commands used by the Engine interface.
@@ -305,24 +308,24 @@ class Write(Command):
     Write command
     """
 
-    def __init__(
-        self, write_request: WriteRequest, locked_fields: Dict[str, int]
-    ) -> None:
-        self.write_request = write_request
-        self.locked_fields = locked_fields
+    def __init__(self, write_requests: List[WriteRequest]) -> None:
+        self.write_requests = write_requests
 
     @property
     def data(self) -> str:
-        information = {}
-        for fqid, value in self.write_request.information.items():
-            information[str(fqid)] = value
-        stringified_write_request: StringifiedWriteRequest = {
-            "events": self.write_request.events,
-            "information": information,
-            "user_id": self.write_request.user_id,
-            "locked_fields": self.locked_fields,
-        }
-        # TODO: REMOVE locked_fields in business logic
+        stringified_write_requests: StringifiedWriteRequests = []
+        for write_request in self.write_requests:
+            information = {}
+            for fqid, value in write_request.information.items():
+                information[str(fqid)] = value
+            stringified_write_requests.append(
+                {
+                    "events": write_request.events,
+                    "information": information,
+                    "user_id": write_request.user_id,
+                    "locked_fields": write_request.locked_fields,
+                }
+            )
 
         class WriteRequestJSONEncoder(json.JSONEncoder):
             def default(self, o):  # type: ignore
@@ -330,7 +333,7 @@ class Write(Command):
                     return str(o)
                 return super().default(o)
 
-        return json.dumps(stringified_write_request, cls=WriteRequestJSONEncoder)
+        return json.dumps(stringified_write_requests, cls=WriteRequestJSONEncoder)
 
 
 class TruncateDb(Command):
