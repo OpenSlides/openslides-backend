@@ -4,6 +4,7 @@ from ....models.models import Option
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -20,9 +21,9 @@ class OptionUpdateAction(UpdateAction):
     model = Option()
     schema = DefaultSchema(Option()).get_update_schema(
         additional_optional_fields={
-            "Y": {"type": "string", "pattern": r"^-?(\d|[1-9]\d+)\.\d{6}$"},
-            "N": {"type": "string", "pattern": r"^-?(\d|[1-9]\d+)\.\d{6}$"},
-            "A": {"type": "string", "pattern": r"^-?(\d|[1-9]\d+)\.\d{6}$"},
+            "Y": decimal_schema,
+            "N": decimal_schema,
+            "A": decimal_schema,
         }
     )
 
