@@ -119,7 +119,10 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn(b'{"success": false, "message": "Datastore service sends HTTP 400. {\'key\': \'committee/1\', \'type\': 6, \'type_verbose\': \'MODEL_LOCKED\'}"}', response.data)
+        self.assertIn(
+            b"{\"success\": false, \"message\": \"Datastore service sends HTTP 400. {'key': 'committee/1', 'type': 6, 'type_verbose': 'MODEL_LOCKED'}\"}",
+            response.data,
+        )
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("meeting/1")
         self.assert_model_exists("committee/1", {"meeting_ids": None})
@@ -255,7 +258,10 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn(b'{"success": false, "message": "Datastore service sends HTTP 400. {\'key\': \'committee/1\', \'type\': 6, \'type_verbose\': \'MODEL_LOCKED\'}"}', response.data)
+        self.assertIn(
+            b"{\"success\": false, \"message\": \"Datastore service sends HTTP 400. {'key': 'committee/1', 'type': 6, 'type_verbose': 'MODEL_LOCKED'}\"}",
+            response.data,
+        )
         self.assert_model_exists("meeting/1")
         self.assert_model_exists("meeting/2")
 
