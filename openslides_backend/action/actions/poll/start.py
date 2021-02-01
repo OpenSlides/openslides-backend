@@ -21,9 +21,9 @@ class PollStartAction(UpdateAction):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state"]
         )
-        if poll.get("state") != Poll.CREATED:
+        if poll.get("state") != Poll.STATE_CREATED:
             raise ActionException(
                 f"Cannot start poll {instance['id']}, because it is not in state created."
             )
-        instance["state"] = Poll.STARTED
+        instance["state"] = Poll.STATE_STARTED
         return instance

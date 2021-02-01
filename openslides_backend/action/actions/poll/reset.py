@@ -20,7 +20,7 @@ class PollResetAction(UpdateAction):
     schema = DefaultSchema(Poll()).get_update_schema()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["state"] = Poll.CREATED
+        instance["state"] = Poll.STATE_CREATED
         self.delete_all_votes(instance["id"])
         return instance
 

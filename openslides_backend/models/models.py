@@ -1264,14 +1264,14 @@ class Poll(Model):
     )
     meeting_id = fields.RelationField(to={Collection("meeting"): "poll_ids"})
 
-    CREATED = "created"
-    STARTED = "started"
-    FINISHED = "finished"
-    PUBLISHED = "published"
+    STATE_CREATED = "created"
+    STATE_STARTED = "started"
+    STATE_FINISHED = "finished"
+    STATE_PUBLISHED = "published"
 
-    ANALOG_TYPE = "analog"
-    NAMED_TYPE = "named"
-    PSEUDOANONYMOUS_TYPE = "pseudoanonymous"
+    TYPE_ANALOG = "analog"
+    TYPE_NAMED = "named"
+    TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
 
 
 class Option(Model):

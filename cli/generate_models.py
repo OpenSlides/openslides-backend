@@ -174,6 +174,18 @@ class Model(Node):
             HIDDEN_ITEM = "hidden"
             """
         ),
+        "poll": dedent(
+            """
+            STATE_CREATED = "created"
+            STATE_STARTED = "started"
+            STATE_FINISHED = "finished"
+            STATE_PUBLISHED = "published"
+
+            TYPE_ANALOG = "analog"
+            TYPE_NAMED = "named"
+            TYPE_PSEUDOANONYMOUS = "pseudoanonymous"
+            """
+        ),
     }
 
     def __init__(self, collection: str, fields: Dict[str, Any]) -> None:

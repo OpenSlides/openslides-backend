@@ -21,9 +21,9 @@ class PollStopAction(UpdateAction):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state"]
         )
-        if poll.get("state") != Poll.STARTED:
+        if poll.get("state") != Poll.STATE_STARTED:
             raise ActionException(
                 f"Cannot stop poll {instance['id']}, because it is not in state started."
             )
-        instance["state"] = Poll.FINISHED
+        instance["state"] = Poll.STATE_FINISHED
         return instance
