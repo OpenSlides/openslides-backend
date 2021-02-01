@@ -14,7 +14,7 @@ from ..vote.update import VoteUpdate
 @register_action("option.update")
 class OptionUpdateAction(UpdateAction):
     """
-    Action to update a user.
+    Action to update an option.
     """
 
     model = Option()
@@ -39,45 +39,22 @@ class OptionUpdateAction(UpdateAction):
 
         payload_create = []
         payload_update = []
-        if "yes" in instance:
-            vote_id = self._get_vote_id("Y", id_to_vote)
-            if vote_id is None:
-                payload_create.append(
-                    {
-                        "option_id": instance["id"],
-                        "value": "Y",
-                        "weight": instance["yes"],
-                        "meeting_id": option["meeting_id"],
-                    }
-                )
-            else:
-                payload_update.append({"id": vote_id, "weight": instance["yes"]})
-        if "no" in instance:
-            vote_id = self._get_vote_id("N", id_to_vote)
-            if vote_id is None:
-                payload_create.append(
-                    {
-                        "option_id": instance["id"],
-                        "value": "N",
-                        "weight": instance["no"],
-                        "meeting_id": option["meeting_id"],
-                    }
-                )
-            else:
-                payload_update.append({"id": vote_id, "weight": instance["no"]})
-        if "abstain" in instance:
-            vote_id = self._get_vote_id("A", id_to_vote)
-            if vote_id is None:
-                payload_create.append(
-                    {
-                        "option_id": instance["id"],
-                        "value": "A",
-                        "weight": instance["abstain"],
-                        "meeting_id": option["meeting_id"],
-                    }
-                )
-            else:
-                payload_update.append({"id": vote_id, "weight": instance["abstain"]})
+        for field_name, vote_name in (("yes", "Y"), ("no", "N"), ("abstain", "A")):
+            if field_name in instance:
+                vote_id = self._get_vote_id(vote_name, id_to_vote)
+                if vote_id is None:
+                    payload_create.append(
+                        {
+                            "option_id": instance["id"],
+                            "value": vote_name,
+                            "weight": instance[field_name],
+                            "meeting_id": option["meeting_id"],
+                        }
+                    )
+                else:
+                    payload_update.append(
+                        {"id": vote_id, "weight": instance[field_name]}
+                    )
         if payload_create:
             self.execute_other_action(VoteCreate, payload_create)
         if payload_update:
