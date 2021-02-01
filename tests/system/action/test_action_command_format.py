@@ -118,13 +118,11 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                 },
             ],
         )
-        self.assert_status_code(response, 200)
-        meeting1 = self.get_model("meeting/1")
-        assert meeting1.get("name") == "name1"
-        assert meeting1.get("committee_id") == 1
-        meeting2 = self.get_model("meeting/2")
-        assert meeting2.get("name") == "name2"
-        assert meeting2.get("committee_id") == 1
+        self.assert_status_code(response, 400)
+        self.assertIn(b'{"success": false, "message": "Datastore service sends HTTP 400. {\'key\': \'committee/1\', \'type\': 6, \'type_verbose\': \'MODEL_LOCKED\'}"}', response.data)
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_not_exists("meeting/1")
+        self.assert_model_exists("committee/1", {"meeting_ids": None})
 
     def test_create_1_2_events(self) -> None:
         self.create_model("committee/1", {"name": "test_committee"})
@@ -256,9 +254,10 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                 },
             ],
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
-        self.assert_model_deleted("meeting/2")
+        self.assert_status_code(response, 400)
+        self.assertIn(b'{"success": false, "message": "Datastore service sends HTTP 400. {\'key\': \'committee/1\', \'type\': 6, \'type_verbose\': \'MODEL_LOCKED\'}"}', response.data)
+        self.assert_model_exists("meeting/1")
+        self.assert_model_exists("meeting/2")
 
     def test_delete_1_2_events(self) -> None:
         self.create_model(
