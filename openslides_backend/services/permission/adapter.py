@@ -31,8 +31,11 @@ class PermissionHTTPAdapter(PermissionService):
                 headers={"Content-Type": "application/json"},
             )
         except requests.exceptions.ConnectionError as e:
-            raise PermissionException(
+            self.logger.error(
                 f"Cannot reach the permission service on {self.endpoint}. Error: {e}"
+            )
+            raise PermissionException(
+                f"Cannot reach the permission service on {self.endpoint}."
             )
 
         content = response.json()
@@ -42,11 +45,13 @@ class PermissionHTTPAdapter(PermissionService):
 
         if response.status_code >= 400:
             error_message = f"Permission service sends HTTP {response.status_code} with the following content: {str(content)}."
-            raise PermissionException(error_message)
+            self.logger.error(error_message)
+            raise PermissionException(
+                f"Permission service sends HTTP {response.status_code}."
+            )
 
         if not isinstance(content, bool):
-            raise PermissionException(
-                f"Bad response from permission service: {str(content)}."
-            )
+            self.logger.error(f"Bad response from permission service: {str(content)}.")
+            raise PermissionException("Bad response from permission service.")
 
         return content
