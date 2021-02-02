@@ -105,8 +105,6 @@ class ActionHandler(BaseHandler):
                 continue
             except ServiceException as exception:
                 raise ActionException(exception.message)
-            except Exception as exception:
-                raise ActionException(str(exception.args))
             break
 
         # Return action result
