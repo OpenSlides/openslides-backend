@@ -41,9 +41,9 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         """
         Checks
         - that a new speaker does not already exist on the list of speaker as
-        comming speaker (with begin_time == None), but allows one additional with point_of_order speaker per user
-        - checks, if points_of_order are used inthis meeting
-        - checks, if user has to be present to be added to the list of speakers
+        waiting speaker (with begin_time == None), but allows one additional with point_of_order speaker per user
+        - that points_of_order are used in this meeting
+        - that user has to be present to be added to the list of speakers
         """
         los_fqid = FullQualifiedId(
             Collection("list_of_speakers"), instance["list_of_speakers_id"]
