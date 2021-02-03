@@ -1,5 +1,5 @@
 from operator import itemgetter
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import fastjsonschema
 
@@ -29,13 +29,7 @@ get_users_schema = fastjsonschema.compile(
             "include_temporary": {"type": "boolean"},
             "filter": {"type": ["string", "null"]},
         },
-        "required": [
-            "start_index",
-            "entries",
-            "sort_criteria",
-            "reverse",
-            "include_temporary",
-        ],
+        "required": [],
         "additionalProperties": False,
     }
 )
@@ -53,27 +47,8 @@ class GetUsers(BasePresenter):
         users = self.get_all_users()
         users = self.filter_temp_users(users)
         users = self.filter_keyword(users)
-
-        # Sort users
-        users = [
-            {
-                "username": user.get("username", ""),
-                "id": user["id"],
-                "first_name": user.get("first_name", ""),
-                "last_name": user.get("last_name", ""),
-            }
-            for user in users
-        ]
-        users.sort(key=itemgetter(*self.data.get("sort_criteria")), reverse=self.data["reverse"])
-
-        print("1",users)
-        # Paginating
-        start_index = self.data["start_index"]
-        end_index = self.data["start_index"] + self.data["entries"]
-        users = users[start_index:end_index]
-
-        print("2", users)
-        # Returning
+        users = self.sort_users(users)
+        users = self.paginate_users(users)
         return {"users": [user["id"] for user in users]}
 
     def get_all_users(self) -> List[Dict[str, Any]]:
@@ -103,4 +78,31 @@ class GetUsers(BasePresenter):
                 or self._check_name(user, "first_name")
                 or self._check_name(user, "last_name")
             ]
+        return users
+
+    def _str_if_None(self, value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        return value
+
+    def sort_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+        users = [
+            {
+                "username": self._str_if_None(user.get("username")),
+                "id": user["id"],
+                "first_name": self._str_if_None(user.get("first_name")),
+                "last_name": self._str_if_None(user.get("last_name")),
+            }
+            for user in users
+        ]
+        default_criteria = ["last_name", "first_name", "username"]
+        criteria = self.data.get("sort_criteria", default_criteria)
+        users.sort(key=itemgetter(*criteria), reverse=self.data.get("reverse", False))
+        return users
+
+    def paginate_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        start_index = self.data.get("start_index", 0)
+        end_index = start_index + self.data.get("entries", 100)
+        users = users[start_index:end_index]
         return users
