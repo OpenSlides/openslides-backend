@@ -26,20 +26,7 @@ class PollVote(UpdateAction):
         required_properties=["id"],
         additional_required_fields={
             "user_id": required_id_schema,
-            "value": {
-                "anyOf": [
-                    {"type": "string", "enum": ["Y", "N", "A"]},
-                    {
-                        "type": "object",
-                        "additionalProperties": {
-                            "anyOf": [
-                                {"type": "integer"},
-                                {"type": "string", "enum": ["Y", "N", "A"]},
-                            ]
-                        },
-                    },
-                ]
-            },
+            "value": {"type": ["object", "string"]},
         },
     )
 
@@ -67,6 +54,7 @@ class PollVote(UpdateAction):
             self.handle_option_value(value, user_id)
 
         elif isinstance(value, str):
+            self.validate_global_value(value)
             self.handle_global_value(value, user_id)
 
         return instance
@@ -110,6 +98,17 @@ class PollVote(UpdateAction):
         for key in value:
             if int(key) not in self.poll.get("option_ids", []):
                 raise ActionException(f"Option {key} not in options of the poll.")
+            if not (
+                isinstance(value[key], int)
+                or (isinstance(value[key], str) and value[key] in ("Y", "N", "A"))
+            ):
+                raise ActionException(
+                    f"Option {key} has not a right value. (int, str)."
+                )
+
+    def validate_global_value(self, value: str) -> None:
+        if value not in ["Y", "N", "A"]:
+            raise ActionException(f"Option value {value} is not in Y, N, A.")
 
     def handle_option_value(self, value: Dict[str, Any], user_id: int) -> None:
         payload: List[Dict[str, Any]] = []

@@ -229,7 +229,8 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_schema_problems(self) -> None:
         self.create_model("group/1", {"user_ids": [1]})
         self.create_model(
-            "poll/1", {"title": "my test poll", "entitled_group_ids": [1]}
+            "poll/1",
+            {"title": "my test poll", "entitled_group_ids": [1], "meeting_id": 113},
         )
         self.create_model("meeting/113", {"name": "my meeting"})
         self.update_model(
@@ -250,10 +251,7 @@ class PollVoteTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data.value must be valid by one of anyOf definition"
-            in response.data.decode()
-        )
+        assert "Option value X is not in Y, N, A" in response.data.decode()
 
     def test_vote_for_analog_type(self) -> None:
         self.create_model("group/1", {"user_ids": [1]})
@@ -449,3 +447,35 @@ class PollVoteTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "User is not present in the meeting." in response.data.decode()
+
+    def test_check_str_validation(self) -> None:
+        self.create_model("group/1", {"user_ids": [1]})
+        self.create_model(
+            "poll/1",
+            {
+                "title": "my test poll",
+                "type": "named",
+                "meeting_id": 113,
+                "entitled_group_ids": [1],
+            },
+        )
+        self.create_model("meeting/113", {"name": "my meeting"})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$_ids": ["113"],
+                "group_$113_ids": [1],
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "poll.vote",
+                    "data": [{"id": 1, "user_id": 1, "value": "X"}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "Option value X is not in Y, N, A." in response.data.decode()
