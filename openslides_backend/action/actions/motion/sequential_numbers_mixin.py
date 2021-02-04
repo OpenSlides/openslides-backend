@@ -2,8 +2,8 @@ from ....shared.filters import FilterOperator
 from ...generics.create import CreateAction
 
 
-class SequenceNumbersMixin(CreateAction):
-    def get_sequence_number(self, meeting_id: int) -> int:
+class SequentialNumbersMixin(CreateAction):
+    def get_sequential_number(self, meeting_id: int) -> int:
         """
         Creates a sequential number, unique per meeting and returns it
         "datastore.max" evaluates the expressin per default with records marked as deleted
@@ -13,7 +13,7 @@ class SequenceNumbersMixin(CreateAction):
         result = self.datastore.max(
             collection=self.model.collection,
             filter=filter,
-            field="sequence_number",
+            field="sequential_number",
             type="int",
             lock_result=True,
         )

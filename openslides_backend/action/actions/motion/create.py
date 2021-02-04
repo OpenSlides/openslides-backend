@@ -18,7 +18,7 @@ from .amendment_paragraphs_mixin import (
     AmendmentParagraphsMixin,
     amendment_paragraphs_schema,
 )
-from .sequence_numbers_mixin import SequenceNumbersMixin
+from .sequential_numbers_mixin import SequentialNumbersMixin
 from .set_number_mixin import SetNumberMixin
 
 
@@ -27,7 +27,7 @@ class MotionCreate(
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     AmendmentParagraphsMixin,
-    SequenceNumbersMixin,
+    SequentialNumbersMixin,
     SetNumberMixin,
 ):
     """
@@ -169,7 +169,7 @@ class MotionCreate(
             MotionSubmitterCreateAction, payload, additional_relation_models
         )
 
-        instance["sequence_number"] = self.get_sequence_number(instance["meeting_id"])
+        instance["sequential_number"] = self.get_sequential_number(instance["meeting_id"])
         # set created and last_modified
         timestamp = round(time.time())
         instance["created"] = timestamp

@@ -95,7 +95,7 @@ class FullQualifiedField:
 class CollectionField:
     """
     The key used in the key-value store i. e. the datastore, e. g.
-    motion/sequence_number
+    motion/sequential_number
     """
 
     def __init__(self, collection: Collection, field: str) -> None:
