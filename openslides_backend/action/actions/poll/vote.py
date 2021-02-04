@@ -9,7 +9,7 @@ from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..option.update import OptionUpdate
+from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.create import VoteCreate
 
 
@@ -209,7 +209,7 @@ class PollVote(UpdateAction):
         payload = [
             {"id": option_id, "yes": str(yes), "no": str(no), "abstain": str(abstain)}
         ]
-        self.execute_other_action(OptionUpdate, payload)
+        self.execute_other_action(OptionSetAutoFields, payload)
 
 
 def check_value_for_option_vote(value: Union[str, Dict[str, Any]]) -> bool:
