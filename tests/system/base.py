@@ -9,6 +9,7 @@ from werkzeug.wrappers import Response
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
+from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import (
     DatastoreService,
     DeletedModelsBehaviour,
@@ -95,6 +96,24 @@ class BaseSystemTestCase(TestCase):
             locked_fields={},
         )
         self.datastore.write(request)
+
+    def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
+        """
+        Can be used to set multiple models at once, independent of create or update.
+        """
+        response = self.datastore.get_many(
+            [
+                GetManyRequest(get_fqid(fqid).collection, [get_fqid(fqid).id], ["id"])
+                for fqid in models.keys()
+            ]
+        )
+        for fqid_str, model in models.items():
+            fqid = get_fqid(fqid_str)
+            collection_map = response.get(fqid.collection)
+            if collection_map and fqid.id in collection_map:
+                self.update_model(fqid_str, model)
+            else:
+                self.create_model(fqid_str, model)
 
     def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
         model = model_registry[get_collection_from_fqid(fqid)]()

@@ -1,11 +1,11 @@
 from typing import Any, Dict
 
-from ....shared.patterns import ID_REGEX
+from ....shared.patterns import POSITIVE_NUMBER_REGEX
 from ....shared.util import validate_html
 
 amendment_paragraphs_schema = {
     "type": "object",
-    "patternProperties": {ID_REGEX: {"type": "string"}},
+    "patternProperties": {POSITIVE_NUMBER_REGEX: {"type": "string"}},
     "additionalProperties": False,
 }
 
