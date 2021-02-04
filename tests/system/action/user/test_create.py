@@ -24,7 +24,8 @@ class UserCreateActionTest(BaseActionTestCase):
                     "data": [
                         {
                             "username": "test_Xcdfgee",
-                            "vote_weight": "1.500000",
+                            "default_vote_weight": "1.500000",
+                            "organisation_management_level": "can_manage_users",
                             "guest_meeting_ids": [110, 111],
                             "committee_as_member_ids": [78],
                             "committee_as_manager_ids": [79],
@@ -36,10 +37,11 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
-        assert model.get("vote_weight") == "1.500000"
+        assert model.get("default_vote_weight") == "1.500000"
         assert model.get("guest_meeting_ids") == [110, 111]
         assert model.get("committee_as_member_ids") == [78]
         assert model.get("committee_as_manager_ids") == [79]
+        assert model.get("organisation_management_level") == "can_manage_users"
         # check meeting.user_ids
         meeting = self.get_model("meeting/110")
         assert meeting.get("user_ids") == [2]

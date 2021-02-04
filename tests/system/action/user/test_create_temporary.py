@@ -37,13 +37,11 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
                             "last_name": "last_name",
                             "is_active": True,
                             "is_physical_person": False,
-                            "about_me": "about_me",
                             "gender": "gender",
-                            "comment": "comment",
-                            "number": "number",
-                            "structure_level": "structure_level",
+                            "default_number": "number",
+                            "default_structure_level": "structure_level",
                             "email": "email",
-                            "vote_weight": "1.000000",
+                            "default_vote_weight": "1.000000",
                             "is_present_in_meeting_ids": [222],
                             "default_password": "password",
                             "group_ids": [1],
@@ -62,13 +60,11 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert model.get("last_name") == "last_name"
         assert model.get("is_active") is True
         assert model.get("is_physical_person") is False
-        assert model.get("about_me") == "about_me"
         assert model.get("gender") == "gender"
-        assert model.get("comment") == "comment"
-        assert model.get("number") == "number"
-        assert model.get("structure_level") == "structure_level"
+        assert model.get("default_number") == "number"
+        assert model.get("default_structure_level") == "structure_level"
         assert model.get("email") == "email"
-        assert model.get("vote_weight") == "1.000000"
+        assert model.get("default_vote_weight") == "1.000000"
         assert model.get("is_present_in_meeting_ids") == [222]
         assert model.get("default_password") == "password"
         assert model.get("group_$222_ids") == [1]

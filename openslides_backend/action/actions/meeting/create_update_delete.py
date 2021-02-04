@@ -90,7 +90,7 @@ meeting_settings_keys = [
     "users_email_replyto",
     "users_email_subject",
     "users_email_body",
-    "assignemnts_export_title",
+    "assignments_export_title",
     "assignments_export_preamble",
     "assignment_poll_ballot_paper_selection",
     "assignment_poll_ballot_paper_number",
