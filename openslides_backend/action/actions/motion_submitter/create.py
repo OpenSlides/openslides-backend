@@ -45,9 +45,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
             FilterOperator("user_id", "=", instance["user_id"]),
             FilterOperator("motion_id", "=", instance["motion_id"]),
         )
-        another_exist = self.datastore.exists(
-            collection=self.model.collection, filter=filter
-        )
-        if another_exist["exists"]:
+        exists = self.datastore.exists(collection=self.model.collection, filter=filter)
+        if exists:
             raise ActionException("(user_id, motion_id) must be unique.")
         return instance

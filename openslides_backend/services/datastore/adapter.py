@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 import simplejson as json
 from simplejson.errors import JSONDecodeError
@@ -16,7 +16,7 @@ from ...shared.patterns import (
 from . import commands
 from .deleted_models_behaviour import DeletedModelsBehaviour
 from .http_engine import HTTPEngine as Engine
-from .interface import Aggregate, Count, DatastoreService, Found, PartialModel
+from .interface import DatastoreService, PartialModel
 
 # TODO: Use proper typing here.
 DatastoreResponse = Any
@@ -231,7 +231,7 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         lock_result: bool = False,
-    ) -> Found:
+    ) -> bool:
         command = commands.Exists(collection=collection, filter=filter)
         self.logger.debug(
             f"Start EXISTS request to datastore with the following data: {command.data}"
@@ -242,14 +242,14 @@ class DatastoreAdapter(DatastoreService):
             if position is None:
                 raise DatastoreException("Invalid response from datastore.")
             raise NotImplementedError("Locking is not implemented")
-        return {"exists": response["exists"]}
+        return response["exists"]
 
     def count(
         self,
         collection: Collection,
         filter: Filter,
         lock_result: bool = False,
-    ) -> Count:
+    ) -> int:
         command = commands.Count(collection=collection, filter=filter)
         self.logger.debug(
             f"Start COUNT request to datastore with the following data: {command.data}"
@@ -257,11 +257,16 @@ class DatastoreAdapter(DatastoreService):
         response = self.retrieve(command)
         if lock_result:
             raise NotImplementedError("Locking is not implemented")
-        return {"count": response["count"]}
+        return response["count"]
 
     def min(
-        self, collection: Collection, filter: Filter, field: str, type: str = None
-    ) -> Aggregate:
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        type: str = None,
+        lock_result: bool = False,
+    ) -> Optional[int]:
         # TODO: This method does not reflect the position of the fetched objects.
         command = commands.Min(
             collection=collection, filter=filter, field=field, type=type
@@ -270,7 +275,11 @@ class DatastoreAdapter(DatastoreService):
             f"Start MIN request to datastore with the following data: {command.data}"
         )
         response = self.retrieve(command)
-        return response
+        if lock_result:
+            self.update_locked_fields(
+                CollectionField(collection, field), response.get("position")
+            )
+        return response.get("min")
 
     def max(
         self,
@@ -279,7 +288,7 @@ class DatastoreAdapter(DatastoreService):
         field: str,
         type: str = None,
         lock_result: bool = False,
-    ) -> Aggregate:
+    ) -> Optional[int]:
         """
         Per default records, marked as deleted, are counted
         """
@@ -295,7 +304,7 @@ class DatastoreAdapter(DatastoreService):
             self.update_locked_fields(
                 CollectionField(collection, field), response.get("position")
             )
-        return response
+        return response.get("max")
 
     def update_locked_fields(
         self,

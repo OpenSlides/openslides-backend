@@ -5,7 +5,7 @@ paths = openslides_backend/ tests/ cli/
 all: black autoflake isort flake8 mypy
 
 black:
-	black $(paths) --exclude tests/integration/old
+	black $(paths)
 
 autoflake:
 	autoflake --verbose --in-place --remove-all-unused-imports \

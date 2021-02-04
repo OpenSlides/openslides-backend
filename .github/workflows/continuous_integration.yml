@@ -70,7 +70,7 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check black
-      run: black --check --diff openslides_backend/ tests/ cli/ --exclude tests/integration/old
+      run: black --check --diff openslides_backend/ tests/ cli/
 
   check-coding-style-isort:
     name: Check coding style with isort

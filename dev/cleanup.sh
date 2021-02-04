@@ -1,7 +1,7 @@
 #!/bin/bash
 
 printf "Black:\n"
-black openslides_backend tests cli --exclude tests/integration/old
+black openslides_backend tests cli
 printf "\nIsort:\n"
 isort openslides_backend tests cli
 printf "\nFlake8:\n"

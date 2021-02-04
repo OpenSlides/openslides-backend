@@ -10,12 +10,12 @@ class SequentialNumbersMixin(CreateAction):
         """
         filter = FilterOperator("meeting_id", "=", meeting_id)
 
-        result = self.datastore.max(
+        number = self.datastore.max(
             collection=self.model.collection,
             filter=filter,
             field="sequential_number",
             type="int",
             lock_result=True,
         )
-        number = 1 if result["max"] is None else result["max"] + 1
+        number = 1 if number is None else number + 1
         return number

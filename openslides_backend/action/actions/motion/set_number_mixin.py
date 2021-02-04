@@ -114,9 +114,8 @@ class SetNumberMixin(BaseAction):
             )
         filter = And(filter, FilterOperator("meta_deleted", "=", False))
         max_result = self.datastore.max(Collection("motion"), filter, "number_value")
-        if max_result.get("max"):
-            return max_result["max"] + 1
-        return 1
+        max_result = 1 if max_result is None else max_result + 1
+        return max_result
 
     def _check_if_unique(self, number: str, meeting_id: int) -> bool:
         filter = And(
@@ -124,7 +123,5 @@ class SetNumberMixin(BaseAction):
             FilterOperator("number", "=", number),
             FilterOperator("meta_deleted", "=", False),
         )
-        exists_result = self.datastore.exists(
-            collection=Collection("motion"), filter=filter
-        )
-        return not exists_result.get("exists")
+        exists = self.datastore.exists(collection=Collection("motion"), filter=filter)
+        return not exists
