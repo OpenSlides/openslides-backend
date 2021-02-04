@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0ed05c0075814352456f4083a9f93901"
+MODELS_YML_CHECKSUM = "5deea6862b21a52bf82657d66d43b67e"
 
 
 class Organisation(Model):
@@ -548,7 +548,45 @@ class Group(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
-    permissions = fields.CharArrayField()
+    permissions = fields.CharArrayField(
+        in_array_constraints={
+            "enum": [
+                "agenda_item.can_manage",
+                "agenda_item.can_see",
+                "agenda_item.can_see_internal",
+                "assignment.can_manage",
+                "assignment.can_nominate_other",
+                "assignment.can_nominate_self",
+                "assignment.can_see",
+                "list_of_speakers.can_be_speaker",
+                "list_of_speakers.can_manage",
+                "list_of_speakers.can_see",
+                "mediafile.can_manage",
+                "mediafile.can_see",
+                "meeting.can_manage_logos_and_fonts",
+                "meeting.can_manage_settings",
+                "meeting.can_see_autopilot",
+                "meeting.can_see_frontpage",
+                "meeting.can_see_history",
+                "meeting.can_see_livestream",
+                "motion.can_create",
+                "motion.can_create_amendments",
+                "motion.can_manage",
+                "motion.can_manage_metadata",
+                "motion.can_manage_polls",
+                "motion.can_see",
+                "motion.can_see_internal",
+                "motion.can_support",
+                "projector.can_manage",
+                "projector.can_see",
+                "tag.can_manage",
+                "user.can_change_own_password",
+                "user.can_manage",
+                "user.can_see",
+                "user.can_see_extra_data",
+            ]
+        }
+    )
     user_ids = fields.RelationListField(to={Collection("user"): "group_$_ids"})
     default_group_for_meeting_id = fields.RelationField(
         to={Collection("meeting"): "default_group_id"},
