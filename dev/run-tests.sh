@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export COMPOSE_DOCKER_CLI_BUILD=0
+
 DC="docker-compose -f dev/docker-compose.dev.yml"
 
 $DC up --build --detach
