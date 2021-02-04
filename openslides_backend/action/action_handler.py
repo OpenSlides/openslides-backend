@@ -8,7 +8,6 @@ from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
     ServiceException,
-    DatastoreException,
 )
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request import WriteRequest
