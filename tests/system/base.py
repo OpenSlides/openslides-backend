@@ -4,7 +4,6 @@ from unittest import TestCase
 import requests
 import simplejson as json
 from fastjsonschema import validate
-from werkzeug.wrappers import Response
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import BaseTemplateField
@@ -18,7 +17,13 @@ from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from tests.util import Client, get_collection_from_fqid, get_fqid, get_id_from_fqid
+from tests.util import (
+    Client,
+    Response,
+    get_collection_from_fqid,
+    get_fqid,
+    get_id_from_fqid,
+)
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
@@ -68,8 +73,8 @@ class BaseSystemTestCase(TestCase):
         raise NotImplementedError()
 
     def assert_status_code(self, response: Response, code: int) -> None:
-        if response.status_code != code and response.data:
-            print(response.data)
+        if response.status_code != code and response.json.get("message", ""):
+            print(response.json)
         self.assertEqual(response.status_code, code)
 
     def create_model(

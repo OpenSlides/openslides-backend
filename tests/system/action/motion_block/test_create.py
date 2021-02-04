@@ -44,8 +44,8 @@ class MotionBlockActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'title\\', \\'meeting_id\\'] properties",
-            str(response.data),
+            "data must contain ['title', 'meeting_id'] properties",
+            response.json.get("message", ""),
         )
 
     def test_create_wrong_field(self) -> None:
@@ -60,6 +60,6 @@ class MotionBlockActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'title\\', \\'meeting_id\\'] properties",
-            str(response.data),
+            "data must contain ['title', 'meeting_id'] properties",
+            response.json.get("message", ""),
         )

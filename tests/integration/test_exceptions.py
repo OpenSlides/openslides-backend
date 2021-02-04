@@ -1,4 +1,3 @@
-import json
 from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
@@ -31,7 +30,7 @@ class TestHttpExceptions(TestCase):
         response = self.client.post("/", json=[{"action": "agenda_item.create"}])
         self.assertEqual(response.status_code, 400)
         self.view.dispatch.assert_called()
-        data = json.loads(response.data)
+        data = response.json
         self.assertEqual(data.get("message"), "test")
 
     def test_forbidden(self) -> None:
@@ -39,11 +38,9 @@ class TestHttpExceptions(TestCase):
         response = self.client.post("/", json=[{"action": "agenda_item.create"}])
         self.assertEqual(response.status_code, 403)
         self.view.dispatch.assert_called()
-        data = json.loads(response.data)
+        data = response.json
         self.assertEqual(data.get("message"), "test")
 
     def test_method_not_allowed(self) -> None:
         response = self.client.get("/", json=[{"action": "agenda_item.create"}])
         self.assertEqual(response.status_code, 405)
-        data = json.loads(response.data)
-        assert data

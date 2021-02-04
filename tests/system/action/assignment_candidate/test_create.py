@@ -30,8 +30,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'assignment_id\\', \\'user_id\\'] properties",
-            str(response.data),
+            "data must contain ['assignment_id', 'user_id'] properties",
+            response.json.get("message", ""),
         )
 
     def test_create_wrong_field(self) -> None:
@@ -54,8 +54,8 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must not contain {\\'wrong_field\\'} properties",
-            str(response.data),
+            "data must not contain {'wrong_field'} properties",
+            response.json.get("message", ""),
         )
 
     def test_create_finished(self) -> None:
@@ -77,5 +77,5 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "It is not permitted to add a candidate to a finished assignment!",
-            str(response.data),
+            response.json.get("message", ""),
         )

@@ -111,8 +111,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'meeting_id\\', \\'title\\'] properties",
-            str(response.data),
+            "data must contain ['meeting_id', 'title'] properties",
+            response.json.get("message", ""),
         )
 
     def test_create_wrong_field(self) -> None:
@@ -134,8 +134,8 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must not contain {\\'wrong_field\\'} properties",
-            str(response.data),
+            "data must not contain {'wrong_field'} properties",
+            response.json.get("message", ""),
         )
 
     def test_create_workflow_id(self) -> None:
@@ -208,7 +208,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "No matching default workflow defined on this meeting" in str(
-            response.data
+            response.json.get("message", "")
         )
 
     def test_correct_origin_id_set(self) -> None:
@@ -298,7 +298,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Committee id 52 not in []" in str(response.data)
+        assert "Committee id 52 not in []" in response.json.get("message", "")
 
     def test_create_missing_text(self) -> None:
         self.create_model("meeting/222", {})
@@ -312,7 +312,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Text is required" in str(response.data)
+        assert "Text is required" in response.json.get("message", "")
 
     def test_create_with_amendment_paragraphs(self) -> None:
         self.create_model("meeting/222", {})
@@ -333,7 +333,9 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "give amendment_paragraphs in this context" in str(response.data)
+        assert "give amendment_paragraphs in this context" in response.json.get(
+            "message", ""
+        )
 
     def test_create_reason_missing(self) -> None:
         self.create_model("meeting/222", {"motions_reason_required": True})
@@ -349,7 +351,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Reason is required" in str(response.data)
+        assert "Reason is required" in response.json.get("message", "")
 
     def test_create_lead_motion_and_statute_paragraph_id_given(self) -> None:
         self.create_model("meeting/222", {})
@@ -375,7 +377,9 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "both of lead_motion_id and statute_paragraph_id." in str(response.data)
+        assert "both of lead_motion_id and statute_paragraph_id." in response.json.get(
+            "message", ""
+        )
 
     def test_create_with_submitters(self) -> None:
         self.create_model("meeting/222", {})

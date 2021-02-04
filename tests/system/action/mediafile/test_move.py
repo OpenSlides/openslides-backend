@@ -161,7 +161,9 @@ class MediafileMoveActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn("New parent is not a directory.", str(response.data))
+        self.assertIn(
+            "New parent is not a directory.", response.json.get("message", "")
+        )
 
     def test_move_multiple_payload_items(self) -> None:
         self.create_model("meeting/222", {})
@@ -214,5 +216,6 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Moving item 7 to one of its children is not possible.", str(response.data)
+            "Moving item 7 to one of its children is not possible.",
+            response.json.get("message", ""),
         )

@@ -207,7 +207,9 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "requires the following fields to be equal" in response.data.decode()
+        assert "requires the following fields to be equal" in response.json.get(
+            "message", ""
+        )
 
     def test_only_motion_allowed(self) -> None:
         self.create_model("meeting/1", {"name": "name_uZXBoHMp"})
@@ -227,4 +229,6 @@ class MotionUpdateMetadataActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Found assignment/1 but only motion is allowed." in str(response.data)
+        assert "Found assignment/1 but only motion is allowed." in response.json.get(
+            "message", ""
+        )

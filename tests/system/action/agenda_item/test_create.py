@@ -124,7 +124,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "requires the following fields to be equal",
-            str(response.data),
+            response.json.get("message", ""),
         )
         self.assert_model_not_exists("agenda_item/2")
 

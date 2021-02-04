@@ -96,7 +96,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Cannot update: found states from different workflows" in str(
-            response.data
+            response.json.get("message", "")
         )
 
     def test_update_wrong_id(self) -> None:

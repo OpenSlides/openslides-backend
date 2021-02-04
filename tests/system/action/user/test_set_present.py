@@ -93,5 +93,5 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "Users are not allowed to set present self in this meeting."
-            in response.data.decode()
+            in response.json.get("message", "")
         )

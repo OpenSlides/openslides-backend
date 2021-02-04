@@ -103,4 +103,4 @@ class MotionResetStateActionTest(BaseActionTestCase):
             "/", json=[{"action": "motion.reset_state", "data": [{"id": 22}]}]
         )
         self.assert_status_code(response, 400)
-        self.assertIn(" has no first_state_id.", str(response.data))
+        self.assertIn(" has no first_state_id.", response.json.get("message", ""))

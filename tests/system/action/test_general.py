@@ -1,5 +1,3 @@
-import simplejson as json
-
 from .base import BaseActionTestCase
 
 
@@ -15,12 +13,12 @@ class GeneralActionWSGITester(BaseActionTestCase):
     def test_request_wrong_media_type(self) -> None:
         response = self.client.post("/")
         self.assert_status_code(response, 400)
-        self.assertIn("Wrong media type.", str(response.data))
+        self.assertIn("Wrong media type.", response.json.get("message", ""))
 
     def test_request_missing_body(self) -> None:
         response = self.client.post("/", content_type="application/json")
         self.assert_status_code(response, 400)
-        self.assertIn("Failed to decode JSON object", str(response.data))
+        self.assertIn("Failed to decode JSON object", response.json.get("message", ""))
 
     def test_request_fuzzy_body(self) -> None:
         response = self.client.post(
@@ -28,7 +26,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
             json={"fuzzy_key_Eeng7pha3a": "fuzzy_value_eez3Ko6quu"},
         )
         self.assert_status_code(response, 400)
-        self.assertIn("data must be array", str(response.data))
+        self.assertIn("data must be array", response.json.get("message", ""))
 
     def test_request_fuzzy_body_2(self) -> None:
         response = self.client.post(
@@ -37,8 +35,8 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain [\\'action\\', \\'data\\'] properties",
-            str(response.data),
+            "data[0] must contain ['action', 'data'] properties",
+            response.json.get("message", ""),
         )
 
     def test_request_no_existing_action(self) -> None:
@@ -48,14 +46,15 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Action fuzzy_action_hamzaeNg4a does not exist.", str(response.data)
+            "Action fuzzy_action_hamzaeNg4a does not exist.",
+            response.json.get("message", ""),
         )
 
     def test_health_route(self) -> None:
         response = self.client.get("/health")
         self.assert_status_code(response, 200)
-        self.assertIn("healthinfo", str(response.data))
-        actions = json.loads(response.data)["healthinfo"]["actions"]
+        self.assertIn("healthinfo", response.json)
+        actions = response.json["healthinfo"]["actions"]
         some_example_actions = (
             "topic.create",
             "motion.delete",

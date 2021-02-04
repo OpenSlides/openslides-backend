@@ -38,7 +38,9 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Motion supporters system deactivated." in response.data.decode()
+        assert "Motion supporters system deactivated." in response.json.get(
+            "message", ""
+        )
 
     def test_state_doesnt_allow_support(self) -> None:
         self.create_model(
@@ -76,7 +78,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "The state does not allow support." in response.data.decode()
+        assert "The state does not allow support." in response.json.get("message", "")
 
     def test_support(self) -> None:
         self.create_model(

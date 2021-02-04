@@ -1,6 +1,3 @@
-from typing import Any, Dict
-
-from werkzeug.wrappers import Response
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -475,18 +472,6 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
 
 
 class SetNumberMixinManuallyTest(BaseActionTestCase):
-    def post_helper(self, data_part: Dict[str, Any]) -> Response:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [data_part],
-                }
-            ],
-        )
-        return response
-
     def _create_models_for_number_manually_tests(self) -> None:
         self.create_model(
             "meeting/222", {"name": "name_SNLGsvIV", "motions_number_type": "manually"}
@@ -506,13 +491,14 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 
     def test_complex_example_manually_1(self) -> None:
         self._create_models_for_number_manually_tests()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
@@ -521,22 +507,24 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 
     def test_complex_example_manually_2(self) -> None:
         self._create_models_for_number_manually_tests()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
-        response2 = self.post_helper(
+        response2 = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response2, 200)
         motion1 = self.get_model("motion/1")
@@ -548,24 +536,26 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 
     def test_complex_example_manually_3(self) -> None:
         self._create_models_for_number_manually_tests()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "number": "TEST",
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
-        response2 = self.post_helper(
+        response2 = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "number": "TEST",
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response2, 400)
         motion1 = self.get_model("motion/1")
@@ -575,18 +565,6 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 
 
 class SetNumberMixinSeriallTest(BaseActionTestCase):
-    def post_helper(self, data_part: Dict[str, Any]) -> Response:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [data_part],
-                }
-            ],
-        )
-        return response
-
     def _create_models_for_number_prefix_test(self) -> None:
         self.create_model(
             "meeting/222",
@@ -624,42 +602,45 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
 
     def test_complex_example_serially_numbered_1(self) -> None:
         self._create_models_for_number_prefix_test()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 7,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
         assert motion1.get("number") == "A 001"
         assert motion1.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 8,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
         assert motion2.get("number") == "B 002"
         assert motion2.get("number_value") == 2
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 9,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
@@ -668,42 +649,45 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
 
     def test_complex_example_serially_numbered_2(self) -> None:
         self._create_models_for_number_prefix_test()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 7,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
         assert motion1.get("number") == "A 001"
         assert motion1.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 8,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
         assert motion2.get("number") == "B 002"
         assert motion2.get("number_value") == 2
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 8,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
@@ -712,14 +696,15 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
 
     def test_complex_example_serially_numbered_3(self) -> None:
         self._create_models_for_number_prefix_test()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 7,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
@@ -731,14 +716,15 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 7,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/2")
@@ -747,18 +733,6 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
 
 
 class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
-    def post_helper(self, data_part: Dict[str, Any]) -> Response:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [data_part],
-                }
-            ],
-        )
-        return response
-
     def _create_models_for_number_per_category_1(self) -> None:
         self.create_model(
             "meeting/222",
@@ -798,28 +772,30 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         self._create_models_for_number_per_category_1()
 
         # create two motions of category A
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 7,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
         assert motion1.get("number") == "A001"
         assert motion1.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 7,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
@@ -827,28 +803,30 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         assert motion2.get("number_value") == 2
 
         # create two motions of category B
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 8,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
         assert motion3.get("number") == "B001"
         assert motion3.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 8,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion4 = self.get_model("motion/4")
@@ -856,28 +834,30 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         assert motion4.get("number_value") == 2
 
         # create two motions of category "no prefix"
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 9,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion5 = self.get_model("motion/5")
         assert motion5.get("number") == "001"
         assert motion5.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "category_id": 9,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion6 = self.get_model("motion/6")
@@ -886,13 +866,14 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
 
     def test_complex_example_per_category_1_2(self) -> None:
         self._create_models_for_number_per_category_1()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
@@ -909,13 +890,14 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
             },
         )
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
@@ -952,21 +934,23 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
 
     def test_complex_example_per_category_2_1(self) -> None:
         self._create_models_for_number_per_category_2()
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "category_id": 7,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
         assert motion1.get("number") == "A 001"
         assert motion1.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
@@ -974,14 +958,15 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "text": "test",
                 "category_id": 7,
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
         assert motion2.get("number") == "A 001 X-001"
         assert motion2.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
@@ -989,7 +974,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "text": "test",
                 "category_id": 7,
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
@@ -1009,21 +994,23 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
             },
         )
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "category_id": 7,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
         assert motion1.get("number") == "A1"
         assert motion1.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
@@ -1031,14 +1018,15 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "text": "test",
                 "category_id": 7,
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
         assert motion2.get("number") == "A1X-1"
         assert motion2.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
@@ -1046,7 +1034,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "text": "test",
                 "category_id": 7,
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
@@ -1056,14 +1044,15 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
     def test_complex_example_per_category_2_3(self) -> None:
         self._create_models_for_number_per_category_2()
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "category_id": 7,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
@@ -1080,7 +1069,8 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "motions_amendments_prefix": "X-",
             },
         )
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
@@ -1088,14 +1078,15 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "text": "test",
                 "category_id": 7,
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
         assert motion2.get("number") == "A 001X-1"
         assert motion2.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
@@ -1103,7 +1094,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "text": "test",
                 "category_id": 7,
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
@@ -1113,56 +1104,60 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
     def test_complex_example_per_category_2_4(self) -> None:
         self._create_models_for_number_per_category_2()
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "category_id": 7,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion1 = self.get_model("motion/1")
         assert motion1.get("number") == "A 001"
         assert motion1.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion2 = self.get_model("motion/2")
         assert motion2.get("number") == "A 001 X-001"
         assert motion2.get("number_value") == 1
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "lead_motion_id": 1,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion3 = self.get_model("motion/3")
         assert motion3.get("number") == "A 001 X-002"
         assert motion3.get("number_value") == 2
 
-        response = self.post_helper(
+        response = self.request(
+            "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "text": "test",
                 "category_id": 7,
-            }
+            },
         )
         self.assert_status_code(response, 200)
         motion4 = self.get_model("motion/4")
