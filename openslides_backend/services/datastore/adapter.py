@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Sequence, Union
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
-from ...shared.exceptions import DatastoreException
+from ...shared.exceptions import DatastoreException, DatastoreLockedException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
@@ -57,10 +57,17 @@ class DatastoreAdapter(DatastoreService):
                 payload.get("error") if isinstance(payload, dict) else None
             )
             if additional_error_message is not None:
-                if (
-                    additional_error_message.get("type_verbose")
-                    == "MODEL_DOES_NOT_EXIST"
-                ):
+                type_verbose = additional_error_message.get("type_verbose")
+                if type_verbose == "MODEL_LOCKED":
+                    raise DatastoreLockedException(
+                        " ".join(
+                            (
+                                error_message,
+                                f"Model '{additional_error_message.get('key')}' raises {type_verbose} error.",
+                            )
+                        )
+                    )
+                elif type_verbose == "MODEL_DOES_NOT_EXIST":
                     error_message = " ".join(
                         (
                             error_message,

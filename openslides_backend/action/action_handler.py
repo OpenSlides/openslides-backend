@@ -4,7 +4,11 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import fastjsonschema
 
 from ..shared.env import is_dev_mode
-from ..shared.exceptions import ActionException, DatastoreException, EventStoreException
+from ..shared.exceptions import (
+    ActionException,
+    DatastoreLockedException,
+    ServiceException,
+)
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.schema import schema_version
@@ -87,22 +91,22 @@ class ActionHandler(BaseHandler):
         retried = 0
         payload_copy = deepcopy(payload)
         while True:
-            # Parse actions and creates events
-            write_requests, results = self.parse_actions(payload)
-
-            # Send events to datastore
-            if write_requests:
-                try:
-                    self.datastore.write(write_requests)
-                except DatastoreException as exception:
-                    retried += 1
-                    payload = deepcopy(payload_copy)
-                    if retried > self.MAX_RETRY:
-                        raise ActionException(exception.message)
-                    continue
-                except EventStoreException as exception:
+            try:
+                # Parse actions and creates events
+                write_request, results = self.parse_actions(payload)
+                if write_request:
+                    # Send events to datastore
+                    self.datastore.write(write_request)
+            except DatastoreLockedException as exception:
+                retried += 1
+                payload = deepcopy(payload_copy)
+                if retried > self.MAX_RETRY:
                     raise ActionException(exception.message)
+                continue
+            except ServiceException as exception:
+                raise ActionException(exception.message)
             break
+
         # Return action result
         # TODO: This is a fake result because in this place all actions were
         # always successful.

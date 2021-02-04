@@ -50,11 +50,15 @@ class DatastoreException(ServiceException):
     pass
 
 
-class PermissionException(ServiceException):
+class DatastoreConnectionException(DatastoreException):
     pass
 
 
-class EventStoreException(View400Exception):
+class DatastoreLockedException(DatastoreException):
+    pass
+
+
+class PermissionException(ServiceException):
     pass
 
 

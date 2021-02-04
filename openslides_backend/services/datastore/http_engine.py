@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 import requests
 
-from ...shared.exceptions import DatastoreException
+from ...shared.exceptions import DatastoreConnectionException
 from ...shared.interfaces.logging import LoggingModule
 
 
@@ -35,18 +35,24 @@ class HTTPEngine:
         self.headers = {"Content-Type": "application/json"}
 
     def retrieve(self, endpoint: str, data: Optional[str]) -> Tuple[bytes, int]:
+        """
+        Throws 2 kinds of DatastoreConnectionException:
+        1. If there is no valid endpoint given to build a URL
+        2. If the datastore cannot be reached for unknown reasons
+        Other exceptions from request.post are passed thru
+        """
         # TODO: Check and test this error handling.
         if endpoint in self.READER_ENDPOINTS:
             base_url = self.datastore_reader_url
         elif endpoint in self.WRITER_ENDPOINTS:
             base_url = self.datastore_writer_url
         else:
-            raise ValueError(f"Endpoint {endpoint} does not exist.")
+            raise DatastoreConnectionException(f"Endpoint {endpoint} does not exist.")
         url = "/".join((base_url, endpoint))
 
         try:
             response = requests.post(url=url, data=data, headers=self.headers)
         except requests.exceptions.ConnectionError as e:
             error_message = f"Cannot reach the datastore service on {url}. Error: {e}"
-            raise DatastoreException(error_message)
+            raise DatastoreConnectionException(error_message)
         return response.content, response.status_code

@@ -60,7 +60,7 @@ class TopicSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. {\\'key\\': \\'meeting/1\\', \\'type\\': 6, \\'type_verbose\\': \\'MODEL_LOCKED\\'}",
+            "Datastore service sends HTTP 400. Model \\'meeting/1\\' raises MODEL_LOCKED error.",
             str(response.data),
         )
         self.assert_model_not_exists("topic/1")
