@@ -12,6 +12,7 @@ class PollVoteTest(BaseActionTestCase):
                 "is_present_in_meeting_ids": [113],
                 "group_$113_ids": [1],
                 "group_$_ids": ["113"],
+                "vote_weight": "2.000000",
             },
         )
         self.update_model(
@@ -62,7 +63,7 @@ class PollVoteTest(BaseActionTestCase):
             json=[
                 {
                     "action": "poll.vote",
-                    "data": [{"id": 1, "user_id": 2, "value": {"11": 0}}],
+                    "data": [{"id": 1, "user_id": 2, "value": {"11": 1}}],
                 }
             ],
         )
@@ -70,12 +71,12 @@ class PollVoteTest(BaseActionTestCase):
         vote = self.get_model("vote/2")
         assert vote.get("value") == "Y"
         assert vote.get("option_id") == 11
-        assert vote.get("weight") == "0.000000"
+        assert vote.get("weight") == "2.000000"
         assert vote.get("meeting_id") == 113
         assert vote.get("user_id") == 2
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1, 2]
-        assert option.get("yes") == "1.000000"
+        assert option.get("yes") == "3.000000"
         assert option.get("no") == "0.000000"
         assert option.get("abstain") == "0.000000"
         user = self.get_model("user/2")

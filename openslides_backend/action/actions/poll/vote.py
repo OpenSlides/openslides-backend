@@ -125,12 +125,16 @@ class PollVote(UpdateAction):
         user_id: int,
         payload: List[Dict[str, Any]],
     ) -> None:
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), user_id), ["vote_weight"]
+        )
+        vote_weight = user.get("vote_weight", "1.000000")
         for key in value:
-            weight = "1.000000"
+            weight = vote_weight
             used_value = value[key]
 
             if self.poll["pollmethod"] in ("Y", "N"):
-                weight = "1.000000" if value[key] == 1 else "0.000000"
+                weight = vote_weight if value[key] == 1 else "0.000000"
                 used_value = self.poll["pollmethod"]
 
             if self.check_if_value_allowed_in_pollmethod(used_value):
