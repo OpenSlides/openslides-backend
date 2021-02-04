@@ -30,7 +30,7 @@ class GroupCreateActionTest(BaseActionTestCase):
                         {
                             "name": "test_Xcdfgee",
                             "meeting_id": 22,
-                            "permissions": ["test"],
+                            "permissions": ["agenda_item.can_see"],
                         }
                     ],
                 }
@@ -40,7 +40,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         model = self.get_model("group/1")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 22
-        assert model.get("permissions") == ["test"]
+        assert model.get("permissions") == ["agenda_item.can_see"]
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
