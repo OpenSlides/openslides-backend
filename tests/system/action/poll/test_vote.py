@@ -6,9 +6,22 @@ class PollVoteTest(BaseActionTestCase):
         self.create_model("group/1", {"user_ids": [1, 2]})
         self.create_model("option/11", {"meeting_id": 113, "poll_id": 1})
         self.create_model(
-            "user/2", {"username": "test2", "is_present_in_meeting_ids": [113]}
+            "user/2",
+            {
+                "username": "test2",
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
         )
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
         self.create_model(
             "poll/1",
             {
@@ -85,7 +98,14 @@ class PollVoteTest(BaseActionTestCase):
             },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
         response = self.client.post(
             "/",
             json=[
@@ -134,9 +154,22 @@ class PollVoteTest(BaseActionTestCase):
             "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
         )
         self.create_model(
-            "user/2", {"username": "test2", "is_present_in_meeting_ids": [113]}
+            "user/2",
+            {
+                "username": "test2",
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
         )
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
         self.create_model(
             "poll/1",
             {
@@ -198,7 +231,14 @@ class PollVoteTest(BaseActionTestCase):
             "poll/1", {"title": "my test poll", "entitled_group_ids": [1]}
         )
         self.create_model("meeting/113", {"name": "my meeting"})
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
         response = self.client.post(
             "/",
             json=[
@@ -221,7 +261,14 @@ class PollVoteTest(BaseActionTestCase):
             {"title": "my test poll", "type": "analog", "entitled_group_ids": [1]},
         )
         self.create_model("meeting/113", {"name": "my meeting"})
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$_ids": ["113"],
+                "group_$113_ids": [1],
+            },
+        )
         response = self.client.post(
             "/",
             json=[
@@ -246,7 +293,14 @@ class PollVoteTest(BaseActionTestCase):
             },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
         response = self.client.post(
             "/",
             json=[
@@ -271,9 +325,22 @@ class PollVoteTest(BaseActionTestCase):
             "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
         )
         self.create_model(
-            "user/2", {"username": "test2", "is_present_in_meeting_ids": [113]}
+            "user/2",
+            {
+                "username": "test2",
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
         )
-        self.update_model("user/1", {"is_present_in_meeting_ids": [113]})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
         self.create_model(
             "poll/1",
             {
@@ -353,6 +420,7 @@ class PollVoteTest(BaseActionTestCase):
 
     def test_check_user_present_in_meeting(self) -> None:
         self.create_model("group/1", {"user_ids": [1]})
+        self.update_model("user/1", {"group_$_ids": ["113"], "group_$113_ids": [1]})
         self.create_model(
             "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
         )

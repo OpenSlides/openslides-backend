@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
@@ -90,15 +90,12 @@ class PollVote(UpdateAction):
 
     def check_user_entitled_groups(self, user_id: int) -> None:
         group_ids = self.poll.get("entitled_group_ids", [])
-        gmr = GetManyRequest(
-            Collection("group"),
-            group_ids,
-            ["user_ids"],
+        meeting_id = self.poll["meeting_id"]
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), user_id), [f"group_${meeting_id}_ids"]
         )
-        result = self.datastore.get_many([gmr])
-        db_groups = result.get(Collection("group"), {})
-        for group in db_groups:
-            if user_id in db_groups[group].get("user_ids", []):
+        for id_ in user.get(f"group_${meeting_id}_ids", []):
+            if id_ in group_ids:
                 return
         raise ActionException("User is not allowed to vote.")
 
@@ -210,14 +207,6 @@ class PollVote(UpdateAction):
             {"id": option_id, "yes": str(yes), "no": str(no), "abstain": str(abstain)}
         ]
         self.execute_other_action(OptionSetAutoFields, payload)
-
-
-def check_value_for_option_vote(value: Union[str, Dict[str, Any]]) -> bool:
-    return isinstance(value, dict)
-
-
-def check_value_for_global_vote(value: Union[str, Dict[str, Any]]) -> bool:
-    return isinstance(value, str)
 
 
 def _get_vote_create_payload(
