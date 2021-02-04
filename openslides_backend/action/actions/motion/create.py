@@ -169,7 +169,9 @@ class MotionCreate(
             MotionSubmitterCreateAction, payload, additional_relation_models
         )
 
-        instance["sequential_number"] = self.get_sequential_number(instance["meeting_id"])
+        instance["sequential_number"] = self.get_sequential_number(
+            instance["meeting_id"]
+        )
         # set created and last_modified
         timestamp = round(time.time())
         instance["created"] = timestamp
