@@ -26,7 +26,7 @@ def monkeypatch_datastore_adapter_write() -> Iterator[None]:
 def write(self, write_request: WriteRequest) -> None:  # type: ignore
     """
     Wraps the write of the datastore.adapter and stops a thread, if the testlock attribute is set thread-local.
-    See example in test_create_sequence_numbers_race_condition
+    See example in test_create_sequential_numbers_race_condition
     """
     if hasattr(pytest_thread_local, "testlock") and pytest_thread_local.testlock:
         if (

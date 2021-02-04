@@ -7,7 +7,7 @@ from tests.system.action.lock import (
 )
 
 
-class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
+class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
     def create_workflow(self, workflow_id: int = 12, meeting_id: int = 222) -> None:
         state_id = workflow_id + 100
         state_str = str(state_id)
@@ -25,7 +25,7 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
             {"name": "name_state" + state_str, "meeting_id": meeting_id},
         )
 
-    def test_create_sequence_numbers(self) -> None:
+    def test_create_sequential_numbers(self) -> None:
         self.create_model("meeting/222", {"name": "meeting222"})
         self.create_workflow()
 
@@ -47,7 +47,7 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
-        self.assertEqual(model.get("sequence_number"), 1)
+        self.assertEqual(model.get("sequential_number"), 1)
 
         response = self.client.post(
             "/",
@@ -68,9 +68,9 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
-        self.assertEqual(model.get("sequence_number"), 2)
+        self.assertEqual(model.get("sequential_number"), 2)
 
-    def test_create_sequence_numbers_2meetings(self) -> None:
+    def test_create_sequential_numbers_2meetings(self) -> None:
         self.create_model("meeting/222", {"name": "meeting222"})
         self.create_model("meeting/223", {"name": "meeting223"})
 
@@ -93,7 +93,7 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
-        self.assertEqual(model.get("sequence_number"), 1)
+        self.assertEqual(model.get("sequential_number"), 1)
 
         self.create_workflow(workflow_id=13, meeting_id=223)
         response = self.client.post(
@@ -114,9 +114,9 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
-        self.assertEqual(model.get("sequence_number"), 1)
+        self.assertEqual(model.get("sequential_number"), 1)
 
-    def test_create_sequence_numbers_deleted_motion(self) -> None:
+    def test_create_sequential_numbers_deleted_motion(self) -> None:
         self.create_model("meeting/222", {"name": "meeting222"})
         self.create_workflow()
 
@@ -138,7 +138,7 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
-        self.assertEqual(model.get("sequence_number"), 1)
+        self.assertEqual(model.get("sequential_number"), 1)
 
         response = self.client.post(
             "/",
@@ -166,9 +166,9 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
-        self.assertEqual(model.get("sequence_number"), 2)
+        self.assertEqual(model.get("sequential_number"), 2)
 
-    def test_create_sequence_numbers_race_condition(self) -> None:
+    def test_create_sequential_numbers_race_condition(self) -> None:
         """
         The main thread in this testing function creates an instance of a threading.lock and acquires it.
         Thread1 will be started first, but should wait for the acquired lock after reading and before writing.
@@ -221,12 +221,12 @@ class MotionCreateActionTestSequenceNumber(BaseActionTestCase):
         self.assert_model_not_exists("motion/1")
         model2 = self.get_model("motion/2")
         model3 = self.get_model("motion/3")
-        self.assertEqual(model2["sequence_number"], 1)
-        self.assertEqual(model3["sequence_number"], 2)
+        self.assertEqual(model2["sequential_number"], 1)
+        self.assertEqual(model3["sequential_number"], 2)
 
 
 def thread_method(
-    test_instance: MotionCreateActionTestSequenceNumber,
+    test_instance: MotionCreateActionTestSequentialNumber,
     meeting_id: int,
     workflow_id: int,
     motion_title: str,
