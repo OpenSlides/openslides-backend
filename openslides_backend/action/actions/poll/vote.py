@@ -62,11 +62,11 @@ class PollVote(UpdateAction):
         self.check_user_is_present_in_meeting(user_id)
 
         # handle create the votes.
-        if check_value_for_option_vote(value):
+        if isinstance(value, dict):
             self.validate_option_value(value)
             self.handle_option_value(value, user_id)
 
-        elif check_value_for_global_vote(value):
+        elif isinstance(value, str):
             self.handle_global_value(value, user_id)
 
         return instance
