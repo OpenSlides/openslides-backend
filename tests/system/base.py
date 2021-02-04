@@ -80,6 +80,7 @@ class BaseSystemTestCase(TestCase):
             events=[Event(type=EventType.Create, fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
+            locked_fields={},
         )
         if deleted:
             request.events.append(Event(type=EventType.Delete, fqid=get_fqid(fqid)))
@@ -91,6 +92,7 @@ class BaseSystemTestCase(TestCase):
             events=[Event(type=EventType.Update, fqid=get_fqid(fqid), fields=data)],
             information={},
             user_id=0,
+            locked_fields={},
         )
         self.datastore.write(request)
 

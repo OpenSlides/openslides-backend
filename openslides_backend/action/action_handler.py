@@ -9,7 +9,6 @@ from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.schema import schema_version
 from . import actions  # noqa
-from .action import merge_write_requests
 from .relations.relation_manager import RelationManager
 from .util.actions_map import actions_map
 from .util.typing import (
@@ -89,12 +88,12 @@ class ActionHandler(BaseHandler):
         payload_copy = deepcopy(payload)
         while True:
             # Parse actions and creates events
-            write_request, results = self.parse_actions(payload)
+            write_requests, results = self.parse_actions(payload)
 
             # Send events to datastore
-            if write_request:
+            if write_requests:
                 try:
-                    self.datastore.write(write_request)
+                    self.datastore.write(write_requests)
                 except DatastoreException as exception:
                     retried += 1
                     payload = deepcopy(payload_copy)
@@ -122,7 +121,7 @@ class ActionHandler(BaseHandler):
 
     def parse_actions(
         self, payload: Payload
-    ) -> Tuple[Optional[WriteRequest], ActionResponseResults]:
+    ) -> Tuple[List[WriteRequest], ActionResponseResults]:
         """
         Parses actions request send by client. Raises ActionException or
         PermissionDenied if something went wrong.
@@ -154,6 +153,6 @@ class ActionHandler(BaseHandler):
 
         self.logger.debug("Write request is ready.")
         return (
-            merge_write_requests(all_write_requests),
+            all_write_requests,
             all_action_response_results,
         )

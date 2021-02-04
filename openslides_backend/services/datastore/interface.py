@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Sequence, Tuple
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 from mypy_extensions import TypedDict
 from typing_extensions import Protocol
@@ -93,7 +93,7 @@ class DatastoreService(Protocol):
     def reserve_id(self, collection: Collection) -> int:
         ...
 
-    def write(self, write_request: WriteRequest) -> None:
+    def write(self, write_requests: Union[List[WriteRequest], WriteRequest]) -> None:
         ...
 
     def truncate_db(self) -> None:

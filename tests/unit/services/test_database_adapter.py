@@ -219,16 +219,26 @@ class DatastoreAdapterTester(TestCase):
         self.engine.retrieve.assert_called_with("reserve_ids", command.data)
         assert new_id == 42
 
-    def test_write(self) -> None:
-        write_request = WriteRequest(
-            events=[],
-            information={},
-            user_id=42,
-        )
-        command = commands.Write(write_request=write_request, locked_fields={})
+    def test_write_new_style(self) -> None:
+        write_requests = [
+            WriteRequest(events=[], information={}, user_id=42, locked_fields={})
+        ]
+        command = commands.Write(write_requests=write_requests)
         self.engine.retrieve.return_value = "", 200
-        self.db.write(write_request=write_request)
+        self.db.write(write_requests=write_requests)
         assert (
             command.data
-            == '{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}'
+            == '[{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}]'
+        )
+
+    def test_write_old_style(self) -> None:
+        write_request = WriteRequest(
+            events=[], information={}, user_id=42, locked_fields={}
+        )
+        command = commands.Write(write_requests=[write_request])
+        self.engine.retrieve.return_value = "", 200
+        self.db.write(write_requests=write_request)
+        assert (
+            command.data
+            == '[{"events": [], "information": {}, "user_id": 42, "locked_fields": {}}]'
         )

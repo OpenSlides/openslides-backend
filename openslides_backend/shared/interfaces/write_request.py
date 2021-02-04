@@ -16,3 +16,4 @@ class WriteRequest:
     events: List[Event]
     information: Information
     user_id: int
+    locked_fields: Dict[str, int]

@@ -313,14 +313,13 @@ class DatastoreAdapter(DatastoreService):
     def reserve_id(self, collection: Collection) -> int:
         return self.reserve_ids(collection=collection, amount=1)[0]
 
-    def write(self, write_request: WriteRequest) -> None:
-        command = commands.Write(
-            write_request=write_request,
-            locked_fields=self.locked_fields,
-        )
+    def write(self, write_requests: Union[List[WriteRequest], WriteRequest]) -> None:
+        if isinstance(write_requests, WriteRequest):
+            write_requests = [write_requests]
+        command = commands.Write(write_requests=write_requests)
         self.logger.debug(
             f"Start WRITE request to datastore with the following data: "
-            f"Write request: {write_request}"
+            f"Write request: {write_requests}"
         )
         self.retrieve(command)
 
