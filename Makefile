@@ -65,7 +65,7 @@ start-dev-interactive:
 	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
 
 run-dev-standalone: | start-dev
-	docker-compose -f dev/docker-compose.dev.yml exec backend bash
+	docker-compose -f dev/docker-compose.dev.yml exec backend bash --rcfile dev/bashrc
 
 run-dev run-bash: | run-dev-standalone
 

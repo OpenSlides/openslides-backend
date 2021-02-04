@@ -1,6 +1,6 @@
 FROM python:3.8.5-slim-buster
 
-RUN apt-get update && apt-get install --yes make git curl ncat vim
+RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion
 
 WORKDIR /app
 RUN mkdir dev
@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir --requirement dev/requirements_development.txt
 
 COPY dev/wait.sh dev/.
 COPY dev/run-tests.sh dev/.
+COPY dev/bashrc dev/.
 COPY dev/cleanup.sh .
 
 COPY Makefile Makefile
