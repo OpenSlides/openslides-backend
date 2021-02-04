@@ -120,7 +120,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model \\\'committee/1\\\' raises MODEL_LOCKED error.",
+            "Datastore service sends HTTP 400. Model \\'committee/1\\' raises MODEL_LOCKED error.",
             str(response.data),
         )
         self.assert_model_not_exists("meeting/1")
@@ -259,7 +259,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model \\\'committee/1\\\' raises MODEL_LOCKED error.",
+            "Datastore service sends HTTP 400. Model \\'committee/1\\' raises MODEL_LOCKED error.",
             str(response.data),
         )
         self.assert_model_exists("meeting/1")
