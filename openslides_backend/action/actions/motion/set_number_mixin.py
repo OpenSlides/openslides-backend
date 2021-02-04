@@ -22,7 +22,7 @@ class SetNumberMixin(BaseAction):
         """
         # Conditions to stop generate an automatic number.
         if instance.get("number"):
-            if not self.check_if_unique(instance["number"], meeting_id):
+            if not self._check_if_unique(instance["number"], meeting_id):
                 raise ActionException("Number is not unique.")
             return
         if existing_number:
@@ -40,8 +40,8 @@ class SetNumberMixin(BaseAction):
             return
 
         # Generate the components of the number
-        prefix = self.get_prefix(meeting_id, lead_motion_id, category_id)
-        number_value = self.get_number_value(
+        prefix = self._get_prefix(meeting_id, lead_motion_id, category_id)
+        number_value = self._get_number_value(
             meeting_id, lead_motion_id, category_id, existing_number_value
         )
 
@@ -50,7 +50,7 @@ class SetNumberMixin(BaseAction):
             meeting.get("motions_number_min_digits", 0), "0"
         )
         number = f"{prefix}{number_value_str}"
-        while not self.check_if_unique(number, meeting_id):
+        while not self._check_if_unique(number, meeting_id):
             number_value += 1
             number_value_str = str(number_value).rjust(
                 meeting.get("motions_number_min_digits", 0), "0"
@@ -60,7 +60,7 @@ class SetNumberMixin(BaseAction):
         instance["number"] = number
         instance["number_value"] = number_value
 
-    def get_prefix(
+    def _get_prefix(
         self, meeting_id: int, lead_motion_id: Optional[int], category_id: Optional[int]
     ) -> str:
         meeting = self.datastore.get(
@@ -85,19 +85,19 @@ class SetNumberMixin(BaseAction):
                 prefix = ""
         return prefix
 
-    def get_number_value(
+    def _get_number_value(
         self,
         meeting_id: int,
         lead_motion_id: Optional[int],
         category_id: Optional[int],
         existing_number_value: Optional[int],
     ) -> int:
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id), ["motions_number_type"]
-        )
         if existing_number_value:
             return existing_number_value
 
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), meeting_id), ["motions_number_type"]
+        )
         if lead_motion_id:
             filter: Union[And, FilterOperator] = FilterOperator(
                 "lead_motion_id", "=", lead_motion_id
@@ -118,7 +118,7 @@ class SetNumberMixin(BaseAction):
             return max_result["max"] + 1
         return 1
 
-    def check_if_unique(self, number: str, meeting_id: int) -> bool:
+    def _check_if_unique(self, number: str, meeting_id: int) -> bool:
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("number", "=", number),

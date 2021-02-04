@@ -457,7 +457,6 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
                 "first_state_of_workflow_id": 76,
                 "next_state_ids": [76],
                 "previous_state_ids": [],
-                "set_number": True,
                 "meeting_id": 222,
             },
         )
