@@ -42,4 +42,15 @@ class TemporaryUserMixin(Action):
                 instance["meeting_id"]: vote_delegations_from_ids
             }
 
+        for field in [
+            "comment_$",
+            "number_$",
+            "structure_level_$",
+            "about_me_$",
+            "vote_weight_$",
+        ]:
+            instance_field = field.replace("_$", "")
+            if instance_field in instance:
+                instance[field] = {instance["meeting_id"]: instance.pop(instance_field)}
+
         return instance

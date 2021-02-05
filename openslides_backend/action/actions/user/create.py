@@ -32,5 +32,10 @@ class UserCreate(CreateAction):
             "committee_as_manager_ids",
             "group_$_ids",
             "vote_delegations_$_from_ids",
+            "comment_$",
+            "number_$",
+            "structure_level_$",
+            "about_me_$",
+            "vote_weight_$",
         ],
     )

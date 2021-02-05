@@ -55,12 +55,14 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("committee_as_manager_ids") == [78]
         assert model.get("organisation_management_level") == "can_manage_users"
 
-    def test_update_group_ids(self) -> None:
+    def test_update_template_fields(self) -> None:
         self.create_model("meeting/1")
         self.create_model("meeting/2")
         self.create_model(
-            "user/111",
-            {"username": "username_srtgb123"},
+            "user/223",
+        )
+        self.create_model(
+            "user/222",
         )
         self.create_model(
             "group/11",
@@ -70,50 +72,49 @@ class UserUpdateActionTest(BaseActionTestCase):
             "group/22",
             {"meeting_id": 2},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update",
-                    "data": [{"id": 111, "group_$_ids": {1: [11], 2: [22]}}],
-                }
-            ],
+        response = self.request(
+            "user.update",
+            {
+                "id": 223,
+                "group_$_ids": {1: [11], 2: [22]},
+                "vote_delegations_$_from_ids": {42: [222]},
+                "comment_$": {1: "comment<iframe></iframe>"},
+                "number_$": {2: "number"},
+                "structure_level_$": {1: "level_1", 2: "level_2"},
+                "about_me_$": {1: "<p>about</p><iframe></iframe>"},
+                "vote_weight_$": {1: "1.000000", 2: "2.333333"},
+            },
         )
         self.assert_status_code(response, 200)
-        user = self.get_model("user/111")
+        user = self.get_model("user/223")
         assert user.get("group_$1_ids") == [11]
         assert user.get("group_$2_ids") == [22]
         assert set(user.get("group_$_ids", [])) == {"1", "2"}
-        group1 = self.get_model("group/11")
-        assert group1.get("user_ids") == [111]
-        group2 = self.get_model("group/22")
-        assert group2.get("user_ids") == [111]
-
-    def test_update_vote_delegations(self) -> None:
-        self.create_model(
-            "user/111",
-            {},
-        )
-        self.create_model(
-            "user/222",
-            {},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update",
-                    "data": [{"id": 111, "vote_delegations_$_from_ids": {42: [222]}}],
-                }
-            ],
-        )
-        self.assert_status_code(response, 200)
-        user = self.get_model("user/111")
         assert user.get("vote_delegations_$42_from_ids") == [222]
         assert user.get("vote_delegations_$_from_ids") == ["42"]
+        assert user.get("comment_$1") == "comment&lt;iframe&gt;&lt;/iframe&gt;"
+        assert user.get("comment_$") == ["1"]
+        assert user.get("number_$2") == "number"
+        assert user.get("number_$") == ["2"]
+        assert user.get("structure_level_$1") == "level_1"
+        assert user.get("structure_level_$2") == "level_2"
+        assert set(user.get("structure_level_$", [])) == {"1", "2"}
+        assert user.get("about_me_$1") == "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;"
+        assert user.get("about_me_$") == ["1"]
+        assert user.get("vote_weight_$1") == "1.000000"
+        assert user.get("vote_weight_$2") == "2.333333"
+        assert set(user.get("vote_weight_$", [])) == {"1", "2"}
         user = self.get_model("user/222")
-        assert user.get("vote_delegated_$42_to_id") == 111
+        assert user.get("vote_delegated_$42_to_id") == 223
         assert user.get("vote_delegated_$_to_id") == ["42"]
+        group1 = self.get_model("group/11")
+        assert group1.get("user_ids") == [223]
+        group2 = self.get_model("group/22")
+        assert group2.get("user_ids") == [223]
+        meeting = self.get_model("meeting/1")
+        assert meeting.get("user_ids") == [223]
+        meeting = self.get_model("meeting/2")
+        assert meeting.get("user_ids") == [223]
 
     def test_update_wrong_id(self) -> None:
         self.create_model(

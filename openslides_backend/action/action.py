@@ -319,7 +319,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     raise ActionException(
                         f"The relation {field.own_field_name} requires the following "
                         f"fields to be equal:\n"
-                        f"{field.own_collection}/{instance['id']}/{equal_field_name}: "
+                        f"{field.own_collection}/{instance.get('id', '<new>')}/{equal_field_name}: "
                         f"{str(instance.get(equal_field_name))}\n"
                         f"{fqid}/{equal_field_name}: "
                         f"{str(related_model.get(equal_field_name))}"

@@ -282,8 +282,10 @@ class BaseTemplateField(Field):
         super().__init__(**kwargs)
 
     def get_payload_schema(
-        self, replacement_pattern: str = ".*", *args: Any, **kwargs: Any
+        self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
     ) -> Schema:
+        if not replacement_pattern:
+            replacement_pattern = ".*"
         return {
             "type": "object",
             "patternProperties": {replacement_pattern: super().get_schema()},
