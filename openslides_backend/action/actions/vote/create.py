@@ -4,8 +4,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-# TODO should be internal
-@register_action("vote.create")
+@register_action("vote.create", internal=True)
 class VoteCreate(CreateAction):
     """
     Internal action to create a vote.
