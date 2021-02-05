@@ -25,6 +25,7 @@ def prepare_actions_map() -> None:
         motion_submitter,
         motion_workflow,
         option,
+        organisation,
         personal_note,
         poll,
         resource,
