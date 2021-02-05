@@ -15,7 +15,7 @@ class MediaServiceAdapter(MediaService):
         self.media_url = media_url + "/"
 
     def _upload(self, file: str, id: int, mimetype: str, subpath: str) -> None:
-        url = self.media_url + subpath
+        url = self.media_url + subpath + "/"
         payload = {"file": file, "id": id, "mimetype": mimetype}
         self.logger.debug("Starting upload of file")
         try:
