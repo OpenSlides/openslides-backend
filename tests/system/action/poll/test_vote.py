@@ -83,7 +83,7 @@ class PollVoteTest(BaseActionTestCase):
         assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [2]
 
-    def test_vote_correct_pollmethod_YN(self) -> None:
+    def test_value_check(self) -> None:
         self.create_model("group/1", {"user_ids": [1]})
         self.create_model("option/11", {"meeting_id": 113, "poll_id": 1})
         self.create_model("option/12", {"meeting_id": 113, "poll_id": 1})
@@ -117,6 +117,48 @@ class PollVoteTest(BaseActionTestCase):
                             "id": 1,
                             "user_id": 1,
                             "value": {"11": "Y", "12": "N", "13": "A"},
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "Option 13 has not a right value. (int, str)." in response.data.decode()
+
+    def test_vote_correct_pollmethod_YN(self) -> None:
+        self.create_model("group/1", {"user_ids": [1]})
+        self.create_model("option/11", {"meeting_id": 113, "poll_id": 1})
+        self.create_model("option/12", {"meeting_id": 113, "poll_id": 1})
+        self.create_model("option/13", {"meeting_id": 113, "poll_id": 1})
+        self.create_model(
+            "poll/1",
+            {
+                "title": "my test poll",
+                "option_ids": [11, 12, 13],
+                "pollmethod": "YN",
+                "meeting_id": 113,
+                "entitled_group_ids": [1],
+            },
+        )
+        self.create_model("meeting/113", {"name": "my meeting"})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "poll.vote",
+                    "data": [
+                        {
+                            "id": 1,
+                            "user_id": 1,
+                            "value": {"11": "Y", "12": "N"},
                         }
                     ],
                 }
@@ -181,6 +223,7 @@ class PollVoteTest(BaseActionTestCase):
                 "global_abstain": False,
                 "meeting_id": 113,
                 "entitled_group_ids": [1],
+                "pollmethod": "YNA",
             },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
@@ -230,7 +273,12 @@ class PollVoteTest(BaseActionTestCase):
         self.create_model("group/1", {"user_ids": [1]})
         self.create_model(
             "poll/1",
-            {"title": "my test poll", "entitled_group_ids": [1], "meeting_id": 113},
+            {
+                "title": "my test poll",
+                "entitled_group_ids": [1],
+                "meeting_id": 113,
+                "pollmethod": "YNA",
+            },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
         self.update_model(
@@ -251,7 +299,7 @@ class PollVoteTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Option value X is not in Y, N, A" in response.data.decode()
+        assert "Option value X is not in YNA" in response.data.decode()
 
     def test_vote_for_analog_type(self) -> None:
         self.create_model("group/1", {"user_ids": [1]})
@@ -350,6 +398,7 @@ class PollVoteTest(BaseActionTestCase):
                 "global_abstain": False,
                 "meeting_id": 113,
                 "entitled_group_ids": [1],
+                "pollmethod": "YN",
             },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
@@ -457,6 +506,7 @@ class PollVoteTest(BaseActionTestCase):
                 "type": "named",
                 "meeting_id": 113,
                 "entitled_group_ids": [1],
+                "pollmethod": "Y",
             },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
@@ -478,4 +528,4 @@ class PollVoteTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Option value X is not in Y, N, A." in response.data.decode()
+        assert "Option value X is not in Y." in response.data.decode()

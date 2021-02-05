@@ -100,15 +100,19 @@ class PollVote(UpdateAction):
                 raise ActionException(f"Option {key} not in options of the poll.")
             if not (
                 isinstance(value[key], int)
-                or (isinstance(value[key], str) and value[key] in ("Y", "N", "A"))
+                or (
+                    isinstance(value[key], str)
+                    and value[key] in self.poll["pollmethod"]
+                )
             ):
                 raise ActionException(
                     f"Option {key} has not a right value. (int, str)."
                 )
 
     def validate_global_value(self, value: str) -> None:
-        if value not in ["Y", "N", "A"]:
-            raise ActionException(f"Option value {value} is not in Y, N, A.")
+        pollmethod = self.poll["pollmethod"]
+        if value not in pollmethod:
+            raise ActionException(f"Option value {value} is not in {pollmethod}.")
 
     def handle_option_value(self, value: Dict[str, Any], user_id: int) -> None:
         payload: List[Dict[str, Any]] = []
