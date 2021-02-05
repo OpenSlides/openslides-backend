@@ -1,5 +1,6 @@
 from ....models.models import AgendaItem
 from ....shared.filters import FilterOperator
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
@@ -31,9 +32,12 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
         )
 
         # Build agenda tree and get new numbers
-        # TODO: Use roman numbers and prefix from config.
-        numeral_system = "arabic"
-        agenda_number_prefix = None
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), meeting_id),
+            ["agenda_numeral_system", "agenda_number_prefix"],
+        )
+        numeral_system = meeting.get("agenda_numeral_system", "arabic")
+        agenda_number_prefix = meeting.get("agenda_number_prefix")
         result = AgendaTree(agenda_items.values()).number_all(
             numeral_system=numeral_system, agenda_number_prefix=agenda_number_prefix
         )
