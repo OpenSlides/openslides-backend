@@ -7,58 +7,44 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123", "meeting_id": 222},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "username": "username_Xcdfgee"}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("username") == "username_Xcdfgee"
 
     def test_update_all_fields(self) -> None:
-        self.create_model("meeting/222", {"name": "name_meeting222"})
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 222},
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_meeting222"},
+                "user/111": {"username": "username_srtgb123", "meeting_id": 222},
+                "group/7": {"name": "name_group7", "user_ids": [], "meeting_id": 222},
+                "user/7": {},
+            }
         )
-        self.create_model(
-            "group/7", {"name": "name_group7", "user_ids": [], "meeting_id": 222}
-        )
-        self.create_model("user/7", {})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [
-                        {
-                            "id": 111,
-                            "username": "test_Xcdfgee",
-                            "title": "title",
-                            "first_name": "first_name",
-                            "last_name": "last_name",
-                            "is_active": True,
-                            "is_physical_person": False,
-                            "gender": "gender",
-                            "email": "email",
-                            "is_present_in_meeting_ids": [222],
-                            "default_password": "password",
-                            "group_ids": [7],
-                            "vote_delegations_from_ids": [7],
-                            "comment": "comment<iframe></iframe>",
-                            "number": "number",
-                            "structure_level": "level",
-                            "about_me": "<p>about</p><iframe></iframe>",
-                            "vote_weight": "1.000000",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary",
+            {
+                "id": 111,
+                "username": "test_Xcdfgee",
+                "title": "title",
+                "first_name": "first_name",
+                "last_name": "last_name",
+                "is_active": True,
+                "is_physical_person": False,
+                "gender": "gender",
+                "email": "email",
+                "is_present_in_meeting_ids": [222],
+                "default_password": "password",
+                "group_ids": [7],
+                "vote_delegations_from_ids": [7],
+                "comment": "comment<iframe></iframe>",
+                "number": "number",
+                "structure_level": "level",
+                "about_me": "<p>about</p><iframe></iframe>",
+                "vote_weight": "1.000000",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
@@ -98,14 +84,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123", "meeting_id": 222},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "vote_weight": "1.500000"}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 111, "vote_weight": "1.500000"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
@@ -116,14 +96,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123", "meeting_id": 222},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "vote_weight": "10.500000"}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 111, "vote_weight": "10.500000"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
@@ -134,14 +108,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123", "meeting_id": 222},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "vote_weight": 1.5}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 111, "vote_weight": 1.5}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("user/111")
@@ -152,14 +120,8 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123", "meeting_id": 222},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "vote_weight": "a.aaaaaa"}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 111, "vote_weight": "a.aaaaaa"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("user/111")
@@ -170,34 +132,23 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123", "meeting_id": 222},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 112, "username": "username_Xcdfgee"}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 112, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
 
     def test_update_invalid_present_meeting(self) -> None:
-        self.create_model("meeting/1", {})
-        self.create_model("meeting/2", {})
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 1},
+        self.set_models(
+            {
+                "meeting/1": {},
+                "meeting/2": {},
+                "user/111": {"username": "username_srtgb123", "meeting_id": 1},
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "is_present_in_meeting_ids": [2]}],
-                }
-            ],
+        response = self.request(
+            "user.update_temporary", {"id": 111, "is_present_in_meeting_ids": [2]}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -207,21 +158,14 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
 
     def test_update_invalid_group(self) -> None:
-        self.create_model("meeting/1", {})
-        self.create_model("group/2", {"meeting_id": 2})
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 1},
+        self.set_models(
+            {
+                "meeting/1": {},
+                "group/2": {"meeting_id": 2},
+                "user/111": {"username": "username_srtgb123", "meeting_id": 1},
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [{"id": 111, "group_ids": [2]}],
-                }
-            ],
-        )
+        response = self.request("user.update_temporary", {"id": 111, "group_ids": [2]})
         self.assert_status_code(response, 400)
         self.assertIn(
             "requires the following fields to be equal",
@@ -233,24 +177,13 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("group_ids") is None
 
     def test_update_invalid_vote_delegation(self) -> None:
-        self.create_model("meeting/222", {})
-        self.create_model(
-            "user/111",
-            {"meeting_id": 222},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_temporary",
-                    "data": [
-                        {
-                            "id": 111,
-                            "vote_delegations_from_ids": [7],
-                        }
-                    ],
-                }
-            ],
+        self.set_models({"meeting/222": {}, "user/111": {"meeting_id": 222}})
+        response = self.request(
+            "user.update_temporary",
+            {
+                "id": 111,
+                "vote_delegations_from_ids": [7],
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(

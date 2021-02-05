@@ -24,15 +24,7 @@ class PollAnonymizeActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.anonymize",
-                    "data": [{"id": 1}],
-                }
-            ],
-        )
+        response = self.request("poll.anonymize", {"id": 1})
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("description") == "test"

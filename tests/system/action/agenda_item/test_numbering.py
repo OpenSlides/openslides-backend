@@ -30,10 +30,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 },
             }
         )
-        response = self.client.post(
-            "/",
-            json=[{"action": "agenda_item.numbering", "data": [{"meeting_id": 1}]}],
-        )
+        response = self.request("agenda_item.numbering", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         agenda_item_1 = self.get_model("agenda_item/1")
         assert agenda_item_1.get("item_number") == "1"
@@ -68,10 +65,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 },
             }
         )
-        response = self.client.post(
-            "/",
-            json=[{"action": "agenda_item.numbering", "data": [{"meeting_id": 1}]}],
-        )
+        response = self.request("agenda_item.numbering", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         agenda_item_1 = self.get_model("agenda_item/1")
         assert agenda_item_1.get("item_number") == "P- 1"
@@ -106,10 +100,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 },
             }
         )
-        response = self.client.post(
-            "/",
-            json=[{"action": "agenda_item.numbering", "data": [{"meeting_id": 1}]}],
-        )
+        response = self.request("agenda_item.numbering", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         agenda_item_1 = self.get_model("agenda_item/1")
         assert agenda_item_1.get("item_number") == "I"
@@ -119,22 +110,22 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         assert agenda_item_3.get("item_number") == "I.2"
 
     def test_numbering_without_parents(self) -> None:
-        self.create_model(
-            "meeting/1",
-            {"agenda_item_ids": [1, 2]},
+        self.set_models(
+            {
+                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "agenda_item/1": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/2": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+            }
         )
-        self.create_model(
-            "agenda_item/1",
-            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
-        )
-        self.create_model(
-            "agenda_item/2",
-            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "agenda_item.numbering", "data": [{"meeting_id": 1}]}],
-        )
+        response = self.request("agenda_item.numbering", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         agenda_item_1 = self.get_model("agenda_item/1")
         assert agenda_item_1.get("item_number") == "1"
@@ -142,22 +133,22 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         assert agenda_item_2.get("item_number") == "2"
 
     def test_numbering_with_non_public_items(self) -> None:
-        self.create_model(
-            "meeting/1",
-            {"agenda_item_ids": [1, 2]},
+        self.set_models(
+            {
+                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "agenda_item/1": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/2": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.INTERNAL_ITEM,
+                },
+            }
         )
-        self.create_model(
-            "agenda_item/1",
-            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
-        )
-        self.create_model(
-            "agenda_item/2",
-            {"meeting_id": 1, "weight": 10, "type": AgendaItem.INTERNAL_ITEM},
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "agenda_item.numbering", "data": [{"meeting_id": 1}]}],
-        )
+        response = self.request("agenda_item.numbering", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         agenda_item_1 = self.get_model("agenda_item/1")
         assert agenda_item_1.get("item_number") == "1"

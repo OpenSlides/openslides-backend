@@ -76,60 +76,66 @@ class FakeModelCDCDeleteAction(DeleteAction):
 
 class TestDeleteCascade(BaseActionTestCase):
     def test_simple(self) -> None:
-        self.create_model("fake_model_cd_a/1", {"fake_model_cd_b": 1})
-        self.create_model("fake_model_cd_b/1", {"fake_model_cd_a": 1})
-        response = self.client.post(
-            "/",
-            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
+        self.set_models(
+            {
+                "fake_model_cd_a/1": {"fake_model_cd_b": 1},
+                "fake_model_cd_b/1": {"fake_model_cd_a": 1},
+            }
         )
+        response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("fake_model_cd_a/1")
         self.assert_model_deleted("fake_model_cd_b/1")
 
     def test_double_cascade(self) -> None:
-        self.create_model("fake_model_cd_a/1", {"fake_model_cd_b": 1})
-        self.create_model(
-            "fake_model_cd_b/1", {"fake_model_cd_a": 1, "fake_model_cd_c_cascade": 1}
+        self.set_models(
+            {
+                "fake_model_cd_a/1": {"fake_model_cd_b": 1},
+                "fake_model_cd_b/1": {
+                    "fake_model_cd_a": 1,
+                    "fake_model_cd_c_cascade": 1,
+                },
+                "fake_model_cd_c/1": {"fake_model_cd_b_cascaded": 1},
+            }
         )
-        self.create_model("fake_model_cd_c/1", {"fake_model_cd_b_cascaded": 1})
-        response = self.client.post(
-            "/",
-            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
-        )
+        response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("fake_model_cd_a/1")
         self.assert_model_deleted("fake_model_cd_b/1")
         self.assert_model_deleted("fake_model_cd_c/1")
 
     def test_cascade_protect(self) -> None:
-        self.create_model("fake_model_cd_a/1", {"fake_model_cd_b": 1})
-        self.create_model(
-            "fake_model_cd_b/1", {"fake_model_cd_a": 1, "fake_model_cd_c_protect": 1}
+        self.set_models(
+            {
+                "fake_model_cd_a/1": {"fake_model_cd_b": 1},
+                "fake_model_cd_b/1": {
+                    "fake_model_cd_a": 1,
+                    "fake_model_cd_c_protect": 1,
+                },
+                "fake_model_cd_c/1": {"fake_model_cd_b_protected": 1},
+            }
         )
-        self.create_model("fake_model_cd_c/1", {"fake_model_cd_b_protected": 1})
-        response = self.client.post(
-            "/",
-            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
-        )
+        response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 400)
         self.assert_model_exists("fake_model_cd_a/1")
         self.assert_model_exists("fake_model_cd_b/1")
         self.assert_model_exists("fake_model_cd_c/1")
 
     def test_cascade_overwrite_protect(self) -> None:
-        self.create_model(
-            "fake_model_cd_a/1", {"fake_model_cd_b": 1, "fake_model_cd_c": 1}
+        self.set_models(
+            {
+                "fake_model_cd_a/1": {"fake_model_cd_b": 1, "fake_model_cd_c": 1},
+                "fake_model_cd_b/1": {
+                    "fake_model_cd_a": 1,
+                    "fake_model_cd_c_protect": 1,
+                },
+                "fake_model_cd_c/1": {
+                    "fake_model_cd_a": 1,
+                    "fake_model_cd_b_protected": 1,
+                },
+            }
         )
-        self.create_model(
-            "fake_model_cd_b/1", {"fake_model_cd_a": 1, "fake_model_cd_c_protect": 1}
-        )
-        self.create_model(
-            "fake_model_cd_c/1", {"fake_model_cd_a": 1, "fake_model_cd_b_protected": 1}
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "fake_model_cd_a.delete", "data": [{"id": 1}]}],
-        )
+        response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("fake_model_cd_a/1")
         self.assert_model_deleted("fake_model_cd_b/1")

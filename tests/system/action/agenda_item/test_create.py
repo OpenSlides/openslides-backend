@@ -4,17 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class AgendaItemSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [{"content_object_id": "topic/1"}],
-                }
-            ],
-        )
+        self.set_models({"meeting/2": {"name": "test"}, "topic/1": {"meeting_id": 2}})
+        response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/1")
         self.assertFalse(model.get("meta_deleted"))
@@ -31,25 +22,22 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(model.get("agenda_item_id"), 1)
 
     def test_create_more_fields(self) -> None:
-        self.create_model("meeting/1", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 1})
-        self.create_model("agenda_item/42", {"comment": "test", "meeting_id": 1})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {
-                            "content_object_id": "topic/1",
-                            "comment": "test_comment_oiuoitesfd",
-                            "type": AgendaItem.INTERNAL_ITEM,
-                            "parent_id": 42,
-                            "duration": 360,
-                        }
-                    ],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/1": {"name": "test"},
+                "topic/1": {"meeting_id": 1},
+                "agenda_item/42": {"comment": "test", "meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "agenda_item.create",
+            {
+                "content_object_id": "topic/1",
+                "comment": "test_comment_oiuoitesfd",
+                "type": AgendaItem.INTERNAL_ITEM,
+                "parent_id": 42,
+                "duration": 360,
+            },
         )
         self.assert_status_code(response, 200)
         agenda_item = self.get_model("agenda_item/43")
@@ -62,27 +50,22 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert agenda_item.get("level") == 1
 
     def test_create_parent_weight(self) -> None:
-        self.create_model("meeting/1", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 1})
-        self.create_model(
-            "agenda_item/42", {"comment": "test", "meeting_id": 1, "weight": 10}
+        self.set_models(
+            {
+                "meeting/1": {"name": "test"},
+                "topic/1": {"meeting_id": 1},
+                "agenda_item/42": {"comment": "test", "meeting_id": 1, "weight": 10},
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {
-                            "content_object_id": "topic/1",
-                            "comment": "test_comment_oiuoitesfd",
-                            "type": "internal",
-                            "parent_id": 42,
-                            "duration": 360,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "agenda_item.create",
+            {
+                "content_object_id": "topic/1",
+                "comment": "test_comment_oiuoitesfd",
+                "type": "internal",
+                "parent_id": 42,
+                "duration": 360,
+            },
         )
         self.assert_status_code(response, 200)
         agenda_item = self.get_model("agenda_item/43")
@@ -95,31 +78,21 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert agenda_item.get("level") == 1
 
     def test_create_content_object_does_not_exist(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [{"content_object_id": "topic/1"}],
-                }
-            ],
-        )
+        response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_differing_meeting_ids(self) -> None:
-        self.create_model("meeting/1", {})
-        self.create_model("meeting/2", {})
-        self.create_model("topic/1", {"meeting_id": 1})
-        self.create_model("agenda_item/1", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [{"content_object_id": "topic/1", "parent_id": 1}],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/1": {},
+                "meeting/2": {},
+                "topic/1": {"meeting_id": 1},
+                "agenda_item/1": {"meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "agenda_item.create", {"content_object_id": "topic/1", "parent_id": 1}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -130,45 +103,21 @@ class AgendaItemSystemTest(BaseActionTestCase):
 
     def test_create_meeting_does_not_exist(self) -> None:
         self.create_model("topic/1", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [{"content_object_id": "topic/1"}],
-                }
-            ],
-        )
+        response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_no_meeting_id(self) -> None:
-        self.create_model("topic/1", {})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [{"content_object_id": "topic/1"}],
-                }
-            ],
-        )
+        self.create_model("topic/1")
+        response = self.request("agenda_item.create", {"content_object_id": "topic/1"})
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_calc_fields_no_parent_agenda_type(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {"content_object_id": "topic/1", "type": AgendaItem.AGENDA_ITEM}
-                    ],
-                }
-            ],
+        self.set_models({"meeting/2": {"name": "test"}, "topic/1": {"meeting_id": 2}})
+        response = self.request(
+            "agenda_item.create",
+            {"content_object_id": "topic/1", "type": AgendaItem.AGENDA_ITEM},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/1")
@@ -177,18 +126,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 0
 
     def test_create_calc_fields_no_parent_hidden_type(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {"content_object_id": "topic/1", "type": AgendaItem.HIDDEN_ITEM}
-                    ],
-                }
-            ],
+        self.set_models({"meeting/2": {"name": "test"}, "topic/1": {"meeting_id": 2}})
+        response = self.request(
+            "agenda_item.create",
+            {"content_object_id": "topic/1", "type": AgendaItem.HIDDEN_ITEM},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/1")
@@ -197,22 +138,19 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 0
 
     def test_create_calc_fields_no_parent_internal_type(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        self.create_model("topic/2", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {
-                            "content_object_id": "topic/1",
-                            "type": AgendaItem.INTERNAL_ITEM,
-                        }
-                    ],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/2": {"name": "test"},
+                "topic/1": {"meeting_id": 2},
+                "topic/2": {"meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "agenda_item.create",
+            {
+                "content_object_id": "topic/1",
+                "type": AgendaItem.INTERNAL_ITEM,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/1")
@@ -221,33 +159,27 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 0
 
     def test_create_calc_fields_parent_agenda_internal(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        self.create_model(
-            "agenda_item/3",
+        self.set_models(
             {
-                "content_object_id": "topic/2",
-                "type": AgendaItem.AGENDA_ITEM,
-                "meeting_id": 2,
-                "is_internal": False,
-                "is_hidden": False,
-                "level": 0,
-            },
+                "meeting/2": {"name": "test"},
+                "topic/1": {"meeting_id": 2},
+                "agenda_item/3": {
+                    "content_object_id": "topic/2",
+                    "type": AgendaItem.AGENDA_ITEM,
+                    "meeting_id": 2,
+                    "is_internal": False,
+                    "is_hidden": False,
+                    "level": 0,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {
-                            "content_object_id": "topic/1",
-                            "type": AgendaItem.INTERNAL_ITEM,
-                            "parent_id": 3,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "agenda_item.create",
+            {
+                "content_object_id": "topic/1",
+                "type": AgendaItem.INTERNAL_ITEM,
+                "parent_id": 3,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/4")
@@ -256,32 +188,26 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 1
 
     def test_create_calc_fields_parent_internal_internal(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        self.create_model(
-            "agenda_item/3",
+        self.set_models(
             {
-                "content_object_id": "topic/2",
-                "type": AgendaItem.INTERNAL_ITEM,
-                "meeting_id": 2,
-                "is_internal": True,
-                "is_hidden": False,
-            },
+                "meeting/2": {"name": "test"},
+                "topic/1": {"meeting_id": 2},
+                "agenda_item/3": {
+                    "content_object_id": "topic/2",
+                    "type": AgendaItem.INTERNAL_ITEM,
+                    "meeting_id": 2,
+                    "is_internal": True,
+                    "is_hidden": False,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {
-                            "content_object_id": "topic/1",
-                            "type": AgendaItem.INTERNAL_ITEM,
-                            "parent_id": 3,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "agenda_item.create",
+            {
+                "content_object_id": "topic/1",
+                "type": AgendaItem.INTERNAL_ITEM,
+                "parent_id": 3,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/4")
@@ -290,33 +216,27 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("level") == 1
 
     def test_create_calc_fields_parent_internal_hidden(self) -> None:
-        self.create_model("meeting/2", {"name": "test"})
-        self.create_model("topic/1", {"meeting_id": 2})
-        self.create_model(
-            "agenda_item/3",
+        self.set_models(
             {
-                "content_object_id": "topic/2",
-                "type": AgendaItem.INTERNAL_ITEM,
-                "meeting_id": 2,
-                "is_internal": True,
-                "is_hidden": False,
-                "level": 12,
-            },
+                "meeting/2": {"name": "test"},
+                "topic/1": {"meeting_id": 2},
+                "agenda_item/3": {
+                    "content_object_id": "topic/2",
+                    "type": AgendaItem.INTERNAL_ITEM,
+                    "meeting_id": 2,
+                    "is_internal": True,
+                    "is_hidden": False,
+                    "level": 12,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "agenda_item.create",
-                    "data": [
-                        {
-                            "content_object_id": "topic/1",
-                            "type": AgendaItem.HIDDEN_ITEM,
-                            "parent_id": 3,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "agenda_item.create",
+            {
+                "content_object_id": "topic/1",
+                "type": AgendaItem.HIDDEN_ITEM,
+                "parent_id": 3,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("agenda_item/4")

@@ -6,14 +6,8 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.create_model(
             "meeting/110", {"name": "name_zvfbAjpZ", "agenda_item_creation": "always"}
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [{"title": "test_Xcdfgee", "meeting_id": 110}],
-                }
-            ],
+        response = self.request(
+            "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("assignment/1")
@@ -33,14 +27,8 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             "meeting/110",
             {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_yes"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [{"title": "test_Xcdfgee", "meeting_id": 110}],
-                }
-            ],
+        response = self.request(
+            "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("assignment/1")
@@ -55,14 +43,8 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             "meeting/110",
             {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_no"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [{"title": "test_Xcdfgee", "meeting_id": 110}],
-                }
-            ],
+        response = self.request(
+            "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("assignment/1")
@@ -74,20 +56,13 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.create_model(
             "meeting/110", {"name": "name_zvfbAjpZ", "agenda_item_creation": "never"}
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 110,
-                            "agenda_create": True,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "assignment.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 110,
+                "agenda_create": True,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("assignment/1")
@@ -97,20 +72,13 @@ class AssignmentCreateActionTest(BaseActionTestCase):
 
     def test_create_agenda_item_no_default(self) -> None:
         self.create_model("meeting/110", {"agenda_item_creation": "default_no"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 110,
-                            "agenda_create": True,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "assignment.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 110,
+                "agenda_create": True,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("assignment/1")
@@ -124,24 +92,17 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             "meeting/110",
             {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_yes"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 110,
-                            "description": "text_test1",
-                            "open_posts": 12,
-                            "phase": "search",
-                            "default_poll_description": "text_test2",
-                            "number_poll_candidates": True,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "assignment.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 110,
+                "description": "text_test1",
+                "open_posts": 12,
+                "phase": "search",
+                "default_poll_description": "text_test2",
+                "number_poll_candidates": True,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("assignment/1")
@@ -157,10 +118,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
 
     def test_create_empty_data(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[{"action": "assignment.create", "data": [{}]}],
-        )
+        response = self.request("assignment.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['title', 'meeting_id'] properties",
@@ -169,20 +127,13 @@ class AssignmentCreateActionTest(BaseActionTestCase):
 
     def test_create_wrong_field(self) -> None:
         self.create_model("meeting/110", {"name": "name_zvfbAjpZ"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "assignment.create",
-                    "data": [
-                        {
-                            "title": "title_Xcdfgee",
-                            "meeting_id": 110,
-                            "wrong_field": "text_AefohteiF8",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "assignment.create",
+            {
+                "title": "title_Xcdfgee",
+                "meeting_id": 110,
+                "wrong_field": "text_AefohteiF8",
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(

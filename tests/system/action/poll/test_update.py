@@ -5,22 +5,15 @@ from tests.system.action.base import BaseActionTestCase
 class PollUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.create_model("poll/1", {"state": "started", "type": "named"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.update",
-                    "data": [
-                        {
-                            "id": 1,
-                            "title": "test",
-                            "description": "test2",
-                            "onehundred_percent_base": "Y",
-                            "majority_method": "simple",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "poll.update",
+            {
+                "id": 1,
+                "title": "test",
+                "description": "test2",
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
@@ -31,25 +24,18 @@ class PollUpdateActionTest(BaseActionTestCase):
 
     def test_catch_not_allowed(self) -> None:
         self.create_model("poll/1", {"state": "started", "type": "named"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.update",
-                    "data": [
-                        {
-                            "id": 1,
-                            "pollmethod": "Y",
-                            "type": "analog",
-                            "min_votes_amount": 1,
-                            "max_votes_amount": 1,
-                            "global_yes": False,
-                            "global_no": True,
-                            "global_abstain": True,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "poll.update",
+            {
+                "id": 1,
+                "pollmethod": "Y",
+                "type": "analog",
+                "min_votes_amount": 1,
+                "max_votes_amount": 1,
+                "global_yes": False,
+                "global_no": True,
+                "global_abstain": True,
+            },
         )
         self.assert_status_code(response, 400)
         assert (
@@ -60,25 +46,18 @@ class PollUpdateActionTest(BaseActionTestCase):
 
     def test_optional_state_created(self) -> None:
         self.create_model("poll/1", {"state": "created", "type": "named"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.update",
-                    "data": [
-                        {
-                            "id": 1,
-                            "pollmethod": "Y",
-                            "type": "analog",
-                            "min_votes_amount": 1,
-                            "max_votes_amount": 1,
-                            "global_yes": False,
-                            "global_no": True,
-                            "global_abstain": True,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "poll.update",
+            {
+                "id": 1,
+                "pollmethod": "Y",
+                "type": "analog",
+                "min_votes_amount": 1,
+                "max_votes_amount": 1,
+                "global_yes": False,
+                "global_no": True,
+                "global_abstain": True,
+            },
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
@@ -92,15 +71,7 @@ class PollUpdateActionTest(BaseActionTestCase):
 
     def test_not_allowed_for_analog(self) -> None:
         self.create_model("poll/1", {"state": "started", "type": "analog"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.update",
-                    "data": [{"id": 1, "entitled_group_ids": []}],
-                }
-            ],
-        )
+        response = self.request("poll.update", {"id": 1, "entitled_group_ids": []})
         self.assert_status_code(response, 400)
         assert (
             "Following options are not allowed in this state and type: "
@@ -109,21 +80,14 @@ class PollUpdateActionTest(BaseActionTestCase):
 
     def test_not_allowed_for_non_analog(self) -> None:
         self.create_model("poll/1", {"state": "started", "type": "named"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.update",
-                    "data": [
-                        {
-                            "id": 1,
-                            "votesvalid": "10.000000",
-                            "votesinvalid": "11.000000",
-                            "votescast": "3.000000",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "poll.update",
+            {
+                "id": 1,
+                "votesvalid": "10.000000",
+                "votesinvalid": "11.000000",
+                "votescast": "3.000000",
+            },
         )
         self.assert_status_code(response, 400)
         assert (

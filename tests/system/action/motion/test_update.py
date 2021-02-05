@@ -15,24 +15,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "amendment_paragraph_$3": "testtesttest",
             },
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.update",
-                    "data": [
-                        {
-                            "id": 111,
-                            "title": "title_bDFsWtKL",
-                            "number": "124",
-                            "text": "text_eNPkDVuq",
-                            "reason": "reason_ukWqADfE",
-                            "modified_final_version": "mfv_ilVvBsUi",
-                            "amendment_paragraph_$": {3: "<html>test</html>"},
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "number": "124",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+                "modified_final_version": "mfv_ilVvBsUi",
+                "amendment_paragraph_$": {3: "<html>test</html>"},
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/111")
@@ -55,10 +48,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "modified_final_version": "blablabla",
             },
         )
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.update", "data": [{"id": 112, "number": "999"}]}],
-        )
+        response = self.request("motion.update", {"id": 112, "number": "999"})
         self.assert_status_code(response, 400)
         model = self.get_model("motion/111")
         assert model.get("number") == "123"
@@ -72,22 +62,15 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "reason": "<b>test2</b>",
             },
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.update",
-                    "data": [
-                        {
-                            "id": 111,
-                            "title": "title_bDFsWtKL",
-                            "number": "124",
-                            "text": "text_eNPkDVuq",
-                            "reason": "reason_ukWqADfE",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "number": "124",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -104,21 +87,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "modified_final_version": "blablabla",
             },
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.update",
-                    "data": [
-                        {
-                            "id": 111,
-                            "title": "title_bDFsWtKL",
-                            "number": "124",
-                            "amendment_paragraph_$": {3: "<html>test</html>"},
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "number": "124",
+                "amendment_paragraph_$": {3: "<html>test</html>"},
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -127,34 +103,29 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_required_reason(self) -> None:
-        self.create_model(
-            "meeting/77", {"name": "name_TZRIHsSD", "motions_reason_required": True}
-        )
-        self.create_model(
-            "motion/111",
+        self.set_models(
             {
-                "title": "title_srtgb123",
-                "number": "123",
-                "modified_final_version": "blablabla",
-                "meeting_id": 77,
-                "reason": "balblabla",
-            },
+                "meeting/77": {
+                    "name": "name_TZRIHsSD",
+                    "motions_reason_required": True,
+                },
+                "motion/111": {
+                    "title": "title_srtgb123",
+                    "number": "123",
+                    "modified_final_version": "blablabla",
+                    "meeting_id": 77,
+                    "reason": "balblabla",
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.update",
-                    "data": [
-                        {
-                            "id": 111,
-                            "title": "title_bDFsWtKL",
-                            "number": "124",
-                            "reason": "",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "number": "124",
+                "reason": "",
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn("Reason is required to update.", response.json["message"])

@@ -28,8 +28,12 @@ class RelationHandlerTest(BaseRelationsTestCase):
 
     def xtest_O2O_replace(self) -> None:
         self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_a/2", {"fake_model_b_oo": 3})
-        self.create_model("fake_model_b/3", {"fake_model_a_oo": 2})
+        self.set_models(
+            {
+                "fake_model_a/2": {"fake_model_b_oo": 3},
+                "fake_model_b/3": {"fake_model_a_oo": 2},
+            }
+        )
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_oo,
@@ -47,8 +51,12 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_O2O_delete(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_oo": 2})
-        self.create_model("fake_model_b/2", {"fake_model_a_oo": 1})
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_oo": 2},
+                "fake_model_b/2": {"fake_model_a_oo": 1},
+            }
+        )
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_oo,
@@ -105,8 +113,12 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_O2M_delete(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_om": 2})
-        self.create_model("fake_model_b/2", {"fake_model_a_mo": [1]})
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_om": 2},
+                "fake_model_b/2": {"fake_model_a_mo": [1]},
+            }
+        )
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_om,
@@ -163,8 +175,12 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_M2M_delete(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_mm": [2]})
-        self.create_model("fake_model_b/2", {"fake_model_a_mm": [1]})
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_mm": [2]},
+                "fake_model_b/2": {"fake_model_a_mm": [1]},
+            }
+        )
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_mm,

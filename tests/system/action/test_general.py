@@ -40,10 +40,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
 
     def test_request_no_existing_action(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[{"action": "fuzzy_action_hamzaeNg4a", "data": [{}]}],
-        )
+        response = self.request("fuzzy_action_hamzaeNg4a", {})
         self.assert_status_code(response, 400)
         self.assertIn(
             "Action fuzzy_action_hamzaeNg4a does not exist.",

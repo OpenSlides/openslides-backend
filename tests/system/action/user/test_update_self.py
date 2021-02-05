@@ -7,19 +7,12 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             "user/1",
             {"username": "username_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update_self",
-                    "data": [
-                        {
-                            "username": "username_Xcdfgee",
-                            "email": "email1@example.com",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "user.update_self",
+            {
+                "username": "username_Xcdfgee",
+                "email": "email1@example.com",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")

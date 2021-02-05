@@ -6,22 +6,15 @@ from tests.system.action.base import BaseActionTestCase
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
         self.create_model("committee/1", {"name": "test_committee"})
-        self.create_model("group/1", {})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "meeting.create",
-                    "data": [
-                        {
-                            "name": "test_name",
-                            "committee_id": 1,
-                            "welcome_title": "test_wel_title",
-                            **datapart,
-                        }
-                    ],
-                }
-            ],
+        self.create_model("group/1")
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "welcome_title": "test_wel_title",
+                **datapart,
+            },
         )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
@@ -33,7 +26,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.basic_test(dict())
 
     def test_check_payload_fields(self) -> None:
-        self.create_model("user/2", {})
+        self.create_model("user/2")
         meeting = self.basic_test(
             {
                 "welcome_text": "htXiSgbj",

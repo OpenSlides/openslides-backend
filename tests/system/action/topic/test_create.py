@@ -4,17 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 
 class TopicSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("topic/41", {})
-        self.create_model("meeting/1", {"name": "test"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "topic.create",
-                    "data": [{"meeting_id": 1, "title": "test"}],
-                }
-            ],
-        )
+        self.set_models({"topic/41": {}, "meeting/1": {"name": "test"}})
+        response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/42")
         topic = self.get_model("topic/42")
@@ -36,9 +27,8 @@ class TopicSystemTest(BaseActionTestCase):
 
     def test_create_multi(self) -> None:
         self.create_model("meeting/1", {"name": "test"})
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_json(
+            [
                 {
                     "action": "topic.create",
                     "data": [
@@ -67,21 +57,14 @@ class TopicSystemTest(BaseActionTestCase):
 
     def test_create_more_fields(self) -> None:
         self.create_model("meeting/1", {"name": "test"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "topic.create",
-                    "data": [
-                        {
-                            "meeting_id": 1,
-                            "title": "test",
-                            "agenda_type": AgendaItem.INTERNAL_ITEM,
-                            "agenda_duration": 60,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "topic.create",
+            {
+                "meeting_id": 1,
+                "title": "test",
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+                "agenda_duration": 60,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/1")
@@ -97,27 +80,22 @@ class TopicSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["weight"], 10000)
 
     def test_create_multiple(self) -> None:
-        self.create_model("meeting/1", {})
-        response = self.client.post(
-            "/",
-            json=[
+        self.create_model("meeting/1")
+        response = self.request_multi(
+            "topic.create",
+            [
                 {
-                    "action": "topic.create",
-                    "data": [
-                        {
-                            "meeting_id": 1,
-                            "title": "A",
-                            "agenda_type": AgendaItem.AGENDA_ITEM,
-                            "agenda_weight": 1000,
-                        },
-                        {
-                            "meeting_id": 1,
-                            "title": "B",
-                            "agenda_type": AgendaItem.AGENDA_ITEM,
-                            "agenda_weight": 1001,
-                        },
-                    ],
-                }
+                    "meeting_id": 1,
+                    "title": "A",
+                    "agenda_type": AgendaItem.AGENDA_ITEM,
+                    "agenda_weight": 1000,
+                },
+                {
+                    "meeting_id": 1,
+                    "title": "B",
+                    "agenda_type": AgendaItem.AGENDA_ITEM,
+                    "agenda_weight": 1001,
+                },
             ],
         )
         self.assert_status_code(response, 200)

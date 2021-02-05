@@ -6,14 +6,9 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
         self.create_model(
             "organisation/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "organisation.update",
-                    "data": [{"id": 3, "name": "testtest", "description": "blablabla"}],
-                }
-            ],
+        response = self.request(
+            "organisation.update",
+            {"id": 3, "name": "testtest", "description": "blablabla"},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("organisation/3")
@@ -24,26 +19,19 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
         self.create_model(
             "organisation/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "organisation.update",
-                    "data": [
-                        {
-                            "id": 3,
-                            "name": "testtest",
-                            "description": "blablabla",
-                            "legal_notice": "GYjDABmD",
-                            "privacy_policy": "test1",
-                            "login_text": "test2",
-                            "theme": "test3",
-                            "custom_translations": "{}",
-                            "reset_password_verbose_errors": False,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "organisation.update",
+            {
+                "id": 3,
+                "name": "testtest",
+                "description": "blablabla",
+                "legal_notice": "GYjDABmD",
+                "privacy_policy": "test1",
+                "login_text": "test2",
+                "theme": "test3",
+                "custom_translations": "{}",
+                "reset_password_verbose_errors": False,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("organisation/3")
@@ -60,14 +48,8 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
         self.create_model(
             "organisation/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "organisation.update",
-                    "data": [{"id": 3, "wrong_name": "testtest"}],
-                }
-            ],
+        response = self.request(
+            "organisation.update", {"id": 3, "wrong_name": "testtest"}
         )
         self.assert_status_code(response, 400)
         assert (

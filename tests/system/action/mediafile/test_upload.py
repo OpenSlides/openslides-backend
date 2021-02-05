@@ -11,21 +11,14 @@ class MediafileUploadActionTest(BaseActionTestCase):
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
         start_time = time()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.upload",
-                    "data": [
-                        {
-                            "title": "title_xXRGTLAJ",
-                            "meeting_id": 110,
-                            "filename": filename,
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": filename,
+                "file": file_content,
+            },
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
@@ -42,21 +35,14 @@ class MediafileUploadActionTest(BaseActionTestCase):
     def test_create_cannot_guess_mimetype(self) -> None:
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
         file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.upload",
-                    "data": [
-                        {
-                            "title": "title_xXRGTLAJ",
-                            "meeting_id": 110,
-                            "filename": "fn_jumbo.tasdde",
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": "fn_jumbo.tasdde",
+                "file": file_content,
+            },
         )
         self.assert_status_code(response, 400)
         assert "Cannot guess mimetype for fn_jumbo.tasdde." in response.json.get(
@@ -66,35 +52,29 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_not_called()
 
     def test_create_access_group(self) -> None:
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
-        self.create_model(
-            "mediafile/10",
+        self.set_models(
             {
-                "title": "title_CgKPfByo",
-                "is_directory": True,
-                "inherited_access_group_ids": [],
-                "is_public": True,
-                "meeting_id": 110,
-            },
+                "meeting/110": {"name": "name_DsJFXoot"},
+                "mediafile/10": {
+                    "title": "title_CgKPfByo",
+                    "is_directory": True,
+                    "inherited_access_group_ids": [],
+                    "is_public": True,
+                    "meeting_id": 110,
+                },
+            }
         )
         file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.upload",
-                    "data": [
-                        {
-                            "title": "title_xXRGTLAJ",
-                            "meeting_id": 110,
-                            "filename": "fn_jumbo.txt",
-                            "file": file_content,
-                            "parent_id": 10,
-                            "access_group_ids": [],
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": "fn_jumbo.txt",
+                "file": file_content,
+                "parent_id": 10,
+                "access_group_ids": [],
+            },
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/11")
@@ -110,21 +90,14 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
         filename = "test.pdf"
         file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.upload",
-                    "data": [
-                        {
-                            "title": "title_xXRGTLAJ",
-                            "meeting_id": 110,
-                            "filename": filename,
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": filename,
+                "file": file_content,
+            },
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
@@ -140,23 +113,16 @@ class MediafileUploadActionTest(BaseActionTestCase):
         used_mimetype = "application/x-shockwave-flash"
         raw_content = b"raising upload error in mock"
         file_content = base64.b64encode(raw_content).decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.upload",
-                    "data": [
-                        {
-                            "title": "title_xXRGTLAJ",
-                            "meeting_id": 110,
-                            "filename": filename,
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": filename,
+                "file": file_content,
+            },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Mocked error on media service upload", str(response.data))
+        self.assertIn("Mocked error on media service upload", response.json["message"])
         self.assert_model_not_exists("resource/1")
         self.media.upload_mediafile.assert_called_with(file_content, 1, used_mimetype)
