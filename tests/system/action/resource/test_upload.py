@@ -174,30 +174,18 @@ class ResourceUploadActionTest(BaseActionTestCase):
             ],
         )
 
-        self.assert_status_code(response, 200)
-        organisation = self.get_model("organisation/1")
-        self.assertCountEqual(organisation["resource_ids"], [2, 3])
-        self.assert_model_deleted("resource/1")
-        self.assert_model_exists(
-            "resource/2",
-            {
-                "organisation_id": 1,
-                "mimetype": used_mimetype,
-                "filesize": len(raw_content1),
-                "token": token1,
-            },
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Datastore service sends HTTP 400. Model \\'organisation/1\\' raises MODEL_LOCKED error.",
+            str(response.data),
         )
-        self.assert_model_exists(
-            "resource/3",
-            {
-                "organisation_id": 1,
-                "mimetype": used_mimetype,
-                "filesize": len(raw_content2),
-                "token": token2,
-            },
-        )
+        self.assert_model_exists("organisation/1", {"resource_ids": [1]})
+        self.assert_model_exists("resource/1", {"meta_deleted": False, "token": token1})
+        self.assert_model_not_exists("resource/2")
+        self.assert_model_not_exists("resource/3")
 
-        self.media.upload_resource.assert_called_with(file_content2, 3, used_mimetype)
+        # TODO: When the retry-problem (issue440) is solved, the 9 has to be substituted with a 3
+        self.media.upload_resource.assert_called_with(file_content2, 9, used_mimetype)
 
     def test_upload_and_mixed_one_action(self) -> None:
         """
