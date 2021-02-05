@@ -67,7 +67,7 @@ class GetUsers(BasePresenter):
         return users
 
     def _check_name(self, user: Dict[str, Any], name: str) -> bool:
-        return user.get(name) is not None and user[name] in self.data["filter"]
+        return user.get(name) is not None and self.data["filter"] in user[name]
 
     def filter_keyword(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if self.data.get("filter"):
