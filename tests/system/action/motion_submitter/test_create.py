@@ -54,7 +54,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['motion_id', 'user_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -81,7 +81,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_not_matching_meeting_ids(self) -> None:
@@ -103,5 +103,5 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match.",
-            response.json.get("message", ""),
+            response.json["message"],
         )

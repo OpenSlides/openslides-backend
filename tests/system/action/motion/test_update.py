@@ -92,7 +92,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot update text, because it was not set in the old values.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_update_amendment_paragraphs_without_previous(self) -> None:
@@ -123,7 +123,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Cannot update amendment_paragraphs, because it was not set in the old values.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_update_required_reason(self) -> None:
@@ -157,4 +157,4 @@ class MotionUpdateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Reason is required to update.", response.json.get("message", ""))
+        self.assertIn("Reason is required to update.", response.json["message"])

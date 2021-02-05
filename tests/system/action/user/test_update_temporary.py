@@ -189,7 +189,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "A temporary user can only be present in its respective meeting.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_exists("user/111", {"is_present_in_meeting_ids": None})
 
@@ -212,7 +212,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "requires the following fields to be equal",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         model = self.get_model("user/111")
         assert model.get("group_$222_ids") is None
@@ -242,7 +242,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "The following users were not found",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         model = self.get_model("user/111")
         assert model.get("vote_delegations_$222_from_ids") is None

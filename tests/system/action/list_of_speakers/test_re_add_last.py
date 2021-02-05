@@ -66,7 +66,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertTrue(
-            "List of speakers 111 has no speakers." in response.json.get("message", "")
+            "List of speakers 111 has no speakers." in response.json["message"]
         )
 
     def test_no_last_speaker(self) -> None:
@@ -88,8 +88,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertTrue(
-            "There is no last speaker that can be re-added."
-            in response.json.get("message", "")
+            "There is no last speaker that can be re-added." in response.json["message"]
         )
 
     def test_last_speaker_also_in_waiting_list(self) -> None:
@@ -120,6 +119,5 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertTrue(
-            "User 42 is already on the list of speakers."
-            in response.json.get("message", "")
+            "User 42 is already on the list of speakers." in response.json["message"]
         )

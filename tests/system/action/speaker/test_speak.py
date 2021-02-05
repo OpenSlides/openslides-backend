@@ -69,6 +69,4 @@ class SpeakerSpeakTester(BaseActionTestCase):
             json=[{"action": "speaker.speak", "data": [{"id": 890}]}],
         )
         self.assert_status_code(response, 400)
-        self.assertTrue(
-            "The list of speakers is closed." in response.json.get("message", "")
-        )
+        self.assertTrue("The list of speakers is closed." in response.json["message"])

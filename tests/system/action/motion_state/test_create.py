@@ -63,7 +63,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['name', 'workflow_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -79,7 +79,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['name', 'workflow_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_forbidden_value_1(self) -> None:
@@ -97,7 +97,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data.css_class must be one of ['grey', 'red', 'green', 'lightblue', 'yellow']",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_forbidden_value_2(self) -> None:
@@ -119,5 +119,5 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data.restrictions[0] must be one of ['motion.can_see_internal', 'motion.can_manage_metadata', 'motion.can_manage', 'is_submitter']",
-            response.json.get("message", ""),
+            response.json["message"],
         )

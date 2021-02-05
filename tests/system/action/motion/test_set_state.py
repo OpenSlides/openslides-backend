@@ -111,5 +111,5 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "State '76' is not in next or previous states of the state '77'.",
-            response.json.get("message", ""),
+            response.json["message"],
         )

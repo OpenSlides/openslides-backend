@@ -56,7 +56,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['username'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -72,5 +72,5 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )

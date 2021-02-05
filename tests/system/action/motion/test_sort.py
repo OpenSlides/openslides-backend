@@ -15,7 +15,7 @@ class MotionSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Actions handled successfully" in response.json.get("message", "")
+        assert "Actions handled successfully" in response.json["message"]
         model_22 = self.get_model("motion/22")
         assert model_22.get("sort_weight") == 2
         assert model_22.get("sort_parent_id") is None
@@ -35,7 +35,7 @@ class MotionSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Did not recieve 2 ids, got 1" in response.json.get("message", "")
+        assert "Did not recieve 2 ids, got 1" in response.json["message"]
 
     def test_sort_complex_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -98,7 +98,7 @@ class MotionSortActionTest(BaseActionTestCase):
             json=[{"action": "motion.sort", "data": [not_tree_data]}],
         )
         self.assert_status_code(response, 400)
-        assert "Duplicate id in sort tree: 12" in response.json.get("message", "")
+        assert "Duplicate id in sort tree: 12" in response.json["message"]
 
     def test_sort_circle_fail(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -122,7 +122,7 @@ class MotionSortActionTest(BaseActionTestCase):
             json=[{"action": "motion.sort", "data": [circle_data]}],
         )
         self.assert_status_code(response, 400)
-        assert "Duplicate id in sort tree: 1" in response.json.get("message", "")
+        assert "Duplicate id in sort tree: 1" in response.json["message"]
 
     def test_small_tree_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -167,4 +167,4 @@ class MotionSortActionTest(BaseActionTestCase):
             json=[{"action": "motion.sort", "data": [data]}],
         )
         self.assert_status_code(response, 400)
-        assert "Id in sort tree does not exist: 111" in response.json.get("message", "")
+        assert "Id in sort tree does not exist: 111" in response.json["message"]

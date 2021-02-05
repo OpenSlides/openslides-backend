@@ -13,12 +13,12 @@ class GeneralActionWSGITester(BaseActionTestCase):
     def test_request_wrong_media_type(self) -> None:
         response = self.client.post("/")
         self.assert_status_code(response, 400)
-        self.assertIn("Wrong media type.", response.json.get("message", ""))
+        self.assertIn("Wrong media type.", response.json["message"])
 
     def test_request_missing_body(self) -> None:
         response = self.client.post("/", content_type="application/json")
         self.assert_status_code(response, 400)
-        self.assertIn("Failed to decode JSON object", response.json.get("message", ""))
+        self.assertIn("Failed to decode JSON object", response.json["message"])
 
     def test_request_fuzzy_body(self) -> None:
         response = self.client.post(
@@ -26,7 +26,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
             json={"fuzzy_key_Eeng7pha3a": "fuzzy_value_eez3Ko6quu"},
         )
         self.assert_status_code(response, 400)
-        self.assertIn("data must be array", response.json.get("message", ""))
+        self.assertIn("data must be array", response.json["message"])
 
     def test_request_fuzzy_body_2(self) -> None:
         response = self.client.post(
@@ -36,7 +36,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data[0] must contain ['action', 'data'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_request_no_existing_action(self) -> None:
@@ -47,7 +47,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Action fuzzy_action_hamzaeNg4a does not exist.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_health_route(self) -> None:

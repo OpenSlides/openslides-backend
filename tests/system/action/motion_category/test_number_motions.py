@@ -154,7 +154,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             'Amendment "85" cannot be numbered, because it\'s lead motion (666) is not in category 111 or any subcategory.',
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_3_categories_5_motions_some_with_lead_motion_ids(self) -> None:
@@ -302,7 +302,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             'Numbering aborted because the motion identifier "prefix_A1" already exists.',
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_sort_categories(self) -> None:

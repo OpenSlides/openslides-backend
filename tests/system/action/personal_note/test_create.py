@@ -28,7 +28,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['content_object_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_no_star_and_no_html(self) -> None:
@@ -46,7 +46,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Can't create personal note without star or note.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_not_unique(self) -> None:
@@ -78,5 +78,5 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "(user_id, content_object_id) must be unique.",
-            response.json.get("message", ""),
+            response.json["message"],
         )

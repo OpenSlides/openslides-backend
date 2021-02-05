@@ -78,7 +78,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "The state does not allow support." in response.json.get("message", "")
+        assert "The state does not allow support." in response.json["message"]
 
     def test_support(self) -> None:
         self.create_model(

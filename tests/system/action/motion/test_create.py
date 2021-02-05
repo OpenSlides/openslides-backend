@@ -112,7 +112,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['meeting_id', 'title'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -135,7 +135,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_workflow_id(self) -> None:
@@ -208,7 +208,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "No matching default workflow defined on this meeting" in str(
-            response.json.get("message", "")
+            response.json["message"]
         )
 
     def test_correct_origin_id_set(self) -> None:
@@ -298,7 +298,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Committee id 52 not in []" in response.json.get("message", "")
+        assert "Committee id 52 not in []" in response.json["message"]
 
     def test_create_missing_text(self) -> None:
         self.create_model("meeting/222", {})
@@ -312,7 +312,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Text is required" in response.json.get("message", "")
+        assert "Text is required" in response.json["message"]
 
     def test_create_with_amendment_paragraphs(self) -> None:
         self.create_model("meeting/222", {})
@@ -351,7 +351,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Reason is required" in response.json.get("message", "")
+        assert "Reason is required" in response.json["message"]
 
     def test_create_lead_motion_and_statute_paragraph_id_given(self) -> None:
         self.create_model("meeting/222", {})

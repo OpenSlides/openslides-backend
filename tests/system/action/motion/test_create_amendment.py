@@ -150,7 +150,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Text or amendment_paragraphs is required in this context." in str(
-            response.json.get("message", "")
+            response.json["message"]
         )
 
     def test_create_text_and_amendment_paragraphs(self) -> None:
@@ -197,4 +197,4 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Reason is required" in response.json.get("message", "")
+        assert "Reason is required" in response.json["message"]

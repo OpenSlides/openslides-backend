@@ -29,7 +29,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['name', 'meeting_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -45,5 +45,5 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['name', 'meeting_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )

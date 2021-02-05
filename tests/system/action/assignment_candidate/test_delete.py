@@ -55,7 +55,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Model 'assignment_candidate/111' does not exist." in str(
-            response.json.get("message", "")
+            response.json["message"]
         )
         model = self.get_model("assignment_candidate/112")
         assert model.get("user_id") == 110
@@ -94,5 +94,5 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("assignment_candidate/111")
         self.assertIn(
             "It is not permitted to remove a candidate from a finished assignment!",
-            response.json.get("message", ""),
+            response.json["message"],
         )

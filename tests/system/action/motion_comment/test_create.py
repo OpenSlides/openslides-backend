@@ -31,7 +31,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['comment', 'motion_id', 'section_id'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -57,5 +57,5 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )

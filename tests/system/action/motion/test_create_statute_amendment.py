@@ -114,4 +114,4 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Reason is required" in response.json.get("message", "")
+        assert "Reason is required" in response.json["message"]

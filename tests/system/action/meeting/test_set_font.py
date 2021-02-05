@@ -37,7 +37,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Cannot set a directory." in response.json.get("message", "")
+        assert "Cannot set a directory." in response.json["message"]
 
     def test_set_font_wrong_no_image(self) -> None:
         self.create_model("meeting/222", {"name": "name_meeting222"})
@@ -55,4 +55,4 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Invalid mimetype" in response.json.get("message", "")
+        assert "Invalid mimetype" in response.json["message"]

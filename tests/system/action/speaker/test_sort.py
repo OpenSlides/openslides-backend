@@ -34,7 +34,7 @@ class SpeakerSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in response.json.get("message", "")
+        assert "Id 32 not in db_instances." in response.json["message"]
 
     def test_sort_another_section_db(self) -> None:
         self.create_model("list_of_speakers/222", {})
@@ -51,4 +51,4 @@ class SpeakerSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in response.json.get("message", "")
+        assert "Additional db_instances found." in response.json["message"]

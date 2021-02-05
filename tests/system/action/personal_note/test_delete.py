@@ -36,6 +36,6 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot delete not owned personal note.", response.json.get("message", "")
+            "Cannot delete not owned personal note.", response.json["message"]
         )
         self.assert_model_exists("personal_note/1")

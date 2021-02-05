@@ -98,7 +98,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "A temporary user can only be present in its respective meeting.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("user/2")
 
@@ -119,7 +119,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "requires the following fields to be equal",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("user/2")
 
@@ -131,7 +131,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['meeting_id', 'username'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("user/2")
 
@@ -155,7 +155,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("user/2")
 
@@ -179,6 +179,6 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "The following users were not found",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("user/2")

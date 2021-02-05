@@ -32,7 +32,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         model = self.get_model("speaker/890")
         self.assertTrue(model.get("end_time") is None)
         self.assertTrue(
-            "Model 'speaker/889' does not exist." in response.json.get("message", "")
+            "Model 'speaker/889' does not exist." in response.json["message"]
         )
 
     def test_existing_speaker(self) -> None:
@@ -56,8 +56,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         self.assertEqual(model.get("begin_time"), 100000)
         self.assertEqual(model.get("end_time"), 200000)
         self.assertTrue(
-            "Speaker 890 is not speaking at the moment."
-            in response.json.get("message", "")
+            "Speaker 890 is not speaking at the moment." in response.json["message"]
         )
 
     def test_existing_speaker_2(self) -> None:
@@ -76,6 +75,5 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         self.assertTrue(model.get("begin_time") is None)
         self.assertTrue(model.get("end_time") is None)
         self.assertTrue(
-            "Speaker 890 is not speaking at the moment."
-            in response.json.get("message", "")
+            "Speaker 890 is not speaking at the moment." in response.json["message"]
         )

@@ -1,4 +1,3 @@
-
 from tests.system.action.base import BaseActionTestCase
 
 

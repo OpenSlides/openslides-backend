@@ -68,7 +68,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Recommendation_label of a recommendation must be set." in str(
-            response.json.get("message", "")
+            response.json["message"]
         )
 
     def test_set_recommendation_not_matching_workflow_ids(self) -> None:

@@ -51,9 +51,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
             json=[{"action": "committee.delete", "data": [{"id": 2}]}],
         )
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "Model 'committee/2' does not exist.", response.json.get("message", "")
-        )
+        self.assertIn("Model 'committee/2' does not exist.", response.json["message"])
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("name"), "committee_testname")
 
@@ -73,5 +71,5 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists(self.COMMITTEE_FQID, {"meeting_ids": [22]})
         self.assertIn(
             "meeting/22",
-            response.json.get("message", ""),
+            response.json["message"],
         )

@@ -33,4 +33,4 @@ class UserGenerateNewPasswordTemporaryActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "User 1 is not temporary" in response.json.get("message", "")
+        assert "User 1 is not temporary" in response.json["message"]

@@ -73,7 +73,7 @@ class BaseSystemTestCase(TestCase):
         raise NotImplementedError()
 
     def assert_status_code(self, response: Response, code: int) -> None:
-        if response.status_code != code and response.json.get("message", ""):
+        if response.status_code != code and response.json["message"]:
             print(response.json)
         self.assertEqual(response.status_code, code)
 

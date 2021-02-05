@@ -74,7 +74,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("committee/1")
 
@@ -85,7 +85,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['organisation_id', 'name'] properties",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("committee/1")
 
@@ -109,7 +109,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Model 'organisation/1' does not exist.",
-            response.json.get("message", ""),
+            response.json["message"],
         )
         self.assert_model_not_exists("committee/1")
 
@@ -134,5 +134,5 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn("does not exist", response.json.get("message", ""))
+        self.assertIn("does not exist", response.json["message"])
         self.assert_model_not_exists("committee/1")
