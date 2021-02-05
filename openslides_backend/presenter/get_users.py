@@ -1,9 +1,10 @@
 from operator import itemgetter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import fastjsonschema
 
 from ..services.datastore.deleted_models_behaviour import DeletedModelsBehaviour
+from ..shared.exceptions import PresenterException
 from ..shared.patterns import Collection
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -34,6 +35,21 @@ get_users_schema = fastjsonschema.compile(
     }
 )
 
+ALLOWED = {
+    "first_name": "",
+    "last_name": "",
+    "username": "",
+    "title": "",
+    "is_active": False,
+    "is_physical_person": False,
+    "email": "",
+    "last_email_send": "",
+    "is_demo_user": False,
+    "number": "",
+    "structure_level": "",
+    "vote_weight": "",
+}
+
 
 @register_presenter("get_users")
 class GetUsers(BasePresenter):
@@ -44,18 +60,33 @@ class GetUsers(BasePresenter):
     schema = get_users_schema
 
     def get_result(self) -> Any:
-        users = self.get_all_users()
+        criteria = self.get_and_check_criteria()
+        users = self.get_all_users(criteria)
         users = self.filter_temp_users(users)
         users = self.filter_keyword(users)
-        users = self.sort_users(users)
+        users = self.sort_users(users, criteria)
         users = self.paginate_users(users)
         return {"users": [user["id"] for user in users]}
 
-    def get_all_users(self) -> List[Dict[str, Any]]:
+    def get_and_check_criteria(self) -> List[str]:
+        default_criteria = ["last_name", "first_name", "username"]
+        criteria = self.data.get("sort_criteria", default_criteria)
+
+        not_allowed = [crit for crit in criteria if crit not in ALLOWED]
+        if not_allowed:
+            raise PresenterException(f"Sort criteria '{not_allowed}' are not allowed")
+        return criteria
+
+    def get_all_users(self, criteria: List[str]) -> List[Dict[str, Any]]:
+        fields = criteria[:]
+        for name in ("username", "first_name", "last_name"):
+            if name not in fields:
+                fields.append(name)
+
         return list(
             self.datastore.get_all(
                 Collection("user"),
-                ["id", "username", "first_name", "last_name", "meeting_id"],
+                ["id", *fields, "meeting_id"],
                 DeletedModelsBehaviour.NO_DELETED,
             ).values()
         )
@@ -80,26 +111,20 @@ class GetUsers(BasePresenter):
             ]
         return users
 
-    def _str_if_None(self, value: Optional[str]) -> str:
-        if value is None:
-            return ""
-        return value
+    def sort_users(
+        self, users: List[Dict[str, Any]], criteria: List[str]
+    ) -> List[Dict[str, Any]]:
+        users_new = []
+        for user in users:
+            for crit in criteria:
+                if user.get(crit) is None:
+                    user[crit] = ALLOWED[crit]
+            users_new.append(user)
 
-    def sort_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-
-        users = [
-            {
-                "username": self._str_if_None(user.get("username")),
-                "id": user["id"],
-                "first_name": self._str_if_None(user.get("first_name")),
-                "last_name": self._str_if_None(user.get("last_name")),
-            }
-            for user in users
-        ]
-        default_criteria = ["last_name", "first_name", "username"]
-        criteria = self.data.get("sort_criteria", default_criteria)
-        users.sort(key=itemgetter(*criteria), reverse=self.data.get("reverse", False))
-        return users
+        users_new.sort(
+            key=itemgetter(*criteria), reverse=self.data.get("reverse", False)
+        )
+        return users_new
 
     def paginate_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         start_index = self.data.get("start_index", 0)
