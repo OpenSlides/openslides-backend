@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -14,10 +14,6 @@ from ..agenda_item.agenda_creation import (
 )
 from ..agenda_item.create import AgendaItemCreate
 from ..motion_submitter.create import MotionSubmitterCreateAction
-from .amendment_paragraphs_mixin import (
-    AmendmentParagraphsMixin,
-    amendment_paragraphs_schema,
-)
 from .sequential_numbers_mixin import SequentialNumbersMixin
 from .set_number_mixin import SetNumberMixin
 
@@ -26,7 +22,6 @@ from .set_number_mixin import SetNumberMixin
 class MotionCreate(
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
-    AmendmentParagraphsMixin,
     SequentialNumbersMixin,
     SetNumberMixin,
 ):
@@ -52,12 +47,12 @@ class MotionCreate(
             "lead_motion_id",
             "statute_paragraph_id",
             "reason",
-            "amendment_paragraph_$",
         ],
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
             "submitter_ids": id_list_schema,
+            **Motion().get_property("amendment_paragraph_$", POSITIVE_NUMBER_REGEX),
             **agenda_creation_properties,
         },
     )

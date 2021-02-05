@@ -53,7 +53,7 @@ class Field:
         """
         return dict(**self.constraints)
 
-    def get_payload_schema(self) -> Schema:
+    def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
         """ Calls get_schema by default. """
         return self.get_schema()
 
@@ -281,8 +281,14 @@ class BaseTemplateField(Field):
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
 
-    def get_payload_schema(self) -> Schema:
-        return {"type": "object", "additionalProperties": super().get_schema()}
+    def get_payload_schema(
+        self, replacement_pattern: str = ".*", *args: Any, **kwargs: Any
+    ) -> Schema:
+        return {
+            "type": "object",
+            "patternProperties": {replacement_pattern: super().get_schema()},
+            "additionalProperties": False,
+        }
 
     def get_regex(self) -> str:
         """
@@ -338,12 +344,8 @@ class BaseTemplateField(Field):
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    def get_payload_schema(self) -> Schema:
-        return {
-            "type": "object",
-            "patternProperties": {ID_REGEX: super().get_schema()},
-            "additionalProperties": False,
-        }
+    def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
+        return super().get_payload_schema(ID_REGEX)
 
 
 class TemplateRelationField(BaseTemplateRelationField, RelationField):

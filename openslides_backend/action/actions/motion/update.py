@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,8 +23,10 @@ class MotionUpdate(UpdateAction):
             "text",
             "reason",
             "modified_final_version",
-            "amendment_paragraph_$",
         ],
+        additional_optional_fields=Motion().get_property(
+            "amendment_paragraph_$", POSITIVE_NUMBER_REGEX
+        ),
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

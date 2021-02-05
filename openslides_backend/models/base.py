@@ -107,6 +107,14 @@ class Model(metaclass=ModelMetaClass):
             if isinstance(model_field, fields.BaseRelationField):
                 yield model_field
 
+    def get_property(
+        self, field: str, replacement_pattern: Optional[str] = None
+    ) -> fields.Schema:
+        """
+        Returns JSON schema for the given field.
+        """
+        return {field: self.get_field(field).get_payload_schema(replacement_pattern)}
+
     def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
         """
         Returns a dictionary of field schemas used for the properties keyword in
@@ -114,5 +122,5 @@ class Model(metaclass=ModelMetaClass):
         """
         properties = {}
         for field in fields:
-            properties[field] = self.get_field(field).get_payload_schema()
+            properties.update(self.get_property(field))
         return properties

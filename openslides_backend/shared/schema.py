@@ -5,8 +5,8 @@ schema_version = "http://json-schema.org/draft-07/schema#"
 
 
 # jsonschemas for ids and fqids
-required_id_schema: Schema = {"type": "integer", "mininum": 1}
-optional_id_schema: Schema = {"type": ["integer", "null"], "mininum": 1}
+required_id_schema: Schema = {"type": "integer", "minimum": 1}
+optional_id_schema: Schema = {"type": ["integer", "null"], "minimum": 1}
 
 required_fqid_schema: Schema = {
     "type": "string",

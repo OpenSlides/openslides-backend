@@ -99,16 +99,28 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraphs": {"0": "text"},
+                "amendment_paragraph_$": {0: "text"},
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 222
-        assert model.get("lead_motion_id") == 1
-        assert model.get("state_id") == 34
-        assert model.get("amendment_paragraphs") is None
+        assert model.get("amendment_paragraph_$0") == "text"
+        assert model.get("amendment_paragraph_$") == ["0"]
+
+    def test_create_with_amendment_paragraphs_string(self) -> None:
+        self.create_model("meeting/222", {})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "lead_motion_id": 1,
+                "amendment_paragraph_$": {"0": "text"},
+            },
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/2")
         assert model.get("amendment_paragraph_$0") == "text"
         assert model.get("amendment_paragraph_$") == ["0"]
 
@@ -121,12 +133,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
                 "meeting_id": 222,
                 "workflow_id": 12,
                 "lead_motion_id": 1,
-                "amendment_paragraphs": {"a4": "text"},
+                "amendment_paragraph_$": {"a4": "text"},
             },
         )
         self.assert_status_code(response, 400)
-        assert "data.amendment_paragraphs must not contain {'a4'} properties" in str(
-            response.json
+        assert "data.amendment_paragraph_$ must not contain {'a4'} properties" in str(
+            response.json["message"]
         )
 
     def test_create_missing_text(self) -> None:
