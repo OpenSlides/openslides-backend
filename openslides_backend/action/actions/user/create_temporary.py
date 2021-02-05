@@ -34,8 +34,14 @@ class UserCreateTemporary(CreateAction, TemporaryUserMixin):
         additional_optional_fields={
             "group_ids": id_list_schema,
             "vote_delegations_from_ids": id_list_schema,
+            "comment": User().comment_.get_schema(),
+            "number": User().number_.get_schema(),
+            "structure_level": User().structure_level_.get_schema(),
+            "about_me": User().about_me_.get_schema(),
+            "vote_weight": User().vote_weight_.get_schema(),
         },
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        return self.update_instance_temporary_user(instance)
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = self.update_instance_temporary_user(instance)
+        return super().base_update_instance(instance)

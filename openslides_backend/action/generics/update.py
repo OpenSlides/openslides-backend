@@ -1,7 +1,5 @@
-from collections import defaultdict
-from typing import Any, Dict, Iterable, Set, Union
+from typing import Any, Dict, Iterable, Union
 
-from ...models.fields import BaseTemplateField
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
@@ -15,51 +13,10 @@ class UpdateAction(Action):
     """
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        # TODO: Check if instance exists in DB and is not deleted. Ensure that object or meta_deleted field is added to locked_fields.
-
         # Primary instance manipulation for defaults and extra fields.
         instance = self.validate_fields(instance)
         instance = self.update_instance(instance)
         instance = self.validate_relation_fields(instance)
-
-        if not isinstance(instance.get("id"), int):
-            raise TypeError(f"Instance {instance} of payload must contain integer id.")
-
-        # Check structured relations and template fields.
-        # TODO: this should be unified with the CreateAction and moved to the relation handling.
-        additional_instance_fields: Dict[str, Set[str]] = defaultdict(set)
-        for field_name in instance:
-            if self.model.has_field(field_name):
-                field = self.model.get_field(field_name)
-                if isinstance(field, BaseTemplateField):
-                    template_field_name = (
-                        field.own_field_name[: field.index]
-                        + "$"
-                        + field.own_field_name[field.index :]
-                    )
-                    template_field_db_value = set(
-                        self.fetch_model(
-                            fqid=FullQualifiedId(self.model.collection, instance["id"]),
-                            mapped_fields=[template_field_name],
-                        ).get(template_field_name, [])
-                    )
-                    replacement = field.get_replacement(field_name)
-                    if instance[field_name]:
-                        if replacement not in template_field_db_value:
-                            additional_instance_fields[template_field_name].update(
-                                template_field_db_value, set([replacement])
-                            )
-                    else:
-                        if replacement in template_field_db_value:
-                            additional_instance_fields[template_field_name].update(
-                                template_field_db_value
-                            )
-                            additional_instance_fields[template_field_name].remove(
-                                replacement
-                            )
-        for k, v in additional_instance_fields.items():
-            # instance.update(...) but with type changing from set to list
-            instance[k] = list(v)
 
         return instance
 

@@ -50,6 +50,11 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                             "default_password": "password",
                             "group_ids": [7],
                             "vote_delegations_from_ids": [7],
+                            "comment": "comment<iframe></iframe>",
+                            "number": "number",
+                            "structure_level": "level",
+                            "about_me": "<p>about</p><iframe></iframe>",
+                            "vote_weight": "1.000000",
                         }
                     ],
                 }
@@ -74,83 +79,91 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_delegations_$222_from_ids") == [7]
         assert model.get("vote_delegations_$_from_ids") == ["222"]
         assert model.get("vote_delegations_from_ids") is None
+        assert model.get("comment_$222") == "comment&lt;iframe&gt;&lt;/iframe&gt;"
+        assert model.get("comment_$") == ["222"]
+        assert model.get("number_$222") == "number"
+        assert model.get("number_$") == ["222"]
+        assert model.get("structure_level_$222") == "level"
+        assert model.get("structure_level_$") == ["222"]
+        assert model.get("about_me_$222") == "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;"
+        assert model.get("about_me_$") == ["222"]
+        assert model.get("vote_weight_$222") == "1.000000"
+        assert model.get("vote_weight_$") == ["222"]
         # check meeting.user_ids
         meeting = self.get_model("meeting/222")
         assert meeting.get("user_ids") == [111]
 
-    # TODO: Re-enabled these tests after vote weight is reimplemented
-    # See https://github.com/OpenSlides/openslides-backend/issues/422
-    # def test_update_vote_weight(self) -> None:
-    #     self.create_model(
-    #         "user/111",
-    #         {"username": "username_srtgb123", "meeting_id": 222},
-    #     )
-    #     response = self.client.post(
-    #         "/",
-    #         json=[
-    #             {
-    #                 "action": "user.update_temporary",
-    #                 "data": [{"id": 111, "vote_weight": "1.500000"}],
-    #             }
-    #         ],
-    #     )
-    #     self.assert_status_code(response, 200)
-    #     model = self.get_model("user/111")
-    #     assert model.get("vote_weight") == "1.500000"
+    def test_update_vote_weight(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update_temporary",
+                    "data": [{"id": 111, "vote_weight": "1.500000"}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert model.get("vote_weight_$222") == "1.500000"
 
-    # def test_update_vote_weight_two_digits(self) -> None:
-    #     self.create_model(
-    #         "user/111",
-    #         {"username": "username_srtgb123", "meeting_id": 222},
-    #     )
-    #     response = self.client.post(
-    #         "/",
-    #         json=[
-    #             {
-    #                 "action": "user.update_temporary",
-    #                 "data": [{"id": 111, "vote_weight": "10.500000"}],
-    #             }
-    #         ],
-    #     )
-    #     self.assert_status_code(response, 200)
-    #     model = self.get_model("user/111")
-    #     assert model.get("vote_weight") == "10.500000"
+    def test_update_vote_weight_two_digits(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update_temporary",
+                    "data": [{"id": 111, "vote_weight": "10.500000"}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert model.get("vote_weight_$222") == "10.500000"
 
-    # def test_update_vote_weight_invalid_number(self) -> None:
-    #     self.create_model(
-    #         "user/111",
-    #         {"username": "username_srtgb123", "meeting_id": 222},
-    #     )
-    #     response = self.client.post(
-    #         "/",
-    #         json=[
-    #             {
-    #                 "action": "user.update_temporary",
-    #                 "data": [{"id": 111, "vote_weight": 1.5}],
-    #             }
-    #         ],
-    #     )
-    #     self.assert_status_code(response, 400)
-    #     model = self.get_model("user/111")
-    #     assert model.get("vote_weight") is None
+    def test_update_vote_weight_invalid_number(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update_temporary",
+                    "data": [{"id": 111, "vote_weight": 1.5}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        model = self.get_model("user/111")
+        assert model.get("vote_weight_$222") is None
 
-    # def test_update_vote_weight_invalid_string(self) -> None:
-    #     self.create_model(
-    #         "user/111",
-    #         {"username": "username_srtgb123", "meeting_id": 222},
-    #     )
-    #     response = self.client.post(
-    #         "/",
-    #         json=[
-    #             {
-    #                 "action": "user.update_temporary",
-    #                 "data": [{"id": 111, "vote_weight": "a.aaaaaa"}],
-    #             }
-    #         ],
-    #     )
-    #     self.assert_status_code(response, 400)
-    #     model = self.get_model("user/111")
-    #     assert model.get("vote_weight") is None
+    def test_update_vote_weight_invalid_string(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123", "meeting_id": 222},
+        )
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "user.update_temporary",
+                    "data": [{"id": 111, "vote_weight": "a.aaaaaa"}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        model = self.get_model("user/111")
+        assert model.get("vote_weight_$222") is None
 
     def test_update_wrong_id(self) -> None:
         self.create_model(

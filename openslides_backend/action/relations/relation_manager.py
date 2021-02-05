@@ -1,9 +1,10 @@
 from typing import Any, Dict, List, cast
 
 from ...models.base import Model, model_registry
-from ...models.fields import BaseRelationField, Field
+from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
-from ...shared.patterns import FullQualifiedField
+from ...shared.exceptions import DatastoreException
+from ...shared.patterns import FullQualifiedField, FullQualifiedId
 from ...shared.typing import ModelMap
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
@@ -33,6 +34,9 @@ class RelationManager:
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
+
+        self.process_template_fields(model, instance)
+
         relations: RelationUpdates = {}
         for field_name in instance:
             if not model.has_field(field_name):
@@ -48,7 +52,9 @@ class RelationManager:
             if not isinstance(field, BaseRelationField):
                 continue
             # ignore template fields, we have to do no relation handling there
-            if "$_" in field_name or field_name[-1] == "$":
+            if isinstance(field, BaseTemplateField) and field.is_template_field(
+                field_name
+            ):
                 continue
 
             handler = SingleRelationHandler(
@@ -79,6 +85,77 @@ class RelationManager:
                 )
 
         return relations
+
+    def process_template_fields(self, model: Model, instance: Dict[str, Any]) -> None:
+        """
+        Processes all template fields in the given instance. They must be given as
+        objects (mapping replacements to values). The corresponding structured fields
+        will be set accordingly.
+        """
+        additional_instance_fields = {}
+
+        # gather all template fields and structured fields in this instance
+        structured_fields = []
+        template_fields = []
+        for field_name in instance:
+            field = model.try_get_field(field_name)
+            if not field or not isinstance(field, BaseTemplateField):
+                continue
+
+            if field.is_template_field(field_name):
+                template_fields.append((field_name, field))
+            else:
+                structured_fields.append((field_name, field))
+
+        def get_template_field_db_value(template_field_name: str) -> List[str]:
+            try:
+                return self.datastore.get(
+                    fqid=FullQualifiedId(model.collection, instance["id"]),
+                    mapped_fields=[template_field_name],
+                ).get(template_field_name, [])
+            except DatastoreException:
+                return []
+
+        def set_structured_field(
+            field: BaseTemplateField, replacement: str, value: Any
+        ) -> None:
+            template_field_name = field.get_template_field_name()
+            structured_field_name = field.get_structured_field_name(replacement)
+            additional_instance_fields[structured_field_name] = value
+            template_field = additional_instance_fields[template_field_name]
+
+            if value is not None:
+                if replacement not in template_field:
+                    template_field.append(replacement)
+            else:
+                if replacement in template_field:
+                    template_field.remove(replacement)
+
+        # process template fields and set the contained structured fields
+        for field_name, field in template_fields:
+            field_value = instance[field_name]
+            assert isinstance(field_value, dict)
+
+            additional_instance_fields[field_name] = get_template_field_db_value(
+                field_name
+            )
+            for replacement, value in field_value.items():
+                set_structured_field(field, str(replacement), value)
+
+        # process directly given structured fields, overwriting any previous ones
+        for field_name, field in structured_fields:
+            value = instance[field_name]
+            template_field_name = field.get_template_field_name()
+            # if this template field wasn't touched before, we have to fetch it from the db
+            if template_field_name not in additional_instance_fields:
+                additional_instance_fields[
+                    template_field_name
+                ] = get_template_field_db_value(template_field_name)
+
+            replacement = field.get_replacement(field_name)
+            set_structured_field(field, replacement, value)
+
+        instance.update(additional_instance_fields)
 
     def call_calculated_field_handlers(
         self,

@@ -9,7 +9,7 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.create",
-                    "data": [{"fake_model_b_$42_ids": [123]}],
+                    "data": [{"fake_model_b_$_ids": {42: [123]}}],
                 }
             ],
         )
@@ -42,7 +42,7 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.create",
-                    "data": [{"fake_model_b_$44_ids": [3453]}],
+                    "data": [{"fake_model_b_$_ids": {44: [3453]}}],
                 }
             ],
         )
@@ -75,7 +75,7 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$44_ids": [3453]}],
+                    "data": [{"id": 234, "fake_model_b_$_ids": {44: [3453]}}],
                 }
             ],
         )
@@ -112,7 +112,7 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             json=[
                 {
                     "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$43_ids": [3453]}],
+                    "data": [{"id": 234, "fake_model_b_$_ids": {43: [3453]}}],
                 }
             ],
         )
@@ -140,12 +140,13 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
         self.create_model(
             "fake_model_b/3452", {"meeting_id": 43, "structured_relation_field": 234}
         )
+        # when setting to empty array, the replacement is not removed from the template field
         response = self.client.post(
             "/",
             json=[
                 {
                     "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$43_ids": []}],
+                    "data": [{"id": 234, "fake_model_b_$_ids": {43: []}}],
                 }
             ],
         )
@@ -154,6 +155,40 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
         model = self.get_model("fake_model_a/234")
         self.assertEqual(model.get("fake_model_b_$42_ids"), [3451])
         self.assertEqual(model.get("fake_model_b_$43_ids"), [])
-        self.assertEqual(set(model.get("fake_model_b_$_ids", [])), set(["42"]))
+        self.assertEqual(model.get("fake_model_b_$_ids"), ["42", "43"])
+        model = self.get_model("fake_model_b/3452")
+        self.assertEqual(model.get("structured_relation_field"), None)
+
+    def test_complex_update_4(self) -> None:
+        self.create_model(
+            "fake_model_a/234",
+            {
+                "fake_model_b_$42_ids": [3451],
+                "fake_model_b_$43_ids": [3452],
+                "fake_model_b_$_ids": ["42", "43"],
+            },
+        )
+        self.create_model(
+            "fake_model_b/3451", {"meeting_id": 42, "structured_relation_field": 234}
+        )
+        self.create_model(
+            "fake_model_b/3452", {"meeting_id": 43, "structured_relation_field": 234}
+        )
+        # when setting to None, the replacement IS removed from the template field
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "fake_model_a.update",
+                    "data": [{"id": 234, "fake_model_b_$_ids": {43: None}}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("fake_model_a/234")
+        model = self.get_model("fake_model_a/234")
+        self.assertEqual(model.get("fake_model_b_$42_ids"), [3451])
+        self.assertNotIn("fake_model_b_$43_ids", model)
+        self.assertEqual(model.get("fake_model_b_$_ids"), ["42"])
         model = self.get_model("fake_model_b/3452")
         self.assertEqual(model.get("structured_relation_field"), None)

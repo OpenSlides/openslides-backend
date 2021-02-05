@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ...models.fields import Field
-from ...shared.exceptions import ActionException
+from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
@@ -17,12 +17,11 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        # Try to fetch db instance to compare if any new ids were added, but only in
-        # non-create cases.
+        # Try to fetch db instance to compare if any new ids were added
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        if not action.endswith("create"):
+        try:
             db_instance = self.datastore.get(fqid, [field_name, "meeting_id"])
-        else:
+        except DatastoreException:
             db_instance = {}
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])

@@ -2,7 +2,7 @@ import re
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
-from ..shared.patterns import Collection, string_to_fqid
+from ..shared.patterns import ID_REGEX, Collection, string_to_fqid
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
@@ -52,6 +52,10 @@ class Field:
         Returns a JSON schema for this field.
         """
         return dict(**self.constraints)
+
+    def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
+        """ Calls get_schema by default. """
+        return self.get_schema()
 
     def extend_schema(self, schema: Schema, **kwargs: Any) -> Schema:
         """
@@ -277,6 +281,17 @@ class BaseTemplateField(Field):
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
 
+    def get_payload_schema(
+        self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
+    ) -> Schema:
+        if not replacement_pattern:
+            replacement_pattern = ".*"
+        return {
+            "type": "object",
+            "patternProperties": {replacement_pattern: super().get_schema()},
+            "additionalProperties": False,
+        }
+
     def get_regex(self) -> str:
         """
         For internal usage. To find the replacement, please use [try_]get_replacement.
@@ -298,6 +313,20 @@ class BaseTemplateField(Field):
             )
         return replacement
 
+    def get_template_field_name(self) -> str:
+        return self.get_structured_field_name("")
+
+    def get_structured_field_name(self, replacement: Any) -> str:
+        return (
+            self.own_field_name[: self.index]
+            + "$"
+            + str(replacement)
+            + self.own_field_name[self.index :]
+        )
+
+    def is_template_field(self, field_name: str) -> bool:
+        return field_name == self.get_template_field_name()
+
     def try_get_replacement(self, field_name: str) -> Optional[str]:
         match = re.match(self.get_regex(), field_name)
         if not match:
@@ -317,7 +346,8 @@ class BaseTemplateField(Field):
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    pass
+    def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
+        return super().get_payload_schema(ID_REGEX)
 
 
 class TemplateRelationField(BaseTemplateRelationField, RelationField):
@@ -337,4 +367,6 @@ class TemplateDecimalField(BaseTemplateField, DecimalField):
 
 
 class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
-    pass
+    def validate(self, value: Any) -> Any:
+        sup: Any = super()
+        return {key: sup.validate(struc) for key, struc in value.items()}

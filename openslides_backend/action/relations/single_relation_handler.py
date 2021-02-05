@@ -128,10 +128,9 @@ class SingleRelationHandler:
         if isinstance(self.field, TemplateRelationField) or isinstance(
             self.field, TemplateRelationListField
         ):
-            if self.field_name.find("$_") > -1 or self.field_name[-1] == "$":
+            if self.field.is_template_field(self.field_name):
                 raise ValueError(
-                    "You can not handle raw template fields here. Use them with "
-                    "populated replacements."
+                    "You can not handle template fields here. Use them with populated replacements."
                 )
 
         add: Set[FullQualifiedId]
@@ -293,12 +292,7 @@ class SingleRelationHandler:
                 # We have a structured tag. Extract the replacement directly from
                 # the field name
                 replacement = self.field.get_replacement(self.field_name)
-            return (
-                field_name[: related_field.index]
-                + "$"
-                + str(replacement)
-                + field_name[related_field.index + 1 :]
-            )
+            return related_field.get_structured_field_name(replacement)
 
     def fetch_model(
         self, fqid: FullQualifiedId, mapped_fields: List[str]

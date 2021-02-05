@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -14,10 +14,6 @@ from ..agenda_item.agenda_creation import (
 )
 from ..agenda_item.create import AgendaItemCreate
 from ..motion_submitter.create import MotionSubmitterCreateAction
-from .amendment_paragraphs_mixin import (
-    AmendmentParagraphsMixin,
-    amendment_paragraphs_schema,
-)
 from .sequential_numbers_mixin import SequentialNumbersMixin
 from .set_number_mixin import SetNumberMixin
 
@@ -26,7 +22,6 @@ from .set_number_mixin import SetNumberMixin
 class MotionCreate(
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
-    AmendmentParagraphsMixin,
     SequentialNumbersMixin,
     SetNumberMixin,
 ):
@@ -56,8 +51,8 @@ class MotionCreate(
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "amendment_paragraphs": amendment_paragraphs_schema,
             "submitter_ids": id_list_schema,
+            **Motion().get_property("amendment_paragraph_$", POSITIVE_NUMBER_REGEX),
             **agenda_creation_properties,
         },
     )
@@ -70,24 +65,24 @@ class MotionCreate(
                 raise ActionException(
                     "You can't give both of lead_motion_id and statute_paragraph_id."
                 )
-            if not instance.get("text") and not instance.get("amendment_paragraphs"):
+            if not instance.get("text") and not instance.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "Text or amendment_paragraphs is required in this context."
+                    "Text or amendment_paragraph_$ is required in this context."
                 )
-            if instance.get("text") and instance.get("amendment_paragraphs"):
+            if instance.get("text") and instance.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "You can't give both of text and amendment_paragraphs"
+                    "You can't give both of text and amendment_paragraph_$"
                 )
-            if instance.get("text") and "amendment_paragraphs" in instance:
-                del instance["amendment_paragraphs"]
-            if instance.get("amendment_paragraphs") and "text" in instance:
+            if instance.get("text") and "amendment_paragraph_$" in instance:
+                del instance["amendment_paragraph_$"]
+            if instance.get("amendment_paragraph_$") and "text" in instance:
                 del instance["text"]
         else:
             if not instance.get("text"):
                 raise ActionException("Text is required")
-            if instance.get("amendment_paragraphs"):
+            if instance.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "You can't give amendment_paragraphs in this context"
+                    "You can't give amendment_paragraph_$ in this context"
                 )
 
         # fetch all needed settings and check reason
@@ -151,9 +146,6 @@ class MotionCreate(
                 raise ActionException(
                     f"Committee id {meeting['committee_id']} not in {committee.get('forward_to_committee_ids', [])}"
                 )
-
-        # replace amendment_paragraphs
-        self.handle_amendment_paragraphs(instance)
 
         # create submitters
         submitter_ids = instance.pop("submitter_ids", None)

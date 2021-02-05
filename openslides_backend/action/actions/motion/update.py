@@ -3,18 +3,14 @@ from typing import Any, Dict
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .amendment_paragraphs_mixin import (
-    AmendmentParagraphsMixin,
-    amendment_paragraphs_schema,
-)
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction, AmendmentParagraphsMixin):
+class MotionUpdate(UpdateAction):
     """
     Action to update motions.
     """
@@ -28,16 +24,16 @@ class MotionUpdate(UpdateAction, AmendmentParagraphsMixin):
             "reason",
             "modified_final_version",
         ],
-        additional_optional_fields={
-            "amendment_paragraphs": amendment_paragraphs_schema
-        },
+        additional_optional_fields=Motion().get_property(
+            "amendment_paragraph_$", POSITIVE_NUMBER_REGEX
+        ),
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["last_modified"] = round(time.time())
         if (
             instance.get("text")
-            or instance.get("amendment_paragraphs")
+            or instance.get("amendment_paragraph_$")
             or instance.get("reason") == ""
         ):
             motion = self.datastore.get(
@@ -50,10 +46,10 @@ class MotionUpdate(UpdateAction, AmendmentParagraphsMixin):
                 raise ActionException(
                     "Cannot update text, because it was not set in the old values."
                 )
-        if instance.get("amendment_paragraphs"):
+        if instance.get("amendment_paragraph_$"):
             if not motion.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "Cannot update amendment_paragraphs, because it was not set in the old values."
+                    "Cannot update amendment_paragraph_$, because it was not set in the old values."
                 )
         if instance.get("reason") == "":
             meeting = self.datastore.get(
@@ -62,6 +58,4 @@ class MotionUpdate(UpdateAction, AmendmentParagraphsMixin):
             )
             if meeting.get("motions_reason_required"):
                 raise ActionException("Reason is required to update.")
-
-        self.handle_amendment_paragraphs(instance)
         return instance
