@@ -8,31 +8,27 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     """
 
     def test_numbering(self) -> None:
-        self.create_model(
-            "meeting/1",
-            {"agenda_item_ids": [1, 2, 3]},
-        )
-        self.create_model(
-            "agenda_item/1",
-            {"meeting_id": 1, "weight": 10, "type": AgendaItem.AGENDA_ITEM},
-        )
-        self.create_model(
-            "agenda_item/2",
+        self.set_models(
             {
-                "meeting_id": 1,
-                "weight": 10,
-                "parent_id": 1,
-                "type": AgendaItem.AGENDA_ITEM,
-            },
-        )
-        self.create_model(
-            "agenda_item/3",
-            {
-                "meeting_id": 1,
-                "parent_id": 1,
-                "weight": 10,
-                "type": AgendaItem.AGENDA_ITEM,
-            },
+                "meeting/1": {"agenda_item_ids": [1, 2, 3]},
+                "agenda_item/1": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/2": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "parent_id": 1,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/3": {
+                    "meeting_id": 1,
+                    "parent_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+            }
         )
         response = self.client.post(
             "/",

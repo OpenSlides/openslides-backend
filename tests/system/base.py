@@ -4,11 +4,11 @@ from unittest import TestCase
 import requests
 import simplejson as json
 from fastjsonschema import validate
-from werkzeug.wrappers import Response
 
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
+from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import (
     DatastoreService,
     DeletedModelsBehaviour,
@@ -17,7 +17,13 @@ from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from tests.util import Client, get_collection_from_fqid, get_fqid, get_id_from_fqid
+from tests.util import (
+    Client,
+    Response,
+    get_collection_from_fqid,
+    get_fqid,
+    get_id_from_fqid,
+)
 
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
@@ -67,8 +73,8 @@ class BaseSystemTestCase(TestCase):
         raise NotImplementedError()
 
     def assert_status_code(self, response: Response, code: int) -> None:
-        if response.status_code != code and response.data:
-            print(response.data)
+        if response.status_code != code and response.json["message"]:
+            print(response.json)
         self.assertEqual(response.status_code, code)
 
     def create_model(
@@ -95,6 +101,24 @@ class BaseSystemTestCase(TestCase):
             locked_fields={},
         )
         self.datastore.write(request)
+
+    def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
+        """
+        Can be used to set multiple models at once, independent of create or update.
+        """
+        response = self.datastore.get_many(
+            [
+                GetManyRequest(get_fqid(fqid).collection, [get_fqid(fqid).id], ["id"])
+                for fqid in models.keys()
+            ]
+        )
+        for fqid_str, model in models.items():
+            fqid = get_fqid(fqid_str)
+            collection_map = response.get(fqid.collection)
+            if collection_map and fqid.id in collection_map:
+                self.update_model(fqid_str, model)
+            else:
+                self.create_model(fqid_str, model)
 
     def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
         model = model_registry[get_collection_from_fqid(fqid)]()

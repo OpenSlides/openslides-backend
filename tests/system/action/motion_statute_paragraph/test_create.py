@@ -29,8 +29,8 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
-            str(response.data),
+            "data must contain ['meeting_id', 'title', 'text'] properties",
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -46,6 +46,6 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'meeting_id\\', \\'title\\', \\'text\\'] properties",
-            str(response.data),
+            "data must contain ['meeting_id', 'title', 'text'] properties",
+            response.json["message"],
         )

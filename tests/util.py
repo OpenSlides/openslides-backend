@@ -3,7 +3,8 @@ from typing import Any
 import requests
 from authlib import COOKIE_NAME, HEADER_NAME
 from werkzeug.test import Client as WerkzeugClient
-from werkzeug.wrappers import BaseResponse
+from werkzeug.wrappers import BaseResponse, CommonResponseDescriptorsMixin
+from werkzeug.wrappers.json import JSONMixin
 
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
@@ -15,11 +16,15 @@ from openslides_backend.shared.patterns import (
 )
 
 
+class Response(JSONMixin, CommonResponseDescriptorsMixin, BaseResponse):
+    pass
+
+
 class Client(WerkzeugClient):
     def __init__(
         self, application: WSGIApplication, username: str = None, password: str = None
     ):
-        super().__init__(application, BaseResponse)
+        super().__init__(application, Response)
 
         # login admin
         if username and password is not None:

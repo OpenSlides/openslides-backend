@@ -35,8 +35,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
-            str(response.data),
+            "data must contain ['list_of_speakers_id', 'user_id'] properties",
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -51,8 +51,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'list_of_speakers_id\\', \\'user_id\\'] properties",
-            str(response.data),
+            "data must contain ['list_of_speakers_id', 'user_id'] properties",
+            response.json["message"],
         )
 
     def test_create_already_exist(self) -> None:

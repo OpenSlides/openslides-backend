@@ -40,5 +40,5 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertTrue(
-            "Model \\'list_of_speakers/111\\' does not exist." in str(response.data)
+            "Model 'list_of_speakers/111' does not exist." in response.json["message"]
         )

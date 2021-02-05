@@ -47,4 +47,4 @@ class UserSetPasswordTemporaryActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        self.assertIn("User 1 is not temporary.", str(response.data))
+        self.assertIn("User 1 is not temporary.", response.json["message"])

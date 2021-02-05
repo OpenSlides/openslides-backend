@@ -1,5 +1,3 @@
-import simplejson as json
-
 from openslides_backend.models.models import AgendaItem
 from tests.system.action.base import BaseActionTestCase
 
@@ -32,10 +30,9 @@ class TopicSystemTest(BaseActionTestCase):
         self.assert_model_exists(
             "list_of_speakers/1", {"content_object_id": "topic/42"}
         )
-        r = json.loads(response.data)
-        self.assertTrue(r["success"])
-        self.assertEqual(r["message"], "Actions handled successfully")
-        self.assertEqual(r["results"], [[{"id": 42}]])
+        self.assertTrue(response.json["success"])
+        self.assertEqual(response.json["message"], "Actions handled successfully")
+        self.assertEqual(response.json["results"], [[{"id": 42}]])
 
     def test_create_multi(self) -> None:
         self.create_model("meeting/1", {"name": "test"})
@@ -60,8 +57,8 @@ class TopicSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model \\'meeting/1\\' raises MODEL_LOCKED error.",
-            str(response.data),
+            "Datastore service sends HTTP 400. Model 'meeting/1' raises MODEL_LOCKED error.",
+            response.json["message"],
         )
         self.assert_model_not_exists("topic/1")
         self.assert_model_not_exists("topic/2")

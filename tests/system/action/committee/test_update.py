@@ -122,8 +122,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("member_ids"), [20])
         self.assertIn(
-            "Model \\'user/30\\' does not exist.",
-            str(response.data),
+            "Model 'user/30' does not exist.",
+            response.json["message"],
         )
 
     def test_update_wrong_manager_ids(self) -> None:
@@ -146,8 +146,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("manager_ids"), [21])
         self.assertIn(
-            "Model \\'user/30\\' does not exist.",
-            str(response.data),
+            "Model 'user/30' does not exist.",
+            response.json["message"],
         )
 
     def test_update_wrong_forward_committee(self) -> None:
@@ -170,8 +170,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertIsNone(model.get("forward_to_committee_ids"))
         self.assertIn(
-            "Model \\'committee/101\\' does not exist.",
-            str(response.data),
+            "Model 'committee/101' does not exist.",
+            response.json["message"],
         )
 
     def test_update_wrong_template_meeting(self) -> None:
@@ -194,8 +194,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertIsNone(model.get("template_meeting_id"))
         self.assertIn(
-            "Model \\'meeting/299\\' does not exist.",
-            str(response.data),
+            "Model 'meeting/299' does not exist.",
+            response.json["message"],
         )
 
     def test_update_wrong_default_meeting(self) -> None:
@@ -218,8 +218,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertIsNone(model.get("default_meeting_id"))
         self.assertIn(
-            "Model \\'meeting/299\\' does not exist.",
-            str(response.data),
+            "Model 'meeting/299' does not exist.",
+            response.json["message"],
         )
 
     def test_update_wrong_id(self) -> None:

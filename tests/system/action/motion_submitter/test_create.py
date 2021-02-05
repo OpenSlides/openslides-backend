@@ -42,7 +42,9 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "(user_id, motion_id) must be unique." in str(response.data)
+        assert "(user_id, motion_id) must be unique." in response.json.get(
+            "message", ""
+        )
 
     def test_create_empty_data(self) -> None:
         response = self.client.post(
@@ -51,8 +53,8 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must contain [\\'motion_id\\', \\'user_id\\'] properties",
-            str(response.data),
+            "data must contain ['motion_id', 'user_id'] properties",
+            response.json["message"],
         )
 
     def test_create_wrong_field(self) -> None:
@@ -78,8 +80,8 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data must not contain {\\'wrong_field\\'} properties",
-            str(response.data),
+            "data must not contain {'wrong_field'} properties",
+            response.json["message"],
         )
 
     def test_create_not_matching_meeting_ids(self) -> None:
@@ -100,6 +102,6 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot create motion_submitter, meeting id of motion and (temporary) user don\\'t match.",
-            str(response.data),
+            "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match.",
+            response.json["message"],
         )

@@ -44,7 +44,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Id 32 not in db_instances." in str(response.data)
+        assert "Id 32 not in db_instances." in response.json["message"]
 
     def test_sort_another_section_db(self) -> None:
         self.create_model("assignment/222", {"title": "title_SNLGsvIV"})
@@ -70,4 +70,4 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Additional db_instances found." in str(response.data)
+        assert "Additional db_instances found." in response.json["message"]

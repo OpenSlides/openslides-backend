@@ -3,7 +3,10 @@ from typing import Union
 
 KEYSEPARATOR = "/"
 
-ID_REGEX = r"[1-9]\d*"
+ID_REGEX_PART = r"[1-9]\d*"
+ID_REGEX = rf"^{ID_REGEX_PART}$"
+POSITIVE_NUMBER_REGEX = fr"^(0|{ID_REGEX_PART})$"
+
 ID_PATTERN = re.compile(ID_REGEX)
 
 
@@ -37,7 +40,7 @@ class FullQualifiedId:
     e. g. motion_change_recommendation/42
     """
 
-    REGEX = KEYSEPARATOR.join(("^[a-z]([a-z_]*[a-z])?", "[1-9][0-9]*$"))
+    REGEX = KEYSEPARATOR.join(("^[a-z]([a-z_]*[a-z])?", f"{ID_REGEX_PART}$"))
 
     def __init__(self, collection: Collection, id: int) -> None:
         self.collection = collection

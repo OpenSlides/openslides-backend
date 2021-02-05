@@ -15,7 +15,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Actions handled successfully" in str(response.data)
+        assert "Actions handled successfully" in response.json["message"]
         model_22 = self.get_model("motion_category/22")
         assert model_22.get("weight") == 2
         assert model_22.get("parent_id") is None
@@ -36,7 +36,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Did not recieve 2 ids, got 1" in str(response.data)
+        assert "Did not recieve 2 ids, got 1" in response.json["message"]
 
     def test_sort_complex_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -105,7 +105,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             json=[{"action": "motion_category.sort", "data": [not_tree_data]}],
         )
         self.assert_status_code(response, 400)
-        assert "Duplicate id in sort tree: 12" in str(response.data)
+        assert "Duplicate id in sort tree: 12" in response.json["message"]
 
     def test_sort_circle_fail(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -129,7 +129,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             json=[{"action": "motion_category.sort", "data": [circle_data]}],
         )
         self.assert_status_code(response, 400)
-        assert "Duplicate id in sort tree: 1" in str(response.data)
+        assert "Duplicate id in sort tree: 1" in response.json["message"]
 
     def test_small_tree_correct(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
@@ -177,7 +177,7 @@ class MotionCategorySortActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        assert "Actions handled successfully" in str(response.data)
+        assert "Actions handled successfully" in response.json["message"]
         category_1 = self.get_model("motion_category/1")
         assert category_1.get("weight") is None
         category_2 = self.get_model("motion_category/2")

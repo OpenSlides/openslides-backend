@@ -90,7 +90,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
-        self.assertIn("Cannot delete a default workflow.", str(response.data))
+        self.assertIn("Cannot delete a default workflow.", response.json["message"])
 
     def test_delete_fail_case_default_2(self) -> None:
         self.create_model(
@@ -111,7 +111,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
-        self.assertIn("Cannot delete a default workflow.", str(response.data))
+        self.assertIn("Cannot delete a default workflow.", response.json["message"])
 
     def test_delete_fail_case_default_3(self) -> None:
         self.create_model(
@@ -133,7 +133,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/111")
-        self.assertIn("Cannot delete a default workflow.", str(response.data))
+        self.assertIn("Cannot delete a default workflow.", response.json["message"])
 
     def test_delete_last_workflow(self) -> None:
         self.create_model(

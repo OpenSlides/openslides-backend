@@ -91,8 +91,8 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "State \\'76\\' is not in next or previous states of the state \\'77\\'."
-            in str(response.data)
+            "State '76' is not in next or previous states of the state '77'."
+            in response.json["message"]
         )
 
     def test_follow_recommendation_missing_recommendation_id(self) -> None:

@@ -1,7 +1,5 @@
 from typing import Any, Dict, Optional, Tuple
 
-import simplejson as json
-
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_presenter_test_application
@@ -22,4 +20,4 @@ class BasePresenterTestCase(BaseSystemTestCase):
         if data:
             payload["data"] = data
         response = self.client.post("/", json=[payload])
-        return (response.status_code, json.loads(response.data)[0])
+        return (response.status_code, response.json[0])

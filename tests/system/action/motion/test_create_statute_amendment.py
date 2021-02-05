@@ -91,7 +91,9 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "give amendment_paragraphs in this context" in str(response.data)
+        assert "give amendment_paragraphs in this context" in response.json.get(
+            "message", ""
+        )
 
     def test_create_reason_missing(self) -> None:
         self.create_model("meeting/222", {"motions_reason_required": True})
@@ -112,4 +114,4 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Reason is required" in str(response.data)
+        assert "Reason is required" in response.json["message"]

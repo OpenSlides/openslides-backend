@@ -34,6 +34,6 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_comment_section/1141")
         assert (
-            'This section has still comments in motion \\\\"17\\\\". Please remove all comments before deletion.'
-            in str(response.data)
+            'This section has still comments in motion "17". Please remove all comments before deletion.'
+            in response.json["message"]
         )

@@ -3,32 +3,26 @@ from tests.system.action.base import BaseActionTestCase
 
 class PollAnonymizeActionTest(BaseActionTestCase):
     def test_anonymize(self) -> None:
-        self.create_model("meeting/1", {})
-        self.create_model(
-            "poll/1",
+        self.set_models(
             {
-                "description": "test",
-                "option_ids": [1],
-                "global_option_id": 2,
-                "meeting_id": 1,
-            },
-        )
-        self.create_model("option/1", {"vote_ids": [1], "meeting_id": 1})
-        self.create_model("option/2", {"vote_ids": [2], "meeting_id": 1})
-        self.create_model(
-            "vote/1", {"user_id": 1, "meeting_id": 1, "delegated_user_id": 1}
-        )
-        self.create_model(
-            "vote/2", {"user_id": 1, "meeting_id": 1, "delegated_user_id": 1}
-        )
-        self.update_model(
-            "user/1",
-            {
-                "vote_$_ids": ["1"],
-                "vote_$1_ids": [1, 2],
-                "vote_delegated_vote_$_ids": ["1"],
-                "vote_delegated_vote_$1_ids": [1, 2],
-            },
+                "meeting/1": {},
+                "poll/1": {
+                    "description": "test",
+                    "option_ids": [1],
+                    "global_option_id": 2,
+                    "meeting_id": 1,
+                },
+                "option/1": {"vote_ids": [1], "meeting_id": 1},
+                "option/2": {"vote_ids": [2], "meeting_id": 1},
+                "vote/1": {"user_id": 1, "meeting_id": 1, "delegated_user_id": 1},
+                "vote/2": {"user_id": 1, "meeting_id": 1, "delegated_user_id": 1},
+                "user/1": {
+                    "vote_$_ids": ["1"],
+                    "vote_$1_ids": [1, 2],
+                    "vote_delegated_vote_$_ids": ["1"],
+                    "vote_delegated_vote_$1_ids": [1, 2],
+                },
+            }
         )
         response = self.client.post(
             "/",

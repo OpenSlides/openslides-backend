@@ -40,4 +40,4 @@ class UserResetPasswordToDefaultTemporaryTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "User 111 is not temporary." in str(response.data)
+        assert "User 111 is not temporary." in response.json["message"]

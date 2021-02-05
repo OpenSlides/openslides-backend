@@ -59,7 +59,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Cannot guess mimetype for fn_jumbo.tasdde." in str(response.data)
+        assert "Cannot guess mimetype for fn_jumbo.tasdde." in response.json.get(
+            "message", ""
+        )
         self.assert_model_not_exists("mediafile/1")
         self.media.upload.assert_not_called()
 

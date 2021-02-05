@@ -9,19 +9,19 @@ class GeneralPresenterWSGITester(BasePresenterTestCase):
     def test_request_wrong_media_type(self) -> None:
         response = self.client.post("/")
         self.assert_status_code(response, 400)
-        self.assertIn("Wrong media type.", str(response.data))
+        self.assertIn("Wrong media type.", response.json["message"])
 
     def test_request_missing_body(self) -> None:
         response = self.client.post("/", content_type="application/json")
         self.assert_status_code(response, 400)
-        self.assertIn("Failed to decode JSON object", str(response.data))
+        self.assertIn("Failed to decode JSON object", response.json["message"])
 
     def test_request_empty(self) -> None:
         response = self.client.post("/", json=[{"presenter": ""}])
         self.assert_status_code(response, 400)
         self.assertIn(
             "data[0].presenter must be longer than or equal to 1 characters",
-            str(response.data),
+            response.json["message"],
         )
 
     def test_request_fuzzy(self) -> None:
@@ -32,5 +32,5 @@ class GeneralPresenterWSGITester(BasePresenterTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Presenter non_existing_presenter does not exist.",
-            str(response.data),
+            response.json["message"],
         )
