@@ -28,7 +28,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                             "text": "text_eNPkDVuq",
                             "reason": "reason_ukWqADfE",
                             "modified_final_version": "mfv_ilVvBsUi",
-                            "amendment_paragraphs": {"3": "<html>test</html>"},
+                            "amendment_paragraph_$": {3: "<html>test</html>"},
                         }
                     ],
                 }
@@ -114,7 +114,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                             "id": 111,
                             "title": "title_bDFsWtKL",
                             "number": "124",
-                            "amendment_paragraphs": {3: "<html>test</html>"},
+                            "amendment_paragraph_$": {3: "<html>test</html>"},
                         }
                     ],
                 }
@@ -122,7 +122,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot update amendment_paragraphs, because it was not set in the old values.",
+            "Cannot update amendment_paragraph_$, because it was not set in the old values.",
             response.json["message"],
         )
 

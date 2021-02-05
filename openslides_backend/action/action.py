@@ -114,11 +114,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for instance in instances:
             instance = self.base_update_instance(instance)
 
-            instance_wre = self.create_write_requests(instance)
-            self.write_requests.extend(instance_wre)
-
             relation_updates = self.handle_relation_updates(instance)
             self.write_requests.extend(relation_updates)
+
+            instance_wre = self.create_write_requests(instance)
+            self.write_requests.extend(instance_wre)
 
         yield from self.process_write_requests()
 

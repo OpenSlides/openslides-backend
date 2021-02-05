@@ -74,7 +74,7 @@ class Model(metaclass=ModelMetaClass):
         Returns the field for the given field name. You may give the
         pythonic field name or even a populated template field.
 
-        E. g. for User the `group__ids` field alais `group_$_ids` field is also found
+        E. g. for User the `group__ids` field alias `group_$_ids` field is also found
         if you look for `group_$42_ids`.
 
         Returns None if field is not found.
@@ -107,12 +107,6 @@ class Model(metaclass=ModelMetaClass):
             if isinstance(model_field, fields.BaseRelationField):
                 yield model_field
 
-    def get_schema(self, field: str) -> fields.Schema:
-        """
-        Returns JSON schema for the given field.
-        """
-        return getattr(self, field).get_schema()
-
     def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
         """
         Returns a dictionary of field schemas used for the properties keyword in
@@ -120,8 +114,5 @@ class Model(metaclass=ModelMetaClass):
         """
         properties = {}
         for field in fields:
-            try:
-                properties[field] = self.get_schema(field)
-            except AttributeError:
-                raise ValueError(f"{field} is not a field of {self}")
+            properties[field] = self.get_field(field).get_payload_schema()
         return properties

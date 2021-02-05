@@ -21,5 +21,5 @@ class MeetingUnsetLogoAction(UpdateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         place = instance.pop("place")
-        instance[f"logo_${place}_id"] = None
+        instance["logo_$_id"] = {place: None}
         return instance

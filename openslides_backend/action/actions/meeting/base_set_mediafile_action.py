@@ -47,6 +47,5 @@ class BaseMeetingSetMediafileAction(UpdateAction):
                 f"Invalid mimetype: {mediafile.get('mimetype')}, allowed are {self.allowed_mimetypes}"
             )
 
-        structured_field = self.field.replace("$", "$" + instance.pop("place"))
-        instance[structured_field] = instance.pop("mediafile_id")
+        instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
         return instance

@@ -23,7 +23,7 @@ class TemporaryUserMixin(Action):
                 User.group__ids, instance, "group_ids", ["meeting_id"]
             )
             group_ids = instance.pop("group_ids")
-            instance[f"group_${instance['meeting_id']}_ids"] = group_ids
+            instance["group_$_ids"] = {instance["meeting_id"]: group_ids}
 
         if "vote_delegations_from_ids" in instance:
             vote_delegations_from_ids = instance.pop("vote_delegations_from_ids")
@@ -38,8 +38,8 @@ class TemporaryUserMixin(Action):
             if len(diff):
                 raise ActionException(f"The following users were not found: {diff}")
 
-            instance[
-                f"vote_delegations_${instance['meeting_id']}_from_ids"
-            ] = vote_delegations_from_ids
+            instance["vote_delegations_$_from_ids"] = {
+                instance["meeting_id"]: vote_delegations_from_ids
+            }
 
         return instance

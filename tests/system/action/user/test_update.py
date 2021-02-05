@@ -75,7 +75,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "user.update",
-                    "data": [{"id": 111, "group_ids": [11, 22]}],
+                    "data": [{"id": 111, "group_$_ids": {1: [11], 2: [22]}}],
                 }
             ],
         )
@@ -103,7 +103,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             json=[
                 {
                     "action": "user.update",
-                    "data": [{"id": 111, "vote_delegations_from_ids": {42: [222]}}],
+                    "data": [{"id": 111, "vote_delegations_$_from_ids": {42: [222]}}],
                 }
             ],
         )

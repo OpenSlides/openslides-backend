@@ -106,22 +106,15 @@ class DeleteAction(Action):
             else:
                 # field.on_delete == OnDelete.SET_NULL
                 if isinstance(field, BaseTemplateRelationField):
-                    raw_field_name = (
-                        field.own_field_name[: field.index]
-                        + "$"
-                        + field.own_field_name[field.index :]
-                    )
+                    template_field_name = field.get_template_field_name()
                     db_instance = self.datastore.get(
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
-                        mapped_fields=[raw_field_name],
+                        mapped_fields=[template_field_name],
                         lock_result=True,
                     )
-                    for replacement in db_instance.get(raw_field_name, []):
-                        structured_field_name = (
-                            field.own_field_name[: field.index]
-                            + "$"
-                            + replacement
-                            + field.own_field_name[field.index :]
+                    for replacement in db_instance.get(template_field_name, []):
+                        structured_field_name = field.get_structured_field_name(
+                            replacement
                         )
                         instance[structured_field_name] = None
                         relation_fields.append((structured_field_name, field))

@@ -1,7 +1,5 @@
-from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Union
+from typing import Any, Dict, Iterable, Union
 
-from ...models.fields import BaseTemplateField
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
@@ -26,26 +24,6 @@ class CreateAction(Action):
         instance = self.update_instance(instance)
         instance = self.validate_relation_fields(instance)
 
-        # Check structured relations and template fields.
-        # TODO: this should be unified with the UpdateAction and moved to the relation handling.
-        additional_instance_fields: Dict[str, List[str]] = defaultdict(list)
-        for field_name in instance:
-            if self.model.has_field(field_name):
-                field = self.model.get_field(field_name)
-                if isinstance(field, BaseTemplateField):
-                    structured_fields = self.get_structured_fields_in_instance(
-                        field, instance
-                    )
-                    for instance_field, replacement in structured_fields:
-                        template_field_name = (
-                            field.own_field_name[: field.index]
-                            + "$"
-                            + field.own_field_name[field.index :]
-                        )
-                        additional_instance_fields[template_field_name].append(
-                            replacement
-                        )
-        instance.update(additional_instance_fields)
         return instance
 
     def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:

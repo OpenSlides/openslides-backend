@@ -52,11 +52,11 @@ class MotionCreate(
             "lead_motion_id",
             "statute_paragraph_id",
             "reason",
+            "amendment_paragraph_$",
         ],
         required_properties=["meeting_id", "title"],
         additional_optional_fields={
             "workflow_id": optional_id_schema,
-            "amendment_paragraphs": amendment_paragraphs_schema,
             "submitter_ids": id_list_schema,
             **agenda_creation_properties,
         },
@@ -70,24 +70,24 @@ class MotionCreate(
                 raise ActionException(
                     "You can't give both of lead_motion_id and statute_paragraph_id."
                 )
-            if not instance.get("text") and not instance.get("amendment_paragraphs"):
+            if not instance.get("text") and not instance.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "Text or amendment_paragraphs is required in this context."
+                    "Text or amendment_paragraph_$ is required in this context."
                 )
-            if instance.get("text") and instance.get("amendment_paragraphs"):
+            if instance.get("text") and instance.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "You can't give both of text and amendment_paragraphs"
+                    "You can't give both of text and amendment_paragraph_$"
                 )
-            if instance.get("text") and "amendment_paragraphs" in instance:
-                del instance["amendment_paragraphs"]
-            if instance.get("amendment_paragraphs") and "text" in instance:
+            if instance.get("text") and "amendment_paragraph_$" in instance:
+                del instance["amendment_paragraph_$"]
+            if instance.get("amendment_paragraph_$") and "text" in instance:
                 del instance["text"]
         else:
             if not instance.get("text"):
                 raise ActionException("Text is required")
-            if instance.get("amendment_paragraphs"):
+            if instance.get("amendment_paragraph_$"):
                 raise ActionException(
-                    "You can't give amendment_paragraphs in this context"
+                    "You can't give amendment_paragraph_$ in this context"
                 )
 
         # fetch all needed settings and check reason
@@ -151,9 +151,6 @@ class MotionCreate(
                 raise ActionException(
                     f"Committee id {meeting['committee_id']} not in {committee.get('forward_to_committee_ids', [])}"
                 )
-
-        # replace amendment_paragraphs
-        self.handle_amendment_paragraphs(instance)
 
         # create submitters
         submitter_ids = instance.pop("submitter_ids", None)

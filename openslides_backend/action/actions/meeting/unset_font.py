@@ -21,5 +21,5 @@ class MeetingUnsetFontAction(UpdateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         place = instance.pop("place")
-        instance[f"font_${place}_id"] = None
+        instance["font_$_id"] = {place: None}
         return instance

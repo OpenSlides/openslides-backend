@@ -65,7 +65,7 @@ class ModelBaseTester(TestCase):
             FakeModel().get_properties("unknown_property")
         self.assertEqual(
             context_manager.exception.args[0],
-            "unknown_property is not a field of fake_model",
+            "Model fake_model has no field unknown_property.",
         )
 
     def test_get_fields_fake_model(self) -> None:
