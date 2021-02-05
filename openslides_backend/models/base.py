@@ -124,3 +124,11 @@ class Model(metaclass=ModelMetaClass):
         for field in fields:
             properties.update(self.get_property(field))
         return properties
+
+    def get_required_fields(self) -> Iterable[fields.Field]:
+        """
+        Yields all required fields
+        """
+        for model_field in self.get_fields():
+            if model_field.required and isinstance(model_field, fields.Field):
+                yield model_field

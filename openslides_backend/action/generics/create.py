@@ -1,5 +1,7 @@
 from typing import Any, Dict, Iterable, Optional
 
+from ...models.fields import BaseTemplateField
+from ...shared.exceptions import RequiredFieldsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
@@ -22,6 +24,7 @@ class CreateAction(Action):
         instance["id"] = new_id
 
         instance = self.update_instance(instance)
+        self.validate_required_fields(instance)
         instance = self.validate_relation_fields(instance)
 
         return instance

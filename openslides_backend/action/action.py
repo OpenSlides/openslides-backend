@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, c
 
 import fastjsonschema
 
-from ..models.base import Model
+from ..models.base import Model, model_registry
 from ..models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
@@ -14,7 +14,11 @@ from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
-from ..shared.exceptions import ActionException, PermissionDenied
+from ..shared.exceptions import (
+    ActionException,
+    PermissionDenied,
+    RequiredFieldsException,
+)
 from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -189,9 +193,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
+            field = getattr(model_registry[fqfield.collection], fqfield.field, None)
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
+                if field and field.required and not data.get("value"):
+                    raise RequiredFieldsException(
+                        f"Backward relation {fqfield.fqid}", [fqfield.field]
+                    )
                 fields = {fqfield.field: data["value"]}
                 if data["type"] == "add":
                     info_text = f"Object attached to {fqfield.collection}"
@@ -199,6 +208,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     info_text = f"Object attachment to {fqfield.collection} reset"
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
+                if field and field.required and not data.get("add"):
+                    raise RequiredFieldsException(
+                        f"Backward relation {fqfield.fqid}", [fqfield.field]
+                    )
                 info_text = "Object updated"
                 fields = None
                 list_fields_tmp = {}

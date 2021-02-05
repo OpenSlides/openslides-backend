@@ -1,5 +1,7 @@
 from typing import Any, Dict, Iterable
 
+from ...models.fields import BaseTemplateField
+from ...shared.exceptions import RequiredFieldsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
@@ -14,6 +16,7 @@ class UpdateAction(Action):
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Primary instance manipulation for defaults and extra fields.
         instance = self.validate_fields(instance)
+        self.validate_required_fields(instance)
         instance = self.update_instance(instance)
         instance = self.validate_relation_fields(instance)
 

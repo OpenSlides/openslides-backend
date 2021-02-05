@@ -53,6 +53,14 @@ class ProtectedModelsException(ActionException):
         self.message = f"You can not delete {own_fqid} because you have to delete the following related models first: {protected_fqids}"
 
 
+class RequiredFieldsException(ActionException):
+    required_fields: List[str]
+
+    def __init__(self, fqid_str: str, required_fields: List[str]) -> None:
+        self.required_fields = required_fields
+        self.message = f"{fqid_str}: You try to set following required fields to an empty value: {required_fields}"
+
+
 class PresenterException(View400Exception):
     pass
 
