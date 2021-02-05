@@ -141,7 +141,9 @@ class ActionHandler(BaseHandler):
                 raise ActionException(f"Action {action_name} does not exist.")
 
             self.logger.debug(f"Perform action {action_name}.")
-            action = ActionClass(self.services, self.datastore, relation_manager)
+            action = ActionClass(
+                self.services, self.datastore, relation_manager, self.logging
+            )
             action_results = action.perform(element["data"], self.user_id)
 
             response_elements: List[Optional[ActionResponseResultsElement]] = []

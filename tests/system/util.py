@@ -1,10 +1,11 @@
-from typing import Type
+from typing import Any, Type
 from unittest.mock import MagicMock, Mock
 
 from openslides_backend.environment import get_environment
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.permission.interface import PermissionService
+from openslides_backend.shared.exceptions import MediaServiceException
 from openslides_backend.shared.interfaces.wsgi import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
 
@@ -28,6 +29,10 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
         logging=MagicMock(),
     )
     mock_media_service = Mock(MediaService)
+    mock_media_service.upload_mediafile = Mock(
+        side_effect=side_effect_for_upload_method
+    )
+    mock_media_service.upload_resource = Mock(side_effect=side_effect_for_upload_method)
     services.media = MagicMock(return_value=mock_media_service)
     mock_permission_service = Mock(PermissionService)
     mock_permission_service.is_allowed = MagicMock(return_value=True)
@@ -40,3 +45,10 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
     application = application_factory.setup()
 
     return application
+
+
+def side_effect_for_upload_method(
+    file: str, id: int, mimetype: str, **kwargs: Any
+) -> None:
+    if mimetype == "application/x-shockwave-flash":
+        raise MediaServiceException("Mocked error on media service upload")

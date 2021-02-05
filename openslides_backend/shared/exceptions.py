@@ -62,5 +62,9 @@ class PermissionException(ServiceException):
     pass
 
 
+class MediaServiceException(ServiceException):
+    pass
+
+
 class PermissionDenied(ViewException):
     status_code = 403

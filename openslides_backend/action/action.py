@@ -27,6 +27,7 @@ from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
 from ..shared.exceptions import ActionException, PermissionDenied
 from ..shared.interfaces.event import Event, EventType, ListFields
+from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
@@ -87,6 +88,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         services: Services,
         datastore: DatastoreService,
         relation_manager: RelationManager,
+        logging: LoggingModule,
         additional_relation_models: ModelMap = {},
     ) -> None:
         self.services = services
@@ -96,6 +98,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.datastore = datastore
         self.relation_manager = relation_manager
         self.additional_relation_models = additional_relation_models
+        self.logging = logging
+        self.logger = logging.getLogger(__name__)
         self.modified_relation_fields = {}
         self.write_requests = []
 
@@ -388,6 +392,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.services,
             self.datastore,
             self.relation_manager,
+            self.logging,
             {**self.additional_relation_models, **additional_relation_models},
         )
         action_results = action.perform(payload, self.user_id)
