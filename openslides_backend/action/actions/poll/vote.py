@@ -128,10 +128,8 @@ class PollVote(UpdateAction):
         user_id: int,
         payload: List[Dict[str, Any]],
     ) -> None:
-        user = self.datastore.get(
-            FullQualifiedId(Collection("user"), user_id), ["vote_weight"]
-        )
-        vote_weight = user.get("vote_weight", "1.000000")
+        vote_weight = self.get_vote_weigth(user_id)
+
         for key in value:
             weight = vote_weight
             used_value = value[key]
@@ -150,6 +148,20 @@ class PollVote(UpdateAction):
                         weight,
                     )
                 )
+
+    def get_vote_weigth(self, user_id: int) -> str:
+        meeting_id = self.poll["meeting_id"]
+        field_id = f"vote_weight_${meeting_id}"
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), user_id),
+            [field_id, "default_vote_weight"],
+        )
+        vote_weight = user.get(field_id)
+        if vote_weight is None:
+            vote_weight = user.get("default_vote_weight")
+        if vote_weight is None:
+            vote_weight = "1.000000"
+        return vote_weight
 
     def check_if_value_allowed_in_pollmethod(self, value_str: str) -> bool:
         """

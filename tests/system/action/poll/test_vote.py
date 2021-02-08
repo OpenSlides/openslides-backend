@@ -12,7 +12,7 @@ class PollVoteTest(BaseActionTestCase):
                 "is_present_in_meeting_ids": [113],
                 "group_$113_ids": [1],
                 "group_$_ids": ["113"],
-                "vote_weight": "2.000000",
+                "vote_weight_$113": "2.000000",
             },
         )
         self.update_model(
@@ -529,3 +529,51 @@ class PollVoteTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Option value X is not in Y." in response.data.decode()
+
+    def test_default_vote_weight(self) -> None:
+        self.create_model("group/1", {"user_ids": [1]})
+        self.create_model("option/11", {"meeting_id": 113, "poll_id": 1})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+                "default_vote_weight": "3.000000",
+            },
+        )
+        self.create_model(
+            "poll/1",
+            {
+                "title": "my test poll",
+                "option_ids": [11],
+                "pollmethod": "Y",
+                "meeting_id": 113,
+                "entitled_group_ids": [1],
+            },
+        )
+        self.create_model("meeting/113", {"name": "my meeting"})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "poll.vote",
+                    "data": [{"id": 1, "user_id": 1, "value": {"11": 1}}],
+                }
+            ],
+        )
+        self.assert_status_code(response, 200)
+        vote = self.get_model("vote/1")
+        assert vote.get("value") == "Y"
+        assert vote.get("option_id") == 11
+        assert vote.get("weight") == "3.000000"
+        assert vote.get("meeting_id") == 113
+        assert vote.get("user_id") == 1
+        option = self.get_model("option/11")
+        assert option.get("vote_ids") == [1]
+        assert option.get("yes") == "3.000000"
+        assert option.get("no") == "0.000000"
+        assert option.get("abstain") == "0.000000"
+        user = self.get_model("user/1")
+        assert user.get("vote_$_ids") == ["113"]
+        assert user.get("vote_$113_ids") == [1]
