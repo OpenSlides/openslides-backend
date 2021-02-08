@@ -25,6 +25,7 @@ class MotionUpdate(UpdateAction):
             "reason",
             "modified_final_version",
             "attachment_ids",
+            "supporter_ids",
         ],
         additional_optional_fields={
             **Motion().get_property("amendment_paragraph_$", POSITIVE_NUMBER_REGEX),
