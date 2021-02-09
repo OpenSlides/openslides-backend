@@ -25,26 +25,36 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         if instance.get("point_of_order", False):
-            weight = self.datastore.min(
+            weight = self.datastore.max(
                 collection=Collection("speaker"),
-                filter=FilterOperator(
-                    "list_of_speakers_id", "=", instance["list_of_speakers_id"]
+                filter=And(
+                    FilterOperator(
+                        "list_of_speakers_id", "=", instance["list_of_speakers_id"]
+                    ),
+                    FilterOperator("point_of_order", "=", True),
+                    FilterOperator("begin_time", "=", None),
+                    FilterOperator("meta_deleted", "=", False),
                 ),
                 field="weight",
                 type="int",
                 lock_result=True,
             )
-            instance["weight"] = -1 if weight is None else weight - 1
+            instance["weight"] = -1 if weight is None else weight
         return instance
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Checks
+        - that only the requesting user can file a point-of-order
         - that a new speaker does not already exist on the list of speaker as
         waiting speaker (with begin_time == None), but allows one additional with point_of_order speaker per user
         - that points_of_order are used in this meeting
         - that user has to be present to be added to the list of speakers
         """
+        if instance.get("point_of_order") and instance.get("user_id") != self.user_id:
+            raise ActionException(
+                f"The requesting user {self.user_id} is not the user {instance.get('user_id')} the point-of-order is filed for."
+            )
         los_fqid = FullQualifiedId(
             Collection("list_of_speakers"), instance["list_of_speakers_id"]
         )

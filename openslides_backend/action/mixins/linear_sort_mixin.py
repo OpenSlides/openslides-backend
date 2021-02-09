@@ -1,7 +1,7 @@
-from typing import List
+from typing import List, Optional
 
 from ...shared.exceptions import ActionException
-from ...shared.filters import FilterOperator
+from ...shared.filters import Filter, FilterOperator
 from ..action import BaseAction
 from ..util.typing import ActionPayload
 
@@ -12,9 +12,15 @@ class LinearSortMixin(BaseAction):
     """
 
     def sort_linear(
-        self, nodes: List, filter_id: int, filter_str: str, weight_key: str = "weight"
+        self,
+        nodes: List,
+        filter_id: int,
+        filter_str: str,
+        weight_key: str = "weight",
+        filter: Optional[Filter] = None,
     ) -> ActionPayload:
-        filter = FilterOperator(filter_str, "=", filter_id)
+        if not filter:
+            filter = FilterOperator(filter_str, "=", filter_id)
         db_instances = self.datastore.filter(
             collection=self.model.collection,
             filter=filter,
