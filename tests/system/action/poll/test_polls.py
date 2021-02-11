@@ -736,11 +736,18 @@ class VotePollBaseTestClass(BaseActionTestCase):
             ),
         )
         self.create_poll()
-        self.create_model("meeting/1", {})
+        self.create_model("meeting/113", {"name": "my meeting"})
+        self.create_model("group/1", {"user_ids": [1]})
         self.create_model("option/1", {"meeting_id": 113, "poll_id": 1})
         self.create_model("option/2", {"meeting_id": 113, "poll_id": 1})
-        self.update_model("user/1", {"is_present_in_meeting_ids": [1]})
-        
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
 
     def create_poll(self) -> None:
         # has to be implemented by subclasses
@@ -2242,8 +2249,9 @@ class VotePollAnonymousN(VotePollBaseTestClass):
                 pollmethod="N",
                 type=Poll.TYPE_PSEUDOANONYMOUS,
                 state=Poll.STATE_CREATED,
-                meeting_id=1,
+                meeting_id=113,
                 option_ids=[1, 2],
+                entitled_group_ids=[1],
             ),
         )
 
@@ -2286,7 +2294,7 @@ class VotePollAnonymousN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request(
             "poll.vote",
-            {"value":{"1": 1, "2": 0}, "id": 1, "user_id": 1},
+            {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
         )
         response = self.request(
             "poll.vote",
@@ -2307,36 +2315,7 @@ class VotePollAnonymousN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request(
             "poll.vote",
-            {"1": -1, "id": 1},
-        )
-        self.assert_status_code(response, 400)
-        self.assert_model_not_exists("vote/1")
-
-    def test_too_many_options(self) -> None:
-        # self.setup_for_multiple_votes()
-        self.start_poll()
-        response = self.request(
-            "poll.vote",
-            {"1": 1, "2": 1, "3": 1, "id": 1},
-        )
-        self.assert_status_code(response, 400)
-        self.assert_model_not_exists("vote/1")
-
-    def test_wrong_options(self) -> None:
-        self.start_poll()
-        response = self.request(
-            "poll.vote",
-            {"value": {"2": 1}, "id": 1, "user_id": 1},
-        )
-        self.assert_status_code(response, 400)
-        self.assert_model_not_exists("vote/1")
-
-    def test_no_permissions(self) -> None:
-        self.start_poll()
-        # self.make_admin_delegate()
-        response = self.request(
-            "poll.vote",
-            {"value": {"1": 1}, "user_id": 1, "id": 1},
+            {"value": {"1": -1}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
@@ -2355,7 +2334,7 @@ class VotePollAnonymousN(VotePollBaseTestClass):
     def test_wrong_state(self) -> None:
         response = self.request(
             "poll.vote",
-            {"1": 1, "id": 1},
+            {"value": {"1": 1}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
@@ -2364,6 +2343,10 @@ class VotePollAnonymousN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request("poll.vote", {})
         self.assert_status_code(response, 400)
+        assert (
+            "data must contain ['id', 'user_id', 'value'] properties"
+            in response.data.decode()
+        )
         self.assert_model_not_exists("vote/1")
         poll = self.get_model("poll/1")
         self.assertNotIn(1, poll.get("voted_ids", []))
@@ -2372,18 +2355,20 @@ class VotePollAnonymousN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request(
             "poll.vote",
-            {"data": [1, 2, 5]},
+            {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
+        assert "data.value must be object or string" in response.data.decode()
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
         self.start_poll()
         response = self.request(
             "poll.vote",
-            {"1": "string", "id": 1},
+            {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
+        assert "Option 1 has not a right value. (int, str)." in response.data.decode()
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
@@ -2399,9 +2384,10 @@ class VotePollAnonymousN(VotePollBaseTestClass):
         self.start_poll()
         response = self.request(
             "poll.vote",
-            {"id": 1, "1": [None]},
+            {"id": 1, "value": {"1": [None]}, "user_id": 1},
         )
         self.assert_status_code(response, 400)
+        assert "Option 1 has not a right value. (int, str)." in response.data.decode()
         self.assert_model_not_exists("vote/1")
 
 
