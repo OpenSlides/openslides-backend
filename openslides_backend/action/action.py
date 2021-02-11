@@ -110,9 +110,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Entrypoint to perform the action.
         """
         self.user_id = user_id
-        self.check_permissions(payload)
         for element in payload:
             self.validate_payload_element(element)
+        self.check_permissions(payload)
 
         instances = self.get_updated_instances(payload)
         for instance in instances:
