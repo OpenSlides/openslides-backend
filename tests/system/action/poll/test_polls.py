@@ -976,255 +976,207 @@ class VotePollBaseTestClass(BaseActionTestCase):
 #         self.assertEqual(option.get("abstain"), "2")
 #
 #
-# class VotePollNamedYNA(VotePollBaseTestClass):
-#     def create_poll(self) -> None:
-#         return Poll.objects.create(
-#             assignment=self.assignment,
-#             title="test_title_OkHAIvOSIcpFnCxbaL6v",
-#             pollmethod=Poll.POLLMETHOD_YNA,
-#             type=Poll.TYPE_NAMED,
-#         )
-#
-#     def test_start_poll(self) -> None:
-#         response = self.request("assignmentpoll-start", args=[self.poll.pk])
-#         self.assert_status_code(response, 200)
-#         poll = self.get_model("poll/1")
-#         self.assertEqual(poll.state, Poll.STATE_STARTED)
-#         self.assertEqual(poll.votesvalid, "0")
-#         self.assertEqual(poll.votesinvalid, "0")
-#         self.assertEqual(poll.votescast, "0")
-#         self.assertFalse(poll.get_votes().exists()
-#
-#     def test_vote(self) -> None:
-#         self.add_candidate()
-#         self.add_candidate()
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y", "2": "N", "3": "A"}},
-#
-#         )
-#         self.assert_status_code(response, 200)
-#         self.assertEqual(Vote.objects.count(), 3)
-#         poll = self.get_model("poll/1")
-#         self.assertEqual(poll.votesvalid, "1")
-#         self.assertEqual(poll.votesinvalid, "0")
-#         self.assertEqual(poll.votescast, "1")
-#         self.assertEqual(poll.state, Poll.STATE_STARTED)
-#         self.assertEqual(poll.amount_users_voted_with_individual_weight(), "1")
-#         self.assertIn(1, poll.get("voted_ids",[]))
-#         option1 = self.get_model("option/1")
-#         option2 = self.get_model("option/2")
-#         option3 = poll.options.get(pk=3)
-#         self.assertEqual(option1.get("yes"), "1")
-#         self.assertEqual(option1.get("no"), "0")
-#         self.assertEqual(option1.get("abstain"), "0")
-#         self.assertEqual(option2.get("yes"), "0")
-#         self.assertEqual(option2.get("no"), "1")
-#         self.assertEqual(option2.get("abstain"), "0")
-#         self.assertEqual(option3.get("yes"), "0")
-#         self.assertEqual(option3.get("no"), "0")
-#         self.assertEqual(option3.get("abstain"), "1")
-#
-#     def test_vote_with_voteweight(self) -> None:
-#         # config["users_activate_vote_weight"] = True
-#         self.admin.vote_weight = weight = "4.2")
-#         self.admin.save()
-#         self.add_candidate()
-#         self.add_candidate()
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y", "2": "N", "3": "A"}},
-#         )
-#         self.assert_status_code(response, 200)
-#         self.assertEqual(Vote.objects.count(), 3)
-#         poll = self.get_model("poll/1")
-#         self.assertEqual(poll.votesvalid, weight)
-#         self.assertEqual(poll.votesinvalid, "0")
-#         self.assertEqual(poll.votescast, "1")
-#         self.assertEqual(poll.state, Poll.STATE_STARTED)
-#         self.assertEqual(poll.amount_users_voted_with_individual_weight(), weight)
-#         option1 = self.get_model("option/1")
-#         option2 = self.get_model("option/2")
-#         option3 = poll.options.get(pk=3)
-#         self.assertEqual(option1.get("yes"), weight)
-#         self.assertEqual(option1.get("no"), "0")
-#         self.assertEqual(option1.get("abstain"), "0")
-#         self.assertEqual(option2.get("yes"), "0")
-#         self.assertEqual(option2.get("no"), weight)
-#         self.assertEqual(option2.get("abstain"), "0")
-#         self.assertEqual(option3.get("yes"), "0")
-#         self.assertEqual(option3.get("no"), "0")
-#         self.assertEqual(option3.get("abstain"), weight)
-#
-#     def test_vote_without_voteweight(self) -> None:
-#         self.admin.vote_weight = "4.2")
-#         self.admin.save()
-#         self.test_vote()
-#
-#     def test_change_vote(self) -> None:
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y"}},
-#
-#         )
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "N"}},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertEqual(Vote.objects.count(), 1)
-#         vote = Vote.objects.get()
-#         self.assertEqual(vote.value, "Y")
-#
-#     def test_option_from_wrong_poll(self) -> None:
-#         self.poll2 = self.create_poll()
-#         self.poll2.create_options()
-#         # start both polls
-#         self.poll.state = Poll.STATE_STARTED
-#         self.poll.save()
-#         self.poll2.state = Poll.STATE_STARTED
-#         self.poll2.save()
-#         option2 = self.poll2.options.get()
-#         # Do request to poll with option2 (which is wrong...)
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {str(option2.id): "Y"}},
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertEqual(Vote.objects.count(), 0)
-#         option = self.poll.options.get()
-#         option2 = self.poll2.options.get()
-#         self.assertEqual(option.get("yes"), "0")
-#         self.assertEqual(option.get("no"), "0")
-#         self.assertEqual(option.get("abstain"), "0")
-#         self.assertEqual(option2.get("yes"), "0")
-#         self.assertEqual(option2.get("no"), "0")
-#         self.assertEqual(option2.get("abstain"), "0")
-#
-#     def test_too_many_options(self) -> None:
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y", "2": "N"}},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_partial_vote(self) -> None:
-#         self.add_candidate()
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y"}},
-#
-#         )
-#         self.assert_status_code(response, 200)
-#         self.assertTrue(self.get_model("vote/1").get_votes().exists())
-#
-#     def test_wrong_options(self) -> None:
-#         self.add_candidate()
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y", "3": "N"}},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_no_permissions(self) -> None:
-#         self.start_poll()
-#         self.make_admin_delegate()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y"}},
-#
-#         )
-#         self.assert_status_code(response, 403)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_anonymous(self) -> None:
-#         self.start_poll()
-#         gclient = self.create_guest_client()
-#         response = grequest(
-#             "poll.vote",
-#             {"value": {"1": "Y"}},
-#
-#         )
-#         self.assert_status_code(response, 403)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_vote_not_present(self) -> None:
-#         self.start_poll()
-#         self.admin.is_present = False
-#         self.admin.save()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "Y"}},
-#
-#         )
-#         self.assert_status_code(response, 403)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_wrong_state(self) -> None:
-#         response = self.request("poll.vote", {"value": {}})
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_missing_data(self) -> None:
-#         self.start_poll()
-#         response = self.request("poll.vote", {"value": {}})
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#         poll = self.get_model("poll/1")
-#         self.assertNotIn(self.admin.id, poll.voted.all())
-#
-#     def test_wrong_data_format(self) -> None:
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": [1, 2, 5]},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_wrong_option_format(self) -> None:
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": "string"}},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_wrong_option_id_type(self) -> None:
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"id": "Y"}},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#     def test_wrong_vote_data(self) -> None:
-#         self.start_poll()
-#         response = self.request(
-#             "poll.vote",
-#             {"value": {"1": [None]}},
-#
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assert_model_not_exists("vote/1")
-#
-#
+class VotePollNamedYNA(VotePollBaseTestClass):
+    def create_poll(self) -> None:
+        self.create_model(
+            "poll/1",
+            dict(
+                content_object_id="assignment/1",
+                title="test_title_OkHAIvOSIcpFnCxbaL6v",
+                pollmethod="YNA",
+                type=Poll.TYPE_NAMED,
+                state=Poll.STATE_CREATED,
+                meeting_id=113,
+                option_ids=[1, 2],
+                entitled_group_ids=[1],
+            ),
+        )
+
+    def test_start_poll(self) -> None:
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
+        self.assertEqual(poll.get("votesvalid"), "0.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "0.000000")
+        self.assert_model_not_exists("vote/1")
+
+    def test_vote(self) -> None:
+        self.add_candidate()
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y", "2": "N", "3": "A"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("vote/1")
+        self.assert_model_exists("vote/2")
+        self.assert_model_exists("vote/3")
+        self.assert_model_not_exists("vote/4")
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("votesvalid"), "1.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "1.000000")
+        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
+        self.assertIn(1, poll.get("voted_ids", []))
+        option1 = self.get_model("option/1")
+        option2 = self.get_model("option/2")
+        option3 = self.get_model("option/3")
+        self.assertEqual(option1.get("yes"), "1.000000")
+        self.assertEqual(option1.get("no"), "0.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "0.000000")
+        self.assertEqual(option2.get("no"), "1.000000")
+        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assertEqual(option3.get("yes"), "0.000000")
+        self.assertEqual(option3.get("no"), "0.000000")
+        self.assertEqual(option3.get("abstain"), "1.000000")
+
+    def test_vote_with_voteweight(self) -> None:
+        # config["users_activate_vote_weight"] = True
+        self.update_model("user/1", dict(vote_weight="4.200000"))
+        self.add_candidate()
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y", "2": "N", "3": "A"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("vote/1")
+        self.assert_model_exists("vote/2")
+        self.assert_model_exists("vote/3")
+        self.assert_model_not_exists("vote/4")
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("votesvalid"), "4.200000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "1.000000")
+        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
+        option1 = self.get_model("option/1")
+        option2 = self.get_model("option/2")
+        option3 = self.get_model("option/3")
+        self.assertEqual(option1.get("yes"), "4.200000")
+        self.assertEqual(option1.get("no"), "0")
+        self.assertEqual(option1.get("abstain"), "0")
+        self.assertEqual(option2.get("yes"), "0")
+        self.assertEqual(option2.get("no"), "4.200000")
+        self.assertEqual(option2.get("abstain"), "0")
+        self.assertEqual(option3.get("yes"), "0")
+        self.assertEqual(option3.get("no"), "0")
+        self.assertEqual(option3.get("abstain"), "4.200000")
+
+    def test_change_vote(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y"}, "id": 1, "user_id": 1},
+        )
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "N"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/2")
+        vote = self.get_model("vote/1")
+        self.assertEqual(vote.get("value"), "Y")
+
+    def test_too_many_options(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y", "2": "N"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_wrong_options(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_no_permissions(self) -> None:
+        self.start_poll()
+        # self.make_admin_delegate()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_anonymous(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y"}, "id": 1, "user_id": 0},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_vote_not_present(self) -> None:
+        self.start_poll()
+        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "Y"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_wrong_state(self) -> None:
+        response = self.request("poll.vote", {"value": {}, "id": 1, "user_id": 1})
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_missing_data(self) -> None:
+        self.start_poll()
+        response = self.request("poll.vote", {"value": {}, "id": 1, "user_id": 1})
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+        poll = self.get_model("poll/1")
+        self.assertNotIn(1, poll.get("voted_ids", []))
+
+    def test_wrong_data_format(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": [1, 2, 5], "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_wrong_option_format(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": "string"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_wrong_option_id_type(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"id": "Y"}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+    def test_wrong_vote_data(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": [None]}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
+
+
 class VotePollNamedY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
