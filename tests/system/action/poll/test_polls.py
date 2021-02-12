@@ -5,505 +5,299 @@ GROUP_ADMIN_PK = 1
 GROUP_DELEGATE_PK = 1
 
 
-# def test_assignment_poll_db_queries():
-#     """
-#     Tests that only the following db queries are done:
-#     * 1 request to get the polls,
-#     * 1 request to get all options for all polls,
-#     * 1 request to get all users for all options (candidates),
-#     * 1 request to get all votes for all options,
-#     * 1 request to get all users for all votes,
-#     * 1 request to get all poll groups,
-#     = 6 queries
-#     """
-#     create_assignment_polls()
-#
-#
-# # assert count_queries(Poll.get_elements)() == 6
-#
-#
-# def test_assignment_vote_db_queries():
-#     """
-#     Tests that only 1 query is done when fetching Votes
-#     """
-#     create_assignment_polls()
-#     # assert count_queries(Vote.get_elements)() == 1
-#
-#
-# def test_assignment_option_db_queries():
-#     """
-#     Tests that only the following db queries are done:
-#     * 1 request to get the options,
-#     * 1 request to get all votes for all options,
-#     = 2 queries
-#     """
-#     create_assignment_polls()
-#     # assert count_queries(Option.get_elements)() == 2
-#
-#
-# def create_assignment_polls():
-#     """
-#     Creates 1 assignment with 3 candidates which has 5 polls in which each candidate got a random amount of votes between 0 and 10 from 3 users
-#     """
-#
-#
-# #    assignment = Assignment(title="test_assignment_ohneivoh9caiB8Yiungo", open_posts=1)
-# #    assignment.save(skip_autoupdate=True)
-# #
-# #    group1 = self.get_model("group/1")
-# #    group2 = self.get_model("group/2")
-# #    for i in range(3):
-# #        user = get_user_model().objects.create_user(
-# #            username=f"test_username_{i}", password="test_password_UOrnlCZMD0lmxFGwEj54"
-# #        )
-# #        assignment.add_candidate(user)
-# #
-# #    for i in range(5):
-# #        poll = Poll(
-# #            assignment=assignment,
-# #            title="test_title_UnMiGzEHmwqplmVBPNEZ",
-# #            pollmethod=Poll.POLLMETHOD_YN,
-# #            type=Poll.TYPE_NAMED,
-# #        )
-# #        poll.save(skip_autoupdate=True)
-# #        poll.create_options(skip_autoupdate=True)
-# #        poll.groups.add(group1)
-# #        poll.groups.add(group2)
-# #
-# #        for j in range(3):
-# #            user = get_user_model().objects.create_user(
-# #                username=f"test_username_{i}{j}",
-# #                password="test_password_kbzj5L8ZtVxBllZzoW6D",
-# #            )
-# #            poll.voted.add(user)
-# #            for option in poll.options.all():
-# #                weight = random.randint(0, 10)
-# #                if weight > 0:
-# #                    Vote.objects.create(
-# #                        user=user, option=option, value="Y", weight=Decimal(weight)
-# #                    )
-#
-#
-# class CreatePoll(BaseActionTestCase):
-#     def advancedSetUp(self) -> None:
-#         self.assignment = Assignment.objects.create(
-#             title="test_assignment_ohneivoh9caiB8Yiungo", open_posts=1
-#         )
-#         self.assignment.add_candidate(self.admin)
-#
-#     def test_simple(self) -> None:
-#         with self.assertNumQueries(40):
-#             response = self.client.post(
-#                 "assignmentpoll-list",
-#                 {
-#                     "title": "test_title_ailai4toogh3eefaa2Vo",
-#                     "pollmethod": Poll.POLLMETHOD_YNA,
-#                     "type": "named",
-#                     "assignment_id": self.assignment.id,
-#                     "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                     "majority_method": Poll.MAJORITY_SIMPLE,
-#                 },
-#             )
-#         self.assert_status_code(response, 200)
-#         self.assertTrue(Poll.objects.exists())
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.title, "test_title_ailai4toogh3eefaa2Vo")
-#         self.assertEqual(poll.pollmethod, Poll.POLLMETHOD_YNA)
-#         self.assertEqual(poll.type, "named")
-#         # Check defaults
-#         self.assertTrue(poll.global_yes)
-#         self.assertTrue(poll.global_no)
-#         self.assertTrue(poll.global_abstain)
-#         self.assertEqual(poll.amount_global_yes, None)
-#         self.assertEqual(poll.amount_global_no, None)
-#         self.assertEqual(poll.amount_global_abstain, None)
-#         self.assertFalse(poll.allow_multiple_votes_per_candidate)
-#         self.assertEqual(poll.votes_amount, 1)
-#         self.assertEqual(poll.assignment.id, self.assignment.id)
-#         self.assertEqual(poll.description, "")
-#         self.assertTrue(poll.options.exists())
-#         option = Option.objects.get()
-#         self.assertTrue(option.user.id, self.admin.id)
-#
-#     def test_all_fields(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_ahThai4pae1pi4xoogoo",
-#                 "pollmethod": Poll.POLLMETHOD_YN,
-#                 "type": "pseudoanonymous",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_THREE_QUARTERS,
-#                 "global_yes": False,
-#                 "global_no": False,
-#                 "global_abstain": False,
-#                 "allow_multiple_votes_per_candidate": True,
-#                 "votes_amount": 5,
-#                 "description": "test_description_ieM8ThuasoSh8aecai8p",
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         self.assertTrue(Poll.objects.exists())
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.title, "test_title_ahThai4pae1pi4xoogoo")
-#         self.assertEqual(poll.pollmethod, Poll.POLLMETHOD_YN)
-#         self.assertEqual(poll.type, "pseudoanonymous")
-#         self.assertFalse(poll.global_yes)
-#         self.assertFalse(poll.global_no)
-#         self.assertFalse(poll.global_abstain)
-#         self.assertTrue(poll.allow_multiple_votes_per_candidate)
-#         self.assertEqual(poll.votes_amount, 5)
-#         self.assertEqual(poll.description, "test_description_ieM8ThuasoSh8aecai8p")
-#
-#     def test_no_candidates(self) -> None:
-#         self.assignment.remove_candidate(self.admin)
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_eing5eipue5cha2Iefai",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#
-#     def test_missing_keys(self) -> None:
-#         complete_request_data = {
-#             "title": "test_title_keugh8Iu9ciyooGaevoh",
-#             "pollmethod": Poll.POLLMETHOD_YNA,
-#             "type": "named",
-#             "assignment_id": self.assignment.id,
-#             "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#             "majority_method": Poll.MAJORITY_SIMPLE,
-#         }
-#         for key in complete_request_data.keys():
-#             request_data = {
-#                 _key: value
-#                 for _key, value in complete_request_data.items()
-#                 if _key != key
-#             }
-#             response = self.client.post("assignmentpoll-list"), request_data
-#             self.assert_status_code(response, 400)
-#             self.assertFalse(Poll.objects.exists())
-#
-#     def test_with_groups(self) -> None:
-#         group1 = self.get_model("group/1")
-#         group2 = self.get_model("group/2")
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "groups_id": [1, 2],
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertTrue(group1 in poll.groups.all())
-#         self.assertTrue(group2 in poll.groups.all())
-#
-#     def test_with_empty_groups(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "groups_id": [],
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertFalse(poll.groups.exists())
-#
-#     def test_not_supported_type(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_yaiyeighoh0Iraet3Ahc",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "not_existing",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#
-#     def test_not_allowed_type(self) -> None:
-#         # setattr(settings, "ENABLE_ELECTRONIC_VOTING", False)
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_yaiyeighoh0Iraet3Ahc",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": Poll.TYPE_NAMED,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#         # setattr(settings, "ENABLE_ELECTRONIC_VOTING", True)
-#
-#     def test_not_supported_pollmethod(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_SeVaiteYeiNgie5Xoov8",
-#                 "pollmethod": "not_existing",
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#
-#     def test_not_supported_onehundred_percent_base(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": "invalid base",
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#
-#     def test_not_supported_majority_method(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YN,
-#                 "majority_method": "invalid majority method",
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#
-#     def test_wrong_pollmethod_onehundred_percent_base_combination_1(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_YNA,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_Y,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, Poll.PERCENT_BASE_YNA)
-#
-#     def test_wrong_pollmethod_onehundred_percent_base_combination_2(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_YN,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_Y,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, Poll.PERCENT_BASE_YN)
-#
-#     def test_wrong_pollmethod_onehundred_percent_base_combination_3(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "type": "named",
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, Poll.PERCENT_BASE_Y)
-#
-#     def test_create_with_votes(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_dKbv5tV47IzY1oGHXdSz",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "type": Poll.TYPE_ANALOG,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "votes": {
-#                     "options": {"1": {"Y": 1}},
-#                     "votesvalid": "-2",
-#                     "votesinvalid": "-2",
-#                     "votescast": "-2",
-#                 },
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.state, Poll.STATE_FINISHED)
-#         self.assertTrue(Vote.objects.exists())
-#
-#     def test_create_with_votes2(self) -> None:
-#         user, _ = self.create_user()
-#         self.assignment.add_candidate(user)
-#         self.assignment.remove_candidate(self.admin)
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_dKbv5tV47IzY1oGHXdSz",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "type": Poll.TYPE_ANALOG,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "votes": {
-#                     "options": {"2": {"Y": 1}},
-#                     "votesvalid": "-2",
-#                     "votesinvalid": "11",
-#                     "votescast": "-2",
-#                 },
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.state, Poll.STATE_FINISHED)
-#         self.assertTrue(Vote.objects.exists())
-#
-#     def test_create_with_votes_publish_immediately_method_y(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_dKbv5tV47IzY1oGHXdSz",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "type": Poll.TYPE_ANALOG,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "votes": {
-#                     "options": {"1": {"Y": 1}},
-#                     "votesvalid": "-2",
-#                     "votesinvalid": "-2",
-#                     "votescast": "-2",
-#                 },
-#                 "publish_immediately": "1",
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.state, Poll.STATE_PUBLISHED)
-#         self.assertTrue(Vote.objects.exists())
-#
-#     def test_create_with_votes_publish_immediately_method_n(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_greoGKPO3FeBAfwpefl3",
-#                 "pollmethod": Poll.POLLMETHOD_N,
-#                 "type": Poll.TYPE_ANALOG,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "votes": {
-#                     "options": {"1": {"N": 1}},
-#                     "votesvalid": "-2",
-#                     "votesinvalid": "-2",
-#                     "votescast": "-2",
-#                     "amount_global_yes": 1,
-#                     "amount_global_no": 2,
-#                     "amount_global_abstain": 3,
-#                 },
-#                 "publish_immediately": "1",
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.state, Poll.STATE_PUBLISHED)
-#         self.assertTrue(Vote.objects.exists())
-#         self.assertEqual(poll.amount_global_yes, Decimal("1"))
-#         self.assertEqual(poll.amount_global_no, Decimal("2"))
-#         self.assertEqual(poll.amount_global_abstain, Decimal("3"))
-#         option = poll.options.get(pk=1)
-#         self.assertEqual(option.yes, Decimal("0"))
-#         self.assertEqual(option.no, Decimal("1"))
-#         self.assertEqual(option.abstain, Decimal("0"))
-#
-#     def test_create_with_invalid_votes(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_dKbv5tV47IzY1oGHXdSz",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "type": Poll.TYPE_ANALOG,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "votes": {
-#                     "options": {"1": {"Y": 1}},
-#                     "votesvalid": "-2",
-#                     "votesinvalid": "-2",
-#                 },
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#         self.assertFalse(Vote.objects.exists())
-#
-#     def test_create_with_votes_wrong_type(self) -> None:
-#         response = self.client.post(
-#             "assignmentpoll-list",
-#             {
-#                 "title": "test_title_dKbv5tV47IzY1oGHXdSz",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "type": Poll.TYPE_NAMED,
-#                 "assignment_id": self.assignment.id,
-#                 "onehundred_percent_base": Poll.PERCENT_BASE_YNA,
-#                 "majority_method": Poll.MAJORITY_SIMPLE,
-#                 "votes": {
-#                     "options": {"1": {"Y": 1}},
-#                     "votesvalid": "-2",
-#                     "votesinvalid": "-2",
-#                     "votescast": "-2",
-#                 },
-#             },
-#         )
-#         self.assert_status_code(response, 400)
-#         self.assertFalse(Poll.objects.exists())
-#         self.assertFalse(Vote.objects.exists())
-#
-#
+class CreatePoll(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_model(
+            "assignment/1",
+            dict(
+                title="test_assignment_ohneivoh9caiB8Yiungo",
+                open_posts=1,
+                candidate_ids=[1],
+                meeting_id=113
+            ),
+        )
+        self.create_model("meeting/113", {})
+
+    def test_simple(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_ailai4toogh3eefaa2Vo",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text": "test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1")
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("title"), "test_title_ailai4toogh3eefaa2Vo")
+        self.assertEqual(poll.get("pollmethod"), "YNA")
+        self.assertEqual(poll.get("type"), "named")
+        # Check defaults
+        # self.assertTrue(poll.get("global_yes"))
+        # self.assertTrue(poll.get("global_no"))
+        # self.assertTrue(poll.get("global_abstain"))
+        self.assertEqual(poll.get("amount_global_yes"), None)
+        self.assertEqual(poll.get("amount_global_no"), None)
+        self.assertEqual(poll.get("amount_global_abstain"), None)
+        self.assertEqual(poll.get("content_object_id"), "assignment/1")
+        self.assertEqual(poll.get("description"), "")
+        # option = self.get_model("option/1")
+        # assert option.get("user_id") == 1
+
+    def test_all_fields(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_ahThai4pae1pi4xoogoo",
+                "pollmethod": "YN",
+                "type": "pseudoanonymous",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YNA",
+                "majority_method": "three_quarters",
+                "global_yes": False,
+                "global_no": False,
+                "global_abstain": False,
+                "description": "test_description_ieM8ThuasoSh8aecai8p",
+                "meeting_id": 113,
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("title"), "test_title_ahThai4pae1pi4xoogoo")
+        self.assertEqual(poll.get("pollmethod"), "YN")
+        self.assertEqual(poll.get("type"), "pseudoanonymous")
+        self.assertFalse(poll.get("global_yes"))
+        self.assertFalse(poll.get("global_no"))
+        self.assertFalse(poll.get("global_abstain"))
+        self.assertEqual(
+            poll.get("description"), "test_description_ieM8ThuasoSh8aecai8p"
+        )
+
+    def test_no_candidates(self) -> None:
+        self.update_model("assignment/1", {"candidate_ids": []})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113, 
+                "options": [{}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_missing_keys(self) -> None:
+        complete_request_data = {
+            "title": "test_title_keugh8Iu9ciyooGaevoh",
+            "pollmethod": "YNA",
+            "type": "named",
+            "meeting_id": 113,
+            "options": [{"text":"test"}],
+        }
+        for key in complete_request_data.keys():
+            request_data = {
+                _key: value
+                for _key, value in complete_request_data.items()
+                if _key != key
+            }
+            response = self.request("poll.create", request_data)
+            self.assert_status_code(response, 400)
+            self.assert_model_not_exists("poll/1")
+
+    def test_with_groups(self) -> None:
+        self.create_model("group/2", {})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "entitled_group_ids": [1, 2],
+                "meeting_id": 113,
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_group_ids") == [1, 2]
+
+    def test_with_empty_groups(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "entitled_group_ids": [],
+                "meeting_id": 113, 
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("entitled_group_ids"), [])
+
+    def test_not_supported_type(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_yaiyeighoh0Iraet3Ahc",
+                "pollmethod": "YNA",
+                "type": "not_existing",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113, 
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_not_allowed_type(self) -> None:
+        # setattr(settings, "ENABLE_ELECTRONIC_VOTING", False)
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_yaiyeighoh0Iraet3Ahc",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113, 
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+        # setattr(settings, "ENABLE_ELECTRONIC_VOTING", True)
+
+    def test_not_supported_pollmethod(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_SeVaiteYeiNgie5Xoov8",
+                "pollmethod": "not_existing",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_not_supported_onehundred_percent_base(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "invalid base",
+                "majority_method": "simple",
+                "meeting_id": 113, 
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_not_supported_majority_method(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "invalid majority method",
+                "meeting_id": 113, 
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_wrong_pollmethod_onehundred_percent_base_combination_1(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "YNA")
+
+    def test_wrong_pollmethod_onehundred_percent_base_combination_2(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YN",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text":"test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "YN")
+
+    def test_wrong_pollmethod_onehundred_percent_base_combination_3(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "Y",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YNA",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text": "test"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "Y")
+
+
 class UpdatePoll(BaseActionTestCase):
     """
     Tests updating polls of assignments.
