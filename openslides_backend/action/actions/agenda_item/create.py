@@ -7,7 +7,7 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("agenda_item.create")
@@ -47,7 +47,7 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
         instance["weight"] = parent["weight"] + 1
         return instance
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             if instance.get("parent_id") is None:
                 parent = {"is_hidden": False, "is_internal": False}

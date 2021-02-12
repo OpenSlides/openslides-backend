@@ -5,7 +5,7 @@ from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from .agenda_tree import AgendaTree
 
 
@@ -18,7 +18,7 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_default_schema(["meeting_id"])
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         payload = super().get_updated_instances(payload)
         # Fetch all agenda items for this meeting from datastore.
         # Payload is an iterable with exactly one item

@@ -3,7 +3,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 
@@ -18,7 +18,7 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
         optional_properties=["title", "access_group_ids"]
     )
 
-    def get_updated_instances(self, instances: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, instances: ActionData) -> ActionData:
         """
         Calculate inherited_access_group_ids and inherited_access_group_ids, if
         access_group_ids are given.

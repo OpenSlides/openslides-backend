@@ -3,7 +3,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("list_of_speakers.delete_all_speakers")
@@ -19,7 +19,7 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
         description="Action to remove all speakers from the given list of speakers.",
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             list_of_speakers = self.fetch_model(
                 FullQualifiedId(Collection("list_of_speakers"), instance["id"]),

@@ -3,7 +3,7 @@ import fastjsonschema
 from ...shared.exceptions import ActionException
 from ...shared.schema import schema_version
 from ..action import Action
-from ..util.typing import ActionPayload
+from ..util.typing import ActionData
 
 singular_schema = fastjsonschema.compile(
     {
@@ -25,11 +25,11 @@ class SingularActionMixin(Action):
 
     is_singular = True
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         self.assert_singular_payload(payload)
         return super().get_updated_instances(payload)
 
-    def assert_singular_payload(self, payload: ActionPayload) -> None:
+    def assert_singular_payload(self, payload: ActionData) -> None:
         try:
             singular_schema(payload)
         except fastjsonschema.JsonSchemaException as exception:

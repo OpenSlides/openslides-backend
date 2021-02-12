@@ -5,7 +5,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("mediafile.delete")
@@ -17,7 +17,7 @@ class MediafileDelete(DeleteAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_delete_schema()
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             yield from ({"id": id_} for id_ in self.get_tree_ids(instance["id"]))
 

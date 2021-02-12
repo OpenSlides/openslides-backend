@@ -4,7 +4,7 @@ from ...mixins.singular_action_mixin import SingularActionMixin
 from ...mixins.tree_sort_mixin import TreeSortMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("agenda_item.sort")
@@ -16,7 +16,7 @@ class AgendaItemSort(TreeSortMixin, SingularActionMixin, UpdateAction):
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_tree_sort_schema()
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         payload = super().get_updated_instances(payload)
         # Payload is an iterable with exactly one item
         instance = next(iter(payload))

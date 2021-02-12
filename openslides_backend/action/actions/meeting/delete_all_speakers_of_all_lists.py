@@ -6,7 +6,7 @@ from ....shared.patterns import Collection
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("meeting.delete_all_speakers_of_all_lists")
@@ -22,7 +22,7 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
         description="An array of meeting objects which speakers to be deleted",
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> Iterable[Dict[str, Any]]:
+    def get_updated_instances(self, payload: ActionData) -> Iterable[Dict[str, Any]]:
         new_payload = []
         meeting_ids = [instance["id"] for instance in payload]
         get_many_request = GetManyRequest(

@@ -2,7 +2,9 @@ from typing import Any, Callable, Dict, Iterable, Optional, Text, Tuple
 
 from typing_extensions import Protocol
 
-from . import Headers
+from openslides_backend.http.request import Request
+
+from . import Headers  # noqa
 from .logging import LoggingModule
 from .services import Services
 
@@ -12,7 +14,6 @@ WSGIEnvironment = Dict[Text, Any]
 
 
 # TODO Use proper type here.
-RequestBody = Any
 ResponseBody = Any
 
 
@@ -26,9 +27,7 @@ class View(Protocol):  # pragma: no cover
     def __init__(self, logging: LoggingModule, services: Services) -> None:
         ...
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, cookies: Dict[str, str]
-    ) -> Tuple[ResponseBody, Optional[str]]:
+    def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         ...
 
 

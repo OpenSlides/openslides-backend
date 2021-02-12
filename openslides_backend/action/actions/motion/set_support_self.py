@@ -6,7 +6,7 @@ from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("motion.set_support_self")
@@ -25,7 +25,7 @@ class MotionSetSupportSelfAction(UpdateAction):
         },
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         motion_get_many_request = GetManyRequest(
             self.model.collection,
             [instance["motion_id"] for instance in payload],

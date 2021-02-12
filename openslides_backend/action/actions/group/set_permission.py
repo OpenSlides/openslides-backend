@@ -5,7 +5,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("group.set_permission")
@@ -22,7 +22,7 @@ class GroupSetPermissionAction(UpdateAction):
         }
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             new_instance = self.update_one_instance(instance)
             if new_instance.get("permissions") is None:

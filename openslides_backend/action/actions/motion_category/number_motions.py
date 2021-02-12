@@ -6,7 +6,7 @@ from ....models.models import Motion, MotionCategory
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
-from ...action import ActionPayload
+from ...action import ActionData
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -25,7 +25,7 @@ class MotionCategoryNumberMotions(UpdateAction):
         required_properties=["id"],
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             self.init_memory(instance["id"])
 

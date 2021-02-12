@@ -4,23 +4,16 @@ from typing import Any, Iterable, Union
 
 import simplejson as json
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
-from werkzeug.wrappers import Request as WerkzeugRequest
 from werkzeug.wrappers import Response
-from werkzeug.wrappers.json import JSONMixin
 
 from ..services.auth.adapter import HEADER_NAME
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
 from .http_exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
+from .request import Request
 
 health_route = re.compile("^/health$")
-
-
-class Request(JSONMixin, WerkzeugRequest):
-    """
-    Customized request object. We use the JSONMixin here.
-    """
 
 
 class OpenSlidesBackendWSGIApplication:
@@ -56,31 +49,31 @@ class OpenSlidesBackendWSGIApplication:
             return MethodNotAllowed(valid_methods=[self.view.method])
         self.logger.debug(f"Request method is {request.method}.")
 
-        # Check mimetype and arse JSON body. The result is cached in request.json.
+        # Check mimetype and parse JSON body. The result is cached in request.json.
         if not request.is_json:
             return BadRequest(
-                "Wrong media type. Use 'Content-Type: application/json' instead."
+                ViewException(
+                    "Wrong media type. Use 'Content-Type: application/json' instead."
+                )
             )
         try:
             request_body = request.get_json()
         except WerkzeugBadRequest as exception:
-            return BadRequest(exception.description)
+            return BadRequest(ViewException(exception.description))
         self.logger.debug(f"Request contains JSON: {request_body}.")
 
         # Dispatch view and return response.
         view_instance = self.view(self.logging, self.services)
         try:
-            response_body, access_token = view_instance.dispatch(
-                request_body, request.headers, request.cookies
-            )
+            response_body, access_token = view_instance.dispatch(request)
         except ViewException as exception:
             env_var = os.environ.get("OPENSLIDES_BACKEND_RAISE_4XX", "off")
             if is_truthy(env_var):
                 raise exception
             if exception.status_code == 400:
-                return BadRequest(exception.message)
+                return BadRequest(exception)
             elif exception.status_code == 403:
-                return Forbidden(exception.message)
+                return Forbidden(exception)
             else:
                 text = (
                     f"Unknown ViewException with status_code {exception.status_code} "

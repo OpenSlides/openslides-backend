@@ -8,7 +8,7 @@ from ....shared.filters import And, FilterOperator
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from .delete import ResourceDelete
 
 
@@ -41,7 +41,7 @@ class MediafileUploadAction(CreateAction):
         self.media.upload_resource(file_, id_, mimetype_)
         return instance
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         tokens = [instance["token"] for instance in payload]
         if len(tokens) != len(set(tokens)):
             raise ActionException(

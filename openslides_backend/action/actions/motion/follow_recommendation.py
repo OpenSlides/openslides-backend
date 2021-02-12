@@ -6,7 +6,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from .set_state import MotionSetStateAction
 
 
@@ -16,7 +16,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         ids = [instance["id"] for instance in payload]
         get_many_request = GetManyRequest(
             self.model.collection,

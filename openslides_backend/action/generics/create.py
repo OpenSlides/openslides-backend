@@ -1,10 +1,10 @@
-from typing import Any, Dict, Iterable, Union
+from typing import Any, Dict, Iterable, Optional
 
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ..action import Action
-from ..util.typing import ActionResponseResultsElement
+from ..util.typing import ActionResultElement
 
 
 class CreateAction(Action):
@@ -35,12 +35,9 @@ class CreateAction(Action):
                 instance[field.own_field_name] = field.default
         return instance
 
-    def create_write_requests(
-        self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
+    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         """
         Creates a write request element for one instance of the current model.
-
         Just prepares a write request element with create event for the given
         instance.
         """
@@ -48,5 +45,8 @@ class CreateAction(Action):
         information = "Object created"
         yield self.build_write_request(EventType.Create, fqid, information, instance)
 
-        response_info: ActionResponseResultsElement = {"id": fqid.id}
-        yield response_info
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        """ Returns the newly created id. """
+        return {"id": instance["id"]}

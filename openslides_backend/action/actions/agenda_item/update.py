@@ -6,7 +6,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("agenda_item.update")
@@ -40,7 +40,7 @@ class AgendaItemUpdate(UpdateAction):
 
     def handle_children(
         self, id_: int, parent_is_hidden: bool, parent_is_internal: bool
-    ) -> ActionPayload:
+    ) -> ActionData:
         instances = []
         agenda_item = self.datastore.get(
             FullQualifiedId(self.model.collection, id_), ["child_ids"]
@@ -78,7 +78,7 @@ class AgendaItemUpdate(UpdateAction):
                 )
         return instances
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         new_instances = []
         agenda_item_ids = [instance["id"] for instance in payload]
         get_many_request = GetManyRequest(
