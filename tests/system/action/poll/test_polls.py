@@ -1,4 +1,3 @@
-
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
 
@@ -505,226 +504,237 @@ GROUP_DELEGATE_PK = 1
 #         self.assertFalse(Vote.objects.exists())
 #
 #
-# class UpdatePoll(BaseActionTestCase):
-#     """
-#     Tests updating polls of assignments.
-#     """
-#
-#     def advancedSetUp(self) -> None:
-#         self.assignment = Assignment.objects.create(
-#             title="test_assignment_ohneivoh9caiB8Yiungo", open_posts=1
-#         )
-#         self.assignment.add_candidate(self.admin)
-#         self.group = self.get_model("group/1")
-#         self.poll = Poll.objects.create(
-#             assignment=self.assignment,
-#             title="test_title_beeFaihuNae1vej2ai8m",
-#             pollmethod=Poll.POLLMETHOD_Y,
-#             type=Poll.TYPE_NAMED,
-#             onehundred_percent_base=Poll.PERCENT_BASE_Y,
-#             majority_method=Poll.MAJORITY_SIMPLE,
-#         )
-#         self.poll.create_options()
-#         self.poll.groups.add(self.group)
-#
-#     def test_patch_title(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"title": "test_title_Aishohh1ohd0aiSut7gi"},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.title, "test_title_Aishohh1ohd0aiSut7gi")
-#
-#     def test_prevent_patching_assignment(self) -> None:
-#         assignment = Assignment(title="test_title_phohdah8quukooHeetuz", open_posts=1)
-#         assignment.save()
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"assignment_id": assignment.id},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.assignment.id, self.assignment.id)  # unchanged
-#
-#     def test_patch_pollmethod(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"pollmethod": Poll.POLLMETHOD_YNA},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.pollmethod, Poll.POLLMETHOD_YNA)
-#         self.assertEqual(poll.onehundred_percent_base, Poll.PERCENT_BASE_YNA)
-#
-#     def test_patch_invalid_pollmethod(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"pollmethod": "invalid"},
-#         )
-#         self.assert_status_code(response, 400)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.pollmethod, Poll.POLLMETHOD_Y)
-#
-#     def test_patch_type(self) -> None:
-#         response = self.client.patch("assignmentpoll-detail", {"type": "analog"})
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.type, "analog")
-#
-#     def test_patch_invalid_type(self) -> None:
-#         response = self.client.patch("assignmentpoll-detail", {"type": "invalid"})
-#         self.assert_status_code(response, 400)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.type, "named")
-#
-#     def test_patch_not_allowed_type(self) -> None:
-#         # setattr(settings, "ENABLE_ELECTRONIC_VOTING", False)
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"type": Poll.TYPE_NAMED},
-#         )
-#         self.assert_status_code(response, 400)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.type, Poll.TYPE_NAMED)
-#         # setattr(settings, "ENABLE_ELECTRONIC_VOTING", True)
-#
-#     def test_patch_groups_to_empty(self) -> None:
-#         response = self.client.patch("assignmentpoll-detail", {"groups_id": []})
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertFalse(poll.groups.exists())
-#
-#     def test_patch_groups(self) -> None:
-#         group2 = self.get_model("group/2")
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"groups_id": [group2.id]},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.groups.count(), 1)
-#         self.assertEqual(poll.groups.get(), group2)
-#
-#     def test_patch_title_started(self) -> None:
-#         self.poll.state = 2
-#         self.poll.save()
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"title": "test_title_Oophah8EaLaequu3toh8"},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.title, "test_title_Oophah8EaLaequu3toh8")
-#
-#     def test_patch_wrong_state(self) -> None:
-#         self.poll.state = 2
-#         self.poll.save()
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"type": Poll.TYPE_NAMED},
-#         )
-#         self.assert_status_code(response, 400)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.type, Poll.TYPE_NAMED)
-#
-#     def test_patch_100_percent_base(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"onehundred_percent_base": "cast"},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, "cast")
-#
-#     def test_patch_wrong_100_percent_base(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"onehundred_percent_base": "invalid"},
-#         )
-#         self.assert_status_code(response, 400)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, Poll.PERCENT_BASE_Y)
-#
-#     def test_patch_majority_method(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"majority_method": Poll.MAJORITY_TWO_THIRDS},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.majority_method, Poll.MAJORITY_TWO_THIRDS)
-#
-#     def test_patch_wrong_majority_method(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"majority_method": "invalid majority method"},
-#         )
-#         self.assert_status_code(response, 400)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.majority_method, Poll.MAJORITY_SIMPLE)
-#
-#     def test_patch_multiple_fields(self) -> None:
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {
-#                 "title": "test_title_ees6Tho8ahheen4cieja",
-#                 "pollmethod": Poll.POLLMETHOD_Y,
-#                 "global_yes": True,
-#                 "global_no": True,
-#                 "global_abstain": False,
-#                 "allow_multiple_votes_per_candidate": True,
-#                 "votes_amount": 42,
-#             },
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.title, "test_title_ees6Tho8ahheen4cieja")
-#         self.assertEqual(poll.pollmethod, Poll.POLLMETHOD_Y)
-#         self.assertTrue(poll.global_yes)
-#         self.assertTrue(poll.global_no)
-#         self.assertFalse(poll.global_abstain)
-#         self.assertEqual(poll.amount_global_yes, Decimal("0"))
-#         self.assertEqual(poll.amount_global_no, Decimal("0"))
-#         self.assertEqual(poll.amount_global_abstain, None)
-#         self.assertTrue(poll.allow_multiple_votes_per_candidate)
-#         self.assertEqual(poll.votes_amount, 42)
-#
-#     def test_patch_majority_method_state_not_created(self) -> None:
-#         self.poll.state = 2
-#         self.poll.save()
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"majority_method": "two_thirds"},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.majority_method, "two_thirds")
-#
-#     def test_patch_100_percent_base_state_not_created(self) -> None:
-#         self.poll.state = 2
-#         self.poll.save()
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"onehundred_percent_base": "cast"},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, "cast")
-#
-#     def test_patch_wrong_100_percent_base_state_not_created(self) -> None:
-#         self.poll.state = 2
-#         self.poll.pollmethod = Poll.POLLMETHOD_YN
-#         self.poll.save()
-#         response = self.client.patch(
-#             "assignmentpoll-detail",
-#             {"onehundred_percent_base": Poll.PERCENT_BASE_YNA},
-#         )
-#         self.assert_status_code(response, 200)
-#         poll = Poll.objects.get()
-#         self.assertEqual(poll.onehundred_percent_base, "YN")
-#
-#
+class UpdatePoll(BaseActionTestCase):
+    """
+    Tests updating polls of assignments.
+    """
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_model(
+            "assignment/1",
+            dict(
+                title="test_assignment_ohneivoh9caiB8Yiungo",
+                open_posts=1,
+                candidate_ids=[1],
+            ),
+        )
+        self.create_model("meeting/113", {"name": "my meeting"})
+        self.create_model("group/1", {"user_ids": [1], "poll_ids": [1]})
+        self.create_model(
+            "poll/1",
+            dict(
+                content_object_id="assignment/1",
+                title="test_title_beeFaihuNae1vej2ai8m",
+                pollmethod="Y",
+                type=Poll.TYPE_NAMED,
+                onehundred_percent_base="Y",
+                majority_method="simple",
+                state=Poll.STATE_CREATED,
+                meeting_id=113,
+                option_ids=[1, 2],
+                entitled_group_ids=[1],
+            ),
+        )
+        self.create_model("option/1", {"meeting_id": 113, "poll_id": 1})
+        self.create_model("option/2", {"meeting_id": 113, "poll_id": 1})
+        self.update_model(
+            "user/1",
+            {
+                "is_present_in_meeting_ids": [113],
+                "group_$113_ids": [1],
+                "group_$_ids": ["113"],
+            },
+        )
+
+    def test_patch_title(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("title"), "test_title_Aishohh1ohd0aiSut7gi")
+
+    def test_prevent_patching_assignment(self) -> None:
+        self.create_model(
+            "assignment/2", dict(title="test_title_phohdah8quukooHeetuz", open_posts=1)
+        )
+        response = self.request(
+            "poll.update",
+            {"content_object_id": "assignment/2", "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("content_object_id"), "assignment/1")  # unchanged
+
+    def test_patch_pollmethod(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"pollmethod": "YNA", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("pollmethod"), "YNA")
+        self.assertEqual(poll.get("onehundred_percent_base"), "YNA")
+
+    def test_patch_invalid_pollmethod(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"pollmethod": "invalid"},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("pollmethod"), "Y")
+
+    def test_patch_type(self) -> None:
+        response = self.request("poll.update", {"type": "analog", "id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("type"), "analog")
+
+    def test_patch_invalid_type(self) -> None:
+        response = self.request("poll.update", {"type": "invalid", "id": 1})
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("type"), "named")
+
+    def test_patch_not_allowed_type(self) -> None:
+        # self.update_model("organisation/1", {"enable_electronic_voting": False})
+        response = self.request(
+            "poll.update",
+            {"type": Poll.TYPE_NAMED, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("type"), Poll.TYPE_NAMED)
+
+    def test_patch_groups_to_empty(self) -> None:
+        response = self.request("poll.update", {"entitled_group_ids": [], "id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_group_ids") == []
+
+    def test_patch_groups(self) -> None:
+        self.create_model("group/2", {"meeting_id": 113, "poll_ids": []})
+        response = self.request(
+            "poll.update",
+            {"entitled_group_ids": [2], "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("entitled_group_ids"), [2])
+
+    def test_patch_title_started(self) -> None:
+        self.update_model("poll/1", dict(state=Poll.STATE_STARTED))
+        response = self.request(
+            "poll.update",
+            {"title": "test_title_Oophah8EaLaequu3toh8", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("title"), "test_title_Oophah8EaLaequu3toh8")
+
+    def test_patch_wrong_state(self) -> None:
+        self.update_model("poll/1", dict(state=Poll.STATE_STARTED))
+        response = self.request(
+            "poll.update",
+            {"type": Poll.TYPE_NAMED, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("type"), Poll.TYPE_NAMED)
+
+    def test_patch_100_percent_base(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"onehundred_percent_base": "cast", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "cast")
+
+    def test_patch_wrong_100_percent_base(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"onehundred_percent_base": "invalid", "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "Y")
+
+    def test_patch_majority_method(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"majority_method": "two_thirds", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("majority_method"), "two_thirds")
+
+    def test_patch_wrong_majority_method(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"majority_method": "invalid majority method", "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("majority_method"), "simple")
+
+    def test_patch_multiple_fields(self) -> None:
+        response = self.request(
+            "poll.update",
+            {
+                "id": 1,
+                "title": "test_title_ees6Tho8ahheen4cieja",
+                "pollmethod": "Y",
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("title"), "test_title_ees6Tho8ahheen4cieja")
+        self.assertEqual(poll.get("pollmethod"), "Y")
+        self.assertTrue(poll.get("global_yes"))
+        self.assertTrue(poll.get("global_no"))
+        self.assertFalse(poll.get("global_abstain"))
+        self.assertEqual(poll.get("amount_global_yes"), "0.000000")
+        self.assertEqual(poll.get("amount_global_no"), "0.000000")
+        self.assertEqual(poll.get("amount_global_abstain"), None)
+
+    def test_patch_majority_method_state_not_created(self) -> None:
+        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        response = self.request(
+            "poll.update",
+            {"majority_method": "two_thirds", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("majority_method"), "two_thirds")
+
+    def test_patch_100_percent_base_state_not_created(self) -> None:
+        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        response = self.request(
+            "poll.update",
+            {"onehundred_percent_base": "cast", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "cast")
+
+    def test_patch_wrong_100_percent_base_state_not_created(self) -> None:
+        self.update_model("poll/1", {"state": Poll.STATE_STARTED, "pollmethod": "YN"})
+        response = self.request(
+            "poll.update",
+            {"onehundred_percent_base": "YNA", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("onehundred_percent_base"), "YN")
+
+
 class VotePollBaseTestClass(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
