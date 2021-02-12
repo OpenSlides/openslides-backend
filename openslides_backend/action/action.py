@@ -104,7 +104,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.write_requests = []
 
     def perform(
-        self, payload: ActionPayload, user_id: int
+        self, payload: ActionPayload, user_id: int, internal: bool = False
     ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
         """
         Entrypoint to perform the action.
@@ -112,7 +112,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.user_id = user_id
         for element in payload:
             self.validate_payload_element(element)
-        self.check_permissions(payload)
+
+        # perform permission not for internal actions
+        if not internal:
+            self.check_permissions(payload)
 
         instances = self.get_updated_instances(payload)
         for instance in instances:
@@ -130,11 +133,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service.
         """
-        if not self.internal:
-            if not self.permission.is_allowed(self.name, self.user_id, list(payload)):
-                raise PermissionDenied(
-                    f"You are not allowed to perform action {self.name}."
-                )
+        if not self.permission.is_allowed(self.name, self.user_id, list(payload)):
+            raise PermissionDenied(
+                f"You are not allowed to perform action {self.name}."
+            )
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         """
@@ -395,7 +397,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.logging,
             {**self.additional_relation_models, **additional_relation_models},
         )
-        action_results = action.perform(payload, self.user_id)
+        action_results = action.perform(payload, self.user_id, internal=True)
         for item in action_results:
             # We strip off items of type ActionResponseResultsElement because
             # we do not want such response information in the real action response.
