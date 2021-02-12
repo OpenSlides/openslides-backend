@@ -77,7 +77,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [42]
 
-    def test_create_add_2_speakers(self) -> None:
+    def test_create_add_2_speakers_in_1_action(self) -> None:
         self.create_model("meeting/7844", {"name": "name_asdewqasd"})
         self.create_model("user/7", {"username": "test_username6"})
         self.create_model("user/8", {"username": "test_username7"})
@@ -100,17 +100,45 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 }
             ],
         )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "It is not permitted to create more than one speaker per request!",
+            str(response.data),
+        )
+
+    def test_create_add_2_speakers_in_2_actions(self) -> None:
+        self.create_model("meeting/7844", {"name": "name_asdewqasd"})
+        self.create_model("user/7", {"username": "test_username6"})
+        self.create_model("user/8", {"username": "test_username7"})
+        self.create_model("user/9", {"username": "test_username8"})
+        self.create_model(
             "speaker/1", {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000}
         )
-        self.assert_model_exists(
-            "speaker/2", {"user_id": 8, "list_of_speakers_id": 23, "weight": 10000}
+        self.create_model(
+            "list_of_speakers/23", {"speaker_ids": [1], "meeting_id": 7844}
         )
-        self.assert_model_exists(
-            "speaker/3", {"user_id": 9, "list_of_speakers_id": 23, "weight": 10000}
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "speaker.create",
+                    "data": [
+                        {"user_id": 8, "list_of_speakers_id": 23},
+                    ],
+                },
+                {
+                    "action": "speaker.create",
+                    "data": [
+                        {"user_id": 8, "list_of_speakers_id": 23},
+                    ],
+                },
+            ],
         )
-        self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2, 3]})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Datastore service sends HTTP 400. Model \\'user/8\\' raises MODEL_LOCKED error.",
+            str(response.data),
+        )
 
     def test_create_user_present(self) -> None:
         self.create_model(

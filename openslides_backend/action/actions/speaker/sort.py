@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from ....models.models import Speaker
 from ....shared.filters import And, Filter, FilterOperator
@@ -32,9 +32,17 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
                 FilterOperator(
                     "list_of_speakers_id", "=", instance["list_of_speakers_id"]
                 ),
-                FilterOperator("end_time", "=", None),
+                FilterOperator("begin_time", "=", None),
             )
+        add_to_db_instances: Dict[int, Any] = {}
+        for key in self.additional_relation_models:
+            if key.collection.collection == "speaker":
+                add_to_db_instances[key.id] = {"id": key.id}
 
         yield from self.sort_linear(
-            nodes=instance["speaker_ids"], filter_id=0, filter_str="", filter=filter
+            nodes=instance["speaker_ids"],
+            filter_id=0,
+            filter_str="",
+            filter=filter,
+            add_to_db_instances=add_to_db_instances,
         )
