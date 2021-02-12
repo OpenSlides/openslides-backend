@@ -36,9 +36,6 @@ from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.typing import ActionPayload, ActionResponseResultsElement
 
-PERMISSION_SPECIAL_CASE = "Special business logic"
-GENERIC_PERMISSION = "Generic permission check"
-
 
 class SchemaProvider(type):
     """
