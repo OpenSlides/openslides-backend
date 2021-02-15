@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Speaker
 from ....shared.exceptions import ActionException
@@ -39,62 +39,35 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        weight_max = self.datastore.max(
-            collection=Collection("speaker"),
-            filter=And(
-                FilterOperator(
-                    "list_of_speakers_id", "=", instance["list_of_speakers_id"]
-                ),
-                FilterOperator("begin_time", "=", None),
-                FilterOperator("meta_deleted", "=", False),
-            ),
-            field="weight",
-            type="int",
-            lock_result=True,
+        weight_max = self._get_max_weight(instance["list_of_speakers_id"])
+        if weight_max is None:
+            instance["weight"] = 1
+            return instance
+
+        if not instance.get("point_of_order"):
+            instance["weight"] = weight_max + 1
+            return instance
+
+        list_of_speakers_id = instance["list_of_speakers_id"]
+        weight_no_poos_min = self._get_no_poo_min(list_of_speakers_id)
+        if weight_no_poos_min is None:
+            instance["weight"] = weight_max + 1
+            return instance
+
+        instance["weight"] = weight_no_poos_min
+        speaker_ids = self._insert_before_weight(
+            instance["id"], weight_no_poos_min, list_of_speakers_id
         )
-        if weight_max:
-            if instance.get("point_of_order"):
-                list_of_speakers_id = instance["list_of_speakers_id"]
-                weight_no_poos_min = self.datastore.min(
-                    collection=Collection("speaker"),
-                    filter=And(
-                        FilterOperator(
-                            "list_of_speakers_id", "=", instance["list_of_speakers_id"]
-                        ),
-                        Or(
-                            FilterOperator("point_of_order", "=", False),
-                            FilterOperator("point_of_order", "=", None),
-                        ),
-                        FilterOperator("begin_time", "=", None),
-                        FilterOperator("meta_deleted", "=", False),
-                    ),
-                    field="weight",
-                    type="int",
-                    lock_result=True,
-                )
-                if weight_no_poos_min:
-                    instance["weight"] = weight_no_poos_min
-                    list_of_speaker_ids = self._insert_before_weight(
-                        instance["id"], weight_no_poos_min, list_of_speakers_id
-                    )
-                    additional_relation_models = {
-                        FullQualifiedId(self.model.collection, instance["id"]): instance
-                    }
-                    payload = [
-                        {
-                            "list_of_speakers_id": list_of_speakers_id,
-                            "speaker_ids": list_of_speaker_ids,
-                        }
-                    ]
-                    self.execute_other_action(
-                        SpeakerSort, payload, additional_relation_models
-                    )
-                else:
-                    instance["weight"] = weight_max + 1
-            else:
-                instance["weight"] = weight_max + 1
-        else:
-            instance["weight"] = -1 if instance.get("point_of_order") else 10000
+        additional_relation_models = {
+            FullQualifiedId(self.model.collection, instance["id"]): instance
+        }
+        payload = [
+            {
+                "list_of_speakers_id": list_of_speakers_id,
+                "speaker_ids": speaker_ids,
+            }
+        ]
+        self.execute_other_action(SpeakerSort, payload, additional_relation_models)
         return instance
 
     def _insert_before_weight(
@@ -122,6 +95,36 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 list_to_sort.append(new_id)
             list_to_sort.append(speaker["id"])
         return list_to_sort
+
+    def _get_max_weight(self, list_of_speakers_id: int) -> Optional[int]:
+        return self.datastore.max(
+            collection=Collection("speaker"),
+            filter=And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meta_deleted", "=", False),
+            ),
+            field="weight",
+            type="int",
+            lock_result=True,
+        )
+
+    def _get_no_poo_min(self, list_of_speakers_id: int) -> Optional[int]:
+        return self.datastore.min(
+            collection=Collection("speaker"),
+            filter=And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                Or(
+                    FilterOperator("point_of_order", "=", False),
+                    FilterOperator("point_of_order", "=", None),
+                ),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meta_deleted", "=", False),
+            ),
+            field="weight",
+            type="int",
+            lock_result=True,
+        )
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
