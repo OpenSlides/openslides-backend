@@ -35,6 +35,10 @@ class PollVote(UpdateAction):
         value = instance.pop("value")
         user_id = instance.pop("user_id")
 
+        # check if value not empty
+        if not value:
+            raise ActionException("Value must contain values.")
+
         # check for double vote
         if user_id in self.poll.get("voted_ids", []):
             raise ActionException("Only one vote per poll per user allowed.")

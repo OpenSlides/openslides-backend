@@ -575,7 +575,7 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
 
     def test_vote_with_voteweight(self) -> None:
         # config["users_activate_vote_weight"] = True
-        self.update_model("user/1", dict(vote_weight="4.200000"))
+        self.update_model("user/1", {"vote_weight_$113": "4.200000"})
         self.add_candidate()
         self.start_poll()
         response = self.request(
