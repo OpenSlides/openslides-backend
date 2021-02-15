@@ -12,6 +12,7 @@ class PollAnonymizeActionTest(BaseActionTestCase):
                     "option_ids": [1],
                     "global_option_id": 2,
                     "meeting_id": 1,
+                    "state": Poll.STATE_FINISHED,
                 },
                 "option/1": {"vote_ids": [1], "meeting_id": 1},
                 "option/2": {"vote_ids": [2], "meeting_id": 1},
@@ -62,17 +63,42 @@ class AnonymizeOS3Poll(BaseActionTestCase):
                 option_ids=[11],
                 meeting_id=113,
                 voted_ids=[1, 2],
+                votesvalid="2.000000",
+                votesinvalid="0.000000",
+                votescast="2.000000",
             ),
         )
-        self.create_model("option/11", {"meeting_id": 113, "poll_id": 1})
+        self.create_model(
+            "option/11",
+            {
+                "meeting_id": 113,
+                "poll_id": 1,
+                "yes": "1.000000",
+                "no": "1.000000",
+                "abstain": "0.000000",
+                "vote_ids": [1, 2],
+            },
+        )
         self.create_model("meeting/113", {"name": "my meeting"})
 
         self.create_model(
-            "vote/1", dict(user_id=1, option_id=11, value="Y", weight="1.000000")
+            "vote/1",
+            dict(meeting_id=113, user_id=1, option_id=11, value="Y", weight="1.000000"),
         )
-        self.create_model("user/2", dict(username="test_user_2"))
+        self.update_model(
+            "user/1",
+            {
+                "vote_$_ids": ["113"],
+                "vote_$113_ids": [1],
+            },
+        )
         self.create_model(
-            "vote/2", dict(user_id=2, option_id=11, value="N", weight="1.000000")
+            "user/2",
+            {"username": "test_user_2", "vote_$113_ids": [2], "vote_$_ids": ["113"]},
+        )
+        self.create_model(
+            "vote/2",
+            dict(meeting_id=113, user_id=2, option_id=11, value="N", weight="1.000000"),
         )
 
     def test_anonymize_poll(self) -> None:

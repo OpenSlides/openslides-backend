@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
+from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -21,6 +22,8 @@ class PollAnonymize(UpdateAction):
 
     def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
         for instance in payload:
+
+            self.check_allowed(instance["id"])
             option_ids = self._get_option_ids(instance["id"])
             options = self._get_options(option_ids)
 
@@ -29,6 +32,16 @@ class PollAnonymize(UpdateAction):
                 if option.get("vote_ids"):
                     self._remove_user_id_from(option["vote_ids"])
         return []
+
+    def check_allowed(self, poll_id: int) -> None:
+        poll = self.datastore.get(
+            FullQualifiedId(Collection("poll"), poll_id), ["type", "state"]
+        )
+
+        if not poll.get("state") == Poll.STATE_FINISHED:
+            raise ActionException("Anonymize only in state finished allowed.")
+        if poll.get("type") == Poll.TYPE_ANALOG:
+            raise ActionException("Anonymize is not allowed for type analog.")
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
