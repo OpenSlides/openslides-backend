@@ -45,6 +45,10 @@ class PollVote(UpdateAction):
         if self.poll.get("type") == "analog":
             raise ActionException("poll.vote is not allowed for analog voting.")
 
+        # check if in the started state-
+        if self.poll.get("state") != Poll.STATE_STARTED:
+            raise ActionException("poll.vote is only allowed in started state.")
+
         self.check_user_entitled_groups(user_id)
         self.check_user_is_present_in_meeting(user_id)
 
@@ -73,6 +77,7 @@ class PollVote(UpdateAction):
                 "pollmethod",
                 "voted_ids",
                 "entitled_group_ids",
+                "state",
             ],
         )
 
@@ -96,10 +101,13 @@ class PollVote(UpdateAction):
 
     def validate_option_value(self, value: Dict[str, Any]) -> None:
         for key in value:
+            if not key.isdigit():
+                raise ActionException(f"Option {key} is not an int.")
             if int(key) not in self.poll.get("option_ids", []):
                 raise ActionException(f"Option {key} not in options of the poll.")
             if not (
-                isinstance(value[key], int)
+                (isinstance(value[key], int)
+                and value[key] in (0, 1))
                 or (
                     isinstance(value[key], str)
                     and value[key] in self.poll["pollmethod"]
@@ -110,9 +118,8 @@ class PollVote(UpdateAction):
                 )
 
     def validate_global_value(self, value: str) -> None:
-        pollmethod = self.poll["pollmethod"]
-        if value not in pollmethod:
-            raise ActionException(f"Option value {value} is not in {pollmethod}.")
+        if value not in ("Y", "N", "A"):
+            raise ActionException(f"Option value {value} is not in 'YNA'.")
 
     def handle_option_value(self, value: Dict[str, Any], user_id: int) -> None:
         payload: List[Dict[str, Any]] = []
@@ -135,7 +142,9 @@ class PollVote(UpdateAction):
             used_value = value[key]
 
             if self.poll["pollmethod"] in ("Y", "N"):
-                weight = vote_weight if value[key] == 1 else "0.000000"
+                if value[key] == 0:
+                    continue
+                weight = vote_weight
                 used_value = self.poll["pollmethod"]
 
             if self.check_if_value_allowed_in_pollmethod(used_value):

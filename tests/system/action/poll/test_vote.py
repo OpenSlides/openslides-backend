@@ -452,8 +452,8 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.create_poll()
         self.create_model("meeting/113", {"name": "my meeting"})
         self.create_model("group/1", {"user_ids": [1]})
-        self.create_model("option/1", {"meeting_id": 113, "poll_id": 1})
-        self.create_model("option/2", {"meeting_id": 113, "poll_id": 1})
+        self.create_model("option/1", {"meeting_id": 113, "poll_id": 1, "yes": "0.000000", "no": "0.000000", "abstain":"0.000000"})
+        self.create_model("option/2", {"meeting_id": 113, "poll_id": 1, "yes": "0.000000", "no": "0.000000", "abstain":"0.000000"})
         self.update_model(
             "user/1",
             {
