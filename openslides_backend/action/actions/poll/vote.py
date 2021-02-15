@@ -106,8 +106,7 @@ class PollVote(UpdateAction):
             if int(key) not in self.poll.get("option_ids", []):
                 raise ActionException(f"Option {key} not in options of the poll.")
             if not (
-                (isinstance(value[key], int)
-                and value[key] in (0, 1))
+                (isinstance(value[key], int) and value[key] in (0, 1))
                 or (
                     isinstance(value[key], str)
                     and value[key] in self.poll["pollmethod"]
