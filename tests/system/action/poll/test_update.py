@@ -293,9 +293,6 @@ class UpdatePollOs3TestCase(BaseActionTestCase):
         self.assertTrue(poll.get("global_yes"))
         self.assertTrue(poll.get("global_no"))
         self.assertFalse(poll.get("global_abstain"))
-        self.assertEqual(poll.get("amount_global_yes"), "0.000000")
-        self.assertEqual(poll.get("amount_global_no"), "0.000000")
-        self.assertEqual(poll.get("amount_global_abstain"), None)
 
     def test_patch_majority_method_state_not_created(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})
