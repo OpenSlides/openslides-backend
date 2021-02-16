@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
@@ -157,7 +157,7 @@ class PollVote(UpdateAction):
 
             if self.check_if_value_allowed_in_pollmethod(used_value):
                 payload.append(
-                    _get_vote_create_payload(
+                    self._get_vote_create_payload(
                         used_value,
                         user_id,
                         int(key),
@@ -197,7 +197,7 @@ class PollVote(UpdateAction):
         ):
             if value == value_check and condition:
                 payload = [
-                    _get_vote_create_payload(
+                    self._get_vote_create_payload(
                         value,
                         user_id,
                         self.poll["global_option_id"],
@@ -253,18 +253,21 @@ class PollVote(UpdateAction):
         )
         instance["votesvalid"] = str(votesvalid)
 
-
-def _get_vote_create_payload(
-    value: str,
-    user_id: int,
-    option_id: int,
-    meeting_id: int,
-    weight: str,
-) -> Dict[str, Any]:
-    return {
-        "value": value,
-        "weight": weight,
-        "user_id": user_id,
-        "option_id": option_id,
-        "meeting_id": meeting_id,
-    }
+    def _get_vote_create_payload(
+        self,
+        value: str,
+        user_id: Optional[int],
+        option_id: int,
+        meeting_id: int,
+        weight: str,
+    ) -> Dict[str, Any]:
+        user_id = user_id
+        if self.poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS:
+            user_id = None
+        return {
+            "value": value,
+            "weight": weight,
+            "user_id": user_id,
+            "option_id": option_id,
+            "meeting_id": meeting_id,
+        }
