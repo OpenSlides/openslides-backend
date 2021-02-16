@@ -73,6 +73,9 @@ class VotePollOS3AnalogYNA(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
@@ -81,9 +84,9 @@ class VotePollOS3AnalogYNA(VotePollBaseTestClass):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
-        self.assertEqual(poll.get("votesvalid"), None)
-        self.assertEqual(poll.get("votesinvalid"), None)
-        self.assertEqual(poll.get("votescast"), None)
+        self.assertEqual(poll.get("votesvalid"), "0.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "0.000000")
         self.assert_model_not_exists("vote/1")
 
 
@@ -100,6 +103,9 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
@@ -127,6 +133,9 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
@@ -154,6 +163,9 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
@@ -181,6 +193,9 @@ class VotePollOS3PseudoanonymousYNA(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
@@ -208,6 +223,9 @@ class VotePollOS3PseudoanonymousY(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
@@ -235,6 +253,9 @@ class VotePollOS3PseudoAnonymousN(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
+                votesvalid="0.000000",
+                votescast="0.000000",
             ),
         )
 
