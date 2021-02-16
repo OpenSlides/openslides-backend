@@ -5,8 +5,6 @@ from openslides_backend.action.util.typing import Payload
 
 from .base import BaseActionTestCase
 
-# TODO: parse_action Tests als UnitTests zum Action Handler, die anderen, die das schreib format testen mal schauen
-
 
 class GeneralActionCommandFormat(BaseActionTestCase):
     """
@@ -21,25 +19,23 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         return handler
 
     def test_parse_actions_create_2_actions(self) -> None:
-        self.create_model("committee/1", {"name": "test_committee"})
+        self.create_model("meeting/1", {})
         payload: Payload = [
             {
-                "action": "meeting.create",
+                "action": "group.create",
                 "data": [
                     {
-                        "name": "name1",
-                        "welcome_title": "title1",
-                        "committee_id": 1,
+                        "name": "group 1",
+                        "meeting_id": 1,
                     }
                 ],
             },
             {
-                "action": "meeting.create",
+                "action": "group.create",
                 "data": [
                     {
-                        "name": "name2",
-                        "welcome_title": "title2",
-                        "committee_id": 1,
+                        "name": "group 2",
+                        "meeting_id": 1,
                     }
                 ],
             },
@@ -49,29 +45,27 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 2)
         self.assertEqual(len(write_requests[0].events), 2)
-        self.assertEqual(write_requests[0].locked_fields, {"committee/1": 2})
+        self.assertEqual(write_requests[0].locked_fields, {"meeting/1": 2})
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "update")
-        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "meeting/1")
-        self.assertEqual(str(write_requests[0].events[1]["fqid"]), "committee/1")
+        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
+        self.assertEqual(str(write_requests[0].events[1]["fqid"]), "meeting/1")
         self.assertEqual(len(write_requests[1].events), 2)
-        self.assertEqual(write_requests[1].locked_fields, {"committee/1": 2})
+        self.assertEqual(write_requests[1].locked_fields, {"meeting/1": 2})
 
     def test_parse_actions_create_1_2_events(self) -> None:
-        self.create_model("committee/1", {"name": "test_committee"})
+        self.create_model("meeting/1", {})
         payload: Payload = [
             {
-                "action": "meeting.create",
+                "action": "group.create",
                 "data": [
                     {
-                        "name": "name1",
-                        "welcome_title": "title1",
-                        "committee_id": 1,
+                        "name": "group 1",
+                        "meeting_id": 1,
                     },
                     {
-                        "name": "name2",
-                        "welcome_title": "title2",
-                        "committee_id": 1,
+                        "name": "group 2",
+                        "meeting_id": 1,
                     },
                 ],
             },
@@ -81,37 +75,36 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 1)
         self.assertEqual(len(write_requests[0].events), 4)
-        self.assertEqual(write_requests[0].locked_fields, {"committee/1": 2})
+        self.assertEqual(write_requests[0].locked_fields, {"meeting/1": 2})
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "create")
         self.assertEqual(write_requests[0].events[2]["type"], "update")
         self.assertEqual(write_requests[0].events[3]["type"], "update")
-        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "meeting/1")
-        self.assertEqual(str(write_requests[0].events[1]["fqid"]), "meeting/2")
-        self.assertEqual(str(write_requests[0].events[2]["fqid"]), "committee/1")
-        self.assertEqual(str(write_requests[0].events[3]["fqid"]), "committee/1")
+        self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
+        self.assertEqual(str(write_requests[0].events[1]["fqid"]), "group/2")
+        self.assertEqual(str(write_requests[0].events[2]["fqid"]), "meeting/1")
+        self.assertEqual(str(write_requests[0].events[3]["fqid"]), "meeting/1")
 
     def test_create_2_actions(self) -> None:
-        self.create_model("committee/1", {"name": "test_committee"})
-        response = self.request_json(
-            [
+        self.create_model("meeting/1", {})
+        response = self.client.post(
+            "/",
+            json=[
                 {
-                    "action": "meeting.create",
+                    "action": "group.create",
                     "data": [
                         {
-                            "name": "name1",
-                            "welcome_title": "title1",
-                            "committee_id": 1,
+                            "name": "group 1",
+                            "meeting_id": 1,
                         }
                     ],
                 },
                 {
-                    "action": "meeting.create",
+                    "action": "group.create",
                     "data": [
                         {
-                            "name": "name2",
-                            "welcome_title": "title2",
-                            "committee_id": 1,
+                            "name": "group 2",
+                            "meeting_id": 1,
                         }
                     ],
                 },
@@ -119,37 +112,36 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'committee/1' raises MODEL_LOCKED error.",
-            response.json["message"],
+            "Datastore service sends HTTP 400. Model \\'meeting/1\\' raises MODEL_LOCKED error.",
+            str(response.data),
         )
-        self.assert_model_not_exists("meeting/1")
-        self.assert_model_not_exists("meeting/1")
-        self.assert_model_exists("committee/1", {"meeting_ids": None})
+        self.assert_model_not_exists("group/1")
+        self.assert_model_not_exists("group/2")
+        self.assert_model_exists("meeting/1", {"group_ids": None})
 
     def test_create_1_2_events(self) -> None:
-        self.create_model("committee/1", {"name": "test_committee"})
-        response = self.request_multi(
-            "meeting.create",
-            [
+        self.create_model("meeting/1", {})
+        response = self.client.post(
+            "/",
+            json=[
                 {
-                    "name": "name1",
-                    "welcome_title": "title1",
-                    "committee_id": 1,
-                },
-                {
-                    "name": "name2",
-                    "welcome_title": "title2",
-                    "committee_id": 1,
+                    "action": "group.create",
+                    "data": [
+                        {
+                            "name": "group 1",
+                            "meeting_id": 1,
+                        },
+                        {
+                            "name": "group 2",
+                            "meeting_id": 1,
+                        },
+                    ],
                 },
             ],
         )
         self.assert_status_code(response, 200)
-        meeting1 = self.get_model("meeting/1")
-        assert meeting1.get("name") == "name1"
-        assert meeting1.get("committee_id") == 1
-        meeting2 = self.get_model("meeting/2")
-        assert meeting2.get("name") == "name2"
-        assert meeting2.get("committee_id") == 1
+        self.assert_model_exists("group/1", {"name": "group 1", "meeting_id": 1})
+        self.assert_model_exists("group/2", {"name": "group 2", "meeting_id": 1})
 
     def test_update_2_actions(self) -> None:
         self.set_models(
@@ -272,3 +264,4 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting/1")
         self.assert_model_deleted("meeting/2")
+        self.assert_model_exists("committee/1", {"meeting_ids": []})
