@@ -52,6 +52,7 @@ class PollCreateAction(CreateAction):
             "votesvalid",
             "votesinvalid",
             "votescast",
+            "entitled_group_ids",
         ],
         additional_optional_fields={
             "amount_global_yes": decimal_schema,
@@ -134,6 +135,10 @@ class PollCreateAction(CreateAction):
             instance["state"] = "finished"
             if instance.get("publish_immediately"):
                 instance["state"] = "published"
+
+        # set votescast, votesvalid, votesinvalid defaults
+        for field in ("votescast", "votesvalid", "votesinvalid"):
+            instance[field] = instance.get(field, "0.000000")
 
         return instance
 
