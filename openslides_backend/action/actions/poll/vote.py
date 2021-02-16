@@ -125,6 +125,12 @@ class PollVote(UpdateAction):
     def validate_global_value(self, value: str) -> None:
         if value not in ("Y", "N", "A"):
             raise ActionException(f"Option value {value} is not in 'YNA'.")
+        if value == "Y" and not self.poll.get("global_yes"):
+            raise ActionException("Global value Y not allowed.")
+        if value == "N" and not self.poll.get("global_no"):
+            raise ActionException("Global value N not allowed.")
+        if value == "A" and not self.poll.get("global_abstain"):
+            raise ActionException("Global value A not allowed.")
 
     def handle_option_value(
         self, value: Dict[str, Any], user_id: int, instance: Dict[str, Any]
