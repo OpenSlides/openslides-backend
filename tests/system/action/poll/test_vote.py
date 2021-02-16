@@ -539,6 +539,9 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votescast="0.000000",
+                votesvalid="0.000000",
+                votesinvalid="0.000000",
             ),
         )
 
@@ -596,13 +599,13 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
         option2 = self.get_model("option/2")
         option3 = self.get_model("option/3")
         self.assertEqual(option1.get("yes"), "4.200000")
-        self.assertEqual(option1.get("no"), "0")
-        self.assertEqual(option1.get("abstain"), "0")
-        self.assertEqual(option2.get("yes"), "0")
+        self.assertEqual(option1.get("no"), "0.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "0.000000")
         self.assertEqual(option2.get("no"), "4.200000")
-        self.assertEqual(option2.get("abstain"), "0")
-        self.assertEqual(option3.get("yes"), "0")
-        self.assertEqual(option3.get("no"), "0")
+        self.assertEqual(option2.get("abstain"), "0.000000")
+        self.assertEqual(option3.get("yes"), "0.000000")
+        self.assertEqual(option3.get("no"), "0.000000")
         self.assertEqual(option3.get("abstain"), "4.200000")
 
     def test_change_vote(self) -> None:
@@ -624,7 +627,7 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
         self.start_poll()
         response = self.request(
             "poll.vote",
-            {"value": {"1": "Y", "2": "N"}, "id": 1, "user_id": 1},
+            {"value": {"1": "Y", "3": "N"}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
@@ -730,6 +733,7 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
             ),
         )
 
@@ -753,7 +757,7 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
         self.assertEqual(option1.get("yes"), "1.000000")
         self.assertEqual(option1.get("no"), "0.000000")
         self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), ".0000000")
+        self.assertEqual(option2.get("yes"), "0.000000")
         self.assertEqual(option2.get("no"), "0.000000")
         self.assertEqual(option2.get("abstain"), "0.000000")
 
@@ -962,6 +966,7 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
             ),
         )
 
@@ -1187,6 +1192,7 @@ class VotePollOS3PseudoanonymousYNA(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
             ),
         )
 
@@ -1356,6 +1362,7 @@ class VotePollOS3PseudoanonymousY(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
             ),
         )
 
@@ -1500,6 +1507,7 @@ class VotePollOS3PseudoAnonymousN(VotePollBaseTestClass):
                 meeting_id=113,
                 option_ids=[1, 2],
                 entitled_group_ids=[1],
+                votesinvalid="0.000000",
             ),
         )
 
@@ -1520,12 +1528,12 @@ class VotePollOS3PseudoAnonymousN(VotePollBaseTestClass):
         self.assertTrue(1 in poll.get("voted_ids", []))
         option1 = self.get_model("option/1")
         option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "0")
-        self.assertEqual(option1.get("no"), "1")
-        self.assertEqual(option1.get("abstain"), "0")
-        self.assertEqual(option2.get("yes"), "0")
-        self.assertEqual(option2.get("no"), "0")
-        self.assertEqual(option2.get("abstain"), "0")
+        self.assertEqual(option1.get("yes"), "0.000000")
+        self.assertEqual(option1.get("no"), "1.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "0.000000")
+        self.assertEqual(option2.get("no"), "0.000000")
+        self.assertEqual(option2.get("abstain"), "0.000000")
         vote = self.get_model("vote/1")
         self.assertIsNone(vote.get("user_id"))
 

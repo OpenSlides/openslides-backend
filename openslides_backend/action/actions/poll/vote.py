@@ -44,6 +44,7 @@ class PollVote(UpdateAction):
             raise ActionException("Only one vote per poll per user allowed.")
         instance["voted_ids"] = self.poll.get("voted_ids", [])
         instance["voted_ids"].append(user_id)
+        instance["votescast"] = f"{len(instance['voted_ids'])}.000000"
 
         # check for analog type
         if self.poll.get("type") == "analog":
@@ -59,11 +60,11 @@ class PollVote(UpdateAction):
         # handle create the votes.
         if isinstance(value, dict):
             self.validate_option_value(value)
-            self.handle_option_value(value, user_id)
+            self.handle_option_value(value, user_id, instance)
 
         elif isinstance(value, str):
             self.validate_global_value(value)
-            self.handle_global_value(value, user_id)
+            self.handle_global_value(value, user_id, instance)
 
         return instance
 
@@ -82,6 +83,7 @@ class PollVote(UpdateAction):
                 "voted_ids",
                 "entitled_group_ids",
                 "state",
+                "votesvalid",
             ],
         )
 
@@ -124,13 +126,16 @@ class PollVote(UpdateAction):
         if value not in ("Y", "N", "A"):
             raise ActionException(f"Option value {value} is not in 'YNA'.")
 
-    def handle_option_value(self, value: Dict[str, Any], user_id: int) -> None:
+    def handle_option_value(
+        self, value: Dict[str, Any], user_id: int, instance: Dict[str, Any]
+    ) -> None:
         payload: List[Dict[str, Any]] = []
         self._handle_value_keys(value, user_id, payload)
         if payload:
             self.execute_other_action(VoteCreate, payload)
             for data in payload:
                 self.update_option(data["option_id"], data["value"], data["weight"])
+                self.update_votes_valid(instance, data["weight"])
 
     def _handle_value_keys(
         self,
@@ -182,7 +187,9 @@ class PollVote(UpdateAction):
         """
         return value_str in self.poll.get("pollmethod", "")
 
-    def handle_global_value(self, value: str, user_id: int) -> None:
+    def handle_global_value(
+        self, value: str, user_id: int, instance: Dict[str, Any]
+    ) -> None:
         for value_check, condition in (
             ("Y", self.poll.get("global_yes")),
             ("N", self.poll.get("global_no")),
@@ -202,6 +209,7 @@ class PollVote(UpdateAction):
                 self.update_option(
                     payload[0]["option_id"], payload[0]["value"], payload[0]["weight"]
                 )
+                self.update_votes_valid(instance, payload[0]["weight"])
 
     def update_option(
         self, option_id: int, extra_value: str, extra_weight: str
@@ -231,13 +239,19 @@ class PollVote(UpdateAction):
             yes += Decimal(extra_weight)
         elif extra_value == "N":
             no += Decimal(extra_weight)
-        elif extra_weight == "A":
+        elif extra_value == "A":
             abstain += Decimal(extra_weight)
 
         payload = [
             {"id": option_id, "yes": str(yes), "no": str(no), "abstain": str(abstain)}
         ]
         self.execute_other_action(OptionSetAutoFields, payload)
+
+    def update_votes_valid(self, instance: Dict[str, Any], extra_weight: str) -> None:
+        votesvalid = Decimal(self.poll.get("votesvalid", "0.000000")) + Decimal(
+            extra_weight
+        )
+        instance["votesvalid"] = str(votesvalid)
 
 
 def _get_vote_create_payload(
