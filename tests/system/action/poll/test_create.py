@@ -181,6 +181,24 @@ class CreatePollTestCase(BaseActionTestCase):
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
                 "meeting_id": 113,
+                "options": [],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")
+
+    def test_invalid_options(self) -> None:
+        self.update_model("assignment/1", {"candidate_ids": []})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113,
                 "options": [{}],
             },
         )
