@@ -448,7 +448,6 @@ class VotePollBaseTestClass(BaseActionTestCase):
             {
                 "title": "test_assignment_tcLT59bmXrXif424Qw7K",
                 "open_posts": 1,
-                "candidate_ids": [1],
             },
         )
         self.create_poll()
@@ -490,7 +489,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
     def start_poll(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})
 
-    def add_candidate(self) -> None:
+    def add_option(self) -> None:
         self.create_model("option/3", {"meeting_id": 113, "poll_id": 1})
         self.update_model("poll/1", {"option_ids": [1, 2, 3]})
 
@@ -548,7 +547,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        self.add_candidate()
+        self.add_option()
         self.start_poll()
         response = self.request(
             "poll.vote",
@@ -581,7 +580,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
     def test_vote_with_voteweight(self) -> None:
         # config["users_activate_vote_weight"] = True
         self.update_model("user/1", {"vote_weight_$113": "4.200000"})
-        self.add_candidate()
+        self.add_option()
         self.start_poll()
         response = self.request(
             "poll.vote",
@@ -1003,7 +1002,7 @@ class VotePollNamedN(VotePollBaseTestClass):
         self.assertEqual(option2.get("abstain"), "0.000000")
 
     def test_change_vote(self) -> None:
-        self.add_candidate()
+        self.add_option()
         self.start_poll()
         response = self.request(
             "poll.vote",
@@ -1202,7 +1201,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         )
 
     def test_vote(self) -> None:
-        self.add_candidate()
+        self.add_option()
         self.start_poll()
         response = self.request(
             "poll.vote",
@@ -1257,7 +1256,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_partial_vote(self) -> None:
-        self.add_candidate()
+        self.add_option()
         self.start_poll()
         response = self.request(
             "poll.vote",
