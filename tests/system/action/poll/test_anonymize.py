@@ -54,19 +54,19 @@ class AnonymizePoll(BaseActionTestCase):
         )
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_3LbUCNirKirpJhRHRxzW",
-                pollmethod="YNA",
-                type=Poll.TYPE_NAMED,
-                state=Poll.STATE_FINISHED,
-                option_ids=[11],
-                meeting_id=113,
-                voted_ids=[1, 2],
-                votesvalid="2.000000",
-                votesinvalid="0.000000",
-                votescast="2.000000",
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_3LbUCNirKirpJhRHRxzW",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "state": Poll.STATE_FINISHED,
+                "option_ids": [11],
+                "meeting_id": 113,
+                "voted_ids": [1, 2],
+                "votesvalid": "2.000000",
+                "votesinvalid": "0.000000",
+                "votescast": "2.000000",
+            },
         )
         self.create_model(
             "option/11",
@@ -83,7 +83,13 @@ class AnonymizePoll(BaseActionTestCase):
 
         self.create_model(
             "vote/1",
-            dict(meeting_id=113, user_id=1, option_id=11, value="Y", weight="1.000000"),
+            {
+                "meeting_id": 113,
+                "user_id": 1,
+                "option_id": 11,
+                "value": "Y",
+                "weight": "1.000000",
+            },
         )
         self.update_model(
             "user/1",
@@ -98,7 +104,13 @@ class AnonymizePoll(BaseActionTestCase):
         )
         self.create_model(
             "vote/2",
-            dict(meeting_id=113, user_id=2, option_id=11, value="N", weight="1.000000"),
+            {
+                "meeting_id": 113,
+                "user_id": 2,
+                "option_id": 11,
+                "value": "N",
+                "weight": "1.000000",
+            },
         )
 
     def test_anonymize_poll(self) -> None:
