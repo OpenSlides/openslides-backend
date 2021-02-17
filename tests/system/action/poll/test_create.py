@@ -128,9 +128,9 @@ class CreatePollTestCase(BaseActionTestCase):
         self.assertEqual(poll.get("pollmethod"), "YNA")
         self.assertEqual(poll.get("type"), "named")
         # Check defaults
-        # self.assertTrue(poll.get("global_yes"))
-        # self.assertTrue(poll.get("global_no"))
-        # self.assertTrue(poll.get("global_abstain"))
+        self.assertTrue(poll.get("global_yes"))
+        self.assertTrue(poll.get("global_no"))
+        self.assertTrue(poll.get("global_abstain"))
         self.assertEqual(poll.get("amount_global_yes"), None)
         self.assertEqual(poll.get("amount_global_no"), None)
         self.assertEqual(poll.get("amount_global_abstain"), None)
@@ -167,7 +167,7 @@ class CreatePollTestCase(BaseActionTestCase):
             poll.get("description"), "test_description_ieM8ThuasoSh8aecai8p"
         )
 
-    def test_no_candidates(self) -> None:
+    def test_no_options(self) -> None:
         self.update_model("assignment/1", {"candidate_ids": []})
         response = self.request(
             "poll.create",
