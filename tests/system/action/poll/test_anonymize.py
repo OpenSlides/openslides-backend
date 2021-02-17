@@ -41,7 +41,7 @@ class PollAnonymizeActionTest(BaseActionTestCase):
         assert user.get("vote_delegated_vote_$1_ids") == []
 
 
-class AnonymizeOS3Poll(BaseActionTestCase):
+class AnonymizePoll(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_model(
