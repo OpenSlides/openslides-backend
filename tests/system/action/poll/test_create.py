@@ -7,21 +7,29 @@ from tests.system.action.base import BaseActionTestCase
 class PollCreateTest(BaseActionTestCase):
     def test_create_correct(self) -> None:
         self.create_model("meeting/112", {"name": "meeting_112"})
-        response = self.request(
-            "poll.create",
-            {
-                "title": "test",
-                "type": "analog",
-                "pollmethod": "Y",
-                "options": [{"text": "test2", "Y": "10.000000"}],
-                "meeting_id": 112,
-                "global_yes": True,
-                "global_no": True,
-                "global_abstain": True,
-                "amount_global_yes": "1.000000",
-                "amount_global_no": "1.250000",
-                "amount_global_abstain": "2.500000",
-            },
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "poll.create",
+                    "data": [
+                        {
+                            "title": "test",
+                            "type": "analog",
+                            "pollmethod": "Y",
+                            "options": [{"text": "test2", "Y": "10.000000"}],
+                            "meeting_id": 112,
+                            "global_yes": True,
+                            "global_no": True,
+                            "global_abstain": True,
+                            "amount_global_yes": "1.000000",
+                            "amount_global_no": "1.250000",
+                            "amount_global_abstain": "2.500000",
+                        }
+                    ],
+                }
+            ],
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
@@ -45,20 +53,27 @@ class PollCreateTest(BaseActionTestCase):
         assert global_option.get("abstain") == "2.500000"
 
     def test_create_three_options(self) -> None:
-        self.create_model("meeting/112", {"name": "meeting_112"})
-        response = self.request(
-            "poll.create",
-            {
-                "title": "test",
-                "type": "analog",
-                "pollmethod": "YNA",
-                "options": [
-                    {"text": "test2", "Y": "10.000000"},
-                    {"text": "test3", "N": "0.999900"},
-                    {"text": "test4", "N": "11.000000"},
-                ],
-                "meeting_id": 112,
-            },
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
+        response = self.client.post(
+            "/",
+            json=[
+                {
+                    "action": "poll.create",
+                    "data": [
+                        {
+                            "title": "test",
+                            "type": "analog",
+                            "pollmethod": "YNA",
+                            "options": [
+                                {"text": "test2", "Y": "10.000000"},
+                                {"text": "test3", "N": "0.999900"},
+                                {"text": "test4", "N": "11.000000"},
+                            ],
+                            "meeting_id": 112,
+                        }
+                    ],
+                }
+            ],
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
@@ -106,6 +121,7 @@ class CreatePollTestCase(BaseActionTestCase):
             },
         )
         self.create_model("meeting/113", {})
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
 
     def test_simple(self) -> None:
         response = self.request(
@@ -280,9 +296,8 @@ class CreatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
 
-    @pytest.mark.skip()
     def test_not_allowed_type(self) -> None:
-        # setattr(settings, "ENABLE_ELECTRONIC_VOTING", False)
+        self.update_model("organisation/1", {"enable_electronic_voting": False})
         response = self.request(
             "poll.create",
             {
@@ -298,7 +313,6 @@ class CreatePollTestCase(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
-        # setattr(settings, "ENABLE_ELECTRONIC_VOTING", True)
 
     def test_not_supported_pollmethod(self) -> None:
         response = self.request(

@@ -1,7 +1,8 @@
 from typing import Any, Dict
 
 from ....models.models import Poll
-from ....shared.patterns import FullQualifiedId
+from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import decimal_schema, optional_fqid_schema
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -63,6 +64,15 @@ class PollCreateAction(CreateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         payload = []
+
+        # check enabled_electronic_voting
+        if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
+            organisation = self.datastore.get(
+                FullQualifiedId(Collection("organisation"), 1),
+                ["enable_electronic_voting"],
+            )
+            if not organisation.get("enable_electronic_voting"):
+                raise ActionException("Electronic voting is not allowed.")
 
         # handle non-global options
         weight = 1
