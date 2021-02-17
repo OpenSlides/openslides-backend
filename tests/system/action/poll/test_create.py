@@ -166,6 +166,8 @@ class CreatePollTestCase(BaseActionTestCase):
         self.assertEqual(
             poll.get("description"), "test_description_ieM8ThuasoSh8aecai8p"
         )
+        self.assertEqual(poll.get("onehundred_percent_base"), "YNA")
+        self.assertEqual(poll.get("majority_method"), "three_quarters")
 
     def test_no_options(self) -> None:
         self.update_model("assignment/1", {"candidate_ids": []})
