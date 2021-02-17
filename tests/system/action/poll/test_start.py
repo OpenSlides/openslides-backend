@@ -31,7 +31,6 @@ class VotePollBaseTestClass(BaseActionTestCase):
             {
                 "title": "test_assignment_tcLT59bmXrXif424Qw7K",
                 "open_posts": 1,
-                "candidate_ids": [1],
             },
         )
         self.create_poll()
@@ -54,10 +53,6 @@ class VotePollBaseTestClass(BaseActionTestCase):
 
     def start_poll(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})
-
-    def add_candidate(self) -> None:
-        self.create_model("option/3", {"meeting_id": 113, "poll_id": 1})
-        self.update_model("poll/1", {"option_ids": [1, 2, 3]})
 
 
 class VotePollAnalogYNA(VotePollBaseTestClass):
