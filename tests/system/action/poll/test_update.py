@@ -97,7 +97,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         ) in response.data.decode()
 
 
-class UpdatePollOs3TestCase(BaseActionTestCase):
+class UpdatePollTestCase(BaseActionTestCase):
     """
     Tests updating polls of assignments.
     """
@@ -106,28 +106,28 @@ class UpdatePollOs3TestCase(BaseActionTestCase):
         super().setUp()
         self.create_model(
             "assignment/1",
-            dict(
-                title="test_assignment_ohneivoh9caiB8Yiungo",
-                open_posts=1,
-                candidate_ids=[1],
-            ),
+            {
+                "title": "test_assignment_ohneivoh9caiB8Yiungo",
+                "open_posts": 1,
+                "candidate_ids": [1],
+            },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
         self.create_model("group/1", {"user_ids": [1], "poll_ids": [1]})
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_beeFaihuNae1vej2ai8m",
-                pollmethod="Y",
-                type=Poll.TYPE_NAMED,
-                onehundred_percent_base="Y",
-                majority_method="simple",
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_beeFaihuNae1vej2ai8m",
+                "pollmethod": "Y",
+                "type": Poll.TYPE_NAMED,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+            },
         )
         self.create_model("option/1", {"meeting_id": 113, "poll_id": 1})
         self.create_model("option/2", {"meeting_id": 113, "poll_id": 1})
@@ -151,7 +151,8 @@ class UpdatePollOs3TestCase(BaseActionTestCase):
 
     def test_prevent_patching_assignment(self) -> None:
         self.create_model(
-            "assignment/2", dict(title="test_title_phohdah8quukooHeetuz", open_posts=1)
+            "assignment/2",
+            {"title": "test_title_phohdah8quukooHeetuz", "open_posts": 1},
         )
         response = self.request(
             "poll.update",
@@ -219,7 +220,7 @@ class UpdatePollOs3TestCase(BaseActionTestCase):
         self.assertEqual(poll.get("entitled_group_ids"), [2])
 
     def test_patch_title_started(self) -> None:
-        self.update_model("poll/1", dict(state=Poll.STATE_STARTED))
+        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
         response = self.request(
             "poll.update",
             {"title": "test_title_Oophah8EaLaequu3toh8", "id": 1},
@@ -229,7 +230,7 @@ class UpdatePollOs3TestCase(BaseActionTestCase):
         self.assertEqual(poll.get("title"), "test_title_Oophah8EaLaequu3toh8")
 
     def test_patch_wrong_state(self) -> None:
-        self.update_model("poll/1", dict(state=Poll.STATE_STARTED))
+        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
         response = self.request(
             "poll.update",
             {"type": Poll.TYPE_NAMED, "id": 1},

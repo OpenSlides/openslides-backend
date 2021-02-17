@@ -93,17 +93,17 @@ class PollCreateTest(BaseActionTestCase):
         assert option_4.get("weight") == 1
 
 
-class CreatePollOS3TestCase(BaseActionTestCase):
+class CreatePollTestCase(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.create_model(
             "assignment/1",
-            dict(
-                title="test_assignment_ohneivoh9caiB8Yiungo",
-                open_posts=1,
-                candidate_ids=[1],
-                meeting_id=113,
-            ),
+            {
+                "title": "test_assignment_ohneivoh9caiB8Yiungo",
+                "open_posts": 1,
+                "candidate_ids": [1],
+                "meeting_id": 113,
+            },
         )
         self.create_model("meeting/113", {})
 

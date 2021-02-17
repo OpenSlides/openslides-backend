@@ -445,11 +445,11 @@ class VotePollBaseTestClass(BaseActionTestCase):
         super().setUp()
         self.create_model(
             "assignment/1",
-            dict(
-                title="test_assignment_tcLT59bmXrXif424Qw7K",
-                open_posts=1,
-                candidate_ids=[1],
-            ),
+            {
+                "title": "test_assignment_tcLT59bmXrXif424Qw7K",
+                "open_posts": 1,
+                "candidate_ids": [1],
+            },
         )
         self.create_poll()
         self.create_model("meeting/113", {"name": "my meeting"})
@@ -495,20 +495,20 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.update_model("poll/1", {"option_ids": [1, 2, 3]})
 
 
-class VotePollOS3AnalogYNA(VotePollBaseTestClass):
+class VotePollAnalogYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_04k0y4TwPLpJKaSvIGm1",
-                pollmethod="YNA",
-                type=Poll.TYPE_ANALOG,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_04k0y4TwPLpJKaSvIGm1",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_ANALOG,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+            },
         )
 
     def test_vote(self) -> None:
@@ -528,23 +528,23 @@ class VotePollOS3AnalogYNA(VotePollBaseTestClass):
         assert "poll.vote is not allowed for analog voting." in response.data.decode()
 
 
-class VotePollOS3NamedYNA(VotePollBaseTestClass):
+class VotePollNamedYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_OkHAIvOSIcpFnCxbaL6v",
-                pollmethod="YNA",
-                type=Poll.TYPE_NAMED,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-                votescast="0.000000",
-                votesvalid="0.000000",
-                votesinvalid="0.000000",
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_OkHAIvOSIcpFnCxbaL6v",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_NAMED,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votescast": "0.000000",
+                "votesvalid": "0.000000",
+                "votesinvalid": "0.000000",
+            },
         )
 
     def test_vote(self) -> None:
@@ -665,7 +665,7 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        self.update_model("user/1", {"is_present_in_meeting_ids": []})
         response = self.request(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
@@ -723,24 +723,24 @@ class VotePollOS3NamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-class VotePollOS3NamedY(VotePollBaseTestClass):
+class VotePollNamedY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_Zrvh146QAdq7t6iSDwZk",
-                pollmethod="Y",
-                type=Poll.TYPE_NAMED,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-                votesinvalid="0.000000",
-                global_yes=True,
-                global_no=True,
-                global_abstain=True,
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_Zrvh146QAdq7t6iSDwZk",
+                "pollmethod": "Y",
+                "type": Poll.TYPE_NAMED,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votesinvalid": "0.000000",
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+            },
         )
 
     def test_vote(self) -> None:
@@ -801,7 +801,7 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
         self.assertEqual(option.get("abstain"), "0.000000")
 
     def test_global_yes_forbidden(self) -> None:
-        self.update_model("poll/1", dict(global_yes=False))
+        self.update_model("poll/1", {"global_yes": False})
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
         self.assert_status_code(response, 400)
@@ -821,7 +821,7 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
         self.assertEqual(option.get("abstain"), "0.000000")
 
     def test_global_no_forbidden(self) -> None:
-        self.update_model("poll/1", dict(global_no=False))
+        self.update_model("poll/1", {"global_no": False})
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
         self.assert_status_code(response, 400)
@@ -842,7 +842,7 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
         self.assertEqual(option.get("abstain"), "1.000000")
 
     def test_global_abstain_forbidden(self) -> None:
-        self.update_model("poll/1", dict(global_abstain=False))
+        self.update_model("poll/1", {"global_abstain": False})
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
         self.assert_status_code(response, 400)
@@ -897,7 +897,7 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        self.update_model("user/1", {"is_present_in_meeting_ids": []})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -958,24 +958,24 @@ class VotePollOS3NamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-class VotePollOS3NamedN(VotePollBaseTestClass):
+class VotePollNamedN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_4oi49ckKFk39SDIfj30s",
-                pollmethod="N",
-                type=Poll.TYPE_NAMED,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-                votesinvalid="0.000000",
-                global_yes=True,
-                global_no=True,
-                global_abstain=True,
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_4oi49ckKFk39SDIfj30s",
+                "pollmethod": "N",
+                "type": Poll.TYPE_NAMED,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votesinvalid": "0.000000",
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+            },
         )
 
     def test_vote(self) -> None:
@@ -1037,7 +1037,7 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
         self.assertEqual(option.get("abstain"), "0.000000")
 
     def test_global_yes_forbidden(self) -> None:
-        self.update_model("poll/1", dict(global_yes=False))
+        self.update_model("poll/1", {"global_yes": False})
         self.start_poll()
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
         self.assert_status_code(response, 400)
@@ -1057,7 +1057,7 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
         self.assertEqual(option.get("abstain"), "0.000000")
 
     def test_global_no_forbidden(self) -> None:
-        self.update_model("poll/1", dict(global_no=False))
+        self.update_model("poll/1", {"global_no": False})
         self.start_poll()
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
         self.assert_status_code(response, 400)
@@ -1077,7 +1077,7 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
         self.assertEqual(option.get("abstain"), "1.000000")
 
     def test_global_abstain_forbidden(self) -> None:
-        self.update_model("poll/1", dict(global_abstain=False))
+        self.update_model("poll/1", {"global_abstain": False})
         self.start_poll()
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
         self.assert_status_code(response, 400)
@@ -1123,7 +1123,7 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        self.update_model("user/1", {"is_present_in_meeting_ids": []})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -1184,21 +1184,21 @@ class VotePollOS3NamedN(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-class VotePollOS3PseudoanonymousYNA(VotePollBaseTestClass):
+class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_OkHAIvOSIcpFnCxbaL6v",
-                pollmethod="YNA",
-                type=Poll.TYPE_PSEUDOANONYMOUS,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-                votesinvalid="0.000000",
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_OkHAIvOSIcpFnCxbaL6v",
+                "pollmethod": "YNA",
+                "type": Poll.TYPE_PSEUDOANONYMOUS,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votesinvalid": "0.000000",
+            },
         )
 
     def test_vote(self) -> None:
@@ -1297,7 +1297,7 @@ class VotePollOS3PseudoanonymousYNA(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        self.update_model("user/1", {"is_present_in_meeting_ids": []})
         response = self.request(
             "poll.vote",
             {"value": {"1": "Y"}, "id": 1, "user_id": 1},
@@ -1355,21 +1355,21 @@ class VotePollOS3PseudoanonymousYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-class VotePollOS3PseudoanonymousY(VotePollBaseTestClass):
+class VotePollPseudoanonymousY(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_Zrvh146QAdq7t6iSDwZk",
-                pollmethod="Y",
-                type=Poll.TYPE_PSEUDOANONYMOUS,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-                votesinvalid="0.000000",
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_Zrvh146QAdq7t6iSDwZk",
+                "pollmethod": "Y",
+                "type": Poll.TYPE_PSEUDOANONYMOUS,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votesinvalid": "0.000000",
+            },
         )
 
     def test_vote(self) -> None:
@@ -1439,7 +1439,7 @@ class VotePollOS3PseudoanonymousY(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        self.update_model("user/1", {"is_present_in_meeting_ids": []})
         response = self.request(
             "poll.vote",
             {"value": {"1": 1}, "id": 1, "user_id": 1},
@@ -1500,21 +1500,21 @@ class VotePollOS3PseudoanonymousY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
-class VotePollOS3PseudoAnonymousN(VotePollBaseTestClass):
+class VotePollPseudoAnonymousN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
             "poll/1",
-            dict(
-                content_object_id="assignment/1",
-                title="test_title_wWPOVJgL9afm83eamf3e",
-                pollmethod="N",
-                type=Poll.TYPE_PSEUDOANONYMOUS,
-                state=Poll.STATE_CREATED,
-                meeting_id=113,
-                option_ids=[1, 2],
-                entitled_group_ids=[1],
-                votesinvalid="0.000000",
-            ),
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_wWPOVJgL9afm83eamf3e",
+                "pollmethod": "N",
+                "type": Poll.TYPE_PSEUDOANONYMOUS,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votesinvalid": "0.000000",
+            },
         )
 
     def test_vote(self) -> None:
@@ -1575,7 +1575,7 @@ class VotePollOS3PseudoAnonymousN(VotePollBaseTestClass):
 
     def test_vote_not_present(self) -> None:
         self.start_poll()
-        self.update_model("user/1", dict(is_present_in_meeting_ids=[]))
+        self.update_model("user/1", {"is_present_in_meeting_ids": []})
 
         response = self.request(
             "poll.vote",
