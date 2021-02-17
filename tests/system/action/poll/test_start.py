@@ -51,9 +51,6 @@ class VotePollBaseTestClass(BaseActionTestCase):
         # has to be implemented by subclasses
         raise NotImplementedError()
 
-    def start_poll(self) -> None:
-        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
-
 
 class VotePollAnalogYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
