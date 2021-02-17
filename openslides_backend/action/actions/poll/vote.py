@@ -39,6 +39,10 @@ class PollVote(UpdateAction):
         if not value:
             raise ActionException("Value must contain values.")
 
+        # check if in the started state
+        if self.poll.get("state") != Poll.STATE_STARTED:
+            raise ActionException("poll.vote is only allowed in started state.")
+
         # check for double vote
         if user_id in self.poll.get("voted_ids", []):
             raise ActionException("Only one vote per poll per user allowed.")
@@ -49,10 +53,6 @@ class PollVote(UpdateAction):
         # check for analog type
         if self.poll.get("type") == "analog":
             raise ActionException("poll.vote is not allowed for analog voting.")
-
-        # check if in the started state-
-        if self.poll.get("state") != Poll.STATE_STARTED:
-            raise ActionException("poll.vote is only allowed in started state.")
 
         self.check_user_entitled_groups(user_id)
         self.check_user_is_present_in_meeting(user_id)
