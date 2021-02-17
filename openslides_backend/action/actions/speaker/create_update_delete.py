@@ -1,8 +1,8 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Speaker
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator
+from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...generics.update import UpdateAction
@@ -11,6 +11,8 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionPayload
+from .sort import SpeakerSort
 
 
 @register_action("speaker.create")
@@ -22,29 +24,121 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         optional_properties=["marked", "point_of_order"],
     )
 
+    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+        """
+        Reason for this Exception: It's hard and specific doing the weight calculation
+        of creating speakers with point of orders, because of the used max- and min-datastore methods.
+        These should handle the still not generated speakers with specific filters.
+        But we don't need this functionality
+        """
+        if len(payload) > 1:  # type: ignore
+            raise ActionException(
+                "It is not permitted to create more than one speaker per request!"
+            )
+        yield from super().get_updated_instances(payload)
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        if instance.get("point_of_order", False):
-            weight = self.datastore.min(
-                collection=Collection("speaker"),
-                filter=FilterOperator(
-                    "list_of_speakers_id", "=", instance["list_of_speakers_id"]
-                ),
-                field="weight",
-                type="int",
-                lock_result=True,
-            )
-            instance["weight"] = -1 if weight is None else weight - 1
+        weight_max = self._get_max_weight(instance["list_of_speakers_id"])
+        if weight_max is None:
+            instance["weight"] = 1
+            return instance
+
+        if not instance.get("point_of_order"):
+            instance["weight"] = weight_max + 1
+            return instance
+
+        list_of_speakers_id = instance["list_of_speakers_id"]
+        weight_no_poos_min = self._get_no_poo_min(list_of_speakers_id)
+        if weight_no_poos_min is None:
+            instance["weight"] = weight_max + 1
+            return instance
+
+        instance["weight"] = weight_no_poos_min
+        speaker_ids = self._insert_before_weight(
+            instance["id"], weight_no_poos_min, list_of_speakers_id
+        )
+        additional_relation_models = {
+            FullQualifiedId(self.model.collection, instance["id"]): instance
+        }
+        payload = [
+            {
+                "list_of_speakers_id": list_of_speakers_id,
+                "speaker_ids": speaker_ids,
+            }
+        ]
+        self.execute_other_action(SpeakerSort, payload, additional_relation_models)
         return instance
+
+    def _insert_before_weight(
+        self, new_id: int, weight: int, list_of_speakers_id: int
+    ) -> List[int]:
+        """
+        We need to bild a list of speakers, sort them by weight and
+        insert the new speaker before the entry with the weight from parameter
+        """
+        filter = And(
+            FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+            FilterOperator("begin_time", "=", None),
+            FilterOperator("meta_deleted", "=", False),
+        )
+        speakers = self.datastore.filter(
+            self.model.collection,
+            filter=filter,
+            mapped_fields=["id", "weight"],
+            lock_result=True,
+        )
+        los = sorted(speakers.values(), key=lambda k: k["weight"])
+        list_to_sort = []
+        for speaker in los:
+            if speaker["weight"] == weight:
+                list_to_sort.append(new_id)
+            list_to_sort.append(speaker["id"])
+        return list_to_sort
+
+    def _get_max_weight(self, list_of_speakers_id: int) -> Optional[int]:
+        return self.datastore.max(
+            collection=Collection("speaker"),
+            filter=And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meta_deleted", "=", False),
+            ),
+            field="weight",
+            type="int",
+            lock_result=True,
+        )
+
+    def _get_no_poo_min(self, list_of_speakers_id: int) -> Optional[int]:
+        return self.datastore.min(
+            collection=Collection("speaker"),
+            filter=And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                Or(
+                    FilterOperator("point_of_order", "=", False),
+                    FilterOperator("point_of_order", "=", None),
+                ),
+                FilterOperator("begin_time", "=", None),
+                FilterOperator("meta_deleted", "=", False),
+            ),
+            field="weight",
+            type="int",
+            lock_result=True,
+        )
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Checks
+        - that only the requesting user can file a point-of-order
         - that a new speaker does not already exist on the list of speaker as
         waiting speaker (with begin_time == None), but allows one additional with point_of_order speaker per user
         - that points_of_order are used in this meeting
         - that user has to be present to be added to the list of speakers
         """
+        if instance.get("point_of_order") and instance.get("user_id") != self.user_id:
+            raise ActionException(
+                f"The requesting user {self.user_id} is not the user {instance.get('user_id')} the point-of-order is filed for."
+            )
         los_fqid = FullQualifiedId(
             Collection("list_of_speakers"), instance["list_of_speakers_id"]
         )
