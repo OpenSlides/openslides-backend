@@ -5,6 +5,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class PollUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
         self.create_model("poll/1", {"state": "started", "type": "named"})
         response = self.request(
             "poll.update",
@@ -24,6 +25,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         assert poll.get("majority_method") == "simple"
 
     def test_catch_not_allowed(self) -> None:
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
         self.create_model("poll/1", {"state": "started", "type": "named"})
         response = self.request(
             "poll.update",
@@ -46,6 +48,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         ) in response.data.decode()
 
     def test_optional_state_created(self) -> None:
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
         self.create_model("poll/1", {"state": "created", "type": "named"})
         response = self.request(
             "poll.update",
@@ -71,6 +74,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         assert poll.get("global_abstain") is True
 
     def test_not_allowed_for_analog(self) -> None:
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
         self.create_model("poll/1", {"state": "started", "type": "analog"})
         response = self.request("poll.update", {"id": 1, "entitled_group_ids": []})
         self.assert_status_code(response, 400)
@@ -80,6 +84,7 @@ class PollUpdateActionTest(BaseActionTestCase):
         ) in response.data.decode()
 
     def test_not_allowed_for_non_analog(self) -> None:
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
         self.create_model("poll/1", {"state": "started", "type": "named"})
         response = self.request(
             "poll.update",
@@ -108,6 +113,7 @@ class UpdatePollTestCase(BaseActionTestCase):
             },
         )
         self.create_model("meeting/113", {"name": "my meeting"})
+        self.create_model("organisation/1", {"enable_electronic_voting": True})
         self.create_model("group/1", {"user_ids": [1], "poll_ids": [1]})
         self.create_model(
             "poll/1",
@@ -189,7 +195,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assertEqual(poll.get("type"), "named")
 
     def test_update_not_allowed_type(self) -> None:
-        # self.update_model("organisation/1", {"enable_electronic_voting": False})
+        self.update_model("organisation/1", {"enable_electronic_voting": False})
         response = self.request(
             "poll.update",
             {"type": Poll.TYPE_NAMED, "id": 1},

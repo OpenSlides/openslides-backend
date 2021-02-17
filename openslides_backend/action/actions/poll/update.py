@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -39,6 +39,16 @@ class PollUpdateAction(UpdateAction):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state", "type"]
         )
+
+        # check enable_electronic voting
+        if instance.get("type") in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
+            organisation = self.datastore.get(
+                FullQualifiedId(Collection("organisation"), 1),
+                ["enable_electronic_voting"],
+            )
+            if not organisation.get("enable_electronic_voting"):
+                raise ActionException("Electronic voting is not allowed.")
+
         not_allowed = []
         if not poll.get("state") == Poll.STATE_CREATED:
             for key in (
