@@ -667,7 +667,9 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_state(self) -> None:
-        response = self.request("poll.vote", {"value": {}, "id": 1, "user_id": 1})
+        response = self.request(
+            "poll.vote", {"value": {"1": "Y"}, "id": 1, "user_id": 1}
+        )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/1")
 
