@@ -11,7 +11,9 @@ ActionResultElement = Dict[str, Any]
 ActionResults = List[Optional[ActionResultElement]]
 
 ActionError = TypedDict(
-    "ActionError", {"success": Literal[False], "message": str, "action_data_index": int}
+    "ActionError",
+    {"success": Literal[False], "message": str, "action_data_error_index": int},
+    total=False,
 )
 
 ActionsResponseResults = List[Union[Optional[ActionResults], ActionError]]

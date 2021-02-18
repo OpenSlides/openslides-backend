@@ -1,10 +1,14 @@
 from copy import deepcopy
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
 import fastjsonschema
 
 from ..shared.env import is_dev_mode
-from ..shared.exceptions import ActionException, DatastoreLockedException
+from ..shared.exceptions import (
+    ActionException,
+    DatastoreLockedException,
+    View400Exception,
+)
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.schema import schema_version
@@ -12,6 +16,7 @@ from . import actions  # noqa
 from .relations.relation_manager import RelationManager
 from .util.actions_map import actions_map
 from .util.typing import (
+    ActionError,
     ActionResults,
     ActionsResponse,
     ActionsResponseResults,
@@ -100,15 +105,13 @@ class ActionHandler(BaseHandler):
 
             for element in payload:
                 try:
-                    results = self.execute_write_requests(
+                    result = self.execute_write_requests(
                         lambda e: transform_to_list(self.perform_action(e)), element
                     )
-                    results.append(results)
+                    results.append(result)
                 except ActionException as exception:
-                    if exception.action_data_error_index:
-                        results.append(exception.get_json())
-                    else:
-                        raise
+                    error = cast(ActionError, exception.get_json())
+                    results.append(error)
 
         # Return action result
         self.logger.debug("Request was successful. Send response now.")
@@ -169,7 +172,7 @@ class ActionHandler(BaseHandler):
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
         if ActionClass is None or (ActionClass.internal and not is_dev_mode()):
-            raise ActionException(f"Action {action_name} does not exist.")
+            raise View400Exception(f"Action {action_name} does not exist.")
         if not relation_manager:
             relation_manager = RelationManager(self.datastore)
 
@@ -186,5 +189,7 @@ class ActionHandler(BaseHandler):
             self.logger.debug(
                 f"Error occured on index {action.index}: {exception.message}"
             )
-            exception.action_data_error_index = action.index
+            # -1: error which cannot be directly associated with a single action data
+            if action.index > -1:
+                exception.action_data_error_index = action.index
             raise exception

@@ -23,7 +23,7 @@ from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
-from .util.typing import ActionData, ActionResultElement
+from .util.typing import ActionData, ActionResultElement, ActionResults
 
 
 class SchemaProvider(type):
@@ -36,6 +36,11 @@ class SchemaProvider(type):
         if schema is not None:
             attrs["schema_validator"] = fastjsonschema.compile(schema)
         return super().__new__(cls, name, bases, attrs)
+
+
+def native(method: Callable) -> Callable:
+    setattr(method, "_native", True)
+    return method
 
 
 class BaseAction:  # pragma: no cover
@@ -91,7 +96,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def perform(
         self, payload: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], List[Optional[ActionResultElement]]]:
+    ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
         Entrypoint to perform the action.
         """
@@ -100,15 +105,21 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for element in payload:
             self.validate_payload_element(element)
             self.index += 1
+        self.index = -1
 
         # perform permission not for internal actions
         if not internal:
             self.check_permissions(payload)
 
-        self.index = 0
         instances = self.get_updated_instances(payload)
-        results: List[Optional[ActionResultElement]] = []
+        results: ActionResults = []
         for instance in instances:
+            # only increment index if the instances which are iterated here are the
+            # same as the ones from the payload (meaning get_updated_instances was
+            # not overridden)
+            if hasattr(self.get_updated_instances, "_native"):
+                self.index += 1
+
             instance = self.base_update_instance(instance)
 
             relation_updates = self.handle_relation_updates(instance)
@@ -119,7 +130,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
             result = self.create_action_result_element(instance)
             results.append(result)
-            self.index += 1
 
         final_write_request = self.process_write_requests()
         return (final_write_request, results)
@@ -133,6 +143,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 f"You are not allowed to perform action {self.name}."
             )
 
+    @native
     def get_updated_instances(self, payload: ActionData) -> ActionData:
         """
         By default this does nothing. Override in subclasses to adjust the updates
