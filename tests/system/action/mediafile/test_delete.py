@@ -4,120 +4,105 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.create_model("mediafile/111", {"title": "title_srtgb123"})
-        response = self.client.post(
-            "/",
-            json=[{"action": "mediafile.delete", "data": [{"id": 111}]}],
-        )
+        response = self.request("mediafile.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/111")
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("mediafile/112", {"title": "title_srtgb123"})
-        response = self.client.post(
-            "/",
-            json=[{"action": "mediafile.delete", "data": [{"id": 111}]}],
-        )
+        response = self.request("mediafile.delete", {"id": 111})
         self.assert_status_code(response, 400)
         model = self.get_model("mediafile/112")
         assert model.get("title") == "title_srtgb123"
 
     def test_delete_directory(self) -> None:
-        self.create_model(
-            "mediafile/112",
-            {"title": "title_srtgb123", "is_directory": True, "child_ids": [110]},
+        self.set_models(
+            {
+                "mediafile/112": {
+                    "title": "title_srtgb123",
+                    "is_directory": True,
+                    "child_ids": [110],
+                },
+                "mediafile/110": {
+                    "title": "title_ghjeu212",
+                    "is_directory": False,
+                    "parent_id": 112,
+                },
+            }
         )
-        self.create_model(
-            "mediafile/110",
-            {"title": "title_ghjeu212", "is_directory": False, "parent_id": 112},
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "mediafile.delete", "data": [{"id": 112}]}],
-        )
+        response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/110")
         self.assert_model_deleted("mediafile/112")
 
     def test_delete_directory_list_of_children(self) -> None:
-        self.create_model(
-            "mediafile/112",
-            {"title": "title_srtgb123", "is_directory": True, "child_ids": [110]},
-        )
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_ghjeu212",
-                "is_directory": True,
-                "child_ids": [113],
-                "parent_id": 112,
-            },
+                "mediafile/112": {
+                    "title": "title_srtgb123",
+                    "is_directory": True,
+                    "child_ids": [110],
+                },
+                "mediafile/110": {
+                    "title": "title_ghjeu212",
+                    "is_directory": True,
+                    "child_ids": [113],
+                    "parent_id": 112,
+                },
+                "mediafile/113": {
+                    "title": "title_del2",
+                    "is_directory": False,
+                    "child_ids": [],
+                    "parent_id": 110,
+                },
+            }
         )
-        self.create_model(
-            "mediafile/113",
-            {
-                "title": "title_del2",
-                "is_directory": False,
-                "child_ids": [],
-                "parent_id": 110,
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "mediafile.delete", "data": [{"id": 112}]}],
-        )
+        response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/110")
         self.assert_model_deleted("mediafile/112")
         self.assert_model_deleted("mediafile/113")
 
     def test_delete_directory_two_children(self) -> None:
-        self.create_model(
-            "mediafile/112",
-            {"title": "title_srtgb123", "is_directory": True, "child_ids": [110, 113]},
-        )
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_ghjeu212",
-                "is_directory": False,
-                "child_ids": [],
-                "parent_id": 112,
-            },
+                "mediafile/112": {
+                    "title": "title_srtgb123",
+                    "is_directory": True,
+                    "child_ids": [110, 113],
+                },
+                "mediafile/110": {
+                    "title": "title_ghjeu212",
+                    "is_directory": False,
+                    "child_ids": [],
+                    "parent_id": 112,
+                },
+                "mediafile/113": {
+                    "title": "title_del2",
+                    "is_directory": False,
+                    "child_ids": [],
+                    "parent_id": 112,
+                },
+            }
         )
-        self.create_model(
-            "mediafile/113",
-            {
-                "title": "title_del2",
-                "is_directory": False,
-                "child_ids": [],
-                "parent_id": 112,
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "mediafile.delete", "data": [{"id": 112}]}],
-        )
+        response = self.request("mediafile.delete", {"id": 112})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/110")
         self.assert_model_deleted("mediafile/112")
         self.assert_model_deleted("mediafile/113")
 
     def test_delete_check_relations(self) -> None:
-        self.create_model(
-            "meeting/111", {"logo_$place_id": 222, "logo_$_id": ["place"]}
-        )
-        self.create_model(
-            "mediafile/222",
+        self.set_models(
             {
-                "used_as_logo_$place_in_meeting_id": 111,
-                "used_as_logo_$_in_meeting_id": ["place"],
-            },
+                "meeting/111": {"logo_$place_id": 222, "logo_$_id": ["place"]},
+                "mediafile/222": {
+                    "used_as_logo_$place_in_meeting_id": 111,
+                    "used_as_logo_$_in_meeting_id": ["place"],
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[{"action": "mediafile.delete", "data": [{"id": 222}]}],
-        )
+        response = self.request("mediafile.delete", {"id": 222})
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/222")

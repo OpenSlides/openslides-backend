@@ -3,26 +3,22 @@ from tests.system.action.base import BaseActionTestCase
 
 class PollResetActionTest(BaseActionTestCase):
     def test_reset_correct(self) -> None:
-        self.create_model(
-            "poll/1", {"state": "started", "option_ids": [1], "global_option_id": 2}
+        self.set_models(
+            {
+                "poll/1": {
+                    "state": "started",
+                    "option_ids": [1],
+                    "global_option_id": 2,
+                },
+                "option/1": {"vote_ids": [1, 2], "poll_id": 1},
+                "option/2": {"vote_ids": [3], "used_as_global_option_in_poll_id": 1},
+                "vote/1": {"option_id": 1},
+                "vote/2": {"option_id": 1},
+                "vote/3": {"option_id": 2},
+            }
         )
-        self.create_model("option/1", {"vote_ids": [1, 2], "poll_id": 1})
-        self.create_model(
-            "option/2", {"vote_ids": [3], "used_as_global_option_in_poll_id": 1}
-        )
-        self.create_model("vote/1", {"option_id": 1})
-        self.create_model("vote/2", {"option_id": 1})
-        self.create_model("vote/3", {"option_id": 2})
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.reset",
-                    "data": [{"id": 1}],
-                }
-            ],
-        )
+        response = self.request("poll.reset", {"id": 1})
         self.assert_status_code(response, 200)
 
         # check if the state has been changed to 1 (Created).

@@ -3,38 +3,34 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionSetNumberMixinTest(BaseActionTestCase):
     def test_create_set_number_return_because_number_preset(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "motions_number_type": "manually"}
-        )
-        self.create_model(
-            "motion_workflow/12",
+        self.set_models(
             {
-                "name": "name_workflow1",
-                "first_state_id": 34,
-                "state_ids": [34],
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_type": "manually",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                    "meeting_id": 222,
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
                 "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+                "number": "A003",
             },
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                            "number": "A003",
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
@@ -43,38 +39,34 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number") == "A003"
 
     def test_create_set_number_return_because_number_type_manually(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "motions_number_type": "manually"}
-        )
-        self.create_model(
-            "motion_workflow/12",
+        self.set_models(
             {
-                "name": "name_workflow1",
-                "first_state_id": 34,
-                "state_ids": [34],
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_type": "manually",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                    "meeting_id": 222,
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
                 "meeting_id": 222,
+                "workflow_id": 12,
+                "agenda_create": True,
+                "text": "test",
             },
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "agenda_create": True,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
@@ -86,30 +78,29 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
 
     def test_create_set_number_good(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+            }
         )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
@@ -119,32 +110,32 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number") == "1"
 
     def test_create_set_number_min_digits(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "motions_number_min_digits": 3}
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_min_digits": 3,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+            }
         )
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
@@ -155,48 +146,41 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number_value") == 1
 
     def test_create_set_number_prefix_blank_lead_motion(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_min_digits": 3,
-                "motions_number_with_blank": True,
-                "motions_amendments_prefix": "B",
-            },
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_min_digits": 3,
+                    "motions_number_with_blank": True,
+                    "motions_amendments_prefix": "B",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion/11": {
+                    "title": "title_FcnPUXJB",
+                    "meeting_id": 222,
+                    "state_id": 34,
+                    "number": "001",
+                },
+            }
         )
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion/11",
+        response = self.request(
+            "motion.create",
             {
-                "title": "title_FcnPUXJB",
+                "title": "test_Xcdfgee",
                 "meeting_id": 222,
-                "state_id": 34,
-                "number": "001",
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 11,
             },
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                            "lead_motion_id": 11,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/12")
@@ -207,60 +191,50 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number_value") == 1
 
     def test_create_set_number_prefix_blank_lead_motion_number_inc(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_min_digits": 3,
-                "motions_number_with_blank": True,
-                "motions_amendments_prefix": "B",
-            },
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_min_digits": 3,
+                    "motions_number_with_blank": True,
+                    "motions_amendments_prefix": "B",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion/11": {
+                    "title": "title_FcnPUXJB",
+                    "meeting_id": 222,
+                    "state_id": 34,
+                    "number": "001",
+                    "number_value": 3,
+                },
+                "motion/8": {
+                    "title": "title_FcnPUXJB",
+                    "meeting_id": 222,
+                    "state_id": 34,
+                    "number": "001",
+                    "number_value": 1,
+                    "lead_motion_id": 11,
+                },
+            }
         )
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion/11",
+        response = self.request(
+            "motion.create",
             {
-                "title": "title_FcnPUXJB",
+                "title": "test_Xcdfgee",
                 "meeting_id": 222,
-                "state_id": 34,
-                "number": "001",
-                "number_value": 3,
-            },
-        )
-        self.create_model(
-            "motion/8",
-            {
-                "title": "title_FcnPUXJB",
-                "meeting_id": 222,
-                "state_id": 34,
-                "number": "001",
-                "number_value": 1,
+                "workflow_id": 12,
+                "text": "test",
                 "lead_motion_id": 11,
             },
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                            "lead_motion_id": 11,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/12")
@@ -271,53 +245,44 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number_value") == 2
 
     def test_create_set_number_get_number_per_category(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_min_digits": 3,
-                "motions_number_type": "per_category",
-            },
-        )
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion_category/176", {"name": "name_category_176", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion/8",
-            {
-                "title": "title_FcnPUXJB",
-                "meeting_id": 222,
-                "state_id": 34,
-                "number": "003",
-                "number_value": 23,
-                "category_id": 176,
-            },
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_min_digits": 3,
+                    "motions_number_type": "per_category",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion_category/176": {"name": "name_category_176", "meeting_id": 222},
+                "motion/8": {
+                    "title": "title_FcnPUXJB",
+                    "meeting_id": 222,
+                    "state_id": 34,
+                    "number": "003",
+                    "number_value": 23,
+                    "category_id": 176,
+                },
+            }
         )
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                            "category_id": 176,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+                "category_id": 176,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/9")
@@ -328,64 +293,52 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number_value") == 24
 
     def test_create_set_number_unique_check_jump(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_min_digits": 3,
-                "motions_number_type": "per_category",
-            },
-        )
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion_category/176", {"name": "name_category_176", "meeting_id": 222}
-        )
-        self.create_model(
-            "motion/8",
-            {
-                "title": "title_FcnPUXJB",
-                "meeting_id": 222,
-                "state_id": 34,
-                "number": "001",
-                "number_value": 23,
-                "category_id": 176,
-            },
-        )
-        self.create_model(
-            "motion/6",
-            {
-                "title": "title_FcnPUXJB",
-                "meeting_id": 222,
-                "state_id": 34,
-                "number": "024",
-                "number_value": 23,
-                "category_id": 176,
-            },
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_min_digits": 3,
+                    "motions_number_type": "per_category",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion_category/176": {"name": "name_category_176", "meeting_id": 222},
+                "motion/8": {
+                    "title": "title_FcnPUXJB",
+                    "meeting_id": 222,
+                    "state_id": 34,
+                    "number": "001",
+                    "number_value": 23,
+                    "category_id": 176,
+                },
+                "motion/6": {
+                    "title": "title_FcnPUXJB",
+                    "meeting_id": 222,
+                    "state_id": 34,
+                    "number": "024",
+                    "number_value": 23,
+                    "category_id": 176,
+                },
+            }
         )
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                            "category_id": 176,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+                "category_id": 176,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/9")
@@ -396,32 +349,32 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
         assert model.get("number_value") == 25
 
     def test_set_number_false(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "motions_number_min_digits": 3}
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_min_digits": 3,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": False,
+                },
+            }
         )
-        self.create_model(
-            "motion_workflow/12",
-            {"name": "name_workflow1", "first_state_id": 34, "state_ids": [34]},
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": False},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
@@ -433,37 +386,29 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
 
 class SetNumberMixinSetStateTest(BaseActionTestCase):
     def test_set_state_correct_next_state(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_state/76",
+        self.set_models(
             {
-                "name": "test0",
-                "motion_ids": [],
-                "next_state_ids": [],
-                "previous_state_ids": [77],
-                "set_number": True,
-                "meeting_id": 222,
-            },
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion_state/76": {
+                    "name": "test0",
+                    "motion_ids": [],
+                    "next_state_ids": [],
+                    "previous_state_ids": [77],
+                    "set_number": True,
+                    "meeting_id": 222,
+                },
+                "motion_state/77": {
+                    "name": "test1",
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "next_state_ids": [76],
+                    "previous_state_ids": [],
+                    "meeting_id": 222,
+                },
+                "motion/22": {"meeting_id": 222, "title": "test1", "state_id": 77},
+            }
         )
-        self.create_model(
-            "motion_state/77",
-            {
-                "name": "test1",
-                "motion_ids": [22],
-                "first_state_of_workflow_id": 76,
-                "next_state_ids": [76],
-                "previous_state_ids": [],
-                "meeting_id": 222,
-            },
-        )
-        self.create_model(
-            "motion/22",
-            {"meeting_id": 222, "title": "test1", "state_id": 77},
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.set_state", "data": [{"id": 22, "state_id": 76}]}],
-        )
+        response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
@@ -472,20 +417,23 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
 
 class SetNumberMixinManuallyTest(BaseActionTestCase):
     def _create_models_for_number_manually_tests(self) -> None:
-        self.create_model(
-            "meeting/222", {"name": "name_SNLGsvIV", "motions_number_type": "manually"}
-        )
-        self.create_model(
-            "motion_workflow/12",
+        self.set_models(
             {
-                "name": "name_workflow1",
-                "first_state_id": 34,
-                "state_ids": [34],
-            },
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_type": "manually",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+            }
         )
 
     def test_complex_example_manually_1(self) -> None:
@@ -565,38 +513,28 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
 
 class SetNumberMixinSeriallTest(BaseActionTestCase):
     def _create_models_for_number_prefix_test(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_type": "serially_numbered",
-                "motions_number_min_digits": 3,
-                "motions_number_with_blank": True,
-            },
-        )
-        self.create_model(
-            "motion_workflow/12",
-            {
-                "name": "name_workflow1",
-                "first_state_id": 34,
-                "state_ids": [34],
-            },
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion_category/7",
-            {"name": "A", "prefix": "A", "meeting_id": 222},
-        )
-        self.create_model(
-            "motion_category/8",
-            {"name": "B", "prefix": "B", "meeting_id": 222},
-        )
-        self.create_model(
-            "motion_category/9",
-            {"name": "no prefix", "meeting_id": 222},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_type": "serially_numbered",
+                    "motions_number_min_digits": 3,
+                    "motions_number_with_blank": True,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion_category/7": {"name": "A", "prefix": "A", "meeting_id": 222},
+                "motion_category/8": {"name": "B", "prefix": "B", "meeting_id": 222},
+                "motion_category/9": {"name": "no prefix", "meeting_id": 222},
+            }
         )
 
     def test_complex_example_serially_numbered_1(self) -> None:
@@ -710,9 +648,7 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
         assert motion1.get("number") == "A 001"
         assert motion1.get("number_value") == 1
 
-        response = self.client.post(
-            "/", json=[{"action": "motion.delete", "data": [{"id": 1}]}]
-        )
+        response = self.request("motion.delete", {"id": 1})
         self.assert_status_code(response, 200)
 
         response = self.request(
@@ -733,38 +669,28 @@ class SetNumberMixinSeriallTest(BaseActionTestCase):
 
 class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
     def _create_models_for_number_per_category_1(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_type": "per_category",
-                "motions_number_min_digits": 3,
-                "motions_number_with_blank": False,
-            },
-        )
-        self.create_model(
-            "motion_workflow/12",
-            {
-                "name": "name_workflow1",
-                "first_state_id": 34,
-                "state_ids": [34],
-            },
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion_category/7",
-            {"name": "A", "prefix": "A", "meeting_id": 222},
-        )
-        self.create_model(
-            "motion_category/8",
-            {"name": "B", "prefix": "B", "meeting_id": 222},
-        )
-        self.create_model(
-            "motion_category/9",
-            {"name": "no prefix", "meeting_id": 222},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_type": "per_category",
+                    "motions_number_min_digits": 3,
+                    "motions_number_with_blank": False,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion_category/7": {"name": "A", "prefix": "A", "meeting_id": 222},
+                "motion_category/8": {"name": "B", "prefix": "B", "meeting_id": 222},
+                "motion_category/9": {"name": "no prefix", "meeting_id": 222},
+            }
         )
 
     def test_complex_example_per_category_1_1(self) -> None:
@@ -904,31 +830,27 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
         assert motion2.get("number_value") == 2
 
     def _create_models_for_number_per_category_2(self) -> None:
-        self.create_model(
-            "meeting/222",
+        self.set_models(
             {
-                "name": "name_SNLGsvIV",
-                "motions_number_type": "per_category",
-                "motions_number_min_digits": 3,
-                "motions_number_with_blank": True,
-                "motions_amendments_prefix": "X-",
-            },
-        )
-        self.create_model(
-            "motion_workflow/12",
-            {
-                "name": "name_workflow1",
-                "first_state_id": 34,
-                "state_ids": [34],
-            },
-        )
-        self.create_model(
-            "motion_state/34",
-            {"name": "name_state34", "meeting_id": 222, "set_number": True},
-        )
-        self.create_model(
-            "motion_category/7",
-            {"name": "A", "prefix": "A", "meeting_id": 222},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "motions_number_type": "per_category",
+                    "motions_number_min_digits": 3,
+                    "motions_number_with_blank": True,
+                    "motions_amendments_prefix": "X-",
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_number": True,
+                },
+                "motion_category/7": {"name": "A", "prefix": "A", "meeting_id": 222},
+            }
         )
 
     def test_complex_example_per_category_2_1(self) -> None:
@@ -1166,51 +1088,40 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
 
 class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):
     def test_set_number(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_category/7",
-            {"name": "A", "prefix": "A", "meeting_id": 222},
-        )
-        self.create_model(
-            "motion_state/76",
+        self.set_models(
             {
-                "name": "test0",
-                "motion_ids": [],
-                "next_state_ids": [77],
-                "previous_state_ids": [],
-                "show_state_extension_field": True,
-                "show_recommendation_extension_field": True,
-                "set_number": True,
-                "meeting_id": 222,
-            },
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion_category/7": {"name": "A", "prefix": "A", "meeting_id": 222},
+                "motion_state/76": {
+                    "name": "test0",
+                    "motion_ids": [],
+                    "next_state_ids": [77],
+                    "previous_state_ids": [],
+                    "show_state_extension_field": True,
+                    "show_recommendation_extension_field": True,
+                    "set_number": True,
+                    "meeting_id": 222,
+                },
+                "motion_state/77": {
+                    "name": "test1",
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "next_state_ids": [],
+                    "previous_state_ids": [76],
+                    "set_number": True,
+                    "meeting_id": 222,
+                },
+                "motion/22": {
+                    "meeting_id": 222,
+                    "title": "test1",
+                    "state_id": 77,
+                    "recommendation_id": 76,
+                    "recommendation_extension": "test_test_test",
+                    "category_id": 7,
+                },
+            }
         )
-        self.create_model(
-            "motion_state/77",
-            {
-                "name": "test1",
-                "motion_ids": [22],
-                "first_state_of_workflow_id": 76,
-                "next_state_ids": [],
-                "previous_state_ids": [76],
-                "set_number": True,
-                "meeting_id": 222,
-            },
-        )
-        self.create_model(
-            "motion/22",
-            {
-                "meeting_id": 222,
-                "title": "test1",
-                "state_id": 77,
-                "recommendation_id": 76,
-                "recommendation_extension": "test_test_test",
-                "category_id": 7,
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.follow_recommendation", "data": [{"id": 22}]}],
-        )
+        response = self.request("motion.follow_recommendation", {"id": 22})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76

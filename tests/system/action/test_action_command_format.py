@@ -93,9 +93,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
 
     def test_create_2_actions(self) -> None:
         self.create_model("committee/1", {"name": "test_committee"})
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_json(
+            [
                 {
                     "action": "meeting.create",
                     "data": [
@@ -120,8 +119,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model \\'committee/1\\' raises MODEL_LOCKED error.",
-            str(response.data),
+            "Datastore service sends HTTP 400. Model 'committee/1' raises MODEL_LOCKED error.",
+            response.json["message"],
         )
         self.assert_model_not_exists("meeting/1")
         self.assert_model_not_exists("meeting/1")
@@ -129,23 +128,18 @@ class GeneralActionCommandFormat(BaseActionTestCase):
 
     def test_create_1_2_events(self) -> None:
         self.create_model("committee/1", {"name": "test_committee"})
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_multi(
+            "meeting.create",
+            [
                 {
-                    "action": "meeting.create",
-                    "data": [
-                        {
-                            "name": "name1",
-                            "welcome_title": "title1",
-                            "committee_id": 1,
-                        },
-                        {
-                            "name": "name2",
-                            "welcome_title": "title2",
-                            "committee_id": 1,
-                        },
-                    ],
+                    "name": "name1",
+                    "welcome_title": "title1",
+                    "committee_id": 1,
+                },
+                {
+                    "name": "name2",
+                    "welcome_title": "title2",
+                    "committee_id": 1,
                 },
             ],
         )
@@ -158,16 +152,15 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         assert meeting2.get("committee_id") == 1
 
     def test_update_2_actions(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "name1", "committee_id": 1, "welcome_title": "t"}
+        self.set_models(
+            {
+                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
+                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "committee/1": {"name": "test_committee"},
+            }
         )
-        self.create_model(
-            "meeting/2", {"name": "name2", "committee_id": 1, "welcome_title": "t"}
-        )
-        self.create_model("committee/1", {"name": "test_committee"})
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_json(
+            [
                 {
                     "action": "meeting.update",
                     "data": [
@@ -195,28 +188,23 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         assert meeting2.get("name") == "name2_updated"
 
     def test_update_1_2_events(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "name1", "committee_id": 1, "welcome_title": "t"}
+        self.set_models(
+            {
+                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
+                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "committee/1": {"name": "test_committee"},
+            }
         )
-        self.create_model(
-            "meeting/2", {"name": "name2", "committee_id": 1, "welcome_title": "t"}
-        )
-        self.create_model("committee/1", {"name": "test_committee"})
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_multi(
+            "meeting.update",
+            [
                 {
-                    "action": "meeting.update",
-                    "data": [
-                        {
-                            "id": 1,
-                            "name": "name1_updated",
-                        },
-                        {
-                            "id": 2,
-                            "name": "name2_updated",
-                        },
-                    ],
+                    "id": 1,
+                    "name": "name1_updated",
+                },
+                {
+                    "id": 2,
+                    "name": "name2_updated",
                 },
             ],
         )
@@ -227,18 +215,15 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         assert meeting2.get("name") == "name2_updated"
 
     def test_delete_2_actions(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "name1", "committee_id": 1, "welcome_title": "t"}
+        self.set_models(
+            {
+                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
+                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "committee/1": {"name": "test_committee", "meeting_ids": [1, 2]},
+            }
         )
-        self.create_model(
-            "meeting/2", {"name": "name2", "committee_id": 1, "welcome_title": "t"}
-        )
-        self.create_model(
-            "committee/1", {"name": "test_committee", "meeting_ids": [1, 2]}
-        )
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_json(
+            [
                 {
                     "action": "meeting.delete",
                     "data": [
@@ -259,35 +244,28 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model \\'committee/1\\' raises MODEL_LOCKED error.",
-            str(response.data),
+            "Datastore service sends HTTP 400. Model 'committee/1' raises MODEL_LOCKED error.",
+            response.json["message"],
         )
         self.assert_model_exists("meeting/1")
         self.assert_model_exists("meeting/2")
 
     def test_delete_1_2_events(self) -> None:
-        self.create_model(
-            "meeting/1", {"name": "name1", "committee_id": 1, "welcome_title": "t"}
+        self.set_models(
+            {
+                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
+                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "committee/1": {"name": "test_committee", "meeting_ids": [1, 2]},
+            }
         )
-        self.create_model(
-            "meeting/2", {"name": "name2", "committee_id": 1, "welcome_title": "t"}
-        )
-        self.create_model(
-            "committee/1", {"name": "test_committee", "meeting_ids": [1, 2]}
-        )
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_multi(
+            "meeting.delete",
+            [
                 {
-                    "action": "meeting.delete",
-                    "data": [
-                        {
-                            "id": 1,
-                        },
-                        {
-                            "id": 2,
-                        },
-                    ],
+                    "id": 1,
+                },
+                {
+                    "id": 2,
                 },
             ],
         )

@@ -7,15 +7,7 @@ class GroupUpdateActionTest(BaseActionTestCase):
             "group/111",
             {"name": "name_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "group.update",
-                    "data": [{"id": 111, "name": "name_Xcdfgee"}],
-                }
-            ],
-        )
+        response = self.request("group.update", {"id": 111, "name": "name_Xcdfgee"})
         self.assert_status_code(response, 200)
         model = self.get_model("group/111")
         assert model.get("name") == "name_Xcdfgee"
@@ -25,15 +17,7 @@ class GroupUpdateActionTest(BaseActionTestCase):
             "group/111",
             {"name": "name_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "group.update",
-                    "data": [{"id": 112, "name": "name_Xcdfgee"}],
-                }
-            ],
-        )
+        response = self.request("group.update", {"id": 112, "name": "name_Xcdfgee"})
         self.assert_status_code(response, 400)
         model = self.get_model("group/111")
         assert model.get("name") == "name_srtgb123"

@@ -3,25 +3,20 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionCategorySystemTest(BaseActionTestCase):
     def test_create_good_case_full_fields(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "motion_category/123", {"name": "name_bWdKLQxL", "meeting_id": 222}
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion_category/123": {"name": "name_bWdKLQxL", "meeting_id": 222},
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.create",
-                    "data": [
-                        {
-                            "name": "test_Xcdfgee",
-                            "prefix": "prefix_niqCxoXA",
-                            "meeting_id": 222,
-                            "parent_id": 123,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "prefix": "prefix_niqCxoXA",
+                "meeting_id": 222,
+                "parent_id": 123,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion_category/124")
@@ -35,19 +30,12 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_create_good_case_only_required_fields(self) -> None:
         self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.create",
-                    "data": [
-                        {
-                            "name": "test_Xcdfgee",
-                            "meeting_id": 222,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion_category/1")
@@ -55,10 +43,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         assert model.get("meeting_id") == 222
 
     def test_create_empty_data(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion_category.create", "data": [{}]}],
-        )
+        response = self.request("motion_category.create", {})
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['name', 'meeting_id'] properties",
@@ -66,20 +51,13 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.create",
-                    "data": [
-                        {
-                            "name": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "wrong_field": "text_AefohteiF8",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "wrong_field": "text_AefohteiF8",
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -88,19 +66,12 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_create_link_non_existing_meeting(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.create",
-                    "data": [
-                        {
-                            "name": "test_Xcdfgee",
-                            "meeting_id": 222,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -110,20 +81,13 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_create_prefix_none(self) -> None:
         self.create_model("meeting/222")
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.create",
-                    "data": [
-                        {
-                            "name": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "prefix": None,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 222,
+                "prefix": None,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion_category/1")

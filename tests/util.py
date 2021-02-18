@@ -47,7 +47,7 @@ class Client(WerkzeugClient):
         else:
             self.headers = {}
 
-    def post(self, *args: Any, **kwargs: Any) -> Any:
+    def post(self, *args: Any, **kwargs: Any) -> Response:
         return super().post(*args, headers=self.headers, **kwargs)
 
 

@@ -8,14 +8,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             "user/1",
             {"password": old_hash},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.set_password_self",
-                    "data": [{"old_password": "old", "new_password": "new"}],
-                }
-            ],
+        response = self.request(
+            "user.set_password_self", {"old_password": "old", "new_password": "new"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
@@ -29,14 +23,8 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             "user/1",
             {"password": old_hash},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.set_password_self",
-                    "data": [{"old_password": "wrong", "new_password": "new"}],
-                }
-            ],
+        response = self.request(
+            "user.set_password_self", {"old_password": "wrong", "new_password": "new"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("user/1")

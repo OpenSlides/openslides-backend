@@ -4,14 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class OptionCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "option.create",
-                    "data": [{"text": "testtesttest", "meeting_id": 111, "weight": 10}],
-                }
-            ],
+        response = self.request(
+            "option.create", {"text": "testtesttest", "meeting_id": 111, "weight": 10}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("option/1")
@@ -21,59 +15,41 @@ class OptionCreateActionTest(BaseActionTestCase):
 
     def test_create_without_text_and_content_object_id(self) -> None:
         self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "option.create",
-                    "data": [{"meeting_id": 111, "weight": 10}],
-                }
-            ],
-        )
+        response = self.request("option.create", {"meeting_id": 111, "weight": 10})
         self.assert_status_code(response, 400)
         assert "Need text xor content_object_id." in response.json["message"]
 
     def test_create_with_both_text_and_content_object_id(self) -> None:
-        self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
-        self.create_model("motion/112", {"meeting_id": 111})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "option.create",
-                    "data": [
-                        {
-                            "text": "test",
-                            "content_object_id": "motion/112",
-                            "meeting_id": 111,
-                            "weight": 10,
-                        }
-                    ],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/111": {"name": "meeting_Xcdfgee"},
+                "motion/112": {"meeting_id": 111},
+            }
+        )
+        response = self.request(
+            "option.create",
+            {
+                "text": "test",
+                "content_object_id": "motion/112",
+                "meeting_id": 111,
+                "weight": 10,
+            },
         )
         self.assert_status_code(response, 400)
         assert "Need text xor content_object_id." in response.json["message"]
 
     def test_create_yna_votes(self) -> None:
         self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "option.create",
-                    "data": [
-                        {
-                            "text": "test",
-                            "meeting_id": 111,
-                            "weight": 10,
-                            "yes": "1.000000",
-                            "no": "2.500000",
-                            "abstain": "0.666667",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "option.create",
+            {
+                "text": "test",
+                "meeting_id": 111,
+                "weight": 10,
+                "yes": "1.000000",
+                "no": "2.500000",
+                "abstain": "0.666667",
+            },
         )
         self.assert_status_code(response, 200)
         option = self.get_model("option/1")

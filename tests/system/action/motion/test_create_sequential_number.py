@@ -29,41 +29,27 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "meeting222"})
         self.create_workflow()
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "motion_title",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "motion_title",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
         self.assertEqual(model.get("sequential_number"), 1)
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "motion_title2",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "motion_title2",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
 
         self.assert_status_code(response, 200)
@@ -71,46 +57,36 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.assertEqual(model.get("sequential_number"), 2)
 
     def test_create_sequential_numbers_2meetings(self) -> None:
-        self.create_model("meeting/222", {"name": "meeting222"})
-        self.create_model("meeting/223", {"name": "meeting223"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "meeting222"},
+                "meeting/223": {"name": "meeting223"},
+            }
+        )
 
         self.create_workflow()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "motion_title",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "motion_title",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
         self.assertEqual(model.get("sequential_number"), 1)
 
         self.create_workflow(workflow_id=13, meeting_id=223)
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "motion_title",
-                            "meeting_id": 223,
-                            "workflow_id": 13,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "motion_title",
+                "meeting_id": 223,
+                "workflow_id": 13,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
@@ -120,49 +96,32 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.create_model("meeting/222", {"name": "meeting222"})
         self.create_workflow()
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "motion_title",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "motion_title",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
         self.assertEqual(model.get("sequential_number"), 1)
 
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.delete", "data": [{"id": 1}]}],
-        )
+        response = self.request("motion.delete", {"id": 1})
         self.assert_status_code(response, 200)
         model = self.get_model("motion/1")
         assert model.get("meta_deleted")
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.create",
-                    "data": [
-                        {
-                            "title": "motion_title",
-                            "meeting_id": 222,
-                            "workflow_id": 12,
-                            "text": "test2",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion.create",
+            {
+                "title": "motion_title",
+                "meeting_id": 222,
+                "workflow_id": 12,
+                "text": "test2",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")

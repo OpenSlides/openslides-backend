@@ -6,35 +6,31 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategoryNumberMotionsTest(BaseActionTestCase):
     def test_good_single_motion(self) -> None:
         check_time = round(time.time())
-        self.create_model(
-            "meeting/1",
-            {"name": "meeting_1", "motion_category_ids": [111], "motion_ids": [69]},
-        )
-        self.create_model(
-            "motion_category/111",
+        self.set_models(
             {
-                "name": "name_MKKAcYQu",
-                "prefix": "prefix_A",
-                "motion_ids": [69],
-                "meeting_id": 1,
+                "meeting/1": {
+                    "name": "meeting_1",
+                    "motion_category_ids": [111],
+                    "motion_ids": [69],
+                },
+                "motion_category/111": {
+                    "name": "name_MKKAcYQu",
+                    "prefix": "prefix_A",
+                    "motion_ids": [69],
+                    "meeting_id": 1,
+                },
+                "motion/69": {
+                    "title": "title_NAZOknoM",
+                    "category_id": 111,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion_category.number_motions",
+            {
+                "id": 111,
             },
-        )
-        self.create_model(
-            "motion/69",
-            {"title": "title_NAZOknoM", "category_id": 111, "meeting_id": 1},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 111,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         motion_69 = self.get_model("motion/69")
@@ -42,63 +38,50 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         assert motion_69.get("last_modified", 0) >= check_time
 
     def test_two_motions(self) -> None:
-        self.create_model(
-            "meeting/35",
+        self.set_models(
             {
-                "name": "name_meeting35",
-                "motions_number_with_blank": True,
-                "motions_number_min_digits": 3,
-                "motion_ids": [78, 85],
-                "motion_category_ids": [111, 78, 114],
-            },
+                "meeting/35": {
+                    "name": "name_meeting35",
+                    "motions_number_with_blank": True,
+                    "motions_number_min_digits": 3,
+                    "motion_ids": [78, 85],
+                    "motion_category_ids": [111, 78, 114],
+                },
+                "motion/78": {
+                    "title": "title_NAZOknoM",
+                    "category_id": 78,
+                    "meeting_id": 35,
+                },
+                "motion/85": {
+                    "title": "title_MyMayxxr",
+                    "category_id": 78,
+                    "meeting_id": 35,
+                },
+                "motion_category/111": {
+                    "name": "name_MKKAcYQu",
+                    "child_ids": [78, 114],
+                    "prefix": "prefix_A",
+                    "meeting_id": 35,
+                },
+                "motion_category/78": {
+                    "name": "name_xSBwbHAT",
+                    "parent_id": 111,
+                    "motion_ids": [78, 85],
+                    "meeting_id": 35,
+                },
+                "motion_category/114": {
+                    "name": "name_pIObKJwT",
+                    "parent_id": 111,
+                    "prefix": "prefix_C",
+                    "meeting_id": 35,
+                },
+            }
         )
-        self.create_model(
-            "motion/78",
-            {"title": "title_NAZOknoM", "category_id": 78, "meeting_id": 35},
-        )
-        self.create_model(
-            "motion/85",
-            {"title": "title_MyMayxxr", "category_id": 78, "meeting_id": 35},
-        )
-        self.create_model(
-            "motion_category/111",
+        response = self.request(
+            "motion_category.number_motions",
             {
-                "name": "name_MKKAcYQu",
-                "child_ids": [78, 114],
-                "prefix": "prefix_A",
-                "meeting_id": 35,
+                "id": 111,
             },
-        )
-        self.create_model(
-            "motion_category/78",
-            {
-                "name": "name_xSBwbHAT",
-                "parent_id": 111,
-                "motion_ids": [78, 85],
-                "meeting_id": 35,
-            },
-        )
-        self.create_model(
-            "motion_category/114",
-            {
-                "name": "name_pIObKJwT",
-                "parent_id": 111,
-                "prefix": "prefix_C",
-                "meeting_id": 35,
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 111,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         motion_78 = self.get_model("motion/78")
@@ -107,49 +90,43 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         assert motion_85.get("number") == "prefix_A 002"
 
     def test_check_amendments_error_case(self) -> None:
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "meeting_1",
-                "motion_ids": [78, 85, 666],
-                "motion_category_ids": [111, 78, 114],
-            },
+                "meeting/1": {
+                    "name": "meeting_1",
+                    "motion_ids": [78, 85, 666],
+                    "motion_category_ids": [111, 78, 114],
+                },
+                "motion/78": {"title": "title_NAZOknoM", "meeting_id": 1},
+                "motion/85": {
+                    "title": "title_MyMayxxr",
+                    "lead_motion_id": 666,
+                    "meeting_id": 1,
+                },
+                "motion/666": {"title": "title_XtzUEFdl", "meeting_id": 1},
+                "motion_category/111": {
+                    "name": "name_MKKAcYQu",
+                    "child_ids": [78, 114],
+                    "meeting_id": 1,
+                },
+                "motion_category/78": {
+                    "name": "name_xSBwbHAT",
+                    "parent_id": 111,
+                    "motion_ids": [78, 85],
+                    "meeting_id": 1,
+                },
+                "motion_category/114": {
+                    "name": "name_pIObKJwT",
+                    "parent_id": 111,
+                    "meeting_id": 1,
+                },
+            }
         )
-        self.create_model("motion/78", {"title": "title_NAZOknoM", "meeting_id": 1})
-        self.create_model(
-            "motion/85",
-            {"title": "title_MyMayxxr", "lead_motion_id": 666, "meeting_id": 1},
-        )
-        self.create_model("motion/666", {"title": "title_XtzUEFdl", "meeting_id": 1})
-        self.create_model(
-            "motion_category/111",
-            {"name": "name_MKKAcYQu", "child_ids": [78, 114], "meeting_id": 1},
-        )
-        self.create_model(
-            "motion_category/78",
+        response = self.request(
+            "motion_category.number_motions",
             {
-                "name": "name_xSBwbHAT",
-                "parent_id": 111,
-                "motion_ids": [78, 85],
-                "meeting_id": 1,
+                "id": 111,
             },
-        )
-        self.create_model(
-            "motion_category/114",
-            {"name": "name_pIObKJwT", "parent_id": 111, "meeting_id": 1},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 111,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -158,103 +135,73 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         )
 
     def test_3_categories_5_motions_some_with_lead_motion_ids(self) -> None:
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "name_meeting_1",
-                "motions_number_with_blank": True,
-                "motions_number_min_digits": 3,
-                "motions_amendments_prefix": "X",
-                "motion_category_ids": [1, 2, 3],
-                "motion_ids": [1, 2, 3, 4, 5],
-            },
-        )
-        self.create_model(
-            "motion_category/1",
-            {
-                "name": "name_category_1",
-                "child_ids": [2, 3],
-                "parent_id": None,
-                "meeting_id": 1,
-            },
-        )
-        self.create_model(
-            "motion_category/2",
-            {
-                "name": "name_category_2",
-                "child_ids": [],
-                "parent_id": 1,
-                "prefix": "A",
-                "meeting_id": 1,
-                "motion_ids": [1, 2],
-            },
-        )
-        self.create_model(
-            "motion_category/3",
-            {
-                "name": "name_category_3",
-                "child_ids": [],
-                "parent_id": 1,
-                "prefix": "B",
-                "meeting_id": 1,
-                "motion_ids": [3, 4, 5],
-            },
-        )
-        self.create_model(
-            "motion/1",
-            {
-                "title": "title_motion_1",
-                "category_id": 2,
-                "meeting_id": 1,
-            },
-        )
-        self.create_model(
-            "motion/2",
-            {
-                "title": "title_motion_2",
-                "category_id": 2,
-                "meeting_id": 1,
-            },
-        )
-        self.create_model(
-            "motion/3",
-            {
-                "title": "title_motion_3",
-                "category_id": 3,
-                "meeting_id": 1,
-            },
-        )
-        self.create_model(
-            "motion/4",
-            {
-                "title": "title_motion_4",
-                "category_id": 3,
-                "meeting_id": 1,
-                "lead_motion_id": 3,
-            },
-        )
-        self.create_model(
-            "motion/5",
-            {
-                "title": "title_motion_5",
-                "category_id": 3,
-                "meeting_id": 1,
-                "lead_motion_id": 3,
-            },
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motions_number_with_blank": True,
+                    "motions_number_min_digits": 3,
+                    "motions_amendments_prefix": "X",
+                    "motion_category_ids": [1, 2, 3],
+                    "motion_ids": [1, 2, 3, 4, 5],
+                },
+                "motion_category/1": {
+                    "name": "name_category_1",
+                    "child_ids": [2, 3],
+                    "parent_id": None,
+                    "meeting_id": 1,
+                },
+                "motion_category/2": {
+                    "name": "name_category_2",
+                    "child_ids": [],
+                    "parent_id": 1,
+                    "prefix": "A",
+                    "meeting_id": 1,
+                    "motion_ids": [1, 2],
+                },
+                "motion_category/3": {
+                    "name": "name_category_3",
+                    "child_ids": [],
+                    "parent_id": 1,
+                    "prefix": "B",
+                    "meeting_id": 1,
+                    "motion_ids": [3, 4, 5],
+                },
+                "motion/1": {
+                    "title": "title_motion_1",
+                    "category_id": 2,
+                    "meeting_id": 1,
+                },
+                "motion/2": {
+                    "title": "title_motion_2",
+                    "category_id": 2,
+                    "meeting_id": 1,
+                },
+                "motion/3": {
+                    "title": "title_motion_3",
+                    "category_id": 3,
+                    "meeting_id": 1,
+                },
+                "motion/4": {
+                    "title": "title_motion_4",
+                    "category_id": 3,
+                    "meeting_id": 1,
+                    "lead_motion_id": 3,
+                },
+                "motion/5": {
+                    "title": "title_motion_5",
+                    "category_id": 3,
+                    "meeting_id": 1,
+                    "lead_motion_id": 3,
+                },
+            }
         )
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 1,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.number_motions",
+            {
+                "id": 1,
+            },
         )
         self.assert_status_code(response, 200)
 
@@ -265,39 +212,36 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.check_helper("motion/5", "B 003 X 002")
 
     def test_already_existing_number(self) -> None:
-        self.create_model(
-            "meeting/1",
-            {"name": "meeting_1", "motion_category_ids": [111], "motion_ids": [69, 70]},
-        )
-        self.create_model(
-            "motion_category/111",
+        self.set_models(
             {
-                "name": "name_MKKAcYQu",
-                "prefix": "prefix_A",
-                "motion_ids": [69],
-                "meeting_id": 1,
+                "meeting/1": {
+                    "name": "meeting_1",
+                    "motion_category_ids": [111],
+                    "motion_ids": [69, 70],
+                },
+                "motion_category/111": {
+                    "name": "name_MKKAcYQu",
+                    "prefix": "prefix_A",
+                    "motion_ids": [69],
+                    "meeting_id": 1,
+                },
+                "motion/69": {
+                    "title": "title_NAZOknoM",
+                    "category_id": 111,
+                    "meeting_id": 1,
+                },
+                "motion/70": {
+                    "title": "title_NAZOknoM",
+                    "meeting_id": 1,
+                    "number": "prefix_A1",
+                },
+            }
+        )
+        response = self.request(
+            "motion_category.number_motions",
+            {
+                "id": 111,
             },
-        )
-        self.create_model(
-            "motion/69",
-            {"title": "title_NAZOknoM", "category_id": 111, "meeting_id": 1},
-        )
-        self.create_model(
-            "motion/70",
-            {"title": "title_NAZOknoM", "meeting_id": 1, "number": "prefix_A1"},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 111,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -306,80 +250,56 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         )
 
     def test_sort_categories(self) -> None:
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "name_meeting_1",
-                "motion_category_ids": [1, 2, 3, 4],
-                "motion_ids": [1, 2, 3],
-            },
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_category_ids": [1, 2, 3, 4],
+                    "motion_ids": [1, 2, 3],
+                },
+                "motion_category/1": {
+                    "name": "category_1",
+                    "meeting_id": 1,
+                    "parent_id": None,
+                    "child_ids": [2, 3, 4],
+                },
+                "motion_category/2": {
+                    "name": "category_2",
+                    "meeting_id": 1,
+                    "parent_id": 1,
+                    "child_ids": [],
+                    "prefix": "C",
+                    "weight": 100,
+                    "motion_ids": [1],
+                },
+                "motion_category/3": {
+                    "name": "category_3",
+                    "meeting_id": 1,
+                    "parent_id": 1,
+                    "child_ids": [],
+                    "prefix": "A",
+                    "weight": 1,
+                    "motion_ids": [2],
+                },
+                "motion_category/4": {
+                    "name": "category_4",
+                    "meeting_id": 1,
+                    "parent_id": 1,
+                    "child_ids": [],
+                    "prefix": "B",
+                    "weight": 10,
+                    "motion_ids": [3],
+                },
+                "motion/1": {"title": "m1", "category_id": 2, "meeting_id": 1},
+                "motion/2": {"title": "m2", "category_id": 3, "meeting_id": 1},
+                "motion/3": {"title": "m3", "category_id": 4, "meeting_id": 1},
+            }
         )
-        self.create_model(
-            "motion_category/1",
+        response = self.request(
+            "motion_category.number_motions",
             {
-                "name": "category_1",
-                "meeting_id": 1,
-                "parent_id": None,
-                "child_ids": [2, 3, 4],
+                "id": 1,
             },
-        )
-        self.create_model(
-            "motion_category/2",
-            {
-                "name": "category_2",
-                "meeting_id": 1,
-                "parent_id": 1,
-                "child_ids": [],
-                "prefix": "C",
-                "weight": 100,
-                "motion_ids": [1],
-            },
-        )
-        self.create_model(
-            "motion_category/3",
-            {
-                "name": "category_3",
-                "meeting_id": 1,
-                "parent_id": 1,
-                "child_ids": [],
-                "prefix": "A",
-                "weight": 1,
-                "motion_ids": [2],
-            },
-        )
-        self.create_model(
-            "motion_category/4",
-            {
-                "name": "category_4",
-                "meeting_id": 1,
-                "parent_id": 1,
-                "child_ids": [],
-                "prefix": "B",
-                "weight": 10,
-                "motion_ids": [3],
-            },
-        )
-        self.create_model(
-            "motion/1", {"title": "m1", "category_id": 2, "meeting_id": 1}
-        )
-        self.create_model(
-            "motion/2", {"title": "m2", "category_id": 3, "meeting_id": 1}
-        )
-        self.create_model(
-            "motion/3", {"title": "m3", "category_id": 4, "meeting_id": 1}
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 1,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
 
@@ -392,48 +312,45 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         assert motion.get("number") == excepted_number
 
     def test_sort_motions(self) -> None:
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "name_meeting_1",
-                "motion_category_ids": [1],
-                "motion_ids": [1, 2, 3],
-            },
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_category_ids": [1],
+                    "motion_ids": [1, 2, 3],
+                },
+                "motion_category/1": {
+                    "name": "category_1",
+                    "meeting_id": 1,
+                    "parent_id": None,
+                    "child_ids": [],
+                    "motion_ids": [1, 2, 3],
+                },
+                "motion/1": {
+                    "title": "m1",
+                    "category_id": 1,
+                    "meeting_id": 1,
+                    "category_weight": 100,
+                },
+                "motion/2": {
+                    "title": "m2",
+                    "category_id": 1,
+                    "meeting_id": 1,
+                    "category_weight": 10,
+                },
+                "motion/3": {
+                    "title": "m3",
+                    "category_id": 1,
+                    "meeting_id": 1,
+                    "category_weight": 1,
+                },
+            }
         )
-        self.create_model(
-            "motion_category/1",
+        response = self.request(
+            "motion_category.number_motions",
             {
-                "name": "category_1",
-                "meeting_id": 1,
-                "parent_id": None,
-                "child_ids": [],
-                "motion_ids": [1, 2, 3],
+                "id": 1,
             },
-        )
-        self.create_model(
-            "motion/1",
-            {"title": "m1", "category_id": 1, "meeting_id": 1, "category_weight": 100},
-        )
-        self.create_model(
-            "motion/2",
-            {"title": "m2", "category_id": 1, "meeting_id": 1, "category_weight": 10},
-        )
-        self.create_model(
-            "motion/3",
-            {"title": "m3", "category_id": 1, "meeting_id": 1, "category_weight": 1},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 1,
-                        }
-                    ],
-                }
-            ],
         )
         self.assert_status_code(response, 200)
         self.check_helper("motion/1", "3")
@@ -441,103 +358,83 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.check_helper("motion/3", "1")
 
     def test_stop_prefix_lookup_at_main_category(self) -> None:
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "name_meeting_1",
-                "motion_category_ids": [1, 2],
-                "motion_ids": [1],
-            },
-        )
-        self.create_model(
-            "motion_category/1",
-            {
-                "name": "category_1",
-                "meeting_id": 1,
-                "parent_id": None,
-                "child_ids": [2],
-                "motion_ids": [],
-                "prefix": "A",
-            },
-        )
-        self.create_model(
-            "motion_category/2",
-            {
-                "name": "category_2",
-                "meeting_id": 1,
-                "parent_id": 1,
-                "child_ids": [],
-                "motion_ids": [1],
-            },
-        )
-        self.create_model(
-            "motion/1",
-            {"title": "m1", "category_id": 2, "meeting_id": 1, "category_weight": 100},
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_category_ids": [1, 2],
+                    "motion_ids": [1],
+                },
+                "motion_category/1": {
+                    "name": "category_1",
+                    "meeting_id": 1,
+                    "parent_id": None,
+                    "child_ids": [2],
+                    "motion_ids": [],
+                    "prefix": "A",
+                },
+                "motion_category/2": {
+                    "name": "category_2",
+                    "meeting_id": 1,
+                    "parent_id": 1,
+                    "child_ids": [],
+                    "motion_ids": [1],
+                },
+                "motion/1": {
+                    "title": "m1",
+                    "category_id": 2,
+                    "meeting_id": 1,
+                    "category_weight": 100,
+                },
+            }
         )
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 2,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.number_motions",
+            {
+                "id": 2,
+            },
         )
         self.assert_status_code(response, 200)
         self.check_helper("motion/1", "1")
 
     def test_invalid_id(self) -> None:
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "name_meeting_1",
-                "motion_category_ids": [1, 2],
-                "motion_ids": [1],
-            },
-        )
-        self.create_model(
-            "motion_category/1",
-            {
-                "name": "category_1",
-                "meeting_id": 1,
-                "parent_id": None,
-                "child_ids": [2],
-                "motion_ids": [],
-                "prefix": "A",
-            },
-        )
-        self.create_model(
-            "motion_category/2",
-            {
-                "name": "category_2",
-                "meeting_id": 1,
-                "parent_id": 1,
-                "child_ids": [],
-                "motion_ids": [1],
-            },
-        )
-        self.create_model(
-            "motion/1",
-            {"title": "m1", "category_id": 2, "meeting_id": 1, "category_weight": 100},
+                "meeting/1": {
+                    "name": "name_meeting_1",
+                    "motion_category_ids": [1, 2],
+                    "motion_ids": [1],
+                },
+                "motion_category/1": {
+                    "name": "category_1",
+                    "meeting_id": 1,
+                    "parent_id": None,
+                    "child_ids": [2],
+                    "motion_ids": [],
+                    "prefix": "A",
+                },
+                "motion_category/2": {
+                    "name": "category_2",
+                    "meeting_id": 1,
+                    "parent_id": 1,
+                    "child_ids": [],
+                    "motion_ids": [1],
+                },
+                "motion/1": {
+                    "title": "m1",
+                    "category_id": 2,
+                    "meeting_id": 1,
+                    "category_weight": 100,
+                },
+            }
         )
 
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_category.number_motions",
-                    "data": [
-                        {
-                            "id": 222,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "motion_category.number_motions",
+            {
+                "id": 222,
+            },
         )
         self.assert_status_code(response, 400)
         assert "Model 'motion_category/222' does not exist." in response.json.get(

@@ -5,29 +5,23 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingUpdateActionTest(BaseActionTestCase):
     def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
-        self.create_model("committee/1", {"name": "test_committee"})
-        self.create_model("group/1", {})
-        self.create_model(
-            "meeting/1",
+        self.set_models(
             {
-                "name": "test_name",
-                "committee_id": 1,
-                "default_group_id": 1,
-            },
+                "committee/1": {"name": "test_committee"},
+                "group/1": {},
+                "meeting/1": {
+                    "name": "test_name",
+                    "committee_id": 1,
+                    "default_group_id": 1,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "meeting.update",
-                    "data": [
-                        {
-                            "id": 1,
-                            **datapart,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "meeting.update",
+            {
+                "id": 1,
+                **datapart,
+            },
         )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
@@ -66,7 +60,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert meeting.get("users_email_body") == "testtesttest"
 
     def test_single_relation_guest_ids(self) -> None:
-        self.create_model("user/3", {})
+        self.create_model("user/3")
         meeting = self.basic_test({"guest_ids": [3]})
         assert meeting.get("guest_ids") == [3]
         user_3 = self.get_model("user/3")

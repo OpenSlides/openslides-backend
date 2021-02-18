@@ -3,16 +3,14 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionSortActionTest(BaseActionTestCase):
     def test_sort_singe_node_correct(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/22", {"meeting_id": 222, "title": "test1"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.sort",
-                    "data": [{"meeting_id": 222, "tree": [{"id": 22}]}],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/22": {"meeting_id": 222, "title": "test1"},
+            }
+        )
+        response = self.request(
+            "motion.sort", {"meeting_id": 222, "tree": [{"id": 22}]}
         )
         self.assert_status_code(response, 200)
         assert "Actions handled successfully" in response.json["message"]
@@ -22,29 +20,31 @@ class MotionSortActionTest(BaseActionTestCase):
         assert model_22.get("sort_children_ids") == []
 
     def test_sort_not_all_sorted(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/22", {"meeting_id": 222, "title": "test1"})
-        self.create_model("motion/23", {"meeting_id": 222, "title": "test"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion.sort",
-                    "data": [{"meeting_id": 222, "tree": [{"id": 22}]}],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/22": {"meeting_id": 222, "title": "test1"},
+                "motion/23": {"meeting_id": 222, "title": "test"},
+            }
+        )
+        response = self.request(
+            "motion.sort", {"meeting_id": 222, "tree": [{"id": 22}]}
         )
         self.assert_status_code(response, 400)
         assert "Did not recieve 2 ids, got 1" in response.json["message"]
 
     def test_sort_complex_correct(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/1", {"meeting_id": 222, "title": "test_root"})
-        self.create_model("motion/11", {"meeting_id": 222, "title": "test_1_1"})
-        self.create_model("motion/12", {"meeting_id": 222, "title": "test_1_2"})
-        self.create_model("motion/21", {"meeting_id": 222, "title": "test_2_1"})
-        self.create_model("motion/22", {"meeting_id": 222, "title": "test_2_2"})
-        self.create_model("motion/23", {"meeting_id": 222, "title": "test_2_3"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/1": {"meeting_id": 222, "title": "test_root"},
+                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
+                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
+                "motion/21": {"meeting_id": 222, "title": "test_2_1"},
+                "motion/22": {"meeting_id": 222, "title": "test_2_2"},
+                "motion/23": {"meeting_id": 222, "title": "test_2_3"},
+            }
+        )
 
         valid_data = {
             "meeting_id": 222,
@@ -59,10 +59,7 @@ class MotionSortActionTest(BaseActionTestCase):
             ],
         }
 
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.sort", "data": [valid_data]}],
-        )
+        response = self.request("motion.sort", valid_data)
         self.assert_status_code(response, 200)
         fqids_in_preorder = [
             "motion/1",
@@ -79,10 +76,14 @@ class MotionSortActionTest(BaseActionTestCase):
             weight += 2
 
     def test_sort_not_a_tree(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/1", {"meeting_id": 222, "title": "test_root"})
-        self.create_model("motion/11", {"meeting_id": 222, "title": "test_1_1"})
-        self.create_model("motion/12", {"meeting_id": 222, "title": "test_1_2"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/1": {"meeting_id": 222, "title": "test_root"},
+                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
+                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
+            }
+        )
 
         not_tree_data = {
             "meeting_id": 222,
@@ -93,18 +94,19 @@ class MotionSortActionTest(BaseActionTestCase):
                 }
             ],
         }
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.sort", "data": [not_tree_data]}],
-        )
+        response = self.request("motion.sort", not_tree_data)
         self.assert_status_code(response, 400)
         assert "Duplicate id in sort tree: 12" in response.json["message"]
 
     def test_sort_circle_fail(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/1", {"meeting_id": 222, "title": "test_root"})
-        self.create_model("motion/11", {"meeting_id": 222, "title": "test_1_1"})
-        self.create_model("motion/12", {"meeting_id": 222, "title": "test_1_2"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/1": {"meeting_id": 222, "title": "test_root"},
+                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
+                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
+            }
+        )
 
         circle_data = {
             "meeting_id": 222,
@@ -117,27 +119,25 @@ class MotionSortActionTest(BaseActionTestCase):
                 }
             ],
         }
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.sort", "data": [circle_data]}],
-        )
+        response = self.request("motion.sort", circle_data)
         self.assert_status_code(response, 400)
         assert "Duplicate id in sort tree: 1" in response.json["message"]
 
     def test_small_tree_correct(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/1", {"meeting_id": 222, "title": "test_root"})
-        self.create_model("motion/11", {"meeting_id": 222, "title": "test_1_1"})
-        self.create_model("motion/12", {"meeting_id": 222, "title": "test_1_2"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/1": {"meeting_id": 222, "title": "test_root"},
+                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
+                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
+            }
+        )
 
         small_tree_data = {
             "meeting_id": 222,
             "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}]}],
         }
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.sort", "data": [small_tree_data]}],
-        )
+        response = self.request("motion.sort", small_tree_data)
         self.assert_status_code(response, 200)
         model_1 = self.get_model("motion/1")
         assert model_1.get("sort_weight") == 2
@@ -153,18 +153,19 @@ class MotionSortActionTest(BaseActionTestCase):
         assert model_12.get("sort_children_ids") == []
 
     def test_extra_id(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model("motion/1", {"meeting_id": 222, "title": "test_root"})
-        self.create_model("motion/11", {"meeting_id": 222, "title": "test_1_1"})
-        self.create_model("motion/12", {"meeting_id": 222, "title": "test_1_2"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion/1": {"meeting_id": 222, "title": "test_root"},
+                "motion/11": {"meeting_id": 222, "title": "test_1_1"},
+                "motion/12": {"meeting_id": 222, "title": "test_1_2"},
+            }
+        )
 
         data = {
             "meeting_id": 222,
             "tree": [{"id": 1, "children": [{"id": 11}, {"id": 12}, {"id": 111}]}],
         }
-        response = self.client.post(
-            "/",
-            json=[{"action": "motion.sort", "data": [data]}],
-        )
+        response = self.request("motion.sort", data)
         self.assert_status_code(response, 400)
         assert "Id in sort tree does not exist: 111" in response.json["message"]

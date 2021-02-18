@@ -10,16 +10,9 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
                 "permissions": ["agenda_item.can_manage", "motion.can_create"],
             },
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "group.set_permission",
-                    "data": [
-                        {"id": 11, "permission": "projector.can_see", "set": True}
-                    ],
-                }
-            ],
+        response = self.request(
+            "group.set_permission",
+            {"id": 11, "permission": "projector.can_see", "set": True},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("group/11")
@@ -37,16 +30,9 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
                 "permissions": ["agenda_item.can_manage", "motion.can_create"],
             },
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "group.set_permission",
-                    "data": [
-                        {"id": 11, "permission": "agenda_item.can_manage", "set": True}
-                    ],
-                }
-            ],
+        response = self.request(
+            "group.set_permission",
+            {"id": 11, "permission": "agenda_item.can_manage", "set": True},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("group/11")
@@ -63,16 +49,9 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
                 "permissions": ["agenda_item.can_manage", "motion.can_create"],
             },
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "group.set_permission",
-                    "data": [
-                        {"id": 11, "permission": "agenda_item.can_manage", "set": False}
-                    ],
-                }
-            ],
+        response = self.request(
+            "group.set_permission",
+            {"id": 11, "permission": "agenda_item.can_manage", "set": False},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("group/11")
@@ -82,16 +61,9 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
         self.create_model(
             "group/11", {"name": "group_11", "permissions": ["agenda_item.can_manage"]}
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "group.set_permission",
-                    "data": [
-                        {"id": 11, "permission": "motion.can_create", "set": False}
-                    ],
-                }
-            ],
+        response = self.request(
+            "group.set_permission",
+            {"id": 11, "permission": "motion.can_create", "set": False},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("group/11")

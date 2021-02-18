@@ -4,14 +4,8 @@ from tests.system.action.base import BaseActionTestCase
 class UserCreateTemporaryActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model("meeting/222", {"name": "name_shjeuazu"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.create_temporary",
-                    "data": [{"username": "test_Xcdfgee", "meeting_id": 222}],
-                }
-            ],
+        response = self.request(
+            "user.create_temporary", {"username": "test_Xcdfgee", "meeting_id": 222}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
@@ -20,41 +14,38 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert model.get("is_physical_person") is True
 
     def test_create_all_fields(self) -> None:
-        self.create_model("meeting/222", {"name": "name_shjeuazu"})
-        self.create_model("group/1", {"meeting_id": 222})
-        self.create_model("user/7", {})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.create_temporary",
-                    "data": [
-                        {
-                            "username": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "title": "title",
-                            "first_name": "first_name",
-                            "last_name": "last_name",
-                            "is_active": True,
-                            "is_physical_person": False,
-                            "gender": "gender",
-                            "default_number": "number",
-                            "default_structure_level": "structure_level",
-                            "email": "email",
-                            "default_vote_weight": "1.000000",
-                            "is_present_in_meeting_ids": [222],
-                            "default_password": "password",
-                            "group_ids": [1],
-                            "vote_delegations_from_ids": [7],
-                            "comment": "comment<iframe></iframe>",
-                            "number": "number",
-                            "structure_level": "level",
-                            "about_me": "<p>about</p><iframe></iframe>",
-                            "vote_weight": "1.000000",
-                        }
-                    ],
-                }
-            ],
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_shjeuazu"},
+                "group/1": {"meeting_id": 222},
+                "user/7": {},
+            }
+        )
+        response = self.request(
+            "user.create_temporary",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 222,
+                "title": "title",
+                "first_name": "first_name",
+                "last_name": "last_name",
+                "is_active": True,
+                "is_physical_person": False,
+                "gender": "gender",
+                "default_number": "number",
+                "default_structure_level": "structure_level",
+                "email": "email",
+                "default_vote_weight": "1.000000",
+                "is_present_in_meeting_ids": [222],
+                "default_password": "password",
+                "group_ids": [1],
+                "vote_delegations_from_ids": [7],
+                "comment": "comment<iframe></iframe>",
+                "number": "number",
+                "structure_level": "level",
+                "about_me": "<p>about</p><iframe></iframe>",
+                "vote_weight": "1.000000",
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/8")
@@ -93,22 +84,14 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert meeting.get("user_ids") == [8]
 
     def test_create_invalid_present_meeting(self) -> None:
-        self.create_model("meeting/1", {})
-        self.create_model("meeting/2", {})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.create_temporary",
-                    "data": [
-                        {
-                            "username": "test_Xcdfgee",
-                            "meeting_id": 1,
-                            "is_present_in_meeting_ids": [2],
-                        }
-                    ],
-                }
-            ],
+        self.set_models({"meeting/1": {}, "meeting/2": {}})
+        response = self.request(
+            "user.create_temporary",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 1,
+                "is_present_in_meeting_ids": [2],
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -118,18 +101,10 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_model_not_exists("user/2")
 
     def test_create_invalid_group(self) -> None:
-        self.create_model("meeting/1", {})
-        self.create_model("group/2", {"meeting_id": 2})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.create_temporary",
-                    "data": [
-                        {"username": "test_Xcdfgee", "meeting_id": 1, "group_ids": [2]}
-                    ],
-                }
-            ],
+        self.set_models({"meeting/1": {}, "group/2": {"meeting_id": 2}})
+        response = self.request(
+            "user.create_temporary",
+            {"username": "test_Xcdfgee", "meeting_id": 1, "group_ids": [2]},
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -139,10 +114,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_model_not_exists("user/2")
 
     def test_create_empty_data(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[{"action": "user.create_temporary", "data": [{}]}],
-        )
+        response = self.request("user.create_temporary", {})
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['meeting_id', 'username'] properties",
@@ -152,20 +124,13 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
 
     def test_create_wrong_field(self) -> None:
         self.create_model("meeting/222", {"name": "name_shjeuazu"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.create_temporary",
-                    "data": [
-                        {
-                            "wrong_field": "text_AefohteiF8",
-                            "username": "test1",
-                            "meeting_id": 222,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "user.create_temporary",
+            {
+                "wrong_field": "text_AefohteiF8",
+                "username": "test1",
+                "meeting_id": 222,
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -175,21 +140,14 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_model_not_exists("user/2")
 
     def test_create_invalid_vote_delegation(self) -> None:
-        self.create_model("meeting/222", {})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.create_temporary",
-                    "data": [
-                        {
-                            "username": "test_Xcdfgee",
-                            "meeting_id": 222,
-                            "vote_delegations_from_ids": [7],
-                        }
-                    ],
-                }
-            ],
+        self.create_model("meeting/222")
+        response = self.request(
+            "user.create_temporary",
+            {
+                "username": "test_Xcdfgee",
+                "meeting_id": 222,
+                "vote_delegations_from_ids": [7],
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(

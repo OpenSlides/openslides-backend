@@ -11,21 +11,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
         token = "mytoken"
         raw_content = b"test_the_picture"
         file_content = base64.b64encode(raw_content).decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": filename,
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "resource.upload",
+            {
+                "organisation_id": 1,
+                "token": token,
+                "filename": filename,
+                "file": file_content,
+            },
         )
 
         self.assert_status_code(response, 200)
@@ -50,44 +43,35 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
     def test_upload_and_update(self) -> None:
         token = "mytoken"
-        self.create_model(
-            "organisation/1",
+        self.set_models(
             {
-                "name": "test_organisation1",
-                "resource_ids": [
-                    1,
-                ],
-            },
-        )
-        self.create_model(
-            "resource/1",
-            {
-                "organisation_id": 1,
-                "token": token,
-                "filesize": 2345,
-                "mimetype": "image/png",
-            },
+                "organisation/1": {
+                    "name": "test_organisation1",
+                    "resource_ids": [
+                        1,
+                    ],
+                },
+                "resource/1": {
+                    "organisation_id": 1,
+                    "token": token,
+                    "filesize": 2345,
+                    "mimetype": "image/png",
+                },
+            }
         )
 
         filename = "test_picture.jpg"
         used_mimetype = "image/jpeg"
         raw_content = b"test_the_picture"
         file_content = base64.b64encode(raw_content).decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": filename,
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "resource.upload",
+            {
+                "organisation_id": 1,
+                "token": token,
+                "filename": filename,
+                "file": file_content,
+            },
         )
 
         self.assert_status_code(response, 200)
@@ -119,23 +103,21 @@ class ResourceUploadActionTest(BaseActionTestCase):
         """
         token1 = "t1"
         token2 = "t2"
-        self.create_model(
-            "organisation/1",
+        self.set_models(
             {
-                "name": "test_organisation1",
-                "resource_ids": [
-                    1,
-                ],
-            },
-        )
-        self.create_model(
-            "resource/1",
-            {
-                "organisation_id": 1,
-                "token": token1,
-                "filesize": 2345,
-                "mimetype": "image/png",
-            },
+                "organisation/1": {
+                    "name": "test_organisation1",
+                    "resource_ids": [
+                        1,
+                    ],
+                },
+                "resource/1": {
+                    "organisation_id": 1,
+                    "token": token1,
+                    "filesize": 2345,
+                    "mimetype": "image/png",
+                },
+            }
         )
 
         used_mimetype = "image/jpeg"
@@ -146,9 +128,8 @@ class ResourceUploadActionTest(BaseActionTestCase):
         raw_content2 = b"test_the_picture2"
         file_content2 = base64.b64encode(raw_content2).decode()
 
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_json(
+            [
                 {
                     "action": "resource.upload",
                     "data": [
@@ -171,13 +152,13 @@ class ResourceUploadActionTest(BaseActionTestCase):
                         }
                     ],
                 },
-            ],
+            ]
         )
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model \\'organisation/1\\' raises MODEL_LOCKED error.",
-            str(response.data),
+            "Datastore service sends HTTP 400. Model 'organisation/1' raises MODEL_LOCKED error.",
+            response.json["message"],
         )
         self.assert_model_exists("organisation/1", {"resource_ids": [1]})
         self.assert_model_exists("resource/1", {"meta_deleted": False, "token": token1})
@@ -194,23 +175,21 @@ class ResourceUploadActionTest(BaseActionTestCase):
         """
         token1 = "t1"
         token2 = "t2"
-        self.create_model(
-            "organisation/1",
+        self.set_models(
             {
-                "name": "test_organisation1",
-                "resource_ids": [
-                    1,
-                ],
-            },
-        )
-        self.create_model(
-            "resource/1",
-            {
-                "organisation_id": 1,
-                "token": token1,
-                "filesize": 2345,
-                "mimetype": "image/png",
-            },
+                "organisation/1": {
+                    "name": "test_organisation1",
+                    "resource_ids": [
+                        1,
+                    ],
+                },
+                "resource/1": {
+                    "organisation_id": 1,
+                    "token": token1,
+                    "filesize": 2345,
+                    "mimetype": "image/png",
+                },
+            }
         )
 
         used_mimetype = "image/jpeg"
@@ -221,25 +200,20 @@ class ResourceUploadActionTest(BaseActionTestCase):
         raw_content2 = b"test_the_picture2"
         file_content2 = base64.b64encode(raw_content2).decode()
 
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_multi(
+            "resource.upload",
+            [
                 {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token1,
-                            "filename": filename1,
-                            "file": file_content1,
-                        },
-                        {
-                            "organisation_id": 1,
-                            "token": token2,
-                            "filename": filename2,
-                            "file": file_content2,
-                        },
-                    ],
+                    "organisation_id": 1,
+                    "token": token1,
+                    "filename": filename1,
+                    "file": file_content1,
+                },
+                {
+                    "organisation_id": 1,
+                    "token": token2,
+                    "filename": filename2,
+                    "file": file_content2,
                 },
             ],
         )
@@ -276,25 +250,18 @@ class ResourceUploadActionTest(BaseActionTestCase):
         token = "mytoken"
         raw_content = b"raising upload error in mock"
         file_content = base64.b64encode(raw_content).decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": filename,
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "resource.upload",
+            {
+                "organisation_id": 1,
+                "token": token,
+                "filename": filename,
+                "file": file_content,
+            },
         )
 
         self.assert_status_code(response, 400)
-        self.assertIn("Mocked error on media service upload", str(response.data))
+        self.assertIn("Mocked error on media service upload", response.json["message"])
         self.assert_model_not_exists("resource/1")
         self.media.upload_resource.assert_called_with(file_content, 1, used_mimetype)
 
@@ -302,25 +269,19 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.create_model("organisation/1", {"name": "test_organisation1"})
         file_content = base64.b64encode(b"testtesttest").decode()
         token = "mytoken"
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": "test.no_guilty_mimetype",
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "resource.upload",
+            {
+                "organisation_id": 1,
+                "token": token,
+                "filename": "test.no_guilty_mimetype",
+                "file": file_content,
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot guess mimetype for test.no_guilty_mimetype", str(response.data)
+            "Cannot guess mimetype for test.no_guilty_mimetype",
+            response.json["message"],
         )
         self.assert_model_not_exists("resource/1")
         self.media.upload_resource.assert_not_called()
@@ -329,32 +290,27 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.create_model("organisation/1", {"name": "test_organisation1"})
         file_content = base64.b64encode(b"testtesttest").decode()
         token = "mytoken"
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_multi(
+            "resource.upload",
+            [
                 {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": "test1.jpg",
-                            "file": file_content,
-                        },
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": "test2.jpg",
-                            "file": file_content,
-                        },
-                    ],
-                }
+                    "organisation_id": 1,
+                    "token": token,
+                    "filename": "test1.jpg",
+                    "file": file_content,
+                },
+                {
+                    "organisation_id": 1,
+                    "token": token,
+                    "filename": "test2.jpg",
+                    "file": file_content,
+                },
             ],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
             "It is not permitted to use the same token twice in a request.",
-            str(response.data),
+            response.json["message"],
         )
         self.assert_model_not_exists("resource/1")
         self.assert_model_not_exists("resource/2")
@@ -363,45 +319,36 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_error_token_used_in_a_request(self) -> None:
         self.create_model("organisation/1", {"name": "test_organisation1"})
         token = "mytoken"
-        self.create_model(
-            "resource/1",
+        self.set_models(
             {
-                "organisation_id": 1,
-                "token": token,
-                "filesize": 11,
-                "mimetype": "image/png",
-            },
-        )
-        self.create_model(
-            "resource/2",
-            {
-                "organisation_id": 1,
-                "token": token,
-                "filesize": 22,
-                "mimetype": "image/png",
-            },
+                "resource/1": {
+                    "organisation_id": 1,
+                    "token": token,
+                    "filesize": 11,
+                    "mimetype": "image/png",
+                },
+                "resource/2": {
+                    "organisation_id": 1,
+                    "token": token,
+                    "filesize": 22,
+                    "mimetype": "image/png",
+                },
+            }
         )
         file_content = base64.b64encode(b"testtesttest").decode()
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "resource.upload",
-                    "data": [
-                        {
-                            "organisation_id": 1,
-                            "token": token,
-                            "filename": "test1.jpg",
-                            "file": file_content,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "resource.upload",
+            {
+                "organisation_id": 1,
+                "token": token,
+                "filename": "test1.jpg",
+                "file": file_content,
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            f'Database corrupt: The resource token has to be unique, but there are 2 tokens \\\\"{token}\\\\".',
-            str(response.data),
+            f'Database corrupt: The resource token has to be unique, but there are 2 tokens "{token}".',
+            response.json["message"],
         )
         self.assert_model_exists("resource/1")
         self.assert_model_exists("resource/2")

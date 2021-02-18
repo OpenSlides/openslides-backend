@@ -7,14 +7,8 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
             "motion_comment/111",
             {"comment": "comment_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_comment.update",
-                    "data": [{"id": 111, "comment": "comment_Xcdfgee"}],
-                }
-            ],
+        response = self.request(
+            "motion_comment.update", {"id": 111, "comment": "comment_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion_comment/111")
@@ -25,14 +19,8 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
             "motion_comment/111",
             {"comment": "comment_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_comment.update",
-                    "data": [{"id": 112, "comment": "comment_Xcdfgee"}],
-                }
-            ],
+        response = self.request(
+            "motion_comment.update", {"id": 112, "comment": "comment_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("motion_comment/111")

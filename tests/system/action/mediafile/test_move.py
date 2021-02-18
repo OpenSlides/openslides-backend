@@ -3,51 +3,37 @@ from tests.system.action.base import BaseActionTestCase
 
 class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_parent_none(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "mediafile/7",
+        self.set_models(
             {
-                "title": "title_7",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [8, 9],
-            },
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "mediafile/7": {
+                    "title": "title_7",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [8, 9],
+                },
+                "mediafile/8": {
+                    "title": "title_8",
+                    "meeting_id": 222,
+                    "parent_id": 7,
+                    "child_ids": [],
+                },
+                "mediafile/9": {
+                    "title": "title_9",
+                    "meeting_id": 222,
+                    "parent_id": 7,
+                    "child_ids": [10],
+                },
+                "mediafile/10": {
+                    "title": "title_10",
+                    "meeting_id": 222,
+                    "parent_id": 9,
+                    "child_ids": [],
+                },
+            }
         )
-        self.create_model(
-            "mediafile/8",
-            {
-                "title": "title_8",
-                "meeting_id": 222,
-                "parent_id": 7,
-                "child_ids": [],
-            },
-        )
-        self.create_model(
-            "mediafile/9",
-            {
-                "title": "title_9",
-                "meeting_id": 222,
-                "parent_id": 7,
-                "child_ids": [10],
-            },
-        )
-        self.create_model(
-            "mediafile/10",
-            {
-                "title": "title_10",
-                "meeting_id": 222,
-                "parent_id": 9,
-                "child_ids": [],
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.move",
-                    "data": [{"meeting_id": 222, "ids": [8, 9], "parent_id": None}],
-                }
-            ],
+        response = self.request(
+            "mediafile.move", {"meeting_id": 222, "ids": [8, 9], "parent_id": None}
         )
         self.assert_status_code(response, 200)
         mediafile_7 = self.get_model("mediafile/7")
@@ -66,45 +52,34 @@ class MediafileMoveActionTest(BaseActionTestCase):
         assert mediafile_10.get("inherited_access_group_ids") == []
 
     def test_move_parent_set(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "mediafile/7",
+        self.set_models(
             {
-                "title": "title_7",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [],
-                "is_directory": True,
-                "is_public": True,
-                "inherited_access_group_ids": [],
-            },
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "mediafile/7": {
+                    "title": "title_7",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [],
+                    "is_directory": True,
+                    "is_public": True,
+                    "inherited_access_group_ids": [],
+                },
+                "mediafile/8": {
+                    "title": "title_8",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [],
+                },
+                "mediafile/9": {
+                    "title": "title_9",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [],
+                },
+            }
         )
-        self.create_model(
-            "mediafile/8",
-            {
-                "title": "title_8",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [],
-            },
-        )
-        self.create_model(
-            "mediafile/9",
-            {
-                "title": "title_9",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [],
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.move",
-                    "data": [{"meeting_id": 222, "ids": [8, 9], "parent_id": 7}],
-                }
-            ],
+        response = self.request(
+            "mediafile.move", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
         )
         self.assert_status_code(response, 200)
         mediafile_7 = self.get_model("mediafile/7")
@@ -122,67 +97,49 @@ class MediafileMoveActionTest(BaseActionTestCase):
         assert mediafile_9.get("inherited_access_group_ids") == []
 
     def test_move_non_directory_parent_set(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
-        self.create_model(
-            "mediafile/7",
+        self.set_models(
             {
-                "title": "title_7",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [],
-                "is_directory": False,
-            },
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "mediafile/7": {
+                    "title": "title_7",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [],
+                    "is_directory": False,
+                },
+                "mediafile/8": {
+                    "title": "title_8",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [],
+                },
+                "mediafile/9": {
+                    "title": "title_9",
+                    "meeting_id": 222,
+                    "parent_id": None,
+                    "child_ids": [],
+                },
+            }
         )
-        self.create_model(
-            "mediafile/8",
-            {
-                "title": "title_8",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [],
-            },
-        )
-        self.create_model(
-            "mediafile/9",
-            {
-                "title": "title_9",
-                "meeting_id": 222,
-                "parent_id": None,
-                "child_ids": [],
-            },
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.move",
-                    "data": [{"meeting_id": 222, "ids": [8, 9], "parent_id": 7}],
-                }
-            ],
+        response = self.request(
+            "mediafile.move", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
         )
         self.assert_status_code(response, 400)
         self.assertIn("New parent is not a directory.", response.json["message"])
 
     def test_move_multiple_payload_items(self) -> None:
-        self.create_model("meeting/222", {})
-        self.create_model(
-            "mediafile/7",
-            {"meeting_id": 222, "is_directory": True},
+        self.set_models(
+            {
+                "meeting/222": {},
+                "mediafile/7": {"meeting_id": 222, "is_directory": True},
+                "mediafile/8": {"meeting_id": 222, "is_directory": True},
+            }
         )
-        self.create_model(
-            "mediafile/8",
-            {"meeting_id": 222, "is_directory": True},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.move",
-                    "data": [
-                        {"meeting_id": 222, "ids": [8], "parent_id": 7},
-                        {"meeting_id": 222, "ids": [7], "parent_id": 8},
-                    ],
-                }
+        response = self.request_multi(
+            "mediafile.move",
+            [
+                {"meeting_id": 222, "ids": [8], "parent_id": 7},
+                {"meeting_id": 222, "ids": [7], "parent_id": 8},
             ],
         )
         self.assert_status_code(response, 400)
@@ -192,25 +149,23 @@ class MediafileMoveActionTest(BaseActionTestCase):
         assert mediafile_8.get("parent_id") is None
 
     def test_move_circle(self) -> None:
-        self.create_model("meeting/222", {})
-        self.create_model(
-            "mediafile/7",
-            {"meeting_id": 222, "is_directory": True, "child_ids": [8]},
+        self.set_models(
+            {
+                "meeting/222": {},
+                "mediafile/7": {
+                    "meeting_id": 222,
+                    "is_directory": True,
+                    "child_ids": [8],
+                },
+                "mediafile/8": {
+                    "meeting_id": 222,
+                    "is_directory": True,
+                    "parent_id": 7,
+                },
+            }
         )
-        self.create_model(
-            "mediafile/8",
-            {"meeting_id": 222, "is_directory": True, "parent_id": 7},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.move",
-                    "data": [
-                        {"meeting_id": 222, "ids": [7], "parent_id": 8},
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.move", {"meeting_id": 222, "ids": [7], "parent_id": 8}
         )
         self.assert_status_code(response, 400)
         self.assertIn(

@@ -7,44 +7,32 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update",
-                    "data": [{"id": 111, "username": "username_Xcdfgee"}],
-                }
-            ],
+        response = self.request(
+            "user.update", {"id": 111, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
         assert model.get("username") == "username_Xcdfgee"
 
     def test_update_some_more_fields(self) -> None:
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123"},
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123"},
+                "meeting/110": {"name": "name_DsJFXoot"},
+                "committee/78": {"name": "name_xXRGTLAJ"},
+            }
         )
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
-        self.create_model("committee/78", {"name": "name_xXRGTLAJ"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update",
-                    "data": [
-                        {
-                            "id": 111,
-                            "username": "username_Xcdfgee",
-                            "default_vote_weight": "1.700000",
-                            "organisation_management_level": "can_manage_users",
-                            "guest_meeting_ids": [110],
-                            "committee_as_member_ids": [78],
-                            "committee_as_manager_ids": [78],
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "username_Xcdfgee",
+                "default_vote_weight": "1.700000",
+                "organisation_management_level": "can_manage_users",
+                "guest_meeting_ids": [110],
+                "committee_as_member_ids": [78],
+                "committee_as_manager_ids": [78],
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
@@ -56,21 +44,15 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("organisation_management_level") == "can_manage_users"
 
     def test_update_template_fields(self) -> None:
-        self.create_model("meeting/1")
-        self.create_model("meeting/2")
-        self.create_model(
-            "user/223",
-        )
-        self.create_model(
-            "user/222",
-        )
-        self.create_model(
-            "group/11",
-            {"meeting_id": 1},
-        )
-        self.create_model(
-            "group/22",
-            {"meeting_id": 2},
+        self.set_models(
+            {
+                "meeting/1": {},
+                "meeting/2": {},
+                "user/222": {},
+                "user/223": {},
+                "group/11": {"meeting_id": 1},
+                "group/22": {"meeting_id": 2},
+            }
         )
         response = self.request(
             "user.update",
@@ -121,14 +103,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123"},
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "user.update",
-                    "data": [{"id": 112, "username": "username_Xcdfgee"}],
-                }
-            ],
+        response = self.request(
+            "user.update", {"id": 112, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("user/111")

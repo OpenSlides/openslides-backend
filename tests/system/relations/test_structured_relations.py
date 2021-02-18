@@ -46,9 +46,14 @@ class StructuredRelationTester(BaseRelationsTestCase):
     def test_nested_structured_relation(self) -> None:
         meeting_id = 222
         self.create_model("fake_model_a/333", {})
-        self.create_model("fake_model_b/111", {"meeting_id": meeting_id})
-        self.create_model(
-            "fake_model_c/444", {"meeting_id": meeting_id, "foreign_key_field": 111}
+        self.set_models(
+            {
+                "fake_model_b/111": {"meeting_id": meeting_id},
+                "fake_model_c/444": {
+                    "meeting_id": meeting_id,
+                    "foreign_key_field": 111,
+                },
+            }
         )
         field = cast(
             fields.BaseRelationField,

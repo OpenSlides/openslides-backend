@@ -3,24 +3,23 @@ from tests.system.action.base import BaseActionTestCase
 
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
     def test_create_directory_correct(self) -> None:
-        self.create_model(
-            "group/7", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
+        self.set_models(
+            {
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "meeting/110": {"name": "meeting110"},
+            }
         )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [7],
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/1")
@@ -31,29 +30,25 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_parent(self) -> None:
-        self.create_model(
-            "group/7", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
+        self.set_models(
+            {
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "meeting/110": {"name": "meeting110"},
+                "mediafile/110": {"title": "title_srtgb199", "meeting_id": 110},
+            }
         )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        self.create_model(
-            "mediafile/110",
-            {"title": "title_srtgb199", "meeting_id": 110},
-        )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [7],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
@@ -63,37 +58,31 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_parent_inherited_list(self) -> None:
-        self.create_model(
-            "group/7", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/8", {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_srtgb199",
-                "inherited_access_group_ids": [8],
-                "is_public": False,
-                "meeting_id": 110,
-            },
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/8": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "meeting/110": {"name": "meeting110"},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "inherited_access_group_ids": [8],
+                    "is_public": False,
+                    "meeting_id": 110,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [7],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
@@ -103,33 +92,27 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_parent_case1(self) -> None:
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_srtgb199",
-                "child_ids": [111],
-                "access_group_ids": [],
-                "inherited_access_group_ids": [],
-                "is_public": True,
-                "meeting_id": 110,
-            },
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "access_group_ids": [],
+                    "inherited_access_group_ids": [],
+                    "is_public": True,
+                    "meeting_id": 110,
+                },
+                "meeting/110": {"name": "meeting110"},
+            }
         )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model_child = self.get_model("mediafile/111")
@@ -138,38 +121,32 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model_child.get("is_public") is True
 
     def test_create_directory_parent_case2(self) -> None:
-        self.create_model(
-            "group/2", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/4", {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_srtgb199",
-                "child_ids": [111],
-                "inherited_access_group_ids": [2, 4],
-                "access_group_ids": [2, 4],
-                "meeting_id": 110,
-            },
+                "group/2": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/4": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "meeting/110": {"name": "meeting110"},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "inherited_access_group_ids": [2, 4],
+                    "access_group_ids": [2, 4],
+                    "meeting_id": 110,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
@@ -178,38 +155,32 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_parent_case3(self) -> None:
-        self.create_model(
-            "group/3", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/6", {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_srtgb199",
-                "child_ids": [111],
-                "inherited_access_group_ids": [],
-                "access_group_ids": [],
-                "meeting_id": 110,
-            },
+                "group/3": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/6": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "meeting/110": {"name": "meeting110"},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "inherited_access_group_ids": [],
+                    "access_group_ids": [],
+                    "meeting_id": 110,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [3, 6],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [3, 6],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
@@ -218,41 +189,33 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_parent_case4(self) -> None:
-        self.create_model(
-            "group/1", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/2", {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/3", {"name": "group_ghjeei", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_srtgb199",
-                "child_ids": [111],
-                "inherited_access_group_ids": [1, 2],
-                "access_group_ids": [1, 2],
-                "meeting_id": 110,
-            },
+                "group/1": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 110},
+                "meeting/110": {"name": "meeting110"},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "inherited_access_group_ids": [1, 2],
+                    "access_group_ids": [1, 2],
+                    "meeting_id": 110,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [2, 3],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [2, 3],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
@@ -261,42 +224,34 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("is_public") is False
 
     def test_create_directory_parent_case5(self) -> None:
-        self.create_model(
-            "group/1", {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/2", {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model(
-            "group/3", {"name": "group_ghjeei", "user_ids": [], "meeting_id": 110}
-        )
-        self.create_model("meeting/110", {"name": "meeting110"})
-        self.create_model(
-            "mediafile/110",
+        self.set_models(
             {
-                "title": "title_srtgb199",
-                "child_ids": [111],
-                "inherited_access_group_ids": [1, 2],
-                "is_public": False,
-                "access_group_ids": [1, 2],
-                "meeting_id": 110,
-            },
+                "group/1": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 110},
+                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 110},
+                "meeting/110": {"name": "meeting110"},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "inherited_access_group_ids": [1, 2],
+                    "is_public": False,
+                    "access_group_ids": [1, 2],
+                    "meeting_id": 110,
+                },
+            }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "mediafile.create_directory",
-                    "data": [
-                        {
-                            "meeting_id": 110,
-                            "title": "title_Xcdfgee",
-                            "access_group_ids": [3],
-                            "parent_id": 110,
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [3],
+                "parent_id": 110,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("mediafile/111")
