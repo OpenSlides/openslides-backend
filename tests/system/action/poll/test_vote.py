@@ -481,6 +481,10 @@ class VotePollBaseTestClass(BaseActionTestCase):
                 "group_$_ids": ["113"],
             },
         )
+        self.create_model(
+            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
+        )
+        self.update_model("poll/1", {"global_option_id": 11})
 
     def create_poll(self) -> None:
         # has to be implemented by subclasses
@@ -784,10 +788,6 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_global_yes(self) -> None:
         self.start_poll()
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
         option = self.get_model("option/11")
@@ -804,10 +804,6 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_global_no(self) -> None:
         self.start_poll()
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
         option = self.get_model("option/11")
@@ -824,11 +820,6 @@ class VotePollNamedY(VotePollBaseTestClass):
 
     def test_global_abstain(self) -> None:
         self.start_poll()
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
-
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
         option = self.get_model("option/11")
@@ -1020,10 +1011,6 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_global_yes(self) -> None:
         self.start_poll()
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
         response = self.request("poll.vote", {"value": "Y", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
         option = self.get_model("option/11")
@@ -1040,10 +1027,6 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_global_no(self) -> None:
         self.start_poll()
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
         response = self.request("poll.vote", {"value": "N", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
         option = self.get_model("option/11")
@@ -1060,10 +1043,6 @@ class VotePollNamedN(VotePollBaseTestClass):
 
     def test_global_abstain(self) -> None:
         self.start_poll()
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
         response = self.request("poll.vote", {"value": "A", "id": 1, "user_id": 1})
         self.assert_status_code(response, 200)
         option = self.get_model("option/11")
