@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "5deea6862b21a52bf82657d66d43b67e"
+MODELS_YML_CHECKSUM = "5748a9b29ebcf59017710603ccb6dfc4"
 
 
 class Organisation(Model):
@@ -1224,9 +1224,9 @@ class Poll(Model):
     )
     min_votes_amount = fields.IntegerField(default=1)
     max_votes_amount = fields.IntegerField(default=1)
-    global_yes = fields.BooleanField(default=False)
-    global_no = fields.BooleanField(default=False)
-    global_abstain = fields.BooleanField(default=False)
+    global_yes = fields.BooleanField(default=True)
+    global_no = fields.BooleanField(default=True)
+    global_abstain = fields.BooleanField(default=True)
     onehundred_percent_base = fields.CharField(
         required=True,
         constraints={"enum": ["Y", "YN", "YNA", "valid", "cast", "disabled"]},
