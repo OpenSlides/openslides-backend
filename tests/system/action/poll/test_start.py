@@ -2,19 +2,6 @@ from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
 
 
-class PollStartActionTest(BaseActionTestCase):
-    def test_start_wrong_state(self) -> None:
-        self.create_model("poll/1", {"state": "published"})
-        response = self.request("poll.start", {"id": 1})
-        self.assert_status_code(response, 400)
-        poll = self.get_model("poll/1")
-        assert poll.get("state") == "published"
-        assert (
-            "Cannot start poll 1, because it is not in state created."
-            in response.data.decode()
-        )
-
-
 class VotePollBaseTestClass(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
@@ -72,6 +59,17 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
         self.assert_model_not_exists("vote/1")
+
+    def test_start_wrong_state(self) -> None:
+        self.update_model("poll/1", {"state": "published"})
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == "published"
+        assert (
+            "Cannot start poll 1, because it is not in state created."
+            in response.data.decode()
+        )
 
 
 class VotePollNamedYNA(VotePollBaseTestClass):
