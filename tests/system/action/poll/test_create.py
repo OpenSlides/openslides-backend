@@ -54,6 +54,7 @@ class PollCreateTest(BaseActionTestCase):
 
     def test_create_three_options(self) -> None:
         self.create_model("organisation/1", {"enable_electronic_voting": True})
+        self.create_model("meeting/112", {})
         response = self.client.post(
             "/",
             json=[

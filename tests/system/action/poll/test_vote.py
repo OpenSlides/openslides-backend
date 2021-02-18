@@ -8,6 +8,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_correct_pollmethod_Y(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1, 2]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/2": {
@@ -28,6 +29,7 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "Y",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
             }
@@ -72,6 +74,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_value_check(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
@@ -82,6 +85,7 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "YN",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -105,6 +109,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_correct_pollmethod_YN(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
@@ -115,6 +120,7 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "YN",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -162,6 +168,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_global(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1, 2]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/2": {
@@ -183,6 +190,7 @@ class PollVoteTest(BaseActionTestCase):
                     "global_abstain": False,
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                     "pollmethod": "YNA",
                 },
                 "meeting/113": {"name": "my meeting"},
@@ -206,7 +214,7 @@ class PollVoteTest(BaseActionTestCase):
         assert user.get("vote_$113_ids") == [1]
 
         response = self.request("poll.vote", {"id": 1, "user_id": 2, "value": "Y"})
-        self.assert_status_code(response, 200)
+        self.assert_status_code(response, 400)
         self.assert_model_not_exists("vote/2")
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
@@ -217,12 +225,14 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_schema_problems(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "poll/1": {
                     "title": "my test poll",
                     "entitled_group_ids": [1],
                     "meeting_id": 113,
                     "pollmethod": "YNA",
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -239,11 +249,13 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_for_analog_type(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "poll/1": {
                     "title": "my test poll",
                     "type": "analog",
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -260,12 +272,14 @@ class PollVoteTest(BaseActionTestCase):
     def test_vote_option_not_in_poll(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "poll/1": {
                     "title": "my test poll",
                     "type": "named",
                     "entitled_group_ids": [1],
                     "meeting_id": 113,
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -289,6 +303,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_double_vote(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1, 2]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/2": {
@@ -311,6 +326,7 @@ class PollVoteTest(BaseActionTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "pollmethod": "YN",
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
             }
@@ -336,6 +352,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/1": {"is_present_in_meeting_ids": [113]},
                 "poll/1": {
@@ -346,6 +363,7 @@ class PollVoteTest(BaseActionTestCase):
                     "global_abstain": False,
                     "meeting_id": 113,
                     "entitled_group_ids": [],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
             }
@@ -357,6 +375,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_check_user_present_in_meeting(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "user/1": {"group_$_ids": ["113"], "group_$113_ids": [1]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
@@ -368,6 +387,7 @@ class PollVoteTest(BaseActionTestCase):
                     "global_abstain": False,
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
             }
@@ -379,6 +399,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_check_str_validation(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "poll/1": {
                     "title": "my test poll",
@@ -386,6 +407,7 @@ class PollVoteTest(BaseActionTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "pollmethod": "Y",
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -402,6 +424,7 @@ class PollVoteTest(BaseActionTestCase):
     def test_default_vote_weight(self) -> None:
         self.set_models(
             {
+                "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "user/1": {
@@ -416,6 +439,7 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "Y",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
                 },
                 "meeting/113": {"name": "my meeting"},
             }
