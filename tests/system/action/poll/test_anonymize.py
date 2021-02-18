@@ -43,7 +43,6 @@ class PollAnonymize(BaseActionTestCase):
         assert user.get("vote_delegated_vote_$_ids") == ["1"]
         assert user.get("vote_delegated_vote_$1_ids") == []
 
-
     def test_anonymize_wrong_state(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_CREATED})
         response = self.request("poll.anonymize", {"id": 1})
