@@ -59,12 +59,20 @@ class DatastoreService(Protocol):
         ...
 
     def exists(
-        self, collection: Collection, filter: Filter, lock_result: bool = False
+        self,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = None,
+        lock_result: bool = False,
     ) -> bool:
         ...
 
     def count(
-        self, collection: Collection, filter: Filter, lock_result: bool = False
+        self,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = None,
+        lock_result: bool = False,
     ) -> int:
         ...
 
@@ -73,7 +81,8 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = None,
+        type: str = "int",
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Optional[int]:
         ...
@@ -83,7 +92,8 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = None,
+        type: str = "int",
+        get_deleted_models: DeletedModelsBehaviour = None,
         lock_result: bool = False,
     ) -> Optional[int]:
         ...

@@ -112,7 +112,6 @@ class SetNumberMixin(BaseAction):
                 FilterOperator("meeting_id", "=", meeting_id),
                 FilterOperator("lead_motion_id", "=", None),
             )
-        filter = And(filter, FilterOperator("meta_deleted", "=", False))
         max_result = self.datastore.max(Collection("motion"), filter, "number_value")
         max_result = 1 if max_result is None else max_result + 1
         return max_result
@@ -121,7 +120,6 @@ class SetNumberMixin(BaseAction):
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("number", "=", number),
-            FilterOperator("meta_deleted", "=", False),
         )
         exists = self.datastore.exists(collection=Collection("motion"), filter=filter)
         return not exists

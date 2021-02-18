@@ -1,3 +1,4 @@
+from ....services.datastore.deleted_models_behaviour import DeletedModelsBehaviour
 from ....shared.filters import FilterOperator
 from ...generics.create import CreateAction
 
@@ -6,7 +7,6 @@ class SequentialNumbersMixin(CreateAction):
     def get_sequential_number(self, meeting_id: int) -> int:
         """
         Creates a sequential number, unique per meeting and returns it
-        "datastore.max" evaluates the expressin per default with records marked as deleted
         """
         filter = FilterOperator("meeting_id", "=", meeting_id)
 
@@ -14,7 +14,7 @@ class SequentialNumbersMixin(CreateAction):
             collection=self.model.collection,
             filter=filter,
             field="sequential_number",
-            type="int",
+            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             lock_result=True,
         )
         number = 1 if number is None else number + 1

@@ -80,7 +80,6 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         filter = And(
             FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
             FilterOperator("begin_time", "=", None),
-            FilterOperator("meta_deleted", "=", False),
         )
         speakers = self.datastore.filter(
             self.model.collection,
@@ -102,10 +101,8 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
             filter=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 FilterOperator("begin_time", "=", None),
-                FilterOperator("meta_deleted", "=", False),
             ),
             field="weight",
-            type="int",
             lock_result=True,
         )
 
@@ -119,10 +116,8 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                     FilterOperator("point_of_order", "=", None),
                 ),
                 FilterOperator("begin_time", "=", None),
-                FilterOperator("meta_deleted", "=", False),
             ),
             field="weight",
-            type="int",
             lock_result=True,
         )
 
