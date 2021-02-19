@@ -20,7 +20,7 @@ class CreateActionWithDependencies(CreateAction):
         additional_relation_models = {
             FullQualifiedId(self.model.collection, instance["id"]): instance,
         }
-        for ActionClass in self.dependencies:
+        for index, ActionClass in enumerate(self.dependencies):
             special_check_method_name = "check_dependant_action_execution_" + str(
                 ActionClass.model.collection
             )
