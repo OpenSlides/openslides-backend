@@ -12,7 +12,6 @@ class CreatePoll(BaseActionTestCase):
             {
                 "title": "test_assignment_ohneivoh9caiB8Yiungo",
                 "open_posts": 1,
-                "candidate_ids": [1],
                 "meeting_id": 113,
             },
         )
@@ -146,7 +145,6 @@ class CreatePoll(BaseActionTestCase):
         self.assertEqual(poll.get("majority_method"), "three_quarters")
 
     def test_no_options(self) -> None:
-        self.update_model("assignment/1", {"candidate_ids": []})
         response = self.request(
             "poll.create",
             {
@@ -164,7 +162,6 @@ class CreatePoll(BaseActionTestCase):
         self.assert_model_not_exists("poll/1")
 
     def test_invalid_options(self) -> None:
-        self.update_model("assignment/1", {"candidate_ids": []})
         response = self.request(
             "poll.create",
             {
