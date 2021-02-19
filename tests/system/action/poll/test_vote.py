@@ -603,7 +603,6 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(option3.get("abstain"), "1.000000")
 
     def test_vote_with_voteweight(self) -> None:
-        # config["users_activate_vote_weight"] = True
         self.update_model("user/1", {"vote_weight_$113": "4.200000"})
         self.add_option()
         self.start_poll()
