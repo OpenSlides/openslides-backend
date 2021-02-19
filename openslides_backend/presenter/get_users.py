@@ -35,6 +35,7 @@ get_users_schema = fastjsonschema.compile(
     }
 )
 
+# The values are the default values for None.
 ALLOWED = {
     "first_name": "",
     "last_name": "",
@@ -79,20 +80,19 @@ class GetUsers(BasePresenter):
 
     def get_all_users(self, criteria: List[str]) -> List[Dict[str, Any]]:
         fields = criteria[:]
-        for name in ("username", "first_name", "last_name"):
+        for name in ("username", "first_name", "last_name", "id", "meeting_id"):
             if name not in fields:
                 fields.append(name)
 
         return list(
             self.datastore.get_all(
                 Collection("user"),
-                ["id", *fields, "meeting_id"],
+                fields,
                 DeletedModelsBehaviour.NO_DELETED,
             ).values()
         )
 
     def filter_temp_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-
         if not self.data.get("include_temporary", False):
             users = [user for user in users if user.get("meeting_id") is None]
         return users
@@ -114,17 +114,13 @@ class GetUsers(BasePresenter):
     def sort_users(
         self, users: List[Dict[str, Any]], criteria: List[str]
     ) -> List[Dict[str, Any]]:
-        users_new = []
         for user in users:
             for crit in criteria:
                 if user.get(crit) is None:
                     user[crit] = ALLOWED[crit]
-            users_new.append(user)
 
-        users_new.sort(
-            key=itemgetter(*criteria), reverse=self.data.get("reverse", False)
-        )
-        return users_new
+        users.sort(key=itemgetter(*criteria), reverse=self.data.get("reverse", False))
+        return users
 
     def paginate_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         start_index = self.data.get("start_index", 0)
