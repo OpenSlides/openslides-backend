@@ -80,9 +80,11 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert meeting.get("user_ids") == [111]
 
     def test_update_vote_weight(self) -> None:
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 222},
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123", "meeting_id": 222},
+                "meeting/222": {},
+            }
         )
         response = self.request(
             "user.update_temporary", {"id": 111, "vote_weight": "1.500000"}
@@ -92,9 +94,11 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_weight_$222") == "1.500000"
 
     def test_update_vote_weight_two_digits(self) -> None:
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 222},
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123", "meeting_id": 222},
+                "meeting/222": {},
+            }
         )
         response = self.request(
             "user.update_temporary", {"id": 111, "vote_weight": "10.500000"}
@@ -104,9 +108,11 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_weight_$222") == "10.500000"
 
     def test_update_vote_weight_invalid_number(self) -> None:
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 222},
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123", "meeting_id": 222},
+                "meeting/222": {},
+            }
         )
         response = self.request(
             "user.update_temporary", {"id": 111, "vote_weight": 1.5}
@@ -116,9 +122,11 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_weight_$222") is None
 
     def test_update_vote_weight_invalid_string(self) -> None:
-        self.create_model(
-            "user/111",
-            {"username": "username_srtgb123", "meeting_id": 222},
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123", "meeting_id": 222},
+                "meeting/222": {},
+            }
         )
         response = self.request(
             "user.update_temporary", {"id": 111, "vote_weight": "a.aaaaaa"}
