@@ -4,7 +4,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("option.delete")
+@register_action("option.delete", internal=True)
 class OptionDelete(DeleteAction):
     """
     Action to delete options.
