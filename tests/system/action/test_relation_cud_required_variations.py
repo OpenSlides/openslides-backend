@@ -1,8 +1,10 @@
-from typing import Any, Dict
+from typing import Any, Dict, Type
 
+from openslides_backend.action.action import Action
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.delete import DeleteAction
 from openslides_backend.action.generics.update import UpdateAction
+from openslides_backend.action.mixins.create_action_with_dependencies import CreateActionWithDependencies
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -125,29 +127,28 @@ class FakeModelCUpdateAction(UpdateAction):
     model = FakeModelC()
     schema = {}  # type: ignore
 
-
-@register_action("test_model_req_a.create")
-class FakeModelReqACreateAction(CreateAction):
-    model = FakeModelReqA()
-    schema = {}  # type: ignore
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        additional_dict = {"name": "modelB"}
-        instance = self.concurrent_create_per_execute_other_action(
-            instance,
-            FakeModelReqBCreateAction,
-            [
-                "fake_req_a_id",
-            ],
-            additional_dict,
-        )
-        return instance
-
-
 @register_action("test_model_req_b.create")
 class FakeModelReqBCreateAction(CreateAction):
     model = FakeModelReqB()
     schema = {}  # type: ignore
+
+
+@register_action("test_model_req_a.create")
+class FakeModelReqACreateAction(CreateActionWithDependencies):
+    model = FakeModelReqA()
+    schema = {}  # type: ignore
+
+    dependencies = [FakeModelReqBCreateAction]
+
+    def get_dependent_action_payload(
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
+    ) -> Dict[str, Any]:
+        return {
+            "name": "modelB",
+            "fake_req_a_id": "fake_req_b_id",
+        }
+
+
 
 
 class TestDeleteVariations(BaseActionTestCase):
