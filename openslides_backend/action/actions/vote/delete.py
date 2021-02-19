@@ -4,7 +4,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("vote.delete")
+@register_action("vote.delete", internal=True)
 class VoteDelete(DeleteAction):
     """
     Action to delete votes.
