@@ -12,13 +12,13 @@ class ProjectorUpdate(BaseActionTestCase):
                 "width": 100,
                 "aspect_ratio_numerator": 3,
                 "aspect_ratio_denominator": 4,
-                "color": "ffffff",
-                "background_color": "ffffff",
-                "header_background_color": "ffffff",
-                "header_font_color": "ffffff",
-                "header_h1_color": "ffffff",
-                "chyron_background_color": "ffffff",
-                "chyron_font_color": "ffffff",
+                "color": "#ffffff",
+                "background_color": "#ffffff",
+                "header_background_color": "#ffffff",
+                "header_font_color": "#ffffff",
+                "header_h1_color": "#ffffff",
+                "chyron_background_color": "#ffffff",
+                "chyron_font_color": "#ffffff",
                 "show_header_footer": True,
                 "show_title": True,
                 "show_logo": True,
@@ -40,7 +40,7 @@ class ProjectorUpdate(BaseActionTestCase):
             "chyron_background_color",
             "chyron_font_color",
         ):
-            assert model.get(color_field) == "ffffff"
+            assert model.get(color_field) == "#ffffff"
         for bool_field in (
             "show_header_footer",
             "show_title",
