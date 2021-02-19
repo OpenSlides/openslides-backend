@@ -1,7 +1,12 @@
+from typing import Any, Dict, List
+
 from ....models.models import Meeting
 from ...action_set import ActionSet
+from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
+from ..group.create import GroupCreate
+from ..motion_workflow.create import MotionWorkflowCreateSimpleWorkflowAction
 
 meeting_settings_keys = [
     "welcome_title",
@@ -104,6 +109,162 @@ meeting_settings_keys = [
 ]
 
 
+class MeetingCreate(CreateAction):
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        instance = self._create_default_group(instance)
+        instance = self._create_admin_group(instance)
+        instance = self._create_delegates_group(instance)
+        instance = self._create_staff_group(instance)
+        instance = self._create_committees_group(instance)
+        instance = self._create_motion_workflow(
+            instance,
+            "Simple Workflow",
+            [
+                "default_workflow_meeting_id",
+                "default_amendment_workflow_meeting_id",
+                "default_statute_amendment_workflow_meeting_id",
+                "meeting_id",
+            ],
+        )
+        return instance
+
+    def _create_default_group(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        additional_dict = {
+            "name": "Default",
+            "permissions": [
+                "agenda_item.can_see_internal",
+                "assignment.can_see",
+                "list_of_speakers.can_see",
+                "mediafile.can_see",
+                "meeting.can_see_frontpage",
+                "motion.can_see",
+                "projector.can_see",
+                "user.can_see",
+                "user.can_change_own_password",
+            ],
+        }
+        instance = self.concurrent_create_per_execute_other_action(
+            instance,
+            GroupCreate,
+            [
+                "meeting_id",
+                "default_group_for_meeting_id",
+            ],
+            additional_dict,
+        )
+        return instance
+
+    def _create_admin_group(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        additional_dict = {"name": "Admin"}
+        instance = self.concurrent_create_per_execute_other_action(
+            instance,
+            GroupCreate,
+            [
+                "meeting_id",
+                "admin_group_for_meeting_id",
+            ],
+            additional_dict,
+        )
+        return instance
+
+    def _create_delegates_group(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        additional_dict = {
+            "name": "Delegates",
+            "permissions": [
+                "agenda_item.can_see_internal",
+                "assignment.can_nominate_other",
+                "assignment.can_nominate_self",
+                "list_of_speakers.can_be_speaker",
+                "mediafile.can_see",
+                "meeting.can_see_autopilot",
+                "meeting.can_see_frontpage",
+                "motion.can_create",
+                "motion.can_create_amendments",
+                "motion.can_support",
+                "projector.can_see",
+                "user.can_see",
+                "user.can_change_own_password",
+            ],
+        }
+        instance = self.concurrent_create_per_execute_other_action(
+            instance,
+            GroupCreate,
+            [
+                "meeting_id",
+            ],
+            additional_dict,
+        )
+        return instance
+
+    def _create_staff_group(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        additional_dict = {
+            "name": "Staff",
+            "permissions": [
+                "agenda_item.can_manage",
+                "assignment.can_manage",
+                "assignment.can_nominate_self",
+                "list_of_speakers.can_be_speaker",
+                "list_of_speakers.can_manage",
+                "mediafile.can_manage",
+                "meeting.can_see_frontpage",
+                "meeting.can_see_history",
+                "motion.can_manage",
+                "projector.can_manage",
+                "tag.can_manage",
+                "user.can_manage",
+                "user.can_change_own_password",
+            ],
+        }
+        instance = self.concurrent_create_per_execute_other_action(
+            instance,
+            GroupCreate,
+            [
+                "meeting_id",
+            ],
+            additional_dict,
+        )
+        return instance
+
+    def _create_committees_group(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        additional_dict = {
+            "name": "Committees",
+            "permissions": [
+                "agenda_item.can_see_internal",
+                "assignment.can_see",
+                "list_of_speakers.can_see",
+                "mediafile.can_see",
+                "meeting.can_see_frontpage",
+                "motion.can_create",
+                "motion.can_create_amendments",
+                "motion.can_support",
+                "projector.can_see",
+                "user.can_see",
+            ],
+        }
+        instance = self.concurrent_create_per_execute_other_action(
+            instance,
+            GroupCreate,
+            [
+                "meeting_id",
+            ],
+            additional_dict,
+        )
+        return instance
+
+    def _create_motion_workflow(
+        self, instance: Dict[str, Any], name: str, fields: List[str]
+    ) -> Dict[str, Any]:
+        additional_dict = {"name": name}
+        instance = self.concurrent_create_per_execute_other_action(
+            instance,
+            MotionWorkflowCreateSimpleWorkflowAction,
+            fields,
+            additional_dict,
+        )
+        return instance
+
+
 @register_action_set("meeting")
 class MeetingActionSet(ActionSet):
     """
@@ -132,3 +293,5 @@ class MeetingActionSet(ActionSet):
         ],
     )
     delete_schema = DefaultSchema(Meeting()).get_delete_schema()
+
+    CreateActionClass = MeetingCreate
