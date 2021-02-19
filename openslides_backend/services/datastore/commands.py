@@ -5,6 +5,7 @@ from mypy_extensions import TypedDict
 
 from ...shared.filters import Filter as FilterInterface
 from ...shared.filters import FilterData
+from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.event import Event
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
@@ -59,7 +60,7 @@ StringifiedWriteRequest = TypedDict(
         "events": List[Event],
         "information": Dict[str, List[str]],
         "user_id": int,
-        "locked_fields": Dict[str, int],
+        "locked_fields": Dict[str, CollectionFieldLock],
     },
 )
 
@@ -331,6 +332,8 @@ class Write(Command):
             def default(self, o):  # type: ignore
                 if isinstance(o, FullQualifiedId):
                     return str(o)
+                if isinstance(o, FilterInterface):
+                    return o.to_dict()
                 return super().default(o)
 
         return json.dumps(stringified_write_requests, cls=WriteRequestJSONEncoder)
