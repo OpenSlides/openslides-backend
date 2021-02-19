@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "5748a9b29ebcf59017710603ccb6dfc4"
+MODELS_YML_CHECKSUM = "e255e7fc01cdad0e78db1488009ce50e"
 
 
 class Organisation(Model):
@@ -136,12 +136,7 @@ class User(Model):
     projection__ids = fields.TemplateRelationListField(
         index=11,
         replacement="meeting_id",
-        to={Collection("projection"): "element_id"},
-    )
-    current_projector__ids = fields.TemplateRelationListField(
-        index=18,
-        replacement="meeting_id",
-        to={Collection("projector"): "current_element_ids"},
+        to={Collection("projection"): "content_object_id"},
     )
     vote_delegated__to_id = fields.TemplateRelationField(
         index=15,
@@ -412,12 +407,8 @@ class Meeting(Model):
     projector_ids = fields.RelationListField(
         to={Collection("projector"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    projection_ids = fields.RelationListField(
+    all_projection_ids = fields.RelationListField(
         to={Collection("projection"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
-    )
-    projectiondefault_ids = fields.RelationListField(
-        to={Collection("projectiondefault"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
     )
     projector_message_ids = fields.RelationListField(
         to={Collection("projector_message"): "meeting_id"},
@@ -533,6 +524,13 @@ class Meeting(Model):
     )
     reference_projector_id = fields.RelationField(
         to={Collection("projector"): "used_as_reference_projector_meeting_id"}
+    )
+    default_projector__id = fields.TemplateRelationField(
+        index=18,
+        to={Collection("projector"): "used_as_default_$_in_meeting_id"},
+    )
+    projection_ids = fields.RelationListField(
+        to={Collection("projection"): "content_object_id"}
     )
     default_group_id = fields.RelationField(
         to={Collection("group"): "default_group_for_meeting_id"}, required=True
@@ -708,10 +706,7 @@ class AgendaItem(Model):
         to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "agenda_item_ids"}, required=True
@@ -745,10 +740,7 @@ class ListOfSpeakers(Model):
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "list_of_speakers_ids"}, required=True
@@ -809,10 +801,7 @@ class Topic(Model):
         to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "topic_ids"}, required=True
@@ -940,10 +929,7 @@ class Motion(Model):
         to={Collection("mediafile"): "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     personal_note_ids = fields.RelationListField(
         to={Collection("personal_note"): "content_object_id"},
@@ -1061,10 +1047,7 @@ class MotionBlock(Model):
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "motion_block_ids"}, required=True
@@ -1224,9 +1207,9 @@ class Poll(Model):
     )
     min_votes_amount = fields.IntegerField(default=1)
     max_votes_amount = fields.IntegerField(default=1)
-    global_yes = fields.BooleanField(default=True)
-    global_no = fields.BooleanField(default=True)
-    global_abstain = fields.BooleanField(default=True)
+    global_yes = fields.BooleanField(default=False)
+    global_no = fields.BooleanField(default=False)
+    global_abstain = fields.BooleanField(default=False)
     onehundred_percent_base = fields.CharField(
         required=True,
         constraints={"enum": ["Y", "YN", "YNA", "valid", "cast", "disabled"]},
@@ -1257,10 +1240,7 @@ class Poll(Model):
         to={Collection("group"): "poll_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(to={Collection("meeting"): "poll_ids"})
 
@@ -1368,10 +1348,7 @@ class Assignment(Model):
         to={Collection("mediafile"): "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "assignment_ids"}, required=True
@@ -1445,10 +1422,7 @@ class Mediafile(Model):
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     attachment_ids = fields.GenericRelationListField(
         to={
@@ -1477,40 +1451,25 @@ class Projector(Model):
 
     id = fields.IntegerField()
     name = fields.CharField()
-    scale = fields.IntegerField()
-    scroll = fields.IntegerField()
-    width = fields.IntegerField()
-    aspect_ratio_numerator = fields.IntegerField()
-    aspect_ratio_denominator = fields.IntegerField()
-    color = fields.CharField()
-    background_color = fields.CharField()
-    header_background_color = fields.CharField()
-    header_font_color = fields.CharField()
-    header_h1_color = fields.CharField()
-    chyron_background_color = fields.CharField()
-    chyron_font_color = fields.CharField()
-    show_header_footer = fields.BooleanField()
-    show_title = fields.BooleanField()
-    show_logo = fields.BooleanField()
+    scale = fields.IntegerField(default=0)
+    scroll = fields.IntegerField(default=0)
+    width = fields.IntegerField(default=1200)
+    aspect_ratio_numerator = fields.IntegerField(default=16)
+    aspect_ratio_denominator = fields.IntegerField(default=9)
+    color = fields.ColorField(default="#000000")
+    background_color = fields.ColorField(default="#ffffff")
+    header_background_color = fields.ColorField(default="#317796")
+    header_font_color = fields.ColorField(default="#f5f5f5")
+    header_h1_color = fields.ColorField(default="#317796")
+    chyron_background_color = fields.ColorField(default="#317796")
+    chyron_font_color = fields.ColorField(default="#ffffff")
+    show_header_footer = fields.BooleanField(default=True)
+    show_title = fields.BooleanField(default=True)
+    show_logo = fields.BooleanField(default=True)
+    show_clock = fields.BooleanField(default=True)
     current_projection_ids = fields.RelationListField(
         to={Collection("projection"): "current_projector_id"},
         on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
-    )
-    current_element_ids = fields.GenericRelationListField(
-        to={
-            Collection("user"): "current_projector_$_ids",
-            Collection("projector_countdown"): "current_projector_ids",
-            Collection("projector_message"): "current_projector_ids",
-            Collection("poll"): "current_projector_ids",
-            Collection("topic"): "current_projector_ids",
-            Collection("agenda_item"): "current_projector_ids",
-            Collection("assignment"): "current_projector_ids",
-            Collection("motion_block"): "current_projector_ids",
-            Collection("list_of_speakers"): "current_projector_ids",
-            Collection("mediafile"): "current_projector_ids",
-            Collection("motion"): "current_projector_ids",
-        },
         equal_fields="meeting_id",
     )
     preview_projection_ids = fields.RelationListField(
@@ -1522,10 +1481,9 @@ class Projector(Model):
     used_as_reference_projector_meeting_id = fields.RelationField(
         to={Collection("meeting"): "reference_projector_id"}
     )
-    projectiondefault_ids = fields.RelationListField(
-        to={Collection("projectiondefault"): "projector_id"},
-        on_delete=fields.OnDelete.PROTECT,
-        equal_fields="meeting_id",
+    used_as_default__in_meeting_id = fields.TemplateRelationField(
+        index=16,
+        to={Collection("meeting"): "default_projector_$_id"},
     )
     meeting_id = fields.RelationField(to={Collection("meeting"): "projector_ids"})
 
@@ -1536,6 +1494,9 @@ class Projection(Model):
 
     id = fields.IntegerField()
     options = fields.JSONField()
+    stable = fields.BooleanField(default=False)
+    weight = fields.IntegerField()
+    type = fields.CharField()
     current_projector_id = fields.RelationField(
         to={Collection("projector"): "current_projection_ids"},
         equal_fields="meeting_id",
@@ -1548,7 +1509,7 @@ class Projection(Model):
         to={Collection("projector"): "history_projection_ids"},
         equal_fields="meeting_id",
     )
-    element_id = fields.GenericRelationField(
+    content_object_id = fields.GenericRelationField(
         to={
             Collection("user"): "projection_$_ids",
             Collection("projector_countdown"): "projection_ids",
@@ -1561,26 +1522,12 @@ class Projection(Model):
             Collection("list_of_speakers"): "projection_ids",
             Collection("mediafile"): "projection_ids",
             Collection("motion"): "projection_ids",
+            Collection("meeting"): "projection_ids",
         },
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projection_ids"}, required=True
-    )
-
-
-class Projectiondefault(Model):
-    collection = Collection("projectiondefault")
-    verbose_name = "projectiondefault"
-
-    id = fields.IntegerField()
-    name = fields.CharField()
-    display_name = fields.CharField()
-    projector_id = fields.RelationField(
-        to={Collection("projector"): "projectiondefault_ids"}, equal_fields="meeting_id"
-    )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projectiondefault_ids"}
+        to={Collection("meeting"): "all_projection_ids"}, required=True
     )
 
 
@@ -1591,10 +1538,7 @@ class ProjectorMessage(Model):
     id = fields.IntegerField()
     message = fields.HTMLStrictField()
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "projector_message_ids"}
@@ -1612,10 +1556,7 @@ class ProjectorCountdown(Model):
     countdown_time = fields.IntegerField()
     running = fields.BooleanField()
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "element_id"}, equal_fields="meeting_id"
-    )
-    current_projector_ids = fields.RelationListField(
-        to={Collection("projector"): "current_element_ids"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "projector_countdown_ids"}
