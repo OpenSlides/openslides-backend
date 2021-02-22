@@ -285,6 +285,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         return write_request
 
     def validate_required_fields(self, write_request: WriteRequest) -> None:
+        """
+        Validate required fields with the events of one WriteRequest.
+        Precondition: Events are sorted create/update/delete-events
+        Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
+        one, during getting required_fields from model.
+        """
         fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
         for event in write_request.events:
             if fdict.get(event["fqid"]):
@@ -292,15 +298,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     fdict[event["fqid"]]["type"] = EventType.Delete
                 else:
                     fdict[event["fqid"]]["fields"].update(event.get("fields", {}))
-                    fdict[event["fqid"]]["list_fields"].update(event.get("list_fields", {}))
             else:
-                fdict[event["fqid"]] = {"type": event["type"], "fields": event.get("fields", {}), "list_fields": event.get("list_fields", {})}
+                fdict[event["fqid"]] = {"type": event["type"], "fields": event.get("fields", {}))}
 
         for fqid, v in fdict.items():
             type_ = v["type"]
             instance = v["fields"]
-            add_list_fields = v["list_fields"].get("add", {}).keys()
-            remove_list_fields = v["list_fields"].get("remove", {}).keys()
             required_fields = []
             if type_ == EventType.Create:
                 required_fields = [
