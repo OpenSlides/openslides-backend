@@ -21,7 +21,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
     dependencies = [MotionStateActionSet.get_action("create")]
 
     def get_dependent_action_payload(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
     ) -> Dict[str, Any]:
         return {
             "name": MOTION_STATE_DEFAULT_NAME,

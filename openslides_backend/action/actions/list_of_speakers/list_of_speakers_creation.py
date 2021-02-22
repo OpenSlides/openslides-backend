@@ -14,7 +14,7 @@ class CreateActionWithListOfSpeakersMixin(BaseAction):
     model: Model
 
     def get_dependent_action_payload_list_of_speakers(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
     ) -> Dict[str, Any]:
         return {
             "content_object_id": f"{str(self.model.collection)}{KEYSEPARATOR}{instance['id']}",
