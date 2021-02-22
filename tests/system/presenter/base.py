@@ -17,7 +17,7 @@ class BasePresenterTestCase(BaseSystemTestCase):
         response. Automatically removes array around response data.
         """
         payload: Dict[str, Any] = {"presenter": presenter}
-        if data:
+        if data is not None:
             payload["data"] = data
         response = self.client.post("/", json=[payload])
         return (response.status_code, response.json[0])
