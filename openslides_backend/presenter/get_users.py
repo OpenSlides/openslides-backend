@@ -44,7 +44,7 @@ ALLOWED = {
     "is_active": False,
     "is_physical_person": False,
     "email": "",
-    "last_email_send": "",
+    "last_email_send": 0,
     "is_demo_user": False,
     "number": "",
     "structure_level": "",
