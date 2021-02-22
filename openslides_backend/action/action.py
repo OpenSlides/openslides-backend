@@ -197,17 +197,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
-                if (
-                    field
-                    and field.required
-                    and not data.get("value")
-                    and not isinstance(
-                        self.additional_relation_models.get(fqfield.fqid), DeletedModel
-                    )
-                ):
-                    raise RequiredFieldsException(
-                        f"From relation {fqfield.fqid}", [fqfield.field]
-                    )
                 fields = {fqfield.field: data["value"]}
                 if data["type"] == "add":
                     info_text = f"Object attached to {fqfield.collection}"
@@ -215,17 +204,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     info_text = f"Object attachment to {fqfield.collection} reset"
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
-                if (
-                    field
-                    and field.required
-                    and not data.get("add")
-                    and not isinstance(
-                        self.additional_relation_models.get(fqfield.fqid), DeletedModel
-                    )
-                ):
-                    raise RequiredFieldsException(
-                        f"From relation {fqfield.fqid}", [fqfield.field]
-                    )
                 info_text = "Object updated"
                 fields = None
                 list_fields_tmp = {}
@@ -305,6 +283,42 @@ class Action(BaseAction, metaclass=SchemaProvider):
             write_request.locked_fields = self.datastore.locked_fields
             self.datastore.locked_fields = {}
         return write_request
+
+    def validate_required_fields(self, write_request: WriteRequest) -> None:
+        fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
+        for event in write_request.events:
+            if fdict.get(event["fqid"]):
+                if event["type"] == EventType.Delete:
+                    fdict[event["fqid"]]["type"] = EventType.Delete
+                else:
+                    fdict[event["fqid"]]["fields"].update(event.get("fields", {}))
+                    fdict[event["fqid"]]["list_fields"].update(event.get("list_fields", {}))
+            else:
+                fdict[event["fqid"]] = {"type": event["type"], "fields": event.get("fields", {}), "list_fields": event.get("list_fields", {})}
+
+        for fqid, v in fdict.items():
+            type_ = v["type"]
+            instance = v["fields"]
+            add_list_fields = v["list_fields"].get("add", {}).keys()
+            remove_list_fields = v["list_fields"].get("remove", {}).keys()
+            required_fields = []
+            if type_ == EventType.Create:
+                required_fields = [
+                    field.own_field_name
+                    for field in model_registry[fqid.collection]().get_required_fields()
+                    if field.own_field_name not in instance
+                    or (field.own_field_name in instance and not instance[field.own_field_name])
+                ]
+                fqid_str = f"Creation of {fqid}"
+            elif type_ == EventType.Update:
+                required_fields = [
+                    field.own_field_name
+                    for field in model_registry[fqid.collection]().get_required_fields()
+                    if field.own_field_name in instance and not instance[field.own_field_name]
+                ]
+                fqid_str = f"Update of {fqid}"
+            if required_fields:
+                raise RequiredFieldsException(fqid_str, required_fields)
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
