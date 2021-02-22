@@ -58,3 +58,11 @@ class ProjectorUpdate(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("projector/111")
         assert model.get("name") == "name_srtgb123"
+
+    def test_update_wrong_color(self) -> None:
+        self.set_models(
+            {"projector/111": {"name": "name_srtgb123"}},
+        )
+        response = self.request("projector.update", {"id": 112, "color": "#aaaXbb"})
+        self.assert_status_code(response, 400)
+        assert "data.color must match pattern ^#[0-9a-f]{6}$" in response.data.decode()
