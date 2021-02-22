@@ -1,5 +1,6 @@
-import pytest
 from typing import Any, Dict, Type
+
+import pytest
 
 from openslides_backend.action.action import Action
 from openslides_backend.action.generics.create import CreateAction
@@ -303,6 +304,7 @@ class TestUpdateVariations(BaseActionTestCase):
         )
         self.assert_model_exists("test_model_c/1", {"req_field": 1})
 
+
 class TestCreateVariations(BaseActionTestCase):
     def test_create_a_impossible_v1(self) -> None:
         """
@@ -396,7 +398,7 @@ class TestCreateVariations(BaseActionTestCase):
         when they are required.
         """
         with pytest.raises(NotImplementedError):
-            response = self.client.post(
+            self.client.post(
                 "/",
                 json=[{"action": "test_model_d.create", "data": [{"name": "nie"}]}],
             )

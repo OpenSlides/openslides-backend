@@ -299,7 +299,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 else:
                     fdict[event["fqid"]]["fields"].update(event.get("fields", {}))
             else:
-                fdict[event["fqid"]] = {"type": event["type"], "fields": event.get("fields", {}))}
+                fdict[event["fqid"]] = {"type": event["type"], "fields": event.get("fields", {})}
 
         for fqid, v in fdict.items():
             type_ = v["type"]
