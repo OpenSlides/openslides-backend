@@ -34,6 +34,7 @@ COMMON_FIELD_CLASSES = {
     "float": "FloatField",
     "decimal(6)": "DecimalField",
     "timestamp": "TimestampField",
+    "color": "ColorField",
     "string[]": "CharArrayField",
     "number[]": "NumberArrayField",
 }
@@ -93,13 +94,15 @@ def main() -> None:
 
     # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
     if len(sys.argv) > 1 and sys.argv[1] != "check":
-        with open(sys.argv[1], "rb") as x:
-            models_yml = x.read()
-    elif os.path.isfile(SOURCE):
-        with open(SOURCE, "rb") as x:
+        file = sys.argv[1]
+    else:
+        file = SOURCE
+
+    if os.path.isfile(file):
+        with open(file, "rb") as x:
             models_yml = x.read()
     else:
-        models_yml = requests.get(SOURCE).content
+        models_yml = requests.get(file).content
 
     # calc checksum to assert the models.py is up-to-date
     checksum = hashlib.md5(models_yml).hexdigest()
@@ -255,7 +258,9 @@ class Attribute(Node):
                     self.to = To(value.get("to", {}))
                     self.on_delete = value.get("on_delete")
                 else:
-                    assert self.type in COMMON_FIELD_CLASSES.keys()
+                    assert self.type in COMMON_FIELD_CLASSES.keys(), (
+                        "Invalid type: " + self.type
+                    )
                 self.required = value.get("required", False)
                 self.read_only = value.get("read_only", False)
                 self.default = value.get("default")

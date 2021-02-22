@@ -147,6 +147,11 @@ class TimestampField(IntegerField):
     """
 
 
+class ColorField(TextField):
+    def get_schema(self) -> Schema:
+        return self.extend_schema(super().get_schema(), pattern=r"^#[0-9a-f]{6}$")
+
+
 class ArrayField(Field):
     """
     Used for arbitrary arrays.
