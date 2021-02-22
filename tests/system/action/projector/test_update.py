@@ -22,6 +22,7 @@ class ProjectorUpdate(BaseActionTestCase):
                 "show_header_footer": True,
                 "show_title": True,
                 "show_logo": True,
+                "show_clock": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -45,6 +46,7 @@ class ProjectorUpdate(BaseActionTestCase):
             "show_header_footer",
             "show_title",
             "show_logo",
+            "show_clock",
         ):
             assert model.get(bool_field) is True
 

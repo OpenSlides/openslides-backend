@@ -27,5 +27,6 @@ class ProjectorUpdate(UpdateAction):
             "show_header_footer",
             "show_title",
             "show_logo",
+            "show_clock",
         ]
     )
