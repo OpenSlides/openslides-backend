@@ -164,5 +164,5 @@ class BaseSystemTestCase(TestCase):
                 self.assertEqual(
                     field.default,
                     instance.get(field.own_field_name),
-                    f"Field {field.own_field_name}: Value {instance.get(field.own_field_name, 'NONE')} is not equal Default Value {field.default}.",
+                    f"Field {field.own_field_name}: Value {instance.get(field.own_field_name, 'None')} is not equal default value {field.default}.",
                 )
