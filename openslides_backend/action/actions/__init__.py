@@ -28,6 +28,7 @@ def prepare_actions_map() -> None:
         organisation,
         personal_note,
         poll,
+        projection,
         projector,
         resource,
         speaker,
