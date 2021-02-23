@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "96a21115e70512bcc517127e1167baf1"
+MODELS_YML_CHECKSUM = "4b3dce86ddae69423102541ef01466a3"
 
 
 class Organisation(Model):
@@ -1453,9 +1453,13 @@ class Projector(Model):
     name = fields.CharField()
     scale = fields.IntegerField(default=0)
     scroll = fields.IntegerField(default=0)
-    width = fields.IntegerField(default=1200)
-    aspect_ratio_numerator = fields.IntegerField(default=16)
-    aspect_ratio_denominator = fields.IntegerField(default=9)
+    width = fields.IntegerField(default=1200, constraints={"minValue": 1})
+    aspect_ratio_numerator = fields.IntegerField(
+        default=16, constraints={"minValue": 1}
+    )
+    aspect_ratio_denominator = fields.IntegerField(
+        default=9, constraints={"minValue": 1}
+    )
     color = fields.ColorField(default="#000000")
     background_color = fields.ColorField(default="#ffffff")
     header_background_color = fields.ColorField(default="#317796")

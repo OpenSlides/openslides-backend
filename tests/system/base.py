@@ -1,11 +1,11 @@
-from typing import Any, Dict
+from typing import Any, Dict, Type
 from unittest import TestCase
 
 import requests
 import simplejson as json
 from fastjsonschema import validate
 
-from openslides_backend.models.base import model_registry
+from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.commands import GetManyRequest
@@ -157,3 +157,12 @@ class BaseSystemTestCase(TestCase):
     def assert_model_deleted(self, fqid: str) -> None:
         model = self.get_model(fqid)
         self.assertTrue(model.get("meta_deleted"))
+
+    def assert_defaults(self, model: Type[Model], instance: Dict[str, Any]) -> None:
+        for field in model().get_fields():
+            if hasattr(field, "default") and field.default is not None:
+                self.assertEqual(
+                    field.default,
+                    instance.get(field.own_field_name),
+                    f"Field {field.own_field_name}: Value {instance.get(field.own_field_name, 'NONE')} is not equal Default Value {field.default}.",
+                )

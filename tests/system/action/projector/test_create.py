@@ -1,8 +1,9 @@
+from openslides_backend.models.models import Projector
 from tests.system.action.base import BaseActionTestCase
 
 
 class ProjectorCreateActionTest(BaseActionTestCase):
-    def test_create_correct(self) -> None:
+    def test_create_correct_and_defaults(self) -> None:
         self.set_models(
             {
                 "meeting/222": {"name": "name_SNLGsvIV"},
@@ -19,6 +20,8 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "projector/1", {"name": "test projector", "meeting_id": 222}
         )
+        model = self.get_model("projector/1")
+        self.assert_defaults(Projector, model)
 
     def test_create_all_fields(self) -> None:
         self.set_models(
@@ -61,5 +64,21 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data.color must match pattern",
+            response.json["message"],
+        )
+
+    def test_create_wrong_width(self) -> None:
+        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        response = self.request(
+            "projector.create",
+            {
+                "name": "Test",
+                "meeting_id": 222,
+                "width": -2,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Field 'width' has a minimum value of 1, but it is only -2.",
             response.json["message"],
         )
