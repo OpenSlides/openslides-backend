@@ -79,6 +79,6 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Field 'width' has a minimum value of 1, but it is only -2.",
+            "data.width must be bigger than or equal to 1",
             response.json["message"],
         )

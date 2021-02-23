@@ -72,13 +72,6 @@ class Field:
 
 
 class IntegerField(Field):
-    def validate(self, value: int) -> int:
-        if "minValue" in self.constraints:
-            assert (
-                value >= self.constraints["minValue"]
-            ), f"Field '{self.own_field_name}' has a minimum value of {self.constraints['minValue']}, but it is only {value}."
-        return value
-
     def get_schema(self) -> Schema:
         if self.required:
             return self.extend_schema(super().get_schema(), type="integer")

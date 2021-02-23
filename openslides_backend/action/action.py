@@ -275,10 +275,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for field_name in instance:
             if self.model.has_field(field_name):
                 field = self.model.get_field(field_name)
-                try:
-                    instance[field_name] = field.validate(instance[field_name])
-                except AssertionError as e:
-                    raise ActionException(e.args[0])
+                instance[field_name] = field.validate(instance[field_name])
         return instance
 
     def validate_relation_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
