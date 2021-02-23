@@ -2,8 +2,11 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class ProjectorControlView(BaseActionTestCase):
-    def test_reset(self) -> None:
+    def setUp(self) -> None:
+        super().setUp()
         self.set_models({"projector/1": {"scale": 11, "scroll": 13}})
+
+    def test_reset(self) -> None:
         response = self.request(
             "projector.control_view", {"id": 1, "field": "scale", "direction": "reset"}
         )
@@ -13,7 +16,6 @@ class ProjectorControlView(BaseActionTestCase):
         assert model.get("scroll") == 13
 
     def test_up(self) -> None:
-        self.set_models({"projector/1": {"scale": 11, "scroll": 13}})
         response = self.request(
             "projector.control_view",
             {"id": 1, "field": "scroll", "direction": "up", "step": 7},
@@ -24,7 +26,6 @@ class ProjectorControlView(BaseActionTestCase):
         assert model.get("scroll") == 20
 
     def test_down(self) -> None:
-        self.set_models({"projector/1": {"scale": 11, "scroll": 13}})
         response = self.request(
             "projector.control_view",
             {"id": 1, "field": "scale", "direction": "down"},
@@ -35,7 +36,6 @@ class ProjectorControlView(BaseActionTestCase):
         assert model.get("scroll") == 13
 
     def test_wrong_direction(self) -> None:
-        self.set_models({"projector/1": {"scale": 11, "scroll": 13}})
         response = self.request(
             "projector.control_view",
             {"id": 1, "field": "scale", "direction": "invalid"},
@@ -45,3 +45,11 @@ class ProjectorControlView(BaseActionTestCase):
             "data.direction must be one of ['up', 'down', 'reset']"
             in response.data.decode()
         )
+
+    def test_wrong_step(self) -> None:
+        response = self.request(
+            "projector.control_view",
+            {"id": 1, "field": "scale", "direction": "up", "step": 0},
+        )
+        self.assert_status_code(response, 400)
+        assert "data.step must be bigger than or equal to 1" in response.data.decode()

@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Projector
+from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -20,7 +21,7 @@ class ProjectorControlView(UpdateAction):
             "direction": {"type": "string", "enum": ["up", "down", "reset"]},
         },
         additional_optional_fields={
-            "step": {"type": "integer"},
+            "step": {"type": "integer", "minimum": 1},
         },
     )
 
@@ -41,5 +42,8 @@ class ProjectorControlView(UpdateAction):
                 FullQualifiedId(self.model.collection, instance["id"]), [field]
             )
             new_value = projector.get(field, 0) - step
+        else:
+            raise ActionException(f"Unknown direction {direction}")
+
         instance[field] = new_value
         return instance
