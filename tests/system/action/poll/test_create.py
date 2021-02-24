@@ -167,6 +167,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        self.assertIn('data.options must contain at least 1 items', response.json["message"])
         self.assert_model_not_exists("poll/1")
 
     def test_invalid_options(self) -> None:
@@ -184,6 +185,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        self.assertIn("Need text xor content_object_id.", response.json["message"])
         self.assert_model_not_exists("poll/1")
 
     def test_missing_keys(self) -> None:
@@ -311,6 +313,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        self.assertIn("data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'valid', 'cast', 'disabled']", response.json["message"])
         self.assert_model_not_exists("poll/1")
 
     def test_not_supported_majority_method(self) -> None:
@@ -328,6 +331,7 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        self.assertIn("data.majority_method must be one of ['simple', 'two_thirds', 'three_quarters', 'disabled']", response.json["message"])
         self.assert_model_not_exists("poll/1")
 
     def test_wrong_pollmethod_onehundred_percent_base_combination_1(self) -> None:
@@ -417,4 +421,79 @@ class CreatePoll(BaseActionTestCase):
         self.assertIn(
             "The collection 'assignment' is not available for field 'content_object_id' in collection 'option'.",
             response.json["message"],
+        )
+
+    def test_unique_error_options_content_object_id(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YNA",
+                "options": [
+                    {"content_object_id": "user/1", "Y": "10.000000"},
+                    {"text": "test4", "N": "11.000000"},
+                    {"content_object_id": "user/1", "Y": "11.000000"},
+                ],
+                "meeting_id": 113,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Duplicated option in poll.options: user/1", response.json["message"]
+        )
+
+    def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
+        self.update_model("user/1", {"meeting_id": 113})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YN",
+                "majority_method": "simple",
+                "onehundred_percent_base": "valid",
+                "options": [
+                    {"content_object_id": "user/1", "Y": "10.000000", "N": "5.000000"},
+                    {"text": "user/1", "Y": "10.000000"},
+                ],
+                "meeting_id": 113,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_analog_poll_without_YNA_values(self) -> None:
+        self.create_model("motion/3", {"meeting_id": 113})
+        response = self.request(
+            "poll.create",
+            {
+                "meeting_id": 113,
+                "title": "Abstimmung",
+                "majority_method": "simple",
+                "onehundred_percent_base": "YNA",
+                "pollmethod": "YNA",
+                "type": "analog",
+                "options": [{"content_object_id": "motion/3"}],
+                "content_object_id": "motion/3",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "option/1",
+            {
+                "content_object_id": "motion/3",
+                "vote_ids": [1, 2, 3],
+                "yes": "-2.000000",
+                "no": "-2.000000",
+                "abstain": "-2.000000",
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists(
+            "option/2",
+            {
+                "text": "global option",
+                "used_as_global_option_in_poll_id": 1,
+                "weight": 1,
+            },
         )
