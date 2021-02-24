@@ -11,19 +11,29 @@ class ProjectionDelete(BaseActionTestCase):
                     "current_projection_ids": [12],
                     "meeting_id": 112,
                     "preview_projection_ids": [13],
+                    "history_projection_ids": [14],
                 },
                 "projection/12": {"current_projector_id": 1, "meeting_id": 112},
                 "projection/13": {"preview_projector_id": 1, "meeting_id": 112},
+                "projection/14": {"history_projector_id": 1, "meeting_id": 112},
             }
         )
 
-    def test_delete_correct(self) -> None:
+    def test_delete_current_correct(self) -> None:
         response = self.request("projection.delete", {"id": 12})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projection/12")
 
-    def test_delete_preview_not_allowed(self) -> None:
+    def test_delete_preview_correct(self) -> None:
         response = self.request("projection.delete", {"id": 13})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("projection/13")
+
+    def test_delete_history_not_allowed(self) -> None:
+        response = self.request("projection.delete", {"id": 14})
         self.assert_status_code(response, 400)
-        assert "Projection must have a current_projector_id." in response.data.decode()
+        assert (
+            "Projection must have a current_projector_id or a preview_projector_id."
+            in response.data.decode()
+        )
         self.assert_model_exists("projection/13")
