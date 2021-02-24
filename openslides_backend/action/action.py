@@ -24,7 +24,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
-from ..shared.typing import DeletedModel, ModelMap
+from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.typing import ActionData, ActionResultElement, ActionResults
@@ -193,21 +193,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
-            field = getattr(model_registry[fqfield.collection], fqfield.field, None)
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
-                if (
-                    field
-                    and field.required
-                    and not data.get("value")
-                    and not isinstance(
-                        self.additional_relation_models.get(fqfield.fqid), DeletedModel
-                    )
-                ):
-                    raise RequiredFieldsException(
-                        f"From relation {fqfield.fqid}", [fqfield.field]
-                    )
                 fields = {fqfield.field: data["value"]}
                 if data["type"] == "add":
                     info_text = f"Object attached to {fqfield.collection}"
@@ -215,17 +203,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     info_text = f"Object attachment to {fqfield.collection} reset"
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
-                if (
-                    field
-                    and field.required
-                    and not data.get("add")
-                    and not isinstance(
-                        self.additional_relation_models.get(fqfield.fqid), DeletedModel
-                    )
-                ):
-                    raise RequiredFieldsException(
-                        f"From relation {fqfield.fqid}", [fqfield.field]
-                    )
                 info_text = "Object updated"
                 fields = None
                 list_fields_tmp = {}

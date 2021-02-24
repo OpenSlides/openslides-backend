@@ -1,10 +1,14 @@
 from typing import Any, Dict, Type
 
+import pytest
+
 from openslides_backend.action.action import Action
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.delete import DeleteAction
 from openslides_backend.action.generics.update import UpdateAction
-from openslides_backend.action.mixins.create_action_with_dependencies import CreateActionWithDependencies
+from openslides_backend.action.mixins.create_action_with_dependencies import (
+    CreateActionWithDependencies,
+)
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -19,16 +23,16 @@ class FakeModelA(Model):
     id = fields.IntegerField()
 
     fake_b_casc_to_all_id = fields.RelationField(
-        to={Collection("test_model_b"): "fake_a_casc_to_all_ids"},
+        to={Collection("test_model_b"): "fake_a_casc_to_all_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
     )
     fake_b_prot_to_all_id = fields.RelationField(
-        to={Collection("test_model_b"): "fake_a_prot_to_all_ids"},
+        to={Collection("test_model_b"): "fake_a_prot_to_all_id"},
         on_delete=fields.OnDelete.PROTECT,
     )
     fake_b_setnul_to_req_id = fields.RelationField(
-        to={Collection("test_model_b"): "fake_a_setnul_to_req_ids"},
+        to={Collection("test_model_b"): "fake_a_setnul_to_req_id"},
     )
     fake_b_setnul_to_not_req_id = fields.RelationField(
         to={Collection("test_model_b"): "fake_a_setnul_to_not_req_ids"},
@@ -40,16 +44,15 @@ class FakeModelB(Model):
     verbose_name = "fake model for b"
     id = fields.IntegerField()
 
-    fake_a_casc_to_all_ids = fields.RelationListField(
+    fake_a_casc_to_all_id = fields.RelationField(
         to={Collection("test_model_a"): "fake_b_casc_to_all_id"}, required=True
     )
-    fake_a_prot_to_all_ids = fields.RelationListField(
+    fake_a_prot_to_all_id = fields.RelationField(
         to={Collection("test_model_a"): "fake_b_prot_to_all_id"}, required=True
     )
-    fake_a_setnul_to_req_ids = fields.RelationListField(
+    fake_a_setnul_to_req_id = fields.RelationField(
         to={Collection("test_model_a"): "fake_b_setnul_to_req_id"}, required=True
     )
-
     fake_a_setnul_to_not_req_ids = fields.RelationListField(
         to={Collection("test_model_a"): "fake_b_setnul_to_not_req_id"}
     )
@@ -62,6 +65,20 @@ class FakeModelC(Model):
 
     req_field = fields.IntegerField(required=True)
     not_req_field = fields.IntegerField(required=True)
+    fake_d_id = fields.RelationField(
+        to={Collection("test_model_d"): "fake_c__ids"},
+    )
+
+
+class FakeModelD(Model):
+    collection = Collection("test_model_d")
+    verbose_name = "fake model for d"
+    id = fields.IntegerField()
+
+    name = fields.CharField()
+    fake_c_ids = fields.RelationListField(
+        to={Collection("test_model_c"): "fake_d_id"}, required=True
+    )
 
 
 class FakeModelReqA(Model):
@@ -127,6 +144,13 @@ class FakeModelCUpdateAction(UpdateAction):
     model = FakeModelC()
     schema = {}  # type: ignore
 
+
+@register_action("test_model_d.create")
+class FakeModelDCreateAction(CreateAction):
+    model = FakeModelD()
+    schema = {}  # type: ignore
+
+
 @register_action("test_model_req_b.create")
 class FakeModelReqBCreateAction(CreateAction):
     model = FakeModelReqB()
@@ -145,16 +169,14 @@ class FakeModelReqACreateAction(CreateActionWithDependencies):
     ) -> Dict[str, Any]:
         return {
             "name": "modelB",
-            "fake_req_a_id": "fake_req_b_id",
+            "fake_req_a_id": instance["id"],
         }
-
-
 
 
 class TestDeleteVariations(BaseActionTestCase):
     def test_del_a_casc_to_all(self) -> None:
         self.create_model("test_model_a/1", {"fake_b_casc_to_all_id": 1})
-        self.create_model("test_model_b/1", {"fake_a_casc_to_all_ids": [1]})
+        self.create_model("test_model_b/1", {"fake_a_casc_to_all_id": 1})
         response = self.client.post(
             "/",
             json=[{"action": "test_model_a.delete", "data": [{"id": 1}]}],
@@ -169,7 +191,7 @@ class TestDeleteVariations(BaseActionTestCase):
         is a value in "fake_b_prot_to_all_id", internally with ProtectedModelsException
         """
         self.create_model("test_model_a/1", {"fake_b_prot_to_all_id": 1})
-        self.create_model("test_model_b/1", {"fake_a_prot_to_all_ids": [1]})
+        self.create_model("test_model_b/1", {"fake_a_prot_to_all_id": 1})
         response = self.client.post(
             "/",
             json=[{"action": "test_model_a.delete", "data": [{"id": 1}]}],
@@ -179,7 +201,7 @@ class TestDeleteVariations(BaseActionTestCase):
             str(response.data),
         )
         self.assert_model_exists("test_model_a/1", {"fake_b_prot_to_all_id": 1})
-        self.assert_model_exists("test_model_b/1", {"fake_a_prot_to_all_ids": [1]})
+        self.assert_model_exists("test_model_b/1", {"fake_a_prot_to_all_id": 1})
 
     def test_del_a_prot_to_all_not_filled(self) -> None:
         self.create_model("test_model_a/1", {"fake_b_prot_to_all_id": None})
@@ -196,18 +218,18 @@ class TestDeleteVariations(BaseActionTestCase):
         This should not be allowed, because b/1:fake_b_prot_to_setnul_id is required.
         """
         self.create_model("test_model_a/1", {"fake_b_setnul_to_req_id": 1})
-        self.create_model("test_model_b/1", {"fake_a_setnul_to_req_ids": [1]})
+        self.create_model("test_model_b/1", {"fake_a_setnul_to_req_id": 1})
         response = self.client.post(
             "/",
             json=[{"action": "test_model_a.delete", "data": [{"id": 1}]}],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "From relation test_model_b/1: You try to set following required fields to an empty value: [\\'fake_a_setnul_to_req_ids\\']",
+            "Update of test_model_b/1: You try to set following required fields to an empty value: [\\'fake_a_setnul_to_req_id\\']",
             str(response.data),
         )
         self.assert_model_exists("test_model_a/1", {"fake_b_setnul_to_req_id": 1})
-        self.assert_model_exists("test_model_b/1", {"fake_a_setnul_to_req_ids": [1]})
+        self.assert_model_exists("test_model_b/1", {"fake_a_setnul_to_req_id": 1})
 
     def test_del_a_setnul_to_not_req(self) -> None:
         self.create_model("test_model_a/1", {"fake_b_setnul_to_not_req_id": 1})
@@ -225,10 +247,10 @@ class TestUpdateVariations(BaseActionTestCase):
     def test_upd_a_all_to_req(self) -> None:
         """
         This should raise an error,
-        because the value is required in b1/fake_a_setnul_to_req_ids
+        because the value is required in b1/fake_a_setnul_to_req_id
         """
         self.create_model("test_model_a/1", {"fake_b_setnul_to_req_id": 1})
-        self.create_model("test_model_b/1", {"fake_a_setnul_to_req_ids": [1]})
+        self.create_model("test_model_b/1", {"fake_a_setnul_to_req_id": 1})
         response = self.client.post(
             "/",
             json=[
@@ -240,11 +262,11 @@ class TestUpdateVariations(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "From relation test_model_b/1: You try to set following required fields to an empty value: [\\'fake_a_setnul_to_req_ids\\']",
+            "Update of test_model_b/1: You try to set following required fields to an empty value: [\\'fake_a_setnul_to_req_id\\']",
             str(response.data),
         )
         self.assert_model_exists("test_model_a/1", {"fake_b_setnul_to_req_id": 1})
-        self.assert_model_exists("test_model_b/1", {"fake_a_setnul_to_req_ids": [1]})
+        self.assert_model_exists("test_model_b/1", {"fake_a_setnul_to_req_id": 1})
 
     def test_upd_a_all_to_not_req(self) -> None:
         self.create_model("test_model_a/1", {"fake_b_setnul_to_not_req_id": 1})
@@ -263,24 +285,6 @@ class TestUpdateVariations(BaseActionTestCase):
             "test_model_a/1", {"fake_b_setnul_to_not_req_id": None}
         )
         self.assert_model_exists("test_model_b/1", {"fake_a_setnul_to_not_req_ids": []})
-
-    def test_upd_a_all_to_req_multi(self) -> None:
-        self.create_model("test_model_a/1", {"fake_b_setnul_to_req_id": 1})
-        self.create_model("test_model_a/2", {"fake_b_setnul_to_req_id": 1})
-        self.create_model("test_model_b/1", {"fake_a_setnul_to_req_ids": [1, 2]})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "test_model_a.update",
-                    "data": [{"id": 1, "fake_b_setnul_to_req_id": None}],
-                }
-            ],
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("test_model_a/1", {"fake_b_setnul_to_req_id": None})
-        self.assert_model_exists("test_model_a/2", {"fake_b_setnul_to_req_id": 1})
-        self.assert_model_exists("test_model_b/1", {"fake_a_setnul_to_req_ids": [2]})
 
     def test_upd_c_set_req_field_empty(self) -> None:
         """
@@ -387,3 +391,14 @@ class TestCreateVariations(BaseActionTestCase):
         self.assert_model_exists(
             "test_model_req_b/1", {"fake_req_a_id": 1, "name": "modelB"}
         )
+
+    def test_not_implemented_error(self) -> None:
+        """
+        The validation of required fields is not implemented for alle types of RelationListFields,
+        when they are required.
+        """
+        with pytest.raises(NotImplementedError):
+            self.client.post(
+                "/",
+                json=[{"action": "test_model_d.create", "data": [{"name": "nie"}]}],
+            )

@@ -45,9 +45,9 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion_workflow/1", {
-            "name": "test_Xcdfgee",
-            "first_state_id": 4 })
+        self.assert_model_exists(
+            "motion_workflow/1", {"name": "test_Xcdfgee", "first_state_id": 4}
+        )
         self.assert_model_exists(
             "motion_state/1",
             {

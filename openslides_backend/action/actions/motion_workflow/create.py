@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, cast
 
 from ....models.models import MotionWorkflow
 from ....shared.interfaces.event import EventType

@@ -1,9 +1,8 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, Type
 
 from ....models.models import Meeting
 from ...action import Action
 from ...action_set import ActionSet
-from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
@@ -112,7 +111,14 @@ meeting_settings_keys = [
 
 
 class MeetingCreate(CreateActionWithDependencies):
-    dependencies = [MotionWorkflowCreateSimpleWorkflowAction] + [GroupCreate] * 5
+    dependencies = [
+        MotionWorkflowCreateSimpleWorkflowAction,
+        GroupCreate,
+        GroupCreate,
+        GroupCreate,
+        GroupCreate,
+        GroupCreate,
+    ]
 
     def get_dependent_action_payload(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
@@ -205,6 +211,9 @@ class MeetingCreate(CreateActionWithDependencies):
                     "user.can_see",
                 ],
             }
+        raise RuntimeError(
+            f"Index {index} is not defined in this get_dependent_action_payload-method"
+        )
 
 
 @register_action_set("meeting")
