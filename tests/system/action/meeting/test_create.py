@@ -1,5 +1,8 @@
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, cast
 
+from openslides_backend.action.actions.meeting.shared_meeting import (
+    meeting_projector_default_object_list,
+)
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -26,6 +29,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_create_simple(self) -> None:
         self.basic_test(dict())
+        meeting1 = self.get_model("meeting/1")
+        self.assertCountEqual(
+            cast(Iterable[Any], meeting1.get("default_projector_$_id")),
+            meeting_projector_default_object_list,
+        )
         self.assert_model_exists(
             "meeting/1",
             {
@@ -75,6 +83,24 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/4", {"name": "submitted", "next_state_ids": [1, 2, 3]}
+        )
+        projector1 = self.get_model("projector/1")
+        self.assertCountEqual(
+            cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
+            meeting_projector_default_object_list
+        )
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "name": "Default projector",
+                "meeting_id": 1,
+                "used_as_reference_projector_meeting_id": 1,
+            }.update(
+                {
+                    f"used_as_default_${name}_in_meeting_id": 1
+                    for name in meeting_projector_default_object_list
+                }
+            ),
         )
 
     def test_check_payload_fields(self) -> None:

@@ -8,6 +8,8 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
 from ..group.create import GroupCreate
 from ..motion_workflow.create import MotionWorkflowCreateSimpleWorkflowAction
+from ..projector.create import ProjectorCreateAction
+from .shared_meeting import meeting_projector_default_object_list
 
 meeting_settings_keys = [
     "welcome_title",
@@ -118,6 +120,7 @@ class MeetingCreate(CreateActionWithDependencies):
         GroupCreate,
         GroupCreate,
         GroupCreate,
+        ProjectorCreateAction,
     ]
 
     def get_dependent_action_payload(
@@ -210,6 +213,16 @@ class MeetingCreate(CreateActionWithDependencies):
                     "projector.can_see",
                     "user.can_see",
                 ],
+            }
+        elif CreateActionClass == ProjectorCreateAction and index == 6:
+            return {
+                "name": "Default projector",
+                "meeting_id": instance["id"],
+                "used_as_reference_projector_meeting_id": instance["id"],
+                "used_as_default_$_in_meeting_id": {
+                    name: instance["id"]
+                    for name in meeting_projector_default_object_list
+                },
             }
         raise RuntimeError(
             f"Index {index} is not defined in this get_dependent_action_payload-method"
