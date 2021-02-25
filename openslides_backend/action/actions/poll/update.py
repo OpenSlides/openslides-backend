@@ -49,6 +49,8 @@ class PollUpdateAction(UpdateAction):
             if not organisation.get("enable_electronic_voting"):
                 raise ActionException("Electronic voting is not allowed.")
 
+        self.check_100_percent_base(instance)
+
         not_allowed = []
         if not poll.get("state") == Poll.STATE_CREATED:
             for key in (
@@ -82,3 +84,25 @@ class PollUpdateAction(UpdateAction):
                 + ", ".join(not_allowed)
             )
         return instance
+
+    def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
+        onehundred_percent_base = instance.get("onehundred_percent_base")
+        if "pollmethod" in instance:
+            pollmethod = instance["pollmethod"]
+        else:
+            poll = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["id"]), ["pollmethod"]
+            )
+            pollmethod = poll.get("pollmethod")
+        if pollmethod == "Y" and onehundred_percent_base in ("N", "YN", "YNA"):
+            raise ActionException(
+                "This onehundred_percent_base not allowed in this pollmethod"
+            )
+        elif pollmethod == "N" and onehundred_percent_base in ("Y", "YN", "YNA"):
+            raise ActionException(
+                "This onehundred_percent_base not allowed in this pollmethod"
+            )
+        elif pollmethod == "YN" and onehundred_percent_base == "YNA":
+            raise ActionException(
+                "This onehundred_percent_base not allowed in this pollmethod"
+            )

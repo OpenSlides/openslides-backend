@@ -1,4 +1,3 @@
-import pytest
 
 import openslides_backend.action.actions  # noqa
 from openslides_backend.models.models import Poll
@@ -137,7 +136,6 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("content_object_id"), "assignment/1")  # unchanged
 
-    @pytest.mark.skip()
     def test_update_pollmethod(self) -> None:
         response = self.request(
             "poll.update",
@@ -146,7 +144,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("pollmethod"), "YNA")
-        self.assertEqual(poll.get("onehundred_percent_base"), "YNA")
+        self.assertEqual(poll.get("onehundred_percent_base"), "Y")
 
     def test_update_invalid_pollmethod(self) -> None:
         response = self.request(
@@ -291,13 +289,16 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("onehundred_percent_base"), "cast")
 
-    @pytest.mark.skip()
     def test_update_wrong_100_percent_base_state_not_created(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED, "pollmethod": "YN"})
         response = self.request(
             "poll.update",
             {"onehundred_percent_base": "YNA", "id": 1},
         )
-        self.assert_status_code(response, 200)
+        self.assert_status_code(response, 400)
+        assert (
+            "This onehundred_percent_base not allowed in this pollmethod"
+            in response.data.decode()
+        )
         poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("onehundred_percent_base"), "YN")
+        self.assertEqual(poll.get("onehundred_percent_base"), "Y")

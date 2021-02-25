@@ -1,4 +1,3 @@
-import pytest
 
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
@@ -120,7 +119,7 @@ class CreatePoll(BaseActionTestCase):
                 "pollmethod": "YN",
                 "type": "pseudoanonymous",
                 "content_object_id": "assignment/1",
-                "onehundred_percent_base": "YNA",
+                "onehundred_percent_base": "YN",
                 "majority_method": "three_quarters",
                 "global_yes": False,
                 "global_no": False,
@@ -141,7 +140,7 @@ class CreatePoll(BaseActionTestCase):
         self.assertEqual(
             poll.get("description"), "test_description_ieM8ThuasoSh8aecai8p"
         )
-        self.assertEqual(poll.get("onehundred_percent_base"), "YNA")
+        self.assertEqual(poll.get("onehundred_percent_base"), "YN")
         self.assertEqual(poll.get("majority_method"), "three_quarters")
 
     def test_no_options(self) -> None:
@@ -322,26 +321,27 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("poll/1")
 
-    @pytest.mark.skip()
     def test_wrong_pollmethod_onehundred_percent_base_combination_1(self) -> None:
         response = self.request(
             "poll.create",
             {
                 "title": "test_title_Thoo2eiphohhi1eeXoow",
-                "pollmethod": "YNA",
+                "pollmethod": "Y",
                 "type": "named",
                 "content_object_id": "assignment/1",
-                "onehundred_percent_base": "Y",
+                "onehundred_percent_base": "YN",
                 "majority_method": "simple",
                 "meeting_id": 113,
                 "options": [{"text": "test"}],
             },
         )
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("onehundred_percent_base"), "YNA")
+        self.assert_status_code(response, 400)
+        assert (
+            "This onehundred_percent_base not allowed in this pollmethod"
+            in response.data.decode()
+        )
+        self.assert_model_not_exists("poll/1")
 
-    @pytest.mark.skip()
     def test_wrong_pollmethod_onehundred_percent_base_combination_2(self) -> None:
         response = self.request(
             "poll.create",
@@ -350,17 +350,19 @@ class CreatePoll(BaseActionTestCase):
                 "pollmethod": "YN",
                 "type": "named",
                 "content_object_id": "assignment/1",
-                "onehundred_percent_base": "Y",
+                "onehundred_percent_base": "YNA",
                 "majority_method": "simple",
                 "meeting_id": 113,
                 "options": [{"text": "test"}],
             },
         )
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("onehundred_percent_base"), "YN")
+        self.assert_status_code(response, 400)
+        assert (
+            "This onehundred_percent_base not allowed in this pollmethod"
+            in response.data.decode()
+        )
+        self.assert_model_not_exists("poll/1")
 
-    @pytest.mark.skip()
     def test_wrong_pollmethod_onehundred_percent_base_combination_3(self) -> None:
         response = self.request(
             "poll.create",
@@ -375,6 +377,9 @@ class CreatePoll(BaseActionTestCase):
                 "options": [{"text": "test"}],
             },
         )
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("onehundred_percent_base"), "Y")
+        self.assert_status_code(response, 400)
+        assert (
+            "This onehundred_percent_base not allowed in this pollmethod"
+            in response.data.decode()
+        )
+        self.assert_model_not_exists("poll/1")
