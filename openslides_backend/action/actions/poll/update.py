@@ -6,6 +6,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .base import base_check_100_percent_base
 
 
 @register_action("poll.update")
@@ -94,15 +95,4 @@ class PollUpdateAction(UpdateAction):
                 FullQualifiedId(self.model.collection, instance["id"]), ["pollmethod"]
             )
             pollmethod = poll.get("pollmethod")
-        if pollmethod == "Y" and onehundred_percent_base in ("N", "YN", "YNA"):
-            raise ActionException(
-                "This onehundred_percent_base not allowed in this pollmethod"
-            )
-        elif pollmethod == "N" and onehundred_percent_base in ("Y", "YN", "YNA"):
-            raise ActionException(
-                "This onehundred_percent_base not allowed in this pollmethod"
-            )
-        elif pollmethod == "YN" and onehundred_percent_base == "YNA":
-            raise ActionException(
-                "This onehundred_percent_base not allowed in this pollmethod"
-            )
+        base_check_100_percent_base(pollmethod, onehundred_percent_base)

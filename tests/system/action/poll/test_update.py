@@ -1,4 +1,3 @@
-
 import openslides_backend.action.actions  # noqa
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase

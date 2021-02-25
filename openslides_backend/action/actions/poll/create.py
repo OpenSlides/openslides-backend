@@ -8,6 +8,7 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
+from .base import base_check_100_percent_base
 
 options_schema = {
     "description": "A option inside a poll create schema",
@@ -160,15 +161,4 @@ class PollCreateAction(CreateAction):
     def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
         pollmethod = instance["pollmethod"]
         onehundred_percent_base = instance.get("onehundred_percent_base")
-        if pollmethod == "Y" and onehundred_percent_base in ("N", "YN", "YNA"):
-            raise ActionException(
-                "This onehundred_percent_base not allowed in this pollmethod"
-            )
-        elif pollmethod == "N" and onehundred_percent_base in ("Y", "YN", "YNA"):
-            raise ActionException(
-                "This onehundred_percent_base not allowed in this pollmethod"
-            )
-        elif pollmethod == "YN" and onehundred_percent_base == "YNA":
-            raise ActionException(
-                "This onehundred_percent_base not allowed in this pollmethod"
-            )
+        base_check_100_percent_base(pollmethod, onehundred_percent_base)
