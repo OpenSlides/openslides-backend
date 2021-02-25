@@ -10,10 +10,12 @@ from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.services.datastore.interface import (
+    Collection,
     DatastoreService,
     DeletedModelsBehaviour,
 )
 from openslides_backend.shared.exceptions import DatastoreException
+from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
@@ -166,3 +168,9 @@ class BaseSystemTestCase(TestCase):
                     instance.get(field.own_field_name),
                     f"Field {field.own_field_name}: Value {instance.get(field.own_field_name, 'None')} is not equal default value {field.default}.",
                 )
+
+    def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
+        db_count = self.datastore.count(
+            Collection(collection), FilterOperator("meeting_id", "=", meeting_id)
+        )
+        self.assertEqual(db_count, count)

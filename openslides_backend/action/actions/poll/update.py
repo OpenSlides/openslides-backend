@@ -2,10 +2,11 @@ from typing import Any, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .base import base_check_100_percent_base
 
 
 @register_action("poll.update")
@@ -39,6 +40,18 @@ class PollUpdateAction(UpdateAction):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state", "type"]
         )
+
+        # check enable_electronic voting
+        if instance.get("type") in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
+            organisation = self.datastore.get(
+                FullQualifiedId(Collection("organisation"), 1),
+                ["enable_electronic_voting"],
+            )
+            if not organisation.get("enable_electronic_voting"):
+                raise ActionException("Electronic voting is not allowed.")
+
+        self.check_100_percent_base(instance)
+
         not_allowed = []
         if not poll.get("state") == Poll.STATE_CREATED:
             for key in (
@@ -72,3 +85,14 @@ class PollUpdateAction(UpdateAction):
                 + ", ".join(not_allowed)
             )
         return instance
+
+    def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
+        onehundred_percent_base = instance.get("onehundred_percent_base")
+        if "pollmethod" in instance:
+            pollmethod = instance["pollmethod"]
+        else:
+            poll = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["id"]), ["pollmethod"]
+            )
+            pollmethod = poll.get("pollmethod")
+        base_check_100_percent_base(pollmethod, onehundred_percent_base)

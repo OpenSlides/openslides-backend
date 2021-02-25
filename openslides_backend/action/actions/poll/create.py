@@ -1,12 +1,14 @@
 from typing import Any, Dict
 
 from ....models.models import Poll
-from ....shared.patterns import FullQualifiedId
+from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import decimal_schema, optional_fqid_schema
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
+from .base import base_check_100_percent_base
 
 options_schema = {
     "description": "A option inside a poll create schema",
@@ -52,6 +54,7 @@ class PollCreateAction(CreateAction):
             "votesvalid",
             "votesinvalid",
             "votescast",
+            "entitled_group_ids",
         ],
         additional_optional_fields={
             "amount_global_yes": decimal_schema,
@@ -62,6 +65,17 @@ class PollCreateAction(CreateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         payload = []
+
+        # check enabled_electronic_voting
+        if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
+            organisation = self.datastore.get(
+                FullQualifiedId(Collection("organisation"), 1),
+                ["enable_electronic_voting"],
+            )
+            if not organisation.get("enable_electronic_voting"):
+                raise ActionException("Electronic voting is not allowed.")
+
+        self.check_100_percent_base(instance)
 
         # handle non-global options
         weight = 1
@@ -135,7 +149,16 @@ class PollCreateAction(CreateAction):
             if instance.get("publish_immediately"):
                 instance["state"] = "published"
 
+        # set votescast, votesvalid, votesinvalid defaults
+        for field in ("votescast", "votesvalid", "votesinvalid"):
+            instance[field] = instance.get(field, "0.000000")
+
         return instance
 
     def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
         return data.get(field, "0.000000")
+
+    def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
+        pollmethod = instance["pollmethod"]
+        onehundred_percent_base = instance.get("onehundred_percent_base")
+        base_check_100_percent_base(pollmethod, onehundred_percent_base)
