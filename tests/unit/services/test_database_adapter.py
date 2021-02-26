@@ -54,6 +54,7 @@ class DatastoreAdapterTester(TestCase):
         assert result is not None
         assert command.get_raw_data() == {
             "requests": [gmr.to_dict()],
+            "get_deleted_models": 1,
         }
         self.engine.retrieve.assert_called_with("get_many", command.data)
 

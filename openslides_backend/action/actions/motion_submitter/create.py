@@ -40,7 +40,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
                 "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match."
             )
 
-        # check, if (user_id, motion_id) already in the databse.
+        # check, if (user_id, motion_id) already in the datastore.
         filter = And(
             FilterOperator("user_id", "=", instance["user_id"]),
             FilterOperator("motion_id", "=", instance["motion_id"]),

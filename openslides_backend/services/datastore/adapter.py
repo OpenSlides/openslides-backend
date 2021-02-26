@@ -86,7 +86,7 @@ class DatastoreAdapter(DatastoreService):
         fqid: FullQualifiedId,
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> PartialModel:
         mapped_fields_set = set()
@@ -118,7 +118,7 @@ class DatastoreAdapter(DatastoreService):
         get_many_requests: List[commands.GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
@@ -162,7 +162,7 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         mapped_fields_set = set()
@@ -196,17 +196,12 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
-        # by default, only filter for existing models
-        if get_deleted_models != DeletedModelsBehaviour.ALL_MODELS:
-            deleted_models_filter = FilterOperator(
-                "meta_deleted",
-                "=",
-                get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED,
-            )
-            full_filter = And(filter, deleted_models_filter)
+        full_filter = self.apply_deleted_models_behaviour_to_filter(
+            filter, get_deleted_models
+        )
         command = commands.Filter(
             collection=collection, filter=full_filter, mapped_fields=set(mapped_fields)
         )
@@ -230,9 +225,13 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> bool:
-        command = commands.Exists(collection=collection, filter=filter)
+        full_filter = self.apply_deleted_models_behaviour_to_filter(
+            filter, get_deleted_models
+        )
+        command = commands.Exists(collection=collection, filter=full_filter)
         self.logger.debug(
             f"Start EXISTS request to datastore with the following data: {command.data}"
         )
@@ -248,9 +247,13 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> int:
-        command = commands.Count(collection=collection, filter=filter)
+        full_filter = self.apply_deleted_models_behaviour_to_filter(
+            filter, get_deleted_models
+        )
+        command = commands.Count(collection=collection, filter=full_filter)
         self.logger.debug(
             f"Start COUNT request to datastore with the following data: {command.data}"
         )
@@ -264,12 +267,16 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = None,
+        type: str = "int",
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
         # TODO: This method does not reflect the position of the fetched objects.
+        full_filter = self.apply_deleted_models_behaviour_to_filter(
+            filter, get_deleted_models
+        )
         command = commands.Min(
-            collection=collection, filter=filter, field=field, type=type
+            collection=collection, filter=full_filter, field=field, type=type
         )
         self.logger.debug(
             f"Start MIN request to datastore with the following data: {command.data}"
@@ -286,15 +293,16 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = None,
+        type: str = "int",
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
-        """
-        Per default records, marked as deleted, are counted
-        """
         # TODO: This method does not reflect the position of the fetched objects.
+        full_filter = self.apply_deleted_models_behaviour_to_filter(
+            filter, get_deleted_models
+        )
         command = commands.Max(
-            collection=collection, filter=filter, field=field, type=type
+            collection=collection, filter=full_filter, field=field, type=type
         )
         self.logger.debug(
             f"Start MAX request to datastore with the following data: {command.data}"
@@ -305,6 +313,19 @@ class DatastoreAdapter(DatastoreService):
                 CollectionField(collection, field), response.get("position")
             )
         return response.get("max")
+
+    def apply_deleted_models_behaviour_to_filter(
+        self, filter: Filter, get_deleted_models: DeletedModelsBehaviour
+    ) -> Filter:
+        if get_deleted_models == DeletedModelsBehaviour.ALL_MODELS:
+            return filter
+
+        deleted_models_filter = FilterOperator(
+            "meta_deleted",
+            "=",
+            get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED,
+        )
+        return And(filter, deleted_models_filter)
 
     def update_locked_fields(
         self,
