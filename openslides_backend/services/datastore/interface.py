@@ -24,7 +24,7 @@ class DatastoreService(Protocol):
         fqid: FullQualifiedId,
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> PartialModel:
         ...
@@ -34,7 +34,7 @@ class DatastoreService(Protocol):
         get_many_requests: List[GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         ...
@@ -43,7 +43,7 @@ class DatastoreService(Protocol):
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         ...
@@ -53,7 +53,7 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         ...
@@ -62,7 +62,7 @@ class DatastoreService(Protocol):
         self,
         collection: Collection,
         filter: Filter,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> bool:
         ...
@@ -71,7 +71,7 @@ class DatastoreService(Protocol):
         self,
         collection: Collection,
         filter: Filter,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> int:
         ...
@@ -82,7 +82,7 @@ class DatastoreService(Protocol):
         filter: Filter,
         field: str,
         type: str = "int",
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
         ...
@@ -93,7 +93,7 @@ class DatastoreService(Protocol):
         filter: Filter,
         field: str,
         type: str = "int",
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
         ...

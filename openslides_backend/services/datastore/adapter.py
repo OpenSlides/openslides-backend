@@ -86,7 +86,7 @@ class DatastoreAdapter(DatastoreService):
         fqid: FullQualifiedId,
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> PartialModel:
         mapped_fields_set = set()
@@ -118,7 +118,7 @@ class DatastoreAdapter(DatastoreService):
         get_many_requests: List[commands.GetManyRequest],
         mapped_fields: List[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
@@ -162,7 +162,7 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         mapped_fields: List[str] = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         mapped_fields_set = set()
@@ -196,7 +196,7 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         mapped_fields: List[str] = [],
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Dict[int, PartialModel]:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
@@ -225,7 +225,7 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> bool:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
@@ -247,7 +247,7 @@ class DatastoreAdapter(DatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> int:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
@@ -268,7 +268,7 @@ class DatastoreAdapter(DatastoreService):
         filter: Filter,
         field: str,
         type: str = "int",
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
         # TODO: This method does not reflect the position of the fetched objects.
@@ -294,7 +294,7 @@ class DatastoreAdapter(DatastoreService):
         filter: Filter,
         field: str,
         type: str = "int",
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
         # TODO: This method does not reflect the position of the fetched objects.
@@ -315,13 +315,11 @@ class DatastoreAdapter(DatastoreService):
         return response.get("max")
 
     def apply_deleted_models_behaviour_to_filter(
-        self, filter: Filter, get_deleted_models: Optional[DeletedModelsBehaviour]
+        self, filter: Filter, get_deleted_models: DeletedModelsBehaviour
     ) -> Filter:
         if get_deleted_models == DeletedModelsBehaviour.ALL_MODELS:
             return filter
 
-        # if get_deleted_models is None (default case), it is handled as if NO_DELETED
-        # was used
         deleted_models_filter = FilterOperator(
             "meta_deleted",
             "=",

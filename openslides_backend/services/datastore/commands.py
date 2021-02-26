@@ -104,7 +104,7 @@ class Get(Command):
         fqid: FullQualifiedId,
         mapped_fields: Set[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> None:
         self.fqid = fqid
         self.mapped_fields = mapped_fields
@@ -133,7 +133,7 @@ class GetMany(Command):
         get_many_requests: List[GetManyRequest],
         mapped_fields: Set[str] = None,
         position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> None:
         self.get_many_requests = get_many_requests
         self.mapped_fields = mapped_fields
@@ -167,7 +167,7 @@ class GetAll(Command):
         self,
         collection: Collection,
         mapped_fields: Set[str] = None,
-        get_deleted_models: DeletedModelsBehaviour = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
     ) -> None:
         self.collection = collection
         self.mapped_fields = mapped_fields
