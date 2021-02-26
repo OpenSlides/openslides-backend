@@ -6,7 +6,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("speaker.end_speech")
@@ -22,7 +22,7 @@ class SpeakerEndSpeach(UpdateAction):
         description="Schema to stop a speaker's speach.",
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             speaker = self.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),

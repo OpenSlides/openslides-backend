@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import BaseAction
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 class MediafileCalculatedFieldsMixin(BaseAction):
@@ -40,7 +40,7 @@ class MediafileCalculatedFieldsMixin(BaseAction):
         instance: Dict[str, Any],
         parent_is_public: Optional[bool],
         parent_inherited_access_group_ids: Optional[List[int]],
-    ) -> ActionPayload:
+    ) -> ActionData:
         mediafile = self.datastore.get(
             FullQualifiedId(Collection("mediafile"), instance["id"]), ["child_ids"]
         )

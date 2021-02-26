@@ -9,7 +9,7 @@ from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("agenda_item.assign")
@@ -31,7 +31,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
         },
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         payload = super().get_updated_instances(payload)
         # Payload is an iterable with exactly one item
         instance = next(iter(payload))
@@ -43,7 +43,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
 
     def prepare_assign_data(
         self, parent_id: Optional[int], ids: List[int], meeting_id: int
-    ) -> ActionPayload:
+    ) -> ActionData:
         filter = FilterOperator("meeting_id", "=", meeting_id)
         db_instances = self.datastore.filter(
             collection=self.model.collection,

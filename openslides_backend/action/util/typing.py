@@ -1,20 +1,24 @@
-from typing import Any, Dict, Iterable, List, Optional, TypedDict
+from typing import Any, Dict, Iterable, List, Literal, Optional, TypedDict, Union
 
-ActionPayload = Iterable[Dict[str, Any]]
+ActionData = Iterable[Dict[str, Any]]
 
-ActionPayloadWithLabel = TypedDict(
-    "ActionPayloadWithLabel", {"action": str, "data": ActionPayload}
+PayloadElement = TypedDict("PayloadElement", {"action": str, "data": ActionData})
+
+Payload = List[PayloadElement]
+
+ActionResultElement = Dict[str, Any]
+
+ActionResults = List[Optional[ActionResultElement]]
+
+ActionError = TypedDict(
+    "ActionError",
+    {"success": Literal[False], "message": str, "action_data_error_index": int},
+    total=False,
 )
 
-Payload = List[ActionPayloadWithLabel]
+ActionsResponseResults = List[Union[Optional[ActionResults], ActionError]]
 
-ActionResponseResultsElement = Dict[str, Any]
-
-ActionResponseResults = List[Optional[List[Optional[ActionResponseResultsElement]]]]
-
-ActionResponse = TypedDict(
-    "ActionResponse",
-    {"success": bool, "message": str, "results": ActionResponseResults},
+ActionsResponse = TypedDict(
+    "ActionsResponse",
+    {"success": bool, "message": str, "results": ActionsResponseResults},
 )
-
-ActionError = Any

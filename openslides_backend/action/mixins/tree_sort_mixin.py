@@ -6,7 +6,7 @@ from ...shared.exceptions import ActionException
 from ...shared.filters import FilterOperator
 from ..action import BaseAction
 from ..util.default_schema import sort_node_schema
-from ..util.typing import ActionPayload
+from ..util.typing import ActionData
 
 validate_sort_node = fastjsonschema.compile(sort_node_schema)
 
@@ -24,7 +24,7 @@ class TreeSortMixin(BaseAction):
         parent_id_key: str,
         children_ids_key: str,
         set_level: bool = False,
-    ) -> ActionPayload:
+    ) -> ActionData:
         """
         Sorts the all model objects represented in a tree of ids. The request
         data should be a list (the root) of all main models. Each node is a dict

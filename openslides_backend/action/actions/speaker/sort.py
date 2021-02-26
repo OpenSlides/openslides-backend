@@ -7,7 +7,7 @@ from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 
 
 @register_action("speaker.sort")
@@ -22,7 +22,7 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         "list_of_speakers_id",
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         filter: Optional[Filter] = None
         payload = super().get_updated_instances(payload)
         # Payload is an iterable with exactly one item

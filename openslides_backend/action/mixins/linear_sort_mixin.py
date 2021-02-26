@@ -5,7 +5,7 @@ from openslides_backend.services.datastore.interface import PartialModel
 from ...shared.exceptions import ActionException
 from ...shared.filters import Filter, FilterOperator
 from ..action import BaseAction
-from ..util.typing import ActionPayload
+from ..util.typing import ActionData
 
 
 class LinearSortMixin(BaseAction):
@@ -21,7 +21,7 @@ class LinearSortMixin(BaseAction):
         weight_key: str = "weight",
         add_to_db_instances: Dict[int, PartialModel] = {},
         filter: Optional[Filter] = None,
-    ) -> ActionPayload:
+    ) -> ActionData:
         if not filter:
             filter = FilterOperator(filter_str, "=", filter_id)
         db_instances = {

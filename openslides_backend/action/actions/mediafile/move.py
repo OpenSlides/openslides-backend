@@ -9,7 +9,7 @@ from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 
@@ -41,7 +41,7 @@ class MediafileMoveAction(
         if not item.get("is_directory"):
             raise ActionException("New parent is not a directory.")
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         payload = super().get_updated_instances(payload)
         # Payload is an iterable with exactly one item
         instance = next(iter(payload))
@@ -53,7 +53,7 @@ class MediafileMoveAction(
 
     def prepare_move_data(
         self, parent_id: Optional[int], ids: List[int], meeting_id: int
-    ) -> ActionPayload:
+    ) -> ActionData:
         get_many_request = GetManyRequest(
             self.model.collection, ids, ["meeting_id", "access_group_ids"]
         )

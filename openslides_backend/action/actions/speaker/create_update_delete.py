@@ -11,7 +11,7 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from .sort import SpeakerSort
 
 
@@ -24,7 +24,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         optional_properties=["marked", "point_of_order"],
     )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         """
         Reason for this Exception: It's hard and specific doing the weight calculation
         of creating speakers with point of orders, because of the used max- and min-datastore methods.

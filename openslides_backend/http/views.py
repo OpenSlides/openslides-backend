@@ -1,12 +1,12 @@
 from typing import Any, Dict, Optional, Tuple
 
 from ..action.action_handler import ActionHandler
-from ..action.util.typing import Payload as ActionPayload
 from ..presenter import Payload as PresenterPayload
 from ..presenter.presenter import PresenterHandler
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
-from ..shared.interfaces.wsgi import Headers, RequestBody, ResponseBody, View
+from ..shared.interfaces.wsgi import Headers, ResponseBody, View
+from .application import Request
 
 
 class BaseView(View):
@@ -33,9 +33,7 @@ class BaseView(View):
         self.logger.debug(f"User id is {user_id}.")
         return user_id, access_token
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, cookies: Dict
-    ) -> Tuple[ResponseBody, Optional[str]]:
+    def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         raise NotImplementedError()
 
 
@@ -47,23 +45,21 @@ class ActionView(BaseView):
 
     method = "POST"
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, cookies: Dict
-    ) -> Tuple[ResponseBody, Optional[str]]:
+    def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         """
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching action request.")
 
         # Get user id.
-        user_id, access_token = self.get_user_id_from_headers(headers, cookies)
-
-        # Setup payload.
-        payload: ActionPayload = body
+        user_id, access_token = self.get_user_id_from_headers(
+            request.headers, request.cookies
+        )
 
         # Handle request.
         handler = ActionHandler(logging=self.logging, services=self.services)
-        response = handler.handle_request(payload, user_id)
+        is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
+        response = handler.handle_request(request.json, user_id, is_atomic)
 
         self.logger.debug("Action request finished successfully.")
         return response, access_token
@@ -83,19 +79,19 @@ class PresenterView(BaseView):
 
     method = "POST"
 
-    def dispatch(
-        self, body: RequestBody, headers: Headers, cookies: Dict
-    ) -> Tuple[ResponseBody, Optional[str]]:
+    def dispatch(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         """
         Dispatches request to the viewpoint.
         """
         self.logger.debug("Start dispatching presenter request.")
 
         # Get user_id.
-        user_id, access_token = self.get_user_id_from_headers(headers, cookies)
+        user_id, access_token = self.get_user_id_from_headers(
+            request.headers, request.cookies
+        )
 
         # Setup payload.
-        payload: PresenterPayload = body
+        payload: PresenterPayload = request.json
 
         # Handle request.
         handler = PresenterHandler(

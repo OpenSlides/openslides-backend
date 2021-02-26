@@ -1,16 +1,5 @@
 from collections import defaultdict
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, cast
 
 import fastjsonschema
 
@@ -34,7 +23,7 @@ from ..shared.patterns import FullQualifiedField, FullQualifiedId
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
-from .util.typing import ActionPayload, ActionResponseResultsElement
+from .util.typing import ActionData, ActionResultElement, ActionResults
 
 
 class SchemaProvider(type):
@@ -47,6 +36,11 @@ class SchemaProvider(type):
         if schema is not None:
             attrs["schema_validator"] = fastjsonschema.compile(schema)
         return super().__new__(cls, name, bases, attrs)
+
+
+def native(method: Callable) -> Callable:
+    setattr(method, "_native", True)
+    return method
 
 
 class BaseAction:  # pragma: no cover
@@ -78,7 +72,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     modified_relation_fields: Dict[FullQualifiedField, Any]
 
-    write_requests: List[Union[WriteRequest, ActionResponseResultsElement]]
+    write_requests: List[WriteRequest]
 
     def __init__(
         self,
@@ -101,32 +95,46 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.write_requests = []
 
     def perform(
-        self, payload: ActionPayload, user_id: int, internal: bool = False
-    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
+        self, payload: ActionData, user_id: int, internal: bool = False
+    ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
         Entrypoint to perform the action.
         """
         self.user_id = user_id
+        self.index = 0
         for element in payload:
             self.validate_payload_element(element)
+            self.index += 1
+        self.index = -1
 
         # perform permission not for internal actions
         if not internal:
             self.check_permissions(payload)
 
         instances = self.get_updated_instances(payload)
+        results: ActionResults = []
         for instance in instances:
+            # only increment index if the instances which are iterated here are the
+            # same as the ones from the payload (meaning get_updated_instances was
+            # not overridden)
+            if hasattr(self.get_updated_instances, "_native"):
+                self.index += 1
+
             instance = self.base_update_instance(instance)
 
             relation_updates = self.handle_relation_updates(instance)
             self.write_requests.extend(relation_updates)
 
-            instance_wre = self.create_write_requests(instance)
-            self.write_requests.extend(instance_wre)
+            write_request = self.create_write_requests(instance)
+            self.write_requests.extend(write_request)
 
-        yield from self.process_write_requests()
+            result = self.create_action_result_element(instance)
+            results.append(result)
 
-    def check_permissions(self, payload: ActionPayload) -> None:
+        final_write_request = self.process_write_requests()
+        return (final_write_request, results)
+
+    def check_permissions(self, payload: ActionData) -> None:
         """
         Checks permission by requesting permission service.
         """
@@ -135,7 +143,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 f"You are not allowed to perform action {self.name}."
             )
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    @native
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         """
         By default this does nothing. Override in subclasses to adjust the updates
         to all instances of the payload. You can only update instances of the model
@@ -232,26 +241,30 @@ class Action(BaseAction, metaclass=SchemaProvider):
             locked_fields={},
         )
 
-    def create_write_requests(
-        self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
+    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         """
         Creates write requests for one instance of the current model.
         """
         raise NotImplementedError
 
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        """
+        Create an ActionResponseResultsElement describing the result of this action.
+        Defaults to None (to be overridden in subclasses).
+        """
+        return None
+
     def process_write_requests(
         self,
-    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
-        # Pre-yield non write requests, i. e. action response results elements.
-        write_requests: List[WriteRequest] = []
-        for item in self.write_requests:
-            if not isinstance(item, WriteRequest):
-                yield item
-            else:
-                write_requests.append(item)
+    ) -> Optional[WriteRequest]:
+        """
+        Merge all temporarily created write requests to one single write request which
+        is returned by this action.
+        """
         # merge all actual write requests
-        write_request = merge_write_requests(write_requests)
+        write_request = merge_write_requests(self.write_requests)
         if write_request:
             # sort events: create - update - delete
             events_by_type: Dict[EventType, List[Event]] = defaultdict(list)
@@ -264,9 +277,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             # Get locked_fields and reset them in datastore
             write_request.locked_fields = self.datastore.locked_fields
             self.datastore.locked_fields = {}
-
-            # Finally yield the merged write request element.
-            yield write_request
+        return write_request
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -377,7 +388,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def execute_other_action(
         self,
         ActionClass: Type["Action"],
-        payload: ActionPayload,
+        payload: ActionData,
         additional_relation_models: ModelMap = {},
     ) -> None:
         """
@@ -394,12 +405,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.logging,
             {**self.additional_relation_models, **additional_relation_models},
         )
-        action_results = action.perform(payload, self.user_id, internal=True)
-        for item in action_results:
-            # We strip off items of type ActionResponseResultsElement because
-            # we do not want such response information in the real action response.
-            if isinstance(item, WriteRequest):
-                self.write_requests.append(item)
+        # ignore the action result elements
+        write_request, _ = action.perform(payload, self.user_id, internal=True)
+        if write_request:
+            self.write_requests.append(write_request)
 
 
 def merge_write_requests(

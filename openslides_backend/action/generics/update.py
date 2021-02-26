@@ -1,10 +1,9 @@
-from typing import Any, Dict, Iterable, Union
+from typing import Any, Dict, Iterable
 
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ..action import Action
-from ..util.typing import ActionResponseResultsElement
 
 
 class UpdateAction(Action):
@@ -43,12 +42,9 @@ class UpdateAction(Action):
                 del updated_instance[field_name]
         return updated_instance
 
-    def create_write_requests(
-        self, instance: Dict[str, Any]
-    ) -> Iterable[Union[WriteRequest, ActionResponseResultsElement]]:
+    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         """
         Creates a write request element for one instance of the current model.
-
         Just prepares a write request element with update event for the given
         instance.
         """
