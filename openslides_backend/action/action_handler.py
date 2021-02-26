@@ -58,7 +58,7 @@ payload_schema = fastjsonschema.compile(
 
 class ActionHandler(BaseHandler):
     """
-    Action handler. It is the concret implementation of Action interface.
+    Action handler. It is the concrete implementation of Action interface.
     """
 
     MAX_RETRY = 3
@@ -80,7 +80,7 @@ class ActionHandler(BaseHandler):
             yield name, info
 
     def handle_request(
-        self, payload: Payload, user_id: int, atomic: bool = False
+        self, payload: Payload, user_id: int, atomic: bool = True
     ) -> ActionsResponse:
         """
         Takes payload and user id and handles this request by validating and
@@ -94,7 +94,7 @@ class ActionHandler(BaseHandler):
             raise ActionException(exception.message)
 
         results: ActionsResponseResults = []
-        if not atomic:
+        if atomic:
             results = self.execute_write_requests(self.parse_actions, payload)
         else:
 

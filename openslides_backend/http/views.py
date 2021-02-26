@@ -58,7 +58,7 @@ class ActionView(BaseView):
 
         # Handle request.
         handler = ActionHandler(logging=self.logging, services=self.services)
-        is_atomic = request.environ["RAW_URI"].endswith("handle_atomic")
+        is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handler.handle_request(request.json, user_id, is_atomic)
 
         self.logger.debug("Action request finished successfully.")

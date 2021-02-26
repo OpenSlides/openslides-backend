@@ -82,7 +82,7 @@ def test_success_actions_atomic(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "success_action", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, True)
+    response = action_handler.handle_request(payload, 0, False)
     assert response["success"] is True
     assert response["results"] == [[], []]
 
@@ -102,7 +102,7 @@ def test_success_actions_with_result_atomic(action_handler: ActionHandler) -> No
         {"action": "success_action", "data": [{}, {}]},
         {"action": "action_with_result", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, True)
+    response = action_handler.handle_request(payload, 0, False)
     assert response["success"] is True
     assert response["results"] == [[], [{"id": 1}, {"id": 42}]]
 
@@ -123,7 +123,7 @@ def test_with_error_atomic(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "error_action", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, True)
+    response = action_handler.handle_request(payload, 0, False)
     assert response["success"] is True
     assert response["results"] == [[], {"success": False, "message": ""}]
 
@@ -144,7 +144,7 @@ def test_with_error_with_index_atomic(action_handler: ActionHandler) -> None:
         {"action": "success_action", "data": [{}, {}]},
         {"action": "error_action_with_index", "data": [{}, {}]},
     ]
-    response = action_handler.handle_request(payload, 0, True)
+    response = action_handler.handle_request(payload, 0, False)
     assert response["success"] is True
     assert response["results"] == [
         [],
