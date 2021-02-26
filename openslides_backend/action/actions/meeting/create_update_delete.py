@@ -1,6 +1,7 @@
 from typing import Any, Dict, Type
 
 from ....models.models import Meeting
+from ....shared.exceptions import ActionException
 from ...action import Action
 from ...action_set import ActionSet
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -9,6 +10,7 @@ from ...util.register import register_action_set
 from ..group.create import GroupCreate
 from ..motion_workflow.create import MotionWorkflowCreateSimpleWorkflowAction
 from ..projector.create import ProjectorCreateAction
+from ..user.update import UserUpdate
 from .shared_meeting import meeting_projector_default_object_list
 
 meeting_settings_keys = [
@@ -122,6 +124,31 @@ class MeetingCreate(CreateActionWithDependencies):
         GroupCreate,
         ProjectorCreateAction,
     ]
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().base_update_instance(instance)
+
+        admin_group_fqid_list = [
+            key
+            for key, data in self.datastore.additional_relation_models.items()
+            if key.collection.collection == "group" and data.get("name") == "Admin"
+        ]
+        if len(admin_group_fqid_list) != 1:
+            raise ActionException(
+                "There is no admin group created during meeting.create."
+            )
+        admin_group_fqid = admin_group_fqid_list[0]
+
+        payload = [
+            {
+                "id": self.user_id,
+                "group_$_ids": {str(instance["id"]): [admin_group_fqid.id]},
+            }
+        ]
+        self.execute_other_action(
+            UserUpdate, payload, self.datastore.additional_relation_models
+        )
+        return instance
 
     def get_dependent_action_payload(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int

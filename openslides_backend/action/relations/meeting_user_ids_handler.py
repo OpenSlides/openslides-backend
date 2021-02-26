@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ...models.fields import Field
-from ...shared.exceptions import ActionException, DatastoreException
+from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
@@ -19,10 +19,12 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
     ) -> RelationUpdates:
         # Try to fetch db instance to compare if any new ids were added
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        try:
-            db_instance = self.datastore.get(fqid, [field_name, "meeting_id"])
-        except DatastoreException:
-            db_instance = {}
+        db_instance = self.datastore.fetch_model(
+            fqid,
+            [field_name, "meeting_id"],
+            lock_result=True,
+            force_db=bool(field.own_collection.collection == "meeting"),
+        )
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])
         added_ids = ids_set.difference(db_ids_set)
@@ -36,7 +38,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         elif field.own_collection == Collection("group"):
             meeting_id = instance.get("meeting_id")
             if not meeting_id:
-                meeting_id = db_instance["meeting_id"]
+                meeting_id = db_instance.get("meeting_id")
                 if not meeting_id:
                     raise ActionException(
                         f"No meeting_id found for group/{instance['id']}"

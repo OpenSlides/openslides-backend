@@ -47,10 +47,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "motions_default_amendment_workflow_id": 1,
                 "motions_default_statute_amendment_workflow_id": 1,
                 "motion_state_ids": [1, 2, 3, 4],
+                "user_ids": [1],
             },
         )
         self.assert_model_exists("group/2", {"name": "Default"})
-        self.assert_model_exists("group/3", {"name": "Admin"})
+        self.assert_model_exists("group/3", {"name": "Admin", "user_ids": [1]})
         self.assert_model_exists("group/4", {"name": "Delegates"})
         self.assert_model_exists("group/5", {"name": "Staff"})
         self.assert_model_exists("group/6", {"name": "Committees"})
@@ -87,7 +88,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         projector1 = self.get_model("projector/1")
         self.assertCountEqual(
             cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
-            meeting_projector_default_object_list
+            meeting_projector_default_object_list,
         )
         self.assert_model_exists(
             "projector/1",
@@ -101,6 +102,13 @@ class MeetingCreateActionTest(BaseActionTestCase):
                     for name in meeting_projector_default_object_list
                 }
             ),
+        )
+        self.assert_model_exists(
+            "user/1",
+            {
+                "group_$1_ids": [3],  # meeting/1 and group 3
+                "group_$_ids": ["1"],  # only meeting/1 values
+            },
         )
 
     def test_check_payload_fields(self) -> None:
@@ -117,3 +125,14 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "guest_ids": [2],
             }
         )
+        assert meeting.get("welcome_text") == "htXiSgbj"
+        assert meeting.get("description") == "RRfnzxHA"
+        assert meeting.get("location") == "LSFHPTgE"
+        assert meeting.get("start_time") == 1608120653
+        assert meeting.get("end_time") == 1608121653
+        assert meeting.get("url_name") == "JWdYZqDX"
+        assert meeting.get("enable_anonymous") is False
+        assert meeting.get("guest_ids") == [2]
+        assert meeting.get("user_ids") == [1, 2]
+        user_2 = self.get_model("user/2")
+        assert user_2.get("guest_meeting_ids") == [1]

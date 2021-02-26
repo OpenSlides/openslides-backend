@@ -13,6 +13,7 @@ from ...shared.patterns import (
     FullQualifiedField,
     FullQualifiedId,
 )
+from ...shared.typing import DeletedModel, ModelMap
 from . import commands
 from .deleted_models_behaviour import DeletedModelsBehaviour
 from .http_engine import HTTPEngine as Engine
@@ -34,6 +35,7 @@ class DatastoreAdapter(DatastoreService):
         self.logger = logging.getLogger(__name__)
         self.engine = engine
         self.locked_fields = {}
+        self.additional_relation_models: ModelMap = {}
 
     def retrieve(self, command: commands.Command) -> DatastoreResponse:
         """
@@ -364,3 +366,30 @@ class DatastoreAdapter(DatastoreService):
         command = commands.TruncateDb()
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
+
+    def fetch_model(
+        self,
+        fqid: FullQualifiedId,
+        mapped_fields: List[str],
+        lock_result: bool = False,
+        force_db: bool = False,
+    ) -> Dict[str, Any]:
+        if (
+            not force_db
+            and fqid in self.additional_relation_models
+            and not isinstance(self.additional_relation_models[fqid], DeletedModel)
+        ):
+            return {
+                field: self.additional_relation_models[fqid].get(field)
+                for field in mapped_fields
+                if field in self.additional_relation_models[fqid]
+            }
+        else:
+            try:
+                return self.get(
+                    fqid,
+                    mapped_fields=mapped_fields,
+                    lock_result=lock_result,
+                )
+            except DatastoreException:
+                return {}
