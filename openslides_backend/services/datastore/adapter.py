@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import simplejson as json
 from simplejson.errors import JSONDecodeError
@@ -15,7 +15,10 @@ from ...shared.patterns import (
 )
 from ...shared.typing import DeletedModel, ModelMap
 from . import commands
-from .deleted_models_behaviour import DeletedModelsBehaviour
+from .deleted_models_behaviour import (
+    DeletedModelsBehaviour,
+    InstanceAdditionalBehaviour,
+)
 from .http_engine import HTTPEngine as Engine
 from .interface import DatastoreService, PartialModel
 
@@ -371,25 +374,55 @@ class DatastoreAdapter(DatastoreService):
         self,
         fqid: FullQualifiedId,
         mapped_fields: List[str],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
-        force_db: bool = False,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
     ) -> Dict[str, Any]:
-        if (
-            not force_db
-            and fqid in self.additional_relation_models
-            and not isinstance(self.additional_relation_models[fqid], DeletedModel)
-        ):
-            return {
-                field: self.additional_relation_models[fqid].get(field)
-                for field in mapped_fields
-                if field in self.additional_relation_models[fqid]
-            }
-        else:
+        def get_additional() -> Tuple[bool, Dict[str, Any]]:
+            if fqid in self.additional_relation_models and not isinstance(
+                self.additional_relation_models[fqid], DeletedModel
+            ):
+                return (
+                    True,
+                    {
+                        field: self.additional_relation_models[fqid].get(field)
+                        for field in mapped_fields
+                        if field in self.additional_relation_models[fqid]
+                    },
+                )
+            else:
+                return (False, {})
+
+        def get_db() -> Tuple[bool, Dict[str, Any]]:
             try:
-                return self.get(
+                return True, self.get(
                     fqid,
                     mapped_fields=mapped_fields,
+                    position=position,
+                    get_deleted_models=get_deleted_models,
                     lock_result=lock_result,
                 )
             except DatastoreException:
-                return {}
+                return False, {}
+
+        if db_additional_relevance in (
+            InstanceAdditionalBehaviour.ONLY_ADDITIONAL,
+            InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+        ):
+            okay, result = get_additional()
+            if (
+                not okay
+                and db_additional_relevance
+                == InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST
+            ):
+                okay, result = get_db()
+        else:
+            okay, result = get_db()
+            if (
+                not okay
+                and db_additional_relevance
+                == InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL
+            ):
+                okay, result = get_additional()
+        return result

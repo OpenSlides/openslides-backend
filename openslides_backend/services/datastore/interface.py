@@ -7,7 +7,10 @@ from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
-from .deleted_models_behaviour import DeletedModelsBehaviour
+from .deleted_models_behaviour import (
+    DeletedModelsBehaviour,
+    InstanceAdditionalBehaviour,
+)
 
 PartialModel = Dict[str, Any]
 
@@ -116,8 +119,10 @@ class DatastoreService(Protocol):
         self,
         fqid: FullQualifiedId,
         mapped_fields: List[str],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
-        force_db: bool = False,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
     ) -> Dict[str, Any]:
         ...
 

@@ -1,5 +1,10 @@
 from typing import Any, Dict
 
+from openslides_backend.services.datastore.deleted_models_behaviour import (
+    DeletedModelsBehaviour,
+    InstanceAdditionalBehaviour,
+)
+
 from ...models.fields import Field
 from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
@@ -22,8 +27,11 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         db_instance = self.datastore.fetch_model(
             fqid,
             [field_name, "meeting_id"],
+            get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
             lock_result=True,
-            force_db=bool(field.own_collection.collection == "meeting"),
+            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST
+            if bool(field.own_collection.collection == "meeting")
+            else InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])
