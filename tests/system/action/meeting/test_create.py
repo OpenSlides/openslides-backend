@@ -8,8 +8,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
-        self.create_model("committee/1", {"name": "test_committee"})
+        self.create_model("committee/1", {"name": "test_committee", "member_ids": [2]})
         self.create_model("group/1")
+        self.create_model("user/2")
+
         response = self.request(
             "meeting.create",
             {
@@ -28,10 +30,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
         return {}
 
     def test_create_simple(self) -> None:
-        self.basic_test(dict())
-        meeting1 = self.get_model("meeting/1")
+        meeting = self.basic_test(dict())
         self.assertCountEqual(
-            cast(Iterable[Any], meeting1.get("default_projector_$_id")),
+            cast(Iterable[Any], meeting.get("default_projector_$_id")),
             meeting_projector_default_object_list,
         )
         self.assert_model_exists(
@@ -112,8 +113,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
 
     def test_check_payload_fields(self) -> None:
-        self.create_model("user/2")
-        self.basic_test(
+        meeting = self.basic_test(
             {
                 "welcome_text": "htXiSgbj",
                 "description": "RRfnzxHA",
@@ -136,3 +136,24 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("user_ids") == [1, 2]
         user_2 = self.get_model("user/2")
         assert user_2.get("guest_meeting_ids") == [1]
+
+    def test_guest_ids_error(self) -> None:
+        self.create_model("committee/1", {"name": "test_committee", "member_ids": [2]})
+        self.create_model("user/2")
+        self.create_model("user/3")
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "welcome_title": "test_wel_title",
+                "guest_ids": [2, 3],
+            },
+        )
+
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Guest-ids {3} are not part of committee-member or manager_ids.",
+            response.json["message"],
+        )

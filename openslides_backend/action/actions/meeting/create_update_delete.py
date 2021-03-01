@@ -1,7 +1,8 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Iterable, Type, cast
 
 from ....models.models import Meeting
 from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 from ...action_set import ActionSet
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -254,6 +255,27 @@ class MeetingCreate(CreateActionWithDependencies):
         raise RuntimeError(
             f"Index {index} is not defined in this get_dependent_action_payload-method"
         )
+
+    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Check for guest_ids being in committee/member_ids or committee/manager_ids
+        """
+        instance = super().validate_fields(instance)
+        if instance.get("guest_ids"):
+            committee = self.datastore.get(
+                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                ["member_ids", "manager_ids"],
+            )
+            diff = (
+                set(cast(Iterable[Any], instance.get("guest_ids")))
+                - set(cast(Iterable[Any], committee.get("member_ids", ())))
+                - set(cast(Iterable[Any], committee.get("manager_ids", ())))
+            )
+            if diff:
+                raise ActionException(
+                    f"Guest-ids {diff} are not part of committee-member or manager_ids."
+                )
+        return instance
 
 
 @register_action_set("meeting")
