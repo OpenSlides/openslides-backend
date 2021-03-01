@@ -162,4 +162,3 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
         )
         self.assertEqual(result.get("name", "None"), "None")
-
