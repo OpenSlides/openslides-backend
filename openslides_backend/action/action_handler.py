@@ -155,7 +155,6 @@ class ActionHandler(BaseHandler):
                 raise exception
 
             if write_request:
-                self.validate_required_fields(write_request)
                 write_requests.append(write_request)
             action_response_results.append(results)
 
