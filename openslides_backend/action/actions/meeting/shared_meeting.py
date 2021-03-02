@@ -22,7 +22,8 @@ used_as_default_for_schema: Schema = {
     "description": "Replacements for all default projector-objects in meeting",
     "type": "object",
     "properties": {
-        name: {"type": "integer"} for name in meeting_projector_default_object_list
+        name: {"type": ["integer", "null"]}
+        for name in meeting_projector_default_object_list
     },
     "additionalProperties": False,
 }
