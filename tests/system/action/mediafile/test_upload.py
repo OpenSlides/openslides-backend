@@ -28,6 +28,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         assert mediafile.get("file") is None
         assert mediafile.get("mimetype") == "text/plain"
         assert mediafile.get("filesize") == 12
+        assert mediafile.get("list_of_speakers_id") == 1
         assert cast(int, mediafile.get("create_timestamp")) > start_time
         assert not mediafile.get("is_directory")
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
@@ -126,3 +127,20 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.assertIn("Mocked error on media service upload", response.json["message"])
         self.assert_model_not_exists("resource/1")
         self.media.upload_mediafile.assert_called_with(file_content, 1, used_mimetype)
+
+    def test_without_filename(self) -> None:
+        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "file": file_content,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must contain ['title', 'meeting_id', 'filename', 'file'] properties",
+            response.json["message"],
+        )

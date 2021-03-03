@@ -370,3 +370,21 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         assert child.get("access_group_ids") == [7]
         assert child.get("inherited_access_group_ids") == [7]
         assert child.get("is_public") is False
+
+    def test_update_filename_error(self) -> None:
+        self.set_models(
+            {
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "filename": "testfile.txt",
+                },
+            }
+        )
+        response = self.request(
+            "mediafile.update",
+            {"id": 110, "filename": "testfile.txt2"},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must not contain {'filename'} properties", response.json["message"]
+        )

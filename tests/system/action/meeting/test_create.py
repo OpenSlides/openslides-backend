@@ -18,7 +18,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         # Annotation: Creation and testing will be fixed with Issue492/pull request486
         self.assert_status_code(response, 400)
-        self.assertIn("Creation of meeting/1: You try to set following required fields to an empty value: ['default_group_id', 'motions_default_amendment_workflow_id', 'motions_default_statute_amendment_workflow_id', 'motions_default_workflow_id']", response.json["message"])
+        self.assertIn(
+            "Creation of meeting/1: You try to set following required fields to an empty value: ['default_group_id', 'motions_default_amendment_workflow_id', 'motions_default_statute_amendment_workflow_id', 'motions_default_workflow_id']",
+            response.json["message"],
+        )
         return {}
 
     def test_create_simple(self) -> None:
@@ -26,7 +29,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_check_payload_fields(self) -> None:
         self.create_model("user/2")
-        meeting = self.basic_test(
+        self.basic_test(
             {
                 "welcome_text": "htXiSgbj",
                 "description": "RRfnzxHA",
