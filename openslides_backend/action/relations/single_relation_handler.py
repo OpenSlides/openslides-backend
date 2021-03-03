@@ -412,7 +412,7 @@ class SingleRelationHandler:
         db_rels = response.get(collection, {})
         result_template_field: RelationFieldUpdates = {}
         for fqfield, rel_update in result_structured_field.items():
-            current_value = db_rels[fqfield.id].get(template_field_name, [])
+            current_value = db_rels.get(fqfield.id, {}).get(template_field_name, [])
             if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
                 self.type in ("1:m", "m:n") and rel_update["value"] == []
             ):

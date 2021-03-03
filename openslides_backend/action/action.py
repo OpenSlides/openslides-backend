@@ -24,7 +24,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import FullQualifiedField, FullQualifiedId
-from ..shared.typing import DeletedModel, ModelMap
+from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.typing import ActionData, ActionResultElement, ActionResults
@@ -193,7 +193,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
-            field = getattr(model_registry[fqfield.collection], fqfield.field, None)
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
@@ -299,7 +298,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 else:
                     fdict[event["fqid"]]["fields"].update(event.get("fields", {}))
             else:
-                fdict[event["fqid"]] = {"type": event["type"], "fields": event.get("fields", {})}
+                fdict[event["fqid"]] = {
+                    "type": event["type"],
+                    "fields": event.get("fields", {}),
+                }
 
         for fqid, v in fdict.items():
             type_ = v["type"]
@@ -310,14 +312,18 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     field.own_field_name
                     for field in model_registry[fqid.collection]().get_required_fields()
                     if field.own_field_name not in instance
-                    or (field.own_field_name in instance and not instance[field.own_field_name])
+                    or (
+                        field.own_field_name in instance
+                        and not instance[field.own_field_name]
+                    )
                 ]
                 fqid_str = f"Creation of {fqid}"
             elif type_ == EventType.Update:
                 required_fields = [
                     field.own_field_name
                     for field in model_registry[fqid.collection]().get_required_fields()
-                    if field.own_field_name in instance and not instance[field.own_field_name]
+                    if field.own_field_name in instance
+                    and not instance[field.own_field_name]
                 ]
                 fqid_str = f"Update of {fqid}"
             if required_fields:

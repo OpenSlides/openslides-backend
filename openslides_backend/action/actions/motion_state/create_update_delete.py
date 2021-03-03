@@ -62,6 +62,7 @@ class MotionStateActionSet(ActionSet):
             "merge_amendment_into_final",
             "show_recommendation_extension_field",
             "first_state_of_workflow_id",
+            "next_state_ids",
         ],
     )
     update_schema = DefaultSchema(MotionState()).get_update_schema(
