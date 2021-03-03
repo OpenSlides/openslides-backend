@@ -32,6 +32,8 @@ class CreatePoll(BaseActionTestCase):
                 "amount_global_yes": "1.000000",
                 "amount_global_no": "1.250000",
                 "amount_global_abstain": "2.500000",
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
             },
         )
         self.assert_status_code(response, 200)
@@ -44,6 +46,8 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("option_ids") == [1]
         assert poll.get("global_option_id") == 2
         assert poll.get("state") == "finished"
+        assert poll.get("onehundred_percent_base") == "Y"
+        assert poll.get("majority_method") == "simple"
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
@@ -73,6 +77,8 @@ class CreatePoll(BaseActionTestCase):
                                 {"text": "test4", "N": "11.000000"},
                             ],
                             "meeting_id": 113,
+                            "onehundred_percent_base": "YNA",
+                            "majority_method": "simple",
                         }
                     ],
                 }
@@ -86,6 +92,8 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("meeting_id") == 113
         assert poll.get("option_ids") == [1, 2, 3]
         assert poll.get("global_option_id") == 4
+        assert poll.get("onehundred_percent_base") == "YNA"
+        assert poll.get("majority_method") == "simple"
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
