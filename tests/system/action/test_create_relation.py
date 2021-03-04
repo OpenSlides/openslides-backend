@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 import pytest
 
@@ -80,12 +80,14 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
     dependencies = [FakeModelCRCCreateAction]
 
     def get_dependent_action_payload(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
-    ) -> Dict[str, Any]:
-        return {
-            "name": "modelC",
-            "fake_model_cr_b_id": instance["id"],
-        }
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+    ) -> List[Dict[str, Any]]:
+        return [
+            {
+                "name": "modelC",
+                "fake_model_cr_b_id": instance["id"],
+            }
+        ]
 
 
 @register_action("fake_model_cr_d.create")

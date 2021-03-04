@@ -20,7 +20,7 @@ class CreateActionWithDependencies(CreateAction):
         additional_relation_models = {
             FullQualifiedId(self.model.collection, instance["id"]): instance,
         }
-        for index, ActionClass in enumerate(self.dependencies):
+        for ActionClass in self.dependencies:
             special_check_method_name = "check_dependant_action_execution_" + str(
                 ActionClass.model.collection
             )
@@ -37,7 +37,7 @@ class CreateActionWithDependencies(CreateAction):
             payload_method = getattr(
                 self, special_payload_method_name, self.get_dependent_action_payload
             )
-            payload = [payload_method(instance, ActionClass, index)]
+            payload = payload_method(instance, ActionClass)
             self.execute_other_action(ActionClass, payload, additional_relation_models)
         return instance
 
@@ -51,8 +51,8 @@ class CreateActionWithDependencies(CreateAction):
         return True
 
     def get_dependent_action_payload(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
-    ) -> Dict[str, Any]:
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+    ) -> List[Dict[str, Any]]:
         """
         Override in subclass to provide the correct payload for the dependencies.
         """

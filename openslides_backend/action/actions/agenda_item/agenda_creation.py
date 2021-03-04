@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 from ....models.models import AgendaItem
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -71,8 +71,8 @@ class CreateActionWithAgendaItemMixin(Action):
         return agenda_create
 
     def get_dependent_action_payload_agenda_item(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
-    ) -> Dict[str, Any]:
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+    ) -> List[Dict[str, Any]]:
         agenda_item_payload_element = {
             "content_object_id": f"{str(self.model.collection)}{KEYSEPARATOR}{instance['id']}",
         }
@@ -85,4 +85,4 @@ class CreateActionWithAgendaItemMixin(Action):
             value = instance.pop(extra_field, None)
             if value is not None:
                 agenda_item_payload_element[extra_field_without_prefix] = value
-        return agenda_item_payload_element
+        return [agenda_item_payload_element]

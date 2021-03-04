@@ -61,8 +61,12 @@ class TestUpdateRelation(BaseActionTestCase):
             "Update of fake_model_ur_b/1: You try to set following required fields to an empty value: ['fake_model_ur_a_required_id']",
             response.json["message"],
         )
-        self.assert_model_exists("fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1})
-        self.assert_model_exists("fake_model_ur_b/1", {"fake_model_ur_a_required_id": 1})
+        self.assert_model_exists(
+            "fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1}
+        )
+        self.assert_model_exists(
+            "fake_model_ur_b/1", {"fake_model_ur_a_required_id": 1}
+        )
 
     def test_set_required_to_0(self) -> None:
         self.create_model("fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1})
@@ -75,5 +79,9 @@ class TestUpdateRelation(BaseActionTestCase):
             "Update of fake_model_ur_b/1: You try to set following required fields to an empty value: ['fake_model_ur_a_required_id']",
             response.json["message"],
         )
-        self.assert_model_exists("fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1})
-        self.assert_model_exists("fake_model_ur_b/1", {"fake_model_ur_a_required_id": 1})
+        self.assert_model_exists(
+            "fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1}
+        )
+        self.assert_model_exists(
+            "fake_model_ur_b/1", {"fake_model_ur_a_required_id": 1}
+        )
