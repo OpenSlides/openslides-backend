@@ -184,7 +184,7 @@ class ActionHandler(BaseHandler):
 
         try:
             write_request, results = action.perform(action_data, self.user_id)
-            if isinstance(write_request, WriteRequest):
+            if write_request:
                 action.validate_required_fields(write_request)
             return (write_request, results)
         except ActionException as exception:
