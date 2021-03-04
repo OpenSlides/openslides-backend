@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "4a1a9213ed6dafefc094cb7ec3315672"
+MODELS_YML_CHECKSUM = "6078d8d2e4d6b8e2ffe834439c639bce"
 
 
 class Organisation(Model):
@@ -70,18 +70,23 @@ class User(Model):
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
+        replacement="meeting_id",
     )
     number_ = fields.TemplateCharField(
         index=7,
+        replacement="meeting_id",
     )
     structure_level_ = fields.TemplateCharField(
         index=16,
+        replacement="meeting_id",
     )
     about_me_ = fields.TemplateHTMLStrictField(
         index=9,
+        replacement="meeting_id",
     )
     vote_weight_ = fields.TemplateDecimalField(
         index=12,
+        replacement="meeting_id",
     )
     group__ids = fields.TemplateRelationListField(
         index=6,
@@ -1386,10 +1391,9 @@ class Mediafile(Model):
         constraints={"description": "In bytes, not the human readable format anymore."},
     )
     filename = fields.CharField(
-        required=True,
         constraints={
             "descriptin": "The uploaded filename. Will be used for downloading. Only writeable on create."
-        },
+        }
     )
     mimetype = fields.CharField()
     pdf_information = fields.JSONField()
@@ -1418,7 +1422,6 @@ class Mediafile(Model):
     list_of_speakers_id = fields.RelationField(
         to={Collection("list_of_speakers"): "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
-        required=True,
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(

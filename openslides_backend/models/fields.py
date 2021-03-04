@@ -290,7 +290,10 @@ class BaseTemplateField(Field):
         self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
     ) -> Schema:
         if not replacement_pattern:
-            replacement_pattern = ".*"
+            if self.replacement:
+                replacement_pattern = ID_REGEX
+            else:
+                replacement_pattern = ".*"
         return {
             "type": "object",
             "patternProperties": {replacement_pattern: super().get_schema()},
@@ -351,8 +354,7 @@ class BaseTemplateField(Field):
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
-        return super().get_payload_schema(ID_REGEX)
+    pass
 
 
 class TemplateRelationField(BaseTemplateRelationField, RelationField):

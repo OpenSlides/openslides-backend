@@ -15,6 +15,11 @@ class FakeModelA(Model):
 
     id = fields.IntegerField()
 
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "fake_model_a_ids"},
+        required=True,
+    )
+
     # normal relations
     fake_model_b_oo = fields.RelationField(
         to={Collection("fake_model_b"): "fake_model_a_oo"}

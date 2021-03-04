@@ -126,6 +126,19 @@ class RelationManager:
 
             if value is not None:
                 if replacement not in template_field:
+                    if field.replacement:
+                        # check if the model the replacement is referring to exists
+                        replacement_field = model.get_field(field.replacement)
+                        assert isinstance(replacement_field, BaseRelationField)
+                        replacement_collection = (
+                            replacement_field.get_target_collection()
+                        )
+                        self.datastore.get(
+                            fqid=FullQualifiedId(
+                                replacement_collection, int(replacement)
+                            ),
+                            mapped_fields=["id"],
+                        )
                     template_field.append(replacement)
             else:
                 if replacement in template_field:
