@@ -107,7 +107,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_check_payload_fields(self) -> None:
+    def test_check_action_data_fields(self) -> None:
+        self.create_model("user/2")
         meeting = self.basic_test(
             {
                 "welcome_text": "htXiSgbj",

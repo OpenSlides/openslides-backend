@@ -38,13 +38,13 @@ class OptionUpdateAction(UpdateAction):
 
         id_to_vote = self._fetch_votes(option.get("vote_ids", []))
 
-        payload_create = []
-        payload_update = []
+        action_data_create = []
+        action_data_update = []
         for field_name, vote_name in (("yes", "Y"), ("no", "N"), ("abstain", "A")):
             if field_name in instance:
                 vote_id = self._get_vote_id(vote_name, id_to_vote)
                 if vote_id is None:
-                    payload_create.append(
+                    action_data_create.append(
                         {
                             "option_id": instance["id"],
                             "value": vote_name,
@@ -53,13 +53,13 @@ class OptionUpdateAction(UpdateAction):
                         }
                     )
                 else:
-                    payload_update.append(
+                    action_data_update.append(
                         {"id": vote_id, "weight": instance[field_name]}
                     )
-        if payload_create:
-            self.execute_other_action(VoteCreate, payload_create)
-        if payload_update:
-            self.execute_other_action(VoteUpdate, payload_update)
+        if action_data_create:
+            self.execute_other_action(VoteCreate, action_data_create)
+        if action_data_update:
+            self.execute_other_action(VoteUpdate, action_data_update)
 
         return instance
 

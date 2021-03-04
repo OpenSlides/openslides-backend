@@ -64,7 +64,7 @@ class PollCreateAction(CreateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        payload = []
+        action_data = []
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
@@ -99,7 +99,7 @@ class PollCreateAction(CreateAction):
                         if instance["pollmethod"] == "YNA":
                             data["abstain"] = self.parse_vote_value(option, "A")
 
-            payload.append(data)
+            action_data.append(data)
 
         # handle global option
         global_data = {
@@ -132,14 +132,14 @@ class PollCreateAction(CreateAction):
                 global_data["abstain"] = self.parse_vote_value(
                     instance, "amount_global_abstain"
                 )
-        payload.append(global_data)
+        action_data.append(global_data)
 
         # Execute the create option actions
         additional_relation_models = {
             FullQualifiedId(self.model.collection, instance["id"]): instance
         }
         self.execute_other_action(
-            OptionCreateAction, payload, additional_relation_models
+            OptionCreateAction, action_data, additional_relation_models
         )
 
         # set state

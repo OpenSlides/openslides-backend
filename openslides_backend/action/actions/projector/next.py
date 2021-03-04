@@ -20,8 +20,8 @@ class ProjectorNext(UpdateAction):
     model = Projector()
     schema = DefaultSchema(Projector()).get_update_schema()
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             projector = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 [
@@ -93,13 +93,13 @@ class ProjectorNext(UpdateAction):
     ) -> None:
         max_weight = self.get_max_projection_weight(meeting_id, projector_id)
         increment = 1
-        payload_set_weight = []
+        action_data_set_weight = []
         for projection_id in projection_ids:
-            payload_set_weight.append(
+            action_data_set_weight.append(
                 {"id": projection_id, "weight": max_weight + increment}
             )
             increment += 1
-        self.execute_other_action(ProjectionSetWeight, payload_set_weight)
+        self.execute_other_action(ProjectionSetWeight, action_data_set_weight)
 
     def get_min_preview_projection(self, projector: Dict[str, Any]) -> int:
         gmr2 = GetManyRequest(

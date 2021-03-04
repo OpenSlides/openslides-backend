@@ -159,11 +159,11 @@ class MotionCreate(
         additional_relation_models = {
             FullQualifiedId(self.model.collection, instance["id"]): instance
         }
-        payload = []
+        action_data = []
         for user_id in submitter_ids:
-            payload.append({"motion_id": instance["id"], "user_id": user_id})
+            action_data.append({"motion_id": instance["id"], "user_id": user_id})
         self.execute_other_action(
-            MotionSubmitterCreateAction, payload, additional_relation_models
+            MotionSubmitterCreateAction, action_data, additional_relation_models
         )
 
         instance["sequential_number"] = self.get_sequential_number(

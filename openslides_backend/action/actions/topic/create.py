@@ -39,6 +39,6 @@ class TopicCreate(
     ) -> bool:
         """
         We always create an agenda item for each topic regardless of
-        payload or metting settings.
+        the given action data or metting settings.
         """
         return True

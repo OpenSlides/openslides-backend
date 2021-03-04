@@ -16,10 +16,10 @@ class MotionSort(TreeSortMixin, SingularActionMixin, UpdateAction):
     model = Motion()
     schema = DefaultSchema(Motion()).get_tree_sort_schema()
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        payload = super().get_updated_instances(payload)
-        # Payload is an iterable with exactly one item
-        instance = next(iter(payload))
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        action_data = super().get_updated_instances(action_data)
+        # Action data is an iterable with exactly one item
+        instance = next(iter(action_data))
         yield from self.sort_tree(
             nodes=instance["tree"],
             meeting_id=instance["meeting_id"],

@@ -17,8 +17,8 @@ class MediafileDelete(DeleteAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_delete_schema()
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             yield from ({"id": id_} for id_ in self.get_tree_ids(instance["id"]))
 
     def get_tree_ids(self, id_: int) -> List[int]:

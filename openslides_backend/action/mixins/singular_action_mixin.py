@@ -20,17 +20,17 @@ singular_schema = fastjsonschema.compile(
 
 class SingularActionMixin(Action):
     """
-    Mixin to ensure that the action payload contains only on object.
+    Mixin to ensure that the action data contains only on object.
     """
 
     is_singular = True
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        self.assert_singular_payload(payload)
-        return super().get_updated_instances(payload)
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        self.assert_singular_action_data(action_data)
+        return super().get_updated_instances(action_data)
 
-    def assert_singular_payload(self, payload: ActionData) -> None:
+    def assert_singular_action_data(self, action_data: ActionData) -> None:
         try:
-            singular_schema(payload)
+            singular_schema(action_data)
         except fastjsonschema.JsonSchemaException as exception:
             raise ActionException(exception.message)

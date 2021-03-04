@@ -22,8 +22,8 @@ class GroupSetPermissionAction(UpdateAction):
         }
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             new_instance = self.update_one_instance(instance)
             if new_instance.get("permissions") is None:
                 continue

@@ -22,13 +22,13 @@ class UserSetPresentAction(UpdateAction):
         }
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
         """
         update is_present_in_meeting_ids:
         add meeting_id if present is True.
         remove meeting_id if present is False.
         """
-        for instance in payload:
+        for instance in action_data:
             if self.user_id == instance["id"]:
                 meeting = self.datastore.get(
                     FullQualifiedId(Collection("meeting"), instance["meeting_id"]),

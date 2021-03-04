@@ -19,10 +19,10 @@ class MotionCommentSectionSort(LinearSortMixin, SingularActionMixin, UpdateActio
         "meeting_id",
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        payload = super().get_updated_instances(payload)
-        # Payload is an iterable with exactly one item
-        instance = next(iter(payload))
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        action_data = super().get_updated_instances(action_data)
+        # Action data is an iterable with exactly one item
+        instance = next(iter(action_data))
         yield from self.sort_linear(
             nodes=instance["motion_comment_section_ids"],
             filter_id=instance["meeting_id"],

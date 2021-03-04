@@ -53,13 +53,13 @@ class PollResetAction(UpdateAction):
         return options
 
     def _delete_votes(self, vote_ids: List[int]) -> None:
-        payload = []
+        action_data = []
         for id_ in vote_ids:
-            payload.append({"id": id_})
-        self.execute_other_action(VoteDelete, payload)
+            action_data.append({"id": id_})
+        self.execute_other_action(VoteDelete, action_data)
 
     def _clear_option_auto_fields(self, option_id: int) -> None:
-        payload = [
+        action_data = [
             {
                 "id": option_id,
                 "yes": "0.000000",
@@ -67,4 +67,4 @@ class PollResetAction(UpdateAction):
                 "abstain": "0.000000",
             }
         ]
-        self.execute_other_action(OptionSetAutoFields, payload)
+        self.execute_other_action(OptionSetAutoFields, action_data)

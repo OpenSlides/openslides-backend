@@ -25,8 +25,8 @@ class MotionCategoryNumberMotions(UpdateAction):
         required_properties=["id"],
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             self.init_memory(instance["id"])
 
             affected_categories = self.get_affected_categories(instance["id"])

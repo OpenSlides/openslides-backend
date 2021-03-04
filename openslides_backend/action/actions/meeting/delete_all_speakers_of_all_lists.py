@@ -1,5 +1,3 @@
-from typing import Any, Dict, Iterable
-
 from ....models.models import Meeting, Speaker
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import Collection
@@ -22,9 +20,9 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
         description="An array of meeting objects which speakers to be deleted",
     )
 
-    def get_updated_instances(self, payload: ActionData) -> Iterable[Dict[str, Any]]:
-        new_payload = []
-        meeting_ids = [instance["id"] for instance in payload]
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        new_action_data = []
+        meeting_ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
             Collection("meeting"), meeting_ids, ["list_of_speakers_ids"]
         )
@@ -41,5 +39,5 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
         lists_of_speakers = gm_result.get(Collection("list_of_speakers"), {})
         for los in lists_of_speakers.values():
             for speaker in los.get("speaker_ids", []):
-                new_payload.append({"id": speaker})
-        return new_payload
+                new_action_data.append({"id": speaker})
+        return new_action_data

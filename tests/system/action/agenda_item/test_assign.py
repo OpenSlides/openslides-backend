@@ -78,7 +78,7 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         assert agenda_item_9.get("child_ids") == []
         assert agenda_item_9.get("parent_id") == 7
 
-    def test_assign_multiple_payload_items(self) -> None:
+    def test_assign_multiple_action_data_items(self) -> None:
         self.set_models(
             {
                 "meeting/222": {},

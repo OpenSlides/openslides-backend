@@ -40,24 +40,26 @@ class OptionCreateAction(CreateAction):
         if not instance.get("text") and not instance.get("content_object_id"):
             raise ActionException("Need text xor content_object_id.")
 
-        payload = []
-        yes_data = self.get_vote_payload_data(instance, "Y", "yes")
+        action_data = []
+        yes_data = self.get_vote_action_data(instance, "Y", "yes")
         if yes_data is not None:
-            payload.append(yes_data)
-        no_data = self.get_vote_payload_data(instance, "N", "no")
+            action_data.append(yes_data)
+        no_data = self.get_vote_action_data(instance, "N", "no")
         if no_data is not None:
-            payload.append(no_data)
-        abstain_data = self.get_vote_payload_data(instance, "A", "abstain")
+            action_data.append(no_data)
+        abstain_data = self.get_vote_action_data(instance, "A", "abstain")
         if abstain_data is not None:
-            payload.append(abstain_data)
-        if payload:
+            action_data.append(abstain_data)
+        if action_data:
             additional_relation_models = {
                 FullQualifiedId(self.model.collection, instance["id"]): instance
             }
-            self.execute_other_action(VoteCreate, payload, additional_relation_models)
+            self.execute_other_action(
+                VoteCreate, action_data, additional_relation_models
+            )
         return instance
 
-    def get_vote_payload_data(
+    def get_vote_action_data(
         self, instance: Dict[str, Any], value: str, prop: str
     ) -> Optional[Dict[str, Any]]:
         if instance.get(prop):

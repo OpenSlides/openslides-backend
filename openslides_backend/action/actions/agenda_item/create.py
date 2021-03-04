@@ -47,8 +47,8 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
         instance["weight"] = parent["weight"] + 1
         return instance
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             if instance.get("parent_id") is None:
                 parent = {"is_hidden": False, "is_internal": False}
                 instance["level"] = 0
@@ -65,4 +65,4 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
                 "type"
             ) == AgendaItem.INTERNAL_ITEM or parent.get("is_internal", False)
 
-        return payload
+        return action_data

@@ -16,8 +16,8 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        ids = [instance["id"] for instance in payload]
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
             self.model.collection,
             ids,

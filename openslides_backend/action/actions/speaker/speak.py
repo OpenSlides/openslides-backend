@@ -23,8 +23,8 @@ class SpeakerSpeak(UpdateAction):
         description="Schema to let a speaker's speach begin.",
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             this_speaker = self.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 mapped_fields=["list_of_speakers_id"],

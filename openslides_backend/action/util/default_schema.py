@@ -48,7 +48,7 @@ class DefaultSchema:
         """
         Returns a default schema with properties and required properties as given.
         The additional_fields can be used to add additional field definitions to a
-        payload which are not present in the model.
+        schema which are not present in the model.
         """
         schema = {
             "$schema": schema_version,
