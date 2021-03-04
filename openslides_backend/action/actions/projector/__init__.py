@@ -1,1 +1,1 @@
-from . import control_view, create, update  # noqa
+from . import control_view, create, next, update  # noqa
