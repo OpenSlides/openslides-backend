@@ -7,7 +7,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionPayload
+from ...util.typing import ActionData
 from ..projection.set_weight import ProjectionSetWeight
 
 
@@ -20,7 +20,7 @@ class ProjectorNext(UpdateAction):
     model = Projector()
     schema = DefaultSchema(Projector()).get_update_schema()
 
-    def get_updated_instances(self, payload: ActionPayload) -> ActionPayload:
+    def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             projector = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),
