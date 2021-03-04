@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Optional, Type
 from unittest import TestCase
 
 import requests
@@ -53,6 +53,7 @@ class BaseSystemTestCase(TestCase):
                 "username": ADMIN_USERNAME,
                 "password": self.auth.hash(ADMIN_PASSWORD),
                 "is_active": True,
+                "organisation_management_level": "superadmin",
             },
         )
         self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
@@ -174,3 +175,6 @@ class BaseSystemTestCase(TestCase):
             Collection(collection), FilterOperator("meeting_id", "=", meeting_id)
         )
         self.assertEqual(db_count, count)
+
+    def set_management_level(self, level: Optional[str], user_id: int = 1) -> None:
+        self.update_model(f"user/{user_id}", {"organisation_management_level": level})

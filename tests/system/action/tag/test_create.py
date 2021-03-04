@@ -35,3 +35,12 @@ class TagActionTest(BaseActionTestCase):
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
+
+    def test_create_no_permissions(self) -> None:
+        self.set_management_level("can_manage_users")
+        self.create_model("meeting/577", {"name": "name_YBEqrXqz"})
+        response = self.request(
+            "tag.create", {"name": "test_Xcdfgee", "meeting_id": 577}
+        )
+        self.assert_status_code(response, 403)
+        self.assert_model_not_exists("tag/1")

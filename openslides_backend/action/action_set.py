@@ -1,4 +1,4 @@
-from typing import Dict, Type, cast
+from typing import Dict, Optional, Type, cast
 
 from ..models.base import Model
 from .action import Action
@@ -13,6 +13,7 @@ class ActionSet:
     """
 
     model: Model
+    permission: Optional[str] = None
 
     create_schema: Dict
     update_schema: Dict
