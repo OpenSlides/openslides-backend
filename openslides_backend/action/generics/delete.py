@@ -14,9 +14,10 @@ from ...shared.typing import DeletedModel, ModelMap
 from ..action import Action
 from ..util.actions_map import actions_map
 from ..util.typing import ActionData
+from .get_meeting_id_mixin import GetMeetingIdMixin
 
 
-class DeleteAction(Action):
+class DeleteAction(GetMeetingIdMixin, Action):
     """
     Generic delete action.
     """

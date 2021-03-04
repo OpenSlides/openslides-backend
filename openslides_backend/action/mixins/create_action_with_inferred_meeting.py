@@ -17,6 +17,10 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
     def update_instance_with_meeting_id(
         self, instance: Dict[str, Any]
     ) -> Dict[str, Any]:
+        instance["meeting_id"] = self.get_meeting_id(instance)
+        return instance
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         field = self.model.get_field(self.relation_field_for_meeting)
         assert isinstance(field, BaseRelationField)
         id = instance[self.relation_field_for_meeting]
@@ -31,8 +35,7 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
             raise ActionException(
                 f"Referenced model in field {self.relation_field_for_meeting} has no meeting id."
             )
-        instance["meeting_id"] = related_model["meeting_id"]
-        return instance
+        return related_model["meeting_id"]
 
 
 class CreateActionWithInferredMeeting(

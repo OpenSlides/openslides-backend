@@ -4,9 +4,10 @@ from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ..action import Action
+from .get_meeting_id_mixin import GetMeetingIdMixin
 
 
-class UpdateAction(Action):
+class UpdateAction(GetMeetingIdMixin, Action):
     """
     Generic update action.
     """

@@ -30,6 +30,10 @@ generate-models:
 	PYTHONPATH=. python3 cli/generate_models.py
 	black openslides_backend/models/models.py
 
+generate-permissions:
+	PYTHONPATH=. python3 cli/generate_permissions.py
+	black openslides_backend/permissions/permissions.py
+
 check-models:
 	PYTHONPATH=. python cli/generate_models.py check
 
