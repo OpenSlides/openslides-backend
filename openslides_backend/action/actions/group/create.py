@@ -15,7 +15,5 @@ class GroupCreate(CreateAction):
         required_properties=["name", "meeting_id"],
         optional_properties=[
             "permissions",
-            "default_group_for_meeting_id",
-            "admin_group_for_meeting_id",
         ],
     )
