@@ -130,7 +130,7 @@ class Model(metaclass=ModelMetaClass):
         Yields all required fields
         """
         for model_field in self.get_fields():
-            if model_field.required and isinstance(model_field, fields.Field):
+            if model_field.required:
                 if isinstance(model_field, fields.RelationListField) or isinstance(
                     model_field, fields.GenericRelationListField
                 ):
