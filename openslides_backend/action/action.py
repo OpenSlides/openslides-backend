@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, c
 
 import fastjsonschema
 
-from ..models.base import Model
+from ..models.base import Model, model_registry
 from ..models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
@@ -14,7 +14,11 @@ from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
-from ..shared.exceptions import ActionException, PermissionDenied
+from ..shared.exceptions import (
+    ActionException,
+    PermissionDenied,
+    RequiredFieldsException,
+)
 from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -278,6 +282,52 @@ class Action(BaseAction, metaclass=SchemaProvider):
             write_request.locked_fields = self.datastore.locked_fields
             self.datastore.locked_fields = {}
         return write_request
+
+    def validate_required_fields(self, write_request: WriteRequest) -> None:
+        """
+        Validate required fields with the events of one WriteRequest.
+        Precondition: Events are sorted create/update/delete-events
+        Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
+        one, during getting required_fields from model.
+        """
+        fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
+        for event in write_request.events:
+            if fdict.get(event["fqid"]):
+                if event["type"] == EventType.Delete:
+                    fdict[event["fqid"]]["type"] = EventType.Delete
+                else:
+                    fdict[event["fqid"]]["fields"].update(event.get("fields", {}))
+            else:
+                fdict[event["fqid"]] = {
+                    "type": event["type"],
+                    "fields": event.get("fields", {}),
+                }
+
+        for fqid, v in fdict.items():
+            type_ = v["type"]
+            instance = v["fields"]
+            required_fields = []
+            if type_ == EventType.Create:
+                required_fields = [
+                    field.own_field_name
+                    for field in model_registry[fqid.collection]().get_required_fields()
+                    if field.own_field_name not in instance
+                    or (
+                        field.own_field_name in instance
+                        and not instance[field.own_field_name]
+                    )
+                ]
+                fqid_str = f"Creation of {fqid}"
+            elif type_ == EventType.Update:
+                required_fields = [
+                    field.own_field_name
+                    for field in model_registry[fqid.collection]().get_required_fields()
+                    if field.own_field_name in instance
+                    and not instance[field.own_field_name]
+                ]
+                fqid_str = f"Update of {fqid}"
+            if required_fields:
+                raise RequiredFieldsException(fqid_str, required_fields)
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

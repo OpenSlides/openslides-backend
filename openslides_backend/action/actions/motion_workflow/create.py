@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 from ....models.models import MotionWorkflow
 from ...action import Action
@@ -22,9 +22,11 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
 
     def get_dependent_action_payload(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> Dict[str, Any]:
-        return {
-            "name": MOTION_STATE_DEFAULT_NAME,
-            "workflow_id": instance["id"],
-            "first_state_of_workflow_id": instance["id"],
-        }
+    ) -> List[Dict[str, Any]]:
+        return [
+            {
+                "name": MOTION_STATE_DEFAULT_NAME,
+                "workflow_id": instance["id"],
+                "first_state_of_workflow_id": instance["id"],
+            }
+        ]

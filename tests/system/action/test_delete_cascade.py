@@ -20,6 +20,14 @@ class FakeModelCDA(Model):
         to={Collection("fake_model_cd_c"): "fake_model_cd_a"},
         on_delete=fields.OnDelete.CASCADE,
     )
+    fake_model_cd_b_set_null = fields.RelationField(
+        to={Collection("fake_model_cd_b"): "fake_model_cd_a_set_null"},
+        on_delete=fields.OnDelete.SET_NULL,
+    )
+    fake_model_cd_b_set_null_required = fields.RelationField(
+        to={Collection("fake_model_cd_b"): "fake_model_cd_a_set_null_required"},
+        on_delete=fields.OnDelete.SET_NULL,
+    )
 
 
 class FakeModelCDB(Model):
@@ -37,6 +45,13 @@ class FakeModelCDB(Model):
     fake_model_cd_c_cascade = fields.RelationField(
         to={Collection("fake_model_cd_c"): "fake_model_cd_b_cascaded"},
         on_delete=fields.OnDelete.CASCADE,
+    )
+    fake_model_cd_a_set_null = fields.RelationField(
+        to={Collection("fake_model_cd_a"): "fake_model_cd_b_set_null"},
+    )
+    fake_model_cd_a_set_null_required = fields.RelationField(
+        to={Collection("fake_model_cd_a"): "fake_model_cd_b_set_null_required"},
+        required=True,
     )
 
 
@@ -104,6 +119,36 @@ class TestDeleteCascade(BaseActionTestCase):
         self.assert_model_deleted("fake_model_cd_b/1")
         self.assert_model_deleted("fake_model_cd_c/1")
 
+    def test_simple_protect(self) -> None:
+        self.set_models(
+            {
+                "fake_model_cd_b/1": {
+                    "fake_model_cd_c_protect": 1,
+                },
+                "fake_model_cd_c/1": {"fake_model_cd_b_protected": 1},
+            }
+        )
+        response = self.request("fake_model_cd_b.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You can not delete fake_model_cd_b/1 because you have to delete the following related models first: [FullQualifiedId('fake_model_cd_c/1')]",
+            response.json["message"],
+        )
+        self.assert_model_exists("fake_model_cd_b/1")
+        self.assert_model_exists("fake_model_cd_c/1")
+
+    def test_protect_not_filled(self) -> None:
+        self.set_models(
+            {
+                "fake_model_cd_b/1": {
+                    "fake_model_cd_c_protect": None,
+                },
+            }
+        )
+        response = self.request("fake_model_cd_b.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("fake_model_cd_b/1")
+
     def test_cascade_protect(self) -> None:
         self.set_models(
             {
@@ -117,6 +162,10 @@ class TestDeleteCascade(BaseActionTestCase):
         )
         response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 400)
+        self.assertIn(
+            "You can not delete fake_model_cd_a/1 because you have to delete the following related models first: [FullQualifiedId('fake_model_cd_c/1')]",
+            response.json["message"],
+        )
         self.assert_model_exists("fake_model_cd_a/1")
         self.assert_model_exists("fake_model_cd_b/1")
         self.assert_model_exists("fake_model_cd_c/1")
@@ -140,3 +189,41 @@ class TestDeleteCascade(BaseActionTestCase):
         self.assert_model_deleted("fake_model_cd_a/1")
         self.assert_model_deleted("fake_model_cd_b/1")
         self.assert_model_deleted("fake_model_cd_c/1")
+
+    def test_set_null(self) -> None:
+        self.set_models(
+            {
+                "fake_model_cd_a/1": {
+                    "fake_model_cd_b_set_null": 1,
+                },
+                "fake_model_cd_b/1": {"fake_model_cd_a_set_null": 1},
+            }
+        )
+        response = self.request("fake_model_cd_a.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("fake_model_cd_a/1")
+        self.assert_model_exists(
+            "fake_model_cd_b/1", {"fake_model_cd_a_set_null": None}
+        )
+
+    def test_set_null_required(self) -> None:
+        self.set_models(
+            {
+                "fake_model_cd_a/1": {
+                    "fake_model_cd_b_set_null_required": 1,
+                },
+                "fake_model_cd_b/1": {"fake_model_cd_a_set_null_required": 1},
+            }
+        )
+        response = self.request("fake_model_cd_a.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Update of fake_model_cd_b/1: You try to set following required fields to an empty value: ['fake_model_cd_a_set_null_required']",
+            response.json["message"],
+        )
+        self.assert_model_exists(
+            "fake_model_cd_a/1", {"fake_model_cd_b_set_null_required": 1}
+        )
+        self.assert_model_exists(
+            "fake_model_cd_b/1", {"fake_model_cd_a_set_null_required": 1}
+        )

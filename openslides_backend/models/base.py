@@ -124,3 +124,17 @@ class Model(metaclass=ModelMetaClass):
         for field in fields:
             properties.update(self.get_property(field))
         return properties
+
+    def get_required_fields(self) -> Iterable[fields.Field]:
+        """
+        Yields all required fields
+        """
+        for model_field in self.get_fields():
+            if model_field.required:
+                if isinstance(model_field, fields.RelationListField) or isinstance(
+                    model_field, fields.GenericRelationListField
+                ):
+                    raise NotImplementedError(
+                        f"NotImplementedError: {self.collection.collection}.{model_field.own_field_name}"
+                    )
+                yield model_field

@@ -13,5 +13,7 @@ class GroupCreate(CreateAction):
     model = Group()
     schema = DefaultSchema(Group()).get_create_schema(
         required_properties=["name", "meeting_id"],
-        optional_properties=["permissions"],
+        optional_properties=[
+            "permissions",
+        ],
     )

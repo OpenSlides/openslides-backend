@@ -10,9 +10,13 @@ from PyPDF2.utils import PdfReadError
 from ....models.models import Mediafile
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
-from ...generics.create import CreateAction
+from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..list_of_speakers.create import ListOfSpeakersCreate
+from ..list_of_speakers.list_of_speakers_creation import (
+    CreateActionWithListOfSpeakersMixin,
+)
 from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 PDFInformation = TypedDict(
@@ -26,7 +30,11 @@ PDFInformation = TypedDict(
 
 
 @register_action("mediafile.upload")
-class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
+class MediafileUploadAction(
+    MediafileCalculatedFieldsMixin,
+    CreateActionWithDependencies,
+    CreateActionWithListOfSpeakersMixin,
+):
     """
     Action to upload a mediafile.
     """
@@ -37,6 +45,8 @@ class MediafileUploadAction(CreateAction, MediafileCalculatedFieldsMixin):
         optional_properties=["access_group_ids", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
     )
+
+    dependencies = [ListOfSpeakersCreate]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["create_timestamp"] = time()

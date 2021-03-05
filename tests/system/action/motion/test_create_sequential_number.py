@@ -215,4 +215,6 @@ def thread_method(
         ],
     )
 
+    if sync_event and not sync_event.is_set() and response.status_code != 200:
+        sync_event.set()
     test_instance.assert_status_code(response, 200)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 
 from ....models.base import Model
 from ....shared.patterns import KEYSEPARATOR
@@ -15,7 +15,9 @@ class CreateActionWithListOfSpeakersMixin(BaseAction):
 
     def get_dependent_action_payload_list_of_speakers(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> Dict[str, Any]:
-        return {
-            "content_object_id": f"{str(self.model.collection)}{KEYSEPARATOR}{instance['id']}",
-        }
+    ) -> List[Dict[str, Any]]:
+        return [
+            {
+                "content_object_id": f"{str(self.model.collection)}{KEYSEPARATOR}{instance['id']}",
+            }
+        ]

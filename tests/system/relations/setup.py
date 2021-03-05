@@ -17,7 +17,6 @@ class FakeModelA(Model):
 
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "fake_model_a_ids"},
-        required=True,
     )
 
     # normal relations

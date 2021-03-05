@@ -34,4 +34,5 @@ class AgendaItemDelete(DeleteAction):
                     [{"id": content_object_fqid.id}],
                     {fqid: DeletedModel()},
                 )
+                self.additional_relation_models[content_object_fqid] = DeletedModel()
         return instance

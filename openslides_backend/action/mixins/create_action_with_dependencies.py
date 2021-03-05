@@ -37,7 +37,7 @@ class CreateActionWithDependencies(CreateAction):
             payload_method = getattr(
                 self, special_payload_method_name, self.get_dependent_action_payload
             )
-            payload = [payload_method(instance, ActionClass)]
+            payload = payload_method(instance, ActionClass)
             self.execute_other_action(ActionClass, payload, additional_relation_models)
         return instance
 
@@ -52,7 +52,7 @@ class CreateActionWithDependencies(CreateAction):
 
     def get_dependent_action_payload(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> Dict[str, Any]:
+    ) -> List[Dict[str, Any]]:
         """
         Override in subclass to provide the correct payload for the dependencies.
         """

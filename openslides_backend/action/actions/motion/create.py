@@ -13,6 +13,10 @@ from ..agenda_item.agenda_creation import (
     agenda_creation_properties,
 )
 from ..agenda_item.create import AgendaItemCreate
+from ..list_of_speakers.create import ListOfSpeakersCreate
+from ..list_of_speakers.list_of_speakers_creation import (
+    CreateActionWithListOfSpeakersMixin,
+)
 from ..motion_submitter.create import MotionSubmitterCreateAction
 from .sequential_numbers_mixin import SequentialNumbersMixin
 from .set_number_mixin import SetNumberMixin
@@ -24,6 +28,7 @@ class MotionCreate(
     CreateActionWithAgendaItemMixin,
     SequentialNumbersMixin,
     SetNumberMixin,
+    CreateActionWithListOfSpeakersMixin,
 ):
     """
     Create Action for motions.
@@ -56,7 +61,7 @@ class MotionCreate(
             **agenda_creation_properties,
         },
     )
-    dependencies = [AgendaItemCreate]
+    dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # special check logic

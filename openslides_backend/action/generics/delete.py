@@ -37,7 +37,6 @@ class DeleteAction(Action):
             for field in self.model.get_relation_fields()
             if field.on_delete != OnDelete.SET_NULL
         ]
-        this_fqid = FullQualifiedId(self.model.collection, instance["id"])
         db_instance = self.datastore.get(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
