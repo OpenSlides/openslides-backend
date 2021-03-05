@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Type, cast
 
+from ...generics.create import CreateAction
 from ....models.models import MotionWorkflow
 from ....shared.interfaces.event import EventType
+from ....shared.patterns import FullQualifiedId
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -32,7 +34,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
 
 
 @register_action("motion_workflow.create_simple_workflow")
-class MotionWorkflowCreateSimpleWorkflowAction(CreateActionWithDependencies):
+class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
     """
     Action to create a motion workflow.
     """
@@ -47,26 +49,21 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateActionWithDependencies):
             "first_state_id",
         ],
     )
-    dependencies = [MotionStateActionSet.get_action("create")]
 
-    def get_dependent_action_payload(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
-    ) -> List[Dict[str, Any]]:
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Umbau in 2 execute_other: 1. ANlegen aller 4, 2. update der first mit den next steps
+        Updates one instance of the payload. This can be overridden by custom
+        action classes. Meant to be called inside base_update_instance.
         """
-        next_state_ids: List[int] = []
-        #if index == 3:
-        for wr in self.write_requests:
-            for event in wr.events:  # type: ignore
-                if (
-                    event["fqid"].collection.collection == "motion_state"
-                    and event["type"] == EventType.Create
-                    and event["fields"]["workflow_id"] == instance["id"]
-                ):
-                    next_state_ids.append(event["fields"]["id"])
-                    self.additional_relation_models[event["fqid"]] = event["fields"]
-        return [
+        additional_relation_models: Dict[str, Any] = {FullQualifiedId(self.model.collection, instance["id"]): instance}
+        payload = [
+            {
+                "name": "submitted",
+                "allow_create_poll": True,
+                "allow_support": True,
+                "workflow_id": instance["id"],
+                "first_state_of_workflow_id": instance["id"],
+            },
             {
                 "name": "accepted",
                 "recommendation_label": "Acceptance",
@@ -88,12 +85,12 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateActionWithDependencies):
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
             },
-            {
-                "name": "submitted",
-                "allow_create_poll": True,
-                "allow_support": True,
-                "workflow_id": instance["id"],
-                "first_state_of_workflow_id": instance["id"],
-                "next_state_ids": next_state_ids,
-            },
         ]
+
+        write_requests, action_results = self.execute_other_action(MotionStateActionSet.get_action("create"), payload, additional_relation_models)
+        additional_relation_models.update({event["fqid"]: event["fields"] for event in write_requests.events if event["type"] == EventType.Create})
+        first_state_id = action_results[0]["id"]
+        next_state_ids = [ar["id"] for ar in action_results[-3:]]
+        payload = [{"id": first_state_id, "next_state_ids": next_state_ids}]
+        self.execute_other_action(MotionStateActionSet.get_action("update"), payload, additional_relation_models)
+        return instance
