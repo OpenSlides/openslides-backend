@@ -453,10 +453,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.datastore,
             self.relation_manager,
             self.logging,
-            {**self.additional_relation_models, **additional_relation_models},
+            {
+                **self.datastore.additional_relation_models,
+                **self.additional_relation_models,
+                **additional_relation_models,
+            },
         )
-        # ignore the action result elements
-        write_request, action_results = action.perform(payload, self.user_id, internal=True)
+        write_request, action_results = action.perform(
+            payload, self.user_id, internal=True
+        )
         if write_request:
             self.write_requests.append(write_request)
         return write_request, action_results

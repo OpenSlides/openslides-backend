@@ -1,7 +1,8 @@
-from typing import Any, Dict, Iterable, Type, cast
+from typing import Any, Dict, Iterable, List, Type, cast
 
 from ....models.models import Meeting
 from ....shared.exceptions import ActionException
+from ....shared.interfaces.event import EventType
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 from ...action_set import ActionSet
@@ -118,55 +119,16 @@ meeting_settings_keys = [
 class MeetingCreate(CreateActionWithDependencies):
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
-        GroupCreate,
-        GroupCreate,
-        GroupCreate,
-        GroupCreate,
-        GroupCreate,
         ProjectorCreateAction,
     ]
 
-    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().base_update_instance(instance)
-
-        admin_group_fqid_list = [
-            key
-            for key, data in self.datastore.additional_relation_models.items()
-            if key.collection.collection == "group" and data.get("name") == "Admin"
-        ]
-        if len(admin_group_fqid_list) != 1:
-            raise ActionException(
-                "There is no admin group created during meeting.create."
-            )
-        admin_group_fqid = admin_group_fqid_list[0]
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
 
         payload = [
             {
-                "id": self.user_id,
-                "group_$_ids": {str(instance["id"]): [admin_group_fqid.id]},
-            }
-        ]
-        self.execute_other_action(
-            UserUpdate, payload, self.datastore.additional_relation_models
-        )
-        return instance
-
-    def get_dependent_action_payload(
-        self, instance: Dict[str, Any], CreateActionClass: Type[Action], index: int
-    ) -> Dict[str, Any]:
-        if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction and index == 0:
-            return {
-                "name": "Simple Workflow",
-                "default_workflow_meeting_id": instance["id"],
-                "default_amendment_workflow_meeting_id": instance["id"],
-                "default_statute_amendment_workflow_meeting_id": instance["id"],
-                "meeting_id": instance["id"],
-            }
-        elif CreateActionClass == GroupCreate and index == 1:
-            return {
                 "name": "Default",
                 "meeting_id": instance["id"],
-                "default_group_for_meeting_id": instance["id"],
                 "permissions": [
                     "agenda_item.can_see_internal",
                     "assignment.can_see",
@@ -178,15 +140,12 @@ class MeetingCreate(CreateActionWithDependencies):
                     "user.can_see",
                     "user.can_change_own_password",
                 ],
-            }
-        elif CreateActionClass == GroupCreate and index == 2:
-            return {
+            },
+            {
                 "name": "Admin",
                 "meeting_id": instance["id"],
-                "admin_group_for_meeting_id": instance["id"],
-            }
-        elif CreateActionClass == GroupCreate and index == 3:
-            return {
+            },
+            {
                 "name": "Delegates",
                 "meeting_id": instance["id"],
                 "permissions": [
@@ -204,9 +163,8 @@ class MeetingCreate(CreateActionWithDependencies):
                     "user.can_see",
                     "user.can_change_own_password",
                 ],
-            }
-        elif CreateActionClass == GroupCreate and index == 4:
-            return {
+            },
+            {
                 "name": "Staff",
                 "meeting_id": instance["id"],
                 "permissions": [
@@ -224,9 +182,8 @@ class MeetingCreate(CreateActionWithDependencies):
                     "user.can_manage",
                     "user.can_change_own_password",
                 ],
-            }
-        elif CreateActionClass == GroupCreate and index == 5:
-            return {
+            },
+            {
                 "name": "Committees",
                 "meeting_id": instance["id"],
                 "permissions": [
@@ -241,20 +198,60 @@ class MeetingCreate(CreateActionWithDependencies):
                     "projector.can_see",
                     "user.can_see",
                 ],
+            },
+        ]
+        write_requests, action_results = self.execute_other_action(GroupCreate, payload)
+
+        used_groups_dict = {
+            event["fields"]["name"]: event["fqid"].id  # type: ignore
+            for event in write_requests.events  # type: ignore
+            if event["type"] == EventType.Create
+            and event["fields"]["name"] in ("Admin", "Default")  # type: ignore
+        }
+        if len(used_groups_dict) != 2:
+            raise ActionException(
+                "There are no admin and default group created during meeting.create."
+            )
+
+        instance["default_group_id"] = used_groups_dict["Default"]
+        instance["admin_group_id"] = used_groups_dict["Admin"]
+
+        # Add user to admin group
+        payload = [
+            {
+                "id": self.user_id,
+                "group_$_ids": {str(instance["id"]): [used_groups_dict["Admin"]]},
             }
-        elif CreateActionClass == ProjectorCreateAction and index == 6:
-            return {
-                "name": "Default projector",
-                "meeting_id": instance["id"],
-                "used_as_reference_projector_meeting_id": instance["id"],
-                "used_as_default_$_in_meeting_id": {
-                    name: instance["id"]
-                    for name in meeting_projector_default_object_list
-                },
-            }
-        raise RuntimeError(
-            f"Index {index} is not defined in this get_dependent_action_payload-method"
-        )
+        ]
+        self.execute_other_action(UserUpdate, payload)
+        return instance
+
+    def get_dependent_action_payload(
+        self, instance: Dict[str, Any], CreateActionClass: Type[Action]
+    ) -> List[Dict[str, Any]]:
+        if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:
+            return [
+                {
+                    "name": "Simple Workflow",
+                    "default_workflow_meeting_id": instance["id"],
+                    "default_amendment_workflow_meeting_id": instance["id"],
+                    "default_statute_amendment_workflow_meeting_id": instance["id"],
+                    "meeting_id": instance["id"],
+                }
+            ]
+        elif CreateActionClass == ProjectorCreateAction:
+            return [
+                {
+                    "name": "Default projector",
+                    "meeting_id": instance["id"],
+                    "used_as_reference_projector_meeting_id": instance["id"],
+                    "used_as_default_$_in_meeting_id": {
+                        name: instance["id"]
+                        for name in meeting_projector_default_object_list
+                    },
+                }
+            ]
+        return []
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

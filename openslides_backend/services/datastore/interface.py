@@ -123,6 +123,7 @@ class DatastoreService(Protocol):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
+        exception: bool = True,
     ) -> Dict[str, Any]:
         ...
 

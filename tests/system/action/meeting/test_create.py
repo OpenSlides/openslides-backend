@@ -21,13 +21,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 **datapart,
             },
         )
-        # Annotation: Creation and testing will be fixed with Issue492/pull request486
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "XCreation of meeting/1: You try to set following required fields to an empty value: ['default_group_id', 'motions_default_amendment_workflow_id', 'motions_default_statute_amendment_workflow_id', 'motions_default_workflow_id']",
-            response.json["message"],
-        )
-        return {}
+        self.assert_status_code(response, 200)
+        return self.get_model("meeting/1")
 
     def test_create_simple(self) -> None:
         meeting = self.basic_test(dict())
@@ -65,26 +60,26 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "default_amendment_workflow_meeting_id": 1,
                 "default_statute_amendment_workflow_meeting_id": 1,
                 "state_ids": [1, 2, 3, 4],
-                "first_state_id": 4,
+                "first_state_id": 1,
             },
         )
         self.assert_model_exists(
-            "motion_state/1",
+            "motion_state/1", {"name": "submitted", "next_state_ids": [2, 3, 4]}
+        )
+        self.assert_model_exists(
+            "motion_state/2",
             {
                 "name": "accepted",
-                "previous_state_ids": [4],
+                "previous_state_ids": [1],
                 "meeting_id": 1,
                 "workflow_id": 1,
             },
         )
         self.assert_model_exists(
-            "motion_state/2", {"name": "rejected", "previous_state_ids": [4]}
+            "motion_state/3", {"name": "rejected", "previous_state_ids": [1]}
         )
         self.assert_model_exists(
-            "motion_state/3", {"name": "not_decided", "previous_state_ids": [4]}
-        )
-        self.assert_model_exists(
-            "motion_state/4", {"name": "submitted", "next_state_ids": [1, 2, 3]}
+            "motion_state/4", {"name": "not_decided", "previous_state_ids": [1]}
         )
         projector1 = self.get_model("projector/1")
         self.assertCountEqual(

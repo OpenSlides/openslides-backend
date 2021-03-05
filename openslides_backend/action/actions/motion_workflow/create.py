@@ -1,10 +1,10 @@
-from typing import Any, Dict, List, Type, cast
+from typing import Any, Dict, List, Type
 
-from ...generics.create import CreateAction
 from ....models.models import MotionWorkflow
 from ....shared.interfaces.event import EventType
 from ....shared.patterns import FullQualifiedId
 from ...action import Action
+from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -26,11 +26,13 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
     def get_dependent_action_payload(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
-        return [{
-            "name": MOTION_STATE_DEFAULT_NAME,
-            "workflow_id": instance["id"],
-            "first_state_of_workflow_id": instance["id"],
-        }]
+        return [
+            {
+                "name": MOTION_STATE_DEFAULT_NAME,
+                "workflow_id": instance["id"],
+                "first_state_of_workflow_id": instance["id"],
+            }
+        ]
 
 
 @register_action("motion_workflow.create_simple_workflow")
@@ -55,7 +57,9 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
         Updates one instance of the payload. This can be overridden by custom
         action classes. Meant to be called inside base_update_instance.
         """
-        additional_relation_models: Dict[str, Any] = {FullQualifiedId(self.model.collection, instance["id"]): instance}
+        additional_relation_models: Dict[FullQualifiedId, Any] = {
+            FullQualifiedId(self.model.collection, instance["id"]): instance
+        }
         payload = [
             {
                 "name": "submitted",
@@ -87,10 +91,24 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
             },
         ]
 
-        write_requests, action_results = self.execute_other_action(MotionStateActionSet.get_action("create"), payload, additional_relation_models)
-        additional_relation_models.update({event["fqid"]: event["fields"] for event in write_requests.events if event["type"] == EventType.Create})
-        first_state_id = action_results[0]["id"]
-        next_state_ids = [ar["id"] for ar in action_results[-3:]]
+        write_requests, action_results = self.execute_other_action(
+            MotionStateActionSet.get_action("create"),
+            payload,
+            additional_relation_models,
+        )
+        additional_relation_models.update(
+            {
+                event["fqid"]: event["fields"]
+                for event in write_requests.events  # type: ignore
+                if event["type"] == EventType.Create
+            }
+        )
+        first_state_id = action_results[0]["id"]  # type: ignore
+        next_state_ids = [ar["id"] for ar in action_results[-3:]]  # type: ignore
         payload = [{"id": first_state_id, "next_state_ids": next_state_ids}]
-        self.execute_other_action(MotionStateActionSet.get_action("update"), payload, additional_relation_models)
+        self.execute_other_action(
+            MotionStateActionSet.get_action("update"),
+            payload,
+            additional_relation_models,
+        )
         return instance

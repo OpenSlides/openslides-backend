@@ -1,5 +1,9 @@
 from typing import Any, Dict, List, cast
 
+from openslides_backend.services.datastore.deleted_models_behaviour import (
+    InstanceAdditionalBehaviour,
+)
+
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
@@ -133,11 +137,12 @@ class RelationManager:
                         replacement_collection = (
                             replacement_field.get_target_collection()
                         )
-                        self.datastore.get(
+                        self.datastore.fetch_model(
                             fqid=FullQualifiedId(
                                 replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
+                            db_additional_relevance=InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL,
                         )
                     template_field.append(replacement)
             else:

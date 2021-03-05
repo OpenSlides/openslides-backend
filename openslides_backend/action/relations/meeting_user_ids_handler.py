@@ -30,8 +30,9 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
             get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
             lock_result=True,
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST
-            if bool(field.own_collection.collection == "meeting")
+            if field.own_collection.collection == "meeting"
             else InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+            exception=False,
         )
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])

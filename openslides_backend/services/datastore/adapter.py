@@ -378,7 +378,10 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
+        exception: bool = True,
     ) -> Dict[str, Any]:
+        datastore_exception: Optional[DatastoreException] = None
+
         def get_additional() -> Tuple[bool, Dict[str, Any]]:
             if fqid in self.additional_relation_models and not isinstance(
                 self.additional_relation_models[fqid], DeletedModel
@@ -394,17 +397,21 @@ class DatastoreAdapter(DatastoreService):
             else:
                 return (False, {})
 
-        def get_db() -> Tuple[bool, Dict[str, Any]]:
+        def get_db() -> Tuple[bool, Dict[str, Any], Optional[DatastoreException]]:
             try:
-                return True, self.get(
-                    fqid,
-                    mapped_fields=mapped_fields,
-                    position=position,
-                    get_deleted_models=get_deleted_models,
-                    lock_result=lock_result,
+                return (
+                    True,
+                    self.get(
+                        fqid,
+                        mapped_fields=mapped_fields,
+                        position=position,
+                        get_deleted_models=get_deleted_models,
+                        lock_result=lock_result,
+                    ),
+                    None,
                 )
-            except DatastoreException:
-                return False, {}
+            except DatastoreException as e:
+                return False, {}, e if exception else None
 
         if db_additional_relevance in (
             InstanceAdditionalBehaviour.ONLY_ADDITIONAL,
@@ -416,13 +423,18 @@ class DatastoreAdapter(DatastoreService):
                 and db_additional_relevance
                 == InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST
             ):
-                okay, result = get_db()
+                okay, result, datastore_exception = get_db()
         else:
-            okay, result = get_db()
+            okay, result, datastore_exception = get_db()
             if (
                 not okay
                 and db_additional_relevance
                 == InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL
             ):
                 okay, result = get_additional()
+        if not okay and exception:
+            if datastore_exception:
+                raise datastore_exception
+            else:
+                raise DatastoreException(f"{fqid} not found at all.")
         return result
