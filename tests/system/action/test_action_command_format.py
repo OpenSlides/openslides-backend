@@ -88,7 +88,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
     def test_create_2_actions(self) -> None:
         self.create_model("meeting/1", {})
         response = self.request_json(
-[
+            [
                 {
                     "action": "group.create",
                     "data": [
@@ -112,7 +112,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "Datastore service sends HTTP 400. Model 'meeting/1' raises MODEL_LOCKED error.",
-            response.json["message"]
+            response.json["message"],
         )
         self.assert_model_not_exists("group/1")
         self.assert_model_not_exists("group/2")
