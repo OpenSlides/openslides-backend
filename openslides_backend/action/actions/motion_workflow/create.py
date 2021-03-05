@@ -35,7 +35,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
         ]
 
 
-@register_action("motion_workflow.create_simple_workflow")
+@register_action("motion_workflow.create_simple_workflow", internal=True)
 class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
     """
     Action to create a motion workflow.
