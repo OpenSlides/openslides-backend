@@ -275,3 +275,12 @@ class UpdatePollTestCase(BaseActionTestCase):
         )
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("onehundred_percent_base"), "Y")
+
+    def test_state_change(self) -> None:
+        self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})
+        response = self.request(
+            "poll.update",
+            {"id": 1, "votescast": "1.000000"})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == Poll.STATE_FINISHED
