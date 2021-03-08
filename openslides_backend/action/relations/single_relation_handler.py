@@ -151,8 +151,8 @@ class SingleRelationHandler:
             remove_per_collection.keys()
         ):
             if collection not in self.field.to:
-                raise RuntimeError(
-                    "You try to change a field using foreign collections that are not available."
+                raise ActionException(
+                    f"The collection '{collection.collection}' is not available for field '{self.field.own_field_name}' in collection '{self.field.own_collection.collection}'."
                 )
 
             related_name = self.get_related_name(collection)
