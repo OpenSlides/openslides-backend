@@ -131,6 +131,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
             relation_updates = self.handle_relation_updates(instance)
             self.write_requests.extend(relation_updates)
 
+            instance = self.final_update_instance(instance)
+
             write_request = self.create_write_requests(instance)
             self.write_requests.extend(write_request)
 
@@ -207,6 +209,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Updates one instance of the action data. This can be overridden by custom
         action classes. Meant to be called inside base_update_instance.
+        """
+        return instance
+
+    def final_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Updates one instance of the payload or executes other actions.
         """
         return instance
 
