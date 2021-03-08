@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -19,7 +19,6 @@ class PollUpdateAction(UpdateAction):
     schema = DefaultSchema(Poll()).get_update_schema(
         optional_properties=[
             "pollmethod",
-            "type",
             "min_votes_amount",
             "max_votes_amount",
             "global_yes",
@@ -33,7 +32,10 @@ class PollUpdateAction(UpdateAction):
             "votesvalid",
             "votesinvalid",
             "votescast",
-        ]
+        ],
+        additional_optional_fields={
+            "publish_immediately": {"type": "boolean"},
+            }
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -41,14 +43,7 @@ class PollUpdateAction(UpdateAction):
             FullQualifiedId(self.model.collection, instance["id"]), ["state", "type"]
         )
 
-        # check enable_electronic voting
-        if instance.get("type") in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
-            organisation = self.datastore.get(
-                FullQualifiedId(Collection("organisation"), 1),
-                ["enable_electronic_voting"],
-            )
-            if not organisation.get("enable_electronic_voting"):
-                raise ActionException("Electronic voting is not allowed.")
+        state_change = check_state_change(instance, poll)
 
         self.check_100_percent_base(instance)
 
@@ -84,6 +79,11 @@ class PollUpdateAction(UpdateAction):
                 "Following options are not allowed in this state and type: "
                 + ", ".join(not_allowed)
             )
+        if state_change:
+            instance["state"] = Poll.STATE_FINISHED
+            if instance.get("publish_immediately"):
+                instance["state"] = Poll.STATE_PUBLISHED
+
         return instance
 
     def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
@@ -96,3 +96,19 @@ class PollUpdateAction(UpdateAction):
             )
             pollmethod = poll.get("pollmethod")
         base_check_100_percent_base(pollmethod, onehundred_percent_base)
+
+
+def check_state_change(instance: Dict[str, Any], poll: Dict[str, Any]) -> bool:
+    if poll.get("type") != Poll.TYPE_ANALOG:
+        return False
+    if poll.get("state") != Poll.STATE_CREATED:
+        return False
+    check_fields = (
+        "votesvalid",
+        "votesinvalid",
+        "votescast",
+    )
+    for field in check_fields:
+        if instance.get(field):
+            return True
+    return False

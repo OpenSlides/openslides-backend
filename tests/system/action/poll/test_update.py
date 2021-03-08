@@ -59,9 +59,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Following options are not allowed in this state and type: "
-            "pollmethod, type, min_votes_amount, max_votes_amount, global_yes,"
-            " global_no, global_abstain"
+            "data must not contain {'type'} properties"
         ) in response.data.decode()
 
     def test_optional_state_created(self) -> None:
@@ -70,7 +68,6 @@ class UpdatePollTestCase(BaseActionTestCase):
             {
                 "id": 1,
                 "pollmethod": "Y",
-                "type": "analog",
                 "min_votes_amount": 1,
                 "max_votes_amount": 1,
                 "global_yes": False,
@@ -81,7 +78,6 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("pollmethod") == "Y"
-        assert poll.get("type") == "analog"
         assert poll.get("min_votes_amount") == 1
         assert poll.get("max_votes_amount") == 1
         assert poll.get("global_yes") is False
@@ -153,28 +149,6 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 400)
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("pollmethod"), "Y")
-
-    def test_update_type(self) -> None:
-        response = self.request("poll.update", {"type": "analog", "id": 1})
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("type"), "analog")
-
-    def test_update_invalid_type(self) -> None:
-        response = self.request("poll.update", {"type": "invalid", "id": 1})
-        self.assert_status_code(response, 400)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("type"), "named")
-
-    def test_update_not_allowed_type(self) -> None:
-        self.update_model("organisation/1", {"enable_electronic_voting": False})
-        response = self.request(
-            "poll.update",
-            {"type": Poll.TYPE_NAMED, "id": 1},
-        )
-        self.assert_status_code(response, 400)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("type"), Poll.TYPE_NAMED)
 
     def test_update_groups_to_empty(self) -> None:
         response = self.request("poll.update", {"entitled_group_ids": [], "id": 1})
