@@ -66,3 +66,150 @@ class ProjectorUpdate(BaseActionTestCase):
         response = self.request("projector.update", {"id": 112, "color": "#aaaXbb"})
         self.assert_status_code(response, 400)
         assert "data.color must match pattern ^#[0-9a-f]{6}$" in response.data.decode()
+
+    def test_update_set_used_as_default__in_meeting_id(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV", "projector_ids": [1]},
+                "projector/1": {"name": "Projector1", "meeting_id": 222},
+            }
+        )
+        response = self.request(
+            "projector.update",
+            {
+                "id": 1,
+                "used_as_default_$_in_meeting_id": {"topics": 222},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_default_$_in_meeting_id": ["topics"],
+                "used_as_default_$topics_in_meeting_id": 222,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/222",
+            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 1},
+        )
+
+    def test_update_not_allowed_change_used_as_default__in_meeting_id(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "projector_ids": [1],
+                    "default_projector_$_id": ["topics"],
+                    "default_projector_$topics_id": 1,
+                },
+                "projector/1": {
+                    "name": "Projector1",
+                    "meeting_id": 222,
+                    "used_as_default_$_in_meeting_id": ["topics"],
+                    "used_as_default_$topics_in_meeting_id": 222,
+                },
+                "projector/2": {"name": "Projector2", "meeting_id": 222},
+            }
+        )
+        response = self.request(
+            "projector.update",
+            {
+                "id": 2,
+                "used_as_default_$_in_meeting_id": {"topics": 222},
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You can not set meeting/222/default_projector_$topics_id to a new value because this field is not empty.",
+            response.json["message"],
+        )
+
+    def test_update_change_used_as_default__in_meeting_id(self) -> None:
+        """
+        To really change the value, it must be first set to None and in next
+        action/request can be set to a new value
+        """
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "projector_ids": [1],
+                    "default_projector_$_id": ["topics"],
+                    "default_projector_$topics_id": 1,
+                },
+                "projector/1": {
+                    "name": "Projector1",
+                    "meeting_id": 222,
+                    "used_as_default_$_in_meeting_id": ["topics"],
+                    "used_as_default_$topics_in_meeting_id": 222,
+                },
+                "projector/2": {"name": "Projector2", "meeting_id": 222},
+            }
+        )
+        response = self.request(
+            "projector.update",
+            {
+                "id": 1,
+                "used_as_default_$_in_meeting_id": {"topics": None},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_default_$_in_meeting_id": [],
+                "used_as_default_$topics_in_meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/222",
+            {"default_projector_$_id": [], "default_projector_$topics_id": None},
+        )
+
+        response = self.request(
+            "projector.update",
+            {
+                "id": 2,
+                "used_as_default_$_in_meeting_id": {"topics": 222},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_default_$_in_meeting_id": [],
+                "used_as_default_$topics_in_meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "projector/2",
+            {
+                "used_as_default_$_in_meeting_id": ["topics"],
+                "used_as_default_$topics_in_meeting_id": 222,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/222",
+            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 2},
+        )
+
+    def test_create_set_wrong_used_as_default__in_meeting_id(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV", "projector_ids": [1]},
+                "projector/1": {"name": "Projector1", "meeting_id": 222},
+            }
+        )
+        response = self.request(
+            "projector.update",
+            {
+                "id": 1,
+                "used_as_default_$_in_meeting_id": {"xxxtopics": 222},
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data.used_as_default_$_in_meeting_id must not contain {'xxxtopics'} properties",
+            response.json["message"],
+        )

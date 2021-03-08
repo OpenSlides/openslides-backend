@@ -5,8 +5,12 @@ from typing_extensions import Protocol
 from ...shared.filters import Filter
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.typing import ModelMap
 from .commands import GetManyRequest
-from .deleted_models_behaviour import DeletedModelsBehaviour
+from .deleted_models_behaviour import (
+    DeletedModelsBehaviour,
+    InstanceAdditionalBehaviour,
+)
 
 PartialModel = Dict[str, Any]
 
@@ -18,6 +22,7 @@ class DatastoreService(Protocol):
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
     locked_fields: Dict[str, int]
+    additional_relation_models: ModelMap
 
     def get(
         self,
@@ -108,6 +113,18 @@ class DatastoreService(Protocol):
         ...
 
     def truncate_db(self) -> None:
+        ...
+
+    def fetch_model(
+        self,
+        fqid: FullQualifiedId,
+        mapped_fields: List[str],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = False,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
+        exception: bool = True,
+    ) -> Dict[str, Any]:
         ...
 
 

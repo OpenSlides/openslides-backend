@@ -440,7 +440,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         ActionClass: Type["Action"],
         payload: ActionData,
         additional_relation_models: ModelMap = {},
-    ) -> None:
+    ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
         Executes the given action class as a dependent action with the given payload
         and the given addtional relation models. Merges its own additional relation
@@ -453,12 +453,18 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.datastore,
             self.relation_manager,
             self.logging,
-            {**self.additional_relation_models, **additional_relation_models},
+            {
+                **self.datastore.additional_relation_models,
+                **self.additional_relation_models,
+                **additional_relation_models,
+            },
         )
-        # ignore the action result elements
-        write_request, _ = action.perform(payload, self.user_id, internal=True)
+        write_request, action_results = action.perform(
+            payload, self.user_id, internal=True
+        )
         if write_request:
             self.write_requests.append(write_request)
+        return write_request, action_results
 
 
 def merge_write_requests(

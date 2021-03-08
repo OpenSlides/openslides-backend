@@ -120,21 +120,16 @@ class GeneralActionCommandFormat(BaseActionTestCase):
 
     def test_create_1_2_events(self) -> None:
         self.create_model("meeting/1", {})
-        response = self.client.post(
-            "/",
-            json=[
+        response = self.request_multi(
+            "group.create",
+            [
                 {
-                    "action": "group.create",
-                    "data": [
-                        {
-                            "name": "group 1",
-                            "meeting_id": 1,
-                        },
-                        {
-                            "name": "group 2",
-                            "meeting_id": 1,
-                        },
-                    ],
+                    "name": "group 1",
+                    "meeting_id": 1,
+                },
+                {
+                    "name": "group 2",
+                    "meeting_id": 1,
                 },
             ],
         )
