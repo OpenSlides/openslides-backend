@@ -527,3 +527,20 @@ class CreatePoll(BaseActionTestCase):
                 "weight": 1,
             },
         )
+    def test_not_state_change(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text": "test1"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == "created"

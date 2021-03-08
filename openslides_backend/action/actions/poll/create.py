@@ -155,7 +155,7 @@ class PollCreateAction(CreateAction):
 
         # set state
         instance["state"] = "created"
-        if instance["type"] == "analog":
+        if state_change:
             instance["state"] = "finished"
             if instance.get("publish_immediately"):
                 instance["state"] = "published"
@@ -173,3 +173,22 @@ class PollCreateAction(CreateAction):
         pollmethod = instance["pollmethod"]
         onehundred_percent_base = instance.get("onehundred_percent_base")
         base_check_100_percent_base(pollmethod, onehundred_percent_base)
+
+    def check_state_change(self, instance: Dict[str, Any]) -> bool:
+        if instance["type"] != Poll.TYPE_ANALOG:
+            return False
+        check_fields = (
+            "amount_global_yes",
+            "amount_global_no",
+            "amount_global_abstain",
+            "votesvalid",
+            "votesinvalid",
+            "votescast",
+        )
+        for field in check_fields:
+            if instance.get(field):
+                return True
+        for option in instance.get("options", []):
+            if option.get("Y") or option.get("N") or option.get("A"):
+                return True
+        return False
