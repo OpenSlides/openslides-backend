@@ -58,9 +58,7 @@ class UpdatePollTestCase(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert (
-            "data must not contain {'type'} properties"
-        ) in response.data.decode()
+        assert ("data must not contain {'type'} properties") in response.data.decode()
 
     def test_optional_state_created(self) -> None:
         response = self.request(
@@ -278,9 +276,17 @@ class UpdatePollTestCase(BaseActionTestCase):
 
     def test_state_change(self) -> None:
         self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})
-        response = self.request(
-            "poll.update",
-            {"id": 1, "votescast": "1.000000"})
+        response = self.request("poll.update", {"id": 1, "votescast": "1.000000"})
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == Poll.STATE_FINISHED
+
+    def test_state_change_2_published(self) -> None:
+        self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})
+        response = self.request(
+            "poll.update",
+            {"id": 1, "votescast": "1.000000", "publish_immediately": True},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == Poll.STATE_PUBLISHED

@@ -35,7 +35,7 @@ class PollUpdateAction(UpdateAction):
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
-            }
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
