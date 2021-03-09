@@ -4,6 +4,7 @@ from . import (  # noqa
     delete,
     publish,
     reset,
+    set_state,
     start,
     stop,
     update,

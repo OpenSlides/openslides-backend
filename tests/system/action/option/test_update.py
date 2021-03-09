@@ -8,6 +8,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 "meeting/110": {"name": "meeting_110"},
                 "poll/65": {
                     "type": "analog",
+                    "state": "created",
                     "pollmethod": "YNA",
                     "meeting_id": 110,
                     "option_ids": [57],
@@ -49,6 +50,8 @@ class OptionUpdateActionTest(BaseActionTestCase):
         assert vote_24.get("option_id") == 57
         assert vote_24.get("value") == "A"
         assert vote_24.get("weight") == "3.000000"
+        poll = self.get_model("poll/65")
+        assert poll.get("state") == "finished"
 
     def test_update_Y(self) -> None:
         self.set_models(
@@ -59,6 +62,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "pollmethod": "Y",
                     "meeting_id": 110,
                     "option_ids": [57],
+                    "state": "created",
                 },
                 "option/57": {
                     "yes": "0.000000",
@@ -71,13 +75,21 @@ class OptionUpdateActionTest(BaseActionTestCase):
         )
         response = self.request(
             "option.update",
-            {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
+            {
+                "id": 57,
+                "Y": "1.000000",
+                "N": "2.000000",
+                "A": "3.000000",
+                "publish_immediately": True,
+            },
         )
         self.assert_status_code(response, 200)
         option = self.get_model("option/57")
         assert option.get("yes") == "1.000000"
         assert option.get("no") == "0.000000"
         assert option.get("abstain") == "0.000000"
+        poll = self.get_model("poll/65")
+        assert poll.get("state") == "published"
 
     def test_update_global_option(self) -> None:
         self.set_models(
@@ -91,6 +103,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "global_yes": True,
                     "global_no": True,
                     "global_abstain": True,
+                    "state": "created",
                 },
                 "option/57": {
                     "yes": "0.000000",

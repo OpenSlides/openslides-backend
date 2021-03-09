@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional, Tuple
 
-from ....models.models import Option
+from ....models.models import Option, Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
@@ -8,6 +8,7 @@ from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..poll.set_state import PollSetState
 from ..vote.create import VoteCreate
 from ..vote.update import VoteUpdate
 
@@ -24,6 +25,7 @@ class OptionUpdateAction(UpdateAction):
             "Y": decimal_schema,
             "N": decimal_schema,
             "A": decimal_schema,
+            "publish_immediately": {"type": "boolean"},
         }
     )
 
@@ -31,6 +33,8 @@ class OptionUpdateAction(UpdateAction):
         """Update votes and auto calculate yes, no, abstain."""
 
         poll_id_option, poll, option = self._get_poll(instance["id"])
+        state_change = check_state_change(instance, poll)
+
         if poll_id_option:
             self._handle_poll_option_data(instance, poll)
         else:
@@ -61,6 +65,14 @@ class OptionUpdateAction(UpdateAction):
         if action_data_update:
             self.execute_other_action(VoteUpdate, action_data_update)
 
+        if state_change:
+            state = Poll.STATE_FINISHED
+            if instance.get("publish_immediately"):
+                state = Poll.STATE_PUBLISHED
+            self.execute_other_action(
+                PollSetState, [{"id": poll["id"], "state": state}]
+            )
+
         return instance
 
     def _get_poll(self, option_id: int) -> Tuple[bool, Dict[str, Any], Dict[str, Any]]:
@@ -80,7 +92,15 @@ class OptionUpdateAction(UpdateAction):
             poll_id_option,
             self.datastore.get(
                 FullQualifiedId(Collection("poll"), poll_id),
-                ["type", "pollmethod", "global_yes", "global_no", "global_abstain"],
+                [
+                    "id",
+                    "state",
+                    "type",
+                    "pollmethod",
+                    "global_yes",
+                    "global_no",
+                    "global_abstain",
+                ],
             ),
             option,
         )
@@ -149,3 +169,14 @@ class OptionUpdateAction(UpdateAction):
             if item["value"] == search_value:
                 return key
         return None
+
+
+def check_state_change(instance: Dict[str, Any], poll: Dict[str, Any]) -> bool:
+    if poll.get("type") != Poll.TYPE_ANALOG:
+        return False
+    if poll.get("state") != Poll.STATE_CREATED:
+        return False
+
+    if instance.get("Y") or instance.get("N") or instance.get("A"):
+        return True
+    return False
