@@ -167,7 +167,9 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn('data.options must contain at least 1 items', response.json["message"])
+        self.assertIn(
+            "data.options must contain at least 1 items", response.json["message"]
+        )
         self.assert_model_not_exists("poll/1")
 
     def test_invalid_options(self) -> None:
@@ -313,7 +315,10 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'valid', 'cast', 'disabled']", response.json["message"])
+        self.assertIn(
+            "data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'valid', 'cast', 'disabled']",
+            response.json["message"],
+        )
         self.assert_model_not_exists("poll/1")
 
     def test_not_supported_majority_method(self) -> None:
@@ -331,7 +336,10 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("data.majority_method must be one of ['simple', 'two_thirds', 'three_quarters', 'disabled']", response.json["message"])
+        self.assertIn(
+            "data.majority_method must be one of ['simple', 'two_thirds', 'three_quarters', 'disabled']",
+            response.json["message"],
+        )
         self.assert_model_not_exists("poll/1")
 
     def test_wrong_pollmethod_onehundred_percent_base_combination_1(self) -> None:
@@ -421,6 +429,27 @@ class CreatePoll(BaseActionTestCase):
         self.assertIn(
             "The collection 'assignment' is not available for field 'content_object_id' in collection 'option'.",
             response.json["message"],
+        )
+
+    def test_unique_error_options_text(self) -> None:
+        self.create_model("meeting/112", {"name": "meeting_112"})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YNA",
+                "options": [
+                    {"text": "test", "Y": "10.000000"},
+                    {"text": "test", "A": "11.000000"},
+                    {"text": "test", "N": "12.000000"},
+                ],
+                "meeting_id": 112,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Duplicated option in poll.options: test", response.json["message"]
         )
 
     def test_unique_error_options_content_object_id(self) -> None:

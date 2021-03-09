@@ -38,7 +38,6 @@ class PollCreateAction(CreateAction):
                 "type": "array",
                 "items": options_schema,
                 "minItems": 1,
-                "uniqueItems": True,
             }
         },
         optional_properties=[
