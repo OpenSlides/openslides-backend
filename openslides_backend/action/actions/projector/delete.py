@@ -27,7 +27,11 @@ class ProjectorDelete(DeleteAction):
             raise ActionException(
                 "A used as reference projector is not allowed to delete."
             )
+        instance["remember_meeting_id"] = projector.get("meeting_id")
+        return instance
 
-        payload = [{"id": projector.get("meeting_id"), "projector_id": instance["id"]}]
+    def final_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        meeting_id = instance.pop("remember_meeting_id")
+        payload = [{"id": meeting_id, "projector_id": instance["id"]}]
         self.execute_other_action(MeetingReplaceProjectorId, payload)
         return instance
