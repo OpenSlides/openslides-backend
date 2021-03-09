@@ -23,6 +23,42 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("merge_amendment_into_final") == "undefined"
         assert model.get("css_class") == "lightblue"
 
+    def test_create_as_new_first_state(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "motion_workflow/42": {
+                    "name": "test_name_fjwnq8d8tje8",
+                    "meeting_id": 1,
+                    "first_state_id": 1,
+                },
+                "motion_state/1": {
+                    "workflow_id": 42,
+                    "first_state_of_workflow_id": 42,
+                    "name": "first state one",
+                },
+            }
+        )
+        response = self.request_json(
+            [
+                {
+                    "action": "motion_state.create",
+                    "data": [
+                        {
+                            "name": "first state two",
+                            "workflow_id": 42,
+                            "first_state_of_workflow_id": 42,
+                        }
+                    ],
+                }
+            ]
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You can not set motion_workflow/42/first_state_id to a new value because this field is not empty.",
+            response.json["message"],
+        )
+
     def test_create_enum_fields(self) -> None:
         self.set_models(
             {
