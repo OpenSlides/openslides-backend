@@ -43,16 +43,15 @@ class ProjectorDelete(BaseActionTestCase):
             },
         )
 
-    def test_delete_wrong_id(self) -> None:
+    def test_delete_missing_meeting_id(self) -> None:
         self.set_models(
             {
-                "projector/112": {"name": "name_srtgb123", "meeting_id": 1},
-                "meeting/1": {"projector_ids": [111, 112, 113]},
+                "projector/112": {"name": "name_srtgb123"},
             }
         )
         response = self.request("projector.delete", {"id": 112})
-        self.assert_status_code(response, 200)
-        model = self.get_model("projector/111")
+        self.assert_status_code(response, 400)
+        model = self.get_model("projector/112")
         assert model.get("name") == "name_srtgb123"
 
     def test_delete_prevent_if_used_as_reference(self) -> None:
