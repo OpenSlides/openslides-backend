@@ -14,7 +14,7 @@ class CreatePoll(BaseActionTestCase):
                 },
                 "meeting/113": {},
                 "organisation/1": {"enable_electronic_voting": True},
-                "user/3": {"username": "User3"}
+                "user/3": {"username": "User3"},
             },
         )
 
