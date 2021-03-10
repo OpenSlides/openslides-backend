@@ -433,6 +433,7 @@ class CreatePoll(BaseActionTestCase):
 
     def test_unique_error_options_text(self) -> None:
         self.create_model("meeting/112", {"name": "meeting_112"})
+        self.create_model("assignment/1", {"meeting_id": 112})
         response = self.request(
             "poll.create",
             {
