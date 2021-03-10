@@ -127,11 +127,11 @@ class PollVote(UpdateAction):
     def validate_global_value(self, value: str) -> None:
         if value not in ("Y", "N", "A"):
             raise ActionException(f"Option value {value} is not in 'YNA'.")
-        if value == "Y" and not self.poll.get("global_yes"):
+        elif value == "Y" and not self.poll.get("global_yes"):
             raise ActionException("Global value Y not allowed.")
-        if value == "N" and not self.poll.get("global_no"):
+        elif value == "N" and not self.poll.get("global_no"):
             raise ActionException("Global value N not allowed.")
-        if value == "A" and not self.poll.get("global_abstain"):
+        elif value == "A" and not self.poll.get("global_abstain"):
             raise ActionException("Global value A not allowed.")
 
     def handle_option_value(
@@ -201,7 +201,6 @@ class PollVote(UpdateAction):
     def handle_global_value(
         self, value: str, user_id: int, instance: Dict[str, Any]
     ) -> None:
-        total_votes = 0
         for value_check, condition in (
             ("Y", self.poll.get("global_yes")),
             ("N", self.poll.get("global_no")),
@@ -224,8 +223,6 @@ class PollVote(UpdateAction):
                     action_data[0]["weight"],
                 )
                 self.update_votes_valid(instance, action_data[0]["weight"])
-                total_votes += 1
-        self.check_total_votes(total_votes)
 
     def update_option(
         self, option_id: int, extra_value: str, extra_weight: str
@@ -277,7 +274,6 @@ class PollVote(UpdateAction):
         meeting_id: int,
         weight: str,
     ) -> Dict[str, Any]:
-        user_id = user_id
         if self.poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS:
             user_id = None
         return {

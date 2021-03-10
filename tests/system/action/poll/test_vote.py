@@ -206,6 +206,10 @@ class PollVoteTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
+        assert (
+            "Total amount of votes is not in min-max-interval."
+            in response.data.decode()
+        )
         self.assert_model_not_exists("vote/1")
 
     def test_vote_global(self) -> None:
