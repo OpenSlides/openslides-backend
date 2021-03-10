@@ -30,6 +30,7 @@ def prepare_actions_map() -> None:
         poll,
         projection,
         projector,
+        projector_message,
         resource,
         speaker,
         tag,
