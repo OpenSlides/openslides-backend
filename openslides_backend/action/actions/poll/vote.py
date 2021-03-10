@@ -84,6 +84,8 @@ class PollVote(UpdateAction):
                 "entitled_group_ids",
                 "state",
                 "votesvalid",
+                "min_votes_amount",
+                "max_votes_amount",
             ],
         )
 
@@ -139,9 +141,12 @@ class PollVote(UpdateAction):
         self._handle_value_keys(value, user_id, action_data)
         if action_data:
             self.execute_other_action(VoteCreate, action_data)
+            total_votes = 0
             for data in action_data:
                 self.update_option(data["option_id"], data["value"], data["weight"])
                 self.update_votes_valid(instance, data["weight"])
+                total_votes += 1
+            self.check_total_votes(total_votes)
 
     def _handle_value_keys(
         self,
@@ -196,6 +201,7 @@ class PollVote(UpdateAction):
     def handle_global_value(
         self, value: str, user_id: int, instance: Dict[str, Any]
     ) -> None:
+        total_votes = 0
         for value_check, condition in (
             ("Y", self.poll.get("global_yes")),
             ("N", self.poll.get("global_no")),
@@ -218,6 +224,8 @@ class PollVote(UpdateAction):
                     action_data[0]["weight"],
                 )
                 self.update_votes_valid(instance, action_data[0]["weight"])
+                total_votes += 1
+        self.check_total_votes(total_votes)
 
     def update_option(
         self, option_id: int, extra_value: str, extra_weight: str
@@ -279,3 +287,11 @@ class PollVote(UpdateAction):
             "option_id": option_id,
             "meeting_id": meeting_id,
         }
+
+    def check_total_votes(self, total: int) -> None:
+        if not (
+            self.poll.get("min_votes_amount", 1)
+            <= total
+            <= self.poll.get("max_votes_amount", 1)
+        ):
+            raise ActionException("Total amount of votes is not in min-max-interval.")

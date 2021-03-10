@@ -30,6 +30,8 @@ class PollVoteTest(BaseActionTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 10,
                 },
                 "meeting/113": {"name": "my meeting"},
             }
@@ -123,6 +125,8 @@ class PollVoteTest(BaseActionTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 10,
                 },
                 "meeting/113": {"name": "my meeting"},
                 "user/1": {
@@ -166,6 +170,43 @@ class PollVoteTest(BaseActionTestCase):
         user = self.get_model("user/1")
         assert user.get("vote_$_ids") == ["113", "113"]
         assert user.get("vote_$113_ids") == [1, 2]
+
+    def test_vote_wrong_votes_total(self) -> None:
+        self.set_models(
+            {
+                "organisation/1": {"enable_electronic_voting": True},
+                "group/1": {"user_ids": [1]},
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
+                "poll/1": {
+                    "title": "my test poll",
+                    "option_ids": [11, 12, 13],
+                    "pollmethod": "YN",
+                    "meeting_id": 113,
+                    "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                },
+                "meeting/113": {"name": "my meeting"},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+            }
+        )
+        response = self.request(
+            "poll.vote",
+            {
+                "id": 1,
+                "user_id": 1,
+                "value": {"11": "Y", "12": "N"},
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("vote/1")
 
     def test_vote_global(self) -> None:
         self.set_models(
@@ -534,6 +575,8 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
                 "meeting_id": 113,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
@@ -570,6 +613,8 @@ class VotePollNamedYNA(VotePollBaseTestClass):
                 "votescast": "0.000000",
                 "votesvalid": "0.000000",
                 "votesinvalid": "0.000000",
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
@@ -761,6 +806,8 @@ class VotePollNamedY(VotePollBaseTestClass):
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
@@ -983,6 +1030,8 @@ class VotePollNamedN(VotePollBaseTestClass):
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
@@ -1194,6 +1243,8 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
@@ -1362,6 +1413,8 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
@@ -1507,6 +1560,8 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
+                "min_votes_amount": 1,
+                "max_votes_amount": 10,
             },
         )
 
