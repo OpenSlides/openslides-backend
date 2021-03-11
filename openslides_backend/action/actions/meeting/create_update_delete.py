@@ -125,7 +125,7 @@ class MeetingCreate(CreateActionWithDependencies):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
 
-        payload = [
+        action_data = [
             {
                 "name": "Default",
                 "meeting_id": instance["id"],
@@ -200,7 +200,9 @@ class MeetingCreate(CreateActionWithDependencies):
                 ],
             },
         ]
-        write_requests, action_results = self.execute_other_action(GroupCreate, payload)
+        write_requests, action_results = self.execute_other_action(
+            GroupCreate, action_data
+        )
 
         used_groups_dict = {
             event["fields"]["name"]: event["fqid"].id  # type: ignore
@@ -217,16 +219,16 @@ class MeetingCreate(CreateActionWithDependencies):
         instance["admin_group_id"] = used_groups_dict["Admin"]
 
         # Add user to admin group
-        payload = [
+        action_data = [
             {
                 "id": self.user_id,
                 "group_$_ids": {str(instance["id"]): [used_groups_dict["Admin"]]},
             }
         ]
-        self.execute_other_action(UserUpdate, payload)
+        self.execute_other_action(UserUpdate, action_data)
         return instance
 
-    def get_dependent_action_payload(
+    def get_dependent_action_data(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
         if CreateActionClass == MotionWorkflowCreateSimpleWorkflowAction:

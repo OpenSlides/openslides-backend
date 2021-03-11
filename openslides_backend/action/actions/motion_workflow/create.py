@@ -53,14 +53,10 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Updates one instance of the payload. This can be overridden by custom
-        action classes. Meant to be called inside base_update_instance.
-        """
         additional_relation_models: Dict[FullQualifiedId, Any] = {
             FullQualifiedId(self.model.collection, instance["id"]): instance
         }
-        payload = [
+        action_data = [
             {
                 "name": "submitted",
                 "allow_create_poll": True,
@@ -93,7 +89,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
 
         write_requests, action_results = self.execute_other_action(
             MotionStateActionSet.get_action("create"),
-            payload,
+            action_data,
             additional_relation_models,
         )
         additional_relation_models.update(
@@ -105,10 +101,10 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
         )
         first_state_id = action_results[0]["id"]  # type: ignore
         next_state_ids = [ar["id"] for ar in action_results[-3:]]  # type: ignore
-        payload = [{"id": first_state_id, "next_state_ids": next_state_ids}]
+        action_data = [{"id": first_state_id, "next_state_ids": next_state_ids}]
         self.execute_other_action(
             MotionStateActionSet.get_action("update"),
-            payload,
+            action_data,
             additional_relation_models,
         )
         return instance
