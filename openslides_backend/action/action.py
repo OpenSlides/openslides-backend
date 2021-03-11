@@ -42,8 +42,8 @@ class SchemaProvider(type):
         return super().__new__(cls, name, bases, attrs)
 
 
-def native(method: Callable) -> Callable:
-    setattr(method, "_native", True)
+def original_instances(method: Callable) -> Callable:
+    setattr(method, "_original_instances", True)
     return method
 
 
@@ -77,6 +77,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     modified_relation_fields: Dict[FullQualifiedField, Any]
 
     write_requests: List[WriteRequest]
+    results: ActionResults
 
     def __init__(
         self,
@@ -97,6 +98,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.logger = logging.getLogger(__name__)
         self.modified_relation_fields = {}
         self.write_requests = []
+        self.results = []
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
@@ -116,12 +118,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.check_permissions(action_data)
 
         instances = self.get_updated_instances(action_data)
-        results: ActionResults = []
+        is_original_instances = hasattr(
+            self.get_updated_instances, "_original_instances"
+        )
         for instance in instances:
             # only increment index if the instances which are iterated here are the
             # same as the ones from the action data list (meaning get_updated_instances was
             # not overridden)
-            if hasattr(self.get_updated_instances, "_native"):
+            if is_original_instances:
                 self.index += 1
 
             instance = self.base_update_instance(instance)
@@ -132,11 +136,16 @@ class Action(BaseAction, metaclass=SchemaProvider):
             write_request = self.create_write_requests(instance)
             self.write_requests.extend(write_request)
 
-            result = self.create_action_result_element(instance)
-            results.append(result)
+            if is_original_instances:
+                result = self.create_action_result_element(instance)
+                self.results.append(result)
 
         final_write_request = self.process_write_requests()
-        return (final_write_request, results)
+        # by default, for actions which changed the updated instances, just return None
+        if not is_original_instances and not self.results:
+            self.results = [None]
+
+        return (final_write_request, self.results)
 
     def check_permissions(self, action_data: ActionData) -> None:
         """
@@ -147,7 +156,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 f"You are not allowed to perform action {self.name}."
             )
 
-    @native
+    @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         """
         By default this does nothing. Override in subclasses to adjust the updates

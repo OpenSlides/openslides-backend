@@ -5,6 +5,7 @@ from typing import Any, Dict
 from ....models.models import Resource
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
+from ...action import original_instances
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -41,6 +42,7 @@ class MediafileUploadAction(CreateAction):
         self.media.upload_resource(file_, id_, mimetype_)
         return instance
 
+    @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         tokens = [instance["token"] for instance in action_data]
         if len(tokens) != len(set(tokens)):

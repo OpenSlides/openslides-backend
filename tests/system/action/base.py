@@ -15,7 +15,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         return self.request_multi(action, [data])
 
     def request_multi(self, action: str, data: List[Dict[str, Any]]) -> Response:
-        return self.request_json(
+        response = self.request_json(
             [
                 {
                     "action": action,
@@ -23,6 +23,11 @@ class BaseActionTestCase(BaseSystemTestCase):
                 }
             ]
         )
+        if response.status_code == 200:
+            results = response.json.get("results", [])
+            assert len(results) == 1
+            assert len(results[0]) == len(data)
+        return response
 
     def request_json(self, payload: Payload) -> Response:
         return self.client.post("/", json=payload)
