@@ -11,13 +11,13 @@ class ProjectorPrevious(BaseActionTestCase):
                 "projector/3": {
                     "current_projection_ids": [1, 2],
                     "preview_projection_ids": [3, 4],
-                    "history_projection_ids": [6, 7],
+                    "history_projection_ids": [5, 6],
                     "meeting_id": 1,
                 },
                 "projector/4": {
                     "current_projection_ids": [],
                     "preview_projection_ids": [],
-                    "history_projection_ids": [5],
+                    "history_projection_ids": [7],
                     "meeting_id": 1,
                 },
                 "projection/1": {
@@ -29,7 +29,7 @@ class ProjectorPrevious(BaseActionTestCase):
                 "projection/2": {
                     "current_projector_id": 3,
                     "meeting_id": 1,
-                    "weight": 98,
+                    "weight": 60,
                 },
                 "projection/3": {
                     "preview_projector_id": 3,
@@ -42,19 +42,19 @@ class ProjectorPrevious(BaseActionTestCase):
                     "weight": 100,
                 },
                 "projection/5": {
-                    "history_projector_id": 4,
-                    "meeting_id": 1,
-                    "weight": 100,
-                },
-                "projection/6": {
                     "history_projector_id": 3,
                     "meeting_id": 1,
                     "weight": 60,
                 },
-                "projection/7": {
+                "projection/6": {
                     "history_projector_id": 3,
                     "meeting_id": 1,
                     "weight": 55,
+                },
+                "projection/7": {
+                    "history_projector_id": 4,
+                    "meeting_id": 1,
+                    "weight": 100,
                 },
             }
         )
@@ -71,11 +71,9 @@ class ProjectorPrevious(BaseActionTestCase):
         response = self.request("projector.previous", {"id": 3})
         self.assert_status_code(response, 200)
         projector = self.get_model("projector/3")
-        assert projector.get("current_projection_ids") == [6, 1]
+        assert projector.get("current_projection_ids") == [5, 1]
         assert projector.get("preview_projection_ids") == [2, 3, 4]
-        assert projector.get("history_projection_ids") == [7]
-        projection_1 = self.get_model("projection/1")
-        assert projection_1.get("weight") == 100
+        assert projector.get("history_projection_ids") == [6]
         projection_2 = self.get_model("projection/2")
         assert projection_2.get("weight") == 98
 
@@ -83,6 +81,6 @@ class ProjectorPrevious(BaseActionTestCase):
         response = self.request("projector.previous", {"id": 4})
         self.assert_status_code(response, 200)
         projector = self.get_model("projector/4")
-        assert projector.get("current_projection_ids") == [5]
+        assert projector.get("current_projection_ids") == [7]
         assert projector.get("preview_projection_ids") == []
         assert projector.get("history_projection_ids") == []
