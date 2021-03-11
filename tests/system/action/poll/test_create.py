@@ -432,20 +432,20 @@ class CreatePoll(BaseActionTestCase):
         )
 
     def test_unique_error_options_text(self) -> None:
-        self.create_model("meeting/112", {"name": "meeting_112"})
-        self.create_model("assignment/1", {"meeting_id": 112})
         response = self.request(
             "poll.create",
             {
                 "title": "test",
                 "type": "analog",
                 "pollmethod": "YNA",
+                "majority_method": "simple",
+                "onehundred_percent_base": "valid",
                 "options": [
                     {"text": "test", "Y": "10.000000"},
                     {"text": "test", "A": "11.000000"},
                     {"text": "test", "N": "12.000000"},
                 ],
-                "meeting_id": 112,
+                "meeting_id": 113,
             },
         )
         self.assert_status_code(response, 400)
