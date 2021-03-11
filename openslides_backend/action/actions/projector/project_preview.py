@@ -84,7 +84,7 @@ class ProjectorProjectPreview(UpdateAction):
             yield instance
 
     def is_stable(self, value: Dict[str, Any]) -> bool:
-        return bool(value.get("stable"))
+        return value.get("stable", False)
 
     def get_max_projection_weight(self, meeting_id: int, projector_id: int) -> int:
         filter_ = And(
