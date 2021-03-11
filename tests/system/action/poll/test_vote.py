@@ -212,6 +212,47 @@ class PollVoteTest(BaseActionTestCase):
         )
         self.assert_model_not_exists("vote/1")
 
+    def test_vote_wrong_votes_total_min_case(self) -> None:
+        self.set_models(
+            {
+                "organisation/1": {"enable_electronic_voting": True},
+                "group/1": {"user_ids": [1]},
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
+                "poll/1": {
+                    "title": "my test poll",
+                    "option_ids": [11, 12, 13],
+                    "pollmethod": "YN",
+                    "meeting_id": 113,
+                    "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 2,
+                    "max_votes_amount": 2,
+                },
+                "meeting/113": {"name": "my meeting"},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+            }
+        )
+        response = self.request(
+            "poll.vote",
+            {
+                "id": 1,
+                "user_id": 1,
+                "value": {"11": "Y"},
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Total amount of votes is not in min-max-interval."
+            in response.data.decode()
+        )
+        self.assert_model_not_exists("vote/1")
+
     def test_vote_global(self) -> None:
         self.set_models(
             {
