@@ -60,6 +60,8 @@ class PollCreateAction(CreateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         action_data = []
 
+        state_change = self.check_state_change(instance)
+
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
             organisation = self.datastore.get(
