@@ -27,4 +27,4 @@ EXPOSE 5678
 
 ENV OPENSLIDES_DEVELOPMENT 1
 
-CMD python -m debugpy --listen 0.0.0.0:5678 openslides_backend
+CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "openslides_backend"]
