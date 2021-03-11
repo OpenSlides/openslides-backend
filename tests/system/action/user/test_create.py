@@ -47,7 +47,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {},
                 "meeting/2": {},
-                "user/222": {},
+                "user/222": {"meeting_id": 1},
                 "group/11": {"meeting_id": 1},
                 "group/22": {"meeting_id": 2},
             }
@@ -125,6 +125,23 @@ class UserCreateActionTest(BaseActionTestCase):
             "data.comment_$ must not contain {'str'} properties",
             response.json["message"],
         )
+
+    def test_create_invalid_group_id(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "meeting/2": {},
+                "group/11": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "group_$_ids": {2: [11]},
+            },
+        )
+        self.assert_status_code(response, 400)
 
     def test_create_empty_data(self) -> None:
         response = self.request("user.create", {})

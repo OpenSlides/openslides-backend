@@ -20,7 +20,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
                 "meeting/222": {"name": "name_meeting222"},
                 "user/111": {"username": "username_srtgb123", "meeting_id": 222},
                 "group/7": {"name": "name_group7", "user_ids": [], "meeting_id": 222},
-                "user/7": {},
+                "user/7": {"meeting_id": 222},
             }
         )
         response = self.request(
@@ -176,7 +176,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         response = self.request("user.update_temporary", {"id": 111, "group_ids": [2]})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "requires the following fields to be equal",
+            "The following models do not belong to meeting 1: [FullQualifiedId('group/2')]",
             response.json["message"],
         )
         model = self.get_model("user/111")

@@ -6,7 +6,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "test_username1"},
+                "user/7": {"username": "test_username1", "meeting_id": 7844},
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
             }
         )
@@ -44,7 +44,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "test_username1", "speaker_$7844_ids": [42]},
+                "user/7": {
+                    "username": "test_username1",
+                    "speaker_$7844_ids": [42],
+                    "meeting_id": 7844,
+                },
                 "list_of_speakers/23": {"speaker_ids": [42], "meeting_id": 7844},
                 "speaker/42": {"user_id": 7, "list_of_speakers_id": 23},
             }
@@ -60,9 +64,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "test_username6"},
-                "user/8": {"username": "test_username7"},
-                "user/9": {"username": "test_username8"},
+                "user/7": {"username": "test_username6", "meeting_id": 7844},
+                "user/8": {"username": "test_username7", "meeting_id": 7844},
+                "user/9": {"username": "test_username8", "meeting_id": 7844},
                 "speaker/1": {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000},
                 "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 7844},
             }
@@ -81,15 +85,15 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_add_2_speakers_in_2_actions(self) -> None:
-        self.create_model("meeting/7844", {"name": "name_asdewqasd"})
-        self.create_model("user/7", {"username": "test_username6"})
-        self.create_model("user/8", {"username": "test_username7"})
-        self.create_model("user/9", {"username": "test_username8"})
-        self.create_model(
-            "speaker/1", {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000}
-        )
-        self.create_model(
-            "list_of_speakers/23", {"speaker_ids": [1], "meeting_id": 7844}
+        self.set_models(
+            {
+                "meeting/7844": {"name": "name_asdewqasd"},
+                "user/7": {"username": "test_username6", "meeting_id": 7844},
+                "user/8": {"username": "test_username7", "meeting_id": 7844},
+                "user/9": {"username": "test_username8", "meeting_id": 7844},
+                "speaker/1": {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000},
+                "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 7844},
+            }
         )
         response = self.client.post(
             "/",
@@ -126,6 +130,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
                     "is_present_in_meeting_ids": [7844],
+                    "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
             }
@@ -151,6 +156,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "username": "user9",
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
+                    "meeting_id": 7844,
                 },
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
             }
@@ -171,7 +177,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_standard_speaker_in_only_talker_list(self) -> None:
         self.create_model("meeting/7844", {"name": "name_asdewqasd"})
-        self.create_model("user/7", {"username": "talking"})
+        self.update_model("user/1", {"meeting_id": 7844})
+        self.create_model("user/7", {"username": "talking", "meeting_id": 7844})
         self.create_model(
             "speaker/1",
             {
@@ -179,6 +186,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "list_of_speakers_id": 23,
                 "begin_time": 100000,
                 "weight": 5,
+                "meeting_id": 7844,
             },
         )
         self.create_model(
@@ -202,14 +210,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_standard_speaker_at_the_end_of_filled_list(self) -> None:
         self.create_model("meeting/7844", {"name": "name_asdewqasd"})
-        self.create_model("user/7", {"username": "talking"})
-        self.create_model("user/8", {"username": "waiting"})
+        self.create_model("user/7", {"username": "talking", "meeting_id": 7844})
+        self.create_model("user/8", {"username": "waiting", "meeting_id": 7844})
         self.update_model(
             "user/1",
-            {
-                "speaker_$7844_ids": [3],
-                "speaker_$_ids": ["7844"],
-            },
+            {"speaker_$7844_ids": [3], "speaker_$_ids": ["7844"], "meeting_id": 7844},
         )
         self.create_model(
             "speaker/1",
@@ -218,10 +223,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "list_of_speakers_id": 23,
                 "begin_time": 100000,
                 "weight": 5,
+                "meeting_id": 7844,
             },
         )
         self.create_model(
-            "speaker/2", {"user_id": 8, "list_of_speakers_id": 23, "weight": 1}
+            "speaker/2",
+            {"user_id": 8, "list_of_speakers_id": 23, "weight": 1, "meeting_id": 7844},
         )
         self.create_model(
             "speaker/3",
@@ -230,6 +237,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "list_of_speakers_id": 23,
                 "point_of_order": True,
                 "weight": 2,
+                "meeting_id": 7844,
             },
         )
         self.create_model(
@@ -254,3 +262,34 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             {"user_id": 1, "point_of_order": None, "weight": 3},
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2, 3, 4]})
+
+    def test_create_guest_in_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/2": {},
+                "user/7": {"guest_meeting_ids": [2]},
+                "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {"user_id": 7, "meeting_id": 2},
+        )
+
+    def test_create_not_in_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "meeting/2": {},
+                "user/7": {"meeting_id": 1},
+                "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 400)

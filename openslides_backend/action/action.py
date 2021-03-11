@@ -4,12 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, c
 import fastjsonschema
 
 from ..models.base import Model, model_registry
-from ..models.fields import (
-    BaseGenericRelationField,
-    BaseRelationField,
-    BaseTemplateField,
-    BaseTemplateRelationField,
-)
+from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
@@ -23,10 +18,11 @@ from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
-from ..shared.patterns import FullQualifiedField, FullQualifiedId
+from ..shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
+from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .util.typing import ActionData, ActionResultElement, ActionResults
 
 
@@ -348,55 +344,59 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 instance[field_name] = field.validate(instance[field_name])
         return instance
 
-    def validate_relation_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def validate_relation_fields(self, instance: Dict[str, Any]) -> None:
         """
         Validates all relation fields according to the model definition.
         """
         for field in self.model.get_relation_fields():
-            if field.equal_fields:
-                if field.own_field_name in instance:
-                    fields = [field.own_field_name]
-                elif isinstance(field, BaseTemplateRelationField):
-                    fields = [
-                        instance_field
-                        for instance_field, replacement in self.get_structured_fields_in_instance(
-                            field, instance
-                        )
-                    ]
-                else:
-                    continue
-                for instance_field in fields:
-                    self.check_equal_fields(field, instance, instance_field)
-        return instance
+            if not field.equal_fields:
+                continue
 
-    def check_equal_fields(
-        self,
-        field: BaseRelationField,
-        instance: Dict[str, Any],
-        instance_field: str,
-        additional_equal_fields: List[str] = [],
-    ) -> None:
-        """
-        Asserts that all fields given in field.equal_fields + additional_equal_fields
-        are the same in instance and the model referenced by the name instance_field
-        of the given field.
-        """
-        fqids = self.get_field_value_as_fqid_list(field, instance[instance_field])
-        equal_fields = field.equal_fields + additional_equal_fields
-        for fqid in fqids:
-            related_model = self.fetch_model(fqid, equal_fields)
-            for equal_field_name in equal_fields:
-                if instance.get(equal_field_name) != related_model.get(
-                    equal_field_name
-                ):
-                    raise ActionException(
-                        f"The relation {field.own_field_name} requires the following "
-                        f"fields to be equal:\n"
-                        f"{field.own_collection}/{instance.get('id', '<new>')}/{equal_field_name}: "
-                        f"{str(instance.get(equal_field_name))}\n"
-                        f"{fqid}/{equal_field_name}: "
-                        f"{str(related_model.get(equal_field_name))}"
+            if field.own_field_name in instance:
+                fields = [field.own_field_name]
+            elif isinstance(field, BaseTemplateRelationField):
+                fields = [
+                    instance_field
+                    for instance_field, replacement in self.get_structured_fields_in_instance(
+                        field, instance
                     )
+                ]
+                if not fields:
+                    continue
+            else:
+                continue
+
+            for equal_field in field.equal_fields:
+                if not (own_equal_field_value := instance.get(equal_field)):
+                    fqid = FullQualifiedId(self.model.collection, instance["id"])
+                    db_instance = self.fetch_model(fqid, [equal_field])
+                    if not (own_equal_field_value := db_instance.get(equal_field)):
+                        raise ActionException(
+                            f"{fqid} has no value for the field {equal_field}"
+                        )
+                for instance_field in fields:
+                    fqids = transform_to_fqids(
+                        instance[instance_field], field.get_target_collection()
+                    )
+                    if equal_field == "meeting_id":
+                        assert_belongs_to_meeting(
+                            self.datastore, fqids, own_equal_field_value
+                        )
+                    else:
+                        for fqid in fqids:
+                            related_instance = self.fetch_model(fqid, [equal_field])
+                            if (
+                                related_instance.get(equal_field)
+                                != own_equal_field_value
+                            ):
+                                raise ActionException(
+                                    f"The relation {field.own_field_name} requires the following "
+                                    f"fields to be equal:\n"
+                                    f"{field.own_collection}/{instance['id']}/{equal_field}: "
+                                    f"{own_equal_field_value}\n"
+                                    f"{fqid}/{equal_field}: "
+                                    f"{related_instance.get(equal_field)}"
+                                )
 
     def get_structured_fields_in_instance(
         self, field: BaseTemplateField, instance: Dict[str, Any]
@@ -411,22 +411,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             if replacement:
                 structured_fields.append((instance_field, replacement))
         return structured_fields
-
-    def get_field_value_as_fqid_list(
-        self, field: BaseRelationField, value: Any
-    ) -> List[FullQualifiedId]:
-        """ Transforms the given value to an Fqid List. """
-        if not isinstance(value, list):
-            if value is None:
-                value = []
-            else:
-                value = [value]
-        if not isinstance(field, BaseGenericRelationField):
-            assert (
-                len(field.to) == 1
-            )  # non-generic fields can only have one target collection
-            value = [FullQualifiedId(field.get_target_collection(), id) for id in value]
-        return value
 
     def fetch_model(
         self, fqid: FullQualifiedId, mapped_fields: List[str] = []

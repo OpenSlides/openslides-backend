@@ -1,9 +1,7 @@
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Dict, Optional, TypedDict, Union
 
-from ...shared.patterns import FullQualifiedField, FullQualifiedId
+from ...shared.patterns import FullQualifiedField, Identifier, IdentifierList
 
-Identifier = Union[int, str, FullQualifiedId]
-IdentifierList = Union[List[int], List[str], List[FullQualifiedId]]
 FieldUpdateElement = TypedDict(
     "FieldUpdateElement",
     {

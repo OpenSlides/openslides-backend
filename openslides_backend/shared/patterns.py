@@ -1,5 +1,5 @@
 import re
-from typing import Union
+from typing import List, Optional, Sequence, Union, cast
 
 KEYSEPARATOR = "/"
 
@@ -8,6 +8,10 @@ ID_REGEX = rf"^{ID_REGEX_PART}$"
 POSITIVE_NUMBER_REGEX = fr"^(0|{ID_REGEX_PART})$"
 
 ID_PATTERN = re.compile(ID_REGEX)
+
+
+Identifier = Union[int, str, "FullQualifiedId"]
+IdentifierList = Union[List[int], List[str], List["FullQualifiedId"]]
 
 
 class Collection:
@@ -127,6 +131,44 @@ def string_to_fqid(fqid: str) -> FullQualifiedId:
     """
     collection, id = fqid.split(KEYSEPARATOR)
     return FullQualifiedId(Collection(collection), int(id))
+
+
+def transform_to_fqids(
+    value: Optional[
+        Union[
+            int,
+            str,
+            FullQualifiedId,
+            Sequence[int],
+            Sequence[str],
+            Sequence[FullQualifiedId],
+        ]
+    ],
+    collection: Collection,
+) -> List[FullQualifiedId]:
+    """
+    Get the given value as a list of fqids. The list may be empty.
+    Transform all to fqids to handle everything in the same fashion.
+    """
+    id_list: IdentifierList
+    if value is None:
+        id_list = []  # type: ignore  # see https://github.com/python/mypy/issues/2164
+    elif not isinstance(value, list):
+        value_arr = cast(IdentifierList, [value])
+        id_list = value_arr
+    else:
+        id_list = value
+
+    fqid_list = []
+    for id in id_list:
+        if isinstance(id, str):
+            fqid_list.append(string_to_fqid(id))
+        elif isinstance(id, int):
+            fqid_list.append(FullQualifiedId(collection, id))
+        else:
+            assert isinstance(id, FullQualifiedId)
+            fqid_list.append(id)
+    return fqid_list
 
 
 def to_fqid(fqid: Union[str, FullQualifiedId]) -> FullQualifiedId:

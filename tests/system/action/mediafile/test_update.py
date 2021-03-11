@@ -5,8 +5,9 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
-                "mediafile/111": {"title": "title_srtgb123"},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
             }
         )
         response = self.request(
@@ -23,15 +24,21 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_children(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_ekxORNiV",
                     "child_ids": [111],
                     "is_public": False,
                     "inherited_access_group_ids": [7],
                     "access_group_ids": [7],
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -47,9 +54,18 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
-                "mediafile/110": {"title": "title_srtgb199", "child_ids": [111]},
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "meeting_id": 1,
+                },
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -66,15 +82,21 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_inherited_list(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
-                "group/8": {"name": "group_sdfafd", "user_ids": []},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/8": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "inherited_access_group_ids": [8],
                     "is_public": False,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -91,14 +113,20 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case1(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "access_group_ids": [],
                     "inherited_access_group_ids": [],
                     "is_public": True,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -114,16 +142,22 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case2(self) -> None:
         self.set_models(
             {
-                "group/2": {"name": "group_LxAHErRs", "user_ids": []},
-                "group/4": {"name": "group_sdfafd", "user_ids": []},
+                "meeting/1": {},
+                "group/2": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/4": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "inherited_access_group_ids": [2, 4],
                     "access_group_ids": [2, 4],
                     "is_public": False,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -139,16 +173,22 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case3(self) -> None:
         self.set_models(
             {
-                "group/3": {"name": "group_LxAHErRs", "user_ids": []},
-                "group/6": {"name": "group_sdfafd", "user_ids": []},
+                "meeting/1": {},
+                "group/3": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/6": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
                     "is_public": True,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -168,17 +208,23 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case4(self) -> None:
         self.set_models(
             {
-                "group/1": {"name": "group_LxAHErRs", "user_ids": []},
-                "group/2": {"name": "group_sdfafd", "user_ids": []},
-                "group/3": {"name": "group_ghjeei", "user_ids": []},
+                "meeting/1": {},
+                "group/1": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
+                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
                     "is_public": False,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -198,17 +244,23 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case5(self) -> None:
         self.set_models(
             {
-                "group/1": {"name": "group_LxAHErRs", "user_ids": []},
-                "group/2": {"name": "group_sdfafd", "user_ids": []},
-                "group/3": {"name": "group_ghjeei", "user_ids": []},
+                "meeting/1": {},
+                "group/1": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
+                "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
                     "is_public": False,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -224,14 +276,20 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_inherited_true(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
                     "is_public": False,
+                    "meeting_id": 1,
                 },
-                "mediafile/111": {"title": "title_srtgb123", "parent_id": 110},
+                "mediafile/111": {
+                    "title": "title_srtgb123",
+                    "parent_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -259,17 +317,24 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
-                "mediafile/110": {"title": "title_srtgb199", "child_ids": [111]},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "meeting_id": 1,
+                },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112],
+                    "meeting_id": 1,
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
                     "access_group_ids": [7],
+                    "meeting_id": 1,
                 },
             }
         )
@@ -291,22 +356,30 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children_2(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
-                "mediafile/110": {"title": "title_srtgb199", "child_ids": [111]},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "meeting_id": 1,
+                },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112, 113],
+                    "meeting_id": 1,
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
                     "access_group_ids": [7],
+                    "meeting_id": 1,
                 },
                 "mediafile/113": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
                     "access_group_ids": [7],
+                    "meeting_id": 1,
                 },
             }
         )
@@ -332,23 +405,31 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children_3(self) -> None:
         self.set_models(
             {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": []},
-                "mediafile/110": {"title": "title_srtgb199", "child_ids": [111]},
+                "meeting/1": {},
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "mediafile/110": {
+                    "title": "title_srtgb199",
+                    "child_ids": [111],
+                    "meeting_id": 1,
+                },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112],
+                    "meeting_id": 1,
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
                     "access_group_ids": [7],
                     "child_ids": [113],
+                    "meeting_id": 1,
                 },
                 "mediafile/113": {
                     "title": "title_srtgb123",
                     "parent_id": 112,
                     "access_group_ids": [7],
+                    "meeting_id": 1,
                 },
             }
         )

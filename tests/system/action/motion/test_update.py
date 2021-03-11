@@ -290,8 +290,9 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "requires the following fields to be equal" in response.json.get(
-            "message", ""
+        assert (
+            "The following models do not belong to meeting 1: [FullQualifiedId('motion/2')]"
+            in response.json.get("message", "")
         )
 
     def test_only_motion_allowed(self) -> None:

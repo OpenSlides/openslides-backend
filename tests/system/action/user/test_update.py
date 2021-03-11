@@ -48,7 +48,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {},
                 "meeting/2": {},
-                "user/222": {},
+                "user/222": {"meeting_id": 1},
                 "user/223": {},
                 "group/11": {"meeting_id": 1},
                 "group/22": {"meeting_id": 2},
