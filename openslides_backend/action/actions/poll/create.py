@@ -125,11 +125,15 @@ class PollCreateAction(CreateAction):
         )
 
         # set state
-        instance["state"] = "created"
+        instance["state"] = Poll.STATE_CREATED
         if state_change:
-            instance["state"] = "finished"
-            if instance.get("publish_immediately"):
-                instance["state"] = "published"
+            instance["state"] = Poll.STATE_FINISHED
+        if (
+            instance["type"] == Poll.TYPE_ANALOG
+            and instance["state"] == Poll.STATE_FINISHED
+            and instance.get("publish_immediately")
+        ):
+            instance["state"] = Poll.STATE_PUBLISHED
 
         # set votescast, votesvalid, votesinvalid defaults
         for field in ("votescast", "votesvalid", "votesinvalid"):

@@ -33,7 +33,7 @@ class OptionUpdateAction(UpdateAction):
         """Update votes and auto calculate yes, no, abstain."""
 
         poll_id_option, poll, option = self._get_poll(instance["id"])
-        state_change = check_state_change(instance, poll)
+        state_change = self.check_state_change(instance, poll)
 
         if poll_id_option:
             self._handle_poll_option_data(instance, poll)
@@ -65,10 +65,20 @@ class OptionUpdateAction(UpdateAction):
         if action_data_update:
             self.execute_other_action(VoteUpdate, action_data_update)
 
+        execute_other_action = False
         if state_change:
             state = Poll.STATE_FINISHED
-            if instance.get("publish_immediately"):
-                state = Poll.STATE_PUBLISHED
+            execute_other_action = True
+        if (
+            execute_other_action
+            or (
+                poll["state"] == Poll.STATE_FINISHED
+                and poll["type"] == Poll.TYPE_ANALOG
+            )
+        ) and instance.get("publish_immediately"):
+            state = Poll.STATE_PUBLISHED
+            execute_other_action = True
+        if execute_other_action:
             self.execute_other_action(
                 PollSetState, [{"id": poll["id"], "state": state}]
             )
@@ -170,13 +180,14 @@ class OptionUpdateAction(UpdateAction):
                 return key
         return None
 
+    def check_state_change(
+        self, instance: Dict[str, Any], poll: Dict[str, Any]
+    ) -> bool:
+        if poll.get("type") != Poll.TYPE_ANALOG:
+            return False
+        if poll.get("state") != Poll.STATE_CREATED:
+            return False
 
-def check_state_change(instance: Dict[str, Any], poll: Dict[str, Any]) -> bool:
-    if poll.get("type") != Poll.TYPE_ANALOG:
+        if instance.get("Y") or instance.get("N") or instance.get("A"):
+            return True
         return False
-    if poll.get("state") != Poll.STATE_CREATED:
-        return False
-
-    if instance.get("Y") or instance.get("N") or instance.get("A"):
-        return True
-    return False

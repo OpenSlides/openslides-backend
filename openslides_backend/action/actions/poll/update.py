@@ -43,7 +43,7 @@ class PollUpdateAction(UpdateAction):
             FullQualifiedId(self.model.collection, instance["id"]), ["state", "type"]
         )
 
-        state_change = check_state_change(instance, poll)
+        state_change = self.check_state_change(instance, poll)
 
         self.check_100_percent_base(instance)
 
@@ -81,8 +81,15 @@ class PollUpdateAction(UpdateAction):
             )
         if state_change:
             instance["state"] = Poll.STATE_FINISHED
-            if instance.get("publish_immediately"):
-                instance["state"] = Poll.STATE_PUBLISHED
+        if (
+            poll["type"] == Poll.TYPE_ANALOG
+            and (
+                instance.get("state") == Poll.STATE_FINISHED
+                or poll["state"] == Poll.STATE_FINISHED
+            )
+            and instance.get("publish_immediately")
+        ):
+            instance["state"] = Poll.STATE_PUBLISHED
 
         return instance
 
@@ -97,18 +104,19 @@ class PollUpdateAction(UpdateAction):
             pollmethod = poll.get("pollmethod")
         base_check_100_percent_base(pollmethod, onehundred_percent_base)
 
-
-def check_state_change(instance: Dict[str, Any], poll: Dict[str, Any]) -> bool:
-    if poll.get("type") != Poll.TYPE_ANALOG:
+    def check_state_change(
+        self, instance: Dict[str, Any], poll: Dict[str, Any]
+    ) -> bool:
+        if poll.get("type") != Poll.TYPE_ANALOG:
+            return False
+        if poll.get("state") != Poll.STATE_CREATED:
+            return False
+        check_fields = (
+            "votesvalid",
+            "votesinvalid",
+            "votescast",
+        )
+        for field in check_fields:
+            if instance.get(field):
+                return True
         return False
-    if poll.get("state") != Poll.STATE_CREATED:
-        return False
-    check_fields = (
-        "votesvalid",
-        "votesinvalid",
-        "votescast",
-    )
-    for field in check_fields:
-        if instance.get(field):
-            return True
-    return False
