@@ -25,7 +25,6 @@ class ProjectorCountdownCreate(CreateAction):
         self.check_title_unique(instance)
 
         # set default_time if needed and countdown_time
-        print(instance.get("default_time"))
         if not instance.get("default_time"):
             meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
