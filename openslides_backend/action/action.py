@@ -5,9 +5,8 @@ import fastjsonschema
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
-from ..permissions import is_child_permission
+from ..permissions.permission_helper import has_perm
 from ..services.auth.interface import AuthenticationService
-from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
@@ -20,12 +19,7 @@ from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
-from ..shared.patterns import (
-    Collection,
-    FullQualifiedField,
-    FullQualifiedId,
-    transform_to_fqids,
-)
+from ..shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
 from ..shared.typing import ModelMap
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
@@ -157,72 +151,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
         # switch between internal and external permission service
         if self.permission:
             meeting_id = self.get_meeting_id(instance)
-            if self.has_perm(self.permission, meeting_id):
+            if has_perm(self.datastore, self.user_id, self.permission, meeting_id):
                 return
         else:
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
 
-        raise PermissionDenied(f"You are not allowed to perform action {self.name}.")
+        msg = f"You are not allowed to perform action {self.name}."
+        if self.permission:
+            msg += f" Missing permission: {self.permission}"
+        raise PermissionDenied(msg)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         """
         To be overridden in subclasses. Must return the meeting_id that belongs to this instance.
         """
         raise NotImplementedError()
-
-    def has_perm(self, permission: str, meeting_id: int) -> bool:
-        # anonymous cannot be fetched from db
-        if self.user_id > 0:
-            user = self.datastore.get(
-                FullQualifiedId(Collection("user"), self.user_id),
-                [
-                    f"group_${meeting_id}_ids",
-                    "guest_meeting_ids",
-                    "organisation_management_level",
-                ],
-            )
-        else:
-            user = {}
-
-        # superadmins have all permissions
-        if user.get("organisation_management_level") == "superadmin":
-            return True
-
-        # get correct group ids for this user
-        if not user.get(f"group_${meeting_id}_ids"):
-            # guests, temporary users and anonymous are in the default group
-            if meeting_id in user.get("guest_meeting_ids", []) or self.user_id == 0:
-                meeting = self.datastore.get(
-                    FullQualifiedId(Collection("meeting"), meeting_id),
-                    ["default_group_id", "enable_anonymous"],
-                )
-                # check if anonymous is allowed
-                if self.user_id == 0 and not meeting.get("enable_anonymous"):
-                    raise PermissionDenied(
-                        f"Anonymous is not enabled for meeting {meeting_id}"
-                    )
-                group_ids = [meeting["default_group_id"]]
-            else:
-                raise PermissionDenied(f"You do not belong to meeting {meeting_id}")
-        else:
-            group_ids = user[f"group_${meeting_id}_ids"]
-
-        gmr = GetManyRequest(
-            Collection("group"),
-            group_ids,
-            ["permissions", "admin_group_for_meeting_id"],
-        )
-        result = self.datastore.get_many([gmr])
-        for group in result[Collection("group")].values():
-            # admins implicitly have all permissions
-            if group.get("admin_group_for_meeting_id") == meeting_id:
-                return True
-            # check if the current group has the needed permission (or a higher one)
-            for group_permission in group.get("permissions", []):
-                if is_child_permission(permission, group_permission):
-                    return True
-        return False
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

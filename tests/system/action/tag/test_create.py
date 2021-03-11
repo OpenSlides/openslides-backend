@@ -44,3 +44,7 @@ class TagActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assert_model_not_exists("tag/1")
+        self.assertIn(
+            "You do not belong to meeting 577",
+            response.json["message"],
+        )
