@@ -6,7 +6,7 @@ class ProjectorCountdown(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {"projector_default_countdown_time": 11},
+                "meeting/1": {"projector_countdown_default_time": 11},
                 "projector_countdown/1": {"title": "blablabla", "meeting_id": 1},
             }
         )
@@ -45,9 +45,15 @@ class ProjectorCountdown(BaseActionTestCase):
     def test_create_no_default_time(self) -> None:
         response = self.request(
             "projector_countdown.create",
-            {"meeting_id": 1, "title": "test2", "description": "good description"},
+            {
+                "meeting_id": 1,
+                "title": "test2",
+                "description": "good description",
+                "default_time": None,
+            },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("projector_countdown/2")
+        assert model.get("title") == "test2"
         assert model.get("default_time") == 11
         assert model.get("countdown_time") == 11
