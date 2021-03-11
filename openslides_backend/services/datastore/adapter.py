@@ -5,6 +5,7 @@ from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
+from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
@@ -32,7 +33,7 @@ class DatastoreAdapter(DatastoreService):
     """
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
-    locked_fields: Dict[str, int]
+    locked_fields: Dict[str, CollectionFieldLock]
 
     def __init__(self, engine: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
@@ -216,13 +217,16 @@ class DatastoreAdapter(DatastoreService):
         response = self.retrieve(command)
         pos = response["position"]
         data = response["data"]
-        # TODO: add option to use collectionfield locks
         if lock_result:
             fields = []
             filter_visitor(filter, lambda fo: fields.append(fo.field))
+            if "meeting_id" not in fields:
+                self.logger.warning(
+                    "Logging a collection field with a filter which does not contain meeting_id!"
+                )
             for field in fields:
                 cf = CollectionField(collection, field)
-                self.update_locked_fields(cf, pos)
+                self.update_locked_fields(cf, {"position": pos, "filter": full_filter})
         data = {int(key): val for key, val in data.items()}
         return data
 
@@ -242,10 +246,14 @@ class DatastoreAdapter(DatastoreService):
         )
         response = self.retrieve(command)
         if lock_result:
-            position = response.get("position")
-            if position is None:
+            if (pos := response.get("position")) is None:
                 raise DatastoreException("Invalid response from datastore.")
-            raise NotImplementedError("Locking is not implemented")
+            filter_visitor(
+                filter,
+                lambda fo: self.update_locked_fields(
+                    CollectionField(collection, fo.field), pos
+                ),
+            )
         return response["exists"]
 
     def count(
@@ -264,7 +272,14 @@ class DatastoreAdapter(DatastoreService):
         )
         response = self.retrieve(command)
         if lock_result:
-            raise NotImplementedError("Locking is not implemented")
+            if (pos := response.get("position")) is None:
+                raise DatastoreException("Invalid response from datastore.")
+            filter_visitor(
+                filter,
+                lambda fo: self.update_locked_fields(
+                    CollectionField(collection, fo.field), pos
+                ),
+            )
         return response["count"]
 
     def min(
@@ -276,7 +291,6 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
     ) -> Optional[int]:
-        # TODO: This method does not reflect the position of the fetched objects.
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
         )
@@ -288,8 +302,14 @@ class DatastoreAdapter(DatastoreService):
         )
         response = self.retrieve(command)
         if lock_result:
-            self.update_locked_fields(
-                CollectionField(collection, field), response.get("position")
+            if (pos := response.get("position")) is None:
+                raise DatastoreException("Invalid response from datastore.")
+            self.update_locked_fields(CollectionField(collection, field), pos)
+            filter_visitor(
+                filter,
+                lambda fo: self.update_locked_fields(
+                    CollectionField(collection, fo.field), pos
+                ),
             )
         return response.get("min")
 
@@ -314,8 +334,14 @@ class DatastoreAdapter(DatastoreService):
         )
         response = self.retrieve(command)
         if lock_result:
-            self.update_locked_fields(
-                CollectionField(collection, field), response.get("position")
+            if (pos := response.get("position")) is None:
+                raise DatastoreException("Invalid response from datastore.")
+            self.update_locked_fields(CollectionField(collection, field), pos)
+            filter_visitor(
+                filter,
+                lambda fo: self.update_locked_fields(
+                    CollectionField(collection, fo.field), pos
+                ),
             )
         return response.get("max")
 
@@ -335,13 +361,42 @@ class DatastoreAdapter(DatastoreService):
     def update_locked_fields(
         self,
         key: Union[FullQualifiedId, FullQualifiedField, CollectionField],
-        position: int,
+        lock: CollectionFieldLock,
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
-        self.locked_fields[str(key)] = position
+        if not isinstance(lock, int) and not isinstance(key, CollectionField):
+            raise DatastoreException(
+                "You can only lock collection fields with a filter"
+            )
+        if (old_pos := self.locked_fields.get(str(key))) :
+            if isinstance(old_pos, int) and isinstance(lock, int):
+                # keep the smaller position
+                if old_pos <= lock:
+                    return
+            elif isinstance(old_pos, int) and not isinstance(lock, int):
+                # old lock locked already more than new lock, so we can skip it
+                if old_pos <= lock["position"]:
+                    return
+                else:
+                    # we have to remove the filter and lock everything with the lower position
+                    lock = lock["position"]
+                    self.logger.warning(
+                        f"You locked the field {key} twice: first to pos {old_pos} and then with a filter to pos {lock}. This results in locking the whole collectionfield to position {lock}."
+                    )
+            elif not isinstance(old_pos, int) and isinstance(lock, int):
+                # old lock locked already more than new lock, so we can skip it
+                if old_pos["position"] < lock:
+                    # we have to remove the filter and lock everything with the lower position
+                    self.logger.warning(
+                        f"You locked the field {key} twice: first to pos {old_pos} with a filter and then to pos {lock}. This results in locking the whole collectionfield to position {old_pos['position']}."
+                    )
+                    lock = old_pos["position"]
+            else:
+                raise NotImplementedError("Can't lock the same key twice with a filter")
+        self.locked_fields[str(key)] = lock
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)

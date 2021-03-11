@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter
+from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
@@ -21,7 +22,7 @@ class DatastoreService(Protocol):
     """
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
-    locked_fields: Dict[str, int]
+    locked_fields: Dict[str, CollectionFieldLock]
     additional_relation_models: ModelMap
 
     def get(

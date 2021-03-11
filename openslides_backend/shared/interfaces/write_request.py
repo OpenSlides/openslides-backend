@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 from ..patterns import FullQualifiedId
+from .collection_field_lock import CollectionFieldLock
 from .event import Event
 
 Information = Dict[FullQualifiedId, List[str]]
@@ -16,4 +17,4 @@ class WriteRequest:
     events: List[Event]
     information: Information
     user_id: int
-    locked_fields: Dict[str, int]
+    locked_fields: Dict[str, CollectionFieldLock]
