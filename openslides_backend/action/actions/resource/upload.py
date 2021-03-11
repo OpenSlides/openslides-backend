@@ -41,14 +41,14 @@ class MediafileUploadAction(CreateAction):
         self.media.upload_resource(file_, id_, mimetype_)
         return instance
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        tokens = [instance["token"] for instance in payload]
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        tokens = [instance["token"] for instance in action_data]
         if len(tokens) != len(set(tokens)):
             raise ActionException(
                 "It is not permitted to use the same token twice in a request."
             )
 
-        for instance in payload:
+        for instance in action_data:
             results = self.datastore.filter(
                 self.model.collection,
                 And(
@@ -66,4 +66,4 @@ class MediafileUploadAction(CreateAction):
                 self.logger.error(text)
                 raise ActionException(text)
 
-        return payload
+        return action_data

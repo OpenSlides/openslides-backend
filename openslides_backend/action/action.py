@@ -99,27 +99,27 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.write_requests = []
 
     def perform(
-        self, payload: ActionData, user_id: int, internal: bool = False
+        self, action_data: ActionData, user_id: int, internal: bool = False
     ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
         Entrypoint to perform the action.
         """
         self.user_id = user_id
         self.index = 0
-        for element in payload:
-            self.validate_payload_element(element)
+        for instance in action_data:
+            self.validate_instance(instance)
             self.index += 1
         self.index = -1
 
         # perform permission not for internal actions
         if not internal:
-            self.check_permissions(payload)
+            self.check_permissions(action_data)
 
-        instances = self.get_updated_instances(payload)
+        instances = self.get_updated_instances(action_data)
         results: ActionResults = []
         for instance in instances:
             # only increment index if the instances which are iterated here are the
-            # same as the ones from the payload (meaning get_updated_instances was
+            # same as the ones from the action data list (meaning get_updated_instances was
             # not overridden)
             if hasattr(self.get_updated_instances, "_native"):
                 self.index += 1
@@ -138,29 +138,29 @@ class Action(BaseAction, metaclass=SchemaProvider):
         final_write_request = self.process_write_requests()
         return (final_write_request, results)
 
-    def check_permissions(self, payload: ActionData) -> None:
+    def check_permissions(self, action_data: ActionData) -> None:
         """
         Checks permission by requesting permission service.
         """
-        if not self.permission.is_allowed(self.name, self.user_id, list(payload)):
+        if not self.permission.is_allowed(self.name, self.user_id, list(action_data)):
             raise PermissionDenied(
                 f"You are not allowed to perform action {self.name}."
             )
 
     @native
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
         """
         By default this does nothing. Override in subclasses to adjust the updates
-        to all instances of the payload. You can only update instances of the model
+        to all instances of the action data. You can only update instances of the model
         of this action.
         If needed, this can also be used to do additional validation on the whole
-        payload.
+        action data.
         """
-        yield from payload
+        yield from action_data
 
-    def validate_payload_element(self, instance: Dict[str, Any]) -> None:
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
         """
-        Validates one instance of the action payload according to schema class attribute.
+        Validates one instance of the action data according to schema class attribute.
         """
         try:
             type(self).schema_validator(instance)
@@ -169,14 +169,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Updates one instance of the payload. This can be overridden by custom
+        Updates one instance of the action data. This can be overridden by custom
         action classes.
         """
         return self.update_instance(instance)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Updates one instance of the payload. This can be overridden by custom
+        Updates one instance of the action data. This can be overridden by custom
         action classes. Meant to be called inside base_update_instance.
         """
         return instance
@@ -438,13 +438,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def execute_other_action(
         self,
         ActionClass: Type["Action"],
-        payload: ActionData,
+        action_data: ActionData,
         additional_relation_models: ModelMap = {},
     ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
-        Executes the given action class as a dependent action with the given payload
-        and the given addtional relation models. Merges its own additional relation
-        models into it.
+        Executes the given action class as a dependent action with the given action
+        data and the given addtional relation models. Merges its own additional
+        relation models into it.
         The action is fully executed and created WriteRequests are appended to
         this action.
         """
@@ -460,7 +460,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             },
         )
         write_request, action_results = action.perform(
-            payload, self.user_id, internal=True
+            action_data, self.user_id, internal=True
         )
         if write_request:
             self.write_requests.append(write_request)

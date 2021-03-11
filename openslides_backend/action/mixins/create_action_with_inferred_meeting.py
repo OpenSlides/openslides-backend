@@ -8,7 +8,7 @@ from ..generics.create import CreateAction
 
 class CreateActionWithInferredMeetingMixin(CreateAction):
     """
-    Mixin to autmatically set the meeting_id on create if it's not given in the payload.
+    Mixin to autmatically set the meeting_id on create if it's not given in the action data.
     The given relation_field_for_meeting must be a relation field.
     """
 

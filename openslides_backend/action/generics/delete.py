@@ -46,7 +46,7 @@ class DeleteAction(Action):
         # Collect relation fields and also update instance and set
         # all relation fields to None.
         relation_fields: List[Tuple[str, BaseRelationField]] = []
-        # Gather all delete actions with payload and also all models to be deleted
+        # Gather all delete actions with action data and also all models to be deleted
         delete_actions: List[Tuple[Type[Action], ActionData]] = []
         additional_relation_models: ModelMap = {this_fqid: DeletedModel()}
         for field in self.model.get_relation_fields():
@@ -98,9 +98,9 @@ class DeleteAction(Action):
                                 f"Can't cascade the delete action to {str(fqid.collection)} "
                                 "since no delete action was found."
                             )
-                        # Assume that the delete action uses the standard payload
-                        payload = [{"id": fqid.id}]
-                        delete_actions.append((delete_action_class, payload))
+                        # Assume that the delete action uses the standard action data
+                        action_data = [{"id": fqid.id}]
+                        delete_actions.append((delete_action_class, action_data))
                         additional_relation_models[fqid] = DeletedModel()
             else:
                 # field.on_delete == OnDelete.SET_NULL
@@ -124,10 +124,10 @@ class DeleteAction(Action):
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids
         all_protected_fqids: List[FullQualifiedId] = []
-        for delete_action_class, action_payload in delete_actions:
+        for delete_action_class, delete_action_data in delete_actions:
             try:
                 self.execute_other_action(
-                    delete_action_class, action_payload, additional_relation_models
+                    delete_action_class, delete_action_data, additional_relation_models
                 )
             except ProtectedModelsException as e:
                 all_protected_fqids.extend(e.fqids)

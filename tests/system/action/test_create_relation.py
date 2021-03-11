@@ -79,7 +79,7 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
 
     dependencies = [FakeModelCRCCreateAction]
 
-    def get_dependent_action_payload(
+    def get_dependent_action_data(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
         return [

@@ -70,10 +70,10 @@ class CreateActionWithAgendaItemMixin(Action):
             return result_default
         return agenda_create
 
-    def get_dependent_action_payload_agenda_item(
+    def get_dependent_action_data_agenda_item(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
-        agenda_item_payload_element = {
+        agenda_item_action_data = {
             "content_object_id": f"{str(self.model.collection)}{KEYSEPARATOR}{instance['id']}",
         }
         for extra_field in agenda_creation_properties.keys():
@@ -84,5 +84,5 @@ class CreateActionWithAgendaItemMixin(Action):
             extra_field_without_prefix = extra_field[prefix_len:]
             value = instance.pop(extra_field, None)
             if value is not None:
-                agenda_item_payload_element[extra_field_without_prefix] = value
-        return [agenda_item_payload_element]
+                agenda_item_action_data[extra_field_without_prefix] = value
+        return [agenda_item_action_data]

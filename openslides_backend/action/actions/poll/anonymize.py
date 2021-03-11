@@ -20,8 +20,8 @@ class PollAnonymize(UpdateAction):
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
 
             self.check_allowed(instance["id"])
             option_ids = self._get_option_ids(instance["id"])
@@ -62,7 +62,7 @@ class PollAnonymize(UpdateAction):
         return options
 
     def _remove_user_id_from(self, vote_ids: List[int]) -> None:
-        payload = []
+        action_data = []
         for id_ in vote_ids:
-            payload.append({"id": id_})
-        self.execute_other_action(VoteAnonymize, payload)
+            action_data.append({"id": id_})
+        self.execute_other_action(VoteAnonymize, action_data)

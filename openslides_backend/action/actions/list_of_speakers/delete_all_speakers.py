@@ -19,8 +19,8 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
         description="Action to remove all speakers from the given list of speakers.",
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
-        for instance in payload:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
             list_of_speakers = self.fetch_model(
                 FullQualifiedId(Collection("list_of_speakers"), instance["id"]),
                 mapped_fields=["speaker_ids"],

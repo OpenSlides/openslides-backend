@@ -135,11 +135,11 @@ class PollVote(UpdateAction):
     def handle_option_value(
         self, value: Dict[str, Any], user_id: int, instance: Dict[str, Any]
     ) -> None:
-        payload: List[Dict[str, Any]] = []
-        self._handle_value_keys(value, user_id, payload)
-        if payload:
-            self.execute_other_action(VoteCreate, payload)
-            for data in payload:
+        action_data: List[Dict[str, Any]] = []
+        self._handle_value_keys(value, user_id, action_data)
+        if action_data:
+            self.execute_other_action(VoteCreate, action_data)
+            for data in action_data:
                 self.update_option(data["option_id"], data["value"], data["weight"])
                 self.update_votes_valid(instance, data["weight"])
 
@@ -147,7 +147,7 @@ class PollVote(UpdateAction):
         self,
         value: Dict[str, Any],
         user_id: int,
-        payload: List[Dict[str, Any]],
+        action_data: List[Dict[str, Any]],
     ) -> None:
         vote_weight = self.get_vote_weigth(user_id)
 
@@ -162,8 +162,8 @@ class PollVote(UpdateAction):
                 used_value = self.poll["pollmethod"]
 
             if self.check_if_value_allowed_in_pollmethod(used_value):
-                payload.append(
-                    self._get_vote_create_payload(
+                action_data.append(
+                    self._get_vote_create_action_data(
                         used_value,
                         user_id,
                         int(key),
@@ -202,8 +202,8 @@ class PollVote(UpdateAction):
             ("A", self.poll.get("global_abstain")),
         ):
             if value == value_check and condition:
-                payload = [
-                    self._get_vote_create_payload(
+                action_data = [
+                    self._get_vote_create_action_data(
                         value,
                         user_id,
                         self.poll["global_option_id"],
@@ -211,11 +211,13 @@ class PollVote(UpdateAction):
                         "1.000000",
                     )
                 ]
-                self.execute_other_action(VoteCreate, payload)
+                self.execute_other_action(VoteCreate, action_data)
                 self.update_option(
-                    payload[0]["option_id"], payload[0]["value"], payload[0]["weight"]
+                    action_data[0]["option_id"],
+                    action_data[0]["value"],
+                    action_data[0]["weight"],
                 )
-                self.update_votes_valid(instance, payload[0]["weight"])
+                self.update_votes_valid(instance, action_data[0]["weight"])
 
     def update_option(
         self, option_id: int, extra_value: str, extra_weight: str
@@ -248,10 +250,10 @@ class PollVote(UpdateAction):
         elif extra_value == "A":
             abstain += Decimal(extra_weight)
 
-        payload = [
+        action_data = [
             {"id": option_id, "yes": str(yes), "no": str(no), "abstain": str(abstain)}
         ]
-        self.execute_other_action(OptionSetAutoFields, payload)
+        self.execute_other_action(OptionSetAutoFields, action_data)
 
     def update_votes_valid(self, instance: Dict[str, Any], extra_weight: str) -> None:
         votesvalid = Decimal(self.poll.get("votesvalid", "0.000000")) + Decimal(
@@ -259,7 +261,7 @@ class PollVote(UpdateAction):
         )
         instance["votesvalid"] = str(votesvalid)
 
-    def _get_vote_create_payload(
+    def _get_vote_create_action_data(
         self,
         value: str,
         user_id: Optional[int],

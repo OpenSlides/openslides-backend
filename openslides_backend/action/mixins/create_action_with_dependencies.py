@@ -31,14 +31,16 @@ class CreateActionWithDependencies(CreateAction):
             )
             if not check_method(instance, ActionClass):
                 continue
-            special_payload_method_name = "get_dependent_action_payload_" + str(
+            special_action_data_method_name = "get_dependent_action_data_" + str(
                 ActionClass.model.collection
             )
-            payload_method = getattr(
-                self, special_payload_method_name, self.get_dependent_action_payload
+            action_data_method = getattr(
+                self, special_action_data_method_name, self.get_dependent_action_data
             )
-            payload = payload_method(instance, ActionClass)
-            self.execute_other_action(ActionClass, payload, additional_relation_models)
+            action_data = action_data_method(instance, ActionClass)
+            self.execute_other_action(
+                ActionClass, action_data, additional_relation_models
+            )
         return instance
 
     def check_dependant_action_execution(
@@ -50,13 +52,13 @@ class CreateActionWithDependencies(CreateAction):
         """
         return True
 
-    def get_dependent_action_payload(
+    def get_dependent_action_data(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> List[Dict[str, Any]]:
         """
-        Override in subclass to provide the correct payload for the dependencies.
+        Override in subclass to provide the correct action data for the dependencies.
         """
         raise NotImplementedError(
-            "You have to implement get_dependent_action_payload for a "
+            "You have to implement get_dependent_action_data for a "
             "CreateActionWithDependencies."
         )

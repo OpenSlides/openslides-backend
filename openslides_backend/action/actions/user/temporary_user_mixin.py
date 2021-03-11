@@ -33,8 +33,8 @@ class TemporaryUserMixin(Action):
             gm_result = self.datastore.get_many([get_many_request])
             users = gm_result.get(self.model.collection, {})
 
-            set_payload = set(vote_delegations_from_ids)
-            diff = set_payload.difference(users.keys())
+            set_action_data = set(vote_delegations_from_ids)
+            diff = set_action_data.difference(users.keys())
             if len(diff):
                 raise ActionException(f"The following users were not found: {diff}")
 

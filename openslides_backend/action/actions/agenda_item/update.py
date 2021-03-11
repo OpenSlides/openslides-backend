@@ -78,15 +78,15 @@ class AgendaItemUpdate(UpdateAction):
                 )
         return instances
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
         new_instances = []
-        agenda_item_ids = [instance["id"] for instance in payload]
+        agenda_item_ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
             self.model.collection, agenda_item_ids, ["parent_id"]
         )
         gm_result = self.datastore.get_many([get_many_request])
         agenda_items = gm_result.get(self.model.collection, {})
-        for instance in payload:
+        for instance in action_data:
             if instance.get("type") is None:
                 new_instances.append(instance)
                 continue

@@ -25,10 +25,10 @@ class MotionSetSupportSelfAction(UpdateAction):
         },
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
         motion_get_many_request = GetManyRequest(
             self.model.collection,
-            [instance["motion_id"] for instance in payload],
+            [instance["motion_id"] for instance in action_data],
             ["meeting_id", "state_id", "supporter_ids"],
         )
         gm_motion_result = self.datastore.get_many([motion_get_many_request])
@@ -48,7 +48,7 @@ class MotionSetSupportSelfAction(UpdateAction):
             Collection("motion_state"), state_ids, ["allow_support"]
         )
         gm_result = self.datastore.get_many([gm_request_meeting, gm_request_state])
-        for instance in payload:
+        for instance in action_data:
             motion = motions.get(instance["motion_id"], {})
             meeting_id = motion.get("meeting_id")
             if meeting_id is None:

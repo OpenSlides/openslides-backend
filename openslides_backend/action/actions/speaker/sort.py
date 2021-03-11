@@ -22,11 +22,11 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         "list_of_speakers_id",
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
         filter: Optional[Filter] = None
-        payload = super().get_updated_instances(payload)
-        # Payload is an iterable with exactly one item
-        instance = next(iter(payload))
+        action_data = super().get_updated_instances(action_data)
+        # Action data is an iterable with exactly one item
+        instance = next(iter(action_data))
         if not filter:
             filter = And(
                 FilterOperator(

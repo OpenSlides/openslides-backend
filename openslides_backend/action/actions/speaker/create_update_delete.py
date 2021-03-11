@@ -24,18 +24,18 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         optional_properties=["marked", "point_of_order"],
     )
 
-    def get_updated_instances(self, payload: ActionData) -> ActionData:
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
         """
         Reason for this Exception: It's hard and specific doing the weight calculation
         of creating speakers with point of orders, because of the used max- and min-datastore methods.
         These should handle the still not generated speakers with specific filters.
         But we don't need this functionality
         """
-        if len(payload) > 1:  # type: ignore
+        if len(action_data) > 1:  # type: ignore
             raise ActionException(
                 "It is not permitted to create more than one speaker per request!"
             )
-        yield from super().get_updated_instances(payload)
+        yield from super().get_updated_instances(action_data)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -61,13 +61,13 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         additional_relation_models = {
             FullQualifiedId(self.model.collection, instance["id"]): instance
         }
-        payload = [
+        action_data = [
             {
                 "list_of_speakers_id": list_of_speakers_id,
                 "speaker_ids": speaker_ids,
             }
         ]
-        self.execute_other_action(SpeakerSort, payload, additional_relation_models)
+        self.execute_other_action(SpeakerSort, action_data, additional_relation_models)
         return instance
 
     def _insert_before_weight(
