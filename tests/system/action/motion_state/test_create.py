@@ -59,6 +59,52 @@ class MotionStateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_as_new_first_state_of_second_workflow(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "motion_workflow/42": {
+                    "name": "test_name_42",
+                    "meeting_id": 1,
+                    "first_state_id": 1,
+                },
+                "motion_state/1": {
+                    "workflow_id": 42,
+                    "first_state_of_workflow_id": 42,
+                    "name": "first state one",
+                },
+                "motion_workflow/43": {
+                    "name": "test_name_43",
+                    "meeting_id": 1,
+                    "first_state_id": 2,
+                },
+                "motion_state/2": {
+                    "workflow_id": 43,
+                    "first_state_of_workflow_id": 43,
+                    "name": "first state two",
+                },
+            }
+        )
+        response = self.request_json(
+            [
+                {
+                    "action": "motion_state.create",
+                    "data": [
+                        {
+                            "name": "first state three",
+                            "workflow_id": 42,
+                            "first_state_of_workflow_id": 43,
+                        }
+                    ],
+                }
+            ]
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You can not set motion_workflow/43/first_state_id to a new value because this field is not empty.",
+            response.json["message"],
+        )
+
     def test_create_enum_fields(self) -> None:
         self.set_models(
             {
