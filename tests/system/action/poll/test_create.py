@@ -5,16 +5,18 @@ from tests.system.action.base import BaseActionTestCase
 class CreatePoll(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_model(
-            "assignment/1",
+        self.set_models(
             {
-                "title": "test_assignment_ohneivoh9caiB8Yiungo",
-                "open_posts": 1,
-                "meeting_id": 113,
+                "assignment/1": {
+                    "title": "test_assignment_ohneivoh9caiB8Yiungo",
+                    "open_posts": 1,
+                    "meeting_id": 113,
+                },
+                "meeting/113": {},
+                "organisation/1": {"enable_electronic_voting": True},
+                "user/3": {"username": "User3"},
             },
         )
-        self.create_model("meeting/113", {})
-        self.create_model("organisation/1", {"enable_electronic_voting": True})
 
     def test_create_correct(self) -> None:
         response = self.request(
@@ -390,3 +392,29 @@ class CreatePoll(BaseActionTestCase):
             in response.data.decode()
         )
         self.assert_model_not_exists("poll/1")
+
+    def test_create_poll_for_option_with_wrong_content_object(self) -> None:
+        response = self.request_json(
+            [
+                {
+                    "action": "poll.create",
+                    "data": [
+                        {
+                            "meeting_id": 113,
+                            "title": "Wahlgang (3)",
+                            "majority_method": "simple",
+                            "onehundred_percent_base": "valid",
+                            "pollmethod": "YN",
+                            "type": "analog",
+                            "options": [{"content_object_id": "assignment/1"}],
+                            "content_object_id": "assignment/1",
+                        }
+                    ],
+                }
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The collection 'assignment' is not available for field 'content_object_id' in collection 'option'.",
+            response.json["message"],
+        )
