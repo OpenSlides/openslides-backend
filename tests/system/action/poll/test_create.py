@@ -31,9 +31,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
-                "amount_global_yes": "1.000000",
-                "amount_global_no": "1.250000",
-                "amount_global_abstain": "2.500000",
                 "onehundred_percent_base": "Y",
                 "majority_method": "simple",
             },
@@ -58,9 +55,6 @@ class CreatePoll(BaseActionTestCase):
         assert global_option.get("text") == "global option"
         assert global_option.get("used_as_global_option_in_poll_id") == 1
         assert global_option.get("meeting_id") == 113
-        assert global_option.get("yes") == "1.000000"
-        assert global_option.get("no") == "1.250000"
-        assert global_option.get("abstain") == "2.500000"
 
     def test_create_three_options(self) -> None:
         response = self.client.post(
