@@ -38,7 +38,6 @@ class PollCreateAction(CreateAction):
                 "type": "array",
                 "items": options_schema,
                 "minItems": 1,
-                "uniqueItems": True,
             }
         },
         optional_properties=[
@@ -79,7 +78,19 @@ class PollCreateAction(CreateAction):
 
         # handle non-global options
         weight = 1
+        unique_set = set()
         for option in instance.get("options", []):
+            c_letter = "T" if "text" in option else "C"
+            content = (
+                option.get("content_object_id")
+                if c_letter == "C"
+                else option.get("text")
+            )
+            o_obj = f"{c_letter},{content}"
+            if o_obj in unique_set:
+                raise ActionException(f"Duplicated option in poll.options: {content}")
+            else:
+                unique_set.add(o_obj)
             data: Dict[str, Any] = {
                 "poll_id": instance["id"],
                 "meeting_id": instance["meeting_id"],
@@ -89,15 +100,15 @@ class PollCreateAction(CreateAction):
             for key in ("text", "content_object_id"):
                 if key in option:
                     data[key] = option[key]
-                if instance["type"] == "analog":
-                    if instance["pollmethod"] == "N":
-                        data["no"] = self.parse_vote_value(option, "N")
-                    else:
-                        data["yes"] = self.parse_vote_value(option, "Y")
-                        if instance["pollmethod"] in ("YN", "YNA"):
+                    if instance["type"] == "analog":
+                        if instance["pollmethod"] == "N":
                             data["no"] = self.parse_vote_value(option, "N")
-                        if instance["pollmethod"] == "YNA":
-                            data["abstain"] = self.parse_vote_value(option, "A")
+                        else:
+                            data["yes"] = self.parse_vote_value(option, "Y")
+                            if instance["pollmethod"] in ("YN", "YNA"):
+                                data["no"] = self.parse_vote_value(option, "N")
+                            if instance["pollmethod"] == "YNA":
+                                data["abstain"] = self.parse_vote_value(option, "A")
 
             action_data.append(data)
 
@@ -156,7 +167,7 @@ class PollCreateAction(CreateAction):
         return instance
 
     def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
-        return data.get(field, "0.000000")
+        return data.get(field, "-2.000000")
 
     def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
         pollmethod = instance["pollmethod"]
