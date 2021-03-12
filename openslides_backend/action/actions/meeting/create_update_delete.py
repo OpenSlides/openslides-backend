@@ -30,7 +30,7 @@ meeting_settings_keys = [
     "conference_los_restriction",
     "conference_stream_url",
     "conference_stream_poster_url",
-    "projector_default_countdown_time",
+    "projector_countdown_default_time",
     "projector_countdown_warning_time",
     "export_csv_encoding",
     "export_csv_separator",

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "6078d8d2e4d6b8e2ffe834439c639bce"
+MODELS_YML_CHECKSUM = "a193a614fa0f1498fa9e6c9d001e56a6"
 
 
 class Organisation(Model):
@@ -46,7 +46,7 @@ class User(Model):
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
-    default_vote_weight = fields.DecimalField()
+    default_vote_weight = fields.DecimalField(default="1")
     last_email_send = fields.TimestampField()
     is_demo_user = fields.BooleanField(read_only=True)
     organisation_management_level = fields.CharField(
@@ -231,7 +231,7 @@ class Meeting(Model):
     conference_open_microphone = fields.BooleanField(default=False)
     conference_open_video = fields.BooleanField(default=False)
     conference_auto_connect_next_speakers = fields.IntegerField(default=0)
-    projector_default_countdown_time = fields.IntegerField(default=60)
+    projector_countdown_default_time = fields.IntegerField(default=60)
     projector_countdown_warning_time = fields.IntegerField(
         default=0, constraints={"minimum": 0}
     )
@@ -273,6 +273,7 @@ class Meeting(Model):
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=False)
+    list_of_speakers_initially_closed = fields.BooleanField(default=False)
     motions_default_workflow_id = fields.RelationField(
         to={Collection("motion_workflow"): "default_workflow_meeting_id"}, required=True
     )
@@ -409,6 +410,7 @@ class Meeting(Model):
     poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_poll_default_id"}
     )
+    poll_couple_countdown = fields.BooleanField(default=True)
     projector_ids = fields.RelationListField(
         to={Collection("projector"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
@@ -530,6 +532,16 @@ class Meeting(Model):
     reference_projector_id = fields.RelationField(
         to={Collection("projector"): "used_as_reference_projector_meeting_id"}
     )
+    list_of_speakers_countdown_id = fields.RelationField(
+        to={
+            Collection(
+                "projector_countdown"
+            ): "used_as_list_of_speaker_countdown_meeting_id"
+        }
+    )
+    poll_countdown_id = fields.RelationField(
+        to={Collection("projector_countdown"): "used_as_poll_countdown_meeting_id"}
+    )
     default_projector__id = fields.TemplateRelationField(
         index=18,
         to={Collection("projector"): "used_as_default_$_in_meeting_id"},
@@ -580,6 +592,7 @@ class Group(Model):
                 "motion.can_see",
                 "motion.can_see_internal",
                 "motion.can_support",
+                "poll.can_manage",
                 "projector.can_manage",
                 "projector.can_see",
                 "tag.can_manage",
@@ -674,7 +687,7 @@ class AgendaItem(Model):
     id = fields.IntegerField()
     item_number = fields.CharField()
     comment = fields.CharField()
-    closed = fields.BooleanField()
+    closed = fields.BooleanField(default=False)
     type = fields.CharField(
         default="common", constraints={"enum": ["common", "internal", "hidden"]}
     )
@@ -727,7 +740,7 @@ class ListOfSpeakers(Model):
     verbose_name = "list of speakers"
 
     id = fields.IntegerField()
-    closed = fields.BooleanField()
+    closed = fields.BooleanField(default=False)
     content_object_id = fields.GenericRelationField(
         to={
             Collection("motion"): "list_of_speakers_id",
@@ -1064,8 +1077,8 @@ class MotionChangeRecommendation(Model):
     verbose_name = "motion change recommendation"
 
     id = fields.IntegerField()
-    rejected = fields.BooleanField()
-    internal = fields.BooleanField()
+    rejected = fields.BooleanField(default=False)
+    internal = fields.BooleanField(default=False)
     type = fields.CharField(
         default="replacement",
         constraints={"enum": ["replacement", "insertion", "deletion", "other"]},
@@ -1097,6 +1110,7 @@ class MotionState(Model):
         constraints={"enum": ["grey", "red", "green", "lightblue", "yellow"]},
     )
     restrictions = fields.CharArrayField(
+        default=[],
         in_array_constraints={
             "enum": [
                 "motion.can_see_internal",
@@ -1104,18 +1118,18 @@ class MotionState(Model):
                 "motion.can_manage",
                 "is_submitter",
             ]
-        }
+        },
     )
-    allow_support = fields.BooleanField()
-    allow_create_poll = fields.BooleanField()
-    allow_submitter_edit = fields.BooleanField()
-    set_number = fields.BooleanField()
-    show_state_extension_field = fields.BooleanField()
+    allow_support = fields.BooleanField(default=False)
+    allow_create_poll = fields.BooleanField(default=False)
+    allow_submitter_edit = fields.BooleanField(default=False)
+    set_number = fields.BooleanField(default=True)
+    show_state_extension_field = fields.BooleanField(default=False)
     merge_amendment_into_final = fields.CharField(
         default="undefined",
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
-    show_recommendation_extension_field = fields.BooleanField()
+    show_recommendation_extension_field = fields.BooleanField(default=False)
     next_state_ids = fields.RelationListField(
         to={Collection("motion_state"): "previous_state_ids"},
         equal_fields=["meeting_id", "workflow_id"],
@@ -1217,7 +1231,7 @@ class Poll(Model):
     global_abstain = fields.BooleanField(default=True)
     onehundred_percent_base = fields.CharField(
         required=True,
-        constraints={"enum": ["Y", "YN", "YNA", "valid", "cast", "disabled"]},
+        constraints={"enum": ["Y", "YN", "YNA", "N", "valid", "cast", "disabled"]},
     )
     majority_method = fields.CharField(
         required=True,
@@ -1555,13 +1569,19 @@ class ProjectorCountdown(Model):
     verbose_name = "projector countdown"
 
     id = fields.IntegerField()
-    title = fields.CharField()
-    description = fields.CharField()
-    default_time = fields.IntegerField()
-    countdown_time = fields.IntegerField()
-    running = fields.BooleanField()
+    title = fields.CharField(required=True)
+    description = fields.CharField(default="")
+    default_time = fields.IntegerField(default=60)
+    countdown_time = fields.FloatField(default=60)
+    running = fields.BooleanField(default=False)
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+    )
+    used_as_list_of_speaker_countdown_meeting_id = fields.RelationField(
+        to={Collection("meeting"): "list_of_speakers_countdown_id"}
+    )
+    used_as_poll_countdown_meeting_id = fields.RelationField(
+        to={Collection("meeting"): "poll_countdown_id"}
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "projector_countdown_ids"}
