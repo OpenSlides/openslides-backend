@@ -21,10 +21,6 @@ class CreateAction(Action):
         new_id = self.datastore.reserve_id(collection=self.model.collection)
         instance["id"] = new_id
 
-        self.datastore.additional_relation_models[
-            FullQualifiedId(self.model.collection, instance["id"])
-        ] = instance
-
         instance = self.update_instance(instance)
 
         self.datastore.additional_relation_models[

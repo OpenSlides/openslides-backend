@@ -25,8 +25,8 @@ from ...shared.patterns import (
     transform_to_fqids,
 )
 from ...shared.typing import DeletedModel, ModelMap
-from .typing import FieldUpdateElement, RelationFieldUpdates
-
+from .typing import FieldUpdateElement, IdentifierList, RelationFieldUpdates
+from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 
 class SingleRelationHandler:
     """
@@ -281,9 +281,9 @@ class SingleRelationHandler:
             # We have to compare with the current datastore state.
 
             # Retrieve current object from datastore
-            current_obj = self.fetch_model(
+            current_obj = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, self.id),
-                [self.field_name],
+                [self.field_name], db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST, exception=False
             )
 
             # Get current ids from relation field

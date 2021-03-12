@@ -15,9 +15,11 @@ class UpdateAction(Action):
         # Primary instance manipulation for defaults and extra fields.
         instance = self.validate_fields(instance)
         instance = self.update_instance(instance)
-        self.datastore.additional_relation_models[
-            FullQualifiedId(self.model.collection, instance["id"])
-        ] = instance
+        fqid = FullQualifiedId(self.model.collection, instance["id"])
+        if fqid in self.datastore.additional_relation_models:
+            self.datastore.additional_relation_models[fqid].update(instance)
+        else:
+            self.datastore.additional_relation_models[fqid] = instance
 
         self.validate_relation_fields(instance)
 

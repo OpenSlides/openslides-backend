@@ -163,13 +163,16 @@ class RelationManager:
         # process template fields and set the contained structured fields
         for field_name, field in template_fields:
             field_value = instance[field_name]
-            assert isinstance(field_value, dict)
-
-            additional_instance_fields[field_name] = get_template_field_db_value(
-                field_name
-            )
-            for replacement, value in field_value.items():
-                set_structured_field(field, str(replacement), value)
+            if isinstance(field_value, dict):
+                additional_instance_fields[field_name] = get_template_field_db_value(
+                    field_name
+                )
+                for replacement, value in field_value.items():
+                    set_structured_field(field, str(replacement), value)
+            elif isinstance(field_value, list):
+                pass  # Todo: check this one: for default_projector_$_id there is the list of possible replacements
+            else:
+                raise ActionException(f"Field '{field_name}'' has no dict as value: '{field_value}'")
 
         # process directly given structured fields, overwriting any previous ones
         for field_name, field in structured_fields:

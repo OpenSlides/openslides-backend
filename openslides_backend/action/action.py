@@ -26,7 +26,7 @@ from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .util.typing import ActionData, ActionResultElement, ActionResults
-
+from ..services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 
 class SchemaProvider(type):
     """
