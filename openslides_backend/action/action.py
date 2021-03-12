@@ -164,9 +164,16 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         """
-        To be overridden in subclasses. Must return the meeting_id that belongs to this instance.
+        Returns the meeting_id, either directly from the instance or from the datastore.
+        Must be overwritten if no meeting_id is present in either!
         """
-        raise NotImplementedError()
+        if instance.get("meeting_id"):
+            return instance["meeting_id"]
+        else:
+            db_instance = self.fetch_model(
+                FullQualifiedId(self.model.collection, instance["id"]), ["meeting_id"]
+            )
+            return db_instance["meeting_id"]
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

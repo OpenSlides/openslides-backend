@@ -35,9 +35,6 @@ class CreateAction(Action):
 
         return instance
 
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return instance["meeting_id"]
-
     def set_defaults(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         for field in self.model.get_fields():
             if (
