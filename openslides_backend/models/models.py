@@ -781,9 +781,7 @@ class Speaker(Model):
         equal_fields="meeting_id",
     )
     user_id = fields.RelationField(
-        to={Collection("user"): "speaker_$_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={Collection("user"): "speaker_$_ids"}, required=True
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "speaker_ids"}, required=True
