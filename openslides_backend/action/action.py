@@ -131,8 +131,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             relation_updates = self.handle_relation_updates(instance)
             self.write_requests.extend(relation_updates)
 
-            instance = self.final_update_instance(instance)
-
             write_request = self.create_write_requests(instance)
             self.write_requests.extend(write_request)
 
@@ -212,12 +210,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         return instance
 
-    def final_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Updates one instance of the payload or executes other actions.
-        """
-        return instance
-
     def handle_relation_updates(
         self,
         instance: Dict[str, Any],
@@ -273,6 +265,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if fields:
             event["fields"] = fields
+            if fqid in self.datastore.additional_relation_models:
+                self.datastore.additional_relation_models[fqid].update(fields)
+            else:
+                self.datastore.additional_relation_models[fqid] = fields
         if list_fields:
             event["list_fields"] = list_fields
         return WriteRequest(

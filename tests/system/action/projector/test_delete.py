@@ -51,6 +51,7 @@ class ProjectorDelete(BaseActionTestCase):
         )
         response = self.request("projector.delete", {"id": 112})
         self.assert_status_code(response, 400)
+        self.assertIn('Datastore service sends HTTP 400. {\'msg\': "The key \'meeting/None\' is no fqid, fqfield or collectionkey", \'type\': 1, \'type_verbose\': \'INVALID_FORMAT\'}', response.json["message"])
         model = self.get_model("projector/112")
         assert model.get("name") == "name_srtgb123"
 

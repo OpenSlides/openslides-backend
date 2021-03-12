@@ -14,6 +14,7 @@ from ...shared.typing import DeletedModel, ModelMap
 from ..action import Action
 from ..util.actions_map import actions_map
 from ..util.typing import ActionData
+from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 
 
 class DeleteAction(Action):
@@ -108,10 +109,11 @@ class DeleteAction(Action):
                 # field.on_delete == OnDelete.SET_NULL
                 if isinstance(field, BaseTemplateRelationField):
                     template_field_name = field.get_template_field_name()
-                    db_instance = self.datastore.get(
+                    db_instance = self.datastore.fetch_model(
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
                         mapped_fields=[template_field_name],
                         lock_result=True,
+                        db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST
                     )
                     for replacement in db_instance.get(template_field_name, []):
                         structured_field_name = field.get_structured_field_name(
