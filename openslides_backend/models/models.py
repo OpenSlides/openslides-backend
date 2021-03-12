@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "c2930fed7fb920b6d56898763b15cfff"
+MODELS_YML_CHECKSUM = "fd3f000786573d23c2131980cd24fdfb"
 
 
 class Organisation(Model):
@@ -1574,7 +1574,7 @@ class ProjectorCountdown(Model):
     id = fields.IntegerField()
     title = fields.CharField(required=True)
     description = fields.CharField(default="")
-    default_time = fields.IntegerField(default=60)
+    default_time = fields.IntegerField()
     countdown_time = fields.FloatField(default=60)
     running = fields.BooleanField(default=False)
     projection_ids = fields.RelationListField(
