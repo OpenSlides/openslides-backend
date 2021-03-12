@@ -5,7 +5,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .shared_meeting import meeting_projector_default_object_list
+from .shared_meeting import meeting_projector_default_replacements
 
 
 @register_action("meeting.replace_projector_id", internal=True)
@@ -24,7 +24,7 @@ class MeetingReplaceProjectorId(UpdateAction):
             projector_id = instance.pop("projector_id")
             fields = [
                 "default_projector_${}_id".format(replacement)
-                for replacement in meeting_projector_default_object_list
+                for replacement in meeting_projector_default_replacements
             ]
             meeting = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),

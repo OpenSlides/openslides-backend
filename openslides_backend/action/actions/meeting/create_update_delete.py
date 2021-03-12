@@ -13,7 +13,7 @@ from ..group.create import GroupCreate
 from ..motion_workflow.create import MotionWorkflowCreateSimpleWorkflowAction
 from ..projector.create import ProjectorCreateAction
 from ..user.update import UserUpdate
-from .shared_meeting import meeting_projector_default_object_list
+from .shared_meeting import meeting_projector_default_replacements
 
 meeting_settings_keys = [
     "welcome_title",
@@ -249,7 +249,7 @@ class MeetingCreate(CreateActionWithDependencies):
                     "used_as_reference_projector_meeting_id": instance["id"],
                     "used_as_default_$_in_meeting_id": {
                         name: instance["id"]
-                        for name in meeting_projector_default_object_list
+                        for name in meeting_projector_default_replacements
                     },
                 }
             ]

@@ -1,7 +1,7 @@
 from typing import Any, Dict, Iterable, cast
 
 from openslides_backend.action.actions.meeting.shared_meeting import (
-    meeting_projector_default_object_list,
+    meeting_projector_default_replacements,
 )
 from tests.system.action.base import BaseActionTestCase
 
@@ -28,7 +28,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         meeting = self.basic_test(dict())
         self.assertCountEqual(
             cast(Iterable[Any], meeting.get("default_projector_$_id")),
-            meeting_projector_default_object_list,
+            meeting_projector_default_replacements,
         )
         self.assert_model_exists(
             "meeting/1",
@@ -84,7 +84,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         projector1 = self.get_model("projector/1")
         self.assertCountEqual(
             cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
-            meeting_projector_default_object_list,
+            meeting_projector_default_replacements,
         )
         self.assert_model_exists(
             "projector/1",
@@ -95,7 +95,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             }.update(
                 {
                     f"used_as_default_${name}_in_meeting_id": 1
-                    for name in meeting_projector_default_object_list
+                    for name in meeting_projector_default_replacements
                 }
             ),
         )
