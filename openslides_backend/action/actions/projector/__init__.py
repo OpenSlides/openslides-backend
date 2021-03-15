@@ -5,6 +5,7 @@ from . import (  # noqa
     delete,
     next,
     previous,
+    project,
     project_preview,
     sort_preview,
     update,
