@@ -8,7 +8,11 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "meeting/1": {},
                 "meeting/2": {},
-                "projector/23": {"meeting_id": 1, "current_projection_ids": [105, 106]},
+                "projector/23": {
+                    "meeting_id": 1,
+                    "current_projection_ids": [105, 106],
+                    "scroll": 80,
+                },
                 "projector/65": {"meeting_id": 1},
                 "projector/75": {"meeting_id": 1, "current_projection_ids": [110, 111]},
                 "projection/105": {
@@ -72,6 +76,7 @@ class ProjectorProject(BaseActionTestCase):
         projector_23 = self.get_model("projector/23")
         assert projector_23.get("current_projection_ids") == [106, 112]
         assert projector_23.get("history_projection_ids") == [105]
+        assert projector_23.get("scroll") == 0
         projector_75 = self.get_model("projector/75")
         assert projector_75.get("current_projection_ids") == [111]
         assert projector_75.get("history_projection_ids") == [110]
@@ -92,6 +97,20 @@ class ProjectorProject(BaseActionTestCase):
         assert projector_23.get("current_projection_ids") == [105, 106, 112]
         projector_65 = self.get_model("projector/65")
         assert projector_65.get("current_projection_ids") == [113]
+
+    def test_project_3(self) -> None:
+        response = self.request(
+            "projector.project",
+            {"ids": [], "content_object_id": "assignment/453", "stable": False},
+        )
+        self.assert_status_code(response, 200)
+        projector_23 = self.get_model("projector/75")
+        assert projector_23.get("current_projection_ids") == [111]
+        assert projector_23.get("history_projection_ids") == [110]
+        projection_110 = self.get_model("projection/110")
+        assert projection_110.get("current_projector_id") is None
+        assert projection_110.get("history_projector_id") == 75
+        assert projection_110.get("weight") == 2
 
     def test_project_wrong_meeting(self) -> None:
         response = self.request(

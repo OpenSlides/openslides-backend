@@ -51,7 +51,9 @@ class ProjectorProject(UpdateAction):
                 create_data.append(data_dict)
             if create_data:
                 self.execute_other_action(ProjectionCreate, create_data)
-        return []
+            if instance.get("stable", False) is False:
+                for projector_id in instance["ids"]:
+                    yield {"id": projector_id, "scroll": 0}
 
     def move_equal_projections_to_history(
         self, instance: Dict[str, Any], meeting_id: int
