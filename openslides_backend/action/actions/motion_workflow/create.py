@@ -48,7 +48,6 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
             "default_workflow_meeting_id",
             "default_amendment_workflow_meeting_id",
             "default_statute_amendment_workflow_meeting_id",
-            "first_state_id",
         ],
     )
 
