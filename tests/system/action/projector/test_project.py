@@ -8,14 +8,26 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "meeting/1": {},
                 "meeting/2": {},
-                "projector/23": {"meeting_id": 1},
+                "projector/23": {"meeting_id": 1, "current_projection_ids": [105, 106]},
                 "projector/65": {"meeting_id": 1},
                 "projector/75": {"meeting_id": 1, "current_projection_ids": [110, 111]},
+                "projection/105": {
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/452",
+                    "current_projector_id": 23,
+                    "stable": False,
+                },
+                "projection/106": {
+                    "meeting_id": 1,
+                    "content_object_id": "assignment/452",
+                    "current_projector_id": 23,
+                    "stable": True,
+                },
                 "projection/110": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/453",
                     "current_projector_id": 75,
-                    "stable": False
+                    "stable": False,
                 },
                 "projection/111": {
                     "meeting_id": 1,
@@ -23,6 +35,7 @@ class ProjectorProject(BaseActionTestCase):
                     "current_projector_id": 75,
                     "stable": True,
                 },
+                "assignment/452": {"meeting_id": 1},
                 "assignment/453": {"meeting_id": 1},
                 "assignment/567": {"meeting_id": 2},
             }
@@ -46,6 +59,19 @@ class ProjectorProject(BaseActionTestCase):
         assert projection.get("options") == ""
         assert projection.get("stable") is False
         assert projection.get("type") == "test"
+        projection = self.get_model("projection/105")
+        assert projection.get("current_projector_id") is None
+        assert projection.get("history_projector_id") == 23
+        assert projection.get("weight") == 2
+        projection = self.get_model("projection/106")
+        assert projection.get("current_projector_id") == 23
+        assert projection.get("history_projector_id") is None
+        projection = self.get_model("projection/110")
+        assert projection.get("current_projector_id") is None
+        assert projection.get("history_projector_id") == 75
+        projector_23 = self.get_model("projector/23")
+        assert projector_23.get("current_projection_ids") == [106, 112]
+        assert projector_23.get("history_projection_ids") == [105]
         projector_75 = self.get_model("projector/75")
         assert projector_75.get("current_projection_ids") == [111]
         assert projector_75.get("history_projection_ids") == [110]
@@ -62,6 +88,10 @@ class ProjectorProject(BaseActionTestCase):
         projection_2 = self.get_model("projection/113")
         assert projection_2.get("current_projector_id") == 65
         assert projection_2.get("content_object_id") == "assignment/453"
+        projector_23 = self.get_model("projector/23")
+        assert projector_23.get("current_projection_ids") == [105, 106, 112]
+        projector_65 = self.get_model("projector/65")
+        assert projector_65.get("current_projection_ids") == [113]
 
     def test_project_wrong_meeting(self) -> None:
         response = self.request(

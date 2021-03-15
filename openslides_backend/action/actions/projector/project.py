@@ -37,6 +37,7 @@ class ProjectorProject(UpdateAction):
 
             if instance.get("stable", False) is False:
                 self.move_equal_projections_to_history(instance, meeting_id)
+                self.move_unstable_projections_to_history(instance)
 
             create_data = []
             for projector_id in instance["ids"]:
@@ -65,17 +66,52 @@ class ProjectorProject(UpdateAction):
         result = self.datastore.filter(
             Collection("projection"), filter_, ["id", "current_projector_id"]
         )
-        action_data = []
+        counter = 1
         for projection_id in result:
             if result[projection_id]["current_projector_id"]:
-                action_data.append(
+                max_weight = self.get_max_projection_weight(
+                    result[projection_id]["current_projector_id"]
+                )
+                action_data = [
                     {
                         "id": int(projection_id),
                         "current_projector_id": None,
                         "history_projector_id": result[projection_id][
                             "current_projector_id"
                         ],
+                        "weight": max_weight + counter,
                     }
+                ]
+                self.execute_other_action(ProjectionUpdate, action_data)
+                counter += 1
+
+    def move_unstable_projections_to_history(self, instance: Dict[str, Any]) -> None:
+        for projector_id in instance["ids"]:
+            filter_ = And(
+                FilterOperator("current_projector_id", "=", projector_id),
+                FilterOperator("stable", "=", False),
+            )
+            projections = self.datastore.filter(
+                Collection("projection"), filter_, ["id"]
+            )
+            max_weight = self.get_max_projection_weight(projector_id)
+            for projection_id in projections:
+                self.execute_other_action(
+                    ProjectionUpdate,
+                    [
+                        {
+                            "id": int(projection_id),
+                            "current_projector_id": None,
+                            "history_projector_id": projector_id,
+                            "weight": max_weight + 1,
+                        }
+                    ],
                 )
-        if action_data:
-            self.execute_other_action(ProjectionUpdate, action_data)
+                max_weight += 1
+
+    def get_max_projection_weight(self, projector_id: int) -> int:
+        filter_ = FilterOperator("history_projector_id", "=", projector_id)
+        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
+        if maximum is None:
+            maximum = 1
+        return maximum

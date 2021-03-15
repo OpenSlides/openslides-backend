@@ -16,5 +16,6 @@ class ProjectionUpdate(UpdateAction):
             "current_projector_id",
             "history_projector_id",
             "preview_projector_id",
+            "weight",
         ]
     )

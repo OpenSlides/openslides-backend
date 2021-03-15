@@ -16,12 +16,14 @@ class ProjectionUpdate(BaseActionTestCase):
                 "id": 33,
                 "current_projector_id": None,
                 "history_projector_id": 23,
+                "weight": 11,
             },
         )
         self.assert_status_code(response, 200)
         projection = self.get_model("projection/33")
         assert projection.get("current_projector_id") is None
         assert projection.get("history_projector_id") == 23
+        assert projection.get("weight") == 11
         projector = self.get_model("projector/23")
         assert projector.get("current_projection_ids") == []
         assert projector.get("history_projection_ids") == [33]
