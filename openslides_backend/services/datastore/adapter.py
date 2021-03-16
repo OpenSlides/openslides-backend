@@ -435,10 +435,11 @@ class DatastoreAdapter(DatastoreService):
         lock_result: bool = False,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
         exception: bool = True,
+        missing_fields_from_db: bool = True,
     ) -> Dict[str, Any]:
         datastore_exception: Optional[DatastoreException] = None
 
-        def get_additional() -> Tuple[bool, Dict[str, Any]]:
+        def get_additional() -> Tuple[bool, Dict[str, Any], List[str]]:
             if fqid in self.additional_relation_models and (
                 get_deleted_models == DeletedModelsBehaviour.ALL_MODELS
                 or (
@@ -455,15 +456,17 @@ class DatastoreAdapter(DatastoreService):
                         complete = False
                 return (complete, instance)
             else:
-                return (False, {})
+                return (False, {}, list())
 
-        def get_db() -> Tuple[bool, Dict[str, Any], Optional[DatastoreException]]:
+        def get_db(
+            fields_to_get: List[str],
+        ) -> Tuple[bool, Dict[str, Any], Optional[DatastoreException]]:
             try:
                 return (
                     True,
                     self.get(
                         fqid,
-                        mapped_fields=mapped_fields,
+                        mapped_fields=fields_to_get,
                         position=position,
                         get_deleted_models=get_deleted_models,
                         lock_result=lock_result,
@@ -493,13 +496,13 @@ class DatastoreAdapter(DatastoreService):
                     okay = True
                     result = cache_result
         else:
-            okay, result, datastore_exception = get_db()
+            okay, result, datastore_exception = get_db(mapped_fields)
             if (
                 not okay
                 and db_additional_relevance
                 == InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL
             ):
-                okay, result = get_additional()
+                okay, result, _ = get_additional()
         if not okay and exception:
             if datastore_exception:
                 raise datastore_exception

@@ -125,6 +125,7 @@ class DatastoreService(Protocol):
         lock_result: bool = False,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
         exception: bool = True,
+        missing_fields_from_db: bool = True,
     ) -> Dict[str, Any]:
         ...
 
