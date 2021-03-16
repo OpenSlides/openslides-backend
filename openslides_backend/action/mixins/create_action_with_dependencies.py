@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Type
 
-from ...shared.patterns import FullQualifiedId
 from ..action import Action
 from ..generics.create import CreateAction
 
@@ -36,9 +35,7 @@ class CreateActionWithDependencies(CreateAction):
                 self, special_action_data_method_name, self.get_dependent_action_data
             )
             action_data = action_data_method(instance, ActionClass)
-            self.execute_other_action(
-                ActionClass, action_data
-            )
+            self.execute_other_action(ActionClass, action_data)
         return instance
 
     def check_dependant_action_execution(

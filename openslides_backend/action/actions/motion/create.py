@@ -160,9 +160,7 @@ class MotionCreate(
         action_data = []
         for user_id in submitter_ids:
             action_data.append({"motion_id": instance["id"], "user_id": user_id})
-        self.execute_other_action(
-            MotionSubmitterCreateAction, action_data
-        )
+        self.execute_other_action(MotionSubmitterCreateAction, action_data)
 
         instance["sequential_number"] = self.get_sequential_number(
             instance["meeting_id"]

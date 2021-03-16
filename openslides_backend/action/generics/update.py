@@ -1,5 +1,6 @@
 from typing import Any, Dict, Iterable
 
+from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
@@ -15,7 +16,6 @@ class UpdateAction(Action):
         # Primary instance manipulation for defaults and extra fields.
         instance = self.validate_fields(instance)
         instance = self.update_instance(instance)
-        fqid = FullQualifiedId(self.model.collection, instance["id"])
         self.apply_instance(instance)
 
         self.validate_relation_fields(instance)

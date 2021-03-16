@@ -1,6 +1,7 @@
 from typing import Any, Dict, Type
 
 from ...models.fields import BaseGenericRelationField, BaseRelationField
+from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ...shared.exceptions import ActionException
 from ...shared.patterns import FullQualifiedId
 from ..generics.create import CreateAction
@@ -30,7 +31,12 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
             assert len(field.to) == 1
             fqid = FullQualifiedId(field.get_target_collection(), id)
         # Fetch meeting_id
-        related_model = self.datastore.fetch_model(fqid, ["meeting_id"])
+        related_model = self.datastore.fetch_model(
+            fqid,
+            ["meeting_id"],
+            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+            lock_result=True,
+        )
         if not related_model.get("meeting_id"):
             raise ActionException(
                 f"Referenced model in field {self.relation_field_for_meeting} has no meeting id."

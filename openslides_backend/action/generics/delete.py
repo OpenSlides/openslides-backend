@@ -41,6 +41,7 @@ class DeleteAction(Action):
         db_instance = self.datastore.fetch_model(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
+            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             lock_result=True,
         )
 
@@ -73,7 +74,8 @@ class DeleteAction(Action):
                         fqid
                         for fqid in foreign_fqids
                         if not isinstance(
-                            self.datastore.additional_relation_models.get(fqid), DeletedModel
+                            additional_relation_models.get(fqid),
+                            DeletedModel,
                         )
                     ]
                     if protected_fqids:
@@ -131,10 +133,8 @@ class DeleteAction(Action):
         for delete_action_class, delete_action_data in delete_actions:
             try:
                 for fqid, model in additional_relation_models.items():
-                    self.datastore.update_additional_models(fqid, model)
-                self.execute_other_action(
-                    delete_action_class, delete_action_data
-                )
+                    self.datastore.additional_relation_models[fqid].update(model)
+                self.execute_other_action(delete_action_class, delete_action_data)
             except ProtectedModelsException as e:
                 all_protected_fqids.extend(e.fqids)
 

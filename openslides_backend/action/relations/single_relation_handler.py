@@ -21,14 +21,13 @@ from ...services.datastore.interface import (
     GetManyRequest,
     PartialModel,
 )
-from ...shared.exceptions import ActionException, DatastoreException
+from ...shared.exceptions import ActionException
 from ...shared.patterns import (
     Collection,
     FullQualifiedField,
     FullQualifiedId,
     transform_to_fqids,
 )
-from ...shared.typing import DeletedModel, ModelMap
 from .typing import FieldUpdateElement, IdentifierList, RelationFieldUpdates
 
 
@@ -149,6 +148,7 @@ class SingleRelationHandler:
                     [related_name],
                     get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
                     db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+                    exception=False,
                 )
                 # again, we transform everything to lists of fqids
                 rels[fqid][related_name] = transform_to_fqids(
@@ -263,6 +263,7 @@ class SingleRelationHandler:
                 FullQualifiedId(self.model.collection, self.id),
                 [self.field_name],
                 db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
+                lock_result=True,
                 exception=False,
             )
 

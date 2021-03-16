@@ -35,7 +35,7 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
                 FilterOperator("begin_time", "=", None),
             )
         add_to_db_instances: Dict[int, Any] = {}
-        for key in self.additional_relation_models:
+        for key in self.datastore.additional_relation_models:
             if key.collection.collection == "speaker":
                 add_to_db_instances[key.id] = {"id": key.id}
 

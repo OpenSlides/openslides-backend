@@ -425,12 +425,6 @@ class DatastoreAdapter(DatastoreService):
         command = commands.TruncateDb()
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
-    
-    def update_additional_models(self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False) -> None:
-        if replace:
-            self.additional_relation_models[fqid] = instance
-        else:
-            self.additional_relation_models[fqid].update(instance)
 
     def fetch_model(
         self,
@@ -457,7 +451,9 @@ class DatastoreAdapter(DatastoreService):
                     instance = {}
                     for field in mapped_fields:
                         if field in self.additional_relation_models[fqid]:
-                            instance[field] = self.additional_relation_models[fqid][field]
+                            instance[field] = self.additional_relation_models[fqid][
+                                field
+                            ]
                         else:
                             complete = False
                 else:

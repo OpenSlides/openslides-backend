@@ -141,7 +141,9 @@ class RelationManager:
                                 replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
-                            db_additional_relevance=InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL,
+                            lock_result=True,
+                            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+                            exception=False,
                         )
                     template_field.append(replacement)
 

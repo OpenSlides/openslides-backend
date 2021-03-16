@@ -10,7 +10,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class DatabaseAdapterSystemTest(BaseActionTestCase):
     def init_both(self) -> None:
-        self.set_models({"meeting/1": {"name": "meetingDB", "description": "descriptionDB"}})
+        self.set_models(
+            {"meeting/1": {"name": "meetingDB", "description": "descriptionDB"}}
+        )
         self.datastore.additional_relation_models[
             FullQualifiedId(Collection("meeting"), 1)
         ] = {"id": 1, "name": "meetingAdd"}

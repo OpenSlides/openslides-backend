@@ -121,7 +121,8 @@ class PollCreateAction(CreateAction):
         # Execute the create option actions
         self.apply_instance(instance)
         self.execute_other_action(
-            OptionCreateAction, action_data,
+            OptionCreateAction,
+            action_data,
         )
 
         # set state

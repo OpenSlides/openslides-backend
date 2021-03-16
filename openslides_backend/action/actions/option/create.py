@@ -2,7 +2,6 @@ from typing import Any, Dict, Optional
 
 from ....models.models import Option
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -52,9 +51,7 @@ class OptionCreateAction(CreateAction):
             action_data.append(abstain_data)
         if action_data:
             self.apply_instance(instance)
-            self.execute_other_action(
-                VoteCreate, action_data
-            )
+            self.execute_other_action(VoteCreate, action_data)
         return instance
 
     def get_vote_action_data(

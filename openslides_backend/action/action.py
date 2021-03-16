@@ -455,11 +455,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )  # non-generic fields can only have one target collection
             value = [FullQualifiedId(field.get_target_collection(), id) for id in value]
         return value
-    
-    def apply_instance(self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None) -> None:
+
+    def apply_instance(
+        self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
+    ) -> None:
         if not fqid:
             fqid = FullQualifiedId(self.model.collection, instance["id"])
-        self.datastore.update_additional_models(fqid, instance)
+        self.datastore.additional_relation_models[fqid].update(instance)
 
     def execute_other_action(
         self,
