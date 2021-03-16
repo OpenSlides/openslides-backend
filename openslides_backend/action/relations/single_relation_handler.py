@@ -144,8 +144,6 @@ class SingleRelationHandler:
             related_name = self.get_related_name(collection)
             related_field = self.get_reverse_field(collection)
 
-            # TODO: check structured field replacement meeting id somewhere here
-
             # acquire all related models with the related fields
             rels = defaultdict(dict)
             for fqid in changed_fqids_per_collection[collection]:
