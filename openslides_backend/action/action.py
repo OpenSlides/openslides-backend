@@ -8,6 +8,7 @@ from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
+from ..services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
@@ -26,7 +27,7 @@ from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .util.typing import ActionData, ActionResultElement, ActionResults
-from ..services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
+
 
 class SchemaProvider(type):
     """
@@ -412,7 +413,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
                         )
                     else:
                         for fqid in fqids:
-                            related_instance = self.fetch_model(fqid, [equal_field])
+                            related_instance = self.datastore.fetch_model(
+                                fqid,
+                                [equal_field],
+                                db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+                            )
                             if (
                                 related_instance.get(equal_field)
                                 != own_equal_field_value

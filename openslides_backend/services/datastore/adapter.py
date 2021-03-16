@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import simplejson as json
@@ -39,7 +40,7 @@ class DatastoreAdapter(DatastoreService):
         self.logger = logging.getLogger(__name__)
         self.engine = engine
         self.locked_fields = {}
-        self.additional_relation_models: ModelMap = {}
+        self.additional_relation_models: ModelMap = defaultdict(dict)
 
     def retrieve(self, command: commands.Command) -> DatastoreResponse:
         """
@@ -438,8 +439,12 @@ class DatastoreAdapter(DatastoreService):
         datastore_exception: Optional[DatastoreException] = None
 
         def get_additional() -> Tuple[bool, Dict[str, Any]]:
-            if fqid in self.additional_relation_models and not isinstance(
-                self.additional_relation_models[fqid], DeletedModel
+            if fqid in self.additional_relation_models and (
+                get_deleted_models == DeletedModelsBehaviour.ALL_MODELS
+                or (
+                    isinstance(self.additional_relation_models[fqid], DeletedModel)
+                    == (get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED)
+                )
             ):
                 complete = True
                 instance = {}
