@@ -21,7 +21,7 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-            list_of_speakers = self.fetch_model(
+            list_of_speakers = self.datastore.fetch_model(
                 FullQualifiedId(Collection("list_of_speakers"), instance["id"]),
                 mapped_fields=["speaker_ids"],
             )

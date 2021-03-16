@@ -35,7 +35,6 @@ class RelationManager:
         model: Model,
         instance: Dict[str, Any],
         action: str,
-        additional_relation_models: ModelMap = {},
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
@@ -67,7 +66,6 @@ class RelationManager:
                 field,
                 field_name,
                 instance,
-                additional_relation_models=additional_relation_models,
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():

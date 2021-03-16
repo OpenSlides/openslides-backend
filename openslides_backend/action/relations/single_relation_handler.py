@@ -42,11 +42,6 @@ class SingleRelationHandler:
         by content: integer relation and generic relation (using a full qualified id)
 
     Therefor we have many cases this class has to handle.
-
-    additional_relation_models can provide models that are required for resolving the
-    relations, but are not yet present in the datastore. This is necessary when nesting
-    actions that are dependent on each other (e. g. topic.create calls
-    agenda_item.create, which assumes the topic exists already).
     """
 
     def __init__(
@@ -57,7 +52,6 @@ class SingleRelationHandler:
         instance: Dict[str, Any],
         only_add: bool = False,
         only_remove: bool = False,
-        additional_relation_models: ModelMap = {},
     ) -> None:
         self.datastore = datastore
         self.model = model_registry[field.own_collection]
@@ -71,7 +65,6 @@ class SingleRelationHandler:
             )
         self.only_add = only_add
         self.only_remove = only_remove
-        self.additional_relation_models = additional_relation_models
 
         self.type = self.get_field_type()
 
@@ -245,27 +238,6 @@ class SingleRelationHandler:
                 # the field name
                 replacement = self.field.get_replacement(self.field_name)
             return related_field.get_structured_field_name(replacement)
-
-    def fetch_model(
-        self, fqid: FullQualifiedId, mapped_fields: List[str]
-    ) -> Dict[str, Any]:
-        if fqid in self.additional_relation_models and not isinstance(
-            self.additional_relation_models[fqid], DeletedModel
-        ):
-            return {
-                field: self.additional_relation_models[fqid].get(field)
-                for field in mapped_fields
-                if field in self.additional_relation_models[fqid]
-            }
-        else:
-            try:
-                return self.datastore.get(
-                    fqid,
-                    mapped_fields=mapped_fields,
-                    lock_result=True,
-                )
-            except DatastoreException:
-                return {}
 
     def relation_diffs(
         self, rel_fqids: List[FullQualifiedId]

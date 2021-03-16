@@ -17,9 +17,7 @@ class CreateActionWithDependencies(CreateAction):
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().base_update_instance(instance)
-        additional_relation_models = {
-            FullQualifiedId(self.model.collection, instance["id"]): instance,
-        }
+        self.apply_instance(instance)
         for ActionClass in self.dependencies:
             special_check_method_name = "check_dependant_action_execution_" + str(
                 ActionClass.model.collection
@@ -39,7 +37,7 @@ class CreateActionWithDependencies(CreateAction):
             )
             action_data = action_data_method(instance, ActionClass)
             self.execute_other_action(
-                ActionClass, action_data, additional_relation_models
+                ActionClass, action_data
             )
         return instance
 

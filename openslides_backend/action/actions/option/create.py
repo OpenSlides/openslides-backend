@@ -51,11 +51,9 @@ class OptionCreateAction(CreateAction):
         if abstain_data is not None:
             action_data.append(abstain_data)
         if action_data:
-            additional_relation_models = {
-                FullQualifiedId(self.model.collection, instance["id"]): instance
-            }
+            self.apply_instance(instance)
             self.execute_other_action(
-                VoteCreate, action_data, additional_relation_models
+                VoteCreate, action_data
             )
         return instance
 

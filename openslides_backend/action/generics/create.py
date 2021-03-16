@@ -22,12 +22,8 @@ class CreateAction(Action):
         instance["id"] = new_id
 
         instance = self.update_instance(instance)
-
-        self.datastore.additional_relation_models[
-            FullQualifiedId(self.model.collection, instance["id"])
-        ] = instance
-
-        self.validate_relation_fields(instance)
+        self.apply_instance(instance)
+        instance = self.validate_relation_fields(instance)
 
         return instance
 

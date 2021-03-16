@@ -119,11 +119,9 @@ class PollCreateAction(CreateAction):
         action_data.append(global_data)
 
         # Execute the create option actions
-        additional_relation_models = {
-            FullQualifiedId(self.model.collection, instance["id"]): instance
-        }
+        self.apply_instance(instance)
         self.execute_other_action(
-            OptionCreateAction, action_data, additional_relation_models
+            OptionCreateAction, action_data,
         )
 
         # set state

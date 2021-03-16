@@ -425,6 +425,12 @@ class DatastoreAdapter(DatastoreService):
         command = commands.TruncateDb()
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
+    
+    def update_additional_models(self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False) -> None:
+        if replace:
+            self.additional_relation_models[fqid] = instance
+        else:
+            self.additional_relation_models[fqid].update(instance)
 
     def fetch_model(
         self,
@@ -433,7 +439,7 @@ class DatastoreAdapter(DatastoreService):
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
         missing_fields_from_db: bool = True,
     ) -> Dict[str, Any]:

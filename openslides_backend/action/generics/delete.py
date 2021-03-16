@@ -38,7 +38,7 @@ class DeleteAction(Action):
             for field in self.model.get_relation_fields()
             if field.on_delete != OnDelete.SET_NULL
         ]
-        db_instance = self.datastore.get(
+        db_instance = self.datastore.fetch_model(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
             lock_result=True,
@@ -73,7 +73,7 @@ class DeleteAction(Action):
                         fqid
                         for fqid in foreign_fqids
                         if not isinstance(
-                            self.additional_relation_models.get(fqid), DeletedModel
+                            self.datastore.additional_relation_models.get(fqid), DeletedModel
                         )
                     ]
                     if protected_fqids:
@@ -89,7 +89,7 @@ class DeleteAction(Action):
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:
                         if isinstance(
-                            self.additional_relation_models.get(fqid), DeletedModel
+                            self.datastore.additional_relation_models.get(fqid), DeletedModel
                         ):
                             # skip models that are already deleted
                             continue
@@ -130,8 +130,10 @@ class DeleteAction(Action):
         all_protected_fqids: List[FullQualifiedId] = []
         for delete_action_class, delete_action_data in delete_actions:
             try:
+                for fqid, model in additional_relation_models.items():
+                    self.datastore.update_additional_models(fqid, model)
                 self.execute_other_action(
-                    delete_action_class, delete_action_data, additional_relation_models
+                    delete_action_class, delete_action_data
                 )
             except ProtectedModelsException as e:
                 all_protected_fqids.extend(e.fqids)

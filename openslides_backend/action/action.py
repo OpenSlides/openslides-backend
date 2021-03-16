@@ -74,8 +74,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
     permission: Optional[Permission] = None
     relation_manager: RelationManager
 
-    modified_relation_fields: Dict[FullQualifiedField, Any]
-
     write_requests: List[WriteRequest]
     results: ActionResults
 
@@ -85,7 +83,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         datastore: DatastoreService,
         relation_manager: RelationManager,
         logging: LoggingModule,
-        additional_relation_models: ModelMap = {},
     ) -> None:
         self.services = services
         self.permission_service = services.permission()
@@ -93,10 +90,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.media = services.media()
         self.datastore = datastore
         self.relation_manager = relation_manager
-        self.additional_relation_models = additional_relation_models
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-        self.modified_relation_fields = {}
         self.write_requests = []
         self.results = []
 
@@ -219,7 +214,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Creates write request elements (with update events) for all relations.
         """
         relation_updates = self.relation_manager.get_relation_updates(
-            self.model, instance, self.name, self.additional_relation_models
+            self.model, instance, self.name
         )
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
@@ -445,27 +440,31 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 structured_fields.append((instance_field, replacement))
         return structured_fields
 
-    def fetch_model(
-        self, fqid: FullQualifiedId, mapped_fields: List[str] = []
-    ) -> Dict[str, Any]:
-        """
-        Helper method to retrieve an instance from datastore or
-        additional_relation_models dictionary.
-        """
-        if fqid in self.additional_relation_models:
-            additional_model = self.additional_relation_models[fqid]
-            if mapped_fields:
-                return {field: additional_model.get(field) for field in mapped_fields}
+    def get_field_value_as_fqid_list(
+        self, field: BaseRelationField, value: Any
+    ) -> List[FullQualifiedId]:
+        """ Transforms the given value to an Fqid List. """
+        if not isinstance(value, list):
+            if value is None:
+                value = []
             else:
-                return additional_model
-        else:
-            return self.datastore.get(fqid, mapped_fields, lock_result=True)
+                value = [value]
+        if not isinstance(field, BaseGenericRelationField):
+            assert (
+                len(field.to) == 1
+            )  # non-generic fields can only have one target collection
+            value = [FullQualifiedId(field.get_target_collection(), id) for id in value]
+        return value
+    
+    def apply_instance(self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None) -> None:
+        if not fqid:
+            fqid = FullQualifiedId(self.model.collection, instance["id"])
+        self.datastore.update_additional_models(fqid, instance)
 
     def execute_other_action(
         self,
         ActionClass: Type["Action"],
         action_data: ActionData,
-        additional_relation_models: ModelMap = {},
     ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
         Executes the given action class as a dependent action with the given action
@@ -479,11 +478,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.datastore,
             self.relation_manager,
             self.logging,
-            {
-                **self.datastore.additional_relation_models,
-                **self.additional_relation_models,
-                **additional_relation_models,
-            },
         )
         write_request, action_results = action.perform(
             action_data, self.user_id, internal=True
