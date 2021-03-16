@@ -2,6 +2,10 @@ from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
+from openslides_backend.permissions.permissions import (
+    OrganisationManagementLevel,
+    Permissions,
+)
 from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase
@@ -17,7 +21,7 @@ class FakeModelP(Model):
 class FakeModelPCreate(CreateAction):
     model = FakeModelP()
     schema = {}  # type: ignore
-    permission = "motion.can_create"
+    permission = Permissions.Motion.CAN_CREATE
 
 
 class TestPermissions(BaseActionTestCase):
@@ -50,7 +54,7 @@ class TestPermissions(BaseActionTestCase):
 
     def test_anonymous_valid(self) -> None:
         self.set_anonymous(True)
-        self.set_group_permissions(1, ["motion.can_create"])
+        self.set_group_permissions(1, [Permissions.Motion.CAN_CREATE])
         response = self.request(
             "fake_model_p.create", {"meeting_id": 1}, anonymous=True
         )
@@ -69,7 +73,7 @@ class TestPermissions(BaseActionTestCase):
 
     def test_guest_user_valid(self) -> None:
         self.update_model(f"user/{self.user_id}", {"guest_meeting_ids": [1]})
-        self.set_group_permissions(1, ["motion.can_create"])
+        self.set_group_permissions(1, [Permissions.Motion.CAN_CREATE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
@@ -80,7 +84,7 @@ class TestPermissions(BaseActionTestCase):
         assert response.json["message"] == "You do not belong to meeting 1"
 
     def test_superadmin(self) -> None:
-        self.set_management_level("superadmin", self.user_id)
+        self.set_management_level(OrganisationManagementLevel.SUPERADMIN, self.user_id)
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
@@ -94,21 +98,21 @@ class TestPermissions(BaseActionTestCase):
 
     def test_user_in_some_group(self) -> None:
         self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, ["motion.can_create"])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_has_parent_perm(self) -> None:
         self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, ["motion.can_manage"])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
     def test_user_has_child_perm(self) -> None:
         self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, ["motion.can_see"])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_SEE])
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 403)
         assert (

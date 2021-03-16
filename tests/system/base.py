@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Type
+from typing import Any, Dict, Type
 from unittest import TestCase
 
 import requests
@@ -177,6 +177,3 @@ class BaseSystemTestCase(TestCase):
             Collection(collection), FilterOperator("meeting_id", "=", meeting_id)
         )
         self.assertEqual(db_count, count)
-
-    def set_management_level(self, level: Optional[str], user_id: int = 1) -> None:
-        self.update_model(f"user/{user_id}", {"organisation_management_level": level})

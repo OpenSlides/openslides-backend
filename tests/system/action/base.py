@@ -2,6 +2,10 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 from openslides_backend.action.util.typing import Payload
+from openslides_backend.permissions.permissions import (
+    OrganisationManagementLevel,
+    Permission,
+)
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import Collection
@@ -56,23 +60,34 @@ class BaseActionTestCase(BaseSystemTestCase):
     def set_anonymous(self, enable: bool = True, meeting_id: int = 1) -> None:
         self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
 
-    def add_group_permissions(self, group_id: int, permissions: List[str]) -> None:
+    def set_management_level(
+        self, level: Optional[OrganisationManagementLevel], user_id: int = 1
+    ) -> None:
+        self.update_model(f"user/{user_id}", {"organisation_management_level": level})
+
+    def add_group_permissions(
+        self, group_id: int, permissions: List[Permission]
+    ) -> None:
         group = self.get_model(f"group/{group_id}")
         self.set_group_permissions(group_id, group.get("permissions", []) + permissions)
 
-    def remove_group_permissions(self, group_id: int, permissions: List[str]) -> None:
+    def remove_group_permissions(
+        self, group_id: int, permissions: List[Permission]
+    ) -> None:
         group = self.get_model(f"group/{group_id}")
         new_perms = [p for p in group.get("permissions", []) if p not in permissions]
         self.set_group_permissions(group_id, new_perms)
 
-    def set_group_permissions(self, group_id: int, permissions: List[str]) -> None:
+    def set_group_permissions(
+        self, group_id: int, permissions: List[Permission]
+    ) -> None:
         self.update_model(f"group/{group_id}", {"permissions": permissions})
 
     def create_user(
         self,
         username: str,
         group_ids: List[int] = [],
-        organisation_management_level: Optional[str] = None,
+        organisation_management_level: Optional[OrganisationManagementLevel] = None,
     ) -> int:
         """
         Create a user with the given username, groups and organisation management level.

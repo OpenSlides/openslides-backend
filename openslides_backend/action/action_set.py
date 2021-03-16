@@ -1,6 +1,7 @@
 from typing import Dict, Optional, Type, cast
 
 from ..models.base import Model
+from ..permissions.permissions import Permission
 from .action import Action
 from .generics.create import CreateAction
 from .generics.delete import DeleteAction
@@ -13,7 +14,7 @@ class ActionSet:
     """
 
     model: Model
-    permission: Optional[str] = None
+    permission: Optional[Permission] = None
 
     create_schema: Dict
     update_schema: Dict

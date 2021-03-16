@@ -6,6 +6,7 @@ import fastjsonschema
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..permissions.permission_helper import has_perm
+from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
@@ -69,7 +70,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema_validator: Callable[[Dict[str, Any]], None]
     is_singular: bool = False
     internal: bool = False
-    permission: Optional[str] = None
+    permission: Optional[Permission] = None
     relation_manager: RelationManager
 
     modified_relation_fields: Dict[FullQualifiedField, Any]

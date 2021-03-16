@@ -37,7 +37,7 @@ class TagActionTest(BaseActionTestCase):
         )
 
     def test_create_no_permissions(self) -> None:
-        self.set_management_level("can_manage_users")
+        self.set_management_level(None)
         self.create_model("meeting/577", {"name": "name_YBEqrXqz"})
         response = self.request(
             "tag.create", {"name": "test_Xcdfgee", "meeting_id": 577}

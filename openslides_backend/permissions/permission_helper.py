@@ -4,11 +4,11 @@ from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
 from ..shared.patterns import Collection, FullQualifiedId
-from .permissions import permissions
+from .permissions import OrganisationManagementLevel, Permission, permission_parents
 
 
 def has_perm(
-    datastore: DatastoreService, user_id: int, permission: str, meeting_id: int
+    datastore: DatastoreService, user_id: int, permission: Permission, meeting_id: int
 ) -> bool:
     # anonymous cannot be fetched from db
     if user_id > 0:
@@ -24,7 +24,10 @@ def has_perm(
         user = {}
 
     # superadmins have all permissions
-    if user.get("organisation_management_level") == "superadmin":
+    if (
+        user.get("organisation_management_level")
+        == OrganisationManagementLevel.SUPERADMIN
+    ):
         return True
 
     # get correct group ids for this user
@@ -63,16 +66,16 @@ def has_perm(
     return False
 
 
-def is_child_permission(child: str, parent: str) -> bool:
+def is_child_permission(child: Permission, parent: Permission) -> bool:
     """
     Iterate the permission tree (represented in the permissions object) from child to
     parent or until there are no parents anymore
     """
-    queue: List[str] = [child]
+    queue: List[Permission] = [child]
     while queue:
         current = queue.pop()
         if current == parent:
             return True
-        parents = permissions[current]
+        parents = permission_parents[current]
         queue.extend(parents)
     return False
