@@ -24,13 +24,11 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         ] = {"id": 1, "name": "meetingAdd"}
 
     def test_fetch_model_ADD_BEFORE_DB_both(self) -> None:
-        """ Includes testing for missing_fields_from_db"""
         self.init_both()
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name", "id", "description", "not_there"],
             db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
-            missing_fields_from_db=True
         )
         self.assertEqual(result["name"], "meetingAdd")
         self.assertEqual(result["id"], 1)
