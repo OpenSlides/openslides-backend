@@ -116,6 +116,11 @@ class DatastoreService(Protocol):
     def truncate_db(self) -> None:
         ...
 
+    def update_additional_models(
+        self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False
+    ) -> None:
+        ...
+
     def fetch_model(
         self,
         fqid: FullQualifiedId,

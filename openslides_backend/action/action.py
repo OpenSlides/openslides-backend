@@ -461,7 +461,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     ) -> None:
         if not fqid:
             fqid = FullQualifiedId(self.model.collection, instance["id"])
-        self.datastore.additional_relation_models[fqid].update(instance)
+        self.datastore.update_additional_models(fqid, instance)
 
     def execute_other_action(
         self,

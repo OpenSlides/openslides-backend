@@ -426,6 +426,14 @@ class DatastoreAdapter(DatastoreService):
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
 
+    def update_additional_models(
+        self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False
+    ) -> None:
+        if replace or isinstance(instance, DeletedModel):
+            self.additional_relation_models[fqid] = instance
+        else:
+            self.additional_relation_models[fqid].update(instance)
+
     def fetch_model(
         self,
         fqid: FullQualifiedId,
