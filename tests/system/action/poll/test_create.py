@@ -31,9 +31,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
-                "amount_global_yes": "1.000000",
-                "amount_global_no": "1.250000",
-                "amount_global_abstain": "2.500000",
                 "onehundred_percent_base": "Y",
                 "majority_method": "simple",
             },
@@ -58,9 +55,6 @@ class CreatePoll(BaseActionTestCase):
         assert global_option.get("text") == "global option"
         assert global_option.get("used_as_global_option_in_poll_id") == 1
         assert global_option.get("meeting_id") == 113
-        assert global_option.get("yes") == "1.000000"
-        assert global_option.get("no") == "1.250000"
-        assert global_option.get("abstain") == "2.500000"
 
     def test_create_three_options(self) -> None:
         response = self.client.post(
@@ -527,3 +521,21 @@ class CreatePoll(BaseActionTestCase):
                 "weight": 1,
             },
         )
+
+    def test_not_state_change(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "meeting_id": 113,
+                "options": [{"text": "test1"}],
+            },
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == "created"

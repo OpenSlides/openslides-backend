@@ -55,15 +55,12 @@ class PollCreateAction(CreateAction):
             "votescast",
             "entitled_group_ids",
         ],
-        additional_optional_fields={
-            "amount_global_yes": decimal_schema,
-            "amount_global_no": decimal_schema,
-            "amount_global_abstain": decimal_schema,
-        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         action_data = []
+
+        state_change = self.check_state_change(instance)
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
@@ -119,30 +116,6 @@ class PollCreateAction(CreateAction):
             "meeting_id": instance["meeting_id"],
             "weight": 1,
         }
-        if instance["type"] == "analog":
-            global_yes_enabled = instance["global_yes"] and instance["pollmethod"] in (
-                "Y",
-                "N",
-            )
-            if "amount_global_yes" in instance and global_yes_enabled:
-                global_data["yes"] = self.parse_vote_value(
-                    instance, "amount_global_yes"
-                )
-
-            global_no_enabled = instance["global_no"] and instance["pollmethod"] in (
-                "Y",
-                "N",
-            )
-            if "amount_global_no" in instance and global_no_enabled:
-                global_data["no"] = self.parse_vote_value(instance, "amount_global_no")
-
-            global_abstain_enabled = instance["global_abstain"] and instance[
-                "pollmethod"
-            ] in ("Y", "N")
-            if "amount_global_abstain" in instance and global_abstain_enabled:
-                global_data["abstain"] = self.parse_vote_value(
-                    instance, "amount_global_abstain"
-                )
         action_data.append(global_data)
 
         # Execute the create option actions
@@ -154,11 +127,15 @@ class PollCreateAction(CreateAction):
         )
 
         # set state
-        instance["state"] = "created"
-        if instance["type"] == "analog":
-            instance["state"] = "finished"
-            if instance.get("publish_immediately"):
-                instance["state"] = "published"
+        instance["state"] = Poll.STATE_CREATED
+        if state_change:
+            instance["state"] = Poll.STATE_FINISHED
+        if (
+            instance["type"] == Poll.TYPE_ANALOG
+            and instance["state"] == Poll.STATE_FINISHED
+            and instance.get("publish_immediately")
+        ):
+            instance["state"] = Poll.STATE_PUBLISHED
 
         # set votescast, votesvalid, votesinvalid defaults
         for field in ("votescast", "votesvalid", "votesinvalid"):
@@ -173,3 +150,19 @@ class PollCreateAction(CreateAction):
         pollmethod = instance["pollmethod"]
         onehundred_percent_base = instance.get("onehundred_percent_base")
         base_check_100_percent_base(pollmethod, onehundred_percent_base)
+
+    def check_state_change(self, instance: Dict[str, Any]) -> bool:
+        if instance["type"] != Poll.TYPE_ANALOG:
+            return False
+        check_fields = (
+            "votesvalid",
+            "votesinvalid",
+            "votescast",
+        )
+        for field in check_fields:
+            if instance.get(field):
+                return True
+        for option in instance.get("options", []):
+            if option.get("Y") or option.get("N") or option.get("A"):
+                return True
+        return False
