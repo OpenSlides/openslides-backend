@@ -521,6 +521,7 @@ class CreatePoll(BaseActionTestCase):
                 "weight": 1,
             },
         )
+
     def test_not_state_change(self) -> None:
         response = self.request(
             "poll.create",
