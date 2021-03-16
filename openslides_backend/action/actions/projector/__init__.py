@@ -1,1 +1,1 @@
-from . import control_view, create, next, project_preview, update  # noqa
+from . import control_view, create, next, previous, project_preview, update  # noqa
