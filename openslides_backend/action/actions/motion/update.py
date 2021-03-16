@@ -16,7 +16,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
-RERIDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
+RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
@@ -103,7 +103,9 @@ class MotionUpdate(UpdateAction):
         self, instance: Dict[str, Any]
     ) -> None:
         recommendation_extension_reference_ids = []
-        possible_rerids = RERIDS_PATTERN.findall(instance["recommendation_extension"])
+        possible_rerids = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
+            instance["recommendation_extension"]
+        )
         for fqid_str in possible_rerids:
             collection, id_ = fqid_str.split(KEYSEPARATOR)
             if collection != "motion":
