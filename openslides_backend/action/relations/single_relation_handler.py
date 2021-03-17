@@ -296,6 +296,8 @@ class SingleRelationHandler:
             new_value: Any  # Union[FullQualifiedId, List[FullQualifiedId]]
             own_fqid = FullQualifiedId(collection=self.field.own_collection, id=self.id)
             if fqid in add:
+                if own_fqid in rel[related_name]:
+                    continue
                 new_value = rel[related_name] + [own_fqid]
                 rel_element = FieldUpdateElement(
                     type="add", value=new_value, modified_element=own_fqid
