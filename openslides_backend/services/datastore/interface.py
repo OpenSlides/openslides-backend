@@ -133,6 +133,9 @@ class DatastoreService(Protocol):
     ) -> Dict[str, Any]:
         ...
 
+    def reset(self) -> None:
+        ...
+
 
 class Engine(Protocol):
     """

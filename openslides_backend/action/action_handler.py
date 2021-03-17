@@ -135,6 +135,8 @@ class ActionHandler(BaseHandler):
                 retried += 1
                 if retried > self.MAX_RETRY:
                     raise ActionException(exception.message)
+                else:
+                    self.datastore.reset()
 
     def parse_actions(
         self, payload: Payload

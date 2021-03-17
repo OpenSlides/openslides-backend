@@ -147,6 +147,7 @@ class SingleRelationHandler:
                     fqid,
                     [related_name],
                     get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
+                    lock_result=True,
                     db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                     exception=False,
                 )

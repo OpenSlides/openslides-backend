@@ -2,7 +2,6 @@ from typing import Any, Dict, Iterable, List, Tuple, Type
 
 from ...models.fields import (
     BaseGenericRelationField,
-    BaseRelationField,
     BaseTemplateRelationField,
     OnDelete,
 )
@@ -45,9 +44,7 @@ class DeleteAction(Action):
             lock_result=True,
         )
 
-        # Collect relation fields and also update instance and set
-        # all relation fields to None.
-        relation_fields: List[Tuple[str, BaseRelationField]] = []
+        # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
         delete_actions: List[Tuple[Type[Action], ActionData]] = []
         self.datastore.update_additional_models(this_fqid, DeletedModel())
@@ -107,7 +104,7 @@ class DeleteAction(Action):
                         # Assume that the delete action uses the standard action data
                         action_data = [{"id": fqid.id}]
                         delete_actions.append((delete_action_class, action_data))
-                        self.datastore.additional_relation_models[fqid] = DeletedModel()
+                        self.datastore.update_additional_models(fqid, DeletedModel())
             else:
                 # field.on_delete == OnDelete.SET_NULL
                 if isinstance(field, BaseTemplateRelationField):
@@ -123,10 +120,8 @@ class DeleteAction(Action):
                             replacement
                         )
                         instance[structured_field_name] = None
-                        relation_fields.append((structured_field_name, field))
                 else:
                     instance[field.own_field_name] = None
-                    relation_fields.append((field.own_field_name, field))
 
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids

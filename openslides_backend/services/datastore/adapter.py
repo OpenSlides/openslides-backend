@@ -41,6 +41,7 @@ class DatastoreAdapter(DatastoreService):
         self.engine = engine
         self.locked_fields = {}
         self.additional_relation_models: ModelMap = defaultdict(dict)
+        self.additional_relation_models_lock: Dict[Any, Any] = defaultdict(dict)
 
     def retrieve(self, command: commands.Command) -> DatastoreResponse:
         """
@@ -466,21 +467,30 @@ class DatastoreAdapter(DatastoreService):
                             complete = False
                 else:
                     instance = self.additional_relation_models[fqid]
+                if lock_result and fqid in self.additional_relation_models_lock:
+                    self.update_locked_fields(
+                        fqid, self.additional_relation_models_lock[fqid]
+                    )
                 return (complete, instance)
             else:
                 return (False, {})
 
         def get_db() -> Tuple[bool, Dict[str, Any], Optional[DatastoreException]]:
             try:
+                instance = self.get(
+                    fqid,
+                    mapped_fields=mapped_fields,
+                    position=position,
+                    get_deleted_models=get_deleted_models,
+                    lock_result=lock_result,
+                )
+                if lock_result:
+                    self.additional_relation_models_lock[fqid] = self.locked_fields[
+                        str(fqid)
+                    ]
                 return (
                     True,
-                    self.get(
-                        fqid,
-                        mapped_fields=mapped_fields,
-                        position=position,
-                        get_deleted_models=get_deleted_models,
-                        lock_result=lock_result,
-                    ),
+                    instance,
                     None,
                 )
             except DatastoreException as e:
@@ -519,3 +529,7 @@ class DatastoreAdapter(DatastoreService):
             else:
                 raise DatastoreException(f"{fqid} not found at all.")
         return result
+
+    def reset(self) -> None:
+        self.additional_relation_models.clear()
+        self.additional_relation_models_lock.clear()
