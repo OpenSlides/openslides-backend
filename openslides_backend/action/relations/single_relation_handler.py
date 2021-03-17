@@ -303,9 +303,8 @@ class SingleRelationHandler:
             else:
                 assert fqid in remove
                 new_value = rel[related_name]
-                assert (
-                    own_fqid in new_value
-                ), f"Invalid relation update: {own_fqid} is not in {new_value} (Collectionfield {self.model.collection}/{self.field_name})"
+                if own_fqid not in new_value:
+                    continue  # maybe replaced by other action
                 new_value.remove(own_fqid)
                 rel_element = FieldUpdateElement(
                     type="remove", value=new_value, modified_element=own_fqid
