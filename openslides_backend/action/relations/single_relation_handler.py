@@ -28,7 +28,7 @@ from ...shared.patterns import (
     FullQualifiedId,
     transform_to_fqids,
 )
-from .typing import FieldUpdateElement, IdentifierList, RelationFieldUpdates
+from .typing import FieldUpdateElement, RelationFieldUpdates
 
 
 class SingleRelationHandler:

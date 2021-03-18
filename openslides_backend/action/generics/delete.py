@@ -10,7 +10,7 @@ from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId, transform_to_fqids
-from ...shared.typing import DeletedModel, ModelMap
+from ...shared.typing import DeletedModel
 from ..action import Action
 from ..util.actions_map import actions_map
 from ..util.typing import ActionData

@@ -9,7 +9,6 @@ from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
-from ...shared.typing import ModelMap
 from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler

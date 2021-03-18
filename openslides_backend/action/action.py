@@ -21,8 +21,7 @@ from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
-from ..shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
-from ..shared.typing import ModelMap
+from ..shared.patterns import FullQualifiedId, transform_to_fqids
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
