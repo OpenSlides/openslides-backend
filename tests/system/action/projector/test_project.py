@@ -122,3 +122,17 @@ class ProjectorProject(BaseActionTestCase):
             "The relation current_projector_id requires the following fields to be equal:\\nprojection/112/meeting_id: 2\\nprojector/23/meeting_id: 1"
             in response.data.decode()
         )
+
+    def test_project_not_unique_ids(self) -> None:
+        response = self.request(
+            "projector.project",
+            {
+                "ids": [23, 23],
+                "content_object_id": "assignment/453",
+                "options": "",
+                "stable": False,
+                "type": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "data.ids must contain unique items" in response.data.decode()
