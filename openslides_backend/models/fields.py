@@ -126,7 +126,9 @@ class HTMLPermissiveField(HTMLStrictField):
 
 class FloatField(Field):
     def get_schema(self) -> Schema:
-        raise NotImplementedError
+        if self.required:
+            return self.extend_schema(super().get_schema(), type="number")
+        return self.extend_schema(super().get_schema(), type=["number", "null"])
 
 
 class DecimalField(Field):
