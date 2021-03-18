@@ -261,10 +261,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if fields:
             event["fields"] = fields
-            if fqid in self.datastore.additional_relation_models:
-                self.datastore.additional_relation_models[fqid].update(fields)
-            else:
-                self.datastore.additional_relation_models[fqid] = fields
+            self.datastore.update_additional_models(fqid, fields)
         if list_fields:
             event["list_fields"] = list_fields
         return WriteRequest(

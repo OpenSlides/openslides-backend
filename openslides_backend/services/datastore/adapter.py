@@ -434,6 +434,8 @@ class DatastoreAdapter(DatastoreService):
             self.additional_relation_models[fqid] = instance
         else:
             self.additional_relation_models[fqid].update(instance)
+        if "id" not in self.additional_relation_models[fqid]:
+            self.additional_relation_models[fqid]["id"] = fqid.id
 
     def fetch_model(
         self,
