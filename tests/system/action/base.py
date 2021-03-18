@@ -13,6 +13,8 @@ from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application
 from tests.util import Response
 
+DEFAULT_PASSWORD = "password"
+
 
 class BaseActionTestCase(BaseSystemTestCase):
     def get_application(self) -> WSGIApplication:
@@ -46,16 +48,30 @@ class BaseActionTestCase(BaseSystemTestCase):
         return client.post("/", json=payload)
 
     def create_meeting(self) -> None:
-        self.set_models({"committee/1": {}})
-        response = self.request(
-            "meeting.create",
+        """
+        Creates meeting with id 1 and groups with ids 1, 2, 3.
+        The groups have no permissions and no users by default.
+        """
+        self.set_models(
             {
-                "committee_id": 1,
-                "name": "test",
-                "welcome_title": "title",
-            },
+                "meeting/1": {
+                    "group_ids": [1, 2, 3],
+                    "default_group_id": 1,
+                    "admin_group_id": 2,
+                },
+                "group/1": {
+                    "meeting_id": 1,
+                    "default_group_for_meeting_id": 1,
+                },
+                "group/2": {
+                    "meeting_id": 1,
+                    "admin_group_for_meeting_id": 1,
+                },
+                "group/3": {
+                    "meeting_id": 1,
+                },
+            }
         )
-        self.assert_status_code(response, 200)
 
     def set_anonymous(self, enable: bool = True, meeting_id: int = 1) -> None:
         self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
@@ -92,41 +108,67 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         Create a user with the given username, groups and organisation management level.
         """
-        partitioned_group_ids = self._fetch_groups(group_ids)
-        response = self.request(
-            "user.create",
+        partitioned_groups = self._fetch_groups(group_ids)
+        id = self.datastore.reserve_id(Collection("user"))
+        self.set_models(
             {
-                "username": username,
-                "group_$_ids": partitioned_group_ids,
-                "organisation_management_level": organisation_management_level,
-                "is_active": True,
-            },
+                f"user/{id}": {
+                    "username": username,
+                    "organisation_management_level": organisation_management_level,
+                    "is_active": True,
+                    "default_password": DEFAULT_PASSWORD,
+                    "password": self.auth.hash(DEFAULT_PASSWORD),
+                    "group_$_ids": list(
+                        str(meeting_id) for meeting_id in partitioned_groups.keys()
+                    ),
+                    **{
+                        f"group_${meeting_id}_ids": [group["id"] for group in groups]
+                        for meeting_id, groups in partitioned_groups.items()
+                    },
+                    **{
+                        f"group/{group['id']}": {
+                            "user_ids": list(set(group.get("user_ids", []) + [id]))
+                        }
+                        for groups in partitioned_groups.values()
+                        for group in groups
+                    },
+                }
+            }
         )
-        self.assert_status_code(response, 200)
-        # save newly created id
-        id = response.json["results"][0][0]["id"]
-        # set password
-        # TODO: remove this once the password is set automatically in user.create
-        response = self.request(
-            "user.set_password",
-            {"id": id, "password": "password", "set_as_default": True},
-        )
-        self.assert_status_code(response, 200)
         return id
 
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
-        partitioned_group_ids = self._fetch_groups(group_ids)
-        response = self.request(
-            "user.update",
+        partitioned_groups = self._fetch_groups(group_ids)
+        user = self.get_model(f"user/{user_id}")
+        self.set_models(
             {
-                "id": user_id,
-                "group_$_ids": {
-                    meeting_id: groups
-                    for meeting_id, groups in partitioned_group_ids.items()
+                f"user/{user_id}": {
+                    "group_$_ids": list(
+                        str(meeting_id)
+                        for meeting_id in set(
+                            user.get("group_$_ids", [])
+                            + list(partitioned_groups.keys())
+                        )
+                    ),
+                    **{
+                        f"group_${meeting_id}_ids": list(
+                            set(
+                                [group["id"] for group in groups]
+                                + user.get(f"group_${meeting_id}_ids", []),
+                            )
+                        )
+                        for meeting_id, groups in partitioned_groups.items()
+                    },
                 },
-            },
+                **{
+                    f"group/{group['id']}": {
+                        "user_ids": list(set(group.get("user_ids", []) + [user_id]))
+                    }
+                    for groups in partitioned_groups.values()
+                    for group in groups
+                },
+            }
         )
-        self.assert_status_code(response, 200)
 
     def login(self, user_id: int) -> None:
         """
@@ -136,7 +178,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         assert user.get("default_password")
         self.client.login(user["username"], user["default_password"])
 
-    def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[int]]:
+    def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
         """
         Helper method to partition the groups by their meeting id.
         """
@@ -144,9 +186,13 @@ class BaseActionTestCase(BaseSystemTestCase):
             return {}
 
         response = self.datastore.get_many(
-            [GetManyRequest(Collection("group"), group_ids, ["meeting_id"])]
+            [
+                GetManyRequest(
+                    Collection("group"), group_ids, ["id", "meeting_id", "user_ids"]
+                )
+            ]
         )
-        partitioned_group_ids: Dict[int, List[int]] = defaultdict(list)
-        for id, group in response.get(Collection("group"), {}).items():
-            partitioned_group_ids[group["meeting_id"]].append(id)
-        return partitioned_group_ids
+        partitioned_groups: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
+        for group in response.get(Collection("group"), {}).values():
+            partitioned_groups[group["meeting_id"]].append(group)
+        return partitioned_groups

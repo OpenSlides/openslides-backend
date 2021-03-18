@@ -4,6 +4,7 @@ from unittest import TestCase
 import requests
 import simplejson as json
 from fastjsonschema import validate
+from fastjsonschema.exceptions import JsonSchemaException
 
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import BaseTemplateField
@@ -138,7 +139,12 @@ class BaseSystemTestCase(TestCase):
                 }
             else:
                 schema = field.get_schema()
-            validate(schema, value)
+            try:
+                validate(schema, value)
+            except JsonSchemaException as e:
+                raise JsonSchemaException(
+                    f"Invalid data for {fqid}/{field_name}: " + e.message
+                )
 
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(
