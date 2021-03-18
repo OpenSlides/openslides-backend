@@ -2,10 +2,11 @@ from ....models.models import User
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .user_mixin import UserMixin
 
 
 @register_action("user.create")
-class UserCreate(CreateAction):
+class UserCreate(CreateAction, UserMixin):
     """
     Action to create a user.
     """

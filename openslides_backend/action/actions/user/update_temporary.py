@@ -7,10 +7,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryMixin
 from .temporary_user_mixin import TemporaryUserMixin
+from .user_mixin import UserMixin
 
 
 @register_action("user.update_temporary")
-class UserUpdateTemporary(UpdateAction, TemporaryUserMixin, CheckTemporaryMixin):
+class UserUpdateTemporary(
+    UpdateAction, TemporaryUserMixin, CheckTemporaryMixin, UserMixin
+):
     """
     Action to update a user.
     """

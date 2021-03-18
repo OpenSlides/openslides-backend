@@ -6,10 +6,11 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .temporary_user_mixin import TemporaryUserMixin
+from .user_mixin import UserMixin
 
 
 @register_action("user.create_temporary")
-class UserCreateTemporary(CreateAction, TemporaryUserMixin):
+class UserCreateTemporary(CreateAction, TemporaryUserMixin, UserMixin):
     """
     Action to create a user.
     """

@@ -2,10 +2,11 @@ from ....models.models import User
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .user_mixin import UserMixin
 
 
 @register_action("user.update")
-class UserUpdate(UpdateAction):
+class UserUpdate(UpdateAction, UserMixin):
     """
     Action to update a user.
     """
