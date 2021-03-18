@@ -202,3 +202,13 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         assert model.get("vote_delegations_$222_from_ids") is None
         assert model.get("vote_delegations_$_from_ids") is None
         assert model.get("vote_delegations_from_ids") is None
+
+    def test_username_already_given(self) -> None:
+        self.create_model("user/222", {"meeting_id": 1})
+        response = self.request(
+            "user.update_temporary", {"id": 222, "username": "admin"}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "A user with the username admin already exists."
+        )

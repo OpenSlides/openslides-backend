@@ -109,3 +109,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
+
+    def test_username_already_given(self) -> None:
+        self.create_model("user/222")
+        response = self.request("user.update", {"id": 222, "username": "admin"})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "A user with the username admin already exists."
+        )

@@ -160,3 +160,10 @@ class UserCreateActionTest(BaseActionTestCase):
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
+
+    def test_username_already_given(self) -> None:
+        response = self.request("user.create", {"username": "admin"})
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "A user with the username admin already exists."
+        )

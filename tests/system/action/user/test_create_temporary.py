@@ -155,3 +155,13 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             response.json["message"],
         )
         self.assert_model_not_exists("user/2")
+
+    def test_username_already_given(self) -> None:
+        self.create_model("meeting/222")
+        response = self.request(
+            "user.create_temporary", {"username": "admin", "meeting_id": 222}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "A user with the username admin already exists."
+        )
