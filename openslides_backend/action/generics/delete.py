@@ -9,7 +9,7 @@ from ...models.fields import (
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import FullQualifiedId
+from ...shared.patterns import FullQualifiedId, transform_to_fqids
 from ...shared.typing import DeletedModel, ModelMap
 from ..action import Action
 from ..util.actions_map import actions_map
@@ -81,7 +81,9 @@ class DeleteAction(Action):
                     # field.on_delete == OnDelete.CASCADE
                     # Extract all foreign keys as fqids from the model
                     value = db_instance.get(field.own_field_name, [])
-                    foreign_fqids = self.get_field_value_as_fqid_list(field, value)
+                    foreign_fqids = transform_to_fqids(
+                        value, field.get_target_collection()
+                    )
 
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:

@@ -539,3 +539,66 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == "created"
+
+    def test_create_user_option_valid(self) -> None:
+        self.set_models(
+            {
+                "meeting/42": {},
+                "group/5": {"meeting_id": 42, "user_ids": [1]},
+                "user/1": {"group_$42_ids": [5], "group_$_ids": ["42"]},
+            }
+        )
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YNA",
+                "options": [
+                    {"content_object_id": "user/1"},
+                ],
+                "meeting_id": 42,
+                "onehundred_percent_base": "YN",
+                "majority_method": "three_quarters",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "option_ids": [1],
+                "meeting_id": 42,
+            },
+        )
+        self.assert_model_exists(
+            "option/1", {"content_object_id": "user/1", "poll_id": 1, "meeting_id": 42}
+        )
+
+    def test_create_user_option_invalid(self) -> None:
+        self.set_models(
+            {
+                "meeting/42": {},
+                "meeting/7": {},
+                "group/5": {"meeting_id": 42, "user_ids": [1]},
+                "user/1": {"group_$42_ids": [5], "group_$_ids": ["42"]},
+            }
+        )
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YNA",
+                "options": [
+                    {"content_object_id": "user/1"},
+                ],
+                "meeting_id": 7,
+                "onehundred_percent_base": "YN",
+                "majority_method": "three_quarters",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "The following models do not belong to meeting 7: [FullQualifiedId('user/1')]"
+        )

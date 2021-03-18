@@ -4,7 +4,7 @@ from .setup import BaseRelationsTestCase, FakeModelA, FakeModelB, FakeModelC  # 
 class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
     def test_simple_create(self) -> None:
         self.create_model("meeting/42")
-        self.create_model("fake_model_b/123")
+        self.create_model("fake_model_b/123", {"meeting_id": 42})
         response = self.client.post(
             "/",
             json=[

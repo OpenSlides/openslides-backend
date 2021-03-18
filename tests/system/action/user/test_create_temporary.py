@@ -18,7 +18,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
             {
                 "meeting/222": {"name": "name_shjeuazu"},
                 "group/1": {"meeting_id": 222},
-                "user/7": {},
+                "user/7": {"meeting_id": 222},
             }
         )
         response = self.request(
@@ -108,7 +108,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "requires the following fields to be equal",
+            "The following models do not belong to meeting 1: [FullQualifiedId('group/2')]",
             response.json["message"],
         )
         self.assert_model_not_exists("user/2")

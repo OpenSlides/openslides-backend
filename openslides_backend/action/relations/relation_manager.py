@@ -8,8 +8,9 @@ from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import DatastoreException
-from ...shared.patterns import FullQualifiedField, FullQualifiedId
+from ...shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
 from ...shared.typing import ModelMap
+from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
 from .typing import (
@@ -145,6 +146,16 @@ class RelationManager:
                             db_additional_relevance=InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL,
                         )
                     template_field.append(replacement)
+
+                if field.replacement and isinstance(field, BaseRelationField):
+                    # check that the given (fq)ids are valid for this replacement
+                    if field.replacement != "meeting_id":
+                        raise NotImplementedError(
+                            "Replacements other than meeting_id are not permitted"
+                        )
+
+                    fqids = transform_to_fqids(value, field.get_target_collection())
+                    assert_belongs_to_meeting(self.datastore, fqids, int(replacement))
             else:
                 if replacement in template_field:
                     template_field.remove(replacement)

@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from ....models.models import User
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ...action import Action
@@ -19,9 +18,6 @@ class TemporaryUserMixin(Action):
             )
 
         if "group_ids" in instance:
-            self.check_equal_fields(
-                User.group__ids, instance, "group_ids", ["meeting_id"]
-            )
             group_ids = instance.pop("group_ids")
             instance["group_$_ids"] = {instance["meeting_id"]: group_ids}
 

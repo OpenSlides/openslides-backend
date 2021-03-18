@@ -1,28 +1,16 @@
 from collections import defaultdict
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import Any, Dict, Iterable, List, Set, Tuple, Union, cast
 
 from ...models.base import model_registry
 from ...models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
     BaseTemplateField,
+    BaseTemplateRelationField,
     GenericRelationField,
     GenericRelationListField,
     RelationField,
     RelationListField,
-    TemplateRelationField,
-    TemplateRelationListField,
 )
 from ...services.datastore.interface import (
     DatastoreService,
@@ -34,10 +22,10 @@ from ...shared.patterns import (
     Collection,
     FullQualifiedField,
     FullQualifiedId,
-    string_to_fqid,
+    transform_to_fqids,
 )
 from ...shared.typing import DeletedModel, ModelMap
-from .typing import FieldUpdateElement, IdentifierList, RelationFieldUpdates
+from .typing import FieldUpdateElement, RelationFieldUpdates
 
 
 class SingleRelationHandler:
@@ -120,14 +108,12 @@ class SingleRelationHandler:
         """
         # Prepare the new value of our field and the real field name of the reverse field.
         value = self.instance.get(self.field_name)
-        rel_ids = self.transform_to_fqids(value)
+        rel_ids = transform_to_fqids(value, self.field.get_target_collection())
         # We transform everything to lists of fqids to unify the handling. The values are
         # later transformed back
 
         # Just check if we have an invalid use case here.
-        if isinstance(self.field, TemplateRelationField) or isinstance(
-            self.field, TemplateRelationListField
-        ):
+        if isinstance(self.field, BaseTemplateRelationField):
             if self.field.is_template_field(self.field_name):
                 raise ValueError(
                     "You can not handle template fields here. Use them with populated replacements."
@@ -166,7 +152,7 @@ class SingleRelationHandler:
                     [related_name],
                 )
                 # again, we transform everything to lists of fqids
-                rels[fqid][related_name] = self.transform_to_fqids(
+                rels[fqid][related_name] = transform_to_fqids(
                     related_model.get(related_name), self.model.collection
                 )
 
@@ -213,46 +199,6 @@ class SingleRelationHandler:
                 result_template_field = self.prepare_result_template_field(result)
                 final.update(result_template_field)
         return final
-
-    def transform_to_fqids(
-        self,
-        value: Optional[
-            Union[
-                int,
-                str,
-                FullQualifiedId,
-                Sequence[int],
-                Sequence[str],
-                Sequence[FullQualifiedId],
-            ]
-        ],
-        collection: Optional[Collection] = None,
-    ) -> List[FullQualifiedId]:
-        """
-        Get the given value of our field as a list. The list may be empty.
-        Transform all to fqids to handle everything in the same fashion.
-        """
-        id_list: IdentifierList
-        if value is None:
-            id_list = []  # type: ignore  # see https://github.com/python/mypy/issues/2164
-        elif not isinstance(value, list):
-            value_arr = cast(IdentifierList, [value])
-            id_list = value_arr
-        else:
-            id_list = value
-
-        fqid_list = []
-        for id in id_list:
-            if isinstance(id, str):
-                fqid_list.append(string_to_fqid(id))
-            elif isinstance(id, int):
-                if not collection:
-                    collection = self.field.get_target_collection()
-                fqid_list.append(FullQualifiedId(collection, id))
-            else:
-                assert isinstance(id, FullQualifiedId)
-                fqid_list.append(id)
-        return fqid_list
 
     def partition_by_collection(
         self, fqids: Iterable[FullQualifiedId]
@@ -342,7 +288,9 @@ class SingleRelationHandler:
 
             # Get current ids from relation field
             current_value = current_obj.get(self.field_name)
-            current_fqids = set(self.transform_to_fqids(current_value))
+            current_fqids = set(
+                transform_to_fqids(current_value, self.field.get_target_collection())
+            )
 
             # Calculate add set and remove set
             new_fqids = set(rel_fqids)
