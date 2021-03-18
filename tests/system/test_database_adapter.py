@@ -10,7 +10,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class DatabaseAdapterSystemTest(BaseActionTestCase):
     def init_both(self) -> None:
-        self.set_models({"meeting/1": {"name": "meetingDB"}})
+        self.set_models(
+            {"meeting/1": {"name": "meetingDB", "description": "descriptionDB"}}
+        )
         self.datastore.additional_relation_models[
             FullQualifiedId(Collection("meeting"), 1)
         ] = {"id": 1, "name": "meetingAdd"}
@@ -27,11 +29,11 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         self.init_both()
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
-            mapped_fields=["name", "id", "not_there"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+            mapped_fields=["name", "id", "description", "not_there"],
         )
         self.assertEqual(result["name"], "meetingAdd")
         self.assertEqual(result["id"], 1)
+        self.assertEqual(result["description"], "descriptionDB")
         self.assertEqual(result.get("not_there", "None"), "None")
 
     def test_fetch_model_ADD_BEFORE_DB_onlyDB(self) -> None:
@@ -39,7 +41,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         self.assertEqual(result["name"], "meetingDB")
 
@@ -48,7 +49,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         self.assertEqual(result["name"], "meetingAdd")
 
@@ -57,7 +57,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
             self.datastore.fetch_model(
                 fqid=FullQualifiedId(Collection("meeting"), 1),
                 mapped_fields=["name"],
-                db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             )
         self.assertIn(
             "Datastore service sends HTTP 400. Model 'meeting/1' does not exist.",
@@ -68,7 +67,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             exception=False,
         )
         self.assertEqual(result.get("name"), None)

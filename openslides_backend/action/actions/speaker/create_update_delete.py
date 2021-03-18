@@ -58,16 +58,14 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         speaker_ids = self._insert_before_weight(
             instance["id"], weight_no_poos_min, list_of_speakers_id
         )
-        additional_relation_models = {
-            FullQualifiedId(self.model.collection, instance["id"]): instance
-        }
+        self.apply_instance(instance)
         action_data = [
             {
                 "list_of_speakers_id": list_of_speakers_id,
                 "speaker_ids": speaker_ids,
             }
         ]
-        self.execute_other_action(SpeakerSort, action_data, additional_relation_models)
+        self.execute_other_action(SpeakerSort, action_data)
         return instance
 
     def _insert_before_weight(

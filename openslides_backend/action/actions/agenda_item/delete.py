@@ -27,12 +27,13 @@ class AgendaItemDelete(DeleteAction):
         if agenda_item.get("content_object_id"):
             content_object_fqid = string_to_fqid(agenda_item["content_object_id"])
             if content_object_fqid.collection.collection == "topic" and not isinstance(
-                self.additional_relation_models.get(content_object_fqid), DeletedModel
+                self.datastore.additional_relation_models.get(content_object_fqid),
+                DeletedModel,
             ):
+                self.apply_instance(DeletedModel(), fqid)
                 self.execute_other_action(
                     TopicDelete,
                     [{"id": content_object_fqid.id}],
-                    {fqid: DeletedModel()},
                 )
-                self.additional_relation_models[content_object_fqid] = DeletedModel()
+                self.apply_instance(DeletedModel(), content_object_fqid)
         return instance

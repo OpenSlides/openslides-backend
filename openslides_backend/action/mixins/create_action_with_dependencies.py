@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Type
 
-from ...shared.patterns import FullQualifiedId
 from ..action import Action
 from ..generics.create import CreateAction
 
@@ -17,9 +16,7 @@ class CreateActionWithDependencies(CreateAction):
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().base_update_instance(instance)
-        additional_relation_models = {
-            FullQualifiedId(self.model.collection, instance["id"]): instance,
-        }
+        self.apply_instance(instance)
         for ActionClass in self.dependencies:
             special_check_method_name = "check_dependant_action_execution_" + str(
                 ActionClass.model.collection
@@ -38,9 +35,7 @@ class CreateActionWithDependencies(CreateAction):
                 self, special_action_data_method_name, self.get_dependent_action_data
             )
             action_data = action_data_method(instance, ActionClass)
-            self.execute_other_action(
-                ActionClass, action_data, additional_relation_models
-            )
+            self.execute_other_action(ActionClass, action_data)
         return instance
 
     def check_dependant_action_execution(

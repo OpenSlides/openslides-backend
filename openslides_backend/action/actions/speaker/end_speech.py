@@ -24,9 +24,10 @@ class SpeakerEndSpeach(UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-            speaker = self.fetch_model(
+            speaker = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 mapped_fields=["begin_time", "end_time"],
+                lock_result=True,
             )
             if speaker.get("begin_time") is None or speaker.get("end_time") is not None:
                 raise ActionException(

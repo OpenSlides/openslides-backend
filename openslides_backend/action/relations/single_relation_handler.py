@@ -12,19 +12,22 @@ from ...models.fields import (
     RelationField,
     RelationListField,
 )
+from ...services.datastore.deleted_models_behaviour import (
+    DeletedModelsBehaviour,
+    InstanceAdditionalBehaviour,
+)
 from ...services.datastore.interface import (
     DatastoreService,
     GetManyRequest,
     PartialModel,
 )
-from ...shared.exceptions import ActionException, DatastoreException
+from ...shared.exceptions import ActionException
 from ...shared.patterns import (
     Collection,
     FullQualifiedField,
     FullQualifiedId,
     transform_to_fqids,
 )
-from ...shared.typing import DeletedModel, ModelMap
 from .typing import FieldUpdateElement, RelationFieldUpdates
 
 
@@ -38,11 +41,6 @@ class SingleRelationHandler:
         by content: integer relation and generic relation (using a full qualified id)
 
     Therefor we have many cases this class has to handle.
-
-    additional_relation_models can provide models that are required for resolving the
-    relations, but are not yet present in the datastore. This is necessary when nesting
-    actions that are dependent on each other (e. g. topic.create calls
-    agenda_item.create, which assumes the topic exists already).
     """
 
     def __init__(
@@ -53,7 +51,6 @@ class SingleRelationHandler:
         instance: Dict[str, Any],
         only_add: bool = False,
         only_remove: bool = False,
-        additional_relation_models: ModelMap = {},
     ) -> None:
         self.datastore = datastore
         self.model = model_registry[field.own_collection]
@@ -67,7 +64,6 @@ class SingleRelationHandler:
             )
         self.only_add = only_add
         self.only_remove = only_remove
-        self.additional_relation_models = additional_relation_models
 
         self.type = self.get_field_type()
 
@@ -147,9 +143,12 @@ class SingleRelationHandler:
             # acquire all related models with the related fields
             rels = defaultdict(dict)
             for fqid in changed_fqids_per_collection[collection]:
-                related_model = self.fetch_model(
+                related_model = self.datastore.fetch_model(
                     fqid,
                     [related_name],
+                    get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
+                    lock_result=True,
+                    exception=False,
                 )
                 # again, we transform everything to lists of fqids
                 rels[fqid][related_name] = transform_to_fqids(
@@ -240,27 +239,6 @@ class SingleRelationHandler:
                 replacement = self.field.get_replacement(self.field_name)
             return related_field.get_structured_field_name(replacement)
 
-    def fetch_model(
-        self, fqid: FullQualifiedId, mapped_fields: List[str]
-    ) -> Dict[str, Any]:
-        if fqid in self.additional_relation_models and not isinstance(
-            self.additional_relation_models[fqid], DeletedModel
-        ):
-            return {
-                field: self.additional_relation_models[fqid].get(field)
-                for field in mapped_fields
-                if field in self.additional_relation_models[fqid]
-            }
-        else:
-            try:
-                return self.datastore.get(
-                    fqid,
-                    mapped_fields=mapped_fields,
-                    lock_result=True,
-                )
-            except DatastoreException:
-                return {}
-
     def relation_diffs(
         self, rel_fqids: List[FullQualifiedId]
     ) -> Tuple[Set[FullQualifiedId], Set[FullQualifiedId]]:
@@ -281,9 +259,12 @@ class SingleRelationHandler:
             # We have to compare with the current datastore state.
 
             # Retrieve current object from datastore
-            current_obj = self.fetch_model(
+            current_obj = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, self.id),
                 [self.field_name],
+                db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
+                lock_result=True,
+                exception=False,
             )
 
             # Get current ids from relation field
@@ -314,6 +295,8 @@ class SingleRelationHandler:
             new_value: Any  # Union[FullQualifiedId, List[FullQualifiedId]]
             own_fqid = FullQualifiedId(collection=self.field.own_collection, id=self.id)
             if fqid in add:
+                if own_fqid in rel[related_name]:
+                    continue
                 new_value = rel[related_name] + [own_fqid]
                 rel_element = FieldUpdateElement(
                     type="add", value=new_value, modified_element=own_fqid
@@ -321,9 +304,8 @@ class SingleRelationHandler:
             else:
                 assert fqid in remove
                 new_value = rel[related_name]
-                assert (
-                    own_fqid in new_value
-                ), f"Invalid relation update: {own_fqid} is not in {new_value} (Collectionfield {self.model.collection}/{self.field_name})"
+                if own_fqid not in new_value:
+                    continue  # maybe replaced by other action
                 new_value.remove(own_fqid)
                 rel_element = FieldUpdateElement(
                     type="remove", value=new_value, modified_element=own_fqid

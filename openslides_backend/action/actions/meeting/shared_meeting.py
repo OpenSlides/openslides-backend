@@ -1,6 +1,6 @@
 from ....shared.typing import Schema
 
-meeting_projector_default_object_list = [
+meeting_projector_default_replacements = [
     "agenda_all_items",
     "topics",
     "list_of_speakers",
@@ -23,7 +23,7 @@ used_as_default_for_schema: Schema = {
     "type": "object",
     "properties": {
         name: {"type": ["integer", "null"]}
-        for name in meeting_projector_default_object_list
+        for name in meeting_projector_default_replacements
     },
     "additionalProperties": False,
 }

@@ -235,6 +235,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/1")
         self.assert_model_exists("meeting/2")
+        self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
 
     def test_delete_1_2_events(self) -> None:
         self.set_models(

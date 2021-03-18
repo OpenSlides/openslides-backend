@@ -38,9 +38,9 @@ class PollAnonymize(BaseActionTestCase):
             assert vote.get("user_id") is None
             assert vote.get("delegated_user_is") is None
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["1"]
+        assert user.get("vote_$_ids") == []
         assert user.get("vote_$1_ids") == []
-        assert user.get("vote_delegated_vote_$_ids") == ["1"]
+        assert user.get("vote_delegated_vote_$_ids") == []
         assert user.get("vote_delegated_vote_$1_ids") == []
 
     def test_anonymize_wrong_state(self) -> None:

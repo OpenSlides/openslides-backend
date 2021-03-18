@@ -2,7 +2,6 @@ from typing import Any, Dict, Iterable, List, Tuple, Type
 
 from ...models.fields import (
     BaseGenericRelationField,
-    BaseRelationField,
     BaseTemplateRelationField,
     OnDelete,
 )
@@ -10,7 +9,7 @@ from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId, transform_to_fqids
-from ...shared.typing import DeletedModel, ModelMap
+from ...shared.typing import DeletedModel
 from ..action import Action
 from ..util.actions_map import actions_map
 from ..util.typing import ActionData
@@ -37,18 +36,16 @@ class DeleteAction(Action):
             for field in self.model.get_relation_fields()
             if field.on_delete != OnDelete.SET_NULL
         ]
-        db_instance = self.datastore.get(
+        db_instance = self.datastore.fetch_model(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
             lock_result=True,
         )
 
-        # Collect relation fields and also update instance and set
-        # all relation fields to None.
-        relation_fields: List[Tuple[str, BaseRelationField]] = []
+        # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
         delete_actions: List[Tuple[Type[Action], ActionData]] = []
-        additional_relation_models: ModelMap = {this_fqid: DeletedModel()}
+        self.datastore.update_additional_models(this_fqid, DeletedModel())
         for field in self.model.get_relation_fields():
             # Check on_delete.
             if field.on_delete != OnDelete.SET_NULL:
@@ -72,7 +69,8 @@ class DeleteAction(Action):
                         fqid
                         for fqid in foreign_fqids
                         if not isinstance(
-                            self.additional_relation_models.get(fqid), DeletedModel
+                            self.datastore.additional_relation_models.get(fqid),
+                            DeletedModel,
                         )
                     ]
                     if protected_fqids:
@@ -88,7 +86,8 @@ class DeleteAction(Action):
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:
                         if isinstance(
-                            self.additional_relation_models.get(fqid), DeletedModel
+                            self.datastore.additional_relation_models.get(fqid),
+                            DeletedModel,
                         ):
                             # skip models that are already deleted
                             continue
@@ -103,12 +102,12 @@ class DeleteAction(Action):
                         # Assume that the delete action uses the standard action data
                         action_data = [{"id": fqid.id}]
                         delete_actions.append((delete_action_class, action_data))
-                        additional_relation_models[fqid] = DeletedModel()
+                        self.datastore.update_additional_models(fqid, DeletedModel())
             else:
                 # field.on_delete == OnDelete.SET_NULL
                 if isinstance(field, BaseTemplateRelationField):
                     template_field_name = field.get_template_field_name()
-                    db_instance = self.datastore.get(
+                    db_instance = self.datastore.fetch_model(
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
                         mapped_fields=[template_field_name],
                         lock_result=True,
@@ -118,19 +117,15 @@ class DeleteAction(Action):
                             replacement
                         )
                         instance[structured_field_name] = None
-                        relation_fields.append((structured_field_name, field))
                 else:
                     instance[field.own_field_name] = None
-                    relation_fields.append((field.own_field_name, field))
 
         # Add additional relation models and execute all previously gathered delete actions
         # catch all protected models exception to gather all protected fqids
         all_protected_fqids: List[FullQualifiedId] = []
         for delete_action_class, delete_action_data in delete_actions:
             try:
-                self.execute_other_action(
-                    delete_action_class, delete_action_data, additional_relation_models
-                )
+                self.execute_other_action(delete_action_class, delete_action_data)
             except ProtectedModelsException as e:
                 all_protected_fqids.extend(e.fqids)
 

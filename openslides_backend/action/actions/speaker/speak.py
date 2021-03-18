@@ -25,15 +25,17 @@ class SpeakerSpeak(UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-            this_speaker = self.fetch_model(
+            this_speaker = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 mapped_fields=["list_of_speakers_id"],
+                lock_result=True,
             )
-            list_of_speakers = self.fetch_model(
+            list_of_speakers = self.datastore.fetch_model(
                 FullQualifiedId(
                     Collection("list_of_speakers"), this_speaker["list_of_speakers_id"]
                 ),
                 mapped_fields=["speaker_ids", "closed"],
+                lock_result=True,
             )
             if list_of_speakers.get("closed"):
                 raise ActionException("The list of speakers is closed.")

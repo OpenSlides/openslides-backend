@@ -1,8 +1,6 @@
 from typing import Any, Dict, List, Type
 
 from ....models.models import MotionWorkflow
-from ....shared.interfaces.event import EventType
-from ....shared.patterns import FullQualifiedId
 from ...action import Action
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -52,9 +50,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        additional_relation_models: Dict[FullQualifiedId, Any] = {
-            FullQualifiedId(self.model.collection, instance["id"]): instance
-        }
+        self.apply_instance(instance)
         action_data = [
             {
                 "name": "submitted",
@@ -89,14 +85,6 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
         write_requests, action_results = self.execute_other_action(
             MotionStateActionSet.get_action("create"),
             action_data,
-            additional_relation_models,
-        )
-        additional_relation_models.update(
-            {
-                event["fqid"]: event["fields"]
-                for event in write_requests.events  # type: ignore
-                if event["type"] == EventType.Create
-            }
         )
         first_state_id = action_results[0]["id"]  # type: ignore
         next_state_ids = [ar["id"] for ar in action_results[-3:]]  # type: ignore
@@ -104,6 +92,5 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
         self.execute_other_action(
             MotionStateActionSet.get_action("update"),
             action_data,
-            additional_relation_models,
         )
         return instance

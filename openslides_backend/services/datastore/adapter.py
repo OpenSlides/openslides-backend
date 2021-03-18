@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import simplejson as json
@@ -39,7 +40,8 @@ class DatastoreAdapter(DatastoreService):
         self.logger = logging.getLogger(__name__)
         self.engine = engine
         self.locked_fields = {}
-        self.additional_relation_models: ModelMap = {}
+        self.additional_relation_models: ModelMap = defaultdict(dict)
+        self.additional_relation_models_lock: Dict[Any, Any] = defaultdict(dict)
 
     def retrieve(self, command: commands.Command) -> DatastoreResponse:
         """
@@ -425,6 +427,16 @@ class DatastoreAdapter(DatastoreService):
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
 
+    def update_additional_models(
+        self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False
+    ) -> None:
+        if replace or isinstance(instance, DeletedModel):
+            self.additional_relation_models[fqid] = instance
+        else:
+            self.additional_relation_models[fqid].update(instance)
+        if "id" not in self.additional_relation_models[fqid]:
+            self.additional_relation_models[fqid]["id"] = fqid.id
+
     def fetch_model(
         self,
         fqid: FullQualifiedId,
@@ -432,37 +444,55 @@ class DatastoreAdapter(DatastoreService):
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = False,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ONLY_DBINST,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
     ) -> Dict[str, Any]:
         datastore_exception: Optional[DatastoreException] = None
 
         def get_additional() -> Tuple[bool, Dict[str, Any]]:
-            if fqid in self.additional_relation_models and not isinstance(
-                self.additional_relation_models[fqid], DeletedModel
+            if fqid in self.additional_relation_models and (
+                get_deleted_models == DeletedModelsBehaviour.ALL_MODELS
+                or (
+                    isinstance(self.additional_relation_models[fqid], DeletedModel)
+                    == (get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED)
+                )
             ):
                 complete = True
-                instance = {}
-                for field in mapped_fields:
-                    if field in self.additional_relation_models[fqid]:
-                        instance[field] = self.additional_relation_models[fqid][field]
-                    else:
-                        complete = False
+                if mapped_fields:
+                    instance = {}
+                    for field in mapped_fields:
+                        if field in self.additional_relation_models[fqid]:
+                            instance[field] = self.additional_relation_models[fqid][
+                                field
+                            ]
+                        else:
+                            complete = False
+                else:
+                    instance = self.additional_relation_models[fqid]
+                if lock_result and fqid in self.additional_relation_models_lock:
+                    self.update_locked_fields(
+                        fqid, self.additional_relation_models_lock[fqid]
+                    )
                 return (complete, instance)
             else:
                 return (False, {})
 
         def get_db() -> Tuple[bool, Dict[str, Any], Optional[DatastoreException]]:
             try:
+                instance = self.get(
+                    fqid,
+                    mapped_fields=mapped_fields,
+                    position=position,
+                    get_deleted_models=get_deleted_models,
+                    lock_result=lock_result,
+                )
+                if lock_result:
+                    self.additional_relation_models_lock[fqid] = self.locked_fields[
+                        str(fqid)
+                    ]
                 return (
                     True,
-                    self.get(
-                        fqid,
-                        mapped_fields=mapped_fields,
-                        position=position,
-                        get_deleted_models=get_deleted_models,
-                        lock_result=lock_result,
-                    ),
+                    instance,
                     None,
                 )
             except DatastoreException as e:
@@ -501,3 +531,7 @@ class DatastoreAdapter(DatastoreService):
             else:
                 raise DatastoreException(f"{fqid} not found at all.")
         return result
+
+    def reset(self) -> None:
+        self.additional_relation_models.clear()
+        self.additional_relation_models_lock.clear()

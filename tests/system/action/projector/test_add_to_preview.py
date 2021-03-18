@@ -80,7 +80,7 @@ class ProjectorAddToPreview(BaseActionTestCase):
             {"ids": [4], "content_object_id": "assignment/1", "stable": False},
         )
         self.assert_status_code(response, 400)
-        assert (
-            "The following models do not belong to meeting 1: [FullQualifiedId('projector/4')]"
-            in response.json["message"]
+        self.assertIn(
+            "The following models do not belong to meeting 1: [FullQualifiedId('projector/4')]",
+            response.json["message"],
         )

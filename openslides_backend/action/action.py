@@ -20,8 +20,7 @@ from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
-from ..shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
-from ..shared.typing import ModelMap
+from ..shared.patterns import FullQualifiedId, transform_to_fqids
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -73,8 +72,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
     permission: Optional[Permission] = None
     relation_manager: RelationManager
 
-    modified_relation_fields: Dict[FullQualifiedField, Any]
-
     write_requests: List[WriteRequest]
     results: ActionResults
 
@@ -84,7 +81,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         datastore: DatastoreService,
         relation_manager: RelationManager,
         logging: LoggingModule,
-        additional_relation_models: ModelMap = {},
     ) -> None:
         self.services = services
         self.permission_service = services.permission()
@@ -92,10 +88,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.media = services.media()
         self.datastore = datastore
         self.relation_manager = relation_manager
-        self.additional_relation_models = additional_relation_models
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-        self.modified_relation_fields = {}
         self.write_requests = []
         self.results = []
 
@@ -171,8 +165,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if instance.get("meeting_id"):
             return instance["meeting_id"]
         else:
-            db_instance = self.fetch_model(
-                FullQualifiedId(self.model.collection, instance["id"]), ["meeting_id"]
+            db_instance = self.datastore.fetch_model(
+                FullQualifiedId(self.model.collection, instance["id"]),
+                ["meeting_id"],
+                exception=True,
+                lock_result=True,
             )
             return db_instance["meeting_id"]
 
@@ -218,7 +215,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Creates write request elements (with update events) for all relations.
         """
         relation_updates = self.relation_manager.get_relation_updates(
-            self.model, instance, self.name, self.additional_relation_models
+            self.model, instance, self.name
         )
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
@@ -265,6 +262,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if fields:
             event["fields"] = fields
+            self.datastore.update_additional_models(fqid, fields)
         if list_fields:
             event["list_fields"] = list_fields
         return WriteRequest(
@@ -393,7 +391,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = FullQualifiedId(self.model.collection, instance["id"])
-                    db_instance = self.fetch_model(fqid, [equal_field])
+                    db_instance = self.datastore.fetch_model(
+                        fqid,
+                        [equal_field],
+                        lock_result=True,
+                    )
                     if not (own_equal_field_value := db_instance.get(equal_field)):
                         raise ActionException(
                             f"{fqid} has no value for the field {equal_field}"
@@ -408,7 +410,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
                         )
                     else:
                         for fqid in fqids:
-                            related_instance = self.fetch_model(fqid, [equal_field])
+                            related_instance = self.datastore.fetch_model(
+                                fqid,
+                                [equal_field],
+                            )
                             if (
                                 related_instance.get(equal_field)
                                 != own_equal_field_value
@@ -436,27 +441,17 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 structured_fields.append((instance_field, replacement))
         return structured_fields
 
-    def fetch_model(
-        self, fqid: FullQualifiedId, mapped_fields: List[str] = []
-    ) -> Dict[str, Any]:
-        """
-        Helper method to retrieve an instance from datastore or
-        additional_relation_models dictionary.
-        """
-        if fqid in self.additional_relation_models:
-            additional_model = self.additional_relation_models[fqid]
-            if mapped_fields:
-                return {field: additional_model.get(field) for field in mapped_fields}
-            else:
-                return additional_model
-        else:
-            return self.datastore.get(fqid, mapped_fields, lock_result=True)
+    def apply_instance(
+        self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
+    ) -> None:
+        if not fqid:
+            fqid = FullQualifiedId(self.model.collection, instance["id"])
+        self.datastore.update_additional_models(fqid, instance)
 
     def execute_other_action(
         self,
         ActionClass: Type["Action"],
         action_data: ActionData,
-        additional_relation_models: ModelMap = {},
     ) -> Tuple[Optional[WriteRequest], ActionResults]:
         """
         Executes the given action class as a dependent action with the given action
@@ -470,11 +465,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.datastore,
             self.relation_manager,
             self.logging,
-            {
-                **self.datastore.additional_relation_models,
-                **self.additional_relation_models,
-                **additional_relation_models,
-            },
         )
         write_request, action_results = action.perform(
             action_data, self.user_id, internal=True

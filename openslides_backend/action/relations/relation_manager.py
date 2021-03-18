@@ -1,15 +1,10 @@
 from typing import Any, Dict, List, cast
 
-from openslides_backend.services.datastore.deleted_models_behaviour import (
-    InstanceAdditionalBehaviour,
-)
-
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import DatastoreException
 from ...shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
-from ...shared.typing import ModelMap
 from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
@@ -35,7 +30,6 @@ class RelationManager:
         model: Model,
         instance: Dict[str, Any],
         action: str,
-        additional_relation_models: ModelMap = {},
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
@@ -67,7 +61,6 @@ class RelationManager:
                 field,
                 field_name,
                 instance,
-                additional_relation_models=additional_relation_models,
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
@@ -143,7 +136,8 @@ class RelationManager:
                                 replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
-                            db_additional_relevance=InstanceAdditionalBehaviour.DBINST_BEFORE_ADDITIONAL,
+                            lock_result=True,
+                            exception=True,
                         )
                     template_field.append(replacement)
 
@@ -163,8 +157,9 @@ class RelationManager:
         # process template fields and set the contained structured fields
         for field_name, field in template_fields:
             field_value = instance[field_name]
-            assert isinstance(field_value, dict)
-
+            assert isinstance(
+                field_value, dict
+            ), f"Field '{field_name}'' has no dict as value: '{field_value}'"
             additional_instance_fields[field_name] = get_template_field_db_value(
                 field_name
             )

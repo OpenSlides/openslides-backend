@@ -168,7 +168,7 @@ class PollVoteTest(BaseActionTestCase):
         assert option.get("no") == "1.000000"
         assert option.get("abstain") == "0.000000"
         user = self.get_model("user/1")
-        assert user.get("vote_$_ids") == ["113", "113"]
+        assert user.get("vote_$_ids") == ["113"]
         assert user.get("vote_$113_ids") == [1, 2]
 
     def test_vote_wrong_votes_total(self) -> None:

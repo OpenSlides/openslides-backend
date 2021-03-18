@@ -30,7 +30,11 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
             assert len(field.to) == 1
             fqid = FullQualifiedId(field.get_target_collection(), id)
         # Fetch meeting_id
-        related_model = self.fetch_model(fqid, ["meeting_id"])
+        related_model = self.datastore.fetch_model(
+            fqid,
+            ["meeting_id"],
+            lock_result=True,
+        )
         if not related_model.get("meeting_id"):
             raise ActionException(
                 f"Referenced model in field {self.relation_field_for_meeting} has no meeting id."

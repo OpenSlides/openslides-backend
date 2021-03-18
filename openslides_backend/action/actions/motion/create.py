@@ -156,15 +156,11 @@ class MotionCreate(
         submitter_ids = instance.pop("submitter_ids", None)
         if not submitter_ids:
             submitter_ids = [self.user_id]
-        additional_relation_models = {
-            FullQualifiedId(self.model.collection, instance["id"]): instance
-        }
+        self.apply_instance(instance)
         action_data = []
         for user_id in submitter_ids:
             action_data.append({"motion_id": instance["id"], "user_id": user_id})
-        self.execute_other_action(
-            MotionSubmitterCreateAction, action_data, additional_relation_models
-        )
+        self.execute_other_action(MotionSubmitterCreateAction, action_data)
 
         instance["sequential_number"] = self.get_sequential_number(
             instance["meeting_id"]
