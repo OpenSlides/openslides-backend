@@ -20,7 +20,7 @@ class ProjectorProject(UpdateAction):
         required_properties=["content_object_id"],
         optional_properties=["options", "stable", "type"],
         additional_required_fields={
-            "ids": {"type": "array", "items": required_id_schema}
+            "ids": {"type": "array", "items": required_id_schema, "uniqueItems": True}
         },
         title="Projector project schema",
     )
@@ -40,8 +40,9 @@ class ProjectorProject(UpdateAction):
                     "meeting_id": meeting_id,
                     "preview_projector_id": projector_id,
                     "weight": max_weight + 1,
+                    "content_object_id": instance["content_object_id"],
                 }
-                for field in ("content_object_id", "options", "stable", "type"):
+                for field in ("options", "stable", "type"):
                     if instance.get(field):
                         data[field] = instance[field]
                 self.execute_other_action(ProjectionCreate, [data])

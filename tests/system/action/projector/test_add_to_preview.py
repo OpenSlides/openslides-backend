@@ -7,10 +7,12 @@ class ProjectorAddToPreview(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {},
+                "meeting/2": {},
                 "assignment/1": {"meeting_id": 1},
                 "projector/1": {"meeting_id": 1, "preview_projection_ids": [10]},
                 "projector/2": {"meeting_id": 1, "preview_projection_ids": [11, 12]},
                 "projector/3": {"meeting_id": 1},
+                "projector/4": {"meeting_id": 2},
                 "projection/10": {
                     "meeting_id": 1,
                     "content_object_id": "assignment/1",
@@ -63,3 +65,22 @@ class ProjectorAddToPreview(BaseActionTestCase):
         assert projection_13.get("preview_projector_id") == 3
         assert projection_13.get("content_object_id") == "assignment/1"
         assert projection_13.get("weight") == 2
+
+    def test_add_to_preview_non_unique_ids(self) -> None:
+        response = self.request(
+            "projector.add_to_preview",
+            {"ids": [1, 1], "content_object_id": "assignment/1", "stable": False},
+        )
+        self.assert_status_code(response, 400)
+        assert "data.ids must contain unique items" in response.data.decode()
+
+    def test_add_to_preview_check_meeting_id(self) -> None:
+        response = self.request(
+            "projector.add_to_preview",
+            {"ids": [4], "content_object_id": "assignment/1", "stable": False},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "The relation preview_projector_id requires the following fields to be equal:\\nprojection/13/meeting_id: 1\\nprojector/4/meeting_id: 2"
+            in response.data.decode()
+        )
