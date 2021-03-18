@@ -389,7 +389,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = FullQualifiedId(self.model.collection, instance["id"])
-                    db_instance = self.fetch_model(fqid, [equal_field])
+                    db_instance = self.datastore.fetch_model(
+                        fqid,
+                        [equal_field],
+                        db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+                        lock_result=True,
+                    )
                     if not (own_equal_field_value := db_instance.get(equal_field)):
                         raise ActionException(
                             f"{fqid} has no value for the field {equal_field}"
@@ -435,22 +440,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             if replacement:
                 structured_fields.append((instance_field, replacement))
         return structured_fields
-
-    def get_field_value_as_fqid_list(
-        self, field: BaseRelationField, value: Any
-    ) -> List[FullQualifiedId]:
-        """ Transforms the given value to an Fqid List. """
-        if not isinstance(value, list):
-            if value is None:
-                value = []
-            else:
-                value = [value]
-        if not isinstance(field, BaseGenericRelationField):
-            assert (
-                len(field.to) == 1
-            )  # non-generic fields can only have one target collection
-            value = [FullQualifiedId(field.get_target_collection(), id) for id in value]
-        return value
 
     def apply_instance(
         self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None

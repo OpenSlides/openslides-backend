@@ -23,7 +23,7 @@ class CreateAction(Action):
 
         instance = self.update_instance(instance)
         self.apply_instance(instance)
-        instance = self.validate_relation_fields(instance)
+        self.validate_relation_fields(instance)
 
         return instance
 
