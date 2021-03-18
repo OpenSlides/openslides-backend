@@ -6,16 +6,18 @@ from openslides_backend.action.relations.single_relation_handler import (
 from openslides_backend.models import fields
 from tests.util import get_fqfield
 
-from .setup import BaseRelationsTestCase, FakeModelB, FakeModelC
+from ..action.base import BaseActionTestCase
+from .setup import FakeModelB, FakeModelC
 
 
-class StructuredRelationTester(BaseRelationsTestCase):
+class StructuredRelationTester(BaseActionTestCase):
     maxDiff = None
 
     def test_simple_structured_relation(self) -> None:
         meeting_id = 222
-        self.create_model("fake_model_a/333", {})
-        self.create_model("fake_model_b/111", {"meeting_id": meeting_id})
+        self.set_models(
+            {"fake_model_a/333": {}, "fake_model_b/111": {"meeting_id": meeting_id}}
+        )
         field = cast(
             fields.BaseRelationField,
             FakeModelB().get_field("structured_relation_field"),

@@ -17,5 +17,5 @@ class PollPublishActionTest(BaseActionTestCase):
         assert poll.get("state") == "created"
         assert (
             "Cannot publish poll 1, because it is not in state finished."
-            in response.data.decode()
+            in response.json["message"]
         )

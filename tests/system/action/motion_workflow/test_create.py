@@ -35,14 +35,9 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
 
     def test_create_simple_workflow(self) -> None:
         self.create_model("meeting/42", {"name": "test_meeting1"})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "motion_workflow.create_simple_workflow",
-                    "data": [{"name": "test_Xcdfgee", "meeting_id": 42}],
-                }
-            ],
+        response = self.request(
+            "motion_workflow.create_simple_workflow",
+            {"name": "test_Xcdfgee", "meeting_id": 42},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(

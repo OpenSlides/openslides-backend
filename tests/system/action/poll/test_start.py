@@ -13,17 +13,18 @@ class VotePollBaseTestClass(BaseActionTestCase):
             },
         )
         self.create_poll()
-        self.create_model("meeting/113", {"name": "my meeting"})
-        self.create_model("group/1", {"user_ids": [1]})
-        self.create_model("option/1", {"meeting_id": 113, "poll_id": 1})
-        self.create_model("option/2", {"meeting_id": 113, "poll_id": 1})
-        self.update_model(
-            "user/1",
+        self.set_models(
             {
-                "is_present_in_meeting_ids": [113],
-                "group_$113_ids": [1],
-                "group_$_ids": ["113"],
-            },
+                "meeting/113": {"name": "my meeting"},
+                "group/1": {"user_ids": [1]},
+                "option/1": {"meeting_id": 113, "poll_id": 1},
+                "option/2": {"meeting_id": 113, "poll_id": 1},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+            }
         )
 
     def create_poll(self) -> None:
@@ -68,7 +69,7 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
         assert poll.get("state") == "published"
         assert (
             "Cannot start poll 1, because it is not in state created."
-            in response.data.decode()
+            in response.json["message"]
         )
 
 

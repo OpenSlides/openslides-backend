@@ -34,6 +34,6 @@ class ProjectionDelete(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "Projection must have a current_projector_id or a preview_projector_id."
-            in response.data.decode()
+            in response.json["message"]
         )
         self.assert_model_exists("projection/13")

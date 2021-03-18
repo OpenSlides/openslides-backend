@@ -3,13 +3,13 @@ from openslides_backend.action.relations.single_relation_handler import (
 )
 from tests.util import get_fqfield
 
-from .setup import BaseRelationsTestCase, FakeModelA
+from ..action.base import BaseActionTestCase
+from .setup import FakeModelA
 
 
-class RelationHandlerTest(BaseRelationsTestCase):
+class RelationHandlerTest(BaseActionTestCase):
     def test_O2O_empty(self) -> None:
-        self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_b/2", {})
+        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_oo,
@@ -74,8 +74,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_O2M_empty(self) -> None:
-        self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_b/2", {})
+        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_om,
@@ -93,9 +92,13 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_O2M_add(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_om": 3})
-        self.create_model("fake_model_a/2", {})
-        self.create_model("fake_model_b/3", {"fake_model_a_mo": [1]})
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_om": 3},
+                "fake_model_a/2": {},
+                "fake_model_b/3": {"fake_model_a_mo": [1]},
+            }
+        )
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_om,
@@ -136,8 +139,7 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_M2M_empty(self) -> None:
-        self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_b/2", {})
+        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_mm,
@@ -155,9 +157,13 @@ class RelationHandlerTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_M2M_add(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_mm": [3]})
-        self.create_model("fake_model_a/2", {})
-        self.create_model("fake_model_b/3", {"fake_model_a_mm": [1]})
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_mm": [3]},
+                "fake_model_a/2": {},
+                "fake_model_b/3": {"fake_model_a_mm": [1]},
+            }
+        )
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_mm,

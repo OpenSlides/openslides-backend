@@ -41,8 +41,12 @@ class FakeModelURAUpdateAction(UpdateAction):
 
 class TestUpdateRelation(BaseActionTestCase):
     def test_set_to_null(self) -> None:
-        self.create_model("fake_model_ur_a/1", {"fake_model_ur_b_id": 1})
-        self.create_model("fake_model_ur_b/1", {"fake_model_ur_a_id": 1})
+        self.set_models(
+            {
+                "fake_model_ur_a/1": {"fake_model_ur_b_id": 1},
+                "fake_model_ur_b/1": {"fake_model_ur_a_id": 1},
+            }
+        )
         response = self.request(
             "fake_model_ur_a.update", {"id": 1, "fake_model_ur_b_id": None}
         )
@@ -51,8 +55,12 @@ class TestUpdateRelation(BaseActionTestCase):
         self.assert_model_exists("fake_model_ur_b/1", {"fake_model_ur_a_id": None})
 
     def test_set_required_to_null(self) -> None:
-        self.create_model("fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1})
-        self.create_model("fake_model_ur_b/1", {"fake_model_ur_a_required_id": 1})
+        self.set_models(
+            {
+                "fake_model_ur_a/1": {"fake_model_ur_b_required_id": 1},
+                "fake_model_ur_b/1": {"fake_model_ur_a_required_id": 1},
+            }
+        )
         response = self.request(
             "fake_model_ur_a.update", {"id": 1, "fake_model_ur_b_required_id": None}
         )
@@ -69,8 +77,12 @@ class TestUpdateRelation(BaseActionTestCase):
         )
 
     def test_set_required_to_0(self) -> None:
-        self.create_model("fake_model_ur_a/1", {"fake_model_ur_b_required_id": 1})
-        self.create_model("fake_model_ur_b/1", {"fake_model_ur_a_required_id": 1})
+        self.set_models(
+            {
+                "fake_model_ur_a/1": {"fake_model_ur_b_required_id": 1},
+                "fake_model_ur_b/1": {"fake_model_ur_a_required_id": 1},
+            }
+        )
         response = self.request(
             "fake_model_ur_a.update", {"id": 1, "fake_model_ur_b_required_id": 0}
         )

@@ -45,5 +45,5 @@ class ProjectorSortPreview(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "Must give all preview projections of this projector and nothing else."
-            in response.data.decode()
+            in response.json["message"]
         )

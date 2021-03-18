@@ -57,7 +57,7 @@ class ProjectorProjectPreview(BaseActionTestCase):
     def test_project_preview_nothing(self) -> None:
         response = self.request("projector.project_preview", {"id": 2})
         self.assert_status_code(response, 400)
-        assert "Projection has not a preview_projector_id." in response.data.decode()
+        assert "Projection has not a preview_projector_id." in response.json["message"]
         projector = self.get_model("projector/3")
         assert projector.get("current_projection_ids") == [1, 2]
         assert projector.get("preview_projection_ids") == [3, 4]
