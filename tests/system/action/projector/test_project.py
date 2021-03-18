@@ -125,7 +125,7 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "The relation current_projector_id requires the following fields to be equal:\\nprojection/112/meeting_id: 2\\nprojector/23/meeting_id: 1"
+            "The following models do not belong to meeting 2: [FullQualifiedId('projector/23')]"
             in response.data.decode()
         )
 
