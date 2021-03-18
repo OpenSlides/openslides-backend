@@ -4,6 +4,7 @@ from unittest import TestCase
 import requests
 import simplejson as json
 from fastjsonschema import validate
+from fastjsonschema.exceptions import JsonSchemaException
 
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import BaseTemplateField
@@ -36,6 +37,7 @@ class BaseSystemTestCase(TestCase):
     auth: AuthenticationService
     datastore: DatastoreService
     client: Client
+    anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
     EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json"
 
@@ -53,9 +55,11 @@ class BaseSystemTestCase(TestCase):
                 "username": ADMIN_USERNAME,
                 "password": self.auth.hash(ADMIN_PASSWORD),
                 "is_active": True,
+                "organisation_management_level": "superadmin",
             },
         )
         self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
+        self.anon_client = self.create_client()
 
     def load_example_data(self) -> None:
         """
@@ -68,7 +72,7 @@ class BaseSystemTestCase(TestCase):
             for model in models:
                 self.create_model(f"{collection}/{model['id']}", model)
 
-    def create_client(self, username: str, password: str) -> Client:
+    def create_client(self, username: str = None, password: str = None) -> Client:
         return Client(self.app, username, password)
 
     def get_application(self) -> WSGIApplication:
@@ -135,7 +139,12 @@ class BaseSystemTestCase(TestCase):
                 }
             else:
                 schema = field.get_schema()
-            validate(schema, value)
+            try:
+                validate(schema, value)
+            except JsonSchemaException as e:
+                raise JsonSchemaException(
+                    f"Invalid data for {fqid}/{field_name}: " + e.message
+                )
 
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(

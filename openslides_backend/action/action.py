@@ -5,6 +5,8 @@ import fastjsonschema
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
+from ..permissions.permission_helper import has_perm
+from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
@@ -49,7 +51,7 @@ class BaseAction:  # pragma: no cover
     """
 
     services: Services
-    permission: PermissionService
+    permission_service: PermissionService
     datastore: DatastoreService
     auth: AuthenticationService
     media: MediaService
@@ -68,6 +70,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema_validator: Callable[[Dict[str, Any]], None]
     is_singular: bool = False
     internal: bool = False
+    permission: Optional[Permission] = None
     relation_manager: RelationManager
 
     modified_relation_fields: Dict[FullQualifiedField, Any]
@@ -84,7 +87,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         additional_relation_models: ModelMap = {},
     ) -> None:
         self.services = services
-        self.permission = services.permission()
+        self.permission_service = services.permission()
         self.auth = services.authentication()
         self.media = services.media()
         self.datastore = datastore
@@ -106,12 +109,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.index = 0
         for instance in action_data:
             self.validate_instance(instance)
+            # perform permission check not for internal actions
+            if not internal:
+                self.check_permissions(instance)
             self.index += 1
         self.index = -1
-
-        # perform permission not for internal actions
-        if not internal:
-            self.check_permissions(action_data)
 
         instances = self.get_updated_instances(action_data)
         is_original_instances = hasattr(
@@ -143,14 +145,36 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
         return (final_write_request, self.results)
 
-    def check_permissions(self, action_data: ActionData) -> None:
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
         """
-        Checks permission by requesting permission service.
+        Checks permission by requesting permission service or using internal check.
         """
-        if not self.permission.is_allowed(self.name, self.user_id, list(action_data)):
-            raise PermissionDenied(
-                f"You are not allowed to perform action {self.name}."
+        # switch between internal and external permission service
+        if self.permission:
+            meeting_id = self.get_meeting_id(instance)
+            if has_perm(self.datastore, self.user_id, self.permission, meeting_id):
+                return
+        else:
+            if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
+                return
+
+        msg = f"You are not allowed to perform action {self.name}."
+        if self.permission:
+            msg += f" Missing permission: {self.permission}"
+        raise PermissionDenied(msg)
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        """
+        Returns the meeting_id, either directly from the instance or from the datastore.
+        Must be overwritten if no meeting_id is present in either!
+        """
+        if instance.get("meeting_id"):
+            return instance["meeting_id"]
+        else:
+            db_instance = self.fetch_model(
+                FullQualifiedId(self.model.collection, instance["id"]), ["meeting_id"]
             )
+            return db_instance["meeting_id"]
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

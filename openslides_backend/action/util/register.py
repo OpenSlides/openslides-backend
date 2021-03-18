@@ -32,6 +32,7 @@ def register_action_set(
     def wrapper(clazz: Type[ActionSet]) -> Type[ActionSet]:
         for route, action in clazz.get_actions().items():
             name = ".".join((name_prefix, route))
+            action.permission = clazz.permission
             _register_action(name, action)
         return clazz
 

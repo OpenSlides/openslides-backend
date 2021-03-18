@@ -45,6 +45,8 @@ class Field:
         self.required = required
         self.read_only = read_only  # TODO: Use this flag in generic and custom actions.
         self.default = default
+        if not self.required and constraints and "enum" in constraints:
+            constraints["enum"].append(None)
         self.constraints = constraints or {}
 
     def get_schema(self) -> Schema:

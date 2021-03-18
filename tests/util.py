@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict
 
 import requests
 from authlib import COOKIE_NAME, HEADER_NAME
@@ -25,27 +25,28 @@ class Client(WerkzeugClient):
         self, application: WSGIApplication, username: str = None, password: str = None
     ):
         super().__init__(application, Response)
-
-        # login admin
+        self.application = application
+        self.headers: Dict[str, str] = {}
         if username and password is not None:
-            auth_endpoint = (
-                application.services.authentication().auth_handler.http_handler.get_endpoint()
+            self.login(username, password)
+
+    def login(self, username: str, password: str) -> None:
+        auth_endpoint = (
+            self.application.services.authentication().auth_handler.http_handler.get_endpoint()
+        )
+        url = f"{auth_endpoint}/system/auth/login"
+        try:
+            response = requests.post(
+                url, json={"username": username, "password": password}
             )
-            url = f"{auth_endpoint}/system/auth/login"
-            try:
-                response = requests.post(
-                    url, json={"username": username, "password": password}
-                )
-            except requests.exceptions.ConnectionError as e:
-                raise AuthenticationException(
-                    f"Cannot reach the authentication service on {url}. Error: {e}"
-                )
-            assert response.status_code == 200
-            # save access token and refresh id for subsequent requests
-            self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
-            self.headers = {HEADER_NAME: response.headers[HEADER_NAME]}
-        else:
-            self.headers = {}
+        except requests.exceptions.ConnectionError as e:
+            raise AuthenticationException(
+                f"Cannot reach the authentication service on {url}. Error: {e}"
+            )
+        assert response.status_code == 200
+        # save access token and refresh id for subsequent requests
+        self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
+        self.headers = {HEADER_NAME: response.headers[HEADER_NAME]}
 
     def post(self, *args: Any, **kwargs: Any) -> Response:
         return super().post(*args, headers=self.headers, **kwargs)
