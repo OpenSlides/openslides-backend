@@ -1,6 +1,7 @@
 import re
 from typing import Dict, Iterable, Optional, Type
 
+from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection
 from . import fields
 
@@ -108,12 +109,17 @@ class Model(metaclass=ModelMetaClass):
                 yield model_field
 
     def get_property(
-        self, field: str, replacement_pattern: Optional[str] = None
+        self, field_name: str, replacement_pattern: Optional[str] = None
     ) -> fields.Schema:
         """
-        Returns JSON schema for the given field.
+        Returns JSON schema for the given field. Throws an error if it's read_only.
         """
-        return {field: self.get_field(field).get_payload_schema(replacement_pattern)}
+        field = self.get_field(field_name)
+        if field.read_only:
+            raise ActionException(
+                f"The field {field_name} is read_only and cannot be used in a payload schema."
+            )
+        return {field_name: field.get_payload_schema(replacement_pattern)}
 
     def get_properties(self, *fields: str) -> Dict[str, fields.Schema]:
         """

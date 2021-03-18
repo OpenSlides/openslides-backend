@@ -3,6 +3,7 @@ from unittest import TestCase
 
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
+from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.patterns import Collection
 
 
@@ -15,6 +16,7 @@ class FakeModel(Model):
     verbose_name = "fake_model"
 
     id = fields.IntegerField(required=True)
+    read_only = fields.IntegerField(read_only=True)
     text = fields.CharField(
         required=True, constraints={"description": "The text of this fake model."}
     )
@@ -70,7 +72,7 @@ class ModelBaseTester(TestCase):
 
     def test_get_fields_fake_model(self) -> None:
         self.assertEqual(
-            ["fake_model_2_generic_ids", "fake_model_2_ids", "id", "text"],
+            ["fake_model_2_generic_ids", "fake_model_2_ids", "id", "read_only", "text"],
             [field.own_field_name for field in FakeModel().get_fields()],
         )
 
@@ -87,3 +89,7 @@ class ModelBaseTester(TestCase):
     def test_get_field_unknown_field(self) -> None:
         with self.assertRaises(ValueError):
             FakeModel().get_field("Unknown field")
+
+    def test_get_read_only_field(self) -> None:
+        with self.assertRaises(ActionException):
+            FakeModel().get_property("read_only")
