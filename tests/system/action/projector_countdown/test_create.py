@@ -49,7 +49,6 @@ class ProjectorCountdown(BaseActionTestCase):
                 "meeting_id": 1,
                 "title": "test2",
                 "description": "good description",
-                "default_time": None,
             },
         )
         self.assert_status_code(response, 200)
