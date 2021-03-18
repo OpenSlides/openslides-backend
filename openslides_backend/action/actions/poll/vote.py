@@ -84,6 +84,8 @@ class PollVote(UpdateAction):
                 "entitled_group_ids",
                 "state",
                 "votesvalid",
+                "min_votes_amount",
+                "max_votes_amount",
             ],
         )
 
@@ -125,11 +127,11 @@ class PollVote(UpdateAction):
     def validate_global_value(self, value: str) -> None:
         if value not in ("Y", "N", "A"):
             raise ActionException(f"Option value {value} is not in 'YNA'.")
-        if value == "Y" and not self.poll.get("global_yes"):
+        elif value == "Y" and not self.poll.get("global_yes"):
             raise ActionException("Global value Y not allowed.")
-        if value == "N" and not self.poll.get("global_no"):
+        elif value == "N" and not self.poll.get("global_no"):
             raise ActionException("Global value N not allowed.")
-        if value == "A" and not self.poll.get("global_abstain"):
+        elif value == "A" and not self.poll.get("global_abstain"):
             raise ActionException("Global value A not allowed.")
 
     def handle_option_value(
@@ -139,9 +141,12 @@ class PollVote(UpdateAction):
         self._handle_value_keys(value, user_id, action_data)
         if action_data:
             self.execute_other_action(VoteCreate, action_data)
+            total_votes = 0
             for data in action_data:
                 self.update_option(data["option_id"], data["value"], data["weight"])
                 self.update_votes_valid(instance, data["weight"])
+                total_votes += 1
+            self.check_total_votes(total_votes)
 
     def _handle_value_keys(
         self,
@@ -269,7 +274,6 @@ class PollVote(UpdateAction):
         meeting_id: int,
         weight: str,
     ) -> Dict[str, Any]:
-        user_id = user_id
         if self.poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS:
             user_id = None
         return {
@@ -279,3 +283,11 @@ class PollVote(UpdateAction):
             "option_id": option_id,
             "meeting_id": meeting_id,
         }
+
+    def check_total_votes(self, total: int) -> None:
+        if not (
+            self.poll.get("min_votes_amount", 1)
+            <= total
+            <= self.poll.get("max_votes_amount", 1)
+        ):
+            raise ActionException("Total amount of votes is not in min-max-interval.")
