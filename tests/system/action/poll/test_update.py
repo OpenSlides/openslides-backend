@@ -6,40 +6,35 @@ from tests.system.action.base import BaseActionTestCase
 class UpdatePollTestCase(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_model(
-            "assignment/1",
+        self.set_models(
             {
-                "title": "test_assignment_ohneivoh9caiB8Yiungo",
-                "open_posts": 1,
-            },
-        )
-        self.create_model("meeting/113", {"name": "my meeting"})
-        self.create_model("organisation/1", {"enable_electronic_voting": True})
-        self.create_model("group/1", {"user_ids": [1], "poll_ids": [1]})
-        self.create_model(
-            "poll/1",
-            {
-                "content_object_id": "assignment/1",
-                "title": "test_title_beeFaihuNae1vej2ai8m",
-                "pollmethod": "Y",
-                "type": Poll.TYPE_NAMED,
-                "onehundred_percent_base": "Y",
-                "majority_method": "simple",
-                "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
-                "option_ids": [1, 2],
-                "entitled_group_ids": [1],
-            },
-        )
-        self.create_model("option/1", {"meeting_id": 113, "poll_id": 1})
-        self.create_model("option/2", {"meeting_id": 113, "poll_id": 1})
-        self.update_model(
-            "user/1",
-            {
-                "is_present_in_meeting_ids": [113],
-                "group_$113_ids": [1],
-                "group_$_ids": ["113"],
-            },
+                "assignment/1": {
+                    "title": "test_assignment_ohneivoh9caiB8Yiungo",
+                    "open_posts": 1,
+                },
+                "meeting/113": {"name": "my meeting"},
+                "organisation/1": {"enable_electronic_voting": True},
+                "group/1": {"user_ids": [1], "poll_ids": [1]},
+                "poll/1": {
+                    "content_object_id": "assignment/1",
+                    "title": "test_title_beeFaihuNae1vej2ai8m",
+                    "pollmethod": "Y",
+                    "type": Poll.TYPE_NAMED,
+                    "onehundred_percent_base": "Y",
+                    "majority_method": "simple",
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 113,
+                    "option_ids": [1, 2],
+                    "entitled_group_ids": [1],
+                },
+                "option/1": {"meeting_id": 113, "poll_id": 1},
+                "option/2": {"meeting_id": 113, "poll_id": 1},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+            }
         )
 
     def test_catch_not_allowed(self) -> None:
@@ -58,7 +53,7 @@ class UpdatePollTestCase(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert ("data must not contain {'type'} properties") in response.data.decode()
+        assert ("data must not contain {'type'} properties") in response.json["message"]
 
     def test_optional_state_created(self) -> None:
         response = self.request(
@@ -89,7 +84,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert (
             "Following options are not allowed in this state and type: "
             "entitled_group_ids"
-        ) in response.data.decode()
+        ) in response.json["message"]
 
     def test_not_allowed_for_non_analog(self) -> None:
         response = self.request(
@@ -105,7 +100,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert (
             "Following options are not allowed in this state and type: "
             "votesvalid, votesinvalid, votescast"
-        ) in response.data.decode()
+        ) in response.json["message"]
 
     def test_update_title(self) -> None:
         response = self.request(
@@ -269,7 +264,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "This onehundred_percent_base not allowed in this pollmethod"
-            in response.data.decode()
+            in response.json["message"]
         )
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("onehundred_percent_base"), "Y")

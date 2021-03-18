@@ -17,5 +17,5 @@ class PollStopActionTest(BaseActionTestCase):
         assert poll.get("state") == "published"
         assert (
             "Cannot stop poll 1, because it is not in state started."
-            in response.data.decode()
+            in response.json["message"]
         )

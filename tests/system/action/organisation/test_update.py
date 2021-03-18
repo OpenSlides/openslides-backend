@@ -53,7 +53,8 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "data must not contain {'wrong_name'} properties" in response.data.decode()
+            "data must not contain {'wrong_name'} properties"
+            in response.json["message"]
         )
         model = self.get_model("organisation/3")
         assert model.get("name") == "aBuwxoYU"

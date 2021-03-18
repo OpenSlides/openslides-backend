@@ -3,13 +3,13 @@ from openslides_backend.action.relations.single_relation_handler import (
 )
 from tests.util import get_fqfield, get_fqid
 
-from .setup import BaseRelationsTestCase, FakeModelA
+from ..action.base import BaseActionTestCase
+from .setup import FakeModelA
 
 
-class GenericRelationsTest(BaseRelationsTestCase):
+class GenericRelationsTest(BaseActionTestCase):
     def test_generic_O2O_empty(self) -> None:
-        self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_b/2", {})
+        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_generic_oo,
@@ -74,8 +74,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_generic_O2M_empty(self) -> None:
-        self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_b/2", {})
+        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_generic_om,
@@ -93,10 +92,12 @@ class GenericRelationsTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_generic_O2M_add(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_generic_om": 3})
-        self.create_model("fake_model_a/2", {})
-        self.create_model(
-            "fake_model_b/3", {"fake_model_a_generic_mo": ["fake_model_a/1"]}
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_generic_om": 3},
+                "fake_model_a/2": {},
+                "fake_model_b/3": {"fake_model_a_generic_mo": ["fake_model_a/1"]},
+            }
         )
         handler = SingleRelationHandler(
             datastore=self.datastore,
@@ -138,8 +139,7 @@ class GenericRelationsTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_generic_M2M_empty(self) -> None:
-        self.create_model("fake_model_a/1", {})
-        self.create_model("fake_model_b/2", {})
+        self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandler(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_generic_mm,
@@ -157,10 +157,12 @@ class GenericRelationsTest(BaseRelationsTestCase):
         assert result == expected
 
     def test_generic_M2M_add(self) -> None:
-        self.create_model("fake_model_a/1", {"fake_model_b_generic_mm": [3]})
-        self.create_model("fake_model_a/2", {})
-        self.create_model(
-            "fake_model_b/3", {"fake_model_a_generic_mm": ["fake_model_a/1"]}
+        self.set_models(
+            {
+                "fake_model_a/1": {"fake_model_b_generic_mm": [3]},
+                "fake_model_a/2": {},
+                "fake_model_b/3": {"fake_model_a_generic_mm": ["fake_model_a/1"]},
+            }
         )
         handler = SingleRelationHandler(
             datastore=self.datastore,

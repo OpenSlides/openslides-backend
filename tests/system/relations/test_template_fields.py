@@ -1,18 +1,14 @@
-from .setup import BaseRelationsTestCase, FakeModelA, FakeModelB, FakeModelC  # noqa
+from tests.system.action.base import BaseActionTestCase
+
+from .setup import FakeModelA, FakeModelB, FakeModelC  # noqa
 
 
-class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
+class CreateActionWithTemplateFieldTester(BaseActionTestCase):
     def test_simple_create(self) -> None:
         self.create_model("meeting/42")
         self.create_model("fake_model_b/123", {"meeting_id": 42})
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "fake_model_a.create",
-                    "data": [{"fake_model_b_$_ids": {42: [123]}}],
-                }
-            ],
+        response = self.request(
+            "fake_model_a.create", {"fake_model_b_$_ids": {42: [123]}}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/1")
@@ -45,14 +41,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
                 "fake_model_b/3453": {"meeting_id": 44},
             }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "fake_model_a.create",
-                    "data": [{"fake_model_b_$_ids": {44: [3453]}}],
-                }
-            ],
+        response = self.request(
+            "fake_model_a.create", {"fake_model_b_$_ids": {44: [3453]}}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/235")
@@ -85,14 +75,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
                 "fake_model_b/3453": {"meeting_id": 44},
             }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$_ids": {44: [3453]}}],
-                }
-            ],
+        response = self.request(
+            "fake_model_a.update", {"id": 234, "fake_model_b_$_ids": {44: [3453]}}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")
@@ -129,14 +113,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
                 "fake_model_b/3453": {"meeting_id": 43},
             }
         )
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$_ids": {43: [3453]}}],
-                }
-            ],
+        response = self.request(
+            "fake_model_a.update", {"id": 234, "fake_model_b_$_ids": {43: [3453]}}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")
@@ -170,14 +148,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             }
         )
         # when setting to empty array, the replacement is not removed from the template field
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$_ids": {43: []}}],
-                }
-            ],
+        response = self.request(
+            "fake_model_a.update", {"id": 234, "fake_model_b_$_ids": {43: []}}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")
@@ -209,14 +181,8 @@ class CreateActionWithTemplateFieldTester(BaseRelationsTestCase):
             }
         )
         # when setting to None, the replacement IS removed from the template field
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "fake_model_a.update",
-                    "data": [{"id": 234, "fake_model_b_$_ids": {43: None}}],
-                }
-            ],
+        response = self.request(
+            "fake_model_a.update", {"id": 234, "fake_model_b_$_ids": {43: None}}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_a/234")

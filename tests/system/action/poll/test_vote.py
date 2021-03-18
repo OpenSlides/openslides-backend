@@ -104,7 +104,9 @@ class PollVoteTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Option 13 has not a right value. (int, str)." in response.data.decode()
+        assert (
+            "Option 13 has not a right value. (int, str)." in response.json["message"]
+        )
 
     def test_vote_correct_pollmethod_YN(self) -> None:
         self.set_models(
@@ -244,7 +246,7 @@ class PollVoteTest(BaseActionTestCase):
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "X"})
         self.assert_status_code(response, 400)
-        assert "Option value X is not in 'YNA'" in response.data.decode()
+        assert "Option value X is not in 'YNA'" in response.json["message"]
 
     def test_vote_for_analog_type(self) -> None:
         self.set_models(
@@ -267,7 +269,7 @@ class PollVoteTest(BaseActionTestCase):
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "Y"})
         self.assert_status_code(response, 400)
-        assert "poll.vote is not allowed for analog voting." in response.data.decode()
+        assert "poll.vote is not allowed for analog voting." in response.json["message"]
 
     def test_vote_option_not_in_poll(self) -> None:
         self.set_models(
@@ -298,7 +300,7 @@ class PollVoteTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Option 113 not in options of the poll." in response.data.decode()
+        assert "Option 113 not in options of the poll." in response.json["message"]
 
     def test_double_vote(self) -> None:
         self.set_models(
@@ -347,7 +349,7 @@ class PollVoteTest(BaseActionTestCase):
 
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
         self.assert_status_code(response, 400)
-        assert "Only one vote per poll per user allowed." in response.data.decode()
+        assert "Only one vote per poll per user allowed." in response.json["message"]
 
     def test_check_user_in_entitled_group(self) -> None:
         self.set_models(
@@ -370,7 +372,7 @@ class PollVoteTest(BaseActionTestCase):
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
         self.assert_status_code(response, 400)
-        assert "User is not allowed to vote." in response.data.decode()
+        assert "User is not allowed to vote." in response.json["message"]
 
     def test_check_user_present_in_meeting(self) -> None:
         self.set_models(
@@ -394,7 +396,7 @@ class PollVoteTest(BaseActionTestCase):
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
         self.assert_status_code(response, 400)
-        assert "User is not present in the meeting." in response.data.decode()
+        assert "User is not present in the meeting." in response.json["message"]
 
     def test_check_str_validation(self) -> None:
         self.set_models(
@@ -419,7 +421,7 @@ class PollVoteTest(BaseActionTestCase):
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "X"})
         self.assert_status_code(response, 400)
-        assert "Option value X is not in 'YNA'." in response.data.decode()
+        assert "Option value X is not in 'YNA'." in response.json["message"]
 
     def test_default_vote_weight(self) -> None:
         self.set_models(
@@ -475,40 +477,33 @@ class VotePollBaseTestClass(BaseActionTestCase):
             },
         )
         self.create_poll()
-        self.create_model("meeting/113", {"name": "my meeting"})
-        self.create_model("group/1", {"user_ids": [1]})
-        self.create_model(
-            "option/1",
+        self.set_models(
             {
-                "meeting_id": 113,
-                "poll_id": 1,
-                "yes": "0.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
-            },
+                "meeting/113": {"name": "my meeting"},
+                "group/1": {"user_ids": [1]},
+                "option/1": {
+                    "meeting_id": 113,
+                    "poll_id": 1,
+                    "yes": "0.000000",
+                    "no": "0.000000",
+                    "abstain": "0.000000",
+                },
+                "option/2": {
+                    "meeting_id": 113,
+                    "poll_id": 1,
+                    "yes": "0.000000",
+                    "no": "0.000000",
+                    "abstain": "0.000000",
+                },
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+                "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
+                "poll/1": {"global_option_id": 11},
+            }
         )
-        self.create_model(
-            "option/2",
-            {
-                "meeting_id": 113,
-                "poll_id": 1,
-                "yes": "0.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
-            },
-        )
-        self.update_model(
-            "user/1",
-            {
-                "is_present_in_meeting_ids": [113],
-                "group_$113_ids": [1],
-                "group_$_ids": ["113"],
-            },
-        )
-        self.create_model(
-            "option/11", {"meeting_id": 113, "used_as_global_option_in_poll_id": 1}
-        )
-        self.update_model("poll/1", {"global_option_id": 11})
 
     def create_poll(self) -> None:
         # has to be implemented by subclasses
@@ -518,8 +513,12 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})
 
     def add_option(self) -> None:
-        self.create_model("option/3", {"meeting_id": 113, "poll_id": 1})
-        self.update_model("poll/1", {"option_ids": [1, 2, 3]})
+        self.set_models(
+            {
+                "option/3": {"meeting_id": 113, "poll_id": 1},
+                "poll/1": {"option_ids": [1, 2, 3]},
+            }
+        )
 
 
 class VotePollAnalogYNA(VotePollBaseTestClass):
@@ -552,7 +551,7 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
             },
         )
         self.assert_status_code(response, 400)
-        assert "poll.vote is not allowed for analog voting." in response.data.decode()
+        assert "poll.vote is not allowed for analog voting." in response.json["message"]
 
 
 class VotePollNamedYNA(VotePollBaseTestClass):
@@ -1592,7 +1591,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
         self.assert_status_code(response, 400)
         assert (
             "data must contain ['id', 'user_id', 'value'] properties"
-            in response.data.decode()
+            in response.json["message"]
         )
         self.assert_model_not_exists("vote/1")
         poll = self.get_model("poll/1")
@@ -1605,7 +1604,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
             {"value": [1, 2, 5], "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert "data.value must be object or string" in response.data.decode()
+        assert "data.value must be object or string" in response.json["message"]
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_format(self) -> None:
@@ -1615,7 +1614,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
             {"value": {"1": "string"}, "id": 1, "user_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert "Option 1 has not a right value. (int, str)." in response.data.decode()
+        assert "Option 1 has not a right value. (int, str)." in response.json["message"]
         self.assert_model_not_exists("vote/1")
 
     def test_wrong_option_id_type(self) -> None:
@@ -1634,5 +1633,5 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
             {"id": 1, "value": {"1": [None]}, "user_id": 1},
         )
         self.assert_status_code(response, 400)
-        assert "Option 1 has not a right value. (int, str)." in response.data.decode()
+        assert "Option 1 has not a right value. (int, str)." in response.json["message"]
         self.assert_model_not_exists("vote/1")

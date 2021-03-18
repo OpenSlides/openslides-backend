@@ -65,7 +65,9 @@ class ProjectorUpdate(BaseActionTestCase):
         )
         response = self.request("projector.update", {"id": 112, "color": "#aaaXbb"})
         self.assert_status_code(response, 400)
-        assert "data.color must match pattern ^#[0-9a-f]{6}$" in response.data.decode()
+        assert (
+            "data.color must match pattern ^#[0-9a-f]{6}$" in response.json["message"]
+        )
 
     def test_update_set_used_as_default__in_meeting_id(self) -> None:
         self.set_models(

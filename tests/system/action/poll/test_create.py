@@ -57,28 +57,21 @@ class CreatePoll(BaseActionTestCase):
         assert global_option.get("meeting_id") == 113
 
     def test_create_three_options(self) -> None:
-        response = self.client.post(
-            "/",
-            json=[
-                {
-                    "action": "poll.create",
-                    "data": [
-                        {
-                            "title": "test",
-                            "type": "analog",
-                            "pollmethod": "YNA",
-                            "options": [
-                                {"text": "test2", "Y": "10.000000"},
-                                {"text": "test3", "N": "0.999900"},
-                                {"text": "test4", "N": "11.000000"},
-                            ],
-                            "meeting_id": 113,
-                            "onehundred_percent_base": "YNA",
-                            "majority_method": "simple",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "YNA",
+                "options": [
+                    {"text": "test2", "Y": "10.000000"},
+                    {"text": "test3", "N": "0.999900"},
+                    {"text": "test4", "N": "11.000000"},
+                ],
+                "meeting_id": 113,
+                "onehundred_percent_base": "YNA",
+                "majority_method": "simple",
+            },
         )
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
@@ -203,8 +196,9 @@ class CreatePoll(BaseActionTestCase):
             self.assert_model_not_exists("poll/1")
 
     def test_with_groups(self) -> None:
-        self.create_model("group/1", {"meeting_id": 113})
-        self.create_model("group/2", {"meeting_id": 113})
+        self.set_models(
+            {"group/1": {"meeting_id": 113}, "group/2": {"meeting_id": 113}}
+        )
         response = self.request(
             "poll.create",
             {
@@ -353,7 +347,7 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "This onehundred_percent_base not allowed in this pollmethod"
-            in response.data.decode()
+            in response.json["message"]
         )
         self.assert_model_not_exists("poll/1")
 
@@ -374,7 +368,7 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "This onehundred_percent_base not allowed in this pollmethod"
-            in response.data.decode()
+            in response.json["message"]
         )
         self.assert_model_not_exists("poll/1")
 
@@ -395,7 +389,7 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "This onehundred_percent_base not allowed in this pollmethod"
-            in response.data.decode()
+            in response.json["message"]
         )
         self.assert_model_not_exists("poll/1")
 

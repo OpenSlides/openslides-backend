@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a193a614fa0f1498fa9e6c9d001e56a6"
+MODELS_YML_CHECKSUM = "c2930fed7fb920b6d56898763b15cfff"
 
 
 class Organisation(Model):
@@ -46,7 +46,7 @@ class User(Model):
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
-    default_vote_weight = fields.DecimalField(default="1")
+    default_vote_weight = fields.DecimalField(default="1.000000")
     last_email_send = fields.TimestampField()
     is_demo_user = fields.BooleanField(read_only=True)
     organisation_management_level = fields.CharField(
@@ -1108,6 +1108,7 @@ class MotionState(Model):
     name = fields.CharField(required=True)
     recommendation_label = fields.CharField()
     css_class = fields.CharField(
+        required=True,
         default="lightblue",
         constraints={"enum": ["grey", "red", "green", "lightblue", "yellow"]},
     )
@@ -1228,9 +1229,9 @@ class Poll(Model):
     )
     min_votes_amount = fields.IntegerField(default=1)
     max_votes_amount = fields.IntegerField(default=1)
-    global_yes = fields.BooleanField(default=True)
-    global_no = fields.BooleanField(default=True)
-    global_abstain = fields.BooleanField(default=True)
+    global_yes = fields.BooleanField(default=False)
+    global_no = fields.BooleanField(default=False)
+    global_abstain = fields.BooleanField(default=False)
     onehundred_percent_base = fields.CharField(
         required=True,
         constraints={"enum": ["Y", "YN", "YNA", "N", "valid", "cast", "disabled"]},

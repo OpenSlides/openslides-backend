@@ -43,7 +43,7 @@ class ProjectorControlView(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             "data.direction must be one of ['up', 'down', 'reset']"
-            in response.data.decode()
+            in response.json["message"]
         )
 
     def test_wrong_step(self) -> None:
@@ -52,4 +52,4 @@ class ProjectorControlView(BaseActionTestCase):
             {"id": 1, "field": "scale", "direction": "up", "step": 0},
         )
         self.assert_status_code(response, 400)
-        assert "data.step must be bigger than or equal to 1" in response.data.decode()
+        assert "data.step must be bigger than or equal to 1" in response.json["message"]
