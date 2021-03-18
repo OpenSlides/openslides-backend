@@ -166,8 +166,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if instance.get("meeting_id"):
             return instance["meeting_id"]
         else:
-            db_instance = self.fetch_model(
-                FullQualifiedId(self.model.collection, instance["id"]), ["meeting_id"]
+            db_instance = self.datastore.fetch_model(
+                FullQualifiedId(self.model.collection, instance["id"]),
+                ["meeting_id"],
+                exception=True,
+                lock_result=True,
             )
             return db_instance["meeting_id"]
 
