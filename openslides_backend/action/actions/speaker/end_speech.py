@@ -1,7 +1,6 @@
 import time
 
 from ....models.models import Speaker
-from ....services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
@@ -28,7 +27,6 @@ class SpeakerEndSpeach(UpdateAction):
             speaker = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 mapped_fields=["begin_time", "end_time"],
-                db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                 lock_result=True,
             )
             if speaker.get("begin_time") is None or speaker.get("end_time") is not None:

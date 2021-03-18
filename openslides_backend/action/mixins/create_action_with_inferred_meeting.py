@@ -1,7 +1,6 @@
 from typing import Any, Dict, Type
 
 from ...models.fields import BaseGenericRelationField, BaseRelationField
-from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ...shared.exceptions import ActionException
 from ...shared.patterns import FullQualifiedId
 from ..generics.create import CreateAction
@@ -34,7 +33,6 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
         related_model = self.datastore.fetch_model(
             fqid,
             ["meeting_id"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             lock_result=True,
         )
         if not related_model.get("meeting_id"):

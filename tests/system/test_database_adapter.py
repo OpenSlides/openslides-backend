@@ -30,7 +30,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name", "id", "description", "not_there"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         self.assertEqual(result["name"], "meetingAdd")
         self.assertEqual(result["id"], 1)
@@ -42,7 +41,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         self.assertEqual(result["name"], "meetingDB")
 
@@ -51,7 +49,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         self.assertEqual(result["name"], "meetingAdd")
 
@@ -60,7 +57,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
             self.datastore.fetch_model(
                 fqid=FullQualifiedId(Collection("meeting"), 1),
                 mapped_fields=["name"],
-                db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             )
         self.assertIn(
             "Datastore service sends HTTP 400. Model 'meeting/1' does not exist.",
@@ -71,7 +67,6 @@ class DatabaseAdapterSystemTest(BaseActionTestCase):
         result = self.datastore.fetch_model(
             fqid=FullQualifiedId(Collection("meeting"), 1),
             mapped_fields=["name"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             exception=False,
         )
         self.assertEqual(result.get("name"), None)

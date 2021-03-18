@@ -8,7 +8,6 @@ from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
-from ..services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
@@ -395,7 +394,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     db_instance = self.datastore.fetch_model(
                         fqid,
                         [equal_field],
-                        db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                         lock_result=True,
                     )
                     if not (own_equal_field_value := db_instance.get(equal_field)):
@@ -415,7 +413,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                             related_instance = self.datastore.fetch_model(
                                 fqid,
                                 [equal_field],
-                                db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                             )
                             if (
                                 related_instance.get(equal_field)

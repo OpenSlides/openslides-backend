@@ -1,5 +1,4 @@
 from ....models.models import ListOfSpeakers, Speaker
-from ....services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -25,7 +24,6 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
             list_of_speakers = self.datastore.fetch_model(
                 FullQualifiedId(Collection("list_of_speakers"), instance["id"]),
                 mapped_fields=["speaker_ids"],
-                db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                 lock_result=True,
             )
             if list_of_speakers.get("speaker_ids"):

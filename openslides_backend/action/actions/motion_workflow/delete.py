@@ -1,7 +1,6 @@
 from typing import Any, Dict, List, cast
 
 from ....models.models import MotionWorkflow
-from ....services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
@@ -25,7 +24,6 @@ class MotionWorkflowDeleteAction(DeleteAction):
         workflow = self.datastore.fetch_model(
             FullQualifiedId(Collection("motion_workflow"), instance["id"]),
             ["meeting_id"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             lock_result=True,
         )
         meeting = self.datastore.fetch_model(
@@ -36,7 +34,6 @@ class MotionWorkflowDeleteAction(DeleteAction):
                 "motions_default_statute_amendment_workflow_id",
                 "motion_workflow_ids",
             ],
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             lock_result=True,
         )
         if instance["id"] in (

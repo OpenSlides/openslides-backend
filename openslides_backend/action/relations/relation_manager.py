@@ -1,13 +1,9 @@
 from typing import Any, Dict, List, cast
 
-from openslides_backend.services.datastore.deleted_models_behaviour import (
-    InstanceAdditionalBehaviour,
-)
-
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
-from ...shared.exceptions import ActionException, DatastoreException
+from ...shared.exceptions import DatastoreException
 from ...shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
 from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .calculated_field_handlers_map import calculated_field_handlers_map
@@ -141,7 +137,6 @@ class RelationManager:
                             ),
                             mapped_fields=["id"],
                             lock_result=True,
-                            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                             exception=True,
                         )
                     template_field.append(replacement)
@@ -162,18 +157,14 @@ class RelationManager:
         # process template fields and set the contained structured fields
         for field_name, field in template_fields:
             field_value = instance[field_name]
-            if isinstance(field_value, dict):
-                additional_instance_fields[field_name] = get_template_field_db_value(
-                    field_name
-                )
-                for replacement, value in field_value.items():
-                    set_structured_field(field, str(replacement), value)
-            elif isinstance(field_value, list):
-                pass  # Todo: check this one: for default_projector_$_id there is the list of possible replacements
-            else:
-                raise ActionException(
-                    f"Field '{field_name}'' has no dict as value: '{field_value}'"
-                )
+            assert isinstance(
+                field_value, dict
+            ), f"Field '{field_name}'' has no dict as value: '{field_value}'"
+            additional_instance_fields[field_name] = get_template_field_db_value(
+                field_name
+            )
+            for replacement, value in field_value.items():
+                set_structured_field(field, str(replacement), value)
 
         # process directly given structured fields, overwriting any previous ones
         for field_name, field in structured_fields:

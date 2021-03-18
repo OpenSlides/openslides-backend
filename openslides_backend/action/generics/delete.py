@@ -5,7 +5,6 @@ from ...models.fields import (
     BaseTemplateRelationField,
     OnDelete,
 )
-from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
@@ -40,7 +39,6 @@ class DeleteAction(Action):
         db_instance = self.datastore.fetch_model(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
-            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
             lock_result=True,
         )
 
@@ -113,7 +111,6 @@ class DeleteAction(Action):
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
                         mapped_fields=[template_field_name],
                         lock_result=True,
-                        db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
                     )
                     for replacement in db_instance.get(template_field_name, []):
                         structured_field_name = field.get_structured_field_name(
