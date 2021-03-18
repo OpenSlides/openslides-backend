@@ -32,6 +32,7 @@ class ProjectorProject(BaseActionTestCase):
                     "content_object_id": "assignment/453",
                     "current_projector_id": 75,
                     "stable": False,
+                    "type": "test",
                 },
                 "projection/111": {
                     "meeting_id": 1,
@@ -101,7 +102,12 @@ class ProjectorProject(BaseActionTestCase):
     def test_project_3(self) -> None:
         response = self.request(
             "projector.project",
-            {"ids": [], "content_object_id": "assignment/453", "stable": False},
+            {
+                "ids": [],
+                "content_object_id": "assignment/453",
+                "stable": False,
+                "type": "test",
+            },
         )
         self.assert_status_code(response, 200)
         projector_23 = self.get_model("projector/75")

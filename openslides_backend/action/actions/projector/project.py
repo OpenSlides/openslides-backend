@@ -35,7 +35,7 @@ class ProjectorProject(UpdateAction):
             )
             meeting_id = content_object["meeting_id"]
 
-            if instance.get("stable", False) is False:
+            if not instance.get("stable"):
                 self.move_equal_projections_to_history(instance, meeting_id)
                 self.move_unstable_projections_to_history(instance)
 
@@ -44,14 +44,15 @@ class ProjectorProject(UpdateAction):
                 data_dict = {
                     "current_projector_id": projector_id,
                     "meeting_id": meeting_id,
+                    "content_object_id": instance["content_object_id"],
                 }
-                for field in ("content_object_id", "options", "stable", "type"):
+                for field in ("options", "stable", "type"):
                     if field in instance:
                         data_dict[field] = instance[field]
                 create_data.append(data_dict)
             if create_data:
                 self.execute_other_action(ProjectionCreate, create_data)
-            if instance.get("stable", False) is False:
+            if not instance.get("stable"):
                 for projector_id in instance["ids"]:
                     yield {"id": projector_id, "scroll": 0}
 
@@ -61,8 +62,8 @@ class ProjectorProject(UpdateAction):
         filter_ = And(
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("content_object_id", "=", instance["content_object_id"]),
-            FilterOperator("stable", "=", False),
-            FilterOperator("type", "=", None),
+            FilterOperator("stable", "=", instance.get("stable")),
+            FilterOperator("type", "=", instance.get("type")),
             *[Not(FilterOperator("id", "=", id_)) for id_ in instance["ids"]],
         )
         result = self.datastore.filter(
