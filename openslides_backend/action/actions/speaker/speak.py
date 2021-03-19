@@ -67,32 +67,32 @@ class SpeakerSpeak(UpdateAction):
                     }
 
             # reset projector countdown
-            assert "meeting_id" in this_speaker
-            meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), this_speaker["meeting_id"]),
-                [
-                    "list_of_speakers_couple_countdown",
-                    "list_of_speakers_countdown_id",
-                ],
-            )
-            if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
-                "list_of_speakers_countdown_id"
-            ):
-                countdown = self.datastore.get(
-                    FullQualifiedId(
-                        Collection("projector_countdown"),
-                        meeting["list_of_speakers_countdown_id"],
-                    ),
-                    ["default_time"],
-                )
-                self.execute_other_action(
-                    ProjectorCountdownUpdate,
+            if this_speaker.get("meeting_id"):
+                meeting = self.datastore.get(
+                    FullQualifiedId(Collection("meeting"), this_speaker["meeting_id"]),
                     [
-                        {
-                            "id": meeting["list_of_speakers_countdown_id"],
-                            "running": False,
-                            "countdown_time": countdown["default_time"],
-                        }
+                        "list_of_speakers_couple_countdown",
+                        "list_of_speakers_countdown_id",
                     ],
                 )
+                if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
+                    "list_of_speakers_countdown_id"
+                ):
+                    countdown = self.datastore.get(
+                        FullQualifiedId(
+                            Collection("projector_countdown"),
+                            meeting["list_of_speakers_countdown_id"],
+                        ),
+                        ["default_time"],
+                    )
+                    self.execute_other_action(
+                        ProjectorCountdownUpdate,
+                        [
+                            {
+                                "id": meeting["list_of_speakers_countdown_id"],
+                                "running": False,
+                                "countdown_time": countdown["default_time"],
+                            }
+                        ],
+                    )
             yield instance

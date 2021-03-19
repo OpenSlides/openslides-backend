@@ -77,3 +77,31 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         self.assertTrue(
             "Speaker 890 is not speaking at the moment." in response.json["message"]
         )
+
+    def test_reset_countdown(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_couple_countdown": True,
+                    "list_of_speakers_countdown_id": 11,
+                },
+                "projector_countdown/11": {
+                    "running": True,
+                    "default_time": 60,
+                    "countdown_time": 31.0,
+                },
+                "user/7": {"username": "test_username1"},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "begin_time": 10000,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        self.assert_status_code(response, 200)
+        countdown = self.get_model("projector_countdown/11")
+        assert countdown.get("running") is False
+        assert countdown.get("countdown_time") == 60
