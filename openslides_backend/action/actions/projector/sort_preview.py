@@ -8,7 +8,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..projection.set_weight import ProjectionSetWeight
+from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.sort_preview")
@@ -31,7 +31,7 @@ class ProjectorSortPreview(UpdateAction):
             weight = 1
             for projection_id in instance["projection_ids"]:
                 self.execute_other_action(
-                    ProjectionSetWeight, [{"id": projection_id, "weight": weight}]
+                    ProjectionUpdate, [{"id": projection_id, "weight": weight}]
                 )
                 weight += 1
         return []

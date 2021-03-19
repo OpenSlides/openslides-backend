@@ -8,7 +8,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..projection.set_weight import ProjectionSetWeight
+from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.next")
@@ -99,7 +99,7 @@ class ProjectorNext(UpdateAction):
                 {"id": projection_id, "weight": max_weight + increment}
             )
             increment += 1
-        self.execute_other_action(ProjectionSetWeight, action_data_set_weight)
+        self.execute_other_action(ProjectionUpdate, action_data_set_weight)
 
     def get_min_preview_projection(self, projector: Dict[str, Any]) -> int:
         gmr2 = GetManyRequest(

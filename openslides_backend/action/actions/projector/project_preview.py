@@ -8,7 +8,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..projection.set_weight import ProjectionSetWeight
+from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.project_preview")
@@ -104,4 +104,4 @@ class ProjectorProjectPreview(UpdateAction):
                 {"id": projection_id, "weight": max_weight + increment}
             )
             increment += 1
-        self.execute_other_action(ProjectionSetWeight, payload_set_weight)
+        self.execute_other_action(ProjectionUpdate, payload_set_weight)

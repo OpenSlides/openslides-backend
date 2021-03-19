@@ -8,7 +8,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..projection.set_weight import ProjectionSetWeight
+from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.previous")
@@ -109,7 +109,7 @@ class ProjectorPrevious(UpdateAction):
                 {"id": projection_id, "weight": min_weight - increment}
             )
             increment += 1
-        self.execute_other_action(ProjectionSetWeight, payload_set_weight)
+        self.execute_other_action(ProjectionUpdate, payload_set_weight)
 
     def get_max_history_projection(self, projector: Dict[str, Any]) -> int:
         gmr2 = GetManyRequest(
