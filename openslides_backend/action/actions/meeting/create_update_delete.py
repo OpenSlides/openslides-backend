@@ -2,7 +2,6 @@ from typing import Any, Dict, Iterable, List, Type, cast
 
 from ....models.models import Meeting
 from ....shared.exceptions import ActionException
-from ....shared.interfaces.event import EventType
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 from ...action_set import ActionSet
@@ -200,29 +199,28 @@ class MeetingCreate(CreateActionWithDependencies):
                 ],
             },
         ]
-        write_requests, action_results = self.execute_other_action(
-            GroupCreate, action_data
+        action_results = self.execute_other_action(GroupCreate, action_data)
+
+        fqid_default_group = FullQualifiedId(
+            Collection("group"), action_results[0]["id"]  # type: ignore
         )
-
-        used_groups_dict = {
-            event["fields"]["name"]: event["fqid"].id  # type: ignore
-            for event in write_requests.events  # type: ignore
-            if event["type"] == EventType.Create
-            and event["fields"]["name"] in ("Admin", "Default")  # type: ignore
-        }
-        if len(used_groups_dict) != 2:
-            raise ActionException(
-                "There are no admin and default group created during meeting.create."
-            )
-
-        instance["default_group_id"] = used_groups_dict["Default"]
-        instance["admin_group_id"] = used_groups_dict["Admin"]
+        fqid_admin_group = FullQualifiedId(Collection("group"), action_results[1]["id"])  # type: ignore
+        assert (
+            self.datastore.additional_relation_models[fqid_default_group]["name"]
+            == "Default"
+        )
+        assert (
+            self.datastore.additional_relation_models[fqid_admin_group]["name"]
+            == "Admin"
+        )
+        instance["default_group_id"] = fqid_default_group.id
+        instance["admin_group_id"] = fqid_admin_group.id
 
         # Add user to admin group
         action_data = [
             {
                 "id": self.user_id,
-                "group_$_ids": {str(instance["id"]): [used_groups_dict["Admin"]]},
+                "group_$_ids": {str(instance["id"]): [fqid_admin_group.id]},
             }
         ]
         self.execute_other_action(UserUpdate, action_data)

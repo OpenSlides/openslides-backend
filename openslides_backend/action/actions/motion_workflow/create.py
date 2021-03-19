@@ -82,7 +82,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
             },
         ]
 
-        write_requests, action_results = self.execute_other_action(
+        action_results = self.execute_other_action(
             MotionStateActionSet.get_action("create"),
             action_data,
         )
