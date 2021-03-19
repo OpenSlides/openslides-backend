@@ -1,3 +1,5 @@
+import time
+
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
 
@@ -15,7 +17,16 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.create_poll()
         self.set_models(
             {
-                "meeting/113": {"name": "my meeting"},
+                "meeting/113": {
+                    "name": "my meeting",
+                    "poll_couple_countdown": True,
+                    "poll_countdown_id": 11,
+                },
+                "projector_countdown/11": {
+                    "default_time": 60,
+                    "running": False,
+                    "countdown_time": 60,
+                },
                 "group/1": {"user_ids": [1]},
                 "option/1": {"meeting_id": 113, "poll_id": 1},
                 "option/2": {"meeting_id": 113, "poll_id": 1},
@@ -60,6 +71,10 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
         self.assert_model_not_exists("vote/1")
+        countdown = self.get_model("projector_countdown/11")
+        assert countdown.get("running") is True
+        now = time.time()
+        assert now <= countdown.get("countdown_time", 0.0) <= now + 600.0
 
     def test_start_wrong_state(self) -> None:
         self.update_model("poll/1", {"state": "published"})
