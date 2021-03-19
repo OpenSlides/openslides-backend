@@ -452,7 +452,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self,
         ActionClass: Type["Action"],
         action_data: ActionData,
-    ) -> Tuple[Optional[WriteRequest], ActionResults]:
+    ) -> ActionResults:
         """
         Executes the given action class as a dependent action with the given action
         data and the given addtional relation models. Merges its own additional
@@ -471,7 +471,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if write_request:
             self.write_requests.append(write_request)
-        return write_request, action_results
+        return action_results
 
 
 def merge_write_requests(
