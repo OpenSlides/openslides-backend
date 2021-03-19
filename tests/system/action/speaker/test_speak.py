@@ -5,9 +5,14 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_correct(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890]},
-                "speaker/890": {"user_id": 7, "list_of_speakers_id": 23},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request("speaker.speak", {"id": 890})
@@ -18,9 +23,14 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_wrong_id(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890]},
-                "speaker/890": {"user_id": 7, "list_of_speakers_id": 23},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request("speaker.speak", {"id": 889})
@@ -31,12 +41,14 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_existing_speaker(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890]},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -48,14 +60,20 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_speak_next_speaker(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890, 891]},
+                "list_of_speakers/23": {"speaker_ids": [890, 891], "meeting_id": 1},
                 "speaker/890": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
+                    "meeting_id": 1,
                 },
-                "speaker/891": {"user_id": 7, "list_of_speakers_id": 23},
+                "speaker/891": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
             }
         )
 
@@ -69,11 +87,47 @@ class SpeakerSpeakTester(BaseActionTestCase):
     def test_closed(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890], "closed": True},
-                "speaker/890": {"user_id": 7, "list_of_speakers_id": 23},
+                "list_of_speakers/23": {
+                    "speaker_ids": [890],
+                    "closed": True,
+                    "meeting_id": 1,
+                },
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request("speaker.speak", {"id": 890})
         self.assert_status_code(response, 400)
         self.assertTrue("The list of speakers is closed." in response.json["message"])
+
+    def test_speak_update_countdown(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "list_of_speakers_couple_countdown": True,
+                    "list_of_speakers_countdown_id": 75,
+                },
+                "projector_countdown/75": {
+                    "running": True,
+                    "default_time": 60,
+                    "countdown_time": 30.0,
+                },
+                "user/7": {"username": "test_username1"},
+                "list_of_speakers/23": {"meeting_id": 1, "speaker_ids": [890]},
+                "speaker/890": {
+                    "meeting_id": 1,
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                },
+            }
+        )
+        response = self.request("speaker.speak", {"id": 890})
+        self.assert_status_code(response, 200)
+        countdown = self.get_model("projector_countdown/75")
+        assert countdown.get("running") is False
+        assert countdown.get("countdown_time") == 60

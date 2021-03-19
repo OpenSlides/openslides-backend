@@ -8,6 +8,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from ..projector_countdown.update import ProjectorCountdownUpdate
 
 
 @register_action("speaker.speak")
@@ -27,7 +28,7 @@ class SpeakerSpeak(UpdateAction):
         for instance in action_data:
             this_speaker = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, instance["id"]),
-                mapped_fields=["list_of_speakers_id"],
+                mapped_fields=["list_of_speakers_id", "meeting_id"],
                 lock_result=True,
             )
             list_of_speakers = self.datastore.fetch_model(
@@ -64,4 +65,34 @@ class SpeakerSpeak(UpdateAction):
                         "id": speaker_id,
                         "end_time": now,
                     }
+
+            # reset projector countdown
+            assert "meeting_id" in this_speaker
+            meeting = self.datastore.get(
+                FullQualifiedId(Collection("meeting"), this_speaker["meeting_id"]),
+                [
+                    "list_of_speakers_couple_countdown",
+                    "list_of_speakers_countdown_id",
+                ],
+            )
+            if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
+                "list_of_speakers_countdown_id"
+            ):
+                countdown = self.datastore.get(
+                    FullQualifiedId(
+                        Collection("projector_countdown"),
+                        meeting["list_of_speakers_countdown_id"],
+                    ),
+                    ["default_time"],
+                )
+                self.execute_other_action(
+                    ProjectorCountdownUpdate,
+                    [
+                        {
+                            "id": meeting["list_of_speakers_countdown_id"],
+                            "running": False,
+                            "countdown_time": countdown["default_time"],
+                        }
+                    ],
+                )
             yield instance
