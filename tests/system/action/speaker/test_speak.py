@@ -1,3 +1,5 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -113,7 +115,7 @@ class SpeakerSpeakTester(BaseActionTestCase):
                     "list_of_speakers_countdown_id": 75,
                 },
                 "projector_countdown/75": {
-                    "running": True,
+                    "running": False,
                     "default_time": 60,
                     "countdown_time": 30.0,
                 },
@@ -129,5 +131,6 @@ class SpeakerSpeakTester(BaseActionTestCase):
         response = self.request("speaker.speak", {"id": 890})
         self.assert_status_code(response, 200)
         countdown = self.get_model("projector_countdown/75")
-        assert countdown.get("running") is False
-        assert countdown.get("countdown_time") == 60
+        assert countdown.get("running")
+        now = time.time()
+        assert now <= countdown.get("countdown_time", 0.0) <= now + 300

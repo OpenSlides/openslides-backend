@@ -85,13 +85,14 @@ class SpeakerSpeak(UpdateAction):
                         ),
                         ["default_time"],
                     )
+                    now = round(time.time())
                     self.execute_other_action(
                         ProjectorCountdownUpdate,
                         [
                             {
                                 "id": meeting["list_of_speakers_countdown_id"],
-                                "running": False,
-                                "countdown_time": countdown["default_time"],
+                                "running": True,
+                                "countdown_time": countdown["default_time"] + now,
                             }
                         ],
                     )
