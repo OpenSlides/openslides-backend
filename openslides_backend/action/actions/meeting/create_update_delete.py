@@ -229,20 +229,21 @@ class MeetingCreate(CreateActionWithDependencies):
             {
                 "title": "List of speakers countdown",
                 "meeting_id": instance["id"],
-                "used_as_list_of_speaker_countdown_meeting_id": instance["id"],
                 "default_time": instance["projector_countdown_default_time"],
             },
             {
                 "title": "Voting countdown",
                 "meeting_id": instance["id"],
-                "used_as_poll_countdown_meeting_id": instance["id"],
                 "default_time": instance["projector_countdown_default_time"],
             },
         ]
-        self.execute_other_action(
+        action_results = self.execute_other_action(
             ProjectorCountdownCreate,
             action_data_countdowns,
         )
+        instance["list_of_speakers_countdown_id"] = action_results[0]["id"]  # type: ignore
+        instance["poll_countdown_id"] = action_results[1]["id"]  # type: ignore
+
         return instance
 
     def get_dependent_action_data(
