@@ -225,16 +225,15 @@ class MeetingCreate(CreateActionWithDependencies):
             }
         ]
         self.execute_other_action(UserUpdate, action_data)
+        self.apply_instance(instance)
         action_data_countdowns = [
             {
                 "title": "List of speakers countdown",
                 "meeting_id": instance["id"],
-                "default_time": instance["projector_countdown_default_time"],
             },
             {
                 "title": "Voting countdown",
                 "meeting_id": instance["id"],
-                "default_time": instance["projector_countdown_default_time"],
             },
         ]
         action_results = self.execute_other_action(
