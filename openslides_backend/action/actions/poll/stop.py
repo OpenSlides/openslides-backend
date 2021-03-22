@@ -30,32 +30,29 @@ class PollStopAction(UpdateAction):
         instance["state"] = Poll.STATE_FINISHED
 
         # reset countdown given by meeting
-        if poll.get("meeting_id"):
-            meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), poll["meeting_id"]),
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), poll["meeting_id"]),
+            [
+                "poll_couple_countdown",
+                "poll_countdown_id",
+            ],
+        )
+        if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
+            countdown = self.datastore.get(
+                FullQualifiedId(
+                    Collection("projector_countdown"),
+                    meeting["poll_countdown_id"],
+                ),
+                ["default_time"],
+            )
+            self.execute_other_action(
+                ProjectorCountdownUpdate,
                 [
-                    "poll_couple_countdown",
-                    "poll_countdown_id",
+                    {
+                        "id": meeting["poll_countdown_id"],
+                        "running": False,
+                        "countdown_time": countdown["default_time"],
+                    }
                 ],
             )
-            if meeting.get("poll_couple_countdown") and meeting.get(
-                "poll_countdown_id"
-            ):
-                countdown = self.datastore.get(
-                    FullQualifiedId(
-                        Collection("projector_countdown"),
-                        meeting["poll_countdown_id"],
-                    ),
-                    ["default_time"],
-                )
-                self.execute_other_action(
-                    ProjectorCountdownUpdate,
-                    [
-                        {
-                            "id": meeting["poll_countdown_id"],
-                            "running": False,
-                            "countdown_time": countdown["default_time"],
-                        }
-                    ],
-                )
         return instance
