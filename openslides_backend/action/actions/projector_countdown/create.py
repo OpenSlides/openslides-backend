@@ -18,7 +18,12 @@ class ProjectorCountdownCreate(CreateAction):
     model = ProjectorCountdown()
     schema = DefaultSchema(ProjectorCountdown()).get_create_schema(
         required_properties=["meeting_id", "title"],
-        optional_properties=["description", "default_time"],
+        optional_properties=[
+            "description",
+            "default_time",
+            "used_as_poll_countdown_meeting_id",
+            "used_as_list_of_speaker_countdown_meeting_id",
+        ],
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

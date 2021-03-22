@@ -44,6 +44,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "motions_default_statute_amendment_workflow_id": 1,
                 "motion_state_ids": [1, 2, 3, 4],
                 "user_ids": [1],
+                "list_of_speakers_countdown_id": 1,
+                "poll_countdown_id": 2,
             },
         )
         self.assert_model_exists("group/2", {"name": "Default"})
@@ -104,6 +106,26 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "group_$1_ids": [3],  # meeting/1 and group 3
                 "group_$_ids": ["1"],  # only meeting/1 values
+            },
+        )
+        self.assert_model_exists(
+            "projector_countdown/1",
+            {
+                "title": "List of speakers countdown",
+                "meeting_id": 1,
+                "used_as_list_of_speaker_countdown_meeting_id": 1,
+                "default_time": 60,
+                "countdown_time": 60,
+            },
+        )
+        self.assert_model_exists(
+            "projector_countdown/2",
+            {
+                "title": "Voting countdown",
+                "meeting_id": 1,
+                "used_as_poll_countdown_meeting_id": 1,
+                "default_time": 60,
+                "countdown_time": 60,
             },
         )
 
