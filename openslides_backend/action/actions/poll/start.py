@@ -1,4 +1,3 @@
-import time
 from typing import Any, Dict
 
 from ....models.models import Poll
@@ -7,11 +6,11 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..projector_countdown.update import ProjectorCountdownUpdate
+from ..projector_countdown.mixins import CountdownControl
 
 
 @register_action("poll.start")
-class PollStartAction(UpdateAction):
+class PollStartAction(CountdownControl, UpdateAction):
     """
     Action to start a poll.
     """
@@ -39,22 +38,5 @@ class PollStartAction(UpdateAction):
             ],
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
-            countdown = self.datastore.get(
-                FullQualifiedId(
-                    Collection("projector_countdown"),
-                    meeting["poll_countdown_id"],
-                ),
-                ["default_time"],
-            )
-            now = round(time.time())
-            self.execute_other_action(
-                ProjectorCountdownUpdate,
-                [
-                    {
-                        "id": meeting["poll_countdown_id"],
-                        "running": True,
-                        "countdown_time": countdown["default_time"] + now,
-                    }
-                ],
-            )
+            self.control_countdown(meeting["poll_countdown_id"], "restart")
         return instance
