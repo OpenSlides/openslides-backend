@@ -1,4 +1,5 @@
 from ....models.models import MotionWorkflow
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,3 +15,4 @@ class MotionWorkflowUpdateAction(UpdateAction):
     schema = DefaultSchema(MotionWorkflow()).get_update_schema(
         optional_properties=["name", "first_state_id"]
     )
+    permission = Permissions.Motion.CAN_MANAGE

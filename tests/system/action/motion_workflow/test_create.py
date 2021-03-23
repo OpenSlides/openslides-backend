@@ -61,3 +61,10 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         self.assert_model_exists(
             "motion_state/4", {"name": "not_decided", "previous_state_ids": [1]}
         )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/42": {"name": "test_name_fsdksjdfhdsfssdf"}},
+            "motion_workflow.create",
+            {"name": "test_Xcdfgee", "meeting_id": 42},
+        )

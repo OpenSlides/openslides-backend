@@ -119,3 +119,19 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         response = self.request("motion_workflow.delete", {"id": 1})
         self.assert_status_code(response, 400)
         self.assert_model_exists("motion_workflow/1")
+
+    def test_delete_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/90": {
+                    "name": "name_testtest",
+                    "motions_default_workflow_id": 12,
+                    "motions_default_statute_amendment_workflow_id": 13,
+                    "motion_workflow_ids": [111, 2],
+                },
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 90},
+                "motion_workflow/2": {"meeting_id": 90},
+            },
+            "motion_workflow.delete",
+            {"id": 111},
+        )
