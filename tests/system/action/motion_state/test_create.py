@@ -64,7 +64,10 @@ class MotionStateActionTest(BaseActionTestCase):
             ]
         )
         self.assert_status_code(response, 400)
-        self.assertIn("There is already a first state for this workflow set. You can't change it.", response.json["message"])
+        self.assertIn(
+            "There is already a first state for this workflow set. You can't change it.",
+            response.json["message"],
+        )
 
     def test_create_as_new_first_state_of_second_workflow(self) -> None:
         self.set_models(

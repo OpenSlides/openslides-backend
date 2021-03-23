@@ -197,24 +197,26 @@ class SingleRelationHandler:
         return final
 
     def build_handler_from_chained_field(self, chained_field: Dict[str, Any]):  # type: ignore
-            """
-                "field": self.field.to,
-                "fqid": fqid,
-                "origin_modified_fqid": own_fqid,
-            """
-            if len(chained_field["field"]) != 1:
-                raise NotImplementedError()
-            collection, _ = list(chained_field["field"].items())[0]
-            field_name = self.get_related_name(collection)
-            field = self.get_reverse_field(collection)
-            instance = self.datastore.fetch_model(chained_field["fqid"], ["id", field_name], lock_result=True)
-            instance[field_name] = None
-            return SingleRelationHandler(
-                self.datastore,
-                field,
-                field_name,
-                instance,
-            )
+        """
+        "field": self.field.to,
+        "fqid": fqid,
+        "origin_modified_fqid": own_fqid,
+        """
+        if len(chained_field["field"]) != 1:
+            raise NotImplementedError()
+        collection, _ = list(chained_field["field"].items())[0]
+        field_name = self.get_related_name(collection)
+        field = self.get_reverse_field(collection)
+        instance = self.datastore.fetch_model(
+            chained_field["fqid"], ["id", field_name], lock_result=True
+        )
+        instance[field_name] = None
+        return SingleRelationHandler(
+            self.datastore,
+            field,
+            field_name,
+            instance,
+        )
 
     def partition_by_collection(
         self, fqids: Iterable[FullQualifiedId]
@@ -316,10 +318,12 @@ class SingleRelationHandler:
                     continue
                 if rel[related_name] and self.type in ("1:1", "m:1"):
                     assert len(rel[related_name]) == 1
-                    self.chained_fields.append({
-                        "field": self.field.to,
-                        "fqid": fqid,
-                    })
+                    self.chained_fields.append(
+                        {
+                            "field": self.field.to,
+                            "fqid": fqid,
+                        }
+                    )
                     new_value = [own_fqid]
                 else:
                     new_value = rel[related_name] + [own_fqid]

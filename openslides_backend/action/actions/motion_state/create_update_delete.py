@@ -7,7 +7,9 @@ from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action_set import ActionSet
 from ...generics.update import UpdateAction
-from ...mixins.create_action_with_inferred_meeting import CreateActionWithInferredMeeting
+from ...mixins.create_action_with_inferred_meeting import (
+    CreateActionWithInferredMeeting,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
 
@@ -16,17 +18,30 @@ class MotionStateCreate(CreateActionWithInferredMeeting):
     """
     Action to create motion states
     """
+
     relation_field_for_meeting = "workflow_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        if (first_state_of_workflow_id := instance.get("first_state_of_workflow_id")) and first_state_of_workflow_id != instance["workflow_id"]:
-            raise ActionException(f"This state of workflow {instance['workflow_id']} cannot be the first state of workflow {first_state_of_workflow_id}.")
+        if (
+            first_state_of_workflow_id := instance.get("first_state_of_workflow_id")
+        ) and first_state_of_workflow_id != instance["workflow_id"]:
+            raise ActionException(
+                f"This state of workflow {instance['workflow_id']} cannot be the first state of workflow {first_state_of_workflow_id}."
+            )
         if first_state_of_workflow_id:
-            workflow = self.datastore.fetch_model(FullQualifiedId(Collection("motion_workflow"), instance['workflow_id']), ["id", "first_state_id"])
-            if (wf_first_state_id := workflow.get("first_state_id")) and instance["id"] != wf_first_state_id:
-                raise ActionException(f"There is already a first state for this workflow set. You can't change it.")
+            workflow = self.datastore.fetch_model(
+                FullQualifiedId(Collection("motion_workflow"), instance["workflow_id"]),
+                ["id", "first_state_id"],
+            )
+            if (wf_first_state_id := workflow.get("first_state_id")) and instance[
+                "id"
+            ] != wf_first_state_id:
+                raise ActionException(
+                    "There is already a first state for this workflow set. You can't change it."
+                )
         return instance
+
 
 class MotionStateUpdate(UpdateAction):
     """
