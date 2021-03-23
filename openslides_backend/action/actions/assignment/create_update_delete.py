@@ -1,4 +1,5 @@
 from ....models.models import Assignment
+from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -55,5 +56,6 @@ class AssignmentActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(Assignment()).get_delete_schema()
+    permission = Permissions.Assignment.CAN_MANAGE
 
     CreateActionClass = AssignmentCreate

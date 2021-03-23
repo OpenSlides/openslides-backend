@@ -52,3 +52,13 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("assignment/111")
         assert model.get("title") == "title_srtgb123"
+
+    def test_permission(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/110": {"name": "name_sdurqw12"},
+                "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
+            },
+            "assignment.update",
+            {"id": 111, "title": "title_Xcdfgee"},
+        )
