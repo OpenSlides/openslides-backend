@@ -11,6 +11,7 @@ from ...util.register import register_action_set
 from ..group.create import GroupCreate
 from ..motion_workflow.create import MotionWorkflowCreateSimpleWorkflowAction
 from ..projector.create import ProjectorCreateAction
+from ..projector_countdown.create import ProjectorCountdownCreate
 from ..user.update import UserUpdate
 from .shared_meeting import meeting_projector_default_replacements
 
@@ -224,6 +225,24 @@ class MeetingCreate(CreateActionWithDependencies):
             }
         ]
         self.execute_other_action(UserUpdate, action_data)
+        self.apply_instance(instance)
+        action_data_countdowns = [
+            {
+                "title": "List of speakers countdown",
+                "meeting_id": instance["id"],
+            },
+            {
+                "title": "Voting countdown",
+                "meeting_id": instance["id"],
+            },
+        ]
+        action_results = self.execute_other_action(
+            ProjectorCountdownCreate,
+            action_data_countdowns,
+        )
+        instance["list_of_speakers_countdown_id"] = action_results[0]["id"]  # type: ignore
+        instance["poll_countdown_id"] = action_results[1]["id"]  # type: ignore
+
         return instance
 
     def get_dependent_action_data(

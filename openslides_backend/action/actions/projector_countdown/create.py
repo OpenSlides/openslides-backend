@@ -18,7 +18,10 @@ class ProjectorCountdownCreate(CreateAction):
     model = ProjectorCountdown()
     schema = DefaultSchema(ProjectorCountdown()).get_create_schema(
         required_properties=["meeting_id", "title"],
-        optional_properties=["description", "default_time"],
+        optional_properties=[
+            "description",
+            "default_time",
+        ],
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -26,7 +29,7 @@ class ProjectorCountdownCreate(CreateAction):
 
         # set default_time if needed and countdown_time
         if not instance.get("default_time"):
-            meeting = self.datastore.get(
+            meeting = self.datastore.fetch_model(
                 FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
                 ["projector_countdown_default_time"],
             )
