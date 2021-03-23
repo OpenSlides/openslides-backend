@@ -3,15 +3,13 @@ from tests.system.action.base import BaseActionTestCase
 
 class AgendaItemActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.create_model("meeting/20", {})
-        self.create_model("agenda_item/111", {"meeting_id": 20})
+        self.set_models({"meeting/20": {}, "agenda_item/111": {"meeting_id": 20}})
         response = self.request("agenda_item.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("agenda_item/111")
 
     def test_delete_wrong_id(self) -> None:
-        self.create_model("meeting/20", {})
-        self.create_model("agenda_item/112", {"meeting_id": 20})
+        self.set_models({"meeting/20": {}, "agenda_item/112": {"meeting_id": 20}})
         response = self.request("agenda_item.delete", {"id": 111})
         self.assert_status_code(response, 400)
         self.assert_model_exists("agenda_item/112")
