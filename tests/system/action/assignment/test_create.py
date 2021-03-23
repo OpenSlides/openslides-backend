@@ -140,3 +140,13 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
+
+    def test_permission(self) -> None:
+        self.base_permission_test(
+            {"meeting/110": {"name": "name_zvfbAjpZ"}},
+            "assignment.create",
+            {
+                "title": "title_Xcdfgee",
+                "meeting_id": 110,
+            },
+        )
