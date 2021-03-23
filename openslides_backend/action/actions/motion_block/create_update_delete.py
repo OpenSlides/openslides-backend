@@ -1,4 +1,5 @@
 from ....models.models import MotionBlock
+from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -38,5 +39,6 @@ class MotionBlockActionSet(ActionSet):
         optional_properties=["title", "internal", "motion_ids"]
     )
     delete_schema = DefaultSchema(MotionBlock()).get_delete_schema()
+    permission = Permissions.Motion.CAN_MANAGE
 
     CreateActionClass = MotionBlockCreate

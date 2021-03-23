@@ -48,3 +48,10 @@ class MotionBlockActionTest(BaseActionTestCase):
             "data must contain ['title', 'meeting_id'] properties",
             response.json["message"],
         )
+
+    def test_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/42": {"name": "test", "agenda_item_creation": "always"}},
+            "motion_block.create",
+            {"title": "test_Xcdfgee", "meeting_id": 42},
+        )
