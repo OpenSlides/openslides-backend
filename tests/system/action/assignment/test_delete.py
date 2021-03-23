@@ -3,9 +3,11 @@ from tests.system.action.base import BaseActionTestCase
 
 class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.create_model("meeting/110", {})
-        self.create_model(
-            "assignment/111", {"meeting_id": 110, "title": "title_srtgb123"}
+        self.set_models(
+            {
+                "meeting/110": {},
+                "assignment/111": {"meeting_id": 110, "title": "title_srtgb123"},
+            }
         )
         response = self.request("assignment.delete", {"id": 111})
         self.assert_status_code(response, 200)
@@ -39,9 +41,11 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("list_of_speakers/222")
 
     def test_delete_wrong_id(self) -> None:
-        self.create_model("meeting/110", {})
-        self.create_model(
-            "assignment/112", {"title": "title_srtgb123", "meeting_id": 110}
+        self.set_models(
+            {
+                "meeting/110": {},
+                "assignment/112": {"title": "title_srtgb123", "meeting_id": 110},
+            }
         )
         response = self.request("assignment.delete", {"id": 111})
         self.assert_status_code(response, 400)
