@@ -32,6 +32,7 @@ class UserUpdate(UpdateAction, UserMixin):
             "committee_as_manager_ids",
             "group_$_ids",
             "vote_delegations_$_from_ids",
+            "vote_delegated_$_to_id",
             "comment_$",
             "number_$",
             "structure_level_$",

@@ -121,10 +121,24 @@ class ProjectorUpdate(BaseActionTestCase):
                 "used_as_default_$_in_meeting_id": {"topics": 222},
             },
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "You can not set meeting/222/default_projector_$topics_id to a new value because this field is not empty.",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_default_$_in_meeting_id": [],
+                "used_as_default_$topics_in_meeting_id": None,
+            },
+        )
+        self.assert_model_exists(
+            "projector/2",
+            {
+                "used_as_default_$_in_meeting_id": ["topics"],
+                "used_as_default_$topics_in_meeting_id": 222,
+            },
+        )
+        self.assert_model_exists(
+            "meeting/222",
+            {"default_projector_$_id": ["topics"], "default_projector_$topics_id": 2},
         )
 
     def test_update_change_used_as_default__in_meeting_id(self) -> None:
