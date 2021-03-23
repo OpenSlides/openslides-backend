@@ -161,3 +161,13 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         assert model_12.get("parent_id") == 1
         assert model_12.get("child_ids") == []
         assert model_12.get("level") == 1
+
+    def test_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "agenda_item/22": {"meeting_id": 222, "comment": "test1"},
+            },
+            "agenda_item.sort",
+            {"meeting_id": 222, "tree": [{"id": 22}]},
+        )

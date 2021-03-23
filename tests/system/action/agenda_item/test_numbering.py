@@ -154,3 +154,22 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         assert agenda_item_1.get("item_number") == "1"
         agenda_item_2 = self.get_model("agenda_item/2")
         assert agenda_item_2.get("item_number") == ""
+
+    def test_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "agenda_item/1": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/2": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+            },
+            "agenda_item.numbering",
+            {"meeting_id": 1},
+        )

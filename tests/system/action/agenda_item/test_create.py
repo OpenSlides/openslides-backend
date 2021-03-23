@@ -243,3 +243,10 @@ class AgendaItemSystemTest(BaseActionTestCase):
         assert model.get("is_internal") is True
         assert model.get("is_hidden") is True
         assert model.get("level") == 13
+
+    def test_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/2": {"name": "test"}, "topic/1": {"meeting_id": 2}},
+            "agenda_item.create",
+            {"content_object_id": "topic/1"},
+        )

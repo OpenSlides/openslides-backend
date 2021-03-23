@@ -1,4 +1,5 @@
 from ....models.models import AgendaItem
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...mixins.tree_sort_mixin import TreeSortMixin
@@ -15,6 +16,7 @@ class AgendaItemSort(TreeSortMixin, SingularActionMixin, UpdateAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_tree_sort_schema()
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)

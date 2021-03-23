@@ -196,3 +196,12 @@ class BaseActionTestCase(BaseSystemTestCase):
         for group in response.get(Collection("group"), {}).values():
             partitioned_groups[group["meeting_id"]].append(group)
         return partitioned_groups
+
+    def base_permission_test(
+        self, models: Dict[str, Any], action: str, action_data: Dict[str, Any]
+    ) -> None:
+        self.set_management_level(None)
+        self.set_models(models)
+        response = self.request(action, action_data)
+        self.assert_status_code(response, 403)
+        assert "You do not belong to meeting" in response.json["message"]
