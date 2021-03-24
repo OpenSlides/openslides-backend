@@ -87,3 +87,14 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
             "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match.",
             response.json["message"],
         )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/111": {"name": "name_m123etrd"},
+                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
+                "user/78": {"username": "username_loetzbfg", "meeting_id": 111},
+            },
+            "motion_submitter.create",
+            {"motion_id": 357, "user_id": 78},
+        )

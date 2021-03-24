@@ -1,4 +1,8 @@
+from typing import Any, Dict
+
 from ....models.models import MotionSubmitter
+from ....permissions.permissions import Permissions
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -17,6 +21,7 @@ class MotionSubmitterSort(LinearSortMixin, SingularActionMixin, UpdateAction):
     schema = DefaultSchema(MotionSubmitter()).get_linear_sort_schema(
         "motion_submitter_ids", "motion_id"
     )
+    permission = Permissions.Motion.CAN_MANAGE_METADATA
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)
@@ -27,3 +32,12 @@ class MotionSubmitterSort(LinearSortMixin, SingularActionMixin, UpdateAction):
             filter_id=instance["motion_id"],
             filter_str="motion_id",
         )
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        db_instance = self.datastore.fetch_model(
+            FullQualifiedId(Collection("motion"), instance["motion_id"]),
+            ["meeting_id"],
+            exception=True,
+            lock_result=True,
+        )
+        return db_instance["meeting_id"]

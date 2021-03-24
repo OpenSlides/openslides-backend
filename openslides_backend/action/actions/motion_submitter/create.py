@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import MotionSubmitter
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
@@ -22,6 +23,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
     schema = DefaultSchema(MotionSubmitter()).get_create_schema(
         ["motion_id", "user_id"],
     )
+    permission = Permissions.Motion.CAN_MANAGE_METADATA
 
     relation_field_for_meeting = "motion_id"
 
