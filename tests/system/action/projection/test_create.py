@@ -15,7 +15,7 @@ class ProjectionCreateActionTest(BaseActionTestCase):
             {
                 "content_object_id": "assignment/1",
                 "current_projector_id": 2,
-                "options": "",
+                "options": {},
                 "stable": True,
                 "type": "test",
                 "meeting_id": 1,
@@ -25,7 +25,7 @@ class ProjectionCreateActionTest(BaseActionTestCase):
         projection = self.get_model("projection/1")
         assert projection.get("content_object_id") == "assignment/1"
         assert projection.get("meeting_id") == 1
-        assert projection.get("options") == ""
+        assert projection.get("options") == {}
         assert projection.get("stable") is True
         assert projection.get("type") == "test"
         projector = self.get_model("projector/2")
