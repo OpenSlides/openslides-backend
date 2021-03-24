@@ -177,4 +177,4 @@ class ProjectorProject(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("", response.json["message"])
+        self.assertIn("The following models do not belong to meeting 2: [FullQualifiedId('projector/65')]", response.json["message"])
