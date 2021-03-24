@@ -67,3 +67,20 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Additional db_instances found." in response.json["message"]
+
+    def test_sort_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/222": {"name": "name_SNLGsvIV"},
+                "motion_comment_section/31": {
+                    "meeting_id": 222,
+                    "name": "name_loisueb",
+                },
+                "motion_comment_section/32": {
+                    "meeting_id": 222,
+                    "name": "name_blanumop",
+                },
+            },
+            "motion_comment_section.sort",
+            {"meeting_id": 222, "motion_comment_section_ids": [32, 31]},
+        )

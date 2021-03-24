@@ -1,4 +1,5 @@
 from ....models.models import MotionCommentSection
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,3 +15,4 @@ class MotionCommentSectionUpdateAction(UpdateAction):
     schema = DefaultSchema(MotionCommentSection()).get_update_schema(
         optional_properties=["name", "read_group_ids", "write_group_ids"]
     )
+    permission = Permissions.Motion.CAN_MANAGE

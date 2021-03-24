@@ -60,3 +60,10 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
         )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/222": {"name": "name_SNLGsvIV"}},
+            "motion_comment_section.create",
+            {"name": "test_Xcdfgee", "meeting_id": 222},
+        )

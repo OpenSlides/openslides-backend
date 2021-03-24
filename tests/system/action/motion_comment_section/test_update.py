@@ -48,3 +48,22 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("motion_comment_section/111")
         assert model.get("read_group_ids") == [23]
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/222": {"name": "name_xQyvfmsS"},
+                "motion_comment_section/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 222,
+                },
+                "group/23": {"meeting_id": 222, "name": "name_asdfetza"},
+            },
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "name": "name_iuqAPRuD",
+                "read_group_ids": [23],
+                "write_group_ids": [23],
+            },
+        )

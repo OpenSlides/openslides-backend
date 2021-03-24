@@ -1,4 +1,5 @@
 from ....models.models import MotionCommentSection
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -18,6 +19,7 @@ class MotionCommentSectionSort(LinearSortMixin, SingularActionMixin, UpdateActio
         "motion_comment_section_ids",
         "meeting_id",
     )
+    permission = Permissions.Motion.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)

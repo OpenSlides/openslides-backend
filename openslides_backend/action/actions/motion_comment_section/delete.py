@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import MotionCommentSection
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, ProtectedModelsException
 from ....shared.patterns import Collection
@@ -17,6 +18,7 @@ class MotionCommentSectionDeleteAction(DeleteAction):
 
     model = MotionCommentSection()
     schema = DefaultSchema(MotionCommentSection()).get_delete_schema()
+    permission = Permissions.Motion.CAN_MANAGE
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         try:
