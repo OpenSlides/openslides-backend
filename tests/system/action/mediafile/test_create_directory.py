@@ -258,3 +258,21 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("access_group_ids") == [3]
         assert model.get("inherited_access_group_ids") == []
         assert model.get("is_public") is False
+
+    def test_create_dictionary_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "group/7": {
+                    "name": "group_LxAHErRs",
+                    "user_ids": [],
+                    "meeting_id": 110,
+                },
+                "meeting/110": {"name": "meeting110"},
+            },
+            "mediafile.create_directory",
+            {
+                "meeting_id": 110,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+            },
+        )

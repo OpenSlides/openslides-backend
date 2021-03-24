@@ -144,3 +144,15 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "data must contain ['title', 'meeting_id', 'filename', 'file'] properties",
             response.json["message"],
         )
+
+    def test_upload_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/110": {}},
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": "fn_jumbo.txt",
+                "file": base64.b64encode(b"testtesttest").decode(),
+            },
+        )

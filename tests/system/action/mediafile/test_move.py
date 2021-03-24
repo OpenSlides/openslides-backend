@@ -172,3 +172,14 @@ class MediafileMoveActionTest(BaseActionTestCase):
             "Moving item 7 to one of its children is not possible.",
             response.json["message"],
         )
+
+    def test_move_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/222": {},
+                "mediafile/7": {"meeting_id": 222, "is_directory": True},
+                "mediafile/8": {"meeting_id": 222, "is_directory": True},
+            },
+            "mediafile.move",
+            {"meeting_id": 222, "ids": [8], "parent_id": 7},
+        )

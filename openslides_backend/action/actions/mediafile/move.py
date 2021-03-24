@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from ....models.models import Mediafile
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
@@ -33,6 +34,7 @@ class MediafileMoveAction(
             }
         },
     )
+    permission = Permissions.Mediafile.CAN_MANAGE
 
     def check_is_directory(self, id_: int) -> None:
         item = self.datastore.get(
