@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ....models.models import ListOfSpeakers, Speaker
+from ....permissions.permissions import Permissions
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -18,6 +21,7 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
         title="Delete all speakers of list of speakers",
         description="Action to remove all speakers from the given list of speakers.",
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
@@ -30,3 +34,11 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
                 yield from [
                     {"id": speaker_id} for speaker_id in list_of_speakers["speaker_ids"]
                 ]
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        list_of_speakers = self.datastore.fetch_model(
+            FullQualifiedId(Collection("list_of_speakers"), instance["id"]),
+            mapped_fields=["meeting_id"],
+            lock_result=True,
+        )
+        return list_of_speakers["meeting_id"]

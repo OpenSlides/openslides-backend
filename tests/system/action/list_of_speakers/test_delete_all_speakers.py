@@ -29,6 +29,24 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
     def test_wrong_id(self) -> None:
         response = self.request("list_of_speakers.delete_all_speakers", {"id": 111})
         self.assert_status_code(response, 400)
-        self.assertTrue(
+        assert (
             "Model 'list_of_speakers/111' does not exist." in response.json["message"]
+        )
+
+    def test_delete_all_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "speaker_ids": [1],
+                },
+                "list_of_speakers/111": {
+                    "closed": False,
+                    "meeting_id": 222,
+                    "speaker_ids": [1],
+                },
+                "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 222},
+            },
+            "list_of_speakers.delete_all_speakers",
+            {"id": 111},
         )
