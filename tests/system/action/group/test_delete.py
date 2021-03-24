@@ -81,3 +81,13 @@ class GroupDeleteActionTest(BaseActionTestCase):
         assert user.get("group_$_ids") == []
         user = self.get_model("meeting/22")
         assert user.get("user_ids") == []
+
+    def test_delete_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/22": {"name": "name_meeting_22", "group_ids": [111]},
+                "group/111": {"name": "name_srtgb123", "meeting_id": 22},
+            },
+            "group.delete",
+            {"id": 111},
+        )

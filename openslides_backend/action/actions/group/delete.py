@@ -1,4 +1,5 @@
 from ....models.models import Group
+from ....permissions.permissions import Permissions
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -12,3 +13,4 @@ class GroupDeleteAction(DeleteAction):
 
     model = Group()
     schema = DefaultSchema(Group()).get_delete_schema()
+    permission = Permissions.User.CAN_MANAGE
