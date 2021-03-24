@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Type
 
 from ....models.models import MotionWorkflow
+from ....permissions.permissions import Permissions
 from ...action import Action
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -19,6 +20,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
 
     model = MotionWorkflow()
     schema = DefaultSchema(MotionWorkflow()).get_create_schema(["name", "meeting_id"])
+    permission = Permissions.Motion.CAN_MANAGE
     dependencies = [MotionStateActionSet.get_action("create")]
 
     def get_dependent_action_data(

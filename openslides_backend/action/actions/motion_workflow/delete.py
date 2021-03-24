@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, cast
 
 from ....models.models import MotionWorkflow
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
@@ -16,6 +17,7 @@ class MotionWorkflowDeleteAction(DeleteAction):
 
     model = MotionWorkflow()
     schema = DefaultSchema(MotionWorkflow()).get_delete_schema()
+    permission = Permissions.Motion.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
