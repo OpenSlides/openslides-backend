@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Group
+from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -21,6 +22,7 @@ class GroupSetPermissionAction(UpdateAction):
             "permission": {"type": "string"},
         }
     )
+    permission = Permissions.User.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

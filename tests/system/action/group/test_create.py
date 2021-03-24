@@ -30,7 +30,8 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("permissions") == ["agenda_item.can_see"]
 
     def test_create_empty_data(self) -> None:
-        response = self.request("group.create", {})
+        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        response = self.request("group.create", {"meeting_id": 22})
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['name', 'meeting_id'] properties",
@@ -51,4 +52,11 @@ class GroupCreateActionTest(BaseActionTestCase):
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/22": {"name": "name_vJxebUwo"}},
+            "group.create",
+            {"name": "test_Xcdfgee", "meeting_id": 22},
         )
