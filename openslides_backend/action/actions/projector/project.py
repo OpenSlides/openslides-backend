@@ -30,10 +30,14 @@ class ProjectorProject(UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-            content_object = self.datastore.get(
-                string_to_fqid(instance["content_object_id"]), ["meeting_id"]
-            )
-            meeting_id = content_object["meeting_id"]
+            fqid_content_object = string_to_fqid(instance["content_object_id"])
+            if fqid_content_object.collection.collection == "meeting":
+                meeting_id = fqid_content_object.id
+            else:
+                content_object = self.datastore.get(
+                    string_to_fqid(instance["content_object_id"]), ["meeting_id"]
+                )
+                meeting_id = content_object["meeting_id"]
 
             if not instance.get("stable"):
                 self.move_equal_projections_to_history(instance, meeting_id)
