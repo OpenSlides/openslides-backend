@@ -1,6 +1,7 @@
 from typing import Optional
 
 from ....models.models import AgendaItem
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
@@ -27,6 +28,7 @@ class AgendaItemUpdate(UpdateAction):
             "duration",
         ]
     )
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def calc_is_internal(
         self, type_: Optional[int], parent_is_internal: Optional[bool]

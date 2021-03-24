@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from ....models.models import AgendaItem
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId
@@ -30,6 +31,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
             }
         },
     )
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)

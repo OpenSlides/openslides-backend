@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import AgendaItem
+from ....permissions.permissions import Permissions
 from ....shared.patterns import Collection, FullQualifiedId
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
@@ -28,6 +29,7 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
             "weight",
         ],
     )
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     relation_field_for_meeting = "content_object_id"
 

@@ -1,4 +1,5 @@
 from ....models.models import AgendaItem
+from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
@@ -17,6 +18,7 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_default_schema(["meeting_id"])
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)

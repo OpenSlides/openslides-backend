@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import AgendaItem
+from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId, string_to_fqid
 from ....shared.typing import DeletedModel
 from ...generics.delete import DeleteAction
@@ -17,6 +18,7 @@ class AgendaItemDelete(DeleteAction):
 
     model = AgendaItem()
     schema = DefaultSchema(AgendaItem()).get_delete_schema()
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         fqid = FullQualifiedId(self.model.collection, instance["id"])

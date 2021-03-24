@@ -98,3 +98,14 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         assert agenda_item_7.get("parent_id") is None
         agenda_item_8 = self.get_model("agenda_item/8")
         assert agenda_item_8.get("parent_id") is None
+
+    def test_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/222": {},
+                "agenda_item/7": {"meeting_id": 222},
+                "agenda_item/8": {"meeting_id": 222},
+            },
+            "agenda_item.assign",
+            {"meeting_id": 222, "ids": [8], "parent_id": 7},
+        )

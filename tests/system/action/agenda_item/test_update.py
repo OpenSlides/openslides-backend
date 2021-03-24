@@ -6,8 +6,13 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "topic/102": {},
-                "agenda_item/111": {"item_number": "101", "duration": 600},
+                "meeting/11": {},
+                "topic/102": {"meeting_id": 11},
+                "agenda_item/111": {
+                    "item_number": "101",
+                    "duration": 600,
+                    "meeting_id": 11,
+                },
             }
         )
         response = self.request("agenda_item.update", {"id": 111, "duration": 1200})
@@ -50,15 +55,18 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_type_change_with_children(self) -> None:
         self.set_models(
             {
+                "meeting/11": {},
                 "agenda_item/111": {
                     "item_number": "101",
                     "duration": 600,
                     "child_ids": [222],
+                    "meeting_id": 11,
                 },
                 "agenda_item/222": {
                     "type": AgendaItem.AGENDA_ITEM,
                     "item_number": "102",
                     "parent_id": 111,
+                    "meeting_id": 11,
                 },
             }
         )
@@ -74,3 +82,18 @@ class AgendaItemActionTest(BaseActionTestCase):
         assert child_model.get("type") == AgendaItem.AGENDA_ITEM
         assert child_model.get("is_hidden") is True
         assert child_model.get("is_internal") is False
+
+    def test_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {},
+                "topic/102": {"meeting_id": 1},
+                "agenda_item/111": {
+                    "item_number": "101",
+                    "duration": 600,
+                    "meeting_id": 1,
+                },
+            },
+            "agenda_item.update",
+            {"id": 111, "duration": 1200},
+        )
