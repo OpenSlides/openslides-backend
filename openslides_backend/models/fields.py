@@ -99,8 +99,13 @@ class CharField(TextField):
         return self.extend_schema(super().get_schema(), maxLength=256)
 
 
-class JSONField(TextField):
-    pass
+class JSONField(Field):
+    def get_schema(self) -> Schema:
+        if self.required:
+            return self.extend_schema(
+                super().get_schema(), type="object", minProperties=1
+            )
+        return self.extend_schema(super().get_schema(), type=["object", "null"])
 
 
 class HTMLStrictField(TextField):

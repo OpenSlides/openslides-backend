@@ -52,7 +52,7 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "ids": [23],
                 "content_object_id": "assignment/453",
-                "options": "",
+                "options": {},
                 "stable": False,
                 "type": "test",
             },
@@ -61,7 +61,7 @@ class ProjectorProject(BaseActionTestCase):
         projection = self.get_model("projection/112")
         assert projection.get("current_projector_id") == 23
         assert projection.get("content_object_id") == "assignment/453"
-        assert projection.get("options") == ""
+        assert projection.get("options") == {}
         assert projection.get("stable") is False
         assert projection.get("type") == "test"
         projection = self.get_model("projection/105")
@@ -135,7 +135,7 @@ class ProjectorProject(BaseActionTestCase):
             {
                 "ids": [23, 23],
                 "content_object_id": "assignment/453",
-                "options": "",
+                "options": {},
                 "stable": False,
                 "type": "test",
             },
