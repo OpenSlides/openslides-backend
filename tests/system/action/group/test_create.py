@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -56,7 +57,15 @@ class GroupCreateActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/22": {"name": "name_vJxebUwo"}},
+            {},
             "group.create",
-            {"name": "test_Xcdfgee", "meeting_id": 22},
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+        )
+
+    def test_create_check_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "group.create",
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+            Permissions.User.CAN_MANAGE,
         )

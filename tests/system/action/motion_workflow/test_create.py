@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -64,7 +65,15 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/42": {"name": "test_name_fsdksjdfhdsfssdf"}},
+            {},
             "motion_workflow.create",
-            {"name": "test_Xcdfgee", "meeting_id": 42},
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_workflow.create",
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+            Permissions.Motion.CAN_MANAGE,
         )

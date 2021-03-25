@@ -1,4 +1,5 @@
 from openslides_backend.models.models import AgendaItem
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -155,7 +156,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
         agenda_item_2 = self.get_model("agenda_item/2")
         assert agenda_item_2.get("item_number") == ""
 
-    def test_permissions(self) -> None:
+    def test_numbering_no_permissions(self) -> None:
         self.base_permission_test(
             {
                 "meeting/1": {"agenda_item_ids": [1, 2]},
@@ -172,4 +173,24 @@ class AgendaItemNumberingTester(BaseActionTestCase):
             },
             "agenda_item.numbering",
             {"meeting_id": 1},
+        )
+
+    def test_numbering_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "agenda_item/1": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+                "agenda_item/2": {
+                    "meeting_id": 1,
+                    "weight": 10,
+                    "type": AgendaItem.AGENDA_ITEM,
+                },
+            },
+            "agenda_item.numbering",
+            {"meeting_id": 1},
+            Permissions.AgendaItem.CAN_MANAGE,
         )

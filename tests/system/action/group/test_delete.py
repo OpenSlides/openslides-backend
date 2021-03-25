@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -85,9 +86,18 @@ class GroupDeleteActionTest(BaseActionTestCase):
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/22": {"name": "name_meeting_22", "group_ids": [111]},
-                "group/111": {"name": "name_srtgb123", "meeting_id": 22},
+                "group/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
             "group.delete",
             {"id": 111},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "group/111": {"name": "name_srtgb123", "meeting_id": 1},
+            },
+            "group.delete",
+            {"id": 111},
+            Permissions.User.CAN_MANAGE,
         )

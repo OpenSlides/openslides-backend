@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -34,9 +35,18 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/10": {},
-                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 10},
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
             "motion_workflow.update",
             {"id": 111, "name": "name_Xcdfgee"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 1},
+            },
+            "motion_workflow.update",
+            {"id": 111, "name": "name_Xcdfgee"},
+            Permissions.Motion.CAN_MANAGE,
         )

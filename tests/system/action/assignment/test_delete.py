@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -52,12 +53,21 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
         model = self.get_model("assignment/112")
         self.assertEqual(model.get("title"), "title_srtgb123")
 
-    def test_permission(self) -> None:
+    def test_delete_no_permission(self) -> None:
         self.base_permission_test(
             {
-                "meeting/110": {},
-                "assignment/111": {"meeting_id": 110, "title": "title_srtgb123"},
+                "assignment/111": {"meeting_id": 1, "title": "title_srtgb123"},
             },
             "assignment.delete",
             {"id": 111},
+        )
+
+    def test_delete_permission(self) -> None:
+        self.base_permission_test(
+            {
+                "assignment/111": {"meeting_id": 1, "title": "title_srtgb123"},
+            },
+            "assignment.delete",
+            {"id": 111},
+            Permissions.Assignment.CAN_MANAGE,
         )

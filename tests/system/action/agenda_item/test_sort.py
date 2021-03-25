@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -162,12 +163,21 @@ class AgendaItemSortActionTest(BaseActionTestCase):
         assert model_12.get("child_ids") == []
         assert model_12.get("level") == 1
 
-    def test_permissions(self) -> None:
+    def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
-                "agenda_item/22": {"meeting_id": 222, "comment": "test1"},
+                "agenda_item/22": {"meeting_id": 1, "comment": "test1"},
             },
             "agenda_item.sort",
-            {"meeting_id": 222, "tree": [{"id": 22}]},
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+        )
+
+    def test_sort_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "agenda_item/22": {"meeting_id": 1, "comment": "test1"},
+            },
+            "agenda_item.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+            Permissions.AgendaItem.CAN_MANAGE,
         )
