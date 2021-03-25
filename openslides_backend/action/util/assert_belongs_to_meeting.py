@@ -15,6 +15,10 @@ def assert_belongs_to_meeting(
 
     errors: List[FullQualifiedId] = []
     for fqid in fqids:
+        if fqid.collection.collection == "meeting":
+            if fqid.id != meeting_id:
+                errors.append(fqid)
+            continue
         mapped_fields = ["meeting_id"]
         if fqid.collection.collection == "user":
             mapped_fields += ["guest_meeting_ids", f"group_${meeting_id}_ids"]
