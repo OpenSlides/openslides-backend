@@ -99,7 +99,7 @@ class CharField(TextField):
         return self.extend_schema(super().get_schema(), maxLength=256)
 
 
-class JSONField(TextField):
+class JSONField(Field):
     def get_schema(self) -> Schema:
         if self.required:
             return self.extend_schema(
