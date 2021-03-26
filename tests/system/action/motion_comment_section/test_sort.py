@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -71,16 +72,32 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
                 "motion_comment_section/31": {
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                     "name": "name_loisueb",
                 },
                 "motion_comment_section/32": {
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                     "name": "name_blanumop",
                 },
             },
             "motion_comment_section.sort",
-            {"meeting_id": 222, "motion_comment_section_ids": [32, 31]},
+            {"meeting_id": 1, "motion_comment_section_ids": [32, 31]},
+        )
+
+    def test_sort_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "motion_comment_section/31": {
+                    "meeting_id": 1,
+                    "name": "name_loisueb",
+                },
+                "motion_comment_section/32": {
+                    "meeting_id": 1,
+                    "name": "name_blanumop",
+                },
+            },
+            "motion_comment_section.sort",
+            {"meeting_id": 1, "motion_comment_section_ids": [32, 31]},
+            Permissions.Motion.CAN_MANAGE,
         )

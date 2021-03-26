@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -52,12 +53,11 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
                 "motion_comment_section/111": {
                     "name": "name_srtgb123",
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                 },
-                "group/23": {"meeting_id": 222, "name": "name_asdfetza"},
+                "group/23": {"meeting_id": 1, "name": "name_asdfetza"},
             },
             "motion_comment_section.update",
             {
@@ -66,4 +66,23 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
                 "read_group_ids": [23],
                 "write_group_ids": [23],
             },
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "motion_comment_section/111": {
+                    "name": "name_srtgb123",
+                    "meeting_id": 1,
+                },
+                "group/23": {"meeting_id": 1, "name": "name_asdfetza"},
+            },
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "name": "name_iuqAPRuD",
+                "read_group_ids": [23],
+                "write_group_ids": [23],
+            },
+            Permissions.Motion.CAN_MANAGE,
         )
