@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -31,9 +32,18 @@ class ListOfSpeakersUpdateActionTest(BaseActionTestCase):
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
-                "list_of_speakers/111": {"closed": False, "meeting_id": 222},
+                "list_of_speakers/111": {"closed": False, "meeting_id": 1},
             },
             "list_of_speakers.update",
             {"id": 111, "closed": True},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "list_of_speakers/111": {"closed": False, "meeting_id": 1},
+            },
+            "list_of_speakers.update",
+            {"id": 111, "closed": True},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
         )

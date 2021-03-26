@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -36,17 +37,34 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
     def test_delete_all_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/222": {
-                    "name": "name_xQyvfmsS",
+                "meeting/1": {
                     "speaker_ids": [1],
                 },
                 "list_of_speakers/111": {
                     "closed": False,
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                     "speaker_ids": [1],
                 },
-                "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 222},
+                "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 1},
             },
             "list_of_speakers.delete_all_speakers",
             {"id": 111},
+        )
+
+    def test_delete_all_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {
+                    "speaker_ids": [1],
+                },
+                "list_of_speakers/111": {
+                    "closed": False,
+                    "meeting_id": 1,
+                    "speaker_ids": [1],
+                },
+                "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 1},
+            },
+            "list_of_speakers.delete_all_speakers",
+            {"id": 111},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
         )
