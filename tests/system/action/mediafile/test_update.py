@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -475,10 +476,20 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
             },
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+                "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
+            },
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+            Permissions.Mediafile.CAN_MANAGE,
         )

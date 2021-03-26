@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -176,10 +177,20 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/222": {},
-                "mediafile/7": {"meeting_id": 222, "is_directory": True},
-                "mediafile/8": {"meeting_id": 222, "is_directory": True},
+                "mediafile/7": {"meeting_id": 1, "is_directory": True},
+                "mediafile/8": {"meeting_id": 1, "is_directory": True},
             },
             "mediafile.move",
-            {"meeting_id": 222, "ids": [8], "parent_id": 7},
+            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+        )
+
+    def test_move_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "mediafile/7": {"meeting_id": 1, "is_directory": True},
+                "mediafile/8": {"meeting_id": 1, "is_directory": True},
+            },
+            "mediafile.move",
+            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+            Permissions.Mediafile.CAN_MANAGE,
         )

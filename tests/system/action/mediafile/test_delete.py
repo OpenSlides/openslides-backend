@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -135,13 +136,28 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/111": {"logo_$place_id": 222, "logo_$_id": ["place"]},
+                "meeting/1": {"logo_$place_id": 222, "logo_$_id": ["place"]},
                 "mediafile/222": {
                     "used_as_logo_$place_in_meeting_id": 111,
                     "used_as_logo_$_in_meeting_id": ["place"],
-                    "meeting_id": 111,
+                    "meeting_id": 1,
                 },
             },
             "mediafile.delete",
             {"id": 222},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {"logo_$place_id": 222, "logo_$_id": ["place"]},
+                "mediafile/222": {
+                    "used_as_logo_$place_in_meeting_id": 111,
+                    "used_as_logo_$_in_meeting_id": ["place"],
+                    "meeting_id": 1,
+                },
+            },
+            "mediafile.delete",
+            {"id": 222},
+            Permissions.Mediafile.CAN_MANAGE,
         )
