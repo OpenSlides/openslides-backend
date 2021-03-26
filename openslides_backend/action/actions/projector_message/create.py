@@ -1,4 +1,5 @@
 from ....models.models import ProjectorMessage
+from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,3 +15,4 @@ class ProjectorMessageCreate(CreateAction):
     schema = DefaultSchema(ProjectorMessage()).get_create_schema(
         required_properties=["message", "meeting_id"],
     )
+    permission = Permissions.Projector.CAN_MANAGE

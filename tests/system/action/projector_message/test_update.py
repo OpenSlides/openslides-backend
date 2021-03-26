@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -6,10 +7,13 @@ class ProjectorMessageUpdate(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {"projector_message_ids": [2]},
-                "projector_message/2": {"meeting_id": 1, "message": "test1"},
+                "meeting/2": {"projector_message_ids": [2]},
+                "projector_message/2": {"meeting_id": 2, "message": "test1"},
             }
         )
+        self.permission_test_model = {
+            "projector_message/2": {"meeting_id": 1, "message": "test1"},
+        }
 
     def test_update(self) -> None:
         response = self.request(
@@ -28,3 +32,18 @@ class ProjectorMessageUpdate(BaseActionTestCase):
         self.assert_status_code(response, 400)
         projector_message = self.get_model("projector_message/2")
         assert projector_message.get("message") == "test1"
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "projector_message.update",
+            {"id": 2, "message": "geredegerede"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "projector_message.update",
+            {"id": 2, "message": "geredegerede"},
+            Permissions.Projector.CAN_MANAGE,
+        )

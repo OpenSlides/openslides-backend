@@ -1,4 +1,5 @@
 from ....models.models import ProjectorMessage
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,3 +15,4 @@ class ProjectorMessageUpdate(UpdateAction):
     schema = DefaultSchema(ProjectorMessage()).get_update_schema(
         optional_properties=["message"],
     )
+    permission = Permissions.Projector.CAN_MANAGE
