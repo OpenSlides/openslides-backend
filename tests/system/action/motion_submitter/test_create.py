@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -91,10 +92,20 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/111": {"name": "name_m123etrd"},
-                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
-                "user/78": {"username": "username_loetzbfg", "meeting_id": 111},
+                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
+                "user/78": {"username": "username_loetzbfg", "meeting_id": 1},
             },
             "motion_submitter.create",
             {"motion_id": 357, "user_id": 78},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
+                "user/78": {"username": "username_loetzbfg", "meeting_id": 1},
+            },
+            "motion_submitter.create",
+            {"motion_id": 357, "user_id": 78},
+            Permissions.Motion.CAN_MANAGE_METADATA,
         )

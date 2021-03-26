@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -31,18 +32,38 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/98": {"motion_submitter_ids": [111]},
+                "meeting/1": {"motion_submitter_ids": [111]},
                 "motion/12": {
-                    "meeting_id": 98,
+                    "meeting_id": 1,
                     "title": "test2",
                     "submitter_ids": [111],
                 },
                 "motion_submitter/111": {
                     "weight": 10,
                     "motion_id": 12,
-                    "meeting_id": 98,
+                    "meeting_id": 1,
                 },
             },
             "motion_submitter.delete",
             {"id": 111},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {"motion_submitter_ids": [111]},
+                "motion/12": {
+                    "meeting_id": 1,
+                    "title": "test2",
+                    "submitter_ids": [111],
+                },
+                "motion_submitter/111": {
+                    "weight": 10,
+                    "motion_id": 12,
+                    "meeting_id": 1,
+                },
+            },
+            "motion_submitter.delete",
+            {"id": 111},
+            Permissions.Motion.CAN_MANAGE_METADATA,
         )
