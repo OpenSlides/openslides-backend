@@ -3,6 +3,20 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "meeting/1": {
+                "speaker_ids": [1],
+            },
+            "list_of_speakers/111": {
+                "closed": False,
+                "meeting_id": 1,
+                "speaker_ids": [1],
+            },
+            "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 1},
+        }
+
     def test_delete_all_correct(self) -> None:
         self.set_models(
             {
@@ -36,34 +50,14 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
 
     def test_delete_all_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "meeting/1": {
-                    "speaker_ids": [1],
-                },
-                "list_of_speakers/111": {
-                    "closed": False,
-                    "meeting_id": 1,
-                    "speaker_ids": [1],
-                },
-                "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 1},
-            },
+            self.permission_test_model,
             "list_of_speakers.delete_all_speakers",
             {"id": 111},
         )
 
     def test_delete_all_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "meeting/1": {
-                    "speaker_ids": [1],
-                },
-                "list_of_speakers/111": {
-                    "closed": False,
-                    "meeting_id": 1,
-                    "speaker_ids": [1],
-                },
-                "speaker/1": {"list_of_speakers_id": 111, "meeting_id": 1},
-            },
+            self.permission_test_model,
             "list_of_speakers.delete_all_speakers",
             {"id": 111},
             Permissions.ListOfSpeakers.CAN_MANAGE,
