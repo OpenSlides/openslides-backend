@@ -1,31 +1,34 @@
 import time
 
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCategoryNumberMotionsTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "meeting/1": {
+                "name": "meeting_1",
+                "motion_category_ids": [111],
+                "motion_ids": [69],
+            },
+            "motion_category/111": {
+                "name": "name_MKKAcYQu",
+                "prefix": "prefix_A",
+                "motion_ids": [69],
+                "meeting_id": 1,
+            },
+            "motion/69": {
+                "title": "title_NAZOknoM",
+                "category_id": 111,
+                "meeting_id": 1,
+            },
+        }
+
     def test_good_single_motion(self) -> None:
         check_time = round(time.time())
-        self.set_models(
-            {
-                "meeting/1": {
-                    "name": "meeting_1",
-                    "motion_category_ids": [111],
-                    "motion_ids": [69],
-                },
-                "motion_category/111": {
-                    "name": "name_MKKAcYQu",
-                    "prefix": "prefix_A",
-                    "motion_ids": [69],
-                    "meeting_id": 1,
-                },
-                "motion/69": {
-                    "title": "title_NAZOknoM",
-                    "category_id": 111,
-                    "meeting_id": 1,
-                },
-            }
-        )
+        self.set_models(self.permission_test_model)
         response = self.request(
             "motion_category.number_motions",
             {
@@ -439,4 +442,19 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Model 'motion_category/222' does not exist." in response.json.get(
             "message", ""
+        )
+
+    def test_number_motions_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_category.number_motions",
+            {"id": 111},
+        )
+
+    def test_number_motions_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_category.number_motions",
+            {"id": 111},
+            Permissions.Motion.CAN_MANAGE,
         )

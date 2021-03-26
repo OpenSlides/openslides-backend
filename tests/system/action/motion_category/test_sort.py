@@ -1,7 +1,14 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCategorySortActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_category/22": {"meeting_id": 1},
+        }
+
     def test_sort_singe_node_correct(self) -> None:
         self.set_models(
             {
@@ -182,3 +189,18 @@ class MotionCategorySortActionTest(BaseActionTestCase):
         assert category_2.get("weight") == 2
         category_3 = self.get_model("motion_category/3")
         assert category_3.get("weight") == 4
+
+    def test_sort_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_category.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+        )
+
+    def test_sort_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_category.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+            Permissions.Motion.CAN_MANAGE,
+        )

@@ -1,9 +1,21 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCategorySystemTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_category/111": {"name": "name_srtgb123", "meeting_id": 1}
+        }
+
     def test_delete_correct(self) -> None:
-        self.create_model("motion_category/111", {"name": "name_srtgb123"})
+        self.set_models(
+            {
+                "meeting/222": {"name": "test_ABC"},
+                "motion_category/111": {"name": "name_srtgb123", "meeting_id": 222},
+            }
+        )
         response = self.request("motion_category.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_category/111")
@@ -33,3 +45,16 @@ class MotionCategorySystemTest(BaseActionTestCase):
         assert motion.get("category_id") is None
         meeting = self.get_model("meeting/222")
         assert meeting.get("motion_category_ids") == []
+
+    def test_delete_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model, "motion_category.delete", {"id": 111}
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_category.delete",
+            {"id": 111},
+            Permissions.Motion.CAN_MANAGE,
+        )

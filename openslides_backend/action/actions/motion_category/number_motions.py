@@ -1,8 +1,9 @@
 import time
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ....models.models import Motion, MotionCategory
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
@@ -24,6 +25,7 @@ class MotionCategoryNumberMotions(UpdateAction):
         description="An object containing an array of main category id.",
         required_properties=["id"],
     )
+    permission = Permissions.Motion.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
@@ -203,3 +205,10 @@ class MotionCategoryNumberMotions(UpdateAction):
             )
             number = f"{prefix}{blank}{number_value_str}"
         return number, number_value_map[motion_id]
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        motion_category = self.datastore.get(
+            FullQualifiedId(Collection("motion_category"), instance["id"]),
+            ["meeting_id"],
+        )
+        return motion_category["meeting_id"]
