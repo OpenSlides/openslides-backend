@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import MotionState
+from ....permissions.permissions import Permissions
 from ....services.datastore.interface import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection
@@ -82,6 +83,7 @@ class MotionStateActionSet(ActionSet):
         ]
     )
     delete_schema = DefaultSchema(MotionState()).get_delete_schema()
+    permission = Permissions.Motion.CAN_MANAGE
 
     CreateActionClass = get_create_action_with_inferred_meeting("workflow_id")
     UpdateActionClass = MotionStateUpdate

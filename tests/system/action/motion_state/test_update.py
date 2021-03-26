@@ -1,12 +1,38 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionStateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.permission_test_model = {
+            "motion_workflow/110": {
+                "name": "name_Ycefgee",
+                "state_ids": [111],
+                "meeting_id": 1,
+            },
+            "motion_state/111": {
+                "name": "name_srtgb123",
+                "workflow_id": 110,
+                "meeting_id": 1,
+            },
+        }
+
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "motion_workflow/110": {"name": "name_Ycefgee", "state_ids": [111]},
-                "motion_state/111": {"name": "name_srtgb123", "workflow_id": 110},
+                "meeting/1": {},
+                "motion_workflow/110": {
+                    "name": "name_Ycefgee",
+                    "state_ids": [111],
+                    "meeting_id": 1,
+                },
+                "motion_state/111": {
+                    "name": "name_srtgb123",
+                    "workflow_id": 110,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -20,6 +46,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_correct_plus_next_previous(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112, 113],
@@ -58,14 +85,32 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_wrong_workflow_mismatch(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112],
+                    "meeting_id": 1,
                 },
-                "motion_workflow/90": {"name": "name_Ycefgee", "state_ids": [113]},
-                "motion_state/111": {"name": "name_srtgb123", "workflow_id": 110},
-                "motion_state/112": {"name": "name_srtfg112", "workflow_id": 110},
-                "motion_state/113": {"name": "name_srtfg113", "workflow_id": 90},
+                "motion_workflow/90": {
+                    "name": "name_Ycefgee",
+                    "state_ids": [113],
+                    "meeting_id": 1,
+                },
+                "motion_state/111": {
+                    "name": "name_srtgb123",
+                    "workflow_id": 110,
+                    "meeting_id": 1,
+                },
+                "motion_state/112": {
+                    "name": "name_srtfg112",
+                    "workflow_id": 110,
+                    "meeting_id": 1,
+                },
+                "motion_state/113": {
+                    "name": "name_srtfg113",
+                    "workflow_id": 90,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -82,10 +127,30 @@ class MotionStateActionTest(BaseActionTestCase):
         )
 
     def test_update_wrong_id(self) -> None:
-        self.create_model("motion_state/111", {"name": "name_srtgb123"})
+        self.set_models(
+            {
+                "motion_state/111": {"name": "name_srtgb123", "meeting_id": 1},
+                "meeting/1": {},
+            }
+        )
         response = self.request(
             "motion_state.update", {"id": 112, "name": "name_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("motion_state/111")
         assert model.get("name") == "name_srtgb123"
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_state.update",
+            {"id": 111, "name": "name_Xcdfgee"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_state.update",
+            {"id": 111, "name": "name_Xcdfgee"},
+            Permissions.Motion.CAN_MANAGE,
+        )

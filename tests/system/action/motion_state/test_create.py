@@ -1,7 +1,18 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionStateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+
+        self.permission_test_model = {
+            "motion_workflow/42": {
+                "name": "test_name_fjwnq8d8tje8",
+                "meeting_id": 1,
+            },
+        }
+
     def test_create(self) -> None:
         self.set_models(
             {
@@ -176,4 +187,19 @@ class MotionStateActionTest(BaseActionTestCase):
         self.assertIn(
             "data.restrictions[0] must be one of ['motion.can_see_internal', 'motion.can_manage_metadata', 'motion.can_manage', 'is_submitter']",
             response.json["message"],
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_state.create",
+            {"name": "test_Xcdfgee", "workflow_id": 42},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_state.create",
+            {"name": "test_Xcdfgee", "workflow_id": 42},
+            Permissions.Motion.CAN_MANAGE,
         )
