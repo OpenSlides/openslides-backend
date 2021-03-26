@@ -1,9 +1,18 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionStatuteParagraphActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
-        self.create_model("motion_statute_paragraph/111", {"title": "title_srtgb123"})
+        self.set_models(
+            {
+                "motion_statute_paragraph/111": {
+                    "title": "title_srtgb123",
+                    "meeting_id": 1,
+                },
+                "meeting/1": {},
+            }
+        )
         response = self.request(
             "motion_statute_paragraph.update",
             {"id": 111, "title": "title_Xcdfgee", "text": "text_blablabla"},
@@ -15,10 +24,43 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         assert model.get("text") == "text_blablabla"
 
     def test_update_wrong_id(self) -> None:
-        self.create_model("motion_statute_paragraph/111", {"title": "title_srtgb123"})
+        self.set_models(
+            {
+                "motion_statute_paragraph/111": {
+                    "title": "title_srtgb123",
+                    "meeting_id": 1,
+                },
+                "meeting/1": {},
+            }
+        )
         response = self.request(
             "motion_statute_paragraph.update", {"id": 112, "title": "title_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
         model = self.get_model("motion_statute_paragraph/111")
         assert model.get("title") == "title_srtgb123"
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "motion_statute_paragraph/111": {
+                    "title": "title_srtgb123",
+                    "meeting_id": 1,
+                }
+            },
+            "motion_statute_paragraph.update",
+            {"id": 111, "title": "title_Xcdfgee", "text": "text_blablabla"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "motion_statute_paragraph/111": {
+                    "title": "title_srtgb123",
+                    "meeting_id": 1,
+                }
+            },
+            "motion_statute_paragraph.update",
+            {"id": 111, "title": "title_Xcdfgee", "text": "text_blablabla"},
+            Permissions.Motion.CAN_MANAGE,
+        )

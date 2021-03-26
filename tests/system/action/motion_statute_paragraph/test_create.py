@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -32,4 +33,19 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         self.assertIn(
             "data must contain ['meeting_id', 'title', 'text'] properties",
             response.json["message"],
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_statute_paragraph.create",
+            {"meeting_id": 1, "title": "test_Xcdfgee", "text": "blablabla"},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_statute_paragraph.create",
+            {"meeting_id": 1, "title": "test_Xcdfgee", "text": "blablabla"},
+            Permissions.Motion.CAN_MANAGE,
         )
