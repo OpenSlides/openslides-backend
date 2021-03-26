@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -53,12 +54,21 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
         model = self.get_model("assignment/111")
         assert model.get("title") == "title_srtgb123"
 
-    def test_permission(self) -> None:
+    def test_update_no_permission(self) -> None:
         self.base_permission_test(
             {
-                "meeting/110": {"name": "name_sdurqw12"},
-                "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
+                "assignment/111": {"title": "title_srtgb123", "meeting_id": 1},
             },
             "assignment.update",
             {"id": 111, "title": "title_Xcdfgee"},
+        )
+
+    def test_update_permission(self) -> None:
+        self.base_permission_test(
+            {
+                "assignment/111": {"title": "title_srtgb123", "meeting_id": 1},
+            },
+            "assignment.update",
+            {"id": 111, "title": "title_Xcdfgee"},
+            Permissions.Assignment.CAN_MANAGE,
         )

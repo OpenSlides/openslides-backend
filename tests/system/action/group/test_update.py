@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -29,9 +30,18 @@ class GroupUpdateActionTest(BaseActionTestCase):
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {},
                 "group/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
             "group.update",
             {"id": 111, "name": "name_Xcdfgee"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "group/111": {"name": "name_srtgb123", "meeting_id": 1},
+            },
+            "group.update",
+            {"id": 111, "name": "name_Xcdfgee"},
+            Permissions.User.CAN_MANAGE,
         )

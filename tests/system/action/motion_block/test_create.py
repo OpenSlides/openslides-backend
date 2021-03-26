@@ -1,4 +1,5 @@
 from openslides_backend.models.models import AgendaItem
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -49,9 +50,17 @@ class MotionBlockActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_permissions(self) -> None:
+    def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/42": {"name": "test", "agenda_item_creation": "always"}},
+            {"meeting/1": {"name": "test", "agenda_item_creation": "always"}},
             "motion_block.create",
-            {"title": "test_Xcdfgee", "meeting_id": 42},
+            {"title": "test_Xcdfgee", "meeting_id": 1},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {"meeting/1": {"name": "test", "agenda_item_creation": "always"}},
+            "motion_block.create",
+            {"title": "test_Xcdfgee", "meeting_id": 1},
+            Permissions.Motion.CAN_MANAGE,
         )

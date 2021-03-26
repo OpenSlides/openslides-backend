@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -141,12 +142,23 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_permission(self) -> None:
+    def test_create_no_permission(self) -> None:
         self.base_permission_test(
-            {"meeting/110": {"name": "name_zvfbAjpZ"}},
+            {},
             "assignment.create",
             {
                 "title": "title_Xcdfgee",
-                "meeting_id": 110,
+                "meeting_id": 1,
             },
+        )
+
+    def test_create_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "assignment.create",
+            {
+                "title": "title_Xcdfgee",
+                "meeting_id": 1,
+            },
+            Permissions.Assignment.CAN_MANAGE,
         )

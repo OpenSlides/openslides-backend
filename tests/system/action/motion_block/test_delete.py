@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -41,9 +42,17 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.assert_model_deleted("agenda_item/333")
         self.assert_model_deleted("list_of_speakers/222")
 
-    def test_permissions(self) -> None:
+    def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/11": {}, "motion_block/111": {"meeting_id": 11}},
+            {"motion_block/111": {"meeting_id": 1}},
             "motion_block.delete",
             {"id": 111},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {"motion_block/111": {"meeting_id": 1}},
+            "motion_block.delete",
+            {"id": 111},
+            Permissions.Motion.CAN_MANAGE,
         )

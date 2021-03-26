@@ -198,10 +198,23 @@ class BaseActionTestCase(BaseSystemTestCase):
         return partitioned_groups
 
     def base_permission_test(
-        self, models: Dict[str, Any], action: str, action_data: Dict[str, Any]
+        self,
+        models: Dict[str, Any],
+        action: str,
+        action_data: Dict[str, Any],
+        permission: Optional[Permission] = None,
     ) -> None:
-        self.set_management_level(None)
-        self.set_models(models)
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        if permission:
+            self.set_group_permissions(3, [permission])
+        if models:
+            self.set_models(models)
         response = self.request(action, action_data)
-        self.assert_status_code(response, 403)
-        assert "You do not belong to meeting" in response.json["message"]
+        if permission:
+            self.assert_status_code(response, 200)
+        else:
+            self.assert_status_code(response, 403)
+            assert "Missing permission:" in response.json["message"]

@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -123,15 +124,32 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/90": {
+                "meeting/1": {
                     "name": "name_testtest",
                     "motions_default_workflow_id": 12,
                     "motions_default_statute_amendment_workflow_id": 13,
                     "motion_workflow_ids": [111, 2],
                 },
-                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 90},
-                "motion_workflow/2": {"meeting_id": 90},
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 1},
+                "motion_workflow/2": {"meeting_id": 1},
             },
             "motion_workflow.delete",
             {"id": 111},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "meeting/1": {
+                    "name": "name_testtest",
+                    "motions_default_workflow_id": 12,
+                    "motions_default_statute_amendment_workflow_id": 13,
+                    "motion_workflow_ids": [111, 2],
+                },
+                "motion_workflow/111": {"name": "name_srtgb123", "meeting_id": 1},
+                "motion_workflow/2": {"meeting_id": 1},
+            },
+            "motion_workflow.delete",
+            {"id": 111},
+            Permissions.Motion.CAN_MANAGE,
         )

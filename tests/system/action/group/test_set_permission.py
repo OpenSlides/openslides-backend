@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -88,7 +89,6 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
     def test_set_permissions_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {},
                 "group/11": {
                     "name": "group_11",
                     "permissions": ["agenda_item.can_manage", "motion.can_create"],
@@ -97,4 +97,18 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
             },
             "group.set_permission",
             {"id": 11, "permission": "projector.can_see", "set": True},
+        )
+
+    def test_set_permissions_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "group/11": {
+                    "name": "group_11",
+                    "permissions": ["agenda_item.can_manage", "motion.can_create"],
+                    "meeting_id": 1,
+                },
+            },
+            "group.set_permission",
+            {"id": 11, "permission": "projector.can_see", "set": True},
+            Permissions.User.CAN_MANAGE,
         )

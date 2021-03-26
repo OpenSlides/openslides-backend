@@ -1,4 +1,5 @@
 from openslides_backend.models.models import AgendaItem
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -83,10 +84,9 @@ class AgendaItemActionTest(BaseActionTestCase):
         assert child_model.get("is_hidden") is True
         assert child_model.get("is_internal") is False
 
-    def test_permissions(self) -> None:
+    def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {},
                 "topic/102": {"meeting_id": 1},
                 "agenda_item/111": {
                     "item_number": "101",
@@ -96,4 +96,19 @@ class AgendaItemActionTest(BaseActionTestCase):
             },
             "agenda_item.update",
             {"id": 111, "duration": 1200},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {
+                "topic/102": {"meeting_id": 1},
+                "agenda_item/111": {
+                    "item_number": "101",
+                    "duration": 600,
+                    "meeting_id": 1,
+                },
+            },
+            "agenda_item.update",
+            {"id": 111, "duration": 1200},
+            Permissions.AgendaItem.CAN_MANAGE,
         )
