@@ -3,6 +3,13 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileMoveActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "mediafile/7": {"meeting_id": 1, "is_directory": True},
+            "mediafile/8": {"meeting_id": 1, "is_directory": True},
+        }
+
     def test_move_parent_none(self) -> None:
         self.set_models(
             {
@@ -176,20 +183,14 @@ class MediafileMoveActionTest(BaseActionTestCase):
 
     def test_move_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "mediafile/7": {"meeting_id": 1, "is_directory": True},
-                "mediafile/8": {"meeting_id": 1, "is_directory": True},
-            },
+            self.permission_test_model,
             "mediafile.move",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
         )
 
     def test_move_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "mediafile/7": {"meeting_id": 1, "is_directory": True},
-                "mediafile/8": {"meeting_id": 1, "is_directory": True},
-            },
+            self.permission_test_model,
             "mediafile.move",
             {"meeting_id": 1, "ids": [8], "parent_id": 7},
             Permissions.Mediafile.CAN_MANAGE,

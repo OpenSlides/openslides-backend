@@ -3,6 +3,13 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileUpdateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+            "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
+        }
+
     def test_update_correct(self) -> None:
         self.set_models(
             {
@@ -475,20 +482,14 @@ class MediafileUpdateActionTest(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
-            },
+            self.permission_test_model,
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
-            },
+            self.permission_test_model,
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
             Permissions.Mediafile.CAN_MANAGE,

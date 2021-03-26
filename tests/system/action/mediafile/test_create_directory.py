@@ -3,6 +3,16 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "group/7": {
+                "name": "group_LxAHErRs",
+                "user_ids": [],
+                "meeting_id": 1,
+            },
+        }
+
     def test_create_directory_correct(self) -> None:
         self.set_models(
             {
@@ -262,13 +272,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_dictionary_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "user_ids": [],
-                    "meeting_id": 1,
-                },
-            },
+            self.permission_test_model,
             "mediafile.create_directory",
             {
                 "meeting_id": 1,
@@ -279,13 +283,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_dictionary_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "group/7": {
-                    "name": "group_LxAHErRs",
-                    "user_ids": [],
-                    "meeting_id": 1,
-                },
-            },
+            self.permission_test_model,
             "mediafile.create_directory",
             {
                 "meeting_id": 1,
