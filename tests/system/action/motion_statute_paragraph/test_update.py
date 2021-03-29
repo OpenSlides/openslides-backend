@@ -3,6 +3,15 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionStatuteParagraphActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_statute_paragraph/111": {
+                "title": "title_srtgb123",
+                "meeting_id": 1,
+            }
+        }
+
     def test_update_correct(self) -> None:
         self.set_models(
             {
@@ -42,24 +51,14 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion_statute_paragraph/111": {
-                    "title": "title_srtgb123",
-                    "meeting_id": 1,
-                }
-            },
+            self.permission_test_model,
             "motion_statute_paragraph.update",
             {"id": 111, "title": "title_Xcdfgee", "text": "text_blablabla"},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion_statute_paragraph/111": {
-                    "title": "title_srtgb123",
-                    "meeting_id": 1,
-                }
-            },
+            self.permission_test_model,
             "motion_statute_paragraph.update",
             {"id": 111, "title": "title_Xcdfgee", "text": "text_blablabla"},
             Permissions.Motion.CAN_MANAGE,

@@ -3,6 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionStatuteParagraphActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {"motion_statute_paragraph/111": {"meeting_id": 1}}
+
     def test_delete_correct(self) -> None:
         self.set_models(
             {"motion_statute_paragraph/111": {"meeting_id": 1}, "meeting/1": {}}
@@ -21,14 +25,14 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            {"motion_statute_paragraph/111": {"meeting_id": 1}},
+            self.permission_test_model,
             "motion_statute_paragraph.delete",
             {"id": 111},
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            {"motion_statute_paragraph/111": {"meeting_id": 1}},
+            self.permission_test_model,
             "motion_statute_paragraph.delete",
             {"id": 111},
             Permissions.Motion.CAN_MANAGE,
