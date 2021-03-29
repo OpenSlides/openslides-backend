@@ -64,14 +64,14 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/1": {"name": "name_SNLGsvIV"}},
+            {},
             "motion_comment_section.create",
             {"name": "test_Xcdfgee", "meeting_id": 1},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/1": {"name": "name_SNLGsvIV"}},
+            {},
             "motion_comment_section.create",
             {"name": "test_Xcdfgee", "meeting_id": 1},
             Permissions.Motion.CAN_MANAGE,

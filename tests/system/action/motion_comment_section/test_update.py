@@ -3,6 +3,16 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCommentSectionActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_comment_section/111": {
+                "name": "name_srtgb123",
+                "meeting_id": 1,
+            },
+            "group/23": {"meeting_id": 1, "name": "name_asdfetza"},
+        }
+
     def test_update_correct_all_fields(self) -> None:
         self.set_models(
             {
@@ -52,13 +62,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion_comment_section/111": {
-                    "name": "name_srtgb123",
-                    "meeting_id": 1,
-                },
-                "group/23": {"meeting_id": 1, "name": "name_asdfetza"},
-            },
+            self.permission_test_model,
             "motion_comment_section.update",
             {
                 "id": 111,
@@ -70,13 +74,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion_comment_section/111": {
-                    "name": "name_srtgb123",
-                    "meeting_id": 1,
-                },
-                "group/23": {"meeting_id": 1, "name": "name_asdfetza"},
-            },
+            self.permission_test_model,
             "motion_comment_section.update",
             {
                 "id": 111,

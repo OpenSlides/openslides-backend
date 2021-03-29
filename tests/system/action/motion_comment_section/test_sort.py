@@ -3,6 +3,19 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCommentSectionSortActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_comment_section/31": {
+                "meeting_id": 1,
+                "name": "name_loisueb",
+            },
+            "motion_comment_section/32": {
+                "meeting_id": 1,
+                "name": "name_blanumop",
+            },
+        }
+
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
@@ -71,32 +84,14 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion_comment_section/31": {
-                    "meeting_id": 1,
-                    "name": "name_loisueb",
-                },
-                "motion_comment_section/32": {
-                    "meeting_id": 1,
-                    "name": "name_blanumop",
-                },
-            },
+            self.permission_test_model,
             "motion_comment_section.sort",
             {"meeting_id": 1, "motion_comment_section_ids": [32, 31]},
         )
 
     def test_sort_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion_comment_section/31": {
-                    "meeting_id": 1,
-                    "name": "name_loisueb",
-                },
-                "motion_comment_section/32": {
-                    "meeting_id": 1,
-                    "name": "name_blanumop",
-                },
-            },
+            self.permission_test_model,
             "motion_comment_section.sort",
             {"meeting_id": 1, "motion_comment_section_ids": [32, 31]},
             Permissions.Motion.CAN_MANAGE,
