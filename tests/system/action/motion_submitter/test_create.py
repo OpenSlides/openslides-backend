@@ -3,6 +3,13 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSubmitterCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
+            "user/78": {"username": "username_loetzbfg", "meeting_id": 1},
+        }
+
     def test_create(self) -> None:
         self.set_models(
             {
@@ -91,20 +98,14 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
-                "user/78": {"username": "username_loetzbfg", "meeting_id": 1},
-            },
+            self.permission_test_model,
             "motion_submitter.create",
             {"motion_id": 357, "user_id": 78},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
-                "user/78": {"username": "username_loetzbfg", "meeting_id": 1},
-            },
+            self.permission_test_model,
             "motion_submitter.create",
             {"motion_id": 357, "user_id": 78},
             Permissions.Motion.CAN_MANAGE_METADATA,

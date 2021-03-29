@@ -3,6 +3,14 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSubmitterSortActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion/222": {"meeting_id": 1},
+            "motion_submitter/31": {"motion_id": 222, "meeting_id": 1},
+            "motion_submitter/32": {"motion_id": 222, "meeting_id": 1},
+        }
+
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
@@ -56,22 +64,14 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion/222": {"meeting_id": 1},
-                "motion_submitter/31": {"motion_id": 222, "meeting_id": 1},
-                "motion_submitter/32": {"motion_id": 222, "meeting_id": 1},
-            },
+            self.permission_test_model,
             "motion_submitter.sort",
             {"motion_id": 222, "motion_submitter_ids": [32, 31]},
         )
 
     def test_sort_permissions(self) -> None:
         self.base_permission_test(
-            {
-                "motion/222": {"meeting_id": 1},
-                "motion_submitter/31": {"motion_id": 222, "meeting_id": 1},
-                "motion_submitter/32": {"motion_id": 222, "meeting_id": 1},
-            },
+            self.permission_test_model,
             "motion_submitter.sort",
             {"motion_id": 222, "motion_submitter_ids": [32, 31]},
             Permissions.Motion.CAN_MANAGE_METADATA,
