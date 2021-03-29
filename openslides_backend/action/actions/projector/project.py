@@ -64,7 +64,7 @@ class ProjectorProject(UpdateAction):
         filter_ = And(
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("content_object_id", "=", instance["content_object_id"]),
-            FilterOperator("stable", "=", instance.get("stable")),
+            FilterOperator("stable", "=", False),
             FilterOperator("type", "=", instance.get("type")),
             *[Not(FilterOperator("current_projector_id", "=", id_)) for id_ in instance["ids"]],
         )
