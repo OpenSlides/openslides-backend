@@ -125,7 +125,7 @@ class ProjectorProject(UpdateAction):
 
     def get_max_projection_weight(self, projector_id: int) -> int:
         filter_ = FilterOperator("history_projector_id", "=", projector_id)
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
+        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int", lock_result=True)
         if maximum is None:
-            maximum = 1
+            maximum = 0
         return maximum

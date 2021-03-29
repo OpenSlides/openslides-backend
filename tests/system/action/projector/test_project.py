@@ -66,7 +66,7 @@ class ProjectorProject(BaseActionTestCase):
                 "content_object_id": "assignment/452",
                 "history_projector_id": 23,
                 "stable": False,
-                "weight": 2,
+                "weight": 1,
             },
         )
         self.assert_model_exists(
@@ -94,7 +94,7 @@ class ProjectorProject(BaseActionTestCase):
                 "history_projector_id": 75,
                 "stable": False,
                 "type": "test",
-                "weight": 2,
+                "weight": 1,
             },
         )
         self.assert_model_exists(
@@ -190,7 +190,7 @@ class ProjectorProject(BaseActionTestCase):
                 "current_projector_id": None,
                 "history_projector_id": 75,
                 "stable": False,
-                "weight": 2,
+                "weight": 1,
             },
         )
         self.assert_model_exists(
@@ -199,9 +199,6 @@ class ProjectorProject(BaseActionTestCase):
         )
 
     def test_try_to_store_second_unstable_projection(self) -> None:
-        """
-        Didn't succeed to store a second unstable projection
-        """
         response = self.request(
             "projector.project",
             {
@@ -234,7 +231,7 @@ class ProjectorProject(BaseActionTestCase):
                 "content_object_id": "assignment/452",
                 "history_projector_id": 23,
                 "stable": False,
-                "weight": 2,
+                "weight": 1,
             },
         )
         self.assert_model_exists(
