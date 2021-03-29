@@ -1,8 +1,6 @@
 from typing import Any, Dict
 
 from ....models.models import Projection, Projector
-from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Not
 from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
 from ....shared.schema import required_id_schema
@@ -35,7 +33,15 @@ class ProjectorProject(UpdateAction):
         for instance in action_data:
             meeting_id = instance["meeting_id"]
             fqid_content_object = string_to_fqid(instance["content_object_id"])
-            assert_belongs_to_meeting(self.datastore, [fqid_content_object] + [FullQualifiedId(Collection('projector'), id) for id in instance['ids']], meeting_id)
+            assert_belongs_to_meeting(
+                self.datastore,
+                [fqid_content_object]
+                + [
+                    FullQualifiedId(Collection("projector"), id)
+                    for id in instance["ids"]
+                ],
+                meeting_id,
+            )
 
             if not instance.get("stable"):
                 self.move_equal_projections_to_history(instance, meeting_id)
@@ -66,7 +72,10 @@ class ProjectorProject(UpdateAction):
             FilterOperator("content_object_id", "=", instance["content_object_id"]),
             FilterOperator("stable", "=", False),
             FilterOperator("type", "=", instance.get("type")),
-            *[Not(FilterOperator("current_projector_id", "=", id_)) for id_ in instance["ids"]],
+            *[
+                Not(FilterOperator("current_projector_id", "=", id_))
+                for id_ in instance["ids"]
+            ],
         )
         result = self.datastore.filter(
             Collection("projection"), filter_, ["id", "current_projector_id"]

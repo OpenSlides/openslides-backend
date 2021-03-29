@@ -291,7 +291,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "The following models do not belong to meeting 1: [FullQualifiedId('motion/2')]"
+            "The following models do not belong to meeting 1: ['motion/2']"
             in response.json.get("message", "")
         )
 

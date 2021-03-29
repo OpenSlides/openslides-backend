@@ -97,7 +97,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: [FullQualifiedId('agenda_item/1')]",
+            "The following models do not belong to meeting 1: ['agenda_item/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("agenda_item/2")
