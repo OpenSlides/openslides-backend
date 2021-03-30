@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import ProjectorCountdown
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...generics.delete import DeleteAction
@@ -16,6 +17,7 @@ class ProjectorCountdownDelete(DeleteAction):
 
     model = ProjectorCountdown()
     schema = DefaultSchema(ProjectorCountdown()).get_delete_schema()
+    permission = Permissions.Projector.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projector_countdown = self.datastore.get(

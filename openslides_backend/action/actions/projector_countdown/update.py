@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import ProjectorCountdown
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import FullQualifiedId
@@ -26,6 +27,7 @@ class ProjectorCountdownUpdate(UpdateAction):
             "running",
         ],
     )
+    permission = Permissions.Projector.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get("title"):

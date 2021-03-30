@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -49,3 +50,18 @@ class ProjectorCountdownUpdate(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Title already exists in this meeting." in response.data.decode()
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_countdown.update",
+            {"id": 2, "title": "new_title"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_countdown.update",
+            {"id": 2, "title": "new_title"},
+            Permissions.Projector.CAN_MANAGE,
+        )

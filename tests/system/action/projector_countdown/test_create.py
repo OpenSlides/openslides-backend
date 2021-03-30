@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -56,3 +57,28 @@ class ProjectorCountdown(BaseActionTestCase):
         assert model.get("title") == "test2"
         assert model.get("default_time") == 11
         assert model.get("countdown_time") == 11
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_countdown.create",
+            {
+                "meeting_id": 1,
+                "title": "test",
+                "description": "good description",
+                "default_time": 30,
+            },
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_countdown.create",
+            {
+                "meeting_id": 1,
+                "title": "test",
+                "description": "good description",
+                "default_time": 30,
+            },
+            Permissions.Projector.CAN_MANAGE,
+        )
