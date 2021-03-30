@@ -148,8 +148,21 @@ class ActionHandler(BaseHandler):
         write_requests: List[WriteRequest] = []
         action_response_results: ActionsResponseResults = []
         relation_manager = RelationManager(self.datastore)
-
+        action_name_list = []
         for i, element in enumerate(payload):
+            action_name = element["action"]
+            if (
+                actions_map.get(action_name)
+                and actions_map.get(action_name).is_singular  # type: ignore
+            ):
+                if action_name in action_name_list:
+                    exception = ActionException(
+                        f"Action {action_name} may not appear twice in one request."
+                    )
+                    exception.action_error_index = i
+                    raise exception
+                else:
+                    action_name_list.append(action_name)
             try:
                 write_request, results = self.perform_action(element, relation_manager)
             except ActionException as exception:

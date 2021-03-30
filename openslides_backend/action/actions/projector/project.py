@@ -5,6 +5,7 @@ from ....shared.filters import And, FilterOperator, Not
 from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,7 +15,7 @@ from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.project")
-class ProjectorProject(UpdateAction):
+class ProjectorProject(SingularActionMixin, UpdateAction):
     """
     Action to projector project.
     """
@@ -30,6 +31,7 @@ class ProjectorProject(UpdateAction):
     )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        action_data = super().get_updated_instances(action_data)
         for instance in action_data:
             meeting_id = instance["meeting_id"]
             fqid_content_object = string_to_fqid(instance["content_object_id"])
@@ -125,7 +127,9 @@ class ProjectorProject(UpdateAction):
 
     def get_max_projection_weight(self, projector_id: int) -> int:
         filter_ = FilterOperator("history_projector_id", "=", projector_id)
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int", lock_result=True)
+        maximum = self.datastore.max(
+            Collection("projection"), filter_, "weight", "int", lock_result=True
+        )
         if maximum is None:
             maximum = 0
         return maximum

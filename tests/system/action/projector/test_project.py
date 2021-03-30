@@ -198,7 +198,7 @@ class ProjectorProject(BaseActionTestCase):
             {"current_projector_id": 75, "history_projector_id": None, "stable": True},
         )
 
-    def test_try_to_store_second_unstable_projection(self) -> None:
+    def test_try_to_store_second_unstable_projection_1(self) -> None:
         response = self.request(
             "projector.project",
             {
@@ -241,6 +241,62 @@ class ProjectorProject(BaseActionTestCase):
                 "current_projector_id": 23,
                 "stable": True,
             },
+        )
+
+    def test_try_to_store_second_unstable_projection_2(self) -> None:
+        response = self.request_multi(
+            "projector.project",
+            [
+                {
+                    "ids": [23],
+                    "content_object_id": "assignment/452",
+                    "meeting_id": 1,
+                    "stable": False,
+                },
+                {
+                    "ids": [23],
+                    "content_object_id": "assignment/452",
+                    "meeting_id": 1,
+                    "stable": False,
+                },
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must contain less than or equal to 1 items", response.json["message"]
+        )
+
+    def test_try_to_store_second_unstable_projection_3(self) -> None:
+        response = self.request_json(
+            [
+                {
+                    "action": "projector.project",
+                    "data": [
+                        {
+                            "ids": [23],
+                            "content_object_id": "assignment/452",
+                            "meeting_id": 1,
+                            "stable": False,
+                        }
+                    ],
+                },
+                {
+                    "action": "projector.project",
+                    "data": [
+                        {
+                            "ids": [23],
+                            "content_object_id": "assignment/452",
+                            "meeting_id": 1,
+                            "stable": False,
+                        }
+                    ],
+                },
+            ],
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Action projector.project may not appear twice in one request.",
+            response.json["message"],
         )
 
     def test_try_to_store_second_stable_projection(self) -> None:
