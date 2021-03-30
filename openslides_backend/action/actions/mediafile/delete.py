@@ -1,6 +1,7 @@
 from typing import List
 
 from ....models.models import Mediafile
+from ....permissions.permissions import Permissions
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -16,6 +17,7 @@ class MediafileDelete(DeleteAction):
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_delete_schema()
+    permission = Permissions.Mediafile.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

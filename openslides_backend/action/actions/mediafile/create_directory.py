@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Mediafile
+from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -19,6 +20,7 @@ class MediafileUpdate(MediafileCalculatedFieldsMixin, CreateAction):
         required_properties=["meeting_id", "title"],
         optional_properties=["access_group_ids", "parent_id"],
     )
+    permission = Permissions.Mediafile.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

@@ -8,6 +8,7 @@ from PyPDF2 import PdfFileReader
 from PyPDF2.utils import PdfReadError
 
 from ....models.models import Mediafile
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -45,6 +46,7 @@ class MediafileUploadAction(
         optional_properties=["access_group_ids", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
     )
+    permission = Permissions.Mediafile.CAN_MANAGE
 
     dependencies = [ListOfSpeakersCreate]
 

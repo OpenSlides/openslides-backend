@@ -1,7 +1,18 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "group/7": {
+                "name": "group_LxAHErRs",
+                "user_ids": [],
+                "meeting_id": 1,
+            },
+        }
+
     def test_create_directory_correct(self) -> None:
         self.set_models(
             {
@@ -258,3 +269,26 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("access_group_ids") == [3]
         assert model.get("inherited_access_group_ids") == []
         assert model.get("is_public") is False
+
+    def test_create_dictionary_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.create_directory",
+            {
+                "meeting_id": 1,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+            },
+        )
+
+    def test_create_dictionary_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.create_directory",
+            {
+                "meeting_id": 1,
+                "title": "title_Xcdfgee",
+                "access_group_ids": [7],
+            },
+            Permissions.Mediafile.CAN_MANAGE,
+        )

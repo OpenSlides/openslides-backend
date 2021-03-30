@@ -1,4 +1,5 @@
 from ....models.models import Mediafile
+from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -17,6 +18,7 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
     schema = DefaultSchema(Mediafile()).get_update_schema(
         optional_properties=["title", "access_group_ids"]
     )
+    permission = Permissions.Mediafile.CAN_MANAGE
 
     def get_updated_instances(self, instances: ActionData) -> ActionData:
         """

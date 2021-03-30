@@ -1,7 +1,15 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileUpdateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
+            "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
+        }
+
     def test_update_correct(self) -> None:
         self.set_models(
             {
@@ -455,9 +463,11 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_filename_error(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "filename": "testfile.txt",
+                    "meeting_id": 1,
                 },
             }
         )
@@ -468,4 +478,19 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'filename'} properties", response.json["message"]
+        )
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+            Permissions.Mediafile.CAN_MANAGE,
         )

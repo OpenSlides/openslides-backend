@@ -2,6 +2,7 @@ import base64
 from time import time
 from typing import cast
 
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -143,4 +144,29 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.assertIn(
             "data must contain ['title', 'meeting_id', 'filename', 'file'] properties",
             response.json["message"],
+        )
+
+    def test_upload_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 1,
+                "filename": "fn_jumbo.txt",
+                "file": base64.b64encode(b"testtesttest").decode(),
+            },
+        )
+
+    def test_upload_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 1,
+                "filename": "fn_jumbo.txt",
+                "file": base64.b64encode(b"testtesttest").decode(),
+            },
+            Permissions.Mediafile.CAN_MANAGE,
         )

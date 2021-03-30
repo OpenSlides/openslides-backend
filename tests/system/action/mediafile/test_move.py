@@ -1,7 +1,15 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MediafileMoveActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "mediafile/7": {"meeting_id": 1, "is_directory": True},
+            "mediafile/8": {"meeting_id": 1, "is_directory": True},
+        }
+
     def test_move_parent_none(self) -> None:
         self.set_models(
             {
@@ -171,4 +179,19 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.assertIn(
             "Moving item 7 to one of its children is not possible.",
             response.json["message"],
+        )
+
+    def test_move_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.move",
+            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+        )
+
+    def test_move_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.move",
+            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+            Permissions.Mediafile.CAN_MANAGE,
         )
