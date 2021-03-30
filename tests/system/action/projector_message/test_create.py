@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -27,4 +28,25 @@ class ProjectorMessageCreate(BaseActionTestCase):
         self.assertIn(
             "data must contain ['message', 'meeting_id'] properties",
             response.json["message"],
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_message.create",
+            {
+                "meeting_id": 1,
+                "message": "<b>TEST</b>",
+            },
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_message.create",
+            {
+                "meeting_id": 1,
+                "message": "<b>TEST</b>",
+            },
+            Permissions.Projector.CAN_MANAGE,
         )
