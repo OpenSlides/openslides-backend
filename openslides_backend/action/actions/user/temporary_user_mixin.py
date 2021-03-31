@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection
 from ...action import Action
 
 
@@ -19,6 +20,17 @@ class TemporaryUserMixin(Action):
 
         if "group_ids" in instance:
             group_ids = instance.pop("group_ids")
+            if group_ids:
+                get_many_request = GetManyRequest(
+                    Collection("group"), group_ids, ["id", "meeting_id"]
+                )
+                result = self.datastore.get_many([get_many_request])
+                groups = result.get(Collection("group"), {}).values()
+                for group in groups:
+                    if group.get("meeting_id") != instance["meeting_id"]:
+                        raise ActionException(
+                            f"Group {group['id']} is not in the meeting of the temporary user."
+                        )
             instance["group_$_ids"] = {instance["meeting_id"]: group_ids}
 
         if "vote_delegations_from_ids" in instance:

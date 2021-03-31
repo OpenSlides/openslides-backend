@@ -176,7 +176,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         response = self.request("user.update_temporary", {"id": 111, "group_ids": [2]})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: ['group/2']",
+            "Group 2 is not in the meeting of the temporary user.",
             response.json["message"],
         )
         model = self.get_model("user/111")
