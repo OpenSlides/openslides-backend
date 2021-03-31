@@ -1,6 +1,8 @@
 from collections import defaultdict
+from functools import reduce
 from typing import Any, Dict, List
 
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
@@ -22,6 +24,7 @@ class UserMixin(Action):
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
+        self.check_existence_of_from_users(instance)
         self.check_meeting_and_users(instance, user_fqid)
         if "vote_delegated_$_to_id" in instance:
             self.check_vote_delegated__to_id(instance, user_fqid)
@@ -34,9 +37,7 @@ class UserMixin(Action):
     ) -> None:
         mapped_fields = [
             f"vote_delegations_${meeting_id}_from_ids"
-            for meeting_id, delegated_to in instance[
-                "vote_delegated_$_to_id"
-            ].items()
+            for meeting_id, delegated_to in instance["vote_delegated_$_to_id"].items()
             if delegated_to
         ]
         if not mapped_fields:
@@ -52,9 +53,7 @@ class UserMixin(Action):
                 ].items()
             }
             user_self.update(update_dict)
-        for meeting_id, delegated_to_id in instance[
-            "vote_delegated_$_to_id"
-        ].items():
+        for meeting_id, delegated_to_id in instance["vote_delegated_$_to_id"].items():
             if user_fqid.id == delegated_to_id:
                 raise ActionException(
                     f"User {delegated_to_id} can't delegate the vote to himself."
@@ -122,6 +121,25 @@ class UserMixin(Action):
                 raise ActionException(
                     f"User(s) {error_user_ids} can't delegate their votes , because they receive vote delegations."
                 )
+
+    def check_existence_of_from_users(self, instance: Dict[str, Any]) -> None:
+        if "vote_delegations_$_from_ids" in instance:
+            user_ids = set(
+                reduce(
+                    (lambda x, y: x + y),  # type: ignore
+                    instance["vote_delegations_$_from_ids"].values(),
+                )
+            )
+            get_many_request = GetManyRequest(
+                self.model.collection, list(user_ids), ["id"]
+            )
+            gm_result = self.datastore.get_many([get_many_request])
+            users = gm_result.get(self.model.collection, {})
+
+            set_action_data = user_ids
+            diff = set_action_data.difference(users.keys())
+            if len(diff):
+                raise ActionException(f"The following users were not found: {diff}")
 
     def check_meeting_and_users(
         self, instance: Dict[str, Any], user_fqid: FullQualifiedId

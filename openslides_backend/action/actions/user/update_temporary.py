@@ -36,6 +36,7 @@ class UserUpdateTemporary(
         additional_optional_fields={
             "group_ids": id_list_schema,
             "vote_delegations_from_ids": id_list_schema,
+            "vote_delegated_to_id": User().vote_delegated__to_id.get_schema(),
             "comment": User().comment_.get_schema(),
             "number": User().number_.get_schema(),
             "structure_level": User().structure_level_.get_schema(),

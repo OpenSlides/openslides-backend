@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection
 from ...action import Action
@@ -33,24 +32,9 @@ class TemporaryUserMixin(Action):
                         )
             instance["group_$_ids"] = {instance["meeting_id"]: group_ids}
 
-        if "vote_delegations_from_ids" in instance:
-            vote_delegations_from_ids = instance.pop("vote_delegations_from_ids")
-            get_many_request = GetManyRequest(
-                self.model.collection, vote_delegations_from_ids, ["id"]
-            )
-            gm_result = self.datastore.get_many([get_many_request])
-            users = gm_result.get(self.model.collection, {})
-
-            set_action_data = set(vote_delegations_from_ids)
-            diff = set_action_data.difference(users.keys())
-            if len(diff):
-                raise ActionException(f"The following users were not found: {diff}")
-
-            instance["vote_delegations_$_from_ids"] = {
-                instance["meeting_id"]: vote_delegations_from_ids
-            }
-
         for field in [
+            "vote_delegations_$_from_ids",
+            "vote_delegated_$_to_id",
             "comment_$",
             "number_$",
             "structure_level_$",
