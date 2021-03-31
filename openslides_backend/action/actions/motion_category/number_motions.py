@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
@@ -26,6 +26,7 @@ class MotionCategoryNumberMotions(UpdateAction):
         required_properties=["id"],
     )
     permission = Permissions.Motion.CAN_MANAGE
+    permission_model = MotionCategory()
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
@@ -205,10 +206,3 @@ class MotionCategoryNumberMotions(UpdateAction):
             )
             number = f"{prefix}{blank}{number_value_str}"
         return number, number_value_map[motion_id]
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        motion_category = self.datastore.get(
-            FullQualifiedId(Collection("motion_category"), instance["id"]),
-            ["meeting_id"],
-        )
-        return motion_category["meeting_id"]
