@@ -1,5 +1,6 @@
 from typing import List, Union
 
+from ...services.datastore.deleted_models_behaviour import InstanceAdditionalBehaviour
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import ActionException
 from ...shared.patterns import FullQualifiedId
@@ -26,6 +27,7 @@ def assert_belongs_to_meeting(
         instance = datastore.fetch_model(
             fqid,
             mapped_fields,
+            db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         )
         if instance.get("meeting_id") != meeting_id:
             if fqid.collection.collection == "user" and (
