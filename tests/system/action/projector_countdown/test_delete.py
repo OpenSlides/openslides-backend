@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -42,4 +43,19 @@ class ProjectorCountdownDelete(BaseActionTestCase):
         assert (
             "List of speakers or poll countdown is not allowed to delete."
             in response.data.decode()
+        )
+
+    def test_delete_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_countdown.delete",
+            {"id": 1},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector_countdown.delete",
+            {"id": 1},
+            Permissions.Projector.CAN_MANAGE,
         )
