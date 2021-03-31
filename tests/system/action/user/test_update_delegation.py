@@ -620,7 +620,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 400)
-        self.assertIn('User 2 cannot delegate his vote, because there are votes delegated to him.', response.json["message"])
+        self.assertIn(
+            "User 2 cannot delegate his vote, because there are votes delegated to him.",
+            response.json["message"],
+        )
 
     def test_update_vote_add_remove_delegations_from(self) -> None:
         """ user3/4 -> user2: user2 removes 4 and adds 1 delegations_from """
