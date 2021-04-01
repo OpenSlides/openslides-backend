@@ -169,7 +169,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         response = self.request(action, request_data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'user/42' does not exist.",
+            "The following users were not found: {42}",
             response.json["message"],
         )
 
@@ -823,7 +823,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         response = self.request(action, request_data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 222: [FullQualifiedId('user/2')]",
+            "The following models do not belong to meeting 222: ['user/2']",
             response.json["message"],
         )
 
@@ -854,7 +854,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 223: [FullQualifiedId('user/1')]",
+            "The following models do not belong to meeting 223: ['user/1']",
             response.json["message"],
         )
 
@@ -892,7 +892,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         response = self.request(action, request_data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 222: [FullQualifiedId('user/2')]",
+            "The following models do not belong to meeting 222: ['user/2']",
             response.json["message"],
         )
 
@@ -925,6 +925,92 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 223: [FullQualifiedId('user/1')]",
+            "The following models do not belong to meeting 223: ['user/1']",
+            response.json["message"],
+        )
+
+    def test_update_delegation_from_other_meeting_with_guest_meeting_standard_user(
+        self,
+    ) -> None:
+        """ user/1(222) receive vote from user/2(223) """
+        self.set_models(
+            {
+                "meeting/222": {"name": "Meeting222"},
+                "group/1": {"meeting_id": 222, "user_ids": [1]},
+                "meeting/223": {"name": "Meeting223"},
+                "group/2": {"meeting_id": 223, "user_ids": [2]},
+                "user/1": {
+                    "group_$_ids": ["222"],
+                    "group_$222_ids": [1],
+                },
+                "user/2": {
+                    "group_$_ids": ["223"],
+                    "group_$223_ids": [2],
+                },
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 1,
+                "vote_delegations_$_from_ids": {223: [2]},
+                "guest_meeting_ids": [223],
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "group_$222_ids": [1],
+                "group_$_ids": ["222"],
+                "guest_meeting_ids": [223],
+                "vote_delegations_$223_from_ids": [2],
+                "vote_delegations_$_from_ids": ["223"],
+            },
+        )
+        self.assert_model_exists(
+            "user/2",
+            {
+                "group_$223_ids": [2],
+                "group_$_ids": ["223"],
+                "vote_delegated_$223_to_id": 1,
+                "vote_delegated_$_to_id": ["223"],
+            },
+        )
+
+    def test_update_delegation_from_other_meeting_with_guest_meeting_temporary_user(
+        self,
+    ) -> None:
+        """ user/1(222) receive vote from user/2(223) """
+        self.set_models(
+            {
+                "meeting/222": {"name": "Meeting222"},
+                "group/1": {"meeting_id": 222, "user_ids": [1]},
+                "meeting/223": {"name": "Meeting223"},
+                "group/2": {"meeting_id": 223, "user_ids": [2]},
+                "user/1": {
+                    "meeting_id": 222,
+                },
+                "user/2": {
+                    "group_$_ids": ["223"],
+                    "group_$223_ids": [2],
+                },
+            }
+        )
+
+        response = self.request(
+            "user.update_temporary",
+            {
+                "id": 1,
+                "vote_delegations_from_ids": [2],
+                "guest_meeting_ids": [223],
+            },
+        )
+
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data must not contain {'guest_meeting_ids'} properties",
             response.json["message"],
         )

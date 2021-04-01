@@ -28,6 +28,7 @@ def assert_belongs_to_meeting(
             fqid,
             mapped_fields,
             db_additional_relevance=InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+            exception=False,
         )
         if instance.get("meeting_id") != meeting_id:
             if fqid.collection.collection == "user" and (
