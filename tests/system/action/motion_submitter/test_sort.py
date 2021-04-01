@@ -1,13 +1,23 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSubmitterSortActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion/222": {"meeting_id": 1},
+            "motion_submitter/31": {"motion_id": 222, "meeting_id": 1},
+            "motion_submitter/32": {"motion_id": 222, "meeting_id": 1},
+        }
+
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
-                "motion/222": {},
-                "motion_submitter/31": {"motion_id": 222},
-                "motion_submitter/32": {"motion_id": 222},
+                "meeting/13": {},
+                "motion/222": {"meeting_id": 13},
+                "motion_submitter/31": {"motion_id": 222, "meeting_id": 13},
+                "motion_submitter/32": {"motion_id": 222, "meeting_id": 13},
             }
         )
         response = self.request(
@@ -21,7 +31,13 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
         assert model_32.get("weight") == 1
 
     def test_sort_missing_model(self) -> None:
-        self.set_models({"motion/222": {}, "motion_submitter/31": {"motion_id": 222}})
+        self.set_models(
+            {
+                "meeting/13": {},
+                "motion/222": {"meeting_id": 13},
+                "motion_submitter/31": {"motion_id": 222, "meeting_id": 13},
+            }
+        )
         response = self.request(
             "motion_submitter.sort",
             {"motion_id": 222, "motion_submitter_ids": [32, 31]},
@@ -32,10 +48,11 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
     def test_sort_another_section_db(self) -> None:
         self.set_models(
             {
-                "motion/222": {},
-                "motion_submitter/31": {"motion_id": 222},
-                "motion_submitter/32": {"motion_id": 222},
-                "motion_submitter/33": {"motion_id": 222},
+                "meeting/13": {},
+                "motion/222": {"meeting_id": 13},
+                "motion_submitter/31": {"motion_id": 222, "meeting_id": 13},
+                "motion_submitter/32": {"motion_id": 222, "meeting_id": 13},
+                "motion_submitter/33": {"motion_id": 222, "meeting_id": 13},
             }
         )
         response = self.request(
@@ -44,3 +61,18 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Additional db_instances found." in response.json["message"]
+
+    def test_sort_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_submitter.sort",
+            {"motion_id": 222, "motion_submitter_ids": [32, 31]},
+        )
+
+    def test_sort_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_submitter.sort",
+            {"motion_id": 222, "motion_submitter_ids": [32, 31]},
+            Permissions.Motion.CAN_MANAGE_METADATA,
+        )

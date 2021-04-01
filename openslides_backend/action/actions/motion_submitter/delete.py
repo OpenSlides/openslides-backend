@@ -1,4 +1,5 @@
 from ....models.models import MotionSubmitter
+from ....permissions.permissions import Permissions
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -12,3 +13,4 @@ class MotionSubmitterDeleteAction(DeleteAction):
 
     model = MotionSubmitter()
     schema = DefaultSchema(MotionSubmitter()).get_delete_schema()
+    permission = Permissions.Motion.CAN_MANAGE_METADATA
