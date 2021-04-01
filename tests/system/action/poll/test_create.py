@@ -594,5 +594,5 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
-            == "The following models do not belong to meeting 7: [FullQualifiedId('user/1')]"
+            == "The following models do not belong to meeting 7: ['user/1']"
         )

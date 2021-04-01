@@ -102,7 +102,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         response = self.request("fake_model_ef_b.create", {"meeting_id": 1, "c_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: [FullQualifiedId('fake_model_ef_c/1')]",
+            "The following models do not belong to meeting 1: ['fake_model_ef_c/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
@@ -146,7 +146,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: [FullQualifiedId('fake_model_ef_c/1')]",
+            "The following models do not belong to meeting 1: ['fake_model_ef_c/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
@@ -179,7 +179,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: [FullQualifiedId('fake_model_ef_c/1')]",
+            "The following models do not belong to meeting 1: ['fake_model_ef_c/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_ef_b/1")
@@ -212,7 +212,7 @@ class TestEqualFieldsCheck(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: [FullQualifiedId('fake_model_ef_c/1')]",
+            "The following models do not belong to meeting 1: ['fake_model_ef_c/1']",
             response.json["message"],
         )
         self.assert_model_not_exists("fake_model_ef_b/1")

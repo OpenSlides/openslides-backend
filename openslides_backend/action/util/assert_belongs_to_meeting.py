@@ -13,11 +13,11 @@ def assert_belongs_to_meeting(
     if not isinstance(fqids, list):
         fqids = [fqids]
 
-    errors: List[FullQualifiedId] = []
+    errors: List[str] = []
     for fqid in fqids:
         if fqid.collection.collection == "meeting":
             if fqid.id != meeting_id:
-                errors.append(fqid)
+                errors.append(str(fqid))
             continue
         mapped_fields = ["meeting_id"]
         if fqid.collection.collection == "user":
@@ -33,7 +33,7 @@ def assert_belongs_to_meeting(
                 or instance.get(f"group_${meeting_id}_ids")
             ):
                 continue
-            errors.append(fqid)
+            errors.append(str(fqid))
 
     if errors:
         raise ActionException(
