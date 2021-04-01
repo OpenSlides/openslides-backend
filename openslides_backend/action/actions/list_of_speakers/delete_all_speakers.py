@@ -1,4 +1,3 @@
-
 from ....models.models import ListOfSpeakers, Speaker
 from ....permissions.permissions import Permissions
 from ....shared.patterns import Collection, FullQualifiedId
