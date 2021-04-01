@@ -5,7 +5,12 @@ from tests.system.action.base import BaseActionTestCase
 class AssignmentCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model(
-            "meeting/110", {"name": "name_zvfbAjpZ", "agenda_item_creation": "always"}
+            "meeting/110",
+            {
+                "name": "name_zvfbAjpZ",
+                "agenda_item_creation": "always",
+                "list_of_speakers_initially_closed": True,
+            },
         )
         response = self.request(
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
@@ -20,7 +25,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("meeting_id"), 110)
         self.assertEqual(agenda_item.get("content_object_id"), "assignment/1")
         self.assert_model_exists(
-            "list_of_speakers/1", {"content_object_id": "assignment/1"}
+            "list_of_speakers/1", {"content_object_id": "assignment/1", "closed": True}
         )
 
     def test_create_other_agenda_item_check(self) -> None:

@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ....models.models import ListOfSpeakers
+from ....shared.patterns import Collection, FullQualifiedId
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -12,3 +15,12 @@ class ListOfSpeakersCreate(CreateActionWithInferredMeeting):
     schema = DefaultSchema(ListOfSpeakers()).get_create_schema(["content_object_id"])
 
     relation_field_for_meeting = "content_object_id"
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            ["list_of_speakers_initially_closed"],
+        )
+        instance["closed"] = meeting.get("list_of_speakers_initially_closed", False)
+        return instance
