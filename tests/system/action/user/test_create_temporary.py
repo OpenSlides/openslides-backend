@@ -108,7 +108,7 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 1: ['group/2']",
+            "Group 2 is not in the meeting of the temporary user.",
             response.json["message"],
         )
         self.assert_model_not_exists("user/2")
