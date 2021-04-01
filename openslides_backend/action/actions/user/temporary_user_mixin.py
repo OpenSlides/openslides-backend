@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection
 from ...action import Action
