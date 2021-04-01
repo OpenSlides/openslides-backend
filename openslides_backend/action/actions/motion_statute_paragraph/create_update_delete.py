@@ -1,4 +1,5 @@
 from ....models.models import MotionStatuteParagraph
+from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
@@ -19,3 +20,4 @@ class MotionStatuteParagraphActionSet(ActionSet):
         optional_properties=["title", "text"]
     )
     delete_schema = DefaultSchema(MotionStatuteParagraph()).get_delete_schema()
+    permission = Permissions.Motion.CAN_MANAGE
