@@ -5,7 +5,6 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-
         self.permission_test_model = {
             "motion_state/111": {"name": "name_srtgb123", "meeting_id": 1}
         }

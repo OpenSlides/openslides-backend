@@ -5,7 +5,6 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-
         self.permission_test_model = {
             "motion_workflow/110": {
                 "name": "name_Ycefgee",
