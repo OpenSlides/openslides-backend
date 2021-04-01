@@ -1,7 +1,18 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCommentSectionActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_comment_section/111": {
+                "name": "name_srtgb123",
+                "meeting_id": 1,
+            },
+            "group/23": {"meeting_id": 1, "name": "name_asdfetza"},
+        }
+
     def test_update_correct_all_fields(self) -> None:
         self.set_models(
             {
@@ -48,3 +59,28 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("motion_comment_section/111")
         assert model.get("read_group_ids") == [23]
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "name": "name_iuqAPRuD",
+                "read_group_ids": [23],
+                "write_group_ids": [23],
+            },
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion_comment_section.update",
+            {
+                "id": 111,
+                "name": "name_iuqAPRuD",
+                "read_group_ids": [23],
+                "write_group_ids": [23],
+            },
+            Permissions.Motion.CAN_MANAGE,
+        )

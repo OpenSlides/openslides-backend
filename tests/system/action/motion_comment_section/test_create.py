@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -59,4 +60,19 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_comment_section.create",
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_comment_section.create",
+            {"name": "test_Xcdfgee", "meeting_id": 1},
+            Permissions.Motion.CAN_MANAGE,
         )
