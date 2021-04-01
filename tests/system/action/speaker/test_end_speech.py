@@ -5,12 +5,22 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_correct(self) -> None:
         self.set_models(
             {
+                "meeting/1": {
+                    "list_of_speakers_couple_countdown": True,
+                    "list_of_speakers_countdown_id": 11,
+                },
+                "projector_countdown/11": {
+                    "running": True,
+                    "default_time": 60,
+                    "countdown_time": 31.0,
+                },
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890]},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 10000,
+                    "meeting_id": 1,
                 },
             }
         )

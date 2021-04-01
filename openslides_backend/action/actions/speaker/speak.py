@@ -8,11 +8,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..projector_countdown.update import ProjectorCountdownUpdate
+from ..projector_countdown.mixins import CountdownControl
 
 
 @register_action("speaker.speak")
-class SpeakerSpeak(UpdateAction):
+class SpeakerSpeak(CountdownControl, UpdateAction):
     """
     Action to let speakers speak.
     """
@@ -67,33 +67,17 @@ class SpeakerSpeak(UpdateAction):
                     }
 
             # reset projector countdown
-            if this_speaker.get("meeting_id"):
-                meeting = self.datastore.get(
-                    FullQualifiedId(Collection("meeting"), this_speaker["meeting_id"]),
-                    [
-                        "list_of_speakers_couple_countdown",
-                        "list_of_speakers_countdown_id",
-                    ],
+            meeting = self.datastore.get(
+                FullQualifiedId(Collection("meeting"), this_speaker["meeting_id"]),
+                [
+                    "list_of_speakers_couple_countdown",
+                    "list_of_speakers_countdown_id",
+                ],
+            )
+            if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
+                "list_of_speakers_countdown_id"
+            ):
+                self.control_countdown(
+                    meeting["list_of_speakers_countdown_id"], "restart"
                 )
-                if meeting.get("list_of_speakers_couple_countdown") and meeting.get(
-                    "list_of_speakers_countdown_id"
-                ):
-                    countdown = self.datastore.get(
-                        FullQualifiedId(
-                            Collection("projector_countdown"),
-                            meeting["list_of_speakers_countdown_id"],
-                        ),
-                        ["default_time"],
-                    )
-                    now = round(time.time())
-                    self.execute_other_action(
-                        ProjectorCountdownUpdate,
-                        [
-                            {
-                                "id": meeting["list_of_speakers_countdown_id"],
-                                "running": True,
-                                "countdown_time": countdown["default_time"] + now,
-                            }
-                        ],
-                    )
             yield instance
