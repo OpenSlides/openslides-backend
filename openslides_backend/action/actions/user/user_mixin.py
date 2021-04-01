@@ -24,7 +24,7 @@ class UserMixin(Action):
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
-        self.check_existence_of_from_users(instance)
+        self.check_existence_of_to_and_from_users(instance)
         self.check_meeting_and_users(instance, user_fqid)
         if "vote_delegated_$_to_id" in instance:
             self.check_vote_delegated__to_id(instance, user_fqid)
@@ -122,14 +122,20 @@ class UserMixin(Action):
                     f"User(s) {error_user_ids} can't delegate their votes , because they receive vote delegations."
                 )
 
-    def check_existence_of_from_users(self, instance: Dict[str, Any]) -> None:
+    def check_existence_of_to_and_from_users(self, instance: Dict[str, Any]) -> None:
+        user_ids = set(
+            filter(bool, instance.get("vote_delegated_$_to_id", dict()).values())
+        )
         if "vote_delegations_$_from_ids" in instance:
-            user_ids = set(
-                reduce(
-                    (lambda x, y: x + y),  # type: ignore
-                    instance["vote_delegations_$_from_ids"].values(),
+            user_ids = user_ids.union(
+                set(
+                    reduce(
+                        (lambda x, y: x + y),  # type: ignore
+                        instance["vote_delegations_$_from_ids"].values(),
+                    )
                 )
             )
+        if user_ids:
             get_many_request = GetManyRequest(
                 self.model.collection, list(user_ids), ["id"]
             )
@@ -147,10 +153,17 @@ class UserMixin(Action):
         user_collection = Collection("user")
         meeting_users = defaultdict(list)
         if instance.get("group_$_ids") is not None:
-            self.datastore.additional_relation_models[user_fqid] = {
-                f"group_${meeting_id}_ids": ids
-                for meeting_id, ids in instance.get("group_$_ids").items()  # type: ignore
-            }
+            self.datastore.additional_relation_models[user_fqid].update(
+                {
+                    f"group_${meeting_id}_ids": ids
+                    for meeting_id, ids in instance.get("group_$_ids").items()  # type: ignore
+                }
+            )
+        for field_name in ("meeting_id", "guest_meeting_ids"):
+            if instance.get(field_name) is not None:
+                self.datastore.additional_relation_models[user_fqid].update(
+                    {field_name: instance.get(field_name)}
+                )
         for meeting_id, user_id in instance.get("vote_delegated_$_to_id", {}).items():
             if user_id:
                 meeting_users[meeting_id].append(
