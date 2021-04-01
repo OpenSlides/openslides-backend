@@ -4,7 +4,6 @@ from ....models.models import ListOfSpeakers, Speaker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,6 +22,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         description="Moves the last speaker back to the top of the list.",
     )
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission_model = ListOfSpeakers()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Fetch all speakers.
@@ -74,11 +74,3 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             "end_time": None,
             "weight": lowest_weight - 1,
         }
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        list_of_speakers = self.datastore.fetch_model(
-            FullQualifiedId(Collection("list_of_speakers"), instance["id"]),
-            mapped_fields=["meeting_id"],
-            lock_result=True,
-        )
-        return list_of_speakers["meeting_id"]
