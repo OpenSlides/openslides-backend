@@ -728,25 +728,25 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_model_exists("user/3", {"vote_delegated_$_to_id": []})
         self.assert_model_exists("user/4", {"vote_delegated_$_to_id": []})
 
-    def test_update_vote_setting_both_from_to_error_standard_user(self) -> None:
+    def test_update_vote_setting_both_from_to_error_standard_user_1(self) -> None:
         request_data = {
             "id": 2,
             "vote_delegations_$_from_ids": {222: [4]},
             "vote_delegated_$_to_id": {222: 3},
         }
-        self.t_update_vote_setting_both_from_to_error("user.update", request_data)
+        self.t_update_vote_setting_both_from_to_error_1("user.update", request_data)
 
-    def test_update_vote_setting_both_from_to_error_temporary_user(self) -> None:
+    def test_update_vote_setting_both_from_to_error_temporary_user_1(self) -> None:
         request_data = {
             "id": 2,
             "vote_delegations_from_ids": [4],
             "vote_delegated_to_id": 3,
         }
-        self.t_update_vote_setting_both_from_to_error(
+        self.t_update_vote_setting_both_from_to_error_1(
             "user.update_temporary", request_data
         )
 
-    def t_update_vote_setting_both_from_to_error(
+    def t_update_vote_setting_both_from_to_error_1(
         self, action: str, request_data: Dict[str, Any]
     ) -> None:
         """ user3/4 -> user2: user2 delegates to user/3 and resets received delegation from user/3 """
@@ -762,6 +762,48 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             "User 2 cannot delegate his vote, because there are votes delegated to him.",
             response.json["message"],
         )
+
+    def test_update_vote_setting_both_from_to_error_standard_user_2(self) -> None:
+        self.set_models({"user/100": {
+                    "username": "new independant",
+                    "group_$_ids": ["222"],
+                    "group_$222_ids": [1],
+                }},
+        )
+        request_data = {
+            "id": 100,
+            "vote_delegations_$_from_ids": {222: [1]},
+            "vote_delegated_$_to_id": {222: 1},
+        }
+        self.t_update_vote_setting_both_from_to_2("user.update", request_data)
+
+    def test_update_vote_setting_both_from_to_error_temporary_user_2(self) -> None:
+        self.set_models({"user/100": {
+                    "username": "new independant",
+                    "meeting_id": 222,
+                }},
+        )
+        request_data = {
+            "id": 100,
+            "vote_delegations_from_ids": [1],
+            "vote_delegated_to_id": 1,
+        }
+        self.t_update_vote_setting_both_from_to_2(
+            "user.update_temporary", request_data
+        )
+
+    def t_update_vote_setting_both_from_to_2(
+        self, action: str, request_data: Dict[str, Any]
+    ) -> None:
+        """ new user/100 without vote delegation dependencies tries to delegate from and to at the same time """
+        if action == "user.update":
+            self.setup_vote_delegation()
+        else:
+            self.setup_vote_delegation_temporary()
+
+        response = self.request(action, request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn('User 100 cannot delegate his vote, because there are votes delegated to him.', response.json["message"])
 
     def test_update_vote_add_remove_delegations_from_standard_user(self) -> None:
         request_data = {"id": 2, "vote_delegations_$_from_ids": {222: [3, 1]}}
