@@ -46,13 +46,13 @@ class UserSetPasswordTemporaryActionTest(BaseActionTestCase):
         self.base_permission_test(
             {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
             "user.set_password_temporary",
-            {"id": 10},
+            {"id": 10, "password": "test"},
         )
 
     def test_set_password_temporary_permissions(self) -> None:
         self.base_permission_test(
             {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
             "user.set_password_temporary",
-            {"id": 10},
+            {"id": 10, "password": "test"},
             Permissions.User.CAN_MANAGE,
         )
