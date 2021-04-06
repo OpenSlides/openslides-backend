@@ -1,7 +1,28 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+
+DEFAULT_PASSWORD = "password"
 
 
 class AssignmentCandidateCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+            "user/110": {
+                "username": "test_Xcdfgee",
+                "is_active": True,
+                "default_password": DEFAULT_PASSWORD,
+                "password": self.auth.hash(DEFAULT_PASSWORD),
+            },
+            "assignment/111": {
+                "title": "title_xTcEkItp",
+                "meeting_id": 1,
+                "phase": "voting",
+            },
+        }
+
     def test_create(self) -> None:
         self.set_models(
             {
@@ -67,4 +88,70 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         self.assertIn(
             "It is not permitted to add a candidate to a finished assignment!",
             response.json["message"],
+        )
+
+    def test_delete_no_permission(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing permissions: assignment.can_nominate_other, assignment.can_manage"
+            in response.json["message"]
+        )
+
+    def test_delete_both_permissions(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3,
+            [
+                Permissions.Assignment.CAN_NOMINATE_OTHER,
+                Permissions.Assignment.CAN_MANAGE,
+            ],
+        )
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delete_both_permissions_self(self) -> None:
+        self.create_meeting()
+        self.user_id = 110
+        self.set_models(self.permission_test_model)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3,
+            [
+                Permissions.Assignment.CAN_NOMINATE_SELF,
+                Permissions.Assignment.CAN_MANAGE,
+            ],
+        )
+        self.login(self.user_id)
+        response = self.request(
+            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_delete_no_permissions_self(self) -> None:
+        self.create_meeting()
+        self.user_id = 110
+        self.set_models(self.permission_test_model)
+        self.set_user_groups(self.user_id, [3])
+        self.login(self.user_id)
+        response = self.request(
+            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing permissions: assignment.can_nominate_self, assignment.can_manage"
+            in response.json["message"]
         )

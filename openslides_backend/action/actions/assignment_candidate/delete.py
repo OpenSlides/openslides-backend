@@ -6,10 +6,11 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionMixin
 
 
 @register_action("assignment_candidate.delete")
-class AssignmentCandidateDelete(DeleteAction):
+class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
     """
     Action to delete a assignment candidate.
     """

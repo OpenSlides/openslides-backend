@@ -8,10 +8,11 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionMixin
 
 
 @register_action("assignment_candidate.create")
-class AssignmentCandidateCreate(CreateActionWithInferredMeeting):
+class AssignmentCandidateCreate(PermissionMixin, CreateActionWithInferredMeeting):
     """
     Action to create an assignment candidate.
     """
