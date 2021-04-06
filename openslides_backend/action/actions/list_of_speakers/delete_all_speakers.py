@@ -1,4 +1,5 @@
 from ....models.models import ListOfSpeakers, Speaker
+from ....permissions.permissions import Permissions
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -18,6 +19,8 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
         title="Delete all speakers of list of speakers",
         description="Action to remove all speakers from the given list of speakers.",
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission_model = ListOfSpeakers()
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

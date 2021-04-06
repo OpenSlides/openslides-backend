@@ -70,6 +70,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     is_singular: bool = False
     internal: bool = False
     permission: Optional[Permission] = None
+    permission_model: Optional[Model] = None
     relation_manager: RelationManager
 
     write_requests: List[WriteRequest]
@@ -165,8 +166,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if instance.get("meeting_id"):
             return instance["meeting_id"]
         else:
+            model = self.model
+            if self.permission_model:
+                model = self.permission_model
             db_instance = self.datastore.fetch_model(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                FullQualifiedId(model.collection, instance["id"]),
                 ["meeting_id"],
                 exception=True,
                 lock_result=True,

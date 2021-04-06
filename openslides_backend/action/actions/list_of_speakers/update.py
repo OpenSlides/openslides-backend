@@ -1,4 +1,5 @@
 from ....models.models import ListOfSpeakers
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,3 +15,4 @@ class ListOfSpeakersUpdateAction(UpdateAction):
     schema = DefaultSchema(ListOfSpeakers()).get_update_schema(
         optional_properties=["closed"]
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE

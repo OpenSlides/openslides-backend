@@ -1,7 +1,38 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "user/42": {"username": "test_username42", "speaker_$222_ids": [222]},
+            "user/43": {"username": "test_username43", "speaker_$222_ids": [223]},
+            "user/44": {"username": "test_username43", "speaker_$222_ids": [224]},
+            "list_of_speakers/111": {
+                "closed": False,
+                "meeting_id": 1,
+                "speaker_ids": [222, 223, 224],
+            },
+            "speaker/222": {
+                "list_of_speakers_id": 111,
+                "user_id": 42,
+                "begin_time": 1000,
+                "end_time": 2000,
+            },
+            "speaker/223": {
+                "list_of_speakers_id": 111,
+                "user_id": 43,
+                "begin_time": 3000,
+                "end_time": 4000,
+            },
+            "speaker/224": {
+                "list_of_speakers_id": 111,
+                "user_id": 44,
+                "begin_time": 5000,
+            },
+        }
+
     def test_correct(self) -> None:
         self.set_models(
             {
@@ -111,4 +142,19 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertTrue(
             "User 42 is already on the list of speakers." in response.json["message"]
+        )
+
+    def test_re_add_last_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "list_of_speakers.re_add_last",
+            {"id": 111},
+        )
+
+    def test_re_add_last_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "list_of_speakers.re_add_last",
+            {"id": 111},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
         )

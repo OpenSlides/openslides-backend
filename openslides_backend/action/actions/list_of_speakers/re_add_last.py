@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import ListOfSpeakers, Speaker
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
@@ -20,6 +21,8 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         title="Re-add last speaker",
         description="Moves the last speaker back to the top of the list.",
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission_model = ListOfSpeakers()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Fetch all speakers.
