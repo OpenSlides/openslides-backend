@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -51,6 +52,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
+        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         response = self.request(
             "motion_category.create",
             {
@@ -93,3 +95,24 @@ class MotionCategorySystemTest(BaseActionTestCase):
         model = self.get_model("motion_category/1")
         assert model.get("name") == "test_Xcdfgee"
         assert "prefix" not in model
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 1,
+            },
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_category.create",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 1,
+            },
+            Permissions.Motion.CAN_MANAGE,
+        )

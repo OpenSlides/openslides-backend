@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 from ....models.models import Motion, MotionCategory
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
@@ -24,6 +25,8 @@ class MotionCategoryNumberMotions(UpdateAction):
         description="An object containing an array of main category id.",
         required_properties=["id"],
     )
+    permission = Permissions.Motion.CAN_MANAGE
+    permission_model = MotionCategory()
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
