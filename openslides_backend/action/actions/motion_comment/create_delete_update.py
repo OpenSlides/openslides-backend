@@ -1,8 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import MotionComment
-from ....permissions.permissions import OrganisationManagementLevel, Permissions
-from ....services.datastore.commands import GetManyRequest
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
@@ -20,42 +19,36 @@ class PermissionMixin(Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
 
-        # check for superuser
-        if self.user_id > 0:
-            user = self.datastore.get(
-                FullQualifiedId(Collection("user"), self.user_id),
-                [
-                    "organisation_management_level",
-                ],
-            )
-            if (
-                user.get("organisation_management_level")
-                == OrganisationManagementLevel.SUPERADMIN
-            ):
-                return
-
-        # get section_id, create vs delete/update case.
+        # get section_id and meeting_id, create vs delete/update case.
         if "section_id" in instance:
             section_id = instance["section_id"]
         else:
             comment = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["section_id"]
+                FullQualifiedId(self.model.collection, instance["id"]),
+                ["section_id", "meeting_id"],
             )
             section_id = comment["section_id"]
         section = self.datastore.get(
             FullQualifiedId(Collection("motion_comment_section"), section_id),
-            ["write_group_ids"],
+            ["write_group_ids", "meeting_id"],
         )
-        gmr = GetManyRequest(
-            Collection("group"), section["write_group_ids"], ["user_ids"]
+        meeting_id = section["meeting_id"]
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), self.user_id),
+            [f"group_${meeting_id}_ids"],
         )
-        result = self.datastore.get_many([gmr])
-        groups = list(result.get(Collection("group"), {}).values())
-        for group in groups:
-            if self.user_id in group.get("user_ids", []):
-                return
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), meeting_id), ["admin_group_id"]
+        )
+
+        allowed_groups = set(section.get("write_group_ids", []))
+        allowed_groups.add(meeting["admin_group_id"])
+        user_groups = set(user.get(f"group_${meeting_id}_ids", []))
+        if allowed_groups.intersection(user_groups):
+            return
+
         msg = f"You are not allowed to perform action {self.name}."
-        msg += " You are not in the write group of the section."
+        msg += " You are not in the write group of the section or in admin group."
         raise PermissionDenied(msg)
 
 

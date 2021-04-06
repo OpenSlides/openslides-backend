@@ -13,7 +13,9 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"name": "name_m123etrd"},
+                "user/1": {"group_$111_ids": [3]},
+                "meeting/111": {"name": "name_m123etrd", "admin_group_id": 3},
+                "group/3": {},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                 "motion_comment_section/78": {"meeting_id": 111},
             }
@@ -88,5 +90,6 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not in the write group of the section." in response.json["message"]
+            "You are not in the write group of the section or in admin group."
+            in response.json["message"]
         )
