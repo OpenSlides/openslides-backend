@@ -1,5 +1,4 @@
-from typing import Any, Dict
-
+from ....permissions.permissions import Permissions
 from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryMixin
 from .reset_password_to_default import UserResetPasswordToDefaultAction
@@ -13,9 +12,4 @@ class UserResetPasswordToDefaultTemporaryAction(
     Action to reset a password to default of a temporary user.
     """
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Check for temporary user and call super().update_instance().
-        """
-        self.check_for_temporary(instance)
-        return super().update_instance(instance)
+    permission = Permissions.User.CAN_MANAGE

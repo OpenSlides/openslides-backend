@@ -1,5 +1,4 @@
-from typing import Any, Dict
-
+from ....permissions.permissions import Permissions
 from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryMixin
 from .generate_new_password import UserGenerateNewPassword
@@ -9,9 +8,5 @@ from .generate_new_password import UserGenerateNewPassword
 class UserGenerateNewPasswordTemporaryAction(
     CheckTemporaryMixin, UserGenerateNewPassword
 ):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Check for temporary user and calls the super code.
-        """
-        self.check_for_temporary(instance)
-        return super().update_instance(instance)
+
+    permission = Permissions.User.CAN_MANAGE

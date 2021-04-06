@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ....permissions.permissions import Permissions
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -42,9 +43,9 @@ class UserUpdateTemporary(
             "vote_weight": User().vote_weight_.get_schema(),
         },
     )
+    permission = Permissions.User.CAN_MANAGE
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        self.check_for_temporary(instance)
         instance = self.update_instance_temporary_user(instance)
         # remove meeting_id again to not write it to db
         del instance["meeting_id"]

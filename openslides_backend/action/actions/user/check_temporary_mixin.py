@@ -18,3 +18,7 @@ class CheckTemporaryMixin(BaseAction):
             instance["meeting_id"] = db_instance.get("meeting_id")
         if not instance.get("meeting_id"):
             raise ActionException(f"User {instance['id']} is not temporary.")
+
+    def validate_instance(self, instance: Dict[str, Any]) -> None:
+        super().validate_instance(instance)  # type: ignore
+        self.check_for_temporary(instance)
