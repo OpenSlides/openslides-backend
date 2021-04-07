@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from ....models.models import Speaker
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, FullQualifiedId
@@ -184,6 +185,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
 class SpeakerUpdate(UpdateAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(["marked"])
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
 
 @register_action("speaker.delete")

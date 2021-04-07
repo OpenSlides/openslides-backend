@@ -1,9 +1,22 @@
 import time
 
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class SpeakerSpeakTester(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "user/7": {"username": "test_username1"},
+            "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+            "speaker/890": {
+                "user_id": 7,
+                "list_of_speakers_id": 23,
+                "meeting_id": 1,
+            },
+        }
+
     def test_speak_correct(self) -> None:
         self.set_models(
             {
@@ -134,3 +147,16 @@ class SpeakerSpeakTester(BaseActionTestCase):
         assert countdown.get("running")
         now = time.time()
         assert now <= countdown.get("countdown_time", 0.0) <= now + 300
+
+    def test_speak_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model, "speaker.speak", {"id": 890}
+        )
+
+    def test_speak_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "speaker.speak",
+            {"id": 890},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
+        )

@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional
 
-from ....models.models import Speaker
+from ....models.models import ListOfSpeakers, Speaker
+from ....permissions.permissions import Permissions
 from ....shared.filters import And, Filter, FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
@@ -21,6 +22,9 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         "speaker_ids",
         "list_of_speakers_id",
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+    permission_model = ListOfSpeakers()
+    permission_id = "list_of_speakers_id"
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         filter: Optional[Filter] = None

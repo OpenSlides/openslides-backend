@@ -1,6 +1,7 @@
 import time
 
 from ....models.models import Speaker
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
@@ -22,6 +23,7 @@ class SpeakerEndSpeach(CountdownControl, UpdateAction):
         title="End speach schema",
         description="Schema to stop a speaker's speach.",
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
