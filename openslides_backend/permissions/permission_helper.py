@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
@@ -78,4 +78,28 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
             return True
         parents = permission_parents[current]
         queue.extend(parents)
+    return False
+
+
+def has_organisation_management_level(
+    datastore: DatastoreService, user_id: int, set_level: OrganisationManagementLevel
+) -> bool:
+    """ Checks wether a user has the minimum necessary OrganisationManagementLevel """
+    hierarchy: Dict[str, int] = {
+        OrganisationManagementLevel.SUPERADMIN: 3,
+        OrganisationManagementLevel.CAN_MANAGE_ORGANISATION: 2,
+        OrganisationManagementLevel.CAN_MANAGE_USERS: 1,
+    }
+
+    if user_id > 0:
+        user = datastore.get(
+            FullQualifiedId(Collection("user"), user_id),
+            ["organisation_management_level"],
+        )
+        set_level_number = hierarchy.get(set_level, 4)
+        actual_level_number = hierarchy.get(
+            user.get("organisation_management_level"), 0  # type: ignore
+        )
+        if actual_level_number >= set_level_number:
+            return True
     return False

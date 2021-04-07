@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import OrganisationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -199,3 +200,22 @@ class UserCreateActionTest(BaseActionTestCase):
             "data.username must be longer than or equal to 1 characters",
             response.json["message"],
         )
+    def test_create_no_permission(self) -> None:
+        self.update_model("user/1", {"organisation_management_level": None})
+        response = self.request("user.create", {"username": "test_Xcdfgee"})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing Organisation Management Level: can_manage_users",
+            response.json["message"],
+        )
+
+    def test_create_permission(self) -> None:
+        self.update_model(
+            "user/1",
+            {
+                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+            },
+        )
+        response = self.request("user.create", {"username": "test_Xcdfgee"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "test_Xcdfgee"})
