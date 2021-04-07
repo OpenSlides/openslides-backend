@@ -1,7 +1,8 @@
 from typing import Any, Dict
 
+from openslides_backend.permissions.permission_helper import is_temporary
+
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
 from ...action import BaseAction
 
 
@@ -11,12 +12,7 @@ class CheckTemporaryMixin(BaseAction):
     """
 
     def check_for_temporary(self, instance: Dict[str, Any]) -> None:
-        if "meeting_id" not in instance:
-            db_instance = self.datastore.get(
-                FullQualifiedId(Collection("user"), instance["id"]), ["meeting_id"]
-            )
-            instance["meeting_id"] = db_instance.get("meeting_id")
-        if not instance.get("meeting_id"):
+        if not is_temporary(self.datastore, instance):
             raise ActionException(f"User {instance['id']} is not temporary.")
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:

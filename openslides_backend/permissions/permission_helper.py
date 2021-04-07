@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
@@ -103,3 +103,16 @@ def has_organisation_management_level(
         if actual_level_number >= set_level_number:
             return True
     return False
+
+
+def is_temporary(datastore: DatastoreService, instance: Dict[str, Any]) -> bool:
+    """
+    Checks whether the user, identified by the id the instance, is a temporary user.
+    Be carefull about the stored meeting id in the instance!
+    """
+    if "meeting_id" not in instance:
+        db_instance = datastore.get(
+            FullQualifiedId(Collection("user"), instance["id"]), ["meeting_id"]
+        )
+        instance["meeting_id"] = db_instance.get("meeting_id")
+    return bool(instance.get("meeting_id"))
