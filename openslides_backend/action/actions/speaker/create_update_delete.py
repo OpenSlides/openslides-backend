@@ -180,6 +180,13 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 )
         return super().validate_fields(instance)
 
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        if instance.get("user_id") == self.user_id:
+            self.permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER
+        else:
+            self.permission = Permissions.ListOfSpeakers.CAN_MANAGE
+        super().check_permissions(instance)
+
 
 @register_action("speaker.update")
 class SpeakerUpdate(UpdateAction):
