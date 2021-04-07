@@ -25,7 +25,7 @@ class PermissionMixin(Action):
         else:
             comment = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),
-                ["section_id", "meeting_id"],
+                ["section_id"],
             )
             section_id = comment["section_id"]
         section = self.datastore.get(
