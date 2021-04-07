@@ -1,11 +1,19 @@
 import base64
 
+from openslides_backend.permissions.permissions import OrganisationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
 class ResourceUploadActionTest(BaseActionTestCase):
     def test_upload_and_create(self) -> None:
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.set_models(
+            {
+                "organisation/1": {"name": "test_organisation1"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+            }
+        )
         filename = "test_picture.jpg"
         used_mimetype = "image/jpeg"
         token = "mytoken"
@@ -56,6 +64,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "token": token,
                     "filesize": 2345,
                     "mimetype": "image/png",
+                },
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -116,6 +127,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "token": token1,
                     "filesize": 2345,
                     "mimetype": "image/png",
+                },
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -189,6 +203,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "filesize": 2345,
                     "mimetype": "image/png",
                 },
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
             }
         )
 
@@ -244,7 +261,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.media.upload_resource.assert_called_with(file_content2, 3, used_mimetype)
 
     def test_error_in_resource_upload(self) -> None:
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.set_models(
+            {
+                "organisation/1": {"name": "test_organisation1"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+            }
+        )
         filename = "raises_upload_error.swf"
         used_mimetype = "application/x-shockwave-flash"
         token = "mytoken"
@@ -266,7 +290,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.media.upload_resource.assert_called_with(file_content, 1, used_mimetype)
 
     def test_create_cannot_guess_mimetype(self) -> None:
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.set_models(
+            {
+                "organisation/1": {"name": "test_organisation1"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+            }
+        )
         file_content = base64.b64encode(b"testtesttest").decode()
         token = "mytoken"
         response = self.request(
@@ -287,7 +318,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.media.upload_resource.assert_not_called()
 
     def test_error_token_used_twice_in_a_request(self) -> None:
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.set_models(
+            {
+                "organisation/1": {"name": "test_organisation1"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+            }
+        )
         file_content = base64.b64encode(b"testtesttest").decode()
         token = "mytoken"
         response = self.request_multi(
@@ -317,7 +355,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.media.upload_resource.assert_not_called()
 
     def test_error_token_used_in_a_request(self) -> None:
-        self.create_model("organisation/1", {"name": "test_organisation1"})
+        self.set_models(
+            {
+                "organisation/1": {"name": "test_organisation1"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+            }
+        )
         token = "mytoken"
         self.set_models(
             {
@@ -353,3 +398,25 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.assert_model_exists("resource/1")
         self.assert_model_exists("resource/2")
         self.media.upload_resource.assert_not_called()
+
+    def test_upload_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "organisation/1": {"name": "test_organisation1"},
+            }
+        )
+        filename = "test_picture.jpg"
+        token = "mytoken"
+        raw_content = b"test_the_picture"
+        file_content = base64.b64encode(raw_content).decode()
+        response = self.request(
+            "resource.upload",
+            {
+                "organisation_id": 1,
+                "token": token,
+                "filename": filename,
+                "file": file_content,
+            },
+        )
+
+        self.assert_status_code(response, 403)
