@@ -11,7 +11,7 @@ def has_perm(
     datastore: DatastoreService, user_id: int, permission: Permission, meeting_id: int
 ) -> bool:
     # anonymous cannot be fetched from db
-    if user_id > 0:
+    if check_not_anonymous(user_id):
         user = datastore.get(
             FullQualifiedId(Collection("user"), user_id),
             [
@@ -79,3 +79,7 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
         parents = permission_parents[current]
         queue.extend(parents)
     return False
+
+
+def check_not_anonymous(user_id: int) -> bool:
+    return user_id > 0
