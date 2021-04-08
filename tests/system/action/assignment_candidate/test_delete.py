@@ -137,10 +137,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         response = self.request("assignment_candidate.delete", {"id": 111})
         self.assert_status_code(response, 403)
-        assert (
-            "Missing permissions: assignment.can_nominate_other, assignment.can_manage"
-            in response.json["message"]
-        )
+        assert "Missing permission: assignment.can_manage" in response.json["message"]
 
     def test_delete_both_permissions(self) -> None:
         self.create_meeting()
@@ -182,7 +179,20 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.login(self.user_id)
         response = self.request("assignment_candidate.delete", {"id": 111})
         self.assert_status_code(response, 403)
-        assert (
-            "Missing permissions: assignment.can_nominate_self, assignment.can_manage"
-            in response.json["message"]
+        assert "Missing permission: assignment.can_manage" in response.json["message"]
+
+    def test_delete_permission_no_voting(self) -> None:
+        self.permission_test_model["assignment/111"]["phase"] = "search"
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3,
+            [
+                Permissions.Assignment.CAN_NOMINATE_OTHER,
+            ],
         )
+        self.set_models(self.permission_test_model)
+        response = self.request("assignment_candidate.delete", {"id": 111})
+        self.assert_status_code(response, 200)

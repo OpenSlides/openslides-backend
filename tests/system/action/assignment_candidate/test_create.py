@@ -100,10 +100,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Missing permissions: assignment.can_nominate_other, assignment.can_manage"
-            in response.json["message"]
-        )
+        assert "Missing permission: assignment.can_manage" in response.json["message"]
 
     def test_create_both_permissions(self) -> None:
         self.create_meeting()
@@ -151,7 +148,22 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Missing permissions: assignment.can_nominate_self, assignment.can_manage"
-            in response.json["message"]
+        assert "Missing permission: assignment.can_manage" in response.json["message"]
+
+    def test_create_permissions_no_voting_self(self) -> None:
+        self.permission_test_model["assignment/111"]["phase"] = "search"
+        self.create_meeting()
+        self.user_id = 110
+        self.set_models(self.permission_test_model)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3,
+            [
+                Permissions.Assignment.CAN_NOMINATE_SELF,
+            ],
         )
+        self.login(self.user_id)
+        response = self.request(
+            "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
+        )
+        self.assert_status_code(response, 200)

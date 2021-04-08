@@ -25,21 +25,26 @@ class PermissionMixin(Action):
         )
         meeting_id = assignment["meeting_id"]
 
-        missing_permissions = []
-        if self.user_id == user_id:
-            permission = Permissions.Assignment.CAN_NOMINATE_SELF
-            if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                missing_permissions.append(permission)
-        else:
-            permission = Permissions.Assignment.CAN_NOMINATE_OTHER
-            if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                missing_permissions.append(permission)
+        # check phase part
         if assignment.get("phase") == "voting":
             permission = Permissions.Assignment.CAN_MANAGE
             if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                missing_permissions.append(permission)
+                msg = f"You are not allowed to perform action {self.name}."
+                msg += f" Missing permission: {permission}"
+                raise PermissionDenied(msg)
 
-        if missing_permissions:
+        # check special assignment part
+        missing_permission = None
+        if self.user_id == user_id:
+            permission = Permissions.Assignment.CAN_NOMINATE_SELF
+            if not has_perm(self.datastore, self.user_id, permission, meeting_id):
+                missing_permission = permission
+        else:
+            permission = Permissions.Assignment.CAN_NOMINATE_OTHER
+            if not has_perm(self.datastore, self.user_id, permission, meeting_id):
+                missing_permission = permission
+
+        if missing_permission:
             msg = f"You are not allowed to perform action {self.name}."
-            msg += f" Missing permissions: {', '.join(missing_permissions)}"
+            msg += f" Missing permission: {missing_permission}"
             raise PermissionDenied(msg)
