@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Projector
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
@@ -24,6 +25,7 @@ class ProjectorControlView(UpdateAction):
             "step": {"type": "integer", "minimum": 1},
         },
     )
+    permission = Permissions.Projector.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         field = instance.pop("field")

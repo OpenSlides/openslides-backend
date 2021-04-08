@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -59,7 +60,7 @@ class ProjectorPrevious(BaseActionTestCase):
             }
         )
 
-    def test_next_nothing(self) -> None:
+    def test_previous_nothing(self) -> None:
         response = self.request("projector.previous", {"id": 2})
         self.assert_status_code(response, 200)
         projector = self.get_model("projector/2")
@@ -67,7 +68,7 @@ class ProjectorPrevious(BaseActionTestCase):
         assert projector.get("preview_projection_ids") is None
         assert projector.get("history_projection_ids") is None
 
-    def test_next_complex(self) -> None:
+    def test_previous_complex(self) -> None:
         response = self.request("projector.previous", {"id": 3})
         self.assert_status_code(response, 200)
         projector = self.get_model("projector/3")
@@ -77,10 +78,21 @@ class ProjectorPrevious(BaseActionTestCase):
         projection_2 = self.get_model("projection/2")
         assert projection_2.get("weight") == 98
 
-    def test_next_just_history(self) -> None:
+    def test_previous_just_history(self) -> None:
         response = self.request("projector.previous", {"id": 4})
         self.assert_status_code(response, 200)
         projector = self.get_model("projector/4")
         assert projector.get("current_projection_ids") == [7]
         assert projector.get("preview_projection_ids") == []
         assert projector.get("history_projection_ids") == []
+
+    def test_previous_no_permissions(self) -> None:
+        self.base_permission_test({}, "projector.previous", {"id": 4})
+
+    def test_previous_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.previous",
+            {"id": 4},
+            Permissions.Projector.CAN_MANAGE,
+        )

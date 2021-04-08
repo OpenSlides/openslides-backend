@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -83,4 +84,19 @@ class ProjectorAddToPreview(BaseActionTestCase):
         self.assertIn(
             "The following models do not belong to meeting 1: ['projector/4']",
             response.json["message"],
+        )
+
+    def test_add_to_preview_no_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.add_to_preview",
+            {"ids": [1, 2], "content_object_id": "assignment/1", "stable": False},
+        )
+
+    def test_add_to_preview_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.add_to_preview",
+            {"ids": [1, 2], "content_object_id": "assignment/1", "stable": False},
+            Permissions.Projector.CAN_MANAGE,
         )

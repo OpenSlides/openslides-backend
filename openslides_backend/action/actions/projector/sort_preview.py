@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Projector
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ....shared.schema import required_id_schema
@@ -23,6 +24,7 @@ class ProjectorSortPreview(UpdateAction):
             "projection_ids": {"type": "array", "items": required_id_schema}
         },
     )
+    permission = Permissions.Projector.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

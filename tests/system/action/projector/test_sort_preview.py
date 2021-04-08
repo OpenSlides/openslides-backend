@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -46,4 +47,17 @@ class ProjectorSortPreview(BaseActionTestCase):
         assert (
             "Must give all preview projections of this projector and nothing else."
             in response.json["message"]
+        )
+
+    def test_sort_no_permissions(self) -> None:
+        self.base_permission_test(
+            {}, "projector.sort_preview", {"id": 1, "projection_ids": [2, 3, 1]}
+        )
+
+    def test_sort_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.sort_preview",
+            {"id": 1, "projection_ids": [2, 3, 1]},
+            Permissions.Projector.CAN_MANAGE,
         )

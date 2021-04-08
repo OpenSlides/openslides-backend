@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from ....models.models import Projector
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
@@ -19,6 +20,7 @@ class ProjectorNext(UpdateAction):
 
     model = Projector()
     schema = DefaultSchema(Projector()).get_update_schema()
+    permission = Permissions.Projector.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

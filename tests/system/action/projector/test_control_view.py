@@ -1,10 +1,16 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class ProjectorControlView(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.set_models({"projector/1": {"scale": 11, "scroll": 13}})
+        self.set_models(
+            {
+                "meeting/1": {},
+                "projector/1": {"scale": 11, "scroll": 13, "meeting_id": 1},
+            }
+        )
 
     def test_reset(self) -> None:
         response = self.request(
@@ -53,3 +59,18 @@ class ProjectorControlView(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "data.step must be bigger than or equal to 1" in response.json["message"]
+
+    def test_control_view_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.control_view",
+            {"id": 1, "field": "scale", "direction": "reset"},
+        )
+
+    def test_control_view_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.control_view",
+            {"id": 1, "field": "scale", "direction": "reset"},
+            Permissions.Projector.CAN_MANAGE,
+        )
