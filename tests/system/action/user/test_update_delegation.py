@@ -764,11 +764,14 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_update_vote_setting_both_from_to_error_standard_user_2(self) -> None:
-        self.set_models({"user/100": {
+        self.set_models(
+            {
+                "user/100": {
                     "username": "new independant",
                     "group_$_ids": ["222"],
                     "group_$222_ids": [1],
-                }},
+                }
+            },
         )
         request_data = {
             "id": 100,
@@ -778,19 +781,20 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.t_update_vote_setting_both_from_to_2("user.update", request_data)
 
     def test_update_vote_setting_both_from_to_error_temporary_user_2(self) -> None:
-        self.set_models({"user/100": {
+        self.set_models(
+            {
+                "user/100": {
                     "username": "new independant",
                     "meeting_id": 222,
-                }},
+                }
+            },
         )
         request_data = {
             "id": 100,
             "vote_delegations_from_ids": [1],
             "vote_delegated_to_id": 1,
         }
-        self.t_update_vote_setting_both_from_to_2(
-            "user.update_temporary", request_data
-        )
+        self.t_update_vote_setting_both_from_to_2("user.update_temporary", request_data)
 
     def t_update_vote_setting_both_from_to_2(
         self, action: str, request_data: Dict[str, Any]
@@ -803,7 +807,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
         response = self.request(action, request_data)
         self.assert_status_code(response, 400)
-        self.assertIn('User 100 cannot delegate his vote, because there are votes delegated to him.', response.json["message"])
+        self.assertIn(
+            "User 100 cannot delegate his vote, because there are votes delegated to him.",
+            response.json["message"],
+        )
 
     def test_update_vote_add_remove_delegations_from_standard_user(self) -> None:
         request_data = {"id": 2, "vote_delegations_$_from_ids": {222: [3, 1]}}
