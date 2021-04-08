@@ -125,14 +125,14 @@ class BaseActionTestCase(BaseSystemTestCase):
                         f"group_${meeting_id}_ids": [group["id"] for group in groups]
                         for meeting_id, groups in partitioned_groups.items()
                     },
-                    **{
-                        f"group/{group['id']}": {
-                            "user_ids": list(set(group.get("user_ids", []) + [id]))
-                        }
-                        for groups in partitioned_groups.values()
-                        for group in groups
-                    },
-                }
+                },
+                **{
+                    f"group/{group['id']}": {
+                        "user_ids": list(set(group.get("user_ids", []) + [id]))
+                    }
+                    for groups in partitioned_groups.values()
+                    for group in groups
+                },
             }
         )
         return id

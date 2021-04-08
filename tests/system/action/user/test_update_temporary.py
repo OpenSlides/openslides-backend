@@ -119,6 +119,9 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user.update_temporary", {"id": 111, "vote_weight": 1.5}
         )
         self.assert_status_code(response, 400)
+        self.assertIn(
+            "data.vote_weight must be string or null", response.json["message"]
+        )
         model = self.get_model("user/111")
         assert model.get("vote_weight_$222") is None
 
@@ -133,6 +136,10 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user.update_temporary", {"id": 111, "vote_weight": "a.aaaaaa"}
         )
         self.assert_status_code(response, 400)
+        self.assertIn(
+            "data.vote_weight must match pattern ^-?(\\d|[1-9]\\d+)\\.\\d{6}$",
+            response.json["message"],
+        )
         model = self.get_model("user/111")
         assert model.get("vote_weight_$222") is None
 
@@ -145,6 +152,10 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
             "user.update_temporary", {"id": 112, "username": "username_Xcdfgee"}
         )
         self.assert_status_code(response, 400)
+        self.assertIn(
+            "Datastore service sends HTTP 400. Model 'user/112' does not exist.",
+            response.json["message"],
+        )
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
 
@@ -196,7 +207,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following users were not found",
+            "The following users were not found: {7}",
             response.json["message"],
         )
         model = self.get_model("user/111")

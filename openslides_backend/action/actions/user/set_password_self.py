@@ -1,8 +1,11 @@
 from typing import Any, Dict
 
+from openslides_backend.permissions.permission_helper import has_perm
+from openslides_backend.permissions.permissions import Permissions
+
 from ....models.models import User
-from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,9 +26,6 @@ class UserSetPasswordSelf(UpdateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if self.auth.is_anonymous(self.user_id):
-            raise ActionException("Can't set password for anonymous")
-
         old_pw = instance.pop("old_password")
         new_pw = instance.pop("new_password")
 
@@ -39,3 +39,23 @@ class UserSetPasswordSelf(UpdateAction):
         instance["id"] = self.user_id
         instance["password"] = self.auth.hash(new_pw)
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        if self.auth.is_anonymous(self.user_id):
+            raise ActionException("Can't set password for anonymous")
+
+        meeting_id = self.datastore.get(
+            FullQualifiedId(Collection("user"), self.user_id), ["meeting_id"]
+        ).get("meeting_id")
+
+        if meeting_id:
+            if has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.User.CAN_CHANGE_OWN_PASSWORD,
+                meeting_id,
+            ):
+                return
+            msg = f"You are not allowed to perform action {self.name}."
+            msg += f" Missing permission: {Permissions.User.CAN_CHANGE_OWN_PASSWORD}"
+            raise PermissionDenied(msg)
