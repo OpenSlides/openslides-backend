@@ -65,7 +65,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You can not set motion_workflow/42/first_state_id to a new value because this field is not empty.",
+            "There is already a first state for this workflow set. You can't change it.",
             response.json["message"],
         )
 
@@ -111,7 +111,7 @@ class MotionStateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You can not set motion_workflow/43/first_state_id to a new value because this field is not empty.",
+            "This state of workflow 42 cannot be the first state of workflow 43.",
             response.json["message"],
         )
 

@@ -1,4 +1,8 @@
+from typing import Any, Dict
+
 from ....models.models import User
+from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -32,6 +36,7 @@ class UserUpdate(UpdateAction, UserMixin):
             "committee_as_manager_ids",
             "group_$_ids",
             "vote_delegations_$_from_ids",
+            "vote_delegated_$_to_id",
             "comment_$",
             "number_$",
             "structure_level_$",
@@ -39,3 +44,12 @@ class UserUpdate(UpdateAction, UserMixin):
             "vote_weight_$",
         ],
     )
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if instance.get("meeting_id") or self.datastore.get(
+            FullQualifiedId(Collection("user"), instance["id"]), ["meeting_id"]
+        ).get("meeting_id"):
+            raise ActionException(
+                "Please use Action user.update_temporary for temporary user"
+            )
+        return super().update_instance(instance)

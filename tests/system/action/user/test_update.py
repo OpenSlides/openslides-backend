@@ -117,3 +117,12 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert (
             response.json["message"] == "A user with the username admin already exists."
         )
+
+    def test_update_temporary_user_error(self) -> None:
+        self.set_models({"meeting/1": {}, "user/5": {"meeting_id": 1}})
+        response = self.request("user.update", {"id": 5, "username": "username5"})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Please use Action user.update_temporary for temporary user",
+            response.json["message"],
+        )

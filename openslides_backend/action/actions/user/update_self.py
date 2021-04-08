@@ -24,8 +24,8 @@ class UserUpdate(UpdateAction, UserMixin):
         """
         Set id = user_id.
         """
-        instance = super().update_instance(instance)
         instance["id"] = self.user_id
+        instance = super().update_instance(instance)
 
         if "about_me_$" in instance:
             meeting_id_str = str(

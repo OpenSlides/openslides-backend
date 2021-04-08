@@ -66,6 +66,7 @@ class SingleRelationHandler:
         self.only_remove = only_remove
 
         self.type = self.get_field_type()
+        self.chained_fields: List[Dict[str, Any]] = []
 
     def get_reverse_field(self, collection: Collection) -> BaseRelationField:
         """
@@ -179,17 +180,8 @@ class SingleRelationHandler:
                 if self.type in ("1:1", "m:1"):
                     if len(current_value) == 0:
                         rel_update["value"] = None
-                    elif len(current_value) == 1:
-                        rel_update["value"] = current_value[0]
                     else:
-                        # We added a value to the *:1 field which was already populated.
-                        # The relation handling does currently not support this kind of
-                        # relation cascading.
-                        message = (
-                            f"You can not set {fqfield} to a new value because this "
-                            "field is not empty."
-                        )
-                        raise ActionException(message)
+                        rel_update["value"] = current_value[0]
 
             final.update(result)
 
@@ -197,7 +189,34 @@ class SingleRelationHandler:
             if isinstance(related_field, BaseTemplateField):
                 result_template_field = self.prepare_result_template_field(result)
                 final.update(result_template_field)
+
+        for chained_field in self.chained_fields:
+            handler = self.build_handler_from_chained_field(chained_field)
+            result = handler.perform()
+            final.update(result)
         return final
+
+    def build_handler_from_chained_field(self, chained_field: Dict[str, Any]):  # type: ignore
+        """
+        "field": self.field.to,
+        "fqid": fqid,
+        "origin_modified_fqid": own_fqid,
+        """
+        if len(chained_field["field"]) != 1:
+            raise NotImplementedError()
+        collection, _ = list(chained_field["field"].items())[0]
+        field_name = self.get_related_name(collection)
+        field = self.get_reverse_field(collection)
+        instance = self.datastore.fetch_model(
+            chained_field["fqid"], ["id", field_name], lock_result=True
+        )
+        instance[field_name] = None
+        return SingleRelationHandler(
+            self.datastore,
+            field,
+            field_name,
+            instance,
+        )
 
     def partition_by_collection(
         self, fqids: Iterable[FullQualifiedId]
@@ -297,7 +316,17 @@ class SingleRelationHandler:
             if fqid in add:
                 if own_fqid in rel[related_name]:
                     continue
-                new_value = rel[related_name] + [own_fqid]
+                if rel[related_name] and self.type in ("1:1", "m:1"):
+                    assert len(rel[related_name]) == 1
+                    self.chained_fields.append(
+                        {
+                            "field": self.field.to,
+                            "fqid": fqid,
+                        }
+                    )
+                    new_value = [own_fqid]
+                else:
+                    new_value = rel[related_name] + [own_fqid]
                 rel_element = FieldUpdateElement(
                     type="add", value=new_value, modified_element=own_fqid
                 )
@@ -360,6 +389,8 @@ class SingleRelationHandler:
                 )
             ):
                 # The replacement was added just now, so we have to add it to the template field.
+                if replacement in current_value:
+                    continue
                 rel_element = FieldUpdateElement(
                     type="add",
                     value=current_value + [replacement],
