@@ -90,7 +90,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_delete_no_permission(self) -> None:
+    def test_create_no_permission(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -105,7 +105,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_delete_both_permissions(self) -> None:
+    def test_create_both_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -123,7 +123,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_delete_both_permissions_self(self) -> None:
+    def test_create_both_permissions_self(self) -> None:
         self.create_meeting()
         self.user_id = 110
         self.set_models(self.permission_test_model)
@@ -141,7 +141,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_delete_no_permissions_self(self) -> None:
+    def test_create_no_permissions_self(self) -> None:
         self.create_meeting()
         self.user_id = 110
         self.set_models(self.permission_test_model)
