@@ -1,6 +1,5 @@
 from . import (  # noqa
     create,
-    update,
     delete,
     delete_all_speakers_of_all_lists,
     replace_projector_id,
@@ -8,4 +7,5 @@ from . import (  # noqa
     set_logo,
     unset_font,
     unset_logo,
+    update,
 )

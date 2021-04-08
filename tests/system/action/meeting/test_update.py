@@ -1,10 +1,16 @@
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
+from openslides_backend.action.actions.meeting.shared_meeting import (
+    meeting_projector_default_replacements,
+)
 from tests.system.action.base import BaseActionTestCase
+from tests.util import Response
 
 
 class MeetingUpdateActionTest(BaseActionTestCase):
-    def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def basic_test(
+        self, datapart: Dict[str, Any], check_200: bool = True
+    ) -> Tuple[Dict[str, Any], Response]:
         self.set_models(
             {
                 "committee/1": {"name": "test_committee"},
@@ -13,6 +19,23 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "name": "test_name",
                     "committee_id": 1,
                     "default_group_id": 1,
+                    "projector_ids": [1],
+                    "reference_projector_id": 1,
+                    "default_projector_$_id": meeting_projector_default_replacements,
+                    **{
+                        f"default_projector_${name}_id": 1
+                        for name in meeting_projector_default_replacements
+                    },
+                },
+                "projector/1": {
+                    "name": "Projector 1",
+                    "meeting_id": 1,
+                    "used_as_reference_projector_meeting_id": 1,
+                    "used_as_default_$_in_meeting_id": meeting_projector_default_replacements,
+                    **{
+                        f"used_as_default_${name}_in_meeting_id": 1
+                        for name in meeting_projector_default_replacements
+                    },
                 },
             }
         )
@@ -23,14 +46,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 **datapart,
             },
         )
-        self.assert_status_code(response, 200)
+        if check_200:
+            self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         assert meeting.get("name") == "test_name"
         assert meeting.get("committee_id") == 1
-        return meeting
+        return meeting, response
 
     def test_update_some_fields_export(self) -> None:
-        meeting = self.basic_test(
+        meeting, _ = self.basic_test(
             {
                 "export_csv_encoding": "utf-8",
                 "export_csv_separator": ",",
@@ -46,7 +70,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert meeting.get("export_pdf_pagesize") == "A4"
 
     def test_update_some_fields_user_email(self) -> None:
-        meeting = self.basic_test(
+        meeting, _ = self.basic_test(
             {
                 "users_email_sender": "test@example.com",
                 "users_email_replyto": "test2@example.com",
@@ -61,7 +85,129 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_single_relation_guest_ids(self) -> None:
         self.create_model("user/3")
-        meeting = self.basic_test({"guest_ids": [3]})
+        meeting, _ = self.basic_test({"guest_ids": [3]})
         assert meeting.get("guest_ids") == [3]
         user_3 = self.get_model("user/3")
         assert user_3.get("guest_meeting_ids") == [1]
+
+    def test_update_projector_related_fields(self) -> None:
+        self.set_models(
+            {
+                "projector/2": {
+                    "name": "Projector 2",
+                    "meeting_id": 1,
+                },
+                "meeting/1": {
+                    "projector_ids": [1, 2],
+                },
+            }
+        )
+        self.basic_test(
+            {"reference_projector_id": 2, "default_projector_$_id": {"topics": 2}}
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "reference_projector_id": 2,
+                "default_projector_$topics_id": 2,
+                "default_projector_$motion_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "projector/1",
+            {
+                "used_as_reference_projector_meeting_id": None,
+                "used_as_default_$topics_in_meeting_id": None,
+                "used_as_default_$motion_in_meeting_id": 1,
+            },
+        )
+        self.assert_model_exists(
+            "projector/2",
+            {
+                "used_as_reference_projector_meeting_id": 1,
+                "used_as_default_$topics_in_meeting_id": 1,
+                "used_as_default_$motion_in_meeting_id": None,
+            },
+        )
+
+    def test_update_reference_projector_to_null_error(self) -> None:
+        _, response = self.basic_test({"reference_projector_id": None}, check_200=False)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The reference projector can't be set to null.", response.json["message"]
+        )
+
+    def test_update_reference_projector_to_not_existing_projector_error(self) -> None:
+        _, response = self.basic_test({"reference_projector_id": 10}, check_200=False)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['projector/10']",
+            response.json["message"],
+        )
+
+    def test_update_reference_projector_to_projector_from_wrong_meeting_error(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "projector/2": {
+                    "name": "Projector 2",
+                    "meeting_id": 2,
+                },
+            }
+        )
+        _, response = self.basic_test({"reference_projector_id": 2}, check_200=False)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['projector/2']",
+            response.json["message"],
+        )
+
+    def test_update_default_projector_to_not_existing_replacement_error(self) -> None:
+        _, response = self.basic_test(
+            {"default_projector_$_id": {"not_existing": 1}}, check_200=False
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "data.default_projector_$_id must not contain {'not_existing'} properties",
+            response.json["message"],
+        )
+
+    def test_update_default_projector_to_null_error(self) -> None:
+        _, response = self.basic_test(
+            {"default_projector_$_id": {"topics": None}}, check_200=False
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The default projecor can't be set to null.", response.json["message"]
+        )
+
+    def test_update_default_projector_to_not_existing_projector_error(self) -> None:
+        _, response = self.basic_test(
+            {"default_projector_$_id": {"topics": 2}}, check_200=False
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['projector/2']",
+            response.json["message"],
+        )
+
+    def test_update_default_projector_to__projector_from_wrong_meeting_error(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "projector/2": {
+                    "name": "Projector 2",
+                    "meeting_id": 2,
+                },
+            }
+        )
+        _, response = self.basic_test(
+            {"default_projector_$_id": {"topics": 2}}, check_200=False
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['projector/2']",
+            response.json["message"],
+        )
