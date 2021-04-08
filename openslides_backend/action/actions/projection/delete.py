@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Projection
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...generics.delete import DeleteAction
@@ -16,6 +17,7 @@ class ProjectionDelete(DeleteAction):
 
     model = Projection()
     schema = DefaultSchema(Projection()).get_delete_schema()
+    permission = Permissions.Projector.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projection = self.datastore.get(

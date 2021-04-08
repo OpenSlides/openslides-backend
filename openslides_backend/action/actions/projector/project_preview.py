@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from ....models.models import Projection, Projector
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -19,6 +20,8 @@ class ProjectorProjectPreview(UpdateAction):
 
     model = Projector()
     schema = DefaultSchema(Projection()).get_update_schema()
+    permission_model = Projection()
+    permission = Permissions.Projector.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projection_id = instance.pop("id")

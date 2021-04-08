@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -81,3 +82,14 @@ class ProjectorNext(BaseActionTestCase):
         assert projector.get("current_projection_ids") == [5]
         assert projector.get("preview_projection_ids") == []
         assert projector.get("history_projection_ids") == []
+
+    def test_next_no_permissions(self) -> None:
+        self.base_permission_test({}, "projector.next", {"id": 4})
+
+    def test_next_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.next",
+            {"id": 4},
+            Permissions.Projector.CAN_MANAGE,
+        )

@@ -1,4 +1,5 @@
 from ....models.models import Projector
+from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -35,3 +36,4 @@ class ProjectorCreateAction(CreateAction):
             "used_as_default_$_in_meeting_id": used_as_default_for_schema,
         },
     )
+    permission = Permissions.Projector.CAN_MANAGE

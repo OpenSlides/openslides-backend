@@ -1,4 +1,5 @@
 from ....models.models import Projector
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -34,3 +35,4 @@ class ProjectorUpdate(UpdateAction):
             "used_as_default_$_in_meeting_id": used_as_default_for_schema,
         },
     )
+    permission = Permissions.Projector.CAN_MANAGE

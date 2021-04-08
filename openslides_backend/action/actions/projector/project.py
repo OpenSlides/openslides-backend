@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Projection, Projector
+from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator, Not
 from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
 from ....shared.schema import required_id_schema
@@ -29,6 +30,7 @@ class ProjectorProject(SingularActionMixin, UpdateAction):
         },
         title="Projector project schema",
     )
+    permission = Permissions.Projector.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)

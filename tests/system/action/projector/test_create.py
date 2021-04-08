@@ -1,4 +1,5 @@
 from openslides_backend.models.models import Projector
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -120,4 +121,25 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         self.assertIn(
             "data.used_as_default_$_in_meeting_id must not contain {'xxxtopics'} properties",
             response.json["message"],
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.create",
+            {
+                "name": "test projector",
+                "meeting_id": 1,
+            },
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.create",
+            {
+                "name": "test projector",
+                "meeting_id": 1,
+            },
+            Permissions.Projector.CAN_MANAGE,
         )

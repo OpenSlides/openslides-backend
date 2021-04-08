@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -487,3 +488,32 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "data.ids must contain unique items" in response.data.decode()
+
+    def test_project_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.project",
+            {
+                "ids": [23],
+                "content_object_id": "assignment/453",
+                "meeting_id": 1,
+                "options": {},
+                "stable": False,
+                "type": "test",
+            },
+        )
+
+    def test_project_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "projector.project",
+            {
+                "ids": [23],
+                "content_object_id": "assignment/453",
+                "meeting_id": 1,
+                "options": {},
+                "stable": False,
+                "type": "test",
+            },
+            Permissions.Projector.CAN_MANAGE,
+        )

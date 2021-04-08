@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ....models.models import Projection, Projector
+from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, string_to_fqid
 from ....shared.schema import required_id_schema
@@ -24,6 +27,7 @@ class ProjectorProject(UpdateAction):
         },
         title="Projector project schema",
     )
+    permission = Permissions.Projector.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
@@ -54,3 +58,10 @@ class ProjectorProject(UpdateAction):
         if maximum is None:
             maximum = 1
         return maximum
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        content_object = self.datastore.get(
+            string_to_fqid(instance["content_object_id"]), ["meeting_id"]
+        )
+        meeting_id = content_object["meeting_id"]
+        return meeting_id
