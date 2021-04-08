@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -22,6 +23,7 @@ class UserDeleteTemporaryActionTest(BaseActionTestCase):
         response = self.request("user.delete_temporary", {"id": 111})
 
         self.assert_status_code(response, 400)
+        self.assertIn("User 111 is not temporary.", response.json["message"])
         self.assert_model_exists("user/111")
 
     def test_delete_wrong_id(self) -> None:
@@ -30,3 +32,18 @@ class UserDeleteTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model("user/112")
         assert model.get("username") == "username_srtgb123"
+
+    def test_delete_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.delete_temporary",
+            {"id": 10},
+        )
+
+    def test_delete_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.delete_temporary",
+            {"id": 10},
+            Permissions.User.CAN_MANAGE,
+        )

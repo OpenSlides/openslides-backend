@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -211,4 +212,29 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
+        )
+
+    def test_update_not_temporary(self) -> None:
+        self.create_model("user/111", {"username": "old name"})
+        response = self.request(
+            "user.update_temporary", {"id": 111, "username": "new name"}
+        )
+
+        self.assert_status_code(response, 400)
+        self.assertIn("User 111 is not temporary.", response.json["message"])
+        self.assert_model_exists("user/111", {"username": "old name"})
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.update_temporary",
+            {"id": 10, "username": "to_change_something"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.update_temporary",
+            {"id": 10, "username": "to_change_something"},
+            Permissions.User.CAN_MANAGE,
         )

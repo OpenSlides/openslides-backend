@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -164,4 +165,19 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "user.create_temporary",
+            {"username": "permission_test_user", "meeting_id": 1},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "user.create_temporary",
+            {"username": "permission_test_user", "meeting_id": 1},
+            Permissions.User.CAN_MANAGE,
         )

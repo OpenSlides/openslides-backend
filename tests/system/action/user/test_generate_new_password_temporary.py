@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -22,3 +23,18 @@ class UserGenerateNewPasswordTemporaryActionTest(BaseActionTestCase):
         response = self.request("user.generate_new_password_temporary", {"id": 1})
         self.assert_status_code(response, 400)
         assert "User 1 is not temporary" in response.json["message"]
+
+    def test_generate_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.generate_new_password_temporary",
+            {"id": 10},
+        )
+
+    def test_generate_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.generate_new_password_temporary",
+            {"id": 10},
+            Permissions.User.CAN_MANAGE,
+        )

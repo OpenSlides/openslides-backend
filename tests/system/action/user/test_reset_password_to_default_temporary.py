@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -26,3 +27,18 @@ class UserResetPasswordToDefaultTemporaryTest(BaseActionTestCase):
         response = self.request("user.reset_password_to_default_temporary", {"id": 111})
         self.assert_status_code(response, 400)
         assert "User 111 is not temporary." in response.json["message"]
+
+    def test_reset_password_temporary_no_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.reset_password_to_default_temporary",
+            {"id": 10},
+        )
+
+    def test_reset_password_temporary_permissions(self) -> None:
+        self.base_permission_test(
+            {"user/10": {"username": "permission_test_user", "meeting_id": 1}},
+            "user.reset_password_to_default_temporary",
+            {"id": 10},
+            Permissions.User.CAN_MANAGE,
+        )

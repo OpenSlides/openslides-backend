@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ....permissions.permissions import Permissions
 from ....shared.schema import id_list_schema
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -42,6 +43,7 @@ class UserCreateTemporary(CreateAction, TemporaryUserMixin, UserMixin):
             "vote_weight": User().vote_weight_.get_schema(),
         },
     )
+    permission = Permissions.User.CAN_MANAGE
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = self.update_instance_temporary_user(instance)

@@ -1,6 +1,5 @@
-from typing import Any, Dict
-
 from ....models.models import User
+from ....permissions.permissions import Permissions
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -15,7 +14,4 @@ class UserDeleteTemporary(CheckTemporaryMixin, DeleteAction):
 
     model = User()
     schema = DefaultSchema(User()).get_delete_schema()
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        self.check_for_temporary(instance)
-        return instance
+    permission = Permissions.User.CAN_MANAGE
