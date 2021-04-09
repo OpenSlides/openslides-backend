@@ -2,6 +2,7 @@ import time
 from typing import Any, Dict
 
 from ....models.models import Motion
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
@@ -15,6 +16,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
+    permission = Permissions.Motion.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         ids = [instance["id"] for instance in action_data]
