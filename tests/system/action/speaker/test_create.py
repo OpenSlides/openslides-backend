@@ -1,7 +1,26 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
+
+DEFAULT_PASSWORD = "password"
 
 
 class SpeakerCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+            "meeting/1": {"name": "name_asdewqasd"},
+            "user/7": {
+                "username": "test_username1",
+                "meeting_id": 1,
+                "is_active": True,
+                "default_password": DEFAULT_PASSWORD,
+                "password": self.auth.hash(DEFAULT_PASSWORD),
+            },
+            "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 1},
+        }
+
     def test_create(self) -> None:
         self.set_models(
             {
@@ -278,3 +297,30 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 400)
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "speaker.create",
+            {"user_id": 7, "list_of_speakers_id": 23},
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "speaker.create",
+            {"user_id": 7, "list_of_speakers_id": 23},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
+        )
+
+    def test_create_permissions_selfadd(self) -> None:
+        self.create_meeting()
+        self.user_id = 7
+        self.set_models(self.permission_test_model)
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)

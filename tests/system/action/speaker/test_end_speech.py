@@ -1,7 +1,30 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class SpeakerEndSpeachTester(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "meeting/1": {
+                "list_of_speakers_couple_countdown": True,
+                "list_of_speakers_countdown_id": 11,
+            },
+            "projector_countdown/11": {
+                "running": True,
+                "default_time": 60,
+                "countdown_time": 31.0,
+            },
+            "user/7": {"username": "test_username1"},
+            "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+            "speaker/890": {
+                "user_id": 7,
+                "list_of_speakers_id": 23,
+                "begin_time": 10000,
+                "meeting_id": 1,
+            },
+        }
+
     def test_correct(self) -> None:
         self.set_models(
             {
@@ -52,13 +75,15 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_existing_speaker(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890]},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
                     "begin_time": 100000,
                     "end_time": 200000,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -74,9 +99,14 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_existing_speaker_2(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890]},
-                "speaker/890": {"user_id": 7, "list_of_speakers_id": 23},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request("speaker.end_speech", {"id": 890})
@@ -115,3 +145,16 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         countdown = self.get_model("projector_countdown/11")
         assert countdown.get("running") is False
         assert countdown.get("countdown_time") == 60
+
+    def test_end_speech_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model, "speaker.end_speech", {"id": 890}
+        )
+
+    def test_end_speech_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "speaker.end_speech",
+            {"id": 890},
+            Permissions.ListOfSpeakers.CAN_MANAGE,
+        )

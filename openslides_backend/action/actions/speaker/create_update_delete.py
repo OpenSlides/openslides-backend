@@ -1,7 +1,9 @@
 from typing import Any, Dict, List, Optional
 
 from ....models.models import Speaker
-from ....shared.exceptions import ActionException
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
@@ -179,14 +181,37 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 )
         return super().validate_fields(instance)
 
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        if instance.get("user_id") == self.user_id:
+            permission = Permissions.ListOfSpeakers.CAN_BE_SPEAKER
+        else:
+            permission = Permissions.ListOfSpeakers.CAN_MANAGE
+
+        meeting_id = self.get_meeting_id(instance)
+        if has_perm(self.datastore, self.user_id, permission, meeting_id):
+            return
+        msg = f"You are not allowed to perform action {self.name}."
+        msg += f" Missing permission: {permission}"
+        raise PermissionDenied(msg)
+
 
 @register_action("speaker.update")
 class SpeakerUpdate(UpdateAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(["marked"])
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
 
 @register_action("speaker.delete")
 class SpeakerDeleteAction(DeleteAction):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_delete_schema()
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        speaker = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["id"]), ["user_id"]
+        )
+        if speaker.get("user_id") == self.user_id:
+            return
+        super().check_permissions(instance)
