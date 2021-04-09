@@ -1,4 +1,5 @@
-from ....models.models import AssignmentCandidate
+from ....models.models import Assignment, AssignmentCandidate
+from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -18,6 +19,9 @@ class AssignmentCandidateSort(LinearSortMixin, SingularActionMixin, UpdateAction
         "candidate_ids",
         "assignment_id",
     )
+    permission_model = Assignment()
+    permission_id = "assignment_id"
+    permission = Permissions.Assignment.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)
