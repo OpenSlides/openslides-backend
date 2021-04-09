@@ -2,6 +2,7 @@ import time
 from typing import Any, Dict
 
 from ....models.models import Motion
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
@@ -17,6 +18,7 @@ class MotionSetRecommendationAction(UpdateAction):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema(["recommendation_id"])
+    permission = Permissions.Motion.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
