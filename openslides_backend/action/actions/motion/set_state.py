@@ -4,17 +4,17 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionHelperMixin
 from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.set_state")
-class MotionSetStateAction(UpdateAction, SetNumberMixin):
+class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
     """
     Set the state in a motion.
     """
@@ -86,15 +86,10 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin):
             FullQualifiedId(Collection("motion_state"), motion["state_id"]),
             ["allow_submitter_edit"],
         )
-        if state.get("allow_submitter_edit"):
-            get_many_request = GetManyRequest(
-                Collection("motion_submitter"), motion["submitter_ids"], ["user_id"]
-            )
-            result = self.datastore.get_many([get_many_request])
-            submitters = result.get(Collection("motion_submitter"), {}).values()
-            for submitter in submitters:
-                if self.user_id == submitter.get("user_id"):
-                    return
+        if state.get("allow_submitter_edit") and self.is_user_submitter(
+            motion["submitter_ids"]
+        ):
+            return
 
         msg = "You are not allowed to perform action {self.name}."
         msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE_METADATA}"
