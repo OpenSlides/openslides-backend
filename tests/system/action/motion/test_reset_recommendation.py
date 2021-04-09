@@ -8,17 +8,17 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
-                "motion_state/77": {
-                    "meeting_id": 1,
-                    "name": "test1",
-                    "motion_recommendation_ids": [22],
-                },
-                "motion/22": {
-                    "meeting_id": 1,
-                    "title": "test1",
-                    "recommendation_id": 77,
-                },
-            }
+            "motion_state/77": {
+                "meeting_id": 1,
+                "name": "test1",
+                "motion_recommendation_ids": [22],
+            },
+            "motion/22": {
+                "meeting_id": 1,
+                "title": "test1",
+                "recommendation_id": 77,
+            },
+        }
 
     def test_reset_recommendation_correct(self) -> None:
         check_time = round(time.time())
