@@ -6,17 +6,17 @@ from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .check_temporary_mixin import CheckTemporaryMixin
+from .check_temporary_mixin import CheckTemporaryYesForInstanceMixin
 from .temporary_user_mixin import TemporaryUserMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.update_temporary")
 class UserUpdateTemporary(
-    UpdateAction, TemporaryUserMixin, CheckTemporaryMixin, UserMixin
+    UpdateAction, TemporaryUserMixin, CheckTemporaryYesForInstanceMixin, UserMixin
 ):
     """
-    Action to update a user.
+    Action to update a temporary user.
     """
 
     model = User()

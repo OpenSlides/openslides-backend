@@ -75,7 +75,7 @@ class UserDeleteActionTest(BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "User 111 is a temporary user. Use user.delete_temporary to delete him.",
+            "User 111 in payload may not be a temporary user.",
             response.json["message"],
         )
         self.assert_model_exists("user/111")

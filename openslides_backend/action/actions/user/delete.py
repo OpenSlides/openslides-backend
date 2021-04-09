@@ -1,20 +1,18 @@
 from typing import Any, Dict
 
-from openslides_backend.permissions.permission_helper import (
-    has_organisation_management_level,
-    is_temporary,
-)
+from openslides_backend.permissions.permission_helper import is_temporary
 from openslides_backend.permissions.permissions import OrganisationManagementLevel
-from openslides_backend.shared.exceptions import ActionException, PermissionDenied
+from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import User
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 
 
 @register_action("user.delete")
-class UserDelete(DeleteAction):
+class UserDelete(CheckTemporaryNoForInstanceMixin, DeleteAction):
     """
     Action to delete a user.
     """

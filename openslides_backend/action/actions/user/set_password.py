@@ -1,8 +1,7 @@
 from typing import Any, Dict
 
-from openslides_backend.permissions.permissions import OrganisationManagementLevel
-
 from ....models.models import User
+from ....permissions.permissions import OrganisationManagementLevel
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action

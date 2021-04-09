@@ -10,7 +10,7 @@ from .user_mixin import UserMixin
 
 
 @register_action("user.update_self")
-class UserUpdate(UpdateAction, UserMixin):
+class UserUpdateSelf(UpdateAction, UserMixin):
     """
     Action to self update a user.
     """

@@ -6,11 +6,12 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.update")
-class UserUpdate(UpdateAction, UserMixin):
+class UserUpdate(CheckTemporaryNoForInstanceMixin, UpdateAction, UserMixin):
     """
     Action to update a user.
     """

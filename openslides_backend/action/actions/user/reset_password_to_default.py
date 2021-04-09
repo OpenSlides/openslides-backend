@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ....permissions.permissions import OrganisationManagementLevel
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -28,3 +29,4 @@ class UserResetPasswordToDefaultAction(UserResetPasswordToDefaultMixin):
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
+    permission = OrganisationManagementLevel.CAN_MANAGE_USERS

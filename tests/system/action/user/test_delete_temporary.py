@@ -23,7 +23,7 @@ class UserDeleteTemporaryActionTest(BaseActionTestCase):
         response = self.request("user.delete_temporary", {"id": 111})
 
         self.assert_status_code(response, 400)
-        self.assertIn("User 111 is not temporary.", response.json["message"])
+        self.assertIn("User 111 in payload is not temporary.", response.json["message"])
         self.assert_model_exists("user/111")
 
     def test_delete_wrong_id(self) -> None:

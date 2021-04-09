@@ -2,12 +2,14 @@ from ....models.models import User
 from ....permissions.permissions import Permissions
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .check_temporary_mixin import CheckTemporaryMixin
+from .check_temporary_mixin import CheckTemporaryYesForInstanceMixin
 from .set_password import UserSetPasswordMixin
 
 
 @register_action("user.set_password_temporary")
-class UserSetPasswordTemporaryAction(CheckTemporaryMixin, UserSetPasswordMixin):
+class UserSetPasswordTemporaryAction(
+    CheckTemporaryYesForInstanceMixin, UserSetPasswordMixin
+):
     """
     Action to set the password of a temporary user.
     """

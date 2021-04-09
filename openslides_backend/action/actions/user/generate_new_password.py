@@ -1,10 +1,13 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ....permissions.permissions import OrganisationManagementLevel
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordAction
+from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
+from .set_password import UserSetPasswordMixin
 
 
 class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
@@ -19,6 +22,9 @@ class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
 
 
 @register_action("user.generate_new_password")
-class UserGenerateNewPassword(UserGenerateNewPasswordMixin):
+class UserGenerateNewPassword(
+    CheckTemporaryNoForInstanceMixin, UserGenerateNewPasswordMixin
+):
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
+    permission = OrganisationManagementLevel.CAN_MANAGE_USERS

@@ -2,13 +2,13 @@ from ....models.models import User
 from ....permissions.permissions import Permissions
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .check_temporary_mixin import CheckTemporaryMixin
-from .reset_password_to_default import UserResetPasswordToDefaultAction
+from .check_temporary_mixin import CheckTemporaryYesForInstanceMixin
+from .reset_password_to_default import UserResetPasswordToDefaultMixin
 
 
 @register_action("user.reset_password_to_default_temporary")
 class UserResetPasswordToDefaultTemporaryAction(
-    CheckTemporaryMixin, UserResetPasswordToDefaultAction
+    CheckTemporaryYesForInstanceMixin, UserResetPasswordToDefaultMixin
 ):
     """
     Action to reset a password to default of a temporary user.

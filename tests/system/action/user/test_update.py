@@ -128,6 +128,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 5, "username": "username5"})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Please use Action user.update_temporary for temporary user",
+            "User 5 in payload may not be a temporary user.",
             response.json["message"],
         )

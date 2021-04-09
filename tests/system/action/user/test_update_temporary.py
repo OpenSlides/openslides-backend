@@ -232,7 +232,7 @@ class UserUpdateTemporaryActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 400)
-        self.assertIn("User 111 is not temporary.", response.json["message"])
+        self.assertIn("User 111 in payload is not temporary.", response.json["message"])
         self.assert_model_exists("user/111", {"username": "old name"})
 
     def test_update_no_permissions(self) -> None:
