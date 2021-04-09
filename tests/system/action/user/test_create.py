@@ -205,7 +205,7 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request("user.create", {"username": "test_Xcdfgee"})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing Organisation Management Level: can_manage_users",
+            "You are not allowed to perform action user.create. Missing permission: can_manage_users",
             response.json["message"],
         )
 

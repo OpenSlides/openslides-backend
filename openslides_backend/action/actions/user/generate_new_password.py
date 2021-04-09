@@ -7,11 +7,7 @@ from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordAction
 
 
-@register_action("user.generate_new_password")
-class UserGenerateNewPassword(UserSetPasswordAction):
-
-    schema = DefaultSchema(User()).get_update_schema()
-
+class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generates new password and call the super code.
@@ -20,3 +16,9 @@ class UserGenerateNewPassword(UserSetPasswordAction):
         instance["password"] = new_password
         instance["set_as_default"] = True
         return super().update_instance(instance)
+
+
+@register_action("user.generate_new_password")
+class UserGenerateNewPassword(UserGenerateNewPasswordMixin):
+    model = User()
+    schema = DefaultSchema(User()).get_update_schema()

@@ -1,23 +1,14 @@
 from typing import Any, Dict
 
+from openslides_backend.permissions.permissions import OrganisationManagementLevel
+
 from ....models.models import User
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("user.set_password")
-class UserSetPasswordAction(UpdateAction):
-    """
-    Action to set the password and default_pasword.
-    """
-
-    model = User()
-    schema = DefaultSchema(User()).get_update_schema(
-        required_properties=["password"],
-        additional_optional_fields={"set_as_default": {"type": "boolean"}},
-    )
-
+class UserSetPasswordMixin(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         set hashed password and set default password if set_as_default is True.
@@ -31,3 +22,17 @@ class UserSetPasswordAction(UpdateAction):
         if set_as_default:
             instance["default_password"] = password
         return instance
+
+
+@register_action("user.set_password")
+class UserSetPasswordAction(UserSetPasswordMixin):
+    """
+    Action to set the password and default_pasword.
+    """
+
+    model = User()
+    schema = DefaultSchema(User()).get_update_schema(
+        required_properties=["password"],
+        additional_optional_fields={"set_as_default": {"type": "boolean"}},
+    )
+    permission = OrganisationManagementLevel.CAN_MANAGE_USERS

@@ -21,15 +21,7 @@ class UserDelete(DeleteAction):
 
     model = User()
     schema = DefaultSchema(User()).get_delete_schema()
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if has_organisation_management_level(
-            self.datastore, self.user_id, OrganisationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
-
-        msg = f"You are not allowed to perform action {self.name}. Missing Organisation Management Level: {OrganisationManagementLevel.CAN_MANAGE_USERS}"
-        raise PermissionDenied(msg)
+    permission = OrganisationManagementLevel.CAN_MANAGE_USERS
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if is_temporary(self.datastore, instance):

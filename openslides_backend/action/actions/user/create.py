@@ -51,6 +51,8 @@ class UserCreate(CreateAction, UserMixin, PasswordCreateMixin):
         ],
     )
 
+    permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if not instance.get("default_password"):
             instance = self.generate_and_set_password(instance)

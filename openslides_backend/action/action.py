@@ -1,12 +1,23 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import fastjsonschema
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
-from ..permissions.permission_helper import has_perm
-from ..permissions.permissions import Permission
+from ..permissions.permission_helper import has_organisation_management_level, has_perm
+from ..permissions.permissions import OrganisationManagementLevel, Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
@@ -69,7 +80,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema_validator: Callable[[Dict[str, Any]], None]
     is_singular: bool = False
     internal: bool = False
-    permission: Optional[Permission] = None
+    permission: Optional[Union[Permission, OrganisationManagementLevel]] = None
     permission_model: Optional[Model] = None
     permission_id: Optional[str] = None
     relation_manager: RelationManager
@@ -147,9 +158,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         # switch between internal and external permission service
         if self.permission:
-            meeting_id = self.get_meeting_id(instance)
-            if has_perm(self.datastore, self.user_id, self.permission, meeting_id):
-                return
+            if type(self.permission) == OrganisationManagementLevel:
+                if has_organisation_management_level(
+                    self.datastore,
+                    self.user_id,
+                    cast(OrganisationManagementLevel, self.permission),
+                ):
+                    return
+            else:
+                meeting_id = self.get_meeting_id(instance)
+                if has_perm(
+                    self.datastore,
+                    self.user_id,
+                    cast(Permission, self.permission),
+                    meeting_id,
+                ):
+                    return
         else:
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
