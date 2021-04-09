@@ -1,9 +1,25 @@
 import time
 
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionResetRecommendationActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+                "motion_state/77": {
+                    "meeting_id": 1,
+                    "name": "test1",
+                    "motion_recommendation_ids": [22],
+                },
+                "motion/22": {
+                    "meeting_id": 1,
+                    "title": "test1",
+                    "recommendation_id": 77,
+                },
+            }
+
     def test_reset_recommendation_correct(self) -> None:
         check_time = round(time.time())
         self.set_models(
@@ -67,3 +83,18 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
         response = self.request("motion.reset_recommendation", {"id": 22})
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("motion/22")
+
+    def test_reset_recommendation_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.reset_recommendation",
+            {"id": 22},
+        )
+
+    def test_reset_recommendation_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.reset_recommendation",
+            {"id": 22},
+            Permissions.Motion.CAN_MANAGE,
+        )
