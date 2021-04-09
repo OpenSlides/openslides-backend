@@ -1,4 +1,5 @@
 from ....models.models import Motion
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection
@@ -24,6 +25,8 @@ class MotionSetSupportSelfAction(UpdateAction):
             "support": {"type": "boolean"},
         },
     )
+    permission_id = "motion_id"
+    permission = Permissions.Motion.CAN_SUPPORT
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         motion_get_many_request = GetManyRequest(
