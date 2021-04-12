@@ -15,12 +15,13 @@ class UserMixin(Action):
         instance = super().update_instance(instance)
         user_fqid = FullQualifiedId(Collection("user"), instance["id"])
         if "username" in instance:
-            exists = self.datastore.exists(
+            result = self.datastore.filter(
                 Collection("user"),
                 FilterOperator("username", "=", instance["username"]),
+                ["id"],
                 lock_result=True,
             )
-            if exists:
+            if result and instance["id"] not in result.keys():
                 raise ActionException(
                     f"A user with the username {instance['username']} already exists."
                 )
