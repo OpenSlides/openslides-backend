@@ -424,9 +424,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(
-            3, [Permissions.Motion.CAN_CREATE]
-        )
+        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
         self.set_models(self.permission_test_model)
         self.set_models({"motion/3": {"meeting_id": 1}})
         response = self.request(
