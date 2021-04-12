@@ -1,9 +1,11 @@
 import re
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.models import Motion
-from ....shared.exceptions import ActionException
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.patterns import (
     KEYSEPARATOR,
@@ -15,12 +17,13 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionHelperMixin
 
 RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction):
+class MotionUpdate(UpdateAction, PermissionHelperMixin):
     """
     Action to update motions.
     """
@@ -121,3 +124,58 @@ class MotionUpdate(UpdateAction):
         instance[
             "recommendation_extension_reference_ids"
         ] = recommendation_extension_reference_ids
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        motion = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["id"]),
+            ["meeting_id", "state_id", "submitter_ids"],
+        )
+
+        # check for can_manage, all allowed
+        perm = Permissions.Motion.CAN_MANAGE
+        if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
+            return
+
+        # check for can_manage_metadata and whitelist
+        perm = Permissions.Motion.CAN_MANAGE_METADATA
+        whitelist = [
+            "category_id",
+            "motion_block_id",
+            "origin",
+            "supporters_id",
+            "recommendation_extension",
+            "id",
+        ]
+        if has_perm(
+            self.datastore, self.user_id, perm, motion["meeting_id"]
+        ) and self.check_whitelist(instance, whitelist):
+            return
+
+        # check for self submitter and whitelist
+        state = self.datastore.get(
+            FullQualifiedId(Collection("motion_state"), motion["state_id"]),
+            ["allow_submitter_edit"],
+        )
+        whitelist = [
+            "title",
+            "text",
+            "reason",
+            "amendment_paragraph_$",
+            "id",
+        ]
+        if (
+            state.get("allow_submitter_edit")
+            and self.is_user_submitter(motion["submitter_ids"])
+            and self.check_whitelist(instance, whitelist)
+        ):
+            return
+
+        msg = f"You are not allowed to perform action {self.name}."
+        msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE}"
+        raise PermissionDenied(msg)
+
+    def check_whitelist(self, instance: Dict[str, Any], whitelist: List[str]) -> bool:
+        for field in instance:
+            if field not in whitelist:
+                return False
+        return True
