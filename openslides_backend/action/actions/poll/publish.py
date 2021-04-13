@@ -6,10 +6,11 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PollPermissionMixin
 
 
 @register_action("poll.publish")
-class PollPublishAction(UpdateAction):
+class PollPublishAction(UpdateAction, PollPermissionMixin):
     """
     Action to publish a poll.
     """

@@ -1,5 +1,6 @@
 import openslides_backend.action.actions  # noqa
 from openslides_backend.models.models import Poll
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -12,7 +13,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
                 },
-                "meeting/113": {"name": "my meeting"},
+                "meeting/1": {"name": "my meeting"},
                 "organisation/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1], "poll_ids": [1]},
                 "poll/1": {
@@ -23,16 +24,16 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "onehundred_percent_base": "Y",
                     "majority_method": "simple",
                     "state": Poll.STATE_CREATED,
-                    "meeting_id": 113,
+                    "meeting_id": 1,
                     "option_ids": [1, 2],
                     "entitled_group_ids": [1],
                 },
-                "option/1": {"meeting_id": 113, "poll_id": 1},
-                "option/2": {"meeting_id": 113, "poll_id": 1},
+                "option/1": {"meeting_id": 1, "poll_id": 1},
+                "option/2": {"meeting_id": 1, "poll_id": 1},
                 "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "is_present_in_meeting_ids": [1],
+                    "group_$1_ids": [1],
+                    "group_$_ids": ["1"],
                 },
             }
         )
@@ -150,7 +151,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert poll.get("entitled_group_ids") == []
 
     def test_update_groups(self) -> None:
-        self.create_model("group/2", {"meeting_id": 113, "poll_ids": []})
+        self.create_model("group/2", {"meeting_id": 1, "poll_ids": []})
         response = self.request(
             "poll.update",
             {"entitled_group_ids": [2], "id": 1},
@@ -285,3 +286,18 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == Poll.STATE_PUBLISHED
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.update",
+            {"title": "test_title_Aishohh1ohd0aiSut7gi", "id": 1},
+            Permissions.Assignment.CAN_MANAGE,
+        )

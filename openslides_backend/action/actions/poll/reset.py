@@ -8,10 +8,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.delete import VoteDelete
+from .mixins import PollPermissionMixin
 
 
 @register_action("poll.reset")
-class PollResetAction(UpdateAction):
+class PollResetAction(UpdateAction, PollPermissionMixin):
     """
     Action to reset a poll.
     """

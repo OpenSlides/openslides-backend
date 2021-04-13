@@ -7,10 +7,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..projector_countdown.mixins import CountdownControl
+from .mixins import PollPermissionMixin
 
 
 @register_action("poll.stop")
-class PollStopAction(CountdownControl, UpdateAction):
+class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
     """
     Action to stop a poll.
     """
