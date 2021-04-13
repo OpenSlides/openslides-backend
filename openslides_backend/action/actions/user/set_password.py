@@ -5,6 +5,7 @@ from ....permissions.permissions import OrganisationManagementLevel
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 
 
 class UserSetPasswordMixin(UpdateAction):
@@ -24,7 +25,7 @@ class UserSetPasswordMixin(UpdateAction):
 
 
 @register_action("user.set_password")
-class UserSetPasswordAction(UserSetPasswordMixin):
+class UserSetPasswordAction(CheckTemporaryNoForInstanceMixin, UserSetPasswordMixin):
     """
     Action to set the password and default_pasword.
     """

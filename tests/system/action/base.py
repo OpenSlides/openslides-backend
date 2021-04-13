@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, cast
 
 from openslides_backend.action.util.typing import Payload
 from openslides_backend.permissions.permissions import (
@@ -47,28 +47,29 @@ class BaseActionTestCase(BaseSystemTestCase):
         client = self.client if not anonymous else self.anon_client
         return client.post("/", json=payload)
 
-    def create_meeting(self) -> None:
+    def create_meeting(self, base:int = 1) -> None:
         """
-        Creates meeting with id 1 and groups with ids 1, 2, 3.
+        Creates meeting with id 1 and groups with ids 1, 2, 3 by default.
+        With base you can setup other meetings, but be cautious because of group-ids
         The groups have no permissions and no users by default.
         """
         self.set_models(
             {
-                "meeting/1": {
-                    "group_ids": [1, 2, 3],
-                    "default_group_id": 1,
-                    "admin_group_id": 2,
+                f"meeting/{base}": {
+                    "group_ids": [base, base+1, base+2],
+                    "default_group_id": base,
+                    "admin_group_id": base+1,
                 },
-                "group/1": {
-                    "meeting_id": 1,
-                    "default_group_for_meeting_id": 1,
+                f"group/{base}": {
+                    "meeting_id": base,
+                    "default_group_for_meeting_id": base,
                 },
-                "group/2": {
-                    "meeting_id": 1,
-                    "admin_group_for_meeting_id": 1,
+                f"group/{base+1}": {
+                    "meeting_id": base,
+                    "admin_group_for_meeting_id": base,
                 },
-                "group/3": {
-                    "meeting_id": 1,
+                f"group/{base+2}": {
+                    "meeting_id": base,
                 },
             }
         )
@@ -202,14 +203,19 @@ class BaseActionTestCase(BaseSystemTestCase):
         models: Dict[str, Any],
         action: str,
         action_data: Dict[str, Any],
-        permission: Optional[Permission] = None,
+        permission: Optional[Union[Permission, OrganisationManagementLevel]] = None,
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         if permission:
-            self.set_group_permissions(3, [permission])
+            if type(permission) == OrganisationManagementLevel:
+                self.set_management_level(
+                    cast(OrganisationManagementLevel, permission), self.user_id
+                )
+            else:
+                self.set_group_permissions(3, [cast(Permission, permission)])
         if models:
             self.set_models(models)
         response = self.request(action, action_data)

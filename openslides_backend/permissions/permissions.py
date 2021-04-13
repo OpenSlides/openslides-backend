@@ -11,6 +11,19 @@ class OrganisationManagementLevel(str, Enum):
     CAN_MANAGE_USERS = "can_manage_users"
     CAN_MANAGE_ORGANISATION = "can_manage_organisation"
 
+    @classmethod
+    def get_level_number(
+        cls, oml: "OrganisationManagementLevel", default_level:int=0
+    ) -> int:
+        return OrganisationManagementLevel_numbers.get(oml, default_level)
+
+
+OrganisationManagementLevel_numbers = {
+    OrganisationManagementLevel.SUPERADMIN: 3,
+    OrganisationManagementLevel.CAN_MANAGE_ORGANISATION: 2,
+    OrganisationManagementLevel.CAN_MANAGE_USERS: 1,
+}
+
 
 class Permission(str):
     """ Marker class to use typing with permissions. """

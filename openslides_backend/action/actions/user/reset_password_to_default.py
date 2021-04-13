@@ -6,6 +6,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 
 
 class UserResetPasswordToDefaultMixin(UpdateAction):
@@ -13,6 +14,7 @@ class UserResetPasswordToDefaultMixin(UpdateAction):
         """
         Gets the default_password and reset password.
         """
+        instance = super().update_instance(instance)
         user = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["default_password"]
         )
@@ -22,7 +24,9 @@ class UserResetPasswordToDefaultMixin(UpdateAction):
 
 
 @register_action("user.reset_password_to_default")
-class UserResetPasswordToDefaultAction(UserResetPasswordToDefaultMixin):
+class UserResetPasswordToDefaultAction(
+    CheckTemporaryNoForInstanceMixin, UserResetPasswordToDefaultMixin
+):
     """
     Action to reset a password to default of a user.
     """
