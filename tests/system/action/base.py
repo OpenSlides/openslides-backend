@@ -47,7 +47,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         client = self.client if not anonymous else self.anon_client
         return client.post("/", json=payload)
 
-    def create_meeting(self, base:int = 1) -> None:
+    def create_meeting(self, base: int = 1) -> None:
         """
         Creates meeting with id 1 and groups with ids 1, 2, 3 by default.
         With base you can setup other meetings, but be cautious because of group-ids
@@ -56,9 +56,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_models(
             {
                 f"meeting/{base}": {
-                    "group_ids": [base, base+1, base+2],
+                    "group_ids": [base, base + 1, base + 2],
                     "default_group_id": base,
-                    "admin_group_id": base+1,
+                    "admin_group_id": base + 1,
                 },
                 f"group/{base}": {
                     "meeting_id": base,

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Set, Tuple, Union
+from typing import Any, Dict, Set, Tuple, cast
 
 from ....models.models import User
 from ....permissions.permission_helper import has_perm
@@ -7,7 +7,7 @@ from ....permissions.permissions import (
     Permission,
     Permissions,
 )
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -102,20 +102,26 @@ class UserUpdate(CheckTemporaryNoForInstanceMixin, UpdateAction, UserMixin):
             return
 
         actual_oml_level_number = OrganisationManagementLevel.get_level_number(
-            actual_oml_level
+            cast(OrganisationManagementLevel, actual_oml_level)
         )
-        if "organisation_management_level" in instance and OrganisationManagementLevel.get_level_number(instance["organisation_management_level"]) > actual_oml_level_number:
-            raise PermissionDenied(f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
-        )
-
+        if (
+            "organisation_management_level" in instance
+            and OrganisationManagementLevel.get_level_number(
+                instance["organisation_management_level"]
+            )
+            > actual_oml_level_number
+        ):
+            raise PermissionDenied(
+                f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
+            )
 
         necessary_permissions: Set[Tuple[Permission, int]] = set()
-        missing_rights: Set[Union[OrganisationManagementLevel, Permission]] = set()
-        potentially_missing_rights: Set[OrganisationManagementLevel] = set()
+        missing_rights: Set[str] = set()
+        potentially_missing_rights: Set[str] = set()
 
         for fieldname, value in instance.items():
             oml_right = False
-            temp_missing_rights = set()
+            temp_missing_rights: Set[str] = set()
             for right in self.field_rights.get(fieldname, []):
                 if type(right) == OrganisationManagementLevel:
                     if (
@@ -127,7 +133,9 @@ class UserUpdate(CheckTemporaryNoForInstanceMixin, UpdateAction, UserMixin):
                         oml_right = True
                         break
                 else:
-                    potentially_missing_rights = potentially_missing_rights.union(temp_missing_rights)
+                    potentially_missing_rights = potentially_missing_rights.union(
+                        temp_missing_rights
+                    )
                     temp_missing_rights = set()
                     for meeting_id in value.keys():
                         necessary_permissions.add((right, int(meeting_id)))

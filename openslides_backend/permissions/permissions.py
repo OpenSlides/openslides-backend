@@ -13,7 +13,7 @@ class OrganisationManagementLevel(str, Enum):
 
     @classmethod
     def get_level_number(
-        cls, oml: "OrganisationManagementLevel", default_level:int=0
+        cls, oml: "OrganisationManagementLevel", default_level: int = 0
     ) -> int:
         return OrganisationManagementLevel_numbers.get(oml, default_level)
 
