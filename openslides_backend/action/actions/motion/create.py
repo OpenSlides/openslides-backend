@@ -181,7 +181,7 @@ class MotionCreate(
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        # Check can create amendment if needed.
+        # Check can create amendment if needed else check can_create
         if instance.get("lead_motion_id"):
             perm = Permissions.Motion.CAN_CREATE_AMENDMENTS
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
@@ -189,12 +189,12 @@ class MotionCreate(
                 msg += f" Missing permission: {perm}"
                 raise PermissionDenied(msg)
 
-        # general check can create
-        perm = Permissions.Motion.CAN_CREATE
-        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-            msg = f"You are not allowed to perform action {self.name}."
-            msg += f" Missing permission: {perm}"
-            raise PermissionDenied(msg)
+        else:
+            perm = Permissions.Motion.CAN_CREATE
+            if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+                msg = f"You are not allowed to perform action {self.name}."
+                msg += f" Missing permission: {perm}"
+                raise PermissionDenied(msg)
 
         # if not can manage whitelist the fields.
         perm = Permissions.Motion.CAN_MANAGE
