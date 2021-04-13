@@ -1,9 +1,11 @@
 from typing import Any, Dict, List, Optional, Tuple
 
 from ....models.models import Option, Poll
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -110,6 +112,8 @@ class OptionUpdateAction(UpdateAction):
                     "global_yes",
                     "global_no",
                     "global_abstain",
+                    "meeting_id",
+                    "content_object_id",
                 ],
             ),
             option,
@@ -191,3 +195,21 @@ class OptionUpdateAction(UpdateAction):
         if instance.get("Y") or instance.get("N") or instance.get("A"):
             return True
         return False
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        _, poll, _ = self._get_poll(instance["id"])
+        content_object_id = poll.get("content_object_id", "")
+        meeting_id = poll["meeting_id"]
+
+        if content_object_id.startswith("motion" + KEYSEPARATOR):
+            self._check_perm(Permissions.Motion.CAN_MANAGE_POLLS, meeting_id)
+        elif content_object_id.startswith("assignment" + KEYSEPARATOR):
+            self._check_perm(Permissions.Assignment.CAN_MANAGE, meeting_id)
+        else:
+            self._check_perm(Permissions.Poll.CAN_MANAGE, meeting_id)
+
+    def _check_perm(self, perm: Permission, meeting_id: int) -> None:
+        if not has_perm(self.datastore, self.user_id, perm, meeting_id):
+            msg = f"You are not allowed to perform action {self.name}."
+            msg += f" Missing permission: {perm}"
+            raise PermissionDenied(msg)

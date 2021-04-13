@@ -1,7 +1,34 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class OptionUpdateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "poll/65": {
+                "type": "analog",
+                "state": "created",
+                "pollmethod": "YNA",
+                "meeting_id": 1,
+                "option_ids": [57],
+            },
+            "option/57": {
+                "yes": "0.000000",
+                "no": "0.000000",
+                "abstain": "0.000000",
+                "meeting_id": 1,
+                "poll_id": 65,
+                "vote_ids": [22],
+            },
+            "vote/22": {
+                "value": "Y",
+                "weight": "0.000000",
+                "meeting_id": 1,
+                "option_id": 57,
+            },
+        }
+
     def test_update(self) -> None:
         self.set_models(
             {
@@ -123,3 +150,18 @@ class OptionUpdateActionTest(BaseActionTestCase):
         assert option.get("yes") == "1.000000"
         assert option.get("no") == "2.000000"
         assert option.get("abstain") == "3.000000"
+
+    def test_update_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "option.update",
+            {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
+        )
+
+    def test_update_permissions(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "option.update",
+            {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
+            Permissions.Poll.CAN_MANAGE,
+        )
