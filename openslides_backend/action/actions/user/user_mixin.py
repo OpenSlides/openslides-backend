@@ -133,6 +133,7 @@ class UserMixin(Action):
                     reduce(
                         (lambda x, y: x + y),  # type: ignore
                         instance["vote_delegations_$_from_ids"].values(),
+                        [],
                     )
                 )
             )
