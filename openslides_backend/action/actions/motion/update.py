@@ -152,10 +152,6 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             return
 
         # check for self submitter and whitelist
-        state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), motion["state_id"]),
-            ["allow_submitter_edit"],
-        )
         whitelist = [
             "title",
             "text",
@@ -163,11 +159,9 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "amendment_paragraph_$",
             "id",
         ]
-        if (
-            state.get("allow_submitter_edit")
-            and self.is_user_submitter(motion["submitter_ids"])
-            and self.check_whitelist(instance, whitelist)
-        ):
+        if self.is_allowed_and_submitter(
+            motion["submitter_ids"], motion["state_id"]
+        ) and self.check_whitelist(instance, whitelist):
             return
 
         msg = f"You are not allowed to perform action {self.name}."

@@ -31,6 +31,7 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
                 "state_id": 77,
                 "recommendation_id": 76,
                 "recommendation_extension": "test_test_test",
+                "submitter_ids": [],
             },
         }
 

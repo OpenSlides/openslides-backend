@@ -82,13 +82,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         ):
             return
 
-        state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), motion["state_id"]),
-            ["allow_submitter_edit"],
-        )
-        if state.get("allow_submitter_edit") and self.is_user_submitter(
-            motion["submitter_ids"]
-        ):
+        if self.is_allowed_and_submitter(motion["submitter_ids"], motion["state_id"]):
             return
 
         msg = "You are not allowed to perform action {self.name}."
