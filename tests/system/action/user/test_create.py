@@ -181,6 +181,6 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request("user.create", {"username": ""})
         self.assert_status_code(response, 400)
         self.assertIn(
-            'data.username must be longer than or equal to 1 characters',
+            "data.username must be longer than or equal to 1 characters",
             response.json["message"],
         )
