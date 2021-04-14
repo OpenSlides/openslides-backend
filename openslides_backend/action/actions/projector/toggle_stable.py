@@ -2,6 +2,8 @@ from typing import Any, Dict
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
+from ....shared.exceptions import PermissionDenied
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
@@ -53,19 +55,27 @@ class ProjectorToggleStable(UpdateAction):
                     for id_ in results:
                         self.execute_other_action(ProjectionDelete, [{"id": id_}])
                 else:
+                    projector = self.datastore.get(
+                        FullQualifiedId(self.model.collection, projector_id),
+                        ["meeting_id"],
+                    )
                     data: Dict[str, Any] = {
                         "current_projector_id": projector_id,
                         "stable": True,
                         "type": instance.get("type"),
                         "content_object_id": instance["content_object_id"],
                         "options": instance.get("options"),
-                        "meeting_id": self.get_meeting_id(instance),
+                        "meeting_id": projector["meeting_id"],
                     }
                     self.execute_other_action(ProjectionCreate, [data])
         return []
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        projector = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["ids"][0]), ["meeting_id"]
-        )
-        return projector["meeting_id"]
+        gmr = GetManyRequest(self.model.collection, instance["ids"], ["meeting_id"])
+        result = self.datastore.get_many([gmr])
+        projectors = list(result.get(self.model.collection, {}).values())
+        meeting_id = projectors[0]["meeting_id"]
+        for projector in projectors:
+            if meeting_id != projector["meeting_id"]:
+                raise PermissionDenied("Different meeting_ids in the projectors.")
+        return meeting_id
