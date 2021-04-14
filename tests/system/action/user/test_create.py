@@ -176,3 +176,11 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2", {"username": "testname", "vote_delegations_$_from_ids": []}
         )
+
+    def test_create_empty_username(self) -> None:
+        response = self.request("user.create", {"username": ""})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            'data.username must be longer than or equal to 1 characters',
+            response.json["message"],
+        )

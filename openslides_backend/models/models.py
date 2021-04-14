@@ -34,7 +34,7 @@ class User(Model):
     verbose_name = "user"
 
     id = fields.IntegerField()
-    username = fields.CharField()
+    username = fields.CharField(required=True)
     title = fields.CharField()
     first_name = fields.CharField()
     last_name = fields.CharField()
