@@ -34,7 +34,7 @@ class User(Model):
     verbose_name = "user"
 
     id = fields.IntegerField()
-    username = fields.CharField()
+    username = fields.CharField(required=True)
     title = fields.CharField()
     first_name = fields.CharField()
     last_name = fields.CharField()
@@ -530,7 +530,8 @@ class Meeting(Model):
         },
     )
     reference_projector_id = fields.RelationField(
-        to={Collection("projector"): "used_as_reference_projector_meeting_id"}
+        to={Collection("projector"): "used_as_reference_projector_meeting_id"},
+        required=True
     )
     list_of_speakers_countdown_id = fields.RelationField(
         to={

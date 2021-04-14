@@ -134,7 +134,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         _, response = self.basic_test({"reference_projector_id": None}, check_200=False)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The reference projector can't be set to null.", response.json["message"]
+            "data.reference_projector_id must be integer", response.json["message"]
         )
 
     def test_update_reference_projector_to_not_existing_projector_error(self) -> None:
@@ -179,7 +179,8 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The default projecor can't be set to null.", response.json["message"]
+            "data.default_projector_$_id.topics must be integer",
+            response.json["message"],
         )
 
     def test_update_default_projector_to_not_existing_projector_error(self) -> None:

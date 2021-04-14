@@ -1,13 +1,12 @@
 from typing import Any, Dict
 
 from ....models.models import Meeting
-from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..meeting.shared_meeting import used_as_default_for_schema
+from ..meeting.shared_meeting import used_as_default_for_schema_required
 
 meeting_settings_keys = [
     "welcome_title",
@@ -121,26 +120,25 @@ class MeetingUpdate(UpdateAction):
             "reference_projector_id",
         ],
         additional_optional_fields={
-            "default_projector_$_id": used_as_default_for_schema,
+            "default_projector_$_id": used_as_default_for_schema_required,
         },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_check = []
         if "reference_projector_id" in instance:
-            if reference_projector_id := instance["reference_projector_id"]:
+            if (
+                reference_projector_id := instance["reference_projector_id"]
+            ) and reference_projector_id:
                 meeting_check.append(
                     FullQualifiedId(Collection("projector"), reference_projector_id)
                 )
-            else:
-                raise ActionException("The reference projector can't be set to null.")
         if "default_projector_$_id" in instance:
-            if any((id is None for id in instance["default_projector_$_id"].values())):
-                raise ActionException("The default projecor can't be set to null.")
             meeting_check.extend(
                 [
                     FullQualifiedId(Collection("projector"), projector_id)
                     for projector_id in instance["default_projector_$_id"].values()
+                    if projector_id
                 ]
             )
 
