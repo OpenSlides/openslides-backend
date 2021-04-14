@@ -391,7 +391,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert "Missing permission:" in response.json["message"]
+        assert "Forbidden fields:" in response.json["message"]
 
     def test_update_permission_metadata_and_wl(self) -> None:
         self.create_meeting()

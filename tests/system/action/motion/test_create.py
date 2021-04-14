@@ -396,7 +396,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert "Missing permission:" in response.json["message"]
+        assert "Forbidden fields:" in response.json["message"]
 
     def test_create_permission_with_can_manage(self) -> None:
         self.create_meeting()

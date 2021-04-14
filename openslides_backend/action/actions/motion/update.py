@@ -136,6 +136,8 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
             return
 
+        forbidden_fields = []
+
         # check for can_manage_metadata and whitelist
         perm = Permissions.Motion.CAN_MANAGE_METADATA
         whitelist = [
@@ -146,10 +148,12 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "recommendation_extension",
             "id",
         ]
-        if has_perm(
-            self.datastore, self.user_id, perm, motion["meeting_id"]
-        ) and self.check_whitelist(instance, whitelist):
-            return
+        if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
+            forbidden_fields_1 = self.check_forbidden_fields(instance, whitelist)
+            if not forbidden_fields_1:
+                return
+            else:
+                forbidden_fields.extend(forbidden_fields_1)
 
         # check for self submitter and whitelist
         whitelist = [
@@ -159,17 +163,26 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "amendment_paragraph_$",
             "id",
         ]
-        if self.is_allowed_and_submitter(
-            motion["submitter_ids"], motion["state_id"]
-        ) and self.check_whitelist(instance, whitelist):
-            return
+
+        if self.is_allowed_and_submitter(motion["submitter_ids"], motion["state_id"]):
+            forbidden_fields_2 = self.check_forbidden_fields(instance, whitelist)
+            if not forbidden_fields_2:
+                return
+            else:
+                forbidden_fields.extend(forbidden_fields_2)
 
         msg = f"You are not allowed to perform action {self.name}."
-        msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE}"
+        if forbidden_fields:
+            msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
+        else:
+            msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE}"
         raise PermissionDenied(msg)
 
-    def check_whitelist(self, instance: Dict[str, Any], whitelist: List[str]) -> bool:
+    def check_forbidden_fields(
+        self, instance: Dict[str, Any], whitelist: List[str]
+    ) -> List[str]:
+        forbidden_fields = []
         for field in instance:
             if field not in whitelist:
-                return False
-        return True
+                forbidden_fields.append(field)
+        return forbidden_fields

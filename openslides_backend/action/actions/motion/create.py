@@ -213,8 +213,12 @@ class MotionCreate(
             ]
             if instance.get("lead_motion_id"):
                 whitelist.append("motion_block_id")
+            forbidden_fields = []
             for field in instance:
                 if field not in whitelist:
-                    msg = f"You are not allowed to perform action {self.name}."
-                    msg += f" Missing permission: {perm}"
-                    raise PermissionDenied(msg)
+                    forbidden_fields.append(field)
+
+            if forbidden_fields:
+                msg = f"You are not allowed to perform action {self.name}."
+                msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
+                raise PermissionDenied(msg)
