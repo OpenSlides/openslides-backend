@@ -11,10 +11,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .delete import ResourceDelete
+from .mixins import PermissionMixin
 
 
 @register_action("resource.upload")
-class MediafileUploadAction(CreateAction):
+class MediafileUploadAction(PermissionMixin, CreateAction):
     """
     Action to upload a resourcefile.
     The token-field acts as unique key

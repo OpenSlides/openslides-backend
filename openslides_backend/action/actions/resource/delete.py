@@ -2,10 +2,11 @@ from ....models.models import Resource
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionMixin
 
 
 @register_action("resource.delete")
-class ResourceDelete(DeleteAction):
+class ResourceDelete(PermissionMixin, DeleteAction):
     """
     Action to delete a resource.
     """
