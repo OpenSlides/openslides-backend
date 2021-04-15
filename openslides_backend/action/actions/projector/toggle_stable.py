@@ -57,15 +57,19 @@ class ProjectorToggleStable(UpdateAction):
                     FilterOperator(
                         "content_object_id", "=", instance["content_object_id"]
                     ),
-                    FilterOperator("type", "=", instance.get("type")),
                     FilterOperator("stable", "=", True),
                 )
+                if instance.get("type"):
+                    filter_ = And(
+                        filter_, FilterOperator("type", "=", instance["type"])
+                    )
                 results = self.datastore.filter(
                     Collection("projection"), filter_, ["id"]
                 )
                 if results:
-                    for id_ in results:
-                        self.execute_other_action(ProjectionDelete, [{"id": id_}])
+                    self.execute_other_action(
+                        ProjectionDelete, [{"id": id_} for id_ in results]
+                    )
                 else:
                     data: Dict[str, Any] = {
                         "current_projector_id": projector_id,
