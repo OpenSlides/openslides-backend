@@ -25,7 +25,8 @@ class ProjectorToggleStable(BaseActionTestCase):
             }
         )
         response = self.request(
-            "projector.toggle_stable", {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1}
+            "projector.toggle_stable",
+            {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projection/33")
@@ -41,7 +42,8 @@ class ProjectorToggleStable(BaseActionTestCase):
             }
         )
         response = self.request(
-            "projector.toggle_stable", {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1}
+            "projector.toggle_stable",
+            {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
