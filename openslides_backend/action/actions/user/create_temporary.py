@@ -6,12 +6,15 @@ from ....shared.schema import id_list_schema
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixin import PasswordCreateMixin
 from .temporary_user_mixin import TemporaryUserMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.create_temporary")
-class UserCreateTemporary(CreateAction, TemporaryUserMixin, UserMixin):
+class UserCreateTemporary(
+    CreateAction, TemporaryUserMixin, UserMixin, PasswordCreateMixin
+):
     """
     Action to create a user.
     """
@@ -49,3 +52,10 @@ class UserCreateTemporary(CreateAction, TemporaryUserMixin, UserMixin):
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = self.update_instance_temporary_user(instance)
         return super().base_update_instance(instance)
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if not instance.get("default_password"):
+            instance = self.generate_and_set_password(instance)
+        else:
+            instance = self.set_password(instance)
+        return super().update_instance(instance)

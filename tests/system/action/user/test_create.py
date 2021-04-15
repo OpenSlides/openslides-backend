@@ -3,10 +3,15 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
+        """ Also checks if a default_password is generated and the correct hashed password stored """
         response = self.request("user.create", {"username": "test_Xcdfgee"})
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
+        assert model.get("default_password") is not None
+        assert self.auth.is_equals(
+            model.get("default_password", ""), model.get("password", "")
+        )
 
     def test_create_some_more_fields(self) -> None:
         self.set_models(
@@ -26,6 +31,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "guest_meeting_ids": [110, 111],
                 "committee_as_member_ids": [78],
                 "committee_as_manager_ids": [79],
+                "default_password": "password",
             },
         )
         self.assert_status_code(response, 200)
@@ -36,6 +42,11 @@ class UserCreateActionTest(BaseActionTestCase):
         assert model.get("committee_as_member_ids") == [78]
         assert model.get("committee_as_manager_ids") == [79]
         assert model.get("organisation_management_level") == "can_manage_users"
+        assert model.get("default_password") == "password"
+        assert self.auth.is_equals(
+            model.get("default_password", ""), model.get("password", "")
+        )
+
         # check meeting.user_ids
         meeting = self.get_model("meeting/110")
         assert meeting.get("user_ids") == [2]

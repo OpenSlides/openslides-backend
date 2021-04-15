@@ -1,12 +1,15 @@
+from typing import Any, Dict
+
 from ....models.models import User
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixin import PasswordCreateMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.create")
-class UserCreate(CreateAction, UserMixin):
+class UserCreate(CreateAction, UserMixin, PasswordCreateMixin):
     """
     Action to create a user.
     """
@@ -41,3 +44,10 @@ class UserCreate(CreateAction, UserMixin):
             "vote_weight_$",
         ],
     )
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if not instance.get("default_password"):
+            instance = self.generate_and_set_password(instance)
+        else:
+            instance = self.set_password(instance)
+        return super().update_instance(instance)

@@ -4,6 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class UserCreateTemporaryActionTest(BaseActionTestCase):
     def test_create(self) -> None:
+        """ Also checks if a default_password is generated and the correct hashed password stored """
         self.create_model("meeting/222", {"name": "name_shjeuazu"})
         response = self.request(
             "user.create_temporary", {"username": "test_Xcdfgee", "meeting_id": 222}
@@ -13,8 +14,13 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert model.get("username") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
         assert model.get("is_physical_person") is True
+        assert model.get("default_password") is not None
+        assert self.auth.is_equals(
+            model.get("default_password", ""), model.get("password", "")
+        )
 
     def test_create_all_fields(self) -> None:
+        """ Also checks if the correct password is stored from the given default_password """
         self.set_models(
             {
                 "meeting/222": {"name": "name_shjeuazu"},
@@ -64,6 +70,9 @@ class UserCreateTemporaryActionTest(BaseActionTestCase):
         assert model.get("default_vote_weight") == "1.000000"
         assert model.get("is_present_in_meeting_ids") == [222]
         assert model.get("default_password") == "password"
+        assert self.auth.is_equals(
+            model.get("default_password", ""), model.get("password", "")
+        )
         assert model.get("group_$222_ids") == [1]
         assert model.get("group_$_ids") == ["222"]
         assert model.get("group_ids") is None
