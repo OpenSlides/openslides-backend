@@ -350,6 +350,10 @@ class DatastoreAdapter(DatastoreService):
     def apply_deleted_models_behaviour_to_filter(
         self, filter: Filter, get_deleted_models: DeletedModelsBehaviour
     ) -> Filter:
+        """
+        Takes the given filter and wraps an AND-Filter based on the given
+        DeletedModelsBehaviour around it.
+        """
         if get_deleted_models == DeletedModelsBehaviour.ALL_MODELS:
             return filter
 
@@ -430,6 +434,10 @@ class DatastoreAdapter(DatastoreService):
     def update_additional_models(
         self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False
     ) -> None:
+        """
+        Adds or replaces the model identified by fqid in the additional models.
+        Automatically adds missing id field.
+        """
         if replace or isinstance(instance, DeletedModel):
             self.additional_relation_models[fqid] = instance
         else:
@@ -447,6 +455,15 @@ class DatastoreAdapter(DatastoreService):
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
     ) -> Dict[str, Any]:
+        """
+        Uses the current additional_relation_models to fetch the given model.
+        additional_relation_models serves as a kind of cache layer of all recently done
+        changes - all updates to any model during the action are saved in there.
+        The parameter db_additional_relevance defines what is searched first: the
+        datastore or the additional models.
+
+        Use this over the get method when in doubt.
+        """
         datastore_exception: Optional[DatastoreException] = None
 
         def get_additional() -> Tuple[bool, Dict[str, Any]]:
