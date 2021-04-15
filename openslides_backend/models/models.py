@@ -531,7 +531,7 @@ class Meeting(Model):
     )
     reference_projector_id = fields.RelationField(
         to={Collection("projector"): "used_as_reference_projector_meeting_id"},
-        required=True
+        required=True,
     )
     list_of_speakers_countdown_id = fields.RelationField(
         to={
