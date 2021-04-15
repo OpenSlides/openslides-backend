@@ -6,10 +6,10 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..vote.create import VoteCreate
+from ..vote.user_token_helper import get_user_token
 
 
-# TODO should be internal
-@register_action("option.create")
+@register_action("option.create", internal=True)
 class OptionCreateAction(CreateAction):
     """
     (internal) Action to create an option
@@ -40,13 +40,14 @@ class OptionCreateAction(CreateAction):
             raise ActionException("Need text xor content_object_id.")
 
         action_data = []
-        yes_data = self.get_vote_action_data(instance, "Y", "yes")
+        user_token = get_user_token()
+        yes_data = self.get_vote_action_data(instance, "Y", "yes", user_token)
         if yes_data is not None:
             action_data.append(yes_data)
-        no_data = self.get_vote_action_data(instance, "N", "no")
+        no_data = self.get_vote_action_data(instance, "N", "no", user_token)
         if no_data is not None:
             action_data.append(no_data)
-        abstain_data = self.get_vote_action_data(instance, "A", "abstain")
+        abstain_data = self.get_vote_action_data(instance, "A", "abstain", user_token)
         if abstain_data is not None:
             action_data.append(abstain_data)
         if action_data:
@@ -55,7 +56,7 @@ class OptionCreateAction(CreateAction):
         return instance
 
     def get_vote_action_data(
-        self, instance: Dict[str, Any], value: str, prop: str
+        self, instance: Dict[str, Any], value: str, prop: str, user_token: str
     ) -> Optional[Dict[str, Any]]:
         if instance.get(prop):
             return {
@@ -63,5 +64,6 @@ class OptionCreateAction(CreateAction):
                 "weight": instance[prop],
                 "option_id": instance["id"],
                 "meeting_id": instance["meeting_id"],
+                "user_token": user_token,
             }
         return None

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "ef41017c68f9af27b7bdae5a57de07b0"
+MODELS_YML_CHECKSUM = "fb3fb8594a09872fd16f1ec2e7e656ef"
 
 
 class Organisation(Model):
@@ -26,6 +26,9 @@ class Organisation(Model):
     )
     resource_ids = fields.RelationListField(
         to={Collection("resource"): "organisation_id"}
+    )
+    organisation_tag_ids = fields.RelationListField(
+        to={Collection("organisation_tag"): "organisation_id"}
     )
 
 
@@ -168,6 +171,24 @@ class Resource(Model):
     )
 
 
+class OrganisationTag(Model):
+    collection = Collection("organisation_tag")
+    verbose_name = "organisation tag"
+
+    id = fields.IntegerField()
+    name = fields.CharField(required=True)
+    color = fields.ColorField(required=True)
+    tagged_ids = fields.GenericRelationListField(
+        to={
+            Collection("committee"): "organisation_tag_ids",
+            Collection("meeting"): "organisation_tag_ids",
+        }
+    )
+    organisation_id = fields.OrganisationField(
+        to={Collection("organisation"): "organisation_tag_ids"}
+    )
+
+
 class Committee(Model):
     collection = Collection("committee")
     verbose_name = "committee"
@@ -195,6 +216,9 @@ class Committee(Model):
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
         to={Collection("committee"): "forward_to_committee_ids"}
+    )
+    organisation_tag_ids = fields.RelationListField(
+        to={Collection("organisation_tag"): "tagged_ids"}
     )
     organisation_id = fields.OrganisationField(
         to={Collection("organisation"): "committee_ids"}, required=True
@@ -231,9 +255,9 @@ class Meeting(Model):
     conference_open_microphone = fields.BooleanField(default=False)
     conference_open_video = fields.BooleanField(default=False)
     conference_auto_connect_next_speakers = fields.IntegerField(default=0)
-    projector_countdown_default_time = fields.IntegerField(default=60)
+    projector_countdown_default_time = fields.IntegerField(required=True, default=60)
     projector_countdown_warning_time = fields.IntegerField(
-        default=0, constraints={"minimum": 0}, required=True
+        required=True, default=0, constraints={"minimum": 0}
     )
     export_csv_encoding = fields.CharField(
         default="utf-8", constraints={"enum": ["utf-8", "iso-8859-15"]}
@@ -517,6 +541,9 @@ class Meeting(Model):
     )
     default_meeting_for_committee_id = fields.RelationField(
         to={Collection("committee"): "default_meeting_id"}
+    )
+    organisation_tag_ids = fields.RelationListField(
+        to={Collection("organisation_tag"): "tagged_ids"}
     )
     present_user_ids = fields.RelationListField(
         to={Collection("user"): "is_present_in_meeting_ids"}
@@ -1221,6 +1248,7 @@ class Poll(Model):
     type = fields.CharField(
         required=True, constraints={"enum": ["analog", "named", "pseudoanonymous"]}
     )
+    is_pseudoanonymized = fields.BooleanField()
     pollmethod = fields.CharField(
         required=True, constraints={"enum": ["Y", "YN", "YNA", "N"]}
     )
@@ -1236,7 +1264,9 @@ class Poll(Model):
     onehundred_percent_base = fields.CharField(
         required=True,
         default="disabled",
-        constraints={"enum": ["Y", "YN", "YNA", "N", "valid", "cast", "disabled"]},
+        constraints={
+            "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
+        },
     )
     majority_method = fields.CharField(
         required=True,
@@ -1246,6 +1276,7 @@ class Poll(Model):
     votesvalid = fields.DecimalField()
     votesinvalid = fields.DecimalField()
     votescast = fields.DecimalField()
+    entitled_users_at_stop = fields.JSONField()
     content_object_id = fields.GenericRelationField(
         to={Collection("motion"): "poll_ids", Collection("assignment"): "poll_ids"},
         equal_fields="meeting_id",
@@ -1320,6 +1351,7 @@ class Vote(Model):
     id = fields.IntegerField()
     weight = fields.DecimalField()
     value = fields.CharField()
+    user_token = fields.CharField(required=True)
     option_id = fields.RelationField(
         to={Collection("option"): "vote_ids"}, required=True, equal_fields="meeting_id"
     )
