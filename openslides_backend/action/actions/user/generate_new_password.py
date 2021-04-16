@@ -1,9 +1,9 @@
-import random
 from typing import Any, Dict
 
 from ....models.models import User
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordAction
 
 
@@ -16,14 +16,7 @@ class UserGenerateNewPassword(UserSetPasswordAction):
         """
         Generates new password and call the super code.
         """
-        ALLOWED_LETTERS = (
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz" + "0123456789"
-        )
-
-        def r() -> str:
-            return random.choice(ALLOWED_LETTERS)
-
-        new_password = "".join([r() for x in range(10)])
+        new_password = PasswordCreateMixin.generate_password()
         instance["password"] = new_password
         instance["set_as_default"] = True
         return super().update_instance(instance)
