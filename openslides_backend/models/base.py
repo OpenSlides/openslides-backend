@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Iterable, Optional, Type
+from typing import Any, Dict, Iterable, Optional, Type
 
 from ..shared.exceptions import ActionException
 from ..shared.patterns import Collection
@@ -138,12 +138,34 @@ class Model(metaclass=ModelMetaClass):
         for model_field in self.get_fields():
             if model_field.required:
 
-                if (
-                    isinstance(model_field, fields.RelationListField)
-                    or isinstance(model_field, fields.GenericRelationListField)
-                    or isinstance(model_field, fields.BaseTemplateField)
+                if isinstance(
+                    model_field,
+                    (
+                        fields.RelationListField,
+                        fields.GenericRelationListField,
+                        fields.BaseTemplateField,
+                    ),
                 ):
                     raise NotImplementedError(
                         f"{self.collection.collection}.{model_field.own_field_name}"
                     )
                 yield model_field
+
+    @staticmethod
+    def check_required_not_fulfilled(
+        field: fields.Field, instance: Dict[str, Any]
+    ) -> bool:
+        """
+        Preconditions:
+        - This method depends on the types eliminated by te get_required_fields method above
+        - The instance-dict contain field.own_field_name as key
+        It returns True if the related value in instance doesn't fulfill the require-requirement
+        """
+        if field.own_field_name not in instance:
+            return False
+        if isinstance(
+            field, (fields.IntegerField, fields.BooleanField, fields.FloatField)
+        ):
+            return instance[field.own_field_name] is None
+        else:
+            return not instance[field.own_field_name]

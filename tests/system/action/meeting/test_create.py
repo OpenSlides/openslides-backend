@@ -46,6 +46,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "user_ids": [1],
                 "list_of_speakers_countdown_id": 1,
                 "poll_countdown_id": 2,
+                "projector_countdown_warning_time": 0,
                 **{
                     f"default_projector_${name}_id": 1
                     for name in meeting_projector_default_replacements

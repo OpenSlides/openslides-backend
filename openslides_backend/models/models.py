@@ -233,7 +233,7 @@ class Meeting(Model):
     conference_auto_connect_next_speakers = fields.IntegerField(default=0)
     projector_countdown_default_time = fields.IntegerField(default=60)
     projector_countdown_warning_time = fields.IntegerField(
-        default=0, constraints={"minimum": 0}
+        default=0, constraints={"minimum": 0}, required=True
     )
     export_csv_encoding = fields.CharField(
         default="utf-8", constraints={"enum": ["utf-8", "iso-8859-15"]}

@@ -339,26 +339,23 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 }
 
         for fqid, v in fdict.items():
+            fqid_model: Model = model_registry[fqid.collection]()
             type_ = v["type"]
             instance = v["fields"]
             required_fields = []
             if type_ == EventType.Create:
                 required_fields = [
                     field.own_field_name
-                    for field in model_registry[fqid.collection]().get_required_fields()
+                    for field in fqid_model.get_required_fields()
                     if field.own_field_name not in instance
-                    or (
-                        field.own_field_name in instance
-                        and not instance[field.own_field_name]
-                    )
+                    or fqid_model.check_required_not_fulfilled(field, instance)
                 ]
                 fqid_str = f"Creation of {fqid}"
             elif type_ == EventType.Update:
                 required_fields = [
                     field.own_field_name
-                    for field in model_registry[fqid.collection]().get_required_fields()
-                    if field.own_field_name in instance
-                    and not instance[field.own_field_name]
+                    for field in fqid_model.get_required_fields()
+                    if fqid_model.check_required_not_fulfilled(field, instance)
                 ]
                 fqid_str = f"Update of {fqid}"
             if required_fields:
