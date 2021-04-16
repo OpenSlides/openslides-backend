@@ -13,11 +13,8 @@ class PasswordCreateMixin(BaseAction):
         return instance
 
     def generate_and_set_password(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        password = self.generate_password()
-        instance["default_password"] = password
-        hashed_password = self.auth.hash(password)
-        instance["password"] = hashed_password
-        return instance
+        instance["default_password"] = self.generate_password()
+        return self.set_password(instance)
 
     @staticmethod
     def generate_password() -> str:
