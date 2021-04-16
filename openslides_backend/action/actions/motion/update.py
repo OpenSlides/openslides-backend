@@ -164,7 +164,9 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "id",
         ]
 
-        if self.is_allowed_and_submitter(motion["submitter_ids"], motion["state_id"]):
+        if self.is_allowed_and_submitter(
+            motion.get("submitter_ids", []), motion["state_id"]
+        ):
             forbidden_fields_2 = self.check_forbidden_fields(instance, whitelist)
             if not forbidden_fields_2:
                 return

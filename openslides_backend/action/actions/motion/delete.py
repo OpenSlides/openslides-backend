@@ -38,7 +38,7 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
             return
 
         if self.is_allowed_and_submitter(
-            motion["submitter_ids"],
+            motion.get("submitter_ids", []),
             motion["state_id"],
         ):
             return

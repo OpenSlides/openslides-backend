@@ -82,7 +82,9 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         ):
             return
 
-        if self.is_allowed_and_submitter(motion["submitter_ids"], motion["state_id"]):
+        if self.is_allowed_and_submitter(
+            motion.get("submitter_ids", []), motion["state_id"]
+        ):
             return
 
         msg = "You are not allowed to perform action {self.name}."
