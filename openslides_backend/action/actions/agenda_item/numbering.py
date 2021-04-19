@@ -30,7 +30,6 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
             collection=self.model.collection,
             filter=FilterOperator("meeting_id", "=", meeting_id),
             mapped_fields=["id", "item_number", "parent_id", "weight", "type"],
-            lock_result=True,
         )
 
         # Build agenda tree and get new numbers

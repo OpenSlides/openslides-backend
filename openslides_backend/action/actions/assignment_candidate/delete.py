@@ -23,14 +23,12 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
         assignment_candidate = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
             mapped_fields=["assignment_id"],
-            lock_result=True,
         )
         assignment = self.datastore.get(
             FullQualifiedId(
                 Collection("assignment"), assignment_candidate["assignment_id"]
             ),
             mapped_fields=["phase"],
-            lock_result=True,
         )
         if assignment.get("phase") == "finished":
             raise ActionException(

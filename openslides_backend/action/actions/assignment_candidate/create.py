@@ -30,7 +30,6 @@ class AssignmentCandidateCreate(PermissionMixin, CreateActionWithInferredMeeting
         assignment = self.datastore.get(
             FullQualifiedId(Collection("assignment"), instance["assignment_id"]),
             mapped_fields=["phase"],
-            lock_result=True,
         )
         if assignment.get("phase") == "finished":
             raise ActionException(

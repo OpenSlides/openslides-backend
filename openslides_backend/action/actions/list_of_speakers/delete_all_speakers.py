@@ -27,7 +27,6 @@ class ListOfSpeakersDeleteAllSpeakersAction(DeleteAction):
             list_of_speakers = self.datastore.fetch_model(
                 FullQualifiedId(Collection("list_of_speakers"), instance["id"]),
                 mapped_fields=["speaker_ids"],
-                lock_result=True,
             )
             if list_of_speakers.get("speaker_ids"):
                 yield from [

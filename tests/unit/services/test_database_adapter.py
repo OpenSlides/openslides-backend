@@ -25,7 +25,7 @@ class DatastoreAdapterTester(TestCase):
             json.dumps({"f": 1, "meta_deleted": False, "meta_position": 1}),
             200,
         )
-        partial_model = self.db.get(fqid, list(fields))
+        partial_model = self.db.get(fqid, list(fields), lock_result=False)
         raw_data = command.get_raw_data()
         assert raw_data["fqid"] == str(fqid)
         assert isinstance(raw_data["mapped_fields"], list)
@@ -58,7 +58,7 @@ class DatastoreAdapterTester(TestCase):
         }
         self.engine.retrieve.assert_called_with("get_many", command.data)
 
-    def test_getAll(self) -> None:
+    def test_get_all(self) -> None:
         fields = set(["a", "b", "c"])
         collection = Collection("a")
         command = commands.GetAll(collection=collection, mapped_fields=fields)
@@ -67,7 +67,7 @@ class DatastoreAdapterTester(TestCase):
             200,
         )
         partial_models = self.db.get_all(
-            collection=collection, mapped_fields=list(fields)
+            collection=collection, mapped_fields=list(fields), lock_result=False
         )
         raw_data = command.get_raw_data()
         assert raw_data["collection"] == str(collection)
@@ -130,7 +130,9 @@ class DatastoreAdapterTester(TestCase):
             ),
             200,
         )
-        found = self.db.filter(collection=collection, filter=or_filter)
+        found = self.db.filter(
+            collection=collection, filter=or_filter, lock_result=False
+        )
         assert found is not None
         assert command.get_raw_data() == {
             "collection": str(collection),

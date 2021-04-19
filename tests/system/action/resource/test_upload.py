@@ -171,7 +171,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'organisation/1' raises MODEL_LOCKED error.",
+            "Datastore service sends HTTP 400. Model 'resource/1' raises MODEL_LOCKED error.",
             response.json["message"],
         )
         self.assert_model_exists("organisation/1", {"resource_ids": [1]})

@@ -51,7 +51,6 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
             collection=self.model.collection,
             filter=filter,
             mapped_fields=["id"],
-            lock_result=True,
         )
 
         ancesters = []

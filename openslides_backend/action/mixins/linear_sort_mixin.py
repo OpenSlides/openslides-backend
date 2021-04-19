@@ -30,7 +30,6 @@ class LinearSortMixin(BaseAction):
                 collection=self.model.collection,
                 filter=filter,
                 mapped_fields=["id"],
-                lock_result=True,
             ),
         }
         valid_instance_ids = []

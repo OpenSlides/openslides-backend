@@ -15,7 +15,6 @@ class SequentialNumbersMixin(CreateAction):
             filter=filter,
             field="sequential_number",
             get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
-            lock_result=True,
         )
         number = 1 if number is None else number + 1
         return number

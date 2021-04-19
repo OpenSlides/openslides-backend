@@ -51,7 +51,6 @@ class MotionChangeRecommendationCreateAction(
                     )
                 ),
             ),
-            lock_result=True,
         )
         if exists:
             raise ActionException(

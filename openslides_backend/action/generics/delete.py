@@ -39,7 +39,6 @@ class DeleteAction(Action):
         db_instance = self.datastore.fetch_model(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
-            lock_result=True,
         )
 
         # Update instance and set relation fields to None.
@@ -110,7 +109,6 @@ class DeleteAction(Action):
                     db_instance = self.datastore.fetch_model(
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
                         mapped_fields=[template_field_name],
-                        lock_result=True,
                     )
                     for replacement in db_instance.get(template_field_name, []):
                         structured_field_name = field.get_structured_field_name(

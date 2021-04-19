@@ -148,7 +148,6 @@ class SingleRelationHandler:
                     fqid,
                     [related_name],
                     get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
-                    lock_result=True,
                     exception=False,
                 )
                 # again, we transform everything to lists of fqids
@@ -207,9 +206,7 @@ class SingleRelationHandler:
         collection, _ = list(chained_field["field"].items())[0]
         field_name = self.get_related_name(collection)
         field = self.get_reverse_field(collection)
-        instance = self.datastore.fetch_model(
-            chained_field["fqid"], ["id", field_name], lock_result=True
-        )
+        instance = self.datastore.fetch_model(chained_field["fqid"], ["id", field_name])
         instance[field_name] = None
         return SingleRelationHandler(
             self.datastore,
@@ -282,7 +279,6 @@ class SingleRelationHandler:
                 FullQualifiedId(self.model.collection, self.id),
                 [self.field_name],
                 db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-                lock_result=True,
                 exception=False,
             )
 
@@ -366,7 +362,6 @@ class SingleRelationHandler:
             get_many_requests=[
                 GetManyRequest(collection, ids, mapped_fields=[template_field_name])
             ],
-            lock_result=True,
         )
         db_rels = response.get(collection, {})
         result_template_field: RelationFieldUpdates = {}

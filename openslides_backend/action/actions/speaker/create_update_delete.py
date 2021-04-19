@@ -85,7 +85,6 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
             self.model.collection,
             filter=filter,
             mapped_fields=["id", "weight"],
-            lock_result=True,
         )
         los = sorted(speakers.values(), key=lambda k: k["weight"])
         list_to_sort = []
@@ -103,7 +102,6 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 FilterOperator("begin_time", "=", None),
             ),
             field="weight",
-            lock_result=True,
         )
 
     def _get_no_poo_min(self, list_of_speakers_id: int) -> Optional[int]:
@@ -118,7 +116,6 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
                 FilterOperator("begin_time", "=", None),
             ),
             field="weight",
-            lock_result=True,
         )
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -170,7 +167,6 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
             collection=Collection("speaker"),
             filter=filter_obj,
             mapped_fields=["user_id", "point_of_order"],
-            lock_result=True,
         )
         for speaker in speakers.values():
             if speaker["user_id"] == instance["user_id"] and bool(

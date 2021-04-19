@@ -40,7 +40,6 @@ class TreeSortMixin(BaseAction):
             collection=self.model.collection,
             filter=filter,
             mapped_fields=["id"],
-            lock_result=True,
         )
         all_model_ids = set(db_instances.keys())
 

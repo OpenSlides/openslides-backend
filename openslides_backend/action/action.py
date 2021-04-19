@@ -141,6 +141,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
             relation_updates = self.handle_relation_updates(instance)
             self.write_requests.extend(relation_updates)
+            # breakpoint()
 
             write_request = self.create_write_requests(instance)
             self.write_requests.extend(write_request)
@@ -150,6 +151,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 self.results.append(result)
 
         final_write_request = self.process_write_requests()
+        # breakpoint()
         # by default, for actions which changed the updated instances, just return None
         if not is_original_instances and not self.results:
             self.results = [None]
@@ -216,7 +218,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 FullQualifiedId(model.collection, instance[identifier]),
                 ["meeting_id"],
                 exception=True,
-                lock_result=True,
             )
             return db_instance["meeting_id"]
 
@@ -354,7 +355,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
             # Get locked_fields and reset them in datastore
             write_request.locked_fields = self.datastore.locked_fields
-            self.datastore.locked_fields = {}
         return write_request
 
     def validate_required_fields(self, write_request: WriteRequest) -> None:
@@ -432,7 +432,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     db_instance = self.datastore.fetch_model(
                         fqid,
                         [equal_field],
-                        lock_result=True,
                     )
                     if not (own_equal_field_value := db_instance.get(equal_field)):
                         raise ActionException(

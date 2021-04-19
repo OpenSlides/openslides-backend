@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, List, Type
 from unittest import TestCase
 
 import requests
@@ -83,9 +83,9 @@ class BaseSystemTestCase(TestCase):
             print(response.json)
         self.assertEqual(response.status_code, code)
 
-    def create_model(
+    def get_create_request(
         self, fqid: str, data: Dict[str, Any] = {}, deleted: bool = False
-    ) -> None:
+    ) -> WriteRequest:
         data["id"] = get_id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         request = WriteRequest(
@@ -96,9 +96,15 @@ class BaseSystemTestCase(TestCase):
         )
         if deleted:
             request.events.append(Event(type=EventType.Delete, fqid=get_fqid(fqid)))
+        return request
+
+    def create_model(
+        self, fqid: str, data: Dict[str, Any] = {}, deleted: bool = False
+    ) -> None:
+        request = self.get_create_request(fqid, data, deleted)
         self.datastore.write(request)
 
-    def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
+    def get_update_request(self, fqid: str, data: Dict[str, Any]) -> WriteRequest:
         self.validate_fields(fqid, data)
         request = WriteRequest(
             events=[Event(type=EventType.Update, fqid=get_fqid(fqid), fields=data)],
@@ -106,6 +112,10 @@ class BaseSystemTestCase(TestCase):
             user_id=0,
             locked_fields={},
         )
+        return request
+
+    def update_model(self, fqid: str, data: Dict[str, Any]) -> None:
+        request = self.get_update_request(fqid, data)
         self.datastore.write(request)
 
     def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
@@ -118,13 +128,15 @@ class BaseSystemTestCase(TestCase):
                 for fqid in models.keys()
             ]
         )
+        requests: List[WriteRequest] = []
         for fqid_str, model in models.items():
             fqid = get_fqid(fqid_str)
             collection_map = response.get(fqid.collection)
             if collection_map and fqid.id in collection_map:
-                self.update_model(fqid_str, model)
+                requests.append(self.get_update_request(fqid_str, model))
             else:
-                self.create_model(fqid_str, model)
+                requests.append(self.get_create_request(fqid_str, model))
+        self.datastore.write(requests)
 
     def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
         model = model_registry[get_collection_from_fqid(fqid)]()

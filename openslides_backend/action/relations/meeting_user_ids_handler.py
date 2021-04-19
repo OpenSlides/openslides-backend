@@ -28,7 +28,6 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
             fqid,
             [field_name, "meeting_id"],
             get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
-            lock_result=True,
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST
             if field.own_collection.collection == "meeting"
             else InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
