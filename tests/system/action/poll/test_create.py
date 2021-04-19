@@ -693,7 +693,7 @@ class CreatePoll(BaseActionTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    def test_create__no_permissions(self) -> None:
+    def test_create_no_permissions(self) -> None:
         self.base_permission_test(
             {},
             "poll.create",
