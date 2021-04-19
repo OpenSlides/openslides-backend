@@ -342,24 +342,18 @@ class Action(BaseAction, metaclass=SchemaProvider):
             fqid_model: Model = model_registry[fqid.collection]()
             type_ = v["type"]
             instance = v["fields"]
-            required_fields = []
-            if type_ == EventType.Create:
+            if type_ in (EventType.Create, EventType.Update):
+                is_create = type_ == EventType.Create
                 required_fields = [
                     field.own_field_name
                     for field in fqid_model.get_required_fields()
-                    if field.own_field_name not in instance
-                    or fqid_model.check_required_not_fulfilled(field, instance)
+                    if field.check_required_not_fulfilled(instance, is_create)
                 ]
-                fqid_str = f"Creation of {fqid}"
-            elif type_ == EventType.Update:
-                required_fields = [
-                    field.own_field_name
-                    for field in fqid_model.get_required_fields()
-                    if fqid_model.check_required_not_fulfilled(field, instance)
-                ]
-                fqid_str = f"Update of {fqid}"
-            if required_fields:
-                raise RequiredFieldsException(fqid_str, required_fields)
+                if required_fields:
+                    fqid_str = (
+                        f"Creation of {fqid}" if is_create else f"Update of {fqid}"
+                    )
+                    raise RequiredFieldsException(fqid_str, required_fields)
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
