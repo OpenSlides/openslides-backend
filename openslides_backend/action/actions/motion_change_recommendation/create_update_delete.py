@@ -2,6 +2,8 @@ from time import time
 from typing import Any, Dict
 
 from ....models.models import MotionChangeRecommendation
+from ....shared.exceptions import ActionException
+from ....shared.filters import And, FilterOperator, Not
 from ...action_set import ActionSet
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
@@ -22,10 +24,42 @@ class MotionChangeRecommendationCreateAction(
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        set creation_time
+        Check for colliding change recommendations and set creation time.
         """
+        line_from = instance["line_from"]
+        line_to = instance["line_to"]
+        if line_from > line_to:
+            raise ActionException("Starting line must be smaller than ending line.")
+
+        instance = self.update_instance_with_meeting_id(instance)
+        exists = self.datastore.exists(
+            self.model.collection,
+            And(
+                # adding meeting id for improved query speed
+                FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                FilterOperator("motion_id", "=", instance["motion_id"]),
+                Not(
+                    And(
+                        FilterOperator("line_from", "<", line_from),
+                        FilterOperator("line_to", "<=", line_from),
+                    )
+                ),
+                Not(
+                    And(
+                        FilterOperator("line_from", ">=", line_to),
+                        FilterOperator("line_to", ">", line_to),
+                    )
+                ),
+            ),
+            lock_result=True,
+        )
+        if exists:
+            raise ActionException(
+                f"The recommendation collides with an existing one (line {line_from} - {line_to})."
+            )
+
         instance["creation_time"] = int(time())
-        return self.update_instance_with_meeting_id(instance)
+        return instance
 
 
 @register_action_set("motion_change_recommendation")
