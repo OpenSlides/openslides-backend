@@ -49,16 +49,18 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def create_meeting(self, base: int = 1) -> None:
         """
-        Creates meeting with id 1 and groups with ids 1, 2, 3 by default.
+        Creates meeting with id 1, committee 60 and groups with ids 1, 2, 3 by default.
         With base you can setup other meetings, but be cautious because of group-ids
         The groups have no permissions and no users by default.
         """
+        committee_id = base + 59
         self.set_models(
             {
                 f"meeting/{base}": {
                     "group_ids": [base, base + 1, base + 2],
                     "default_group_id": base,
                     "admin_group_id": base + 1,
+                    "committee_id": committee_id,
                 },
                 f"group/{base}": {
                     "meeting_id": base,
@@ -70,6 +72,10 @@ class BaseActionTestCase(BaseSystemTestCase):
                 },
                 f"group/{base+2}": {
                     "meeting_id": base,
+                },
+                f"committee/{committee_id}": {
+                    "name": f"Commitee{committee_id}",
+                    "meeting_ids": [base],
                 },
             }
         )

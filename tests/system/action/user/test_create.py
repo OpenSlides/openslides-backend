@@ -200,6 +200,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "data.username must be longer than or equal to 1 characters",
             response.json["message"],
         )
+
     def test_create_no_permission(self) -> None:
         self.update_model("user/1", {"organisation_management_level": None})
         response = self.request("user.create", {"username": "test_Xcdfgee"})

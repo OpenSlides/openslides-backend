@@ -13,8 +13,6 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/111": {"username": "User 111"},
-                "committee/78": {"name": "name_78"},
-                "committee/79": {"name": "name_79"},
             }
         )
 
@@ -165,7 +163,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "or alternative {'OrganisationManagementLevel.CAN_MANAGE_ORGANISATION'}.",
+            "or alternative {'Committee Manager Right for meetings {1}'}.",
             response.json["message"],
         )
 
@@ -221,39 +219,42 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_manage_organisation(self) -> None:
-        """ May update group A and group C fields """
+    def test_update_permission_committee_manager(self) -> None:
+        """ May update group C fields """
         self.permission_setup()
-        self.set_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_ORGANISATION, self.user_id
+        self.create_meeting(base=4)
+        self.update_model(
+            f"user/{self.user_id}", {"committee_as_manager_ids": [60, 63]}
         )
 
         response = self.request(
             "user.update",
             {
                 "id": 111,
-                "username": "username_new",
                 "group_$_ids": {1: [1]},
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/111",
-            {"username": "username_new", "group_$_ids": ["1"], "group_$1_ids": [1]},
+            {"group_$_ids": ["1"], "group_$1_ids": [1]},
         )
 
-    def test_update_permission_manage_organisation_no_permission(self) -> None:
+    def test_update_permission_committee_manager_no_permission(self) -> None:
         """ vote_weight_$ is in group B and may only work with meeting-Permission  """
         self.permission_setup()
-        self.set_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_ORGANISATION, self.user_id
+        self.update_model(
+            f"user/{self.user_id}",
+            {
+                "committee_as_manager_ids": [
+                    60,
+                ]
+            },
         )
-
         response = self.request(
             "user.update",
             {
                 "id": 111,
-                "username": "username_new",
                 "group_$_ids": {1: [1]},
                 "vote_weight_$": {1: "1.000000"},
             },
@@ -289,8 +290,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
-                "committee_as_member_ids": [78, 79],
-                "committee_as_manager_ids": [78],
+                "committee_as_member_ids": [60],
+                "committee_as_manager_ids": [63],
                 "guest_meeting_ids": [1, 4],
             },
         )
@@ -311,8 +312,8 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
-                "committee_as_member_ids": [78, 79],
-                "committee_as_manager_ids": [78],
+                "committee_as_member_ids": [60],
+                "committee_as_manager_ids": [63],
                 "guest_meeting_ids": [1, 4],
             },
         )
@@ -340,7 +341,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_user_can_manage(self) -> None:
-        """ May update group B fields only """
+        """ May update group B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_management_level(None, self.user_id)
@@ -366,6 +367,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "comment_$": {"1": "comment zu meeting/1"},
                 "vote_delegated_$_to_id": {"1": self.user_id},
                 "vote_delegations_$_from_ids": {"4": [5, 6]},
+                "group_$_ids": {"1": [2, 3], "4": [5]},
             },
         )
         self.assert_status_code(response, 200)
@@ -388,11 +390,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_delegated_$1_to_id": self.user_id,
                 "vote_delegations_$_from_ids": ["4"],
                 "vote_delegations_$4_from_ids": [5, 6],
+                "group_$1_ids": [2, 3],
+                "group_$4_ids": [5],
             },
         )
 
     def test_update_permission_user_can_manage_no_permission(self) -> None:
-        """ May update group B fields only """
+        """ May update group B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_management_level(None, self.user_id)
@@ -434,6 +438,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_set_1(self) -> None:
+        """ Rights for all field groups, but missing rights for meeting/4 """
         self.create_meeting()
         self.create_meeting(base=4)
         self.user_id = self.create_user(
@@ -470,23 +475,62 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "about_me_$": {1: "<p>about</p><iframe></iframe>"},
                 "vote_weight_$": {1: "1.000000", 4: "2.333333"},
                 # Group C
-                "group_$_ids": {1: [1], 4: [4]},
+                "group_$_ids": {1: [1]},
             },
         )
 
         self.assert_status_code(response, 403)
         self.assertIn("You do not belong to meeting 4", response.json["message"])
-        # model = self.get_model("user/111")
-        # assert model.get("username") == "username_Neu"
-        # assert model.get("default_vote_weight") == "1.700000"
-        # assert model.get("guest_meeting_ids") == [1, 2]
-        # assert model.get("committee_as_member_ids") == [78]
-        # assert model.get("committee_as_manager_ids") == [78]
-        # assert model.get("organisation_management_level") == "can_manage_users"
 
+    def test_update_permission_set_2(self) -> None:
+        """ Rights for all field groups,1 one meeting with admin group, other meeting with single right """
+        self.create_meeting()
+        self.create_meeting(base=4)
+        self.user_id = self.create_user(
+            "test", group_ids=[2, 6]
+        )  # admin-group of meeting/1 and group of meeting 4
+        self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
+        self.login(self.user_id)
+        self.set_management_level(
+            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+        self.set_models(
+            {
+                "user/111": {"username": "username_Old"},
+                "user/222": {"username": "user222", "meeting_id": 1},
+                "committee/78": {"name": "name78"},
+                "committee/79": {"name": "name79"},
+            }
+        )
 
-# Necessary tests:
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                # Group A
+                "username": "username_New",
+                "default_vote_weight": "1.700000",
+                "organisation_management_level": "can_manage_users",
+                "guest_meeting_ids": [1, 4],
+                "committee_as_member_ids": [78],
+                "committee_as_manager_ids": [79],
+                # Group B
+                "vote_delegations_$_from_ids": {1: [222]},
+                "comment_$": {1: "comment<iframe></iframe>"},
+                "number_$": {4: "number"},
+                "structure_level_$": {1: "level_1", 4: "level_2"},
+                "about_me_$": {1: "<p>about</p><iframe></iframe>"},
+                "vote_weight_$": {1: "1.000000", 4: "2.333333"},
+                # Group C
+                "group_$_ids": {1: [1]},
+            },
+        )
 
-# The meetings in group_$_ids must all belong to committees given in committee_as_member_ids and committee_as_manager_ids
-# The lists user/committee_as_member_ids and user/committee_as_manager_ids must be disjoint after the update.
-# group_$_ids: This field is also updatable by committee managers of each meeting.
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert model.get("username") == "username_New"
+        assert model.get("default_vote_weight") == "1.700000"
+        assert model.get("guest_meeting_ids") == [1, 4]
+        assert model.get("committee_as_member_ids") == [78]
+        assert model.get("committee_as_manager_ids") == [79]
+        assert model.get("organisation_management_level") == "can_manage_users"

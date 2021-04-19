@@ -25,6 +25,13 @@ OrganisationManagementLevel_numbers = {
 }
 
 
+class CommitteeManager:
+    """ 2nd Permission Type, implemented as User.committee_as_manager_ids """
+
+    def __str__(self) -> str:
+        return "Committee Manager Right"
+
+
 class Permission(str):
     """ Marker class to use typing with permissions. """
 
