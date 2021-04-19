@@ -138,10 +138,13 @@ class Model(metaclass=ModelMetaClass):
         for model_field in self.get_fields():
             if model_field.required:
 
-                if (
-                    isinstance(model_field, fields.RelationListField)
-                    or isinstance(model_field, fields.GenericRelationListField)
-                    or isinstance(model_field, fields.BaseTemplateField)
+                if isinstance(
+                    model_field,
+                    (
+                        fields.RelationListField,
+                        fields.GenericRelationListField,
+                        fields.BaseTemplateField,
+                    ),
                 ):
                     raise NotImplementedError(
                         f"{self.collection.collection}.{model_field.own_field_name}"

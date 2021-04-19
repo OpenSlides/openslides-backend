@@ -72,6 +72,13 @@ class Field:
         """
         return value
 
+    def check_required_not_fulfilled(
+        self, instance: Dict[str, Any], is_create: bool
+    ) -> bool:
+        if self.own_field_name not in instance:
+            return is_create
+        return not instance[self.own_field_name]
+
 
 class IntegerField(Field):
     def get_schema(self) -> Schema:
@@ -79,12 +86,26 @@ class IntegerField(Field):
             return self.extend_schema(super().get_schema(), type="integer")
         return self.extend_schema(super().get_schema(), type=["integer", "null"])
 
+    def check_required_not_fulfilled(
+        self, instance: Dict[str, Any], is_create: bool
+    ) -> bool:
+        if self.own_field_name not in instance:
+            return is_create
+        return instance[self.own_field_name] is None
+
 
 class BooleanField(Field):
     def get_schema(self) -> Schema:
         if self.required:
             return self.extend_schema(super().get_schema(), type="boolean")
         return self.extend_schema(super().get_schema(), type=["boolean", "null"])
+
+    def check_required_not_fulfilled(
+        self, instance: Dict[str, Any], is_create: bool
+    ) -> bool:
+        if self.own_field_name not in instance:
+            return is_create
+        return instance[self.own_field_name] is None
 
 
 class TextField(Field):
@@ -134,6 +155,13 @@ class FloatField(Field):
         if self.required:
             return self.extend_schema(super().get_schema(), type="number")
         return self.extend_schema(super().get_schema(), type=["number", "null"])
+
+    def check_required_not_fulfilled(
+        self, instance: Dict[str, Any], is_create: bool
+    ) -> bool:
+        if self.own_field_name not in instance:
+            return is_create
+        return instance[self.own_field_name] is None
 
 
 class DecimalField(Field):
