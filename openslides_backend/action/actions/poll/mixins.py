@@ -33,36 +33,19 @@ def check_poll_or_option_perms(
     meeting_id: int,
 ) -> None:
 
+    msg = f"You are not allowed to perform action {action_name}."
     if content_object_id.startswith("motion" + KEYSEPARATOR):
-        _check_perm(
-            datastore,
-            user_id,
-            Permissions.Motion.CAN_MANAGE_POLLS,
-            meeting_id,
-            action_name,
-        )
+        perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
+        if not has_perm(datastore, user_id, perm, meeting_id):
+            msg += f" Missing permission: {perm}"
+            raise PermissionDenied(msg)
     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
-        _check_perm(
-            datastore,
-            user_id,
-            Permissions.Assignment.CAN_MANAGE,
-            meeting_id,
-            action_name,
-        )
+        perm = Permissions.Assignment.CAN_MANAGE
+        if not has_perm(datastore, user_id, perm, meeting_id):
+            msg += f" Missing permission: {perm}"
+            raise PermissionDenied(msg)
     else:
-        _check_perm(
-            datastore, user_id, Permissions.Poll.CAN_MANAGE, meeting_id, action_name
-        )
-
-
-def _check_perm(
-    datastore: DatastoreService,
-    user_id: int,
-    perm: Permission,
-    meeting_id: int,
-    action_name: str,
-) -> None:
-    if not has_perm(datastore, user_id, perm, meeting_id):
-        msg = f"You are not allowed to perform action {action_name}."
-        msg += f" Missing permission: {perm}"
-        raise PermissionDenied(msg)
+        perm = Permissions.Poll.CAN_MANAGE
+        if not has_perm(datastore, user_id, perm, meeting_id):
+            msg += f" Missing permission: {perm}"
+            raise PermissionDenied(msg)
