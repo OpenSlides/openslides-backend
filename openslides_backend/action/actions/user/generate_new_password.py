@@ -4,9 +4,8 @@ from ....models.models import User
 from ....permissions.permissions import OrganisationManagementLevel
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .password_mixin import PasswordCreateMixin
-from .set_password import UserSetPasswordAction
 from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
+from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordMixin
 
 
