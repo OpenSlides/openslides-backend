@@ -33,19 +33,13 @@ def check_poll_or_option_perms(
     meeting_id: int,
 ) -> None:
 
-    msg = f"You are not allowed to perform action {action_name}."
     if content_object_id.startswith("motion" + KEYSEPARATOR):
         perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
-        if not has_perm(datastore, user_id, perm, meeting_id):
-            msg += f" Missing permission: {perm}"
-            raise PermissionDenied(msg)
     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
         perm = Permissions.Assignment.CAN_MANAGE
-        if not has_perm(datastore, user_id, perm, meeting_id):
-            msg += f" Missing permission: {perm}"
-            raise PermissionDenied(msg)
     else:
         perm = Permissions.Poll.CAN_MANAGE
-        if not has_perm(datastore, user_id, perm, meeting_id):
-            msg += f" Missing permission: {perm}"
-            raise PermissionDenied(msg)
+    if not has_perm(datastore, user_id, perm, meeting_id):
+        msg = f"You are not allowed to perform action {action_name}."
+        msg += f" Missing permission: {perm}"
+        raise PermissionDenied(msg)
