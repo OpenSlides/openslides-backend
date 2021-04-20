@@ -17,7 +17,11 @@ import fastjsonschema
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..permissions.permission_helper import has_organisation_management_level, has_perm
-from ..permissions.permissions import OrganisationManagementLevel, Permission
+from ..permissions.permissions import (
+    CommitteeManager,
+    OrganisationManagementLevel,
+    Permission,
+)
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
@@ -157,6 +161,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Checks permission by requesting permission service or using internal check.
         """
         # switch between internal and external permission service
+        msg_appendix = None
         if self.permission:
             if type(self.permission) == OrganisationManagementLevel:
                 if has_organisation_management_level(
@@ -165,6 +170,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     cast(OrganisationManagementLevel, self.permission),
                 ):
                     return
+                msg_appendix = (
+                    f"Missing Organisation Management Level: {self.permission}"
+                )
+            elif type(self.permission) == CommitteeManager:
+                """
+                set permission in class to: permission = CommitteeManager
+                A specialized realisation see in user/update.py
+                """
+                raise NotImplementedError
             else:
                 meeting_id = self.get_meeting_id(instance)
                 if has_perm(
@@ -174,13 +188,14 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     meeting_id,
                 ):
                     return
+                msg_appendix = f" Missing permission: {self.permission}"
         else:
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
 
-        msg = f"You are not allowed to perform action {self.name}."
-        if self.permission:
-            msg += f" Missing permission: {self.permission}"
+        msg = f"You are not allowed to perform action {self.name}. "
+        if msg_appendix:
+            msg += msg_appendix
         raise PermissionDenied(msg)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

@@ -7,12 +7,15 @@ from ....shared.exceptions import PermissionDenied
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordCreateMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.create")
-class UserCreate(CreateAction, UserMixin, PasswordCreateMixin):
+class UserCreate(
+    CreateAction, UserMixin, CreateUpdatePermissionsMixin, PasswordCreateMixin
+):
     """
     Action to create a user.
     """
@@ -48,20 +51,9 @@ class UserCreate(CreateAction, UserMixin, PasswordCreateMixin):
         ],
     )
 
-    permission = OrganisationManagementLevel.CAN_MANAGE_USERS
-
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if not instance.get("default_password"):
             instance = self.generate_and_set_password(instance)
         else:
             instance = self.set_password(instance)
         return super().update_instance(instance)
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if has_organisation_management_level(
-            self.datastore, self.user_id, OrganisationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
-
-        msg = f"You are not allowed to perform action {self.name}. Missing Organisation Management Level: {OrganisationManagementLevel.CAN_MANAGE_USERS}"
-        raise PermissionDenied(msg)

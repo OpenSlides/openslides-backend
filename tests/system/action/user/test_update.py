@@ -181,7 +181,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Anonymous user is not allowed to update user data.",
+            "Anonymous user is not allowed to change user data.",
             response.json["message"],
         )
 

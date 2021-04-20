@@ -229,4 +229,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             self.assert_status_code(response, 200)
         else:
             self.assert_status_code(response, 403)
-            assert "Missing permission:" in response.json["message"]
+            self.assertIn(
+                f"You are not allowed to perform action {action}",
+                response.json["message"],
+            )

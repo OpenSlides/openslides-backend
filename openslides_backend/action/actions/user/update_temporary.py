@@ -13,7 +13,7 @@ from .user_mixin import UserMixin
 
 @register_action("user.update_temporary")
 class UserUpdateTemporary(
-    UpdateAction, TemporaryUserMixin, CheckTemporaryYesForInstanceMixin, UserMixin
+    TemporaryUserMixin, CheckTemporaryYesForInstanceMixin, UserMixin, UpdateAction
 ):
     """
     Action to update a temporary user.
