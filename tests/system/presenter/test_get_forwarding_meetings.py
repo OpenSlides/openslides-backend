@@ -59,7 +59,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
             {
                 "meeting/1": {"name": "meeting1", "committee_id": 2, "group_ids": [2]},
                 "meeting/2": {"name": "meeting2", "committee_id": 3, "group_ids": [3]},
-                "meeting/3": {"committee_id": 3, "group_ids": [4]},
+                "meeting/3": {"name": "meeting3", "committee_id": 3, "group_ids": [4]},
                 "committee/2": {
                     "name": "com2",
                     "forward_to_committee_ids": [3],

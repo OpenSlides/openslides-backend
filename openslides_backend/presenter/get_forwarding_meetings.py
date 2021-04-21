@@ -39,7 +39,7 @@ class GetForwardingMeetings(BasePresenter):
             Permissions.Motion.CAN_MANAGE,
             self.data["meeting_id"],
         ):
-            msg = "You are not allowed to perform persenter get_forwarding_meetings"
+            msg = "You are not allowed to perform presenter get_forwarding_meetings"
             msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE}"
             raise PermissionDenied(msg)
 
