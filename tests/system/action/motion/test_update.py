@@ -350,8 +350,12 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_no_permissions(self) -> None:
-        self.base_permission_test(
-            self.permission_test_model,
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_models(self.permission_test_model)
+        response = self.request(
             "motion.update",
             {
                 "id": 111,
@@ -360,6 +364,8 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "reason": "reason_ukWqADfE",
             },
         )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: title, text, reason" in response.json["message"]
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
@@ -424,6 +430,27 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "title": "title_bDFsWtKL",
                 "text": "text_eNPkDVuq",
                 "reason": "reason_ukWqADfE",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_permission_metadata_and_submitter(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+        self.permission_test_model["motion_submitter/1"]["user_id"] = self.user_id
+        self.set_models(self.permission_test_model)
+        self.set_models({"motion_category/2": {"meeting_id": 1}})
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+                "category_id": 2,
             },
         )
         self.assert_status_code(response, 200)

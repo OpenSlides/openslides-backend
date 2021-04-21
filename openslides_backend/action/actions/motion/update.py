@@ -136,8 +136,6 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
             return
 
-        forbidden_fields = []
-
         # check for can_manage_metadata and whitelist
         perm = Permissions.Motion.CAN_MANAGE_METADATA
         whitelist = [
@@ -146,39 +144,28 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "origin",
             "supporters_id",
             "recommendation_extension",
-            "id",
         ]
+        allowed_fields = ["id"]
         if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
-            forbidden_fields_1 = self.check_forbidden_fields(instance, whitelist)
-            if not forbidden_fields_1:
-                return
-            else:
-                forbidden_fields.extend(forbidden_fields_1)
-
+            allowed_fields += whitelist
         # check for self submitter and whitelist
         whitelist = [
             "title",
             "text",
             "reason",
             "amendment_paragraph_$",
-            "id",
         ]
 
         if self.is_allowed_and_submitter(
             motion.get("submitter_ids", []), motion["state_id"]
         ):
-            forbidden_fields_2 = self.check_forbidden_fields(instance, whitelist)
-            if not forbidden_fields_2:
-                return
-            else:
-                forbidden_fields.extend(forbidden_fields_2)
+            allowed_fields += whitelist
 
+        forbidden_fields = self.check_forbidden_fields(instance, allowed_fields)
         msg = f"You are not allowed to perform action {self.name}."
         if forbidden_fields:
             msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
-        else:
-            msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE}"
-        raise PermissionDenied(msg)
+            raise PermissionDenied(msg)
 
     def check_forbidden_fields(
         self, instance: Dict[str, Any], whitelist: List[str]
