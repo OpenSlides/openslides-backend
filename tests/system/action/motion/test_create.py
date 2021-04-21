@@ -396,7 +396,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert "Forbidden fields:" in response.json["message"]
+        assert "Forbidden fields: number" in response.json["message"]
 
     def test_create_permission_with_can_manage(self) -> None:
         self.create_meeting()
@@ -438,6 +438,10 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
+        assert (
+            "Missing permission: motion.can_create_amendments"
+            in response.json["message"]
+        )
 
     def test_create_permission_lead_motion(self) -> None:
         self.create_meeting()
