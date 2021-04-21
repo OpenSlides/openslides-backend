@@ -1,4 +1,5 @@
 from openslides_backend.models.models import Poll
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -10,9 +11,9 @@ class CreatePoll(BaseActionTestCase):
                 "assignment/1": {
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
-                    "meeting_id": 113,
+                    "meeting_id": 1,
                 },
-                "meeting/113": {},
+                "meeting/1": {},
                 "organisation/1": {"enable_electronic_voting": True},
                 "user/3": {"username": "User3"},
             },
@@ -27,7 +28,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "pollmethod": "Y",
                 "options": [{"text": "test2", "Y": "10.000000"}],
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": True,
@@ -41,7 +42,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("type") == "analog"
         assert poll.get("content_object_id") == "assignment/1"
         assert poll.get("pollmethod") == "Y"
-        assert poll.get("meeting_id") == 113
+        assert poll.get("meeting_id") == 1
         assert poll.get("option_ids") == [1]
         assert poll.get("global_option_id") == 2
         assert poll.get("state") == "finished"
@@ -50,11 +51,11 @@ class CreatePoll(BaseActionTestCase):
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
-        assert option.get("meeting_id") == 113
+        assert option.get("meeting_id") == 1
         global_option = self.get_model("option/2")
         assert global_option.get("text") == "global option"
         assert global_option.get("used_as_global_option_in_poll_id") == 1
-        assert global_option.get("meeting_id") == 113
+        assert global_option.get("meeting_id") == 1
 
     def test_create_three_options(self) -> None:
         response = self.request(
@@ -68,7 +69,7 @@ class CreatePoll(BaseActionTestCase):
                     {"text": "test3", "N": "0.999900"},
                     {"text": "test4", "N": "11.000000"},
                 ],
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "onehundred_percent_base": "YNA",
                 "majority_method": "simple",
             },
@@ -78,7 +79,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("title") == "test"
         assert poll.get("type") == "analog"
         assert poll.get("pollmethod") == "YNA"
-        assert poll.get("meeting_id") == 113
+        assert poll.get("meeting_id") == 1
         assert poll.get("option_ids") == [1, 2, 3]
         assert poll.get("global_option_id") == 4
         assert poll.get("onehundred_percent_base") == "YNA"
@@ -86,25 +87,25 @@ class CreatePoll(BaseActionTestCase):
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
-        assert option.get("meeting_id") == 113
+        assert option.get("meeting_id") == 1
         assert option.get("yes") == "10.000000"
         assert option.get("weight") == 1
         option_2 = self.get_model("option/2")
         assert option_2.get("text") == "test3"
         assert option_2.get("poll_id") == 1
-        assert option_2.get("meeting_id") == 113
+        assert option_2.get("meeting_id") == 1
         assert option_2.get("no") == "0.999900"
         assert option_2.get("weight") == 2
         option_3 = self.get_model("option/3")
         assert option_3.get("text") == "test4"
         assert option_3.get("poll_id") == 1
-        assert option_3.get("meeting_id") == 113
+        assert option_3.get("meeting_id") == 1
         assert option_3.get("no") == "11.000000"
         assert option_3.get("weight") == 3
         option_4 = self.get_model("option/4")
         assert option_4.get("text") == "global option"
         assert option_4.get("used_as_global_option_in_poll_id") == 1
-        assert option_4.get("meeting_id") == 113
+        assert option_4.get("meeting_id") == 1
         assert option_4.get("weight") == 1
 
     def test_all_fields(self) -> None:
@@ -121,7 +122,7 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": False,
                 "global_abstain": False,
                 "description": "test_description_ieM8ThuasoSh8aecai8p",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -149,7 +150,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [],
             },
         )
@@ -169,7 +170,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{}],
             },
         )
@@ -182,7 +183,7 @@ class CreatePoll(BaseActionTestCase):
             "title": "test_title_keugh8Iu9ciyooGaevoh",
             "pollmethod": "YNA",
             "type": "named",
-            "meeting_id": 113,
+            "meeting_id": 1,
             "options": [{"text": "test"}],
         }
         for key in complete_request_data.keys():
@@ -196,9 +197,7 @@ class CreatePoll(BaseActionTestCase):
             self.assert_model_not_exists("poll/1")
 
     def test_with_groups(self) -> None:
-        self.set_models(
-            {"group/1": {"meeting_id": 113}, "group/2": {"meeting_id": 113}}
-        )
+        self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
         response = self.request(
             "poll.create",
             {
@@ -209,7 +208,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
                 "entitled_group_ids": [1, 2],
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -228,7 +227,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
                 "entitled_group_ids": [],
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -246,7 +245,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -264,7 +263,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -281,7 +280,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -298,7 +297,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "invalid base",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -319,7 +318,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "invalid majority method",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -340,7 +339,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -361,7 +360,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YNA",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -382,7 +381,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YNA",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
         )
@@ -400,7 +399,7 @@ class CreatePoll(BaseActionTestCase):
                     "action": "poll.create",
                     "data": [
                         {
-                            "meeting_id": 113,
+                            "meeting_id": 1,
                             "title": "Wahlgang (3)",
                             "majority_method": "simple",
                             "onehundred_percent_base": "valid",
@@ -433,7 +432,7 @@ class CreatePoll(BaseActionTestCase):
                     {"text": "test", "A": "11.000000"},
                     {"text": "test", "N": "12.000000"},
                 ],
-                "meeting_id": 113,
+                "meeting_id": 1,
             },
         )
         self.assert_status_code(response, 400)
@@ -453,7 +452,7 @@ class CreatePoll(BaseActionTestCase):
                     {"text": "test4", "N": "11.000000"},
                     {"content_object_id": "user/1", "Y": "11.000000"},
                 ],
-                "meeting_id": 113,
+                "meeting_id": 1,
             },
         )
         self.assert_status_code(response, 400)
@@ -462,7 +461,7 @@ class CreatePoll(BaseActionTestCase):
         )
 
     def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
-        self.update_model("user/1", {"meeting_id": 113})
+        self.update_model("user/1", {"meeting_id": 1})
         response = self.request(
             "poll.create",
             {
@@ -475,17 +474,17 @@ class CreatePoll(BaseActionTestCase):
                     {"content_object_id": "user/1", "Y": "10.000000", "N": "5.000000"},
                     {"text": "user/1", "Y": "10.000000"},
                 ],
-                "meeting_id": 113,
+                "meeting_id": 1,
             },
         )
         self.assert_status_code(response, 200)
 
     def test_analog_poll_without_YNA_values(self) -> None:
-        self.create_model("motion/3", {"meeting_id": 113})
+        self.create_model("motion/3", {"meeting_id": 1})
         response = self.request(
             "poll.create",
             {
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "title": "Abstimmung",
                 "majority_method": "simple",
                 "onehundred_percent_base": "YNA",
@@ -526,7 +525,7 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
                 "majority_method": "simple",
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "options": [{"text": "test1"}],
             },
         )
@@ -595,4 +594,119 @@ class CreatePoll(BaseActionTestCase):
         assert (
             response.json["message"]
             == "The following models do not belong to meeting 7: ['user/1']"
+        )
+
+    def test_create_no_permissions_assignment(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
+        )
+
+    def test_create_permissions_assignment(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
+            Permissions.Assignment.CAN_MANAGE,
+        )
+
+    def test_create_no_permissions_motion(self) -> None:
+        self.base_permission_test(
+            {"motion/23": {"meeting_id": 1}},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "motion/23",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
+        )
+
+    def test_create_permissions_motion(self) -> None:
+        self.base_permission_test(
+            {"motion/23": {"meeting_id": 1}},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "motion/23",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
+            Permissions.Motion.CAN_MANAGE_POLLS,
+        )
+
+    def test_create_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
+            Permissions.Poll.CAN_MANAGE,
+        )
+
+    def test_create_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "majority_method": "simple",
+            },
         )

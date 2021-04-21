@@ -8,6 +8,7 @@ from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..poll.mixins import check_poll_or_option_perms
 from ..poll.set_state import PollSetState
 from ..vote.create import VoteCreate
 from ..vote.update import VoteUpdate
@@ -110,6 +111,8 @@ class OptionUpdateAction(UpdateAction):
                     "global_yes",
                     "global_no",
                     "global_abstain",
+                    "meeting_id",
+                    "content_object_id",
                 ],
             ),
             option,
@@ -191,3 +194,11 @@ class OptionUpdateAction(UpdateAction):
         if instance.get("Y") or instance.get("N") or instance.get("A"):
             return True
         return False
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        _, poll, _ = self._get_poll(instance["id"])
+        content_object_id = poll.get("content_object_id", "")
+        meeting_id = poll["meeting_id"]
+        check_poll_or_option_perms(
+            self.name, content_object_id, self.datastore, self.user_id, meeting_id
+        )
