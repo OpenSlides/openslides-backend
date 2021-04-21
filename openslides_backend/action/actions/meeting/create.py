@@ -156,7 +156,6 @@ class MeetingCreate(CreateActionWithDependencies):
         )
         instance["list_of_speakers_countdown_id"] = action_results[0]["id"]  # type: ignore
         instance["poll_countdown_id"] = action_results[1]["id"]  # type: ignore
-        instance["projector_countdown_warning_time"] = 1
 
         return instance
 
