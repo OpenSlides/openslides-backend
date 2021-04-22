@@ -36,9 +36,40 @@ FILE_TEMPLATE = dedent(
         CAN_MANAGE_USERS = "can_manage_users"
         CAN_MANAGE_ORGANISATION = "can_manage_organisation"
 
+        def __init__(self, oml: str):
+            super().__init__()
+            self.numbers = {
+                "superadmin": 3,
+                "can_manage_organisation": 2,
+                "can_manage_users": 1,
+            }
+            self.number: int = self.numbers.get(oml, 0)
+
+        def is_ok(self, user_oml: str) -> bool:
+            return self.numbers.get(user_oml, 0) >= self.number
+
+
+    class CommitteeManagementLevel(str, Enum):
+        \""" 2nd Permission Type, implemented as User.committee_as_manager_ids \"""
+
+        MANAGER = "can_manage_committees"
+
+        def __init__(self, cml: str):
+            super().__init__()
+            self.numbers = {
+                "can_manage_committees": 1,
+            }
+            self.number: int = self.numbers.get(cml, 0)
+
+        def is_ok(self, user_cml: str) -> bool:
+            return self.numbers.get(user_cml, 0) >= self.number
+
 
     class Permission(str):
         \""" Marker class to use typing with permissions. \"""
+
+        def __str__(self) -> str:
+                return self.value  # type: ignore
     """
 )
 
