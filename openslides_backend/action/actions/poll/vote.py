@@ -11,6 +11,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.create import VoteCreate
+from ..vote.user_token_helper import get_user_token
 
 
 @register_action("poll.vote")
@@ -155,6 +156,7 @@ class PollVote(UpdateAction):
         action_data: List[Dict[str, Any]],
     ) -> None:
         vote_weight = self.get_vote_weigth(user_id)
+        user_token = get_user_token()
 
         for key in value:
             weight = vote_weight
@@ -174,6 +176,7 @@ class PollVote(UpdateAction):
                         int(key),
                         self.poll["meeting_id"],
                         weight,
+                        user_token,
                     )
                 )
 
@@ -201,6 +204,8 @@ class PollVote(UpdateAction):
     def handle_global_value(
         self, value: str, user_id: int, instance: Dict[str, Any]
     ) -> None:
+        user_token = get_user_token()
+
         for value_check, condition in (
             ("Y", self.poll.get("global_yes")),
             ("N", self.poll.get("global_no")),
@@ -214,6 +219,7 @@ class PollVote(UpdateAction):
                         self.poll["global_option_id"],
                         self.poll["meeting_id"],
                         "1.000000",
+                        user_token,
                     )
                 ]
                 self.execute_other_action(VoteCreate, action_data)
@@ -273,6 +279,7 @@ class PollVote(UpdateAction):
         option_id: int,
         meeting_id: int,
         weight: str,
+        user_token: str,
     ) -> Dict[str, Any]:
         if self.poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS:
             user_id = None
@@ -281,6 +288,7 @@ class PollVote(UpdateAction):
             "weight": weight,
             "user_id": user_id,
             "option_id": option_id,
+            "user_token": user_token,
             "meeting_id": meeting_id,
         }
 

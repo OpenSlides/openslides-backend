@@ -303,7 +303,7 @@ class CreatePoll(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'disabled']",
+            "data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'disabled']",
             response.json["message"],
         )
         self.assert_model_not_exists("poll/1")

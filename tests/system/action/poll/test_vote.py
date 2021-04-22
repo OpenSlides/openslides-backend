@@ -151,12 +151,14 @@ class PollVoteTest(BaseActionTestCase):
         assert vote.get("weight") == "1.000000"
         assert vote.get("meeting_id") == 113
         assert vote.get("user_id") == 1
+        user_token = vote.get("user_token")
         vote = self.get_model("vote/2")
         assert vote.get("value") == "N"
         assert vote.get("option_id") == 12
         assert vote.get("weight") == "1.000000"
         assert vote.get("meeting_id") == 113
         assert vote.get("user_id") == 1
+        assert vote.get("user_token") == user_token
         option = self.get_model("option/11")
         assert option.get("vote_ids") == [1]
         assert option.get("yes") == "1.000000"

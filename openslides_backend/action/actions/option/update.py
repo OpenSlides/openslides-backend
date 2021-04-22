@@ -12,6 +12,7 @@ from ..poll.mixins import check_poll_or_option_perms
 from ..poll.set_state import PollSetState
 from ..vote.create import VoteCreate
 from ..vote.update import VoteUpdate
+from ..vote.user_token_helper import get_user_token
 
 
 @register_action("option.update")
@@ -45,6 +46,8 @@ class OptionUpdateAction(UpdateAction):
 
         action_data_create = []
         action_data_update = []
+        user_token = get_user_token()
+
         for field_name, vote_name in (("yes", "Y"), ("no", "N"), ("abstain", "A")):
             if field_name in instance:
                 vote_id = self._get_vote_id(vote_name, id_to_vote)
@@ -55,6 +58,7 @@ class OptionUpdateAction(UpdateAction):
                             "value": vote_name,
                             "weight": instance[field_name],
                             "meeting_id": option["meeting_id"],
+                            "user_token": user_token,
                         }
                     )
                 else:
