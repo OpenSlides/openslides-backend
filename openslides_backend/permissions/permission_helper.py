@@ -82,7 +82,7 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
 
 
 def has_organisation_management_level(
-    datastore: DatastoreService, user_id: int, set_level: OrganisationManagementLevel
+    datastore: DatastoreService, user_id: int, expected_level: OrganisationManagementLevel
 ) -> bool:
     """ Checks wether a user has the minimum necessary OrganisationManagementLevel """
     if user_id > 0:
@@ -90,12 +90,7 @@ def has_organisation_management_level(
             FullQualifiedId(Collection("user"), user_id),
             ["organisation_management_level"],
         )
-        set_level_number = OrganisationManagementLevel.get_level_number(set_level, 4)
-        actual_level_number = OrganisationManagementLevel.get_level_number(
-            user.get("organisation_management_level")  # type: ignore
-        )
-        if actual_level_number >= set_level_number:
-            return True
+        return expected_level.is_ok(user.get("organisation_management_level", 0))
     return False
 
 

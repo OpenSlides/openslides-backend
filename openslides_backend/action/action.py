@@ -171,7 +171,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 ):
                     return
                 msg_appendix = (
-                    f"Missing Organisation Management Level: {self.permission}"
+                    f" Missing Organisation Management Level: {self.permission}"
                 )
             elif type(self.permission) == CommitteeManager:
                 """
@@ -193,7 +193,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
 
-        msg = f"You are not allowed to perform action {self.name}. "
+        msg = f"You are not allowed to perform action {self.name}."
         if msg_appendix:
             msg += msg_appendix
         raise PermissionDenied(msg)

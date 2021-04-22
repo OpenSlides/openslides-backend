@@ -288,13 +288,13 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "username",
-                "group_$_ids": {1: [1]},
+                "group_$_ids": {1: [1], 4: [5]},
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/3",
-            {"group_$_ids": ["1"], "group_$1_ids": [1], "username": "username"},
+            {"group_$_ids": ["1", "4"], "group_$1_ids": [1], "group_$4_ids": [5], "username": "username"},
         )
 
     def test_create_permission_committee_manager_no_permission(self) -> None:
@@ -305,19 +305,22 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee_as_manager_ids": [60],
                 "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                "group_$_ids": ["1", "4"],
+                "group_$1_ids": [2],  # admin group of meeting/1
+                "group_$4_ids": [4],  # default group of meeting/4
             },
         )
         response = self.request(
             "user.create",
             {
                 "username": "username",
-                "group_$_ids": {1: [1]},
+                "group_$_ids": {1: [1], 4: [5]},
                 "vote_weight_$": {1: "1.000000"},
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'_User.CAN_MANAGE for meeting 1'}",
+            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'Committee Manager Right for meetings {4}'}.",
             response.json["message"],
         )
 
@@ -371,27 +374,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_as_manager_ids": [63],
                 "guest_meeting_ids": [1, 4],
             },
-        )
-
-    def test_create_permission_manage_user_no_permission(self) -> None:
-        """ May create group A fields only """
-        self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
-        )
-
-        response = self.request(
-            "user.create",
-            {
-                "username": "username",
-                "structure_level_$": {"1": "group B field"},
-            },
-        )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'_User.CAN_MANAGE for meeting 1'}",
-            response.json["message"],
         )
 
     def test_create_permission_user_can_manage(self) -> None:
@@ -466,7 +448,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'_User.CAN_MANAGE for meeting 4'}",
+            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'}",
             response.json["message"],
         )
 

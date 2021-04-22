@@ -222,9 +222,8 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_permission_committee_manager(self) -> None:
         """ May update group C fields """
         self.permission_setup()
-        self.create_meeting(base=4)
         self.update_model(
-            f"user/{self.user_id}", {"committee_as_manager_ids": [60, 63]}
+            f"user/{self.user_id}", {"committee_as_manager_ids": [60]}
         )
 
         response = self.request(
@@ -246,22 +245,24 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.update_model(
             f"user/{self.user_id}",
             {
-                "committee_as_manager_ids": [
-                    60,
-                ]
+                "committee_as_manager_ids": [60],
+                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                "group_$_ids": ["1", "4"],
+                "group_$1_ids": [2],  # admin group of meeting/1
+                "group_$4_ids": [4],  # default group of meeting/4
             },
         )
         response = self.request(
             "user.update",
             {
                 "id": 111,
-                "group_$_ids": {1: [1]},
+                "group_$_ids": {1: [1], 4: [5]},
                 "vote_weight_$": {1: "1.000000"},
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'_User.CAN_MANAGE for meeting 1'}",
+            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'} or alternative {'Committee Manager Right for meetings {4}'}.",
             response.json["message"],
         )
 
@@ -318,34 +319,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_manage_user_no_permission(self) -> None:
-        """ May update group A fields only """
-        self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
-        )
-
-        response = self.request(
-            "user.update",
-            {
-                "id": 111,
-                "username": "new username",
-                "structure_level_$": {"1": "group B field"},
-            },
-        )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'_User.CAN_MANAGE for meeting 1'}",
-            response.json["message"],
-        )
-
     def test_update_permission_user_can_manage(self) -> None:
         """ May update group B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_management_level(None, self.user_id)
-        self.set_user_groups(self.user_id, [3, 6])
+        self.set_user_groups(self.user_id, [3, 6])  # Empty groups of meeting/1 and meeting/4
         self.set_user_groups(111, [1, 4])
         self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
         self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
@@ -400,8 +379,8 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_management_level(None, self.user_id)
-        self.set_user_groups(self.user_id, [3, 6])
-        self.set_user_groups(111, [1, 4])
+        self.set_user_groups(self.user_id, [3, 6])  # Empty groups of meeting/1 and meeting/4
+        self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
         self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
 
         response = self.request(
@@ -413,7 +392,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'_User.CAN_MANAGE for meeting 4'}",
+            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'}. Conflicting fields: number_$/meeting:4",
             response.json["message"],
         )
 

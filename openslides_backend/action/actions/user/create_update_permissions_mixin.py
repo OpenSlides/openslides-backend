@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Set, Tuple, cast
+from collections import defaultdict
+from typing import Any, Dict, List, Set, Tuple, Union, cast
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import (
@@ -60,19 +61,24 @@ class CreateUpdatePermissionsMixin(Action):
             FullQualifiedId(Collection("user"), self.user_id),
             ["organisation_management_level", "committee_as_manager_ids"],
         )
-        user_oml_level = user.get("organisation_management_level")
-        if user_oml_level == OrganisationManagementLevel.SUPERADMIN:
+        user_oml = user.get("organisation_management_level")
+        if user_oml == OrganisationManagementLevel.SUPERADMIN:
             return
 
-        user_oml_level_number = self._get_and_check_oml_level_number(
-            cast(OrganisationManagementLevel, user_oml_level), instance
-        )
+        if "organisation_management_level" in instance:
+            if not OrganisationManagementLevel(instance["organisation_management_level"]).is_ok(user_oml):
+                raise PermissionDenied(
+                    f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
+                )
 
         user_meetings = self._get_user_meetings_set(
             cast(List[int], user.get("committee_as_manager_ids", []))
         )
         necessary_permissions: Set[Tuple[Permission, int]] = set()
+
+        necessary_fields: Dict[Tupel[str, int], List[int]] = defaultdict(list)
         missing_rights: Set[str] = set()
+        missing_fields: List(str) = []
         potentially_missing_rights: Set[str] = set()
 
         for fieldname, value in instance.items():
@@ -80,66 +86,46 @@ class CreateUpdatePermissionsMixin(Action):
             temp_missing_rights: Set[str] = set()
             for right in self.field_rights.get(fieldname, []):
                 if type(right) == OrganisationManagementLevel:
-                    if (
-                        OrganisationManagementLevel.get_level_number(right)
-                        > user_oml_level_number
-                    ):
-                        temp_missing_rights.add(str(right))
-                    else:
+                    if right.is_ok(user_oml):
                         temp_right = True
                         break
+                    temp_missing_rights.add(str(right))
                 elif type(right) == CommitteeManager:
-                    result = {
+                    result = set(
                         int(meeting_id) for meeting_id in value.keys()
-                    } - user_meetings
+                    ) - user_meetings
                     if result:
                         temp_missing_rights.add(f"{str(right)} for meetings {result}")
                     else:
                         temp_right = True
                         break
                 else:
-                    potentially_missing_rights = potentially_missing_rights.union(
-                        temp_missing_rights
-                    )
+                    potentially_missing_rights.update(temp_missing_rights)
                     temp_missing_rights = set()
                     for meeting_id in value.keys():
                         necessary_permissions.add((right, int(meeting_id)))
+                        necessary_fields[(right, int(meeting_id))].append(f"{fieldname}/meeting: {meeting_id}")
             if not temp_right and temp_missing_rights:
-                missing_rights = missing_rights.union(temp_missing_rights)
+                missing_rights.update(temp_missing_rights)
+                missing_fields.append(fieldname)
 
         if necessary_permissions:
             for right in necessary_permissions:
                 permission, meeting_id = right
                 if not has_perm(self.datastore, self.user_id, permission, meeting_id):
                     missing_rights.add(f"{str(permission)} for meeting {meeting_id}")
+                    missing_fields.extend(necessary_fields[right])
 
         if missing_rights:
             msg = f"You are not allowed to perform action {self.name}."
             msg += f" Missing permissions {missing_rights}"
             if potentially_missing_rights:
-                msg += f" or alternative {potentially_missing_rights}."
+                msg += f" or alternative {potentially_missing_rights}"
+            msg += f". Conflicting fields: {', '.join(missing_fields)}"
             raise PermissionDenied(msg)
 
-    def _get_and_check_oml_level_number(
-        self, user_oml_level: OrganisationManagementLevel, instance: Dict[str, Any]
-    ) -> int:
-        user_oml_level_number = OrganisationManagementLevel.get_level_number(
-            cast(OrganisationManagementLevel, user_oml_level)
-        )
-        if (
-            "organisation_management_level" in instance
-            and OrganisationManagementLevel.get_level_number(
-                instance["organisation_management_level"]
-            )
-            > user_oml_level_number
-        ):
-            raise PermissionDenied(
-                f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
-            )
-        return user_oml_level_number
-
     def _get_user_meetings_set(self, committee_ids: List[int]) -> Set[int]:
-        user_meetings = []
+        user_meetings = set()
         if committee_ids:
             committees = (
                 self.datastore.get_many(
@@ -153,6 +139,6 @@ class CreateUpdatePermissionsMixin(Action):
                 .values()
             )
             for committee in committees:
-                user_meetings.extend(committee.get("meeting_ids", []))
+                user_meetings.update(committee.get("meeting_ids", []))
 
-        return set(user_meetings)
+        return user_meetings
