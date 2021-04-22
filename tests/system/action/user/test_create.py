@@ -294,7 +294,12 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/3",
-            {"group_$_ids": ["1", "4"], "group_$1_ids": [1], "group_$4_ids": [5], "username": "username"},
+            {
+                "group_$_ids": ["1", "4"],
+                "group_$1_ids": [1],
+                "group_$4_ids": [5],
+                "username": "username",
+            },
         )
 
     def test_create_permission_committee_manager_no_permission(self) -> None:

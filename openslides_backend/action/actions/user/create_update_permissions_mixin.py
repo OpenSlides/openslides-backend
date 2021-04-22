@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, Union, cast
+from typing import Any, Dict, List, Set, Tuple, cast
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import (
@@ -61,12 +61,14 @@ class CreateUpdatePermissionsMixin(Action):
             FullQualifiedId(Collection("user"), self.user_id),
             ["organisation_management_level", "committee_as_manager_ids"],
         )
-        user_oml = user.get("organisation_management_level")
+        user_oml: str = cast(str, user.get("organisation_management_level"))
         if user_oml == OrganisationManagementLevel.SUPERADMIN:
             return
 
         if "organisation_management_level" in instance:
-            if not OrganisationManagementLevel(instance["organisation_management_level"]).is_ok(user_oml):
+            if not OrganisationManagementLevel(
+                instance["organisation_management_level"]
+            ).is_ok(user_oml):
                 raise PermissionDenied(
                     f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
                 )
@@ -76,9 +78,9 @@ class CreateUpdatePermissionsMixin(Action):
         )
         necessary_permissions: Set[Tuple[Permission, int]] = set()
 
-        necessary_fields: Dict[Tupel[str, int], List[int]] = defaultdict(list)
+        necessary_fields: Dict[Tuple[str, int], List[str]] = defaultdict(list)
         missing_rights: Set[str] = set()
-        missing_fields: List(str) = []
+        missing_fields: List[str] = []
         potentially_missing_rights: Set[str] = set()
 
         for fieldname, value in instance.items():
@@ -91,9 +93,10 @@ class CreateUpdatePermissionsMixin(Action):
                         break
                     temp_missing_rights.add(str(right))
                 elif type(right) == CommitteeManager:
-                    result = set(
-                        int(meeting_id) for meeting_id in value.keys()
-                    ) - user_meetings
+                    result = (
+                        set(int(meeting_id) for meeting_id in value.keys())
+                        - user_meetings
+                    )
                     if result:
                         temp_missing_rights.add(f"{str(right)} for meetings {result}")
                     else:
@@ -104,7 +107,9 @@ class CreateUpdatePermissionsMixin(Action):
                     temp_missing_rights = set()
                     for meeting_id in value.keys():
                         necessary_permissions.add((right, int(meeting_id)))
-                        necessary_fields[(right, int(meeting_id))].append(f"{fieldname}/meeting: {meeting_id}")
+                        necessary_fields[(right, int(meeting_id))].append(
+                            f"{fieldname}/meeting: {meeting_id}"
+                        )
             if not temp_right and temp_missing_rights:
                 missing_rights.update(temp_missing_rights)
                 missing_fields.append(fieldname)

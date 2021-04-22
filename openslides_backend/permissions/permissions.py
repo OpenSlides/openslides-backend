@@ -1,7 +1,7 @@
 # Code generated. DO NOT EDIT.
 
 from enum import Enum
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from .get_permission_parts import get_permission_parts
 
@@ -16,9 +16,9 @@ class OrganisationManagementLevel(str, Enum):
         self.numbers = {
             "superadmin": 3,
             "can_manage_organisation": 2,
-            "can_manage_users": 1
+            "can_manage_users": 1,
         }
-        self.number = self.numbers.get(oml)
+        self.number: int = self.numbers.get(oml, 0)
 
     def is_ok(self, user_oml: str) -> bool:
         return self.numbers.get(user_oml, 0) >= self.number
@@ -33,8 +33,9 @@ class CommitteeManager:
 
 class Permission(str):
     """ Marker class to use typing with permissions. """
-    def __str__(self):
-        return self.value
+
+    def __str__(self) -> str:
+        return self.value  # type: ignore
 
 
 class _AgendaItem(Permission, Enum):

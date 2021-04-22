@@ -222,9 +222,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_permission_committee_manager(self) -> None:
         """ May update group C fields """
         self.permission_setup()
-        self.update_model(
-            f"user/{self.user_id}", {"committee_as_manager_ids": [60]}
-        )
+        self.update_model(f"user/{self.user_id}", {"committee_as_manager_ids": [60]})
 
         response = self.request(
             "user.update",
@@ -324,7 +322,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_management_level(None, self.user_id)
-        self.set_user_groups(self.user_id, [3, 6])  # Empty groups of meeting/1 and meeting/4
+        self.set_user_groups(
+            self.user_id, [3, 6]
+        )  # Empty groups of meeting/1 and meeting/4
         self.set_user_groups(111, [1, 4])
         self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
         self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
@@ -379,7 +379,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_management_level(None, self.user_id)
-        self.set_user_groups(self.user_id, [3, 6])  # Empty groups of meeting/1 and meeting/4
+        self.set_user_groups(
+            self.user_id, [3, 6]
+        )  # Empty groups of meeting/1 and meeting/4
         self.set_user_groups(111, [1, 4])  # Default groups of meeting/1 and meeting/4
         self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
 
@@ -392,7 +394,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'}. Conflicting fields: number_$/meeting:4",
+            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'}. Conflicting fields: number_$/meeting: 4",
             response.json["message"],
         )
 
