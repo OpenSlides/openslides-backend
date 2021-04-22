@@ -19,7 +19,7 @@ from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.create_forwarded")
-class MotionCreate(
+class MotionCreateForwarded(
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     SequentialNumbersMixin,

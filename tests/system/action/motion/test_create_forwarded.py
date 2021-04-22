@@ -1,7 +1,7 @@
 from tests.system.action.base import BaseActionTestCase
 
 
-class MotionCreateActionTest(BaseActionTestCase):
+class MotionCreateForwarded(BaseActionTestCase):
     def test_correct_origin_id_set(self) -> None:
         self.set_models(
             {
