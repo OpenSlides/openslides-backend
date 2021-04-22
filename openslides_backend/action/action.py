@@ -18,7 +18,7 @@ from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..permissions.permission_helper import has_organisation_management_level, has_perm
 from ..permissions.permissions import (
-    CommitteeManager,
+    CommitteeManagementLevel,
     OrganisationManagementLevel,
     Permission,
 )
@@ -173,10 +173,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 msg_appendix = (
                     f" Missing Organisation Management Level: {self.permission}"
                 )
-            elif type(self.permission) == CommitteeManager:
+            elif type(self.permission) == CommitteeManagementLevel:
                 """
-                set permission in class to: permission = CommitteeManager
-                A specialized realisation see in user/update.py
+                set permission in class to: permission = CommitteeManagementLevel.MANAGER
+                A specialized realisation see in create_update_permissions_mixin.py
                 """
                 raise NotImplementedError
             else:

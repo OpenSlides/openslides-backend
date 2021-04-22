@@ -221,7 +221,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "or alternative {'Committee Manager Right for meetings {1}'}.",
+            "or alternative {'CommitteeManagementLevel.MANAGER for meetings {1}'}.",
             response.json["message"],
         )
 
@@ -325,7 +325,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'Committee Manager Right for meetings {4}'}.",
+            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.MANAGER for meetings {4}'}.",
             response.json["message"],
         )
 

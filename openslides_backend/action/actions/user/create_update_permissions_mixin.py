@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Set, Tuple, cast
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import (
-    CommitteeManager,
+    CommitteeManagementLevel,
     OrganisationManagementLevel,
     Permission,
     Permissions,
@@ -43,7 +43,7 @@ class CreateUpdatePermissionsMixin(Action):
         "vote_delegations_$_from_ids": [Permissions.User.CAN_MANAGE],
         # Group C
         "group_$_ids": [
-            CommitteeManager(),
+            CommitteeManagementLevel.MANAGER,
             Permissions.User.CAN_MANAGE,
         ],
     }
@@ -92,7 +92,7 @@ class CreateUpdatePermissionsMixin(Action):
                         temp_right = True
                         break
                     temp_missing_rights.add(str(right))
-                elif type(right) == CommitteeManager:
+                elif type(right) == CommitteeManagementLevel:
                     result = (
                         set(int(meeting_id) for meeting_id in value.keys())
                         - user_meetings

@@ -24,11 +24,19 @@ class OrganisationManagementLevel(str, Enum):
         return self.numbers.get(user_oml, 0) >= self.number
 
 
-class CommitteeManager:
+class CommitteeManagementLevel(str, Enum):
     """ 2nd Permission Type, implemented as User.committee_as_manager_ids """
+    MANAGER = "can_manage_committees"
 
-    def __str__(self) -> str:
-        return "Committee Manager Right"
+    def __init__(self, cml: str):
+        super().__init__()
+        self.numbers = {
+            "can_manage_committees": 1,
+        }
+        self.number: int = self.numbers.get(cml, 0)
+
+    def is_ok(self, user_cml: str) -> bool:
+        return self.numbers.get(user_cml, 0) >= self.number
 
 
 class Permission(str):
