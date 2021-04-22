@@ -52,6 +52,9 @@ class PollResetActionTest(BaseActionTestCase):
         poll = self.get_model("poll/1")
         assert poll.get("state") == "created"
 
+        # check if not is_pseudoanonymized
+        assert poll.get("is_pseudoanonymized") is False
+
         # check if the votes are deleted
         self.assert_model_deleted("vote/1")
         self.assert_model_deleted("vote/2")

@@ -32,7 +32,9 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
                 option = options[option_id]
                 if option.get("vote_ids"):
                     self._remove_user_id_from(option["vote_ids"])
-        return []
+
+            instance["is_pseudoanonymized"] = True
+            yield instance
 
     def check_allowed(self, poll_id: int) -> None:
         poll = self.datastore.get(
