@@ -48,6 +48,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("state") == "finished"
         assert poll.get("onehundred_percent_base") == "Y"
         assert poll.get("majority_method") == "simple"
+        assert poll.get("is_pseudoanonymized") is False
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
@@ -131,6 +132,7 @@ class CreatePoll(BaseActionTestCase):
         self.assertEqual(poll.get("title"), "test_title_ahThai4pae1pi4xoogoo")
         self.assertEqual(poll.get("pollmethod"), "YN")
         self.assertEqual(poll.get("type"), "pseudoanonymous")
+        self.assertTrue(poll.get("is_pseudoanonymized"))
         self.assertFalse(poll.get("global_yes"))
         self.assertFalse(poll.get("global_no"))
         self.assertFalse(poll.get("global_abstain"))

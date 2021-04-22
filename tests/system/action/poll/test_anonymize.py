@@ -34,6 +34,7 @@ class PollAnonymize(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("description") == "test"
+        assert poll.get("is_pseudoanonymized") is True
         for fqid in ("vote/1", "vote/2"):
             vote = self.get_model(fqid)
             assert vote.get("user_id") is None

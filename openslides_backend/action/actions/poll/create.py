@@ -141,6 +141,9 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
         for field in ("votescast", "votesvalid", "votesinvalid"):
             instance[field] = instance.get(field, "0.000000")
 
+        # calculate is_pseudoanonymized
+        instance["is_pseudoanonymized"] = instance["type"] == Poll.TYPE_PSEUDOANONYMOUS
+
         return instance
 
     def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
