@@ -60,14 +60,19 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 "meeting/1": {"name": "meeting1", "committee_id": 2, "group_ids": [2]},
                 "meeting/2": {"name": "meeting2", "committee_id": 3, "group_ids": [3]},
                 "meeting/3": {"name": "meeting3", "committee_id": 3, "group_ids": [4]},
+                "meeting/4": {"name": "meeting4", "committee_id": 4, "group_ids": [5]},
                 "committee/2": {
                     "name": "com2",
-                    "forward_to_committee_ids": [3],
+                    "forward_to_committee_ids": [3, 4],
                     "meeting_ids": [1],
                 },
                 "committee/3": {
                     "name": "com3",
                     "meeting_ids": [2, 3],
+                },
+                "committee/4": {
+                    "name": "com4",
+                    "meeting_ids": [4],
                 },
                 "user/3": {
                     "username": "test",
@@ -77,6 +82,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "group_$1_ids": [2],
                     "group_$2_ids": [3],
                     "group_$3_ids": [4],
+                    "group_$4_ids": [5],
                 },
                 "group/2": {
                     "meeting_id": 1,
@@ -88,6 +94,10 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 },
                 "group/4": {
                     "meeting_id": 3,
+                    "permissions": [],
+                },
+                "group/5": {
+                    "meeting_id": 4,
                     "permissions": [],
                 },
             }
