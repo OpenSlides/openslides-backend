@@ -70,7 +70,7 @@ class PresenterHandler(BaseHandler):
             raise PresenterException(exception.message)
 
         # Parse presentations and creates response
-        response = self.parse_presenters(payload)
+        response = self.parse_presenters(payload, user_id)
         self.logger.debug("Request was successful. Send response now.")
         return response
 
@@ -82,7 +82,7 @@ class PresenterHandler(BaseHandler):
         self.logger.debug("Validate presenter request.")
         payload_schema(payload)
 
-    def parse_presenters(self, payload: Payload) -> PresenterResponse:
+    def parse_presenters(self, payload: Payload, user_id: int) -> PresenterResponse:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.
@@ -100,6 +100,7 @@ class PresenterHandler(BaseHandler):
                     self.services,
                     self.datastore,
                     self.logging,
+                    user_id,
                 )
                 presenter_instance.validate()
                 result = presenter_instance.get_result()
