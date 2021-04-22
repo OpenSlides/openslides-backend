@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -138,40 +138,29 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
 
         # check for can_manage_metadata and whitelist
         perm = Permissions.Motion.CAN_MANAGE_METADATA
-        whitelist = [
-            "category_id",
-            "motion_block_id",
-            "origin",
-            "supporters_id",
-            "recommendation_extension",
-        ]
         allowed_fields = ["id"]
         if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
-            allowed_fields += whitelist
-        # check for self submitter and whitelist
-        whitelist = [
-            "title",
-            "text",
-            "reason",
-            "amendment_paragraph_$",
-        ]
+            allowed_fields += [
+                "category_id",
+                "motion_block_id",
+                "origin",
+                "supporters_id",
+                "recommendation_extension",
+            ]
 
+        # check for self submitter and whitelist
         if self.is_allowed_and_submitter(
             motion.get("submitter_ids", []), motion["state_id"]
         ):
-            allowed_fields += whitelist
+            allowed_fields += [
+                "title",
+                "text",
+                "reason",
+                "amendment_paragraph_$",
+            ]
 
-        forbidden_fields = self.check_forbidden_fields(instance, allowed_fields)
-        msg = f"You are not allowed to perform action {self.name}."
+        forbidden_fields = [field for field in instance if field not in allowed_fields]
         if forbidden_fields:
+            msg = f"You are not allowed to perform action {self.name}."
             msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
-
-    def check_forbidden_fields(
-        self, instance: Dict[str, Any], whitelist: List[str]
-    ) -> List[str]:
-        forbidden_fields = []
-        for field in instance:
-            if field not in whitelist:
-                forbidden_fields.append(field)
-        return forbidden_fields
