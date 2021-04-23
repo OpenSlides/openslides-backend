@@ -88,6 +88,7 @@ class MotionCreateBase(
             action_data.append({"motion_id": instance["id"], "user_id": user_id})
         self.execute_other_action(MotionSubmitterCreateAction, action_data)
 
+    def set_sequential_number(self, instance: Dict[str, Any]) -> None:
         instance["sequential_number"] = self.get_sequential_number(
             instance["meeting_id"]
         )
