@@ -1,6 +1,9 @@
 from typing import Any, Dict
 
 from ....models.models import Motion
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -33,3 +36,22 @@ class MotionCreateForwarded(MotionCreateBase):
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        perm = Permissions.Motion.CAN_CREATE
+        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+            msg = f"You are not allowed to perform action {self.name}."
+            msg += f" Missing permission: {perm}"
+            raise PermissionDenied(msg)
+
+        origin = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["origin_id"]),
+            ["meeting_id"],
+        )
+        perm_origin = Permissions.Motion.CAN_MANAGE
+        if not has_perm(
+            self.datastore, self.user_id, perm_origin, origin["meeting_id"]
+        ):
+            msg = f"You are not allowed to perform action {self.name}."
+            msg += f" Missing permission: {perm_origin}"
+            raise PermissionDenied(msg)
