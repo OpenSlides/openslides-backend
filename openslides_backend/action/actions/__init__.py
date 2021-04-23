@@ -26,6 +26,7 @@ def prepare_actions_map() -> None:
         motion_workflow,
         option,
         organisation,
+        organisation_tag,
         personal_note,
         poll,
         projection,
