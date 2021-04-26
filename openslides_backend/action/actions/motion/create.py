@@ -2,7 +2,9 @@ import time
 from typing import Any, Dict
 
 from ....models.models import Motion
-from ....shared.exceptions import ActionException
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -37,7 +39,6 @@ class MotionCreate(
     model = Motion()
     schema = DefaultSchema(Motion()).get_create_schema(
         optional_properties=[
-            "meeting_id",
             "title",
             "number",
             "state_extension",
@@ -178,3 +179,46 @@ class MotionCreate(
         )
 
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        # Check can create amendment if needed else check can_create
+        if instance.get("lead_motion_id"):
+            perm = Permissions.Motion.CAN_CREATE_AMENDMENTS
+            if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+                msg = f"You are not allowed to perform action {self.name}."
+                msg += f" Missing permission: {perm}"
+                raise PermissionDenied(msg)
+
+        else:
+            perm = Permissions.Motion.CAN_CREATE
+            if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+                msg = f"You are not allowed to perform action {self.name}."
+                msg += f" Missing permission: {perm}"
+                raise PermissionDenied(msg)
+
+        # if not can manage whitelist the fields.
+        perm = Permissions.Motion.CAN_MANAGE
+        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+            whitelist = [
+                "title",
+                "text",
+                "reason",
+                "lead_motion_id",
+                "amendment_paragraph_$",
+                "category_id",
+                "statute_paragraph_id",
+                "workflow_id",
+                "id",
+                "meeting_id",
+            ]
+            if instance.get("lead_motion_id"):
+                whitelist.append("motion_block_id")
+            forbidden_fields = []
+            for field in instance:
+                if field not in whitelist:
+                    forbidden_fields.append(field)
+
+            if forbidden_fields:
+                msg = f"You are not allowed to perform action {self.name}."
+                msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
+                raise PermissionDenied(msg)

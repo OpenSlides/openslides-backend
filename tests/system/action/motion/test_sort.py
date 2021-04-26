@@ -1,7 +1,14 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionSortActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion/22": {"meeting_id": 1, "title": "test1"},
+        }
+
     def test_sort_singe_node_correct(self) -> None:
         self.set_models(
             {
@@ -169,3 +176,18 @@ class MotionSortActionTest(BaseActionTestCase):
         response = self.request("motion.sort", data)
         self.assert_status_code(response, 400)
         assert "Id in sort tree does not exist: 111" in response.json["message"]
+
+    def test_sort_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+        )
+
+    def test_sort_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.sort",
+            {"meeting_id": 1, "tree": [{"id": 22}]},
+            Permissions.Motion.CAN_MANAGE,
+        )

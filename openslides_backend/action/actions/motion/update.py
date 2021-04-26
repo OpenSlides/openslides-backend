@@ -3,7 +3,9 @@ import time
 from typing import Any, Dict
 
 from ....models.models import Motion
-from ....shared.exceptions import ActionException
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import FilterOperator
 from ....shared.patterns import (
     KEYSEPARATOR,
@@ -15,12 +17,13 @@ from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionHelperMixin
 
 RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(r"\[(?P<fqid>\w+/\d+)\]")
 
 
 @register_action("motion.update")
-class MotionUpdate(UpdateAction):
+class MotionUpdate(UpdateAction, PermissionHelperMixin):
     """
     Action to update motions.
     """
@@ -121,3 +124,43 @@ class MotionUpdate(UpdateAction):
         instance[
             "recommendation_extension_reference_ids"
         ] = recommendation_extension_reference_ids
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        motion = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["id"]),
+            ["meeting_id", "state_id", "submitter_ids"],
+        )
+
+        # check for can_manage, all allowed
+        perm = Permissions.Motion.CAN_MANAGE
+        if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
+            return
+
+        # check for can_manage_metadata and whitelist
+        perm = Permissions.Motion.CAN_MANAGE_METADATA
+        allowed_fields = ["id"]
+        if has_perm(self.datastore, self.user_id, perm, motion["meeting_id"]):
+            allowed_fields += [
+                "category_id",
+                "motion_block_id",
+                "origin",
+                "supporters_id",
+                "recommendation_extension",
+            ]
+
+        # check for self submitter and whitelist
+        if self.is_allowed_and_submitter(
+            motion.get("submitter_ids", []), motion["state_id"]
+        ):
+            allowed_fields += [
+                "title",
+                "text",
+                "reason",
+                "amendment_paragraph_$",
+            ]
+
+        forbidden_fields = [field for field in instance if field not in allowed_fields]
+        if forbidden_fields:
+            msg = f"You are not allowed to perform action {self.name}."
+            msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
+            raise PermissionDenied(msg)

@@ -2,16 +2,19 @@ import time
 from typing import Any, Dict
 
 from ....models.models import Motion
-from ....shared.exceptions import ActionException
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionHelperMixin
 from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.set_state")
-class MotionSetStateAction(UpdateAction, SetNumberMixin):
+class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
     """
     Set the state in a motion.
     """
@@ -61,3 +64,29 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin):
         )
         instance["last_modified"] = round(time.time())
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        motion = self.datastore.get(
+            FullQualifiedId(Collection("motion"), instance["id"]),
+            [
+                "state_id",
+                "submitter_ids",
+                "meeting_id",
+            ],
+        )
+        if has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Motion.CAN_MANAGE_METADATA,
+            motion["meeting_id"],
+        ):
+            return
+
+        if self.is_allowed_and_submitter(
+            motion.get("submitter_ids", []), motion["state_id"]
+        ):
+            return
+
+        msg = "You are not allowed to perform action {self.name}."
+        msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE_METADATA}"
+        raise PermissionDenied(msg)
