@@ -55,7 +55,7 @@ class SendInvitationMail(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user2 = self.get_model("user/2")
         self.assertIsInstance(user2.get("last_email_send"), int)
-        self.assertGreater(user2.get("last_email_send"), start_time)
+        self.assertGreaterEqual(user2.get("last_email_send"), start_time)
 
     def test_send_mixed_multimail(self) -> None:
         """

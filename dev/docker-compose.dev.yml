@@ -86,6 +86,37 @@ services:
             - auth
             - redis
             - cache
+    vote:
+        build:
+            context: "https://github.com/OpenSlides/openslides-vote-service.git#main"
+        image: openslides-vote-dev
+        ports:
+            - "9013:9013"
+        environment:
+            - OPENSLIDES_DEVELOPMENT=true
+            - VOTE_HOST=vote
+            - VOTE_PORT=9013
+            - DATASTORE_READER_HOST=reader
+            - MESSAGING=redis
+            - MESSAGE_BUS_HOST=redis
+            - VOTE_REDIS_HOST=cache
+            - VOTE_DATABASE_HOST=postgresql
+            - VOTE_DATABASE_USER=openslides
+            - VOTE_DATABASE_PASSWORD=openslides
+            - VOTE_DATABASE_NAME=openslides
+            - AUTH=ticket
+            - AUTH_HOST=auth
+        depends_on:
+            - reader
+            - redis
+            - auth
+            - cache
+        networks:
+            - datastore
+            - redis
+            - auth
+            - cache
+            - postgresql
     postgresql:
         image: postgres:11
         environment:

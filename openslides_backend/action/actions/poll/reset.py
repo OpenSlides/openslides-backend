@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
@@ -6,6 +6,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.delete import VoteDelete
 from .mixins import PollPermissionMixin
@@ -78,3 +79,10 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
             }
         ]
         self.execute_other_action(OptionSetAutoFields, action_data)
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+        def on_success() -> None:
+            for instance in action_data:
+                self.vote_service.clear(instance["id"])
+
+        return on_success

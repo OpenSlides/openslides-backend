@@ -63,7 +63,6 @@ class OptionCreateAction(CreateAction):
                 "value": value,
                 "weight": instance[prop],
                 "option_id": instance["id"],
-                "meeting_id": instance["meeting_id"],
                 "user_token": user_token,
             }
         return None

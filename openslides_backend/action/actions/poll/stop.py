@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -6,6 +6,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .mixins import PollPermissionMixin, StopControl
 
 
@@ -30,3 +31,10 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
         instance["state"] = Poll.STATE_FINISHED
         self.on_stop(instance)
         return instance
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+        def on_success() -> None:
+            for instance in action_data:
+                self.vote_service.clear(instance["id"])
+
+        return on_success

@@ -1,7 +1,4 @@
-import time
-
 from openslides_backend.models.models import Poll
-from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -19,11 +16,13 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.create_poll()
         self.set_models(
             {
+                "organization/1": {"enable_electronic_voting": True},
                 "meeting/1": {
                     "name": "my meeting",
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 11,
                     "is_active_in_organization_id": 1,
+                    "group_ids": [1],
                 },
                 "projector_countdown/11": {
                     "default_time": 60,
@@ -66,38 +65,15 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
             },
         )
 
-    def test_start_poll(self) -> None:
-        response = self.request("poll.start", {"id": 1})
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("state"), Poll.STATE_STARTED)
-        self.assertEqual(poll.get("votesvalid"), "0.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "0.000000")
-        self.assert_model_not_exists("vote/1")
-        countdown = self.get_model("projector_countdown/11")
-        assert countdown.get("running") is True
-        now = time.time()
-        assert now <= countdown.get("countdown_time", 0.0) <= now + 600.0
-
-    def test_start_wrong_state(self) -> None:
-        self.update_model("poll/1", {"state": "published"})
+    def test_start_analog_poll(self) -> None:
         response = self.request("poll.start", {"id": 1})
         self.assert_status_code(response, 400)
-        poll = self.get_model("poll/1")
-        assert poll.get("state") == "published"
         assert (
-            "Cannot start poll 1, because it is not in state created."
+            "Analog polls cannot be started. Please use poll.update instead to give votes."
             in response.json["message"]
         )
-
-    def test_start_no_permissions(self) -> None:
-        self.base_permission_test({}, "poll.start", {"id": 1})
-
-    def test_start_permissions(self) -> None:
-        self.base_permission_test(
-            {}, "poll.start", {"id": 1}, Permissions.Assignment.CAN_MANAGE
-        )
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("state"), Poll.STATE_CREATED)
 
 
 class VotePollNamedYNA(VotePollBaseTestClass):
@@ -128,6 +104,9 @@ class VotePollNamedYNA(VotePollBaseTestClass):
         self.assertEqual(poll.get("votesinvalid"), "0.000000")
         self.assertEqual(poll.get("votescast"), "0.000000")
         self.assert_model_not_exists("vote/1")
+        # test that votes can be given
+        response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
+        self.assert_status_code(response, 200)
 
 
 class VotePollNamedY(VotePollBaseTestClass):

@@ -16,7 +16,6 @@ class VoteCreateActionTest(BaseActionTestCase):
             "vote.create",
             {
                 "value": "Y",
-                "meeting_id": 111,
                 "weight": "1.000000",
                 "option_id": 12,
                 "user_token": "aaaabbbbccccdddd",
