@@ -199,7 +199,7 @@ class ProjectorProject(BaseActionTestCase):
             {"current_projector_id": 75, "history_projector_id": None, "stable": True},
         )
 
-    def test_try_to_project_user_zero(self) -> None:
+    def test_try_to_project_anonymous(self) -> None:
         response = self.request(
             "projector.project",
             {
