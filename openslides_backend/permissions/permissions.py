@@ -3,41 +3,71 @@
 from enum import Enum
 from typing import Dict, List
 
+from ..shared.exceptions import PermissionException
 from .get_permission_parts import get_permission_parts
 
 
-class OrganisationManagementLevel(str, Enum):
+class CompareRightLevel(str):
+    def get_number(self, value) -> int:  # type: ignore
+        return 0
+
+    def __lt__(self, other: str) -> bool:
+        self_number = self.get_number(self)
+        other_number = self.get_number(other)
+        return self_number < other_number
+
+    def __le__(self, other: str) -> bool:
+        self_number = self.get_number(self)
+        other_number = self.get_number(other)
+        return self_number <= other_number
+
+    def __gt__(self, other: str) -> bool:
+        self_number = self.get_number(self)
+        other_number = self.get_number(other)
+        return self_number > other_number
+
+    def __ge__(self, other: str) -> bool:
+        self_number = self.get_number(self)
+        other_number = self.get_number(other)
+        return self_number >= other_number
+
+
+class OrganisationManagementLevel(CompareRightLevel, Enum):
     SUPERADMIN = "superadmin"
     CAN_MANAGE_USERS = "can_manage_users"
     CAN_MANAGE_ORGANISATION = "can_manage_organisation"
+    NO_RIGHT = "no_right"
 
-    def __init__(self, oml: str):
-        super().__init__()
-        self.numbers = {
+    def get_number(self, value: "OrganisationManagementLevel") -> int:
+        if not isinstance(value, self.__class__):
+            raise PermissionException(
+                f"The comparison expect an {self.__class__}-type and no string!"
+            )
+        numbers = {
             "superadmin": 3,
             "can_manage_organisation": 2,
             "can_manage_users": 1,
+            "no_right": 0,
         }
-        self.number: int = self.numbers.get(oml, 0)
-
-    def is_ok(self, user_oml: str) -> bool:
-        return self.numbers.get(user_oml, 0) >= self.number
+        return numbers.get(value, 0)
 
 
-class CommitteeManagementLevel(str, Enum):
+class CommitteeManagementLevel(CompareRightLevel, Enum):
     """ 2nd Permission Type, implemented as User.committee_as_manager_ids """
 
-    MANAGER = "can_manage_committees"
+    MANAGER = "can_manage"
+    NO_RIGHT = "no_right"
 
-    def __init__(self, cml: str):
-        super().__init__()
-        self.numbers = {
-            "can_manage_committees": 1,
+    def get_number(self, value: "CommitteeManagementLevel") -> int:
+        if not isinstance(value, self.__class__):
+            raise PermissionException(
+                f"The comparison expect an {self.__class__}-type and no string!"
+            )
+        numbers = {
+            "can_manage": 1,
+            "no_right": 0,
         }
-        self.number: int = self.numbers.get(cml, 0)
-
-    def is_ok(self, user_cml: str) -> bool:
-        return self.numbers.get(user_cml, 0) >= self.number
+        return numbers.get(value, 0)
 
 
 class Permission(str):
@@ -55,40 +85,40 @@ class _AgendaItem(Permission, Enum):
 
 class _Assignment(Permission, Enum):
     CAN_MANAGE = "assignment.can_manage"
-    CAN_NOMINATE_SELF = "assignment.can_nominate_self"
     CAN_NOMINATE_OTHER = "assignment.can_nominate_other"
+    CAN_NOMINATE_SELF = "assignment.can_nominate_self"
     CAN_SEE = "assignment.can_see"
 
 
 class _ListOfSpeakers(Permission, Enum):
+    CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
     CAN_MANAGE = "list_of_speakers.can_manage"
     CAN_SEE = "list_of_speakers.can_see"
-    CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
 
 
 class _Mediafile(Permission, Enum):
-    CAN_SEE = "mediafile.can_see"
     CAN_MANAGE = "mediafile.can_manage"
+    CAN_SEE = "mediafile.can_see"
 
 
 class _Meeting(Permission, Enum):
     CAN_MANAGE_LOGOS_AND_FONTS = "meeting.can_manage_logos_and_fonts"
+    CAN_MANAGE_SETTINGS = "meeting.can_manage_settings"
     CAN_SEE_AUTOPILOT = "meeting.can_see_autopilot"
     CAN_SEE_FRONTPAGE = "meeting.can_see_frontpage"
-    CAN_MANAGE_SETTINGS = "meeting.can_manage_settings"
     CAN_SEE_HISTORY = "meeting.can_see_history"
     CAN_SEE_LIVESTREAM = "meeting.can_see_livestream"
 
 
 class _Motion(Permission, Enum):
-    CAN_MANAGE_POLLS = "motion.can_manage_polls"
-    CAN_MANAGE_METADATA = "motion.can_manage_metadata"
-    CAN_MANAGE = "motion.can_manage"
-    CAN_SEE = "motion.can_see"
-    CAN_SUPPORT = "motion.can_support"
-    CAN_SEE_INTERNAL = "motion.can_see_internal"
-    CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
     CAN_CREATE = "motion.can_create"
+    CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
+    CAN_MANAGE = "motion.can_manage"
+    CAN_MANAGE_METADATA = "motion.can_manage_metadata"
+    CAN_MANAGE_POLLS = "motion.can_manage_polls"
+    CAN_SEE = "motion.can_see"
+    CAN_SEE_INTERNAL = "motion.can_see_internal"
+    CAN_SUPPORT = "motion.can_support"
 
 
 class _Poll(Permission, Enum):
@@ -105,10 +135,10 @@ class _Tag(Permission, Enum):
 
 
 class _User(Permission, Enum):
-    CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
     CAN_CHANGE_OWN_PASSWORD = "user.can_change_own_password"
-    CAN_SEE = "user.can_see"
     CAN_MANAGE = "user.can_manage"
+    CAN_SEE = "user.can_see"
+    CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
 
 
 class Permissions:

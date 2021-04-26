@@ -61,14 +61,17 @@ class CreateUpdatePermissionsMixin(Action):
             FullQualifiedId(Collection("user"), self.user_id),
             ["organisation_management_level", "committee_as_manager_ids"],
         )
-        user_oml: str = cast(str, user.get("organisation_management_level"))
+        user_oml = OrganisationManagementLevel(
+            user.get("organisation_management_level", "no_right")
+        )
         if user_oml == OrganisationManagementLevel.SUPERADMIN:
             return
 
         if "organisation_management_level" in instance:
-            if not OrganisationManagementLevel(
-                instance["organisation_management_level"]
-            ).is_ok(user_oml):
+            if (
+                OrganisationManagementLevel(instance["organisation_management_level"])
+                > user_oml
+            ):
                 raise PermissionDenied(
                     f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
                 )
@@ -88,7 +91,7 @@ class CreateUpdatePermissionsMixin(Action):
             temp_missing_rights: Set[str] = set()
             for right in self.field_rights.get(fieldname, []):
                 if type(right) == OrganisationManagementLevel:
-                    if right.is_ok(user_oml):
+                    if right <= user_oml:
                         temp_right = True
                         break
                     temp_missing_rights.add(str(right))

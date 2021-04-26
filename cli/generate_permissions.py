@@ -28,48 +28,77 @@ FILE_TEMPLATE = dedent(
     from enum import Enum
     from typing import Dict, List
 
+    from ..shared.exceptions import PermissionException
     from .get_permission_parts import get_permission_parts
 
 
-    class OrganisationManagementLevel(str, Enum):
+    class CompareRightLevel(str):
+        def get_number(self, value) -> int:  # type: ignore
+            return 0
+
+        def __lt__(self, other: str) -> bool:
+            self_number = self.get_number(self)
+            other_number = self.get_number(other)
+            return self_number < other_number
+
+        def __le__(self, other: str) -> bool:
+            self_number = self.get_number(self)
+            other_number = self.get_number(other)
+            return self_number <= other_number
+
+        def __gt__(self, other: str) -> bool:
+            self_number = self.get_number(self)
+            other_number = self.get_number(other)
+            return self_number > other_number
+
+        def __ge__(self, other: str) -> bool:
+            self_number = self.get_number(self)
+            other_number = self.get_number(other)
+            return self_number >= other_number
+
+
+    class OrganisationManagementLevel(CompareRightLevel, Enum):
         SUPERADMIN = "superadmin"
         CAN_MANAGE_USERS = "can_manage_users"
         CAN_MANAGE_ORGANISATION = "can_manage_organisation"
+        NO_RIGHT = "no_right"
 
-        def __init__(self, oml: str):
-            super().__init__()
-            self.numbers = {
+        def get_number(self, value: "OrganisationManagementLevel") -> int:
+            if not isinstance(value, self.__class__):
+                raise PermissionException(
+                    f"The comparison expect an {self.__class__}-type and no string!"
+                )
+            numbers = {
                 "superadmin": 3,
                 "can_manage_organisation": 2,
                 "can_manage_users": 1,
+                "no_right": 0,
             }
-            self.number: int = self.numbers.get(oml, 0)
+            return numbers.get(value, 0)
 
-        def is_ok(self, user_oml: str) -> bool:
-            return self.numbers.get(user_oml, 0) >= self.number
-
-
-    class CommitteeManagementLevel(str, Enum):
+    class CommitteeManagementLevel(CompareRightLevel, Enum):
         \""" 2nd Permission Type, implemented as User.committee_as_manager_ids \"""
 
-        MANAGER = "can_manage_committees"
+        MANAGER = "can_manage"
+        NO_RIGHT = "no_right"
 
-        def __init__(self, cml: str):
-            super().__init__()
-            self.numbers = {
-                "can_manage_committees": 1,
+        def get_number(self, value: "CommitteeManagementLevel") -> int:
+            if not isinstance(value, self.__class__):
+                raise PermissionException(
+                    f"The comparison expect an {self.__class__}-type and no string!"
+                )
+            numbers = {
+                "can_manage": 1,
+                "no_right": 0,
             }
-            self.number: int = self.numbers.get(cml, 0)
-
-        def is_ok(self, user_cml: str) -> bool:
-            return self.numbers.get(user_cml, 0) >= self.number
+            return numbers.get(value, 0)
 
 
     class Permission(str):
         \""" Marker class to use typing with permissions. \"""
 
         def __str__(self) -> str:
-                return self.value  # type: ignore
+            return self.value  # type: ignore
     """
 )
 
@@ -125,7 +154,7 @@ def main() -> None:
 
         for collection, permissions in all_permissions.items():
             dest.write(f"\nclass _{collection}(Permission, Enum):\n")
-            for permission in permissions:
+            for permission in sorted(permissions):
                 _, perm_str = get_permission_parts(permission)
                 dest.write(f"    {perm_str} = '{permission}'\n")
 
