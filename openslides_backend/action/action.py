@@ -141,7 +141,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
             relation_updates = self.handle_relation_updates(instance)
             self.write_requests.extend(relation_updates)
-            # breakpoint()
 
             write_request = self.create_write_requests(instance)
             self.write_requests.extend(write_request)
@@ -151,7 +150,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 self.results.append(result)
 
         final_write_request = self.process_write_requests()
-        # breakpoint()
         # by default, for actions which changed the updated instances, just return None
         if not is_original_instances and not self.results:
             self.results = [None]
@@ -350,11 +348,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for event in write_request.events:
                 events_by_type[event["type"]].append(event)
             write_request.events = []
-            for type in (EventType.Create, EventType.Update, EventType.Delete):
-                write_request.events.extend(events_by_type[type])
-
-            # Get locked_fields and reset them in datastore
-            write_request.locked_fields = self.datastore.locked_fields
+            for event_type in (EventType.Create, EventType.Update, EventType.Delete):
+                write_request.events.extend(events_by_type[event_type])
         return write_request
 
     def validate_required_fields(self, write_request: WriteRequest) -> None:

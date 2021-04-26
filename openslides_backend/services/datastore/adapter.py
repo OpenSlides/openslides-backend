@@ -99,7 +99,6 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> PartialModel:
-        # breakpoint()
         mapped_fields_set = set()
         if mapped_fields:
             mapped_fields_set.update(mapped_fields)
@@ -530,7 +529,6 @@ class DatastoreAdapter(DatastoreService):
             InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         ):
             complete, result = get_additional()
-            # breakpoint()
             okay = bool(result)
             if (
                 not complete

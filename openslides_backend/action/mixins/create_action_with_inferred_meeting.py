@@ -30,7 +30,6 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
             assert len(field.to) == 1
             fqid = FullQualifiedId(field.get_target_collection(), id)
         # Fetch meeting_id
-        # breakpoint()
         related_model = self.datastore.fetch_model(
             fqid,
             ["meeting_id"],
