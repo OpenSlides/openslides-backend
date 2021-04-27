@@ -28,7 +28,6 @@ class MotionCreate(MotionCreateBase):
             "supporter_ids",
             "tag_ids",
             "attachment_ids",
-            "origin_id",
             "text",
             "lead_motion_id",
             "statute_paragraph_id",
@@ -84,7 +83,6 @@ class MotionCreate(MotionCreateBase):
             raise ActionException("Reason is required")
 
         self.set_state_from_workflow(instance, meeting)
-        self.check_for_origin_id(instance)
         self.create_submitters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
