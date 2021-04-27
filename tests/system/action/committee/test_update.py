@@ -6,6 +6,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     COMMITTEE_FQID = "committee/1"
     COMMITTEE_NAME = "committee_testname"
     COMMITTEE_ID_FORWARD = 2
+    COMMITTEE_FQID_FORWARD = "committee/2"
 
     def create_data(self) -> None:
         self.set_models(
@@ -78,6 +79,25 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assertEqual(model.get("template_meeting_id"), 200)
         self.assertEqual(model.get("default_meeting_id"), 201)
+
+    def test_update_receive_forwardings(self) -> None:
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {
+                "id": self.COMMITTEE_ID_FORWARD,
+                "receive_forwardings_from_committee_ids": [self.COMMITTEE_ID],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            self.COMMITTEE_FQID,
+            {"forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD]},
+        )
+        self.assert_model_exists(
+            self.COMMITTEE_FQID_FORWARD,
+            {"receive_forwardings_from_committee_ids": [self.COMMITTEE_ID]},
+        )
 
     def test_update_wrong_member_ids(self) -> None:
         self.create_data()
