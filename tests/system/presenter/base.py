@@ -20,4 +20,6 @@ class BasePresenterTestCase(BaseSystemTestCase):
         if data is not None:
             payload["data"] = data
         response = self.client.post("/", json=[payload])
-        return (response.status_code, response.json[0])
+        if isinstance(response.json, list) and len(response.json) == 1:
+            return (response.status_code, response.json[0])
+        return (response.status_code, response.json)

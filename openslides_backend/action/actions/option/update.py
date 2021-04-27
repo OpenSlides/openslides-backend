@@ -8,9 +8,11 @@ from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..poll.mixins import check_poll_or_option_perms
 from ..poll.set_state import PollSetState
 from ..vote.create import VoteCreate
 from ..vote.update import VoteUpdate
+from ..vote.user_token_helper import get_user_token
 
 
 @register_action("option.update")
@@ -44,6 +46,8 @@ class OptionUpdateAction(UpdateAction):
 
         action_data_create = []
         action_data_update = []
+        user_token = get_user_token()
+
         for field_name, vote_name in (("yes", "Y"), ("no", "N"), ("abstain", "A")):
             if field_name in instance:
                 vote_id = self._get_vote_id(vote_name, id_to_vote)
@@ -54,6 +58,7 @@ class OptionUpdateAction(UpdateAction):
                             "value": vote_name,
                             "weight": instance[field_name],
                             "meeting_id": option["meeting_id"],
+                            "user_token": user_token,
                         }
                     )
                 else:
@@ -110,6 +115,8 @@ class OptionUpdateAction(UpdateAction):
                     "global_yes",
                     "global_no",
                     "global_abstain",
+                    "meeting_id",
+                    "content_object_id",
                 ],
             ),
             option,
@@ -191,3 +198,11 @@ class OptionUpdateAction(UpdateAction):
         if instance.get("Y") or instance.get("N") or instance.get("A"):
             return True
         return False
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        _, poll, _ = self._get_poll(instance["id"])
+        content_object_id = poll.get("content_object_id", "")
+        meeting_id = poll["meeting_id"]
+        check_poll_or_option_perms(
+            self.name, content_object_id, self.datastore, self.user_id, meeting_id
+        )

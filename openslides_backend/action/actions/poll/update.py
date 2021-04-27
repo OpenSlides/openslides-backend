@@ -7,10 +7,11 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .base import base_check_100_percent_base
+from .mixins import PollPermissionMixin
 
 
 @register_action("poll.update")
-class PollUpdateAction(UpdateAction):
+class PollUpdateAction(UpdateAction, PollPermissionMixin):
     """
     Action to update a poll.
     """

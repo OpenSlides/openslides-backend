@@ -26,6 +26,7 @@ class BasePresenter:
         services: Services,
         datastore: DatastoreService,
         logging: LoggingModule,
+        user_id: int,
     ):
         self.data = data
         self.services = services
@@ -33,6 +34,7 @@ class BasePresenter:
         self.datastore = datastore
         self.logging = logging
         self.logger = logging.getLogger(__name__)
+        self.user_id = user_id
 
     def validate(self) -> None:
         """ Validates the given data. If schema is not set, assumes that no data should be given. """

@@ -8,10 +8,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..vote.delete import VoteDelete
+from .mixins import PollPermissionMixin
 
 
 @register_action("poll.reset")
-class PollResetAction(UpdateAction):
+class PollResetAction(UpdateAction, PollPermissionMixin):
     """
     Action to reset a poll.
     """
@@ -22,6 +23,10 @@ class PollResetAction(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["state"] = Poll.STATE_CREATED
         self.delete_all_votes(instance["id"])
+        poll = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["id"]), ["type"]
+        )
+        instance["is_pseudoanonymized"] = poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS
         return instance
 
     def delete_all_votes(self, poll_id: int) -> None:

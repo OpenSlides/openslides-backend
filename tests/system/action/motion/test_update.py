@@ -1,11 +1,15 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionUpdateActionTest(BaseActionTestCase):
-    def test_update_correct(self) -> None:
-        self.create_model(
-            "motion/111",
-            {
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+            "motion/111": {
+                "meeting_id": 1,
                 "title": "title_srtgb123",
                 "number": "123",
                 "text": "<i>test</i>",
@@ -13,7 +17,32 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "modified_final_version": "blablabla",
                 "amendment_paragraph_$": ["3"],
                 "amendment_paragraph_$3": "testtesttest",
+                "submitter_ids": [1],
+                "state_id": 1,
             },
+            "motion_submitter/1": {"meeting_id": 1, "motion_id": 111, "user_id": 1},
+            "motion_state/1": {
+                "meeting_id": 1,
+                "motion_ids": [111],
+                "allow_submitter_edit": True,
+            },
+        }
+
+    def test_update_correct(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "motion/111": {
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                    "number": "123",
+                    "text": "<i>test</i>",
+                    "reason": "<b>test2</b>",
+                    "modified_final_version": "blablabla",
+                    "amendment_paragraph_$": ["3"],
+                    "amendment_paragraph_$3": "testtesttest",
+                },
+            }
         )
         response = self.request(
             "motion.update",
@@ -38,15 +67,18 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("amendment_paragraph_$") == ["3"]
 
     def test_update_wrong_id(self) -> None:
-        self.create_model(
-            "motion/111",
+        self.set_models(
             {
-                "title": "title_srtgb123",
-                "number": "123",
-                "text": "<i>test</i>",
-                "reason": "<b>test2</b>",
-                "modified_final_version": "blablabla",
-            },
+                "meeting/1": {},
+                "motion/111": {
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                    "number": "123",
+                    "text": "<i>test</i>",
+                    "reason": "<b>test2</b>",
+                    "modified_final_version": "blablabla",
+                },
+            }
         )
         response = self.request("motion.update", {"id": 112, "number": "999"})
         self.assert_status_code(response, 400)
@@ -54,13 +86,16 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("number") == "123"
 
     def test_update_text_without_previous(self) -> None:
-        self.create_model(
-            "motion/111",
+        self.set_models(
             {
-                "title": "title_srtgb123",
-                "number": "123",
-                "reason": "<b>test2</b>",
-            },
+                "meeting/1": {},
+                "motion/111": {
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                    "number": "123",
+                    "reason": "<b>test2</b>",
+                },
+            }
         )
         response = self.request(
             "motion.update",
@@ -79,13 +114,16 @@ class MotionUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_amendment_paragraphs_without_previous(self) -> None:
-        self.create_model(
-            "motion/111",
+        self.set_models(
             {
-                "title": "title_srtgb123",
-                "number": "123",
-                "modified_final_version": "blablabla",
-            },
+                "meeting/1": {},
+                "motion/111": {
+                    "meeting_id": 1,
+                    "title": "title_srtgb123",
+                    "number": "123",
+                    "modified_final_version": "blablabla",
+                },
+            }
         )
         response = self.request(
             "motion.update",
@@ -310,3 +348,109 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert "Found assignment/1 but only motion is allowed." in response.json.get(
             "message", ""
         )
+
+    def test_update_no_permissions(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: title, text, reason" in response.json["message"]
+
+    def test_update_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+            },
+            Permissions.Motion.CAN_MANAGE,
+        )
+
+    def test_update_permission_metadata_no_wl(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields:" in response.json["message"]
+
+    def test_update_permission_metadata_and_wl(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+        self.set_models(self.permission_test_model)
+        self.set_models({"motion_category/2": {"meeting_id": 1}})
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "category_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_permission_submitter_and_wl(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.permission_test_model["motion_submitter/1"]["user_id"] = self.user_id
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_permission_metadata_and_submitter(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
+        self.permission_test_model["motion_submitter/1"]["user_id"] = self.user_id
+        self.set_models(self.permission_test_model)
+        self.set_models({"motion_category/2": {"meeting_id": 1}})
+        response = self.request(
+            "motion.update",
+            {
+                "id": 111,
+                "title": "title_bDFsWtKL",
+                "text": "text_eNPkDVuq",
+                "reason": "reason_ukWqADfE",
+                "category_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)

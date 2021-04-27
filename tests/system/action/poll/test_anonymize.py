@@ -1,4 +1,5 @@
 from openslides_backend.models.models import Poll
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -33,6 +34,7 @@ class PollAnonymize(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("description") == "test"
+        assert poll.get("is_pseudoanonymized") is True
         for fqid in ("vote/1", "vote/2"):
             vote = self.get_model(fqid)
             assert vote.get("user_id") is None
@@ -60,3 +62,18 @@ class PollAnonymize(BaseActionTestCase):
             vote = self.get_model(vote_fqid)
             assert vote.get("user_id")
             assert vote.get("delegated_user_id")
+
+    def test_anonymize_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.anonymize",
+            {"id": 1},
+        )
+
+    def test_anonymize_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "poll.anonymize",
+            {"id": 1},
+            Permissions.Poll.CAN_MANAGE,
+        )

@@ -1,9 +1,39 @@
 import time
 
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionFollowRecommendationActionText(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_state/76": {
+                "meeting_id": 1,
+                "name": "test0",
+                "motion_ids": [],
+                "next_state_ids": [77],
+                "previous_state_ids": [],
+                "show_state_extension_field": True,
+                "show_recommendation_extension_field": True,
+            },
+            "motion_state/77": {
+                "meeting_id": 1,
+                "name": "test1",
+                "motion_ids": [22],
+                "first_state_of_workflow_id": 76,
+                "next_state_ids": [],
+                "previous_state_ids": [76],
+            },
+            "motion/22": {
+                "meeting_id": 1,
+                "title": "test1",
+                "state_id": 77,
+                "recommendation_id": 76,
+                "recommendation_extension": "test_test_test",
+            },
+        }
+
     def test_follow_recommendation_correct(self) -> None:
         check_time = round(time.time())
         self.set_models(
@@ -105,3 +135,18 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         )
         response = self.request("motion.follow_recommendation", {"id": 22})
         self.assert_status_code(response, 200)
+
+    def test_follow_recommendation_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.follow_recommendation",
+            {"id": 22},
+        )
+
+    def test_follow_recommendation_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.follow_recommendation",
+            {"id": 22},
+            Permissions.Motion.CAN_MANAGE,
+        )

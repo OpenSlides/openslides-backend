@@ -1,7 +1,19 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MotionCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "motion_workflow/12": {
+                "name": "name_workflow1",
+                "first_state_id": 34,
+                "state_ids": [34],
+            },
+            "motion_state/34": {"name": "name_state34", "meeting_id": 1},
+        }
+
     def test_create_good_case_required_fields(self) -> None:
         self.set_models(
             {
@@ -259,3 +271,115 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert submitter_2.get("meeting_id") == 222
         assert submitter_2.get("user_id") == 57
         assert submitter_2.get("motion_id") == 1
+
+    def test_create_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+
+    def test_create_permission_simple_fields(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+            Permissions.Motion.CAN_CREATE,
+        )
+
+    def test_create_permission_missing_can_manage(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "number": "X13",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: number" in response.json["message"]
+
+    def test_create_permission_with_can_manage(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE]
+        )
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "number": "X13",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_no_permission_lead_motion(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
+        self.set_models(self.permission_test_model)
+        self.set_models({"motion/3": {"meeting_id": 1}})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing permission: motion.can_create_amendments"
+            in response.json["message"]
+        )
+
+    def test_create_permission_lead_motion(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
+        )
+        self.set_models(self.permission_test_model)
+        self.set_models({"motion/3": {"meeting_id": 1}})
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+            },
+        )
+        self.assert_status_code(response, 200)

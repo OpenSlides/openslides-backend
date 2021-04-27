@@ -1,6 +1,7 @@
 import time
 
 from openslides_backend.models.models import Poll
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -17,7 +18,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.create_poll()
         self.set_models(
             {
-                "meeting/113": {
+                "meeting/1": {
                     "name": "my meeting",
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 11,
@@ -28,12 +29,12 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "countdown_time": 60,
                 },
                 "group/1": {"user_ids": [1]},
-                "option/1": {"meeting_id": 113, "poll_id": 1},
-                "option/2": {"meeting_id": 113, "poll_id": 1},
+                "option/1": {"meeting_id": 1, "poll_id": 1},
+                "option/2": {"meeting_id": 1, "poll_id": 1},
                 "user/1": {
-                    "is_present_in_meeting_ids": [113],
-                    "group_$113_ids": [1],
-                    "group_$_ids": ["113"],
+                    "is_present_in_meeting_ids": [1],
+                    "group_$1_ids": [1],
+                    "group_$_ids": ["1"],
                 },
             }
         )
@@ -53,7 +54,7 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
                 "pollmethod": "YNA",
                 "type": Poll.TYPE_ANALOG,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
@@ -87,6 +88,14 @@ class VotePollAnalogYNA(VotePollBaseTestClass):
             in response.json["message"]
         )
 
+    def test_start_no_permissions(self) -> None:
+        self.base_permission_test({}, "poll.start", {"id": 1})
+
+    def test_start_permissions(self) -> None:
+        self.base_permission_test(
+            {}, "poll.start", {"id": 1}, Permissions.Assignment.CAN_MANAGE
+        )
+
 
 class VotePollNamedYNA(VotePollBaseTestClass):
     def create_poll(self) -> None:
@@ -98,7 +107,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
                 "pollmethod": "YNA",
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
@@ -128,7 +137,7 @@ class VotePollNamedY(VotePollBaseTestClass):
                 "pollmethod": "Y",
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
@@ -158,7 +167,7 @@ class VotePollNamedN(VotePollBaseTestClass):
                 "pollmethod": "N",
                 "type": Poll.TYPE_NAMED,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
@@ -188,7 +197,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
                 "pollmethod": "YNA",
                 "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
@@ -218,7 +227,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
                 "pollmethod": "Y",
                 "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
@@ -248,7 +257,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
                 "pollmethod": "N",
                 "type": Poll.TYPE_PSEUDOANONYMOUS,
                 "state": Poll.STATE_CREATED,
-                "meeting_id": 113,
+                "meeting_id": 1,
                 "option_ids": [1, 2],
                 "entitled_group_ids": [1],
                 "votesinvalid": "0.000000",
