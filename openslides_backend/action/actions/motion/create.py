@@ -69,6 +69,14 @@ class MotionCreate(MotionCreateBase):
                 raise ActionException(
                     "You can't give amendment_paragraph_$ in this context"
                 )
+        # if lead_motion use category_id and block_id from the lead_motion
+        if instance.get("lead_motion_id"):
+            lead_motion = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["lead_motion_id"]),
+                ["block_id", "category_id"],
+            )
+            instance["block_id"] = lead_motion.get("block_id")
+            instance["category_id"] = lead_motion.get("category_id")
 
         # fetch all needed settings and check reason
         meeting = self.datastore.get(

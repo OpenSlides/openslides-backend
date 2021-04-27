@@ -290,6 +290,31 @@ class MotionCreateActionTest(BaseActionTestCase):
             "data must not contain {'origin_id'} properties" in response.json["message"]
         )
 
+    def test_create_lead_motion(self) -> None:
+        self.set_models(self.permission_test_model)
+        self.set_models(
+            {
+                "meeting/1": {"name": "meeting_1 _test"},
+                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
+                "motion_category/12": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/4", {"lead_motion_id": 3, "block_id": 13, "category_id": 12}
+        )
+
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
