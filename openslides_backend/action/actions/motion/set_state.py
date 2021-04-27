@@ -87,6 +87,6 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         ):
             return
 
-        msg = "You are not allowed to perform action {self.name}."
-        msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE_METADATA}"
+        msg = f"You are not allowed to perform action {self.name}."
+        msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE_METADATA}"
         raise PermissionDenied(msg)

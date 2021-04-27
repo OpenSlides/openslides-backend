@@ -44,5 +44,5 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
             return
 
         msg = f"You are not allowed to perform action {self.name}."
-        msg += f"Missing permission: {Permissions.Motion.CAN_MANAGE}"
+        msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE}"
         raise PermissionDenied(msg)

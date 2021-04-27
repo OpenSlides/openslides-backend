@@ -162,5 +162,5 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         forbidden_fields = [field for field in instance if field not in allowed_fields]
         if forbidden_fields:
             msg = f"You are not allowed to perform action {self.name}."
-            msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
+            msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
