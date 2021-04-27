@@ -73,7 +73,7 @@ class CreateUpdatePermissionsMixin(Action):
                 > user_oml
             ):
                 raise PermissionDenied(
-                    f"Your Organisation Management Level is not high enough to set a Level of {instance['organisation_management_level']}!"
+                    f"Your organisation management level is not high enough to set a Level of {instance['organisation_management_level']}!"
                 )
 
         user_meetings = self._get_user_meetings_set(

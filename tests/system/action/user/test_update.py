@@ -414,7 +414,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your Organisation Management Level is not high enough to set a Level of can_manage_organisation!",
+            "Your organisation management level is not high enough to set a Level of can_manage_organisation!",
             response.json["message"],
         )
 
