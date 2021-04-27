@@ -29,8 +29,7 @@ class PermissionMixin(Action):
         if assignment.get("phase") == "voting":
             permission = Permissions.Assignment.CAN_MANAGE
             if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Missing permission: {permission}"
+                msg = f"Missing permission: {permission}"
                 raise PermissionDenied(msg)
 
         # check special assignment part
@@ -45,6 +44,5 @@ class PermissionMixin(Action):
                 missing_permission = permission
 
         if missing_permission:
-            msg = f"You are not allowed to perform action {self.name}."
-            msg += f" Missing permission: {missing_permission}"
+            msg = f"Missing permission: {missing_permission}"
             raise PermissionDenied(msg)

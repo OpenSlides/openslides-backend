@@ -52,6 +52,5 @@ class UserSetPasswordSelf(UpdateAction):
                 instance["meeting_id"],
             ):
                 return
-            msg = f"You are not allowed to perform action {self.name}."
-            msg += f" Missing permission: {Permissions.User.CAN_CHANGE_OWN_PASSWORD}"
+            msg = f"Missing permission: {Permissions.User.CAN_CHANGE_OWN_PASSWORD}"
             raise PermissionDenied(msg)

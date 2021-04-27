@@ -122,7 +122,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.validate_instance(instance)
             # perform permission check not for internal actions
             if not internal:
-                self.check_permissions(instance)
+                try:
+                    self.check_permissions(instance)
+                except PermissionDenied as e:
+                    if e.message.startswith("Missing"):
+                        msg = f"You are not allowed to perform action {self.name}."
+                        e.message = msg + " " + e.message
+                    raise e
             self.index += 1
         self.index = -1
 

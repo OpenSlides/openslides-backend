@@ -40,6 +40,5 @@ def check_poll_or_option_perms(
     else:
         perm = Permissions.Poll.CAN_MANAGE
     if not has_perm(datastore, user_id, perm, meeting_id):
-        msg = f"You are not allowed to perform action {action_name}."
-        msg += f" Missing permission: {perm}"
+        msg = f"Missing permission: {perm}"
         raise PermissionDenied(msg)

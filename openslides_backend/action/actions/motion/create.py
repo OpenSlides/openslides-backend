@@ -185,15 +185,13 @@ class MotionCreate(
         if instance.get("lead_motion_id"):
             perm = Permissions.Motion.CAN_CREATE_AMENDMENTS
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Missing permission: {perm}"
+                msg = f"Missing permission: {perm}"
                 raise PermissionDenied(msg)
 
         else:
             perm = Permissions.Motion.CAN_CREATE
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Missing permission: {perm}"
+                msg = f"Missing permission: {perm}"
                 raise PermissionDenied(msg)
 
         # if not can manage whitelist the fields.
@@ -219,6 +217,6 @@ class MotionCreate(
                     forbidden_fields.append(field)
 
             if forbidden_fields:
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
+                msg = f"You are not allowed to perform action {self.name}. "
+                msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
                 raise PermissionDenied(msg)

@@ -190,8 +190,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         meeting_id = self.get_meeting_id(instance)
         if has_perm(self.datastore, self.user_id, permission, meeting_id):
             return
-        msg = f"You are not allowed to perform action {self.name}."
-        msg += f" Missing permission: {permission}"
+        msg = f"Missing permission: {permission}"
         raise PermissionDenied(msg)
 
 
