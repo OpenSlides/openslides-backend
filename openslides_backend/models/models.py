@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "fb3fb8594a09872fd16f1ec2e7e656ef"
+MODELS_YML_CHECKSUM = "a39feda3b18c7a4ae1beb8e5b3a2570b"
 
 
 class Organisation(Model):
@@ -1247,6 +1247,9 @@ class Poll(Model):
     title = fields.CharField(required=True)
     type = fields.CharField(
         required=True, constraints={"enum": ["analog", "named", "pseudoanonymous"]}
+    )
+    backend = fields.CharField(
+        required=True, default="long", constraints={"enum": ["long", "fast"]}
     )
     is_pseudoanonymized = fields.BooleanField()
     pollmethod = fields.CharField(
