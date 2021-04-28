@@ -1,4 +1,4 @@
-import random
+import secrets
 from typing import Any, Dict
 
 from ...action import BaseAction
@@ -20,4 +20,4 @@ class PasswordCreateMixin(BaseAction):
         ALLOWED_LETTERS = (
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz" + "0123456789"
         )
-        return "".join(random.choice(ALLOWED_LETTERS) for i in range(10))
+        return "".join(secrets.choice(ALLOWED_LETTERS) for i in range(10))
