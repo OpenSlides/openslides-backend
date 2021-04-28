@@ -48,7 +48,7 @@ class ProjectorProject(SingularActionMixin, UpdateAction):
                 meeting_id,
             )
 
-            self.move_equal_projections_to_history(instance, meeting_id)
+            self.move_equal_projections_to_history_or_unset(instance, meeting_id)
             if not instance.get("stable"):
                 self.move_unstable_projections_to_history(instance)
 
@@ -69,7 +69,7 @@ class ProjectorProject(SingularActionMixin, UpdateAction):
                 for projector_id in instance["ids"]:
                     yield {"id": projector_id, "scroll": 0}
 
-    def move_equal_projections_to_history(
+    def move_equal_projections_to_history_or_unset(
         self, instance: Dict[str, Any], meeting_id: int
     ) -> None:
         filter_ = And(
@@ -84,11 +84,11 @@ class ProjectorProject(SingularActionMixin, UpdateAction):
         counter = 1
         for projection_id in result:
             if result[projection_id]["current_projector_id"]:
-                # Unset stable projections
+                # Unset stable equal projections
                 if result[projection_id]["stable"]:
                     action_del_data = [{"id": int(projection_id)}]
                     self.execute_other_action(ProjectionDelete, action_del_data)
-                # Move unstable projections to history
+                # Move unstable equal projections to history
                 else:
                     max_weight = self.get_max_projection_weight(
                         result[projection_id]["current_projector_id"]
