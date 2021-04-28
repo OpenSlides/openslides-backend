@@ -2,10 +2,8 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union, cast
 
 from openslides_backend.action.util.typing import Payload
-from openslides_backend.permissions.permissions import (
-    OrganisationManagementLevel,
-    Permission,
-)
+from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import Collection

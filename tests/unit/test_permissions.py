@@ -1,6 +1,6 @@
 import pytest
 
-from openslides_backend.permissions.permissions import (
+from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganisationManagementLevel,
 )

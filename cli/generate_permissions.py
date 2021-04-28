@@ -28,70 +28,7 @@ FILE_TEMPLATE = dedent(
     from enum import Enum
     from typing import Dict, List
 
-    from ..shared.exceptions import PermissionException
     from .get_permission_parts import get_permission_parts
-
-
-    class CompareRightLevel(str):
-        def get_number(self, value) -> int:  # type: ignore
-            return 0
-
-        def __lt__(self, other: str) -> bool:
-            self_number = self.get_number(self)
-            other_number = self.get_number(other)
-            return self_number < other_number
-
-        def __le__(self, other: str) -> bool:
-            self_number = self.get_number(self)
-            other_number = self.get_number(other)
-            return self_number <= other_number
-
-        def __gt__(self, other: str) -> bool:
-            self_number = self.get_number(self)
-            other_number = self.get_number(other)
-            return self_number > other_number
-
-        def __ge__(self, other: str) -> bool:
-            self_number = self.get_number(self)
-            other_number = self.get_number(other)
-            return self_number >= other_number
-
-
-    class OrganisationManagementLevel(CompareRightLevel, Enum):
-        SUPERADMIN = "superadmin"
-        CAN_MANAGE_USERS = "can_manage_users"
-        CAN_MANAGE_ORGANISATION = "can_manage_organisation"
-        NO_RIGHT = "no_right"
-
-        def get_number(self, value: "OrganisationManagementLevel") -> int:
-            if not isinstance(value, self.__class__):
-                raise PermissionException(
-                    f"The comparison expect an {self.__class__}-type and no string!"
-                )
-            numbers = {
-                "superadmin": 3,
-                "can_manage_organisation": 2,
-                "can_manage_users": 1,
-                "no_right": 0,
-            }
-            return numbers.get(value, 0)
-
-    class CommitteeManagementLevel(CompareRightLevel, Enum):
-        \""" 2nd Permission Type, implemented as User.committee_as_manager_ids \"""
-
-        MANAGER = "can_manage"
-        NO_RIGHT = "no_right"
-
-        def get_number(self, value: "CommitteeManagementLevel") -> int:
-            if not isinstance(value, self.__class__):
-                raise PermissionException(
-                    f"The comparison expect an {self.__class__}-type and no string!"
-                )
-            numbers = {
-                "can_manage": 1,
-                "no_right": 0,
-            }
-            return numbers.get(value, 0)
 
 
     class Permission(str):
@@ -99,6 +36,8 @@ FILE_TEMPLATE = dedent(
 
         def __str__(self) -> str:
             return self.value  # type: ignore
+
+
     """
 )
 

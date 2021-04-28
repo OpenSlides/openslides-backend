@@ -1,4 +1,4 @@
-from openslides_backend.permissions.permissions import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganisationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 

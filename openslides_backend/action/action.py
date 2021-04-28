@@ -16,12 +16,12 @@ import fastjsonschema
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
-from ..permissions.permission_helper import has_organisation_management_level, has_perm
-from ..permissions.permissions import (
+from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganisationManagementLevel,
-    Permission,
 )
+from ..permissions.permission_helper import has_organisation_management_level, has_perm
+from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService

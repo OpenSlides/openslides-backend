@@ -4,7 +4,8 @@ from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
 from ..shared.patterns import Collection, FullQualifiedId
-from .permissions import OrganisationManagementLevel, Permission, permission_parents
+from .management_levels import OrganisationManagementLevel
+from .permissions import Permission, permission_parents
 
 
 def has_perm(
@@ -92,7 +93,7 @@ def has_organisation_management_level(
             FullQualifiedId(Collection("user"), user_id),
             ["organisation_management_level"],
         )
-        return expected_level <= OrganisationManagementLevel(
+        return expected_level <= OrganisationManagementLevel(  # type: ignore
             user.get("organisation_management_level", "no_right")
         )
     return False

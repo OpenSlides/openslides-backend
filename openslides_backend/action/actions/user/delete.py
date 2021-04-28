@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
+from openslides_backend.permissions.management_levels import OrganisationManagementLevel
 from openslides_backend.permissions.permission_helper import is_temporary
-from openslides_backend.permissions.permissions import OrganisationManagementLevel
 from openslides_backend.shared.exceptions import ActionException
 
 from ....models.models import User

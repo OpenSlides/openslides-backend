@@ -2,10 +2,8 @@ from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.permissions.permissions import (
-    OrganisationManagementLevel,
-    Permissions,
-)
+from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase

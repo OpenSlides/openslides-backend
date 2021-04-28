@@ -1,13 +1,12 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple, cast
 
-from ....permissions.permission_helper import has_perm
-from ....permissions.permissions import (
+from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganisationManagementLevel,
-    Permission,
-    Permissions,
 )
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
@@ -63,13 +62,13 @@ class CreateUpdatePermissionsMixin(Action):
         )
         user_oml = OrganisationManagementLevel(
             user.get("organisation_management_level", "no_right")
-        )
+        )  # type: ignore
         if user_oml == OrganisationManagementLevel.SUPERADMIN:
             return
 
         if "organisation_management_level" in instance:
             if (
-                OrganisationManagementLevel(instance["organisation_management_level"])
+                OrganisationManagementLevel(instance["organisation_management_level"])  # type: ignore
                 > user_oml
             ):
                 raise PermissionDenied(

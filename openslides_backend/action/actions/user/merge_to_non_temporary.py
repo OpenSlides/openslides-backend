@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....permissions.permissions import OrganisationManagementLevel
+from ....permissions.management_levels import OrganisationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...generics.create import CreateAction
