@@ -30,7 +30,7 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
         speakers = self.datastore.filter(
             self.model.collection,
             FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
-            mapped_fields=["end_time", "user_id", "weight"],
+            mapped_fields=["end_time", "user_id", "weight", "point_of_order"],
             lock_result=True,
         )
         if not speakers:
@@ -56,12 +56,17 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
                         last_speaker_id, last_speaker = speaker_id, speaker
         if last_speaker is None:
             raise ActionException("There is no last speaker that can be re-added.")
+        elif last_speaker.get("point_of_order"):
+            raise ActionException(
+                "The last speaker is a point of order speaker and cannot be re-added."
+            )
         assert isinstance(lowest_weight, int)
 
         for speaker in speakers.values():
             if (
                 speaker.get("end_time") is None
                 and speaker["user_id"] == last_speaker["user_id"]
+                and not speaker.get("point_of_order")
             ):
                 raise ActionException(
                     f"User {last_speaker['user_id']} is already on the list of speakers."
