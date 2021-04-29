@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import MissingPermission
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 
@@ -29,8 +29,7 @@ class PermissionMixin(Action):
         if assignment.get("phase") == "voting":
             permission = Permissions.Assignment.CAN_MANAGE
             if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                msg = f"Missing permission: {permission}"
-                raise PermissionDenied(msg)
+                raise MissingPermission(permission, self.name)
 
         # check special assignment part
         missing_permission = None
@@ -44,5 +43,4 @@ class PermissionMixin(Action):
                 missing_permission = permission
 
         if missing_permission:
-            msg = f"Missing permission: {missing_permission}"
-            raise PermissionDenied(msg)
+            raise MissingPermission(missing_permission, self.name)

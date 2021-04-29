@@ -4,7 +4,7 @@ from openslides_backend.permissions.permission_helper import has_perm, is_tempor
 from openslides_backend.permissions.permissions import Permissions
 
 from ....models.models import User
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -52,5 +52,4 @@ class UserSetPasswordSelf(UpdateAction):
                 instance["meeting_id"],
             ):
                 return
-            msg = f"Missing permission: {Permissions.User.CAN_CHANGE_OWN_PASSWORD}"
-            raise PermissionDenied(msg)
+            raise MissingPermission(Permissions.User.CAN_CHANGE_OWN_PASSWORD, self.name)

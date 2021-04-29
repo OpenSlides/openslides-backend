@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from ..permissions.permissions import Permission
 from .patterns import FullQualifiedId
 
 
@@ -91,3 +92,10 @@ class MediaServiceException(ServiceException):
 
 class PermissionDenied(ViewException):
     status_code = 403
+
+
+class MissingPermission(PermissionDenied):
+    def __init__(self, permission: Permission, action_name: str) -> None:
+        msg = f"You are not allowed to perform action {action_name}."
+        msg += f" Missing permission: {permission}"
+        self.message = msg

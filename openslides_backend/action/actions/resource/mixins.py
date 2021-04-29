@@ -21,5 +21,6 @@ class PermissionMixin(Action):
         ):
             return
 
-        msg = "Missing can_manage_organisation"
+        msg = f"You are not allowed to perform action {self.name}."
+        msg += "Missing can_manage_organisation"
         raise PermissionDenied(msg)
