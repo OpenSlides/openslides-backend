@@ -116,6 +116,35 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
             "There is no last speaker that can be re-added." in response.json["message"]
         )
 
+    def test_last_speaker_poos(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_xQyvfmsS"},
+                "user/42": {
+                    "username": "test_username42",
+                    "speaker_$222_ids": [223],
+                },
+                "list_of_speakers/111": {
+                    "closed": False,
+                    "meeting_id": 222,
+                    "speaker_ids": [223],
+                },
+                "speaker/223": {
+                    "list_of_speakers_id": 111,
+                    "user_id": 42,
+                    "begin_time": 3000,
+                    "end_time": 4000,
+                    "point_of_order": True,
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 111})
+        self.assert_status_code(response, 400)
+        assert (
+            "The last speaker is a point of order speaker and cannot be re-added."
+            in response.json["message"]
+        )
+
     def test_last_speaker_also_in_waiting_list(self) -> None:
         self.set_models(
             {
@@ -143,6 +172,35 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         self.assertTrue(
             "User 42 is already on the list of speakers." in response.json["message"]
         )
+
+    def test_last_speaker_also_in_waiting_list_but_poos(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_xQyvfmsS"},
+                "user/42": {
+                    "username": "test_username42",
+                    "speaker_$222_ids": [223, 224],
+                },
+                "list_of_speakers/111": {
+                    "closed": False,
+                    "meeting_id": 222,
+                    "speaker_ids": [223, 224],
+                },
+                "speaker/223": {
+                    "list_of_speakers_id": 111,
+                    "user_id": 42,
+                    "begin_time": 3000,
+                    "end_time": 4000,
+                },
+                "speaker/224": {
+                    "list_of_speakers_id": 111,
+                    "user_id": 42,
+                    "point_of_order": True,
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 111})
+        self.assert_status_code(response, 200)
 
     def test_re_add_last_no_permissions(self) -> None:
         self.base_permission_test(
