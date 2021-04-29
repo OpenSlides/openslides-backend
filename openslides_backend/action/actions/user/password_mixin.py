@@ -1,7 +1,7 @@
-import secrets
 from typing import Any, Dict
 
 from ...action import BaseAction
+from ...util.crypto import get_random_string
 
 
 class PasswordCreateMixin(BaseAction):
@@ -17,7 +17,4 @@ class PasswordCreateMixin(BaseAction):
 
     @staticmethod
     def generate_password() -> str:
-        ALLOWED_LETTERS = (
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + "abcdefghijklmnopqrstuvwxyz" + "0123456789"
-        )
-        return "".join(secrets.choice(ALLOWED_LETTERS) for i in range(10))
+        return get_random_string(10)
