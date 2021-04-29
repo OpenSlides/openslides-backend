@@ -26,7 +26,7 @@ class UserResetPasswordToDefaultTemporaryTest(BaseActionTestCase):
         )
         response = self.request("user.reset_password_to_default_temporary", {"id": 111})
         self.assert_status_code(response, 400)
-        assert "User 111 is not temporary." in response.json["message"]
+        assert "User 111 in payload is not temporary." in response.json["message"]
 
     def test_reset_password_temporary_no_permissions(self) -> None:
         self.base_permission_test(

@@ -1,10 +1,11 @@
-from typing import List
+from typing import Any, Dict, List
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
 from ..shared.patterns import Collection, FullQualifiedId
-from .permissions import OrganisationManagementLevel, Permission, permission_parents
+from .management_levels import OrganisationManagementLevel
+from .permissions import Permission, permission_parents
 
 
 def has_perm(
@@ -79,3 +80,33 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
         parents = permission_parents[current]
         queue.extend(parents)
     return False
+
+
+def has_organisation_management_level(
+    datastore: DatastoreService,
+    user_id: int,
+    expected_level: OrganisationManagementLevel,
+) -> bool:
+    """ Checks wether a user has the minimum necessary OrganisationManagementLevel """
+    if user_id > 0:
+        user = datastore.get(
+            FullQualifiedId(Collection("user"), user_id),
+            ["organisation_management_level"],
+        )
+        return expected_level <= OrganisationManagementLevel(  # type: ignore
+            user.get("organisation_management_level", "no_right")
+        )
+    return False
+
+
+def is_temporary(datastore: DatastoreService, instance: Dict[str, Any]) -> bool:
+    """
+    Checks whether the user, identified by the id the instance, is a temporary user.
+    Be carefull about the stored meeting id in the instance!
+    """
+    if "meeting_id" not in instance:
+        db_instance = datastore.get(
+            FullQualifiedId(Collection("user"), instance["id"]), ["meeting_id"]
+        )
+        instance["meeting_id"] = db_instance.get("meeting_id")
+    return bool(instance.get("meeting_id"))

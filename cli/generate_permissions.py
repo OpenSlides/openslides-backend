@@ -31,14 +31,13 @@ FILE_TEMPLATE = dedent(
     from .get_permission_parts import get_permission_parts
 
 
-    class OrganisationManagementLevel(str, Enum):
-        SUPERADMIN = "superadmin"
-        CAN_MANAGE_USERS = "can_manage_users"
-        CAN_MANAGE_ORGANISATION = "can_manage_organisation"
-
-
     class Permission(str):
         \""" Marker class to use typing with permissions. \"""
+
+        def __str__(self) -> str:
+            return self.value  # type: ignore
+
+
     """
 )
 
@@ -94,7 +93,7 @@ def main() -> None:
 
         for collection, permissions in all_permissions.items():
             dest.write(f"\nclass _{collection}(Permission, Enum):\n")
-            for permission in permissions:
+            for permission in sorted(permissions):
                 _, perm_str = get_permission_parts(permission)
                 dest.write(f"    {perm_str} = '{permission}'\n")
 

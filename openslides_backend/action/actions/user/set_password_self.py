@@ -1,11 +1,11 @@
 from typing import Any, Dict
 
-from openslides_backend.permissions.permission_helper import has_perm
+from openslides_backend.permissions.permission_helper import has_perm, is_temporary
 from openslides_backend.permissions.permissions import Permissions
 
 from ....models.models import User
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,7 +36,6 @@ class UserSetPasswordSelf(UpdateAction):
         if not self.auth.is_equals(old_pw, db_instance["password"]):
             raise ActionException("Wrong password")
 
-        instance["id"] = self.user_id
         instance["password"] = self.auth.hash(new_pw)
         return instance
 
@@ -44,16 +43,13 @@ class UserSetPasswordSelf(UpdateAction):
         if self.auth.is_anonymous(self.user_id):
             raise ActionException("Can't set password for anonymous")
 
-        meeting_id = self.datastore.get(
-            FullQualifiedId(Collection("user"), self.user_id), ["meeting_id"]
-        ).get("meeting_id")
-
-        if meeting_id:
+        instance["id"] = self.user_id
+        if is_temporary(self.datastore, instance):
             if has_perm(
                 self.datastore,
                 self.user_id,
                 Permissions.User.CAN_CHANGE_OWN_PASSWORD,
-                meeting_id,
+                instance["meeting_id"],
             ):
                 return
             msg = f"You are not allowed to perform action {self.name}."

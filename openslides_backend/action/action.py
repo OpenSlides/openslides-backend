@@ -1,11 +1,26 @@
 from collections import defaultdict
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+    cast,
+)
 
 import fastjsonschema
 
 from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
-from ..permissions.permission_helper import has_perm
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
+from ..permissions.permission_helper import has_organisation_management_level, has_perm
 from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
@@ -69,7 +84,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema_validator: Callable[[Dict[str, Any]], None]
     is_singular: bool = False
     internal: bool = False
-    permission: Optional[Permission] = None
+    permission: Optional[Union[Permission, OrganisationManagementLevel]] = None
     permission_model: Optional[Model] = None
     permission_id: Optional[str] = None
     relation_manager: RelationManager
@@ -146,17 +161,41 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Checks permission by requesting permission service or using internal check.
         """
         # switch between internal and external permission service
+        msg_appendix = None
         if self.permission:
-            meeting_id = self.get_meeting_id(instance)
-            if has_perm(self.datastore, self.user_id, self.permission, meeting_id):
-                return
+            if type(self.permission) == OrganisationManagementLevel:
+                if has_organisation_management_level(
+                    self.datastore,
+                    self.user_id,
+                    cast(OrganisationManagementLevel, self.permission),
+                ):
+                    return
+                msg_appendix = (
+                    f" Missing Organisation Management Level: {self.permission}"
+                )
+            elif type(self.permission) == CommitteeManagementLevel:
+                """
+                set permission in class to: permission = CommitteeManagementLevel.MANAGER
+                A specialized realisation see in create_update_permissions_mixin.py
+                """
+                raise NotImplementedError
+            else:
+                meeting_id = self.get_meeting_id(instance)
+                if has_perm(
+                    self.datastore,
+                    self.user_id,
+                    cast(Permission, self.permission),
+                    meeting_id,
+                ):
+                    return
+                msg_appendix = f" Missing permission: {self.permission}"
         else:
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
 
         msg = f"You are not allowed to perform action {self.name}."
-        if self.permission:
-            msg += f" Missing permission: {self.permission}"
+        if msg_appendix:
+            msg += msg_appendix
         raise PermissionDenied(msg)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

@@ -40,7 +40,7 @@ class UserSetPasswordTemporaryActionTest(BaseActionTestCase):
             {"id": 1, "password": "test", "set_as_default": True},
         )
         self.assert_status_code(response, 400)
-        self.assertIn("User 1 is not temporary.", response.json["message"])
+        self.assertIn("User 1 in payload is not temporary.", response.json["message"])
 
     def test_set_password_temporary_no_permissions(self) -> None:
         self.base_permission_test(

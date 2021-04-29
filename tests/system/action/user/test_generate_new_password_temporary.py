@@ -22,7 +22,7 @@ class UserGenerateNewPasswordTemporaryActionTest(BaseActionTestCase):
         self.update_model("user/1", {"password": "old_pw"})
         response = self.request("user.generate_new_password_temporary", {"id": 1})
         self.assert_status_code(response, 400)
-        assert "User 1 is not temporary" in response.json["message"]
+        assert "User 1 in payload is not temporary" in response.json["message"]
 
     def test_generate_no_permissions(self) -> None:
         self.base_permission_test(

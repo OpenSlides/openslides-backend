@@ -4,12 +4,15 @@ from ....models.models import User
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordCreateMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.create")
-class UserCreate(CreateAction, UserMixin, PasswordCreateMixin):
+class UserCreate(
+    CreateAction, UserMixin, CreateUpdatePermissionsMixin, PasswordCreateMixin
+):
     """
     Action to create a user.
     """

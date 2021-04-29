@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from ....permissions.permissions import OrganisationManagementLevel
+from ....permissions.management_levels import OrganisationManagementLevel
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action

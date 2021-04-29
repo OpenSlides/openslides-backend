@@ -6,58 +6,55 @@ from typing import Dict, List
 from .get_permission_parts import get_permission_parts
 
 
-class OrganisationManagementLevel(str, Enum):
-    SUPERADMIN = "superadmin"
-    CAN_MANAGE_USERS = "can_manage_users"
-    CAN_MANAGE_ORGANISATION = "can_manage_organisation"
-
-
 class Permission(str):
     """ Marker class to use typing with permissions. """
 
+    def __str__(self) -> str:
+        return self.value  # type: ignore
+
 
 class _AgendaItem(Permission, Enum):
-    CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
-    CAN_SEE = "agenda_item.can_see"
     CAN_MANAGE = "agenda_item.can_manage"
+    CAN_SEE = "agenda_item.can_see"
+    CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
 
 
 class _Assignment(Permission, Enum):
-    CAN_SEE = "assignment.can_see"
+    CAN_MANAGE = "assignment.can_manage"
     CAN_NOMINATE_OTHER = "assignment.can_nominate_other"
     CAN_NOMINATE_SELF = "assignment.can_nominate_self"
-    CAN_MANAGE = "assignment.can_manage"
+    CAN_SEE = "assignment.can_see"
 
 
 class _ListOfSpeakers(Permission, Enum):
-    CAN_SEE = "list_of_speakers.can_see"
-    CAN_MANAGE = "list_of_speakers.can_manage"
     CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
+    CAN_MANAGE = "list_of_speakers.can_manage"
+    CAN_SEE = "list_of_speakers.can_see"
 
 
 class _Mediafile(Permission, Enum):
-    CAN_SEE = "mediafile.can_see"
     CAN_MANAGE = "mediafile.can_manage"
+    CAN_SEE = "mediafile.can_see"
 
 
 class _Meeting(Permission, Enum):
-    CAN_SEE_HISTORY = "meeting.can_see_history"
     CAN_MANAGE_LOGOS_AND_FONTS = "meeting.can_manage_logos_and_fonts"
-    CAN_SEE_FRONTPAGE = "meeting.can_see_frontpage"
-    CAN_SEE_AUTOPILOT = "meeting.can_see_autopilot"
     CAN_MANAGE_SETTINGS = "meeting.can_manage_settings"
+    CAN_SEE_AUTOPILOT = "meeting.can_see_autopilot"
+    CAN_SEE_FRONTPAGE = "meeting.can_see_frontpage"
+    CAN_SEE_HISTORY = "meeting.can_see_history"
     CAN_SEE_LIVESTREAM = "meeting.can_see_livestream"
 
 
 class _Motion(Permission, Enum):
     CAN_CREATE = "motion.can_create"
+    CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
     CAN_MANAGE = "motion.can_manage"
-    CAN_SUPPORT = "motion.can_support"
     CAN_MANAGE_METADATA = "motion.can_manage_metadata"
     CAN_MANAGE_POLLS = "motion.can_manage_polls"
     CAN_SEE = "motion.can_see"
-    CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
     CAN_SEE_INTERNAL = "motion.can_see_internal"
+    CAN_SUPPORT = "motion.can_support"
 
 
 class _Poll(Permission, Enum):
@@ -74,10 +71,10 @@ class _Tag(Permission, Enum):
 
 
 class _User(Permission, Enum):
-    CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
-    CAN_MANAGE = "user.can_manage"
     CAN_CHANGE_OWN_PASSWORD = "user.can_change_own_password"
+    CAN_MANAGE = "user.can_manage"
     CAN_SEE = "user.can_see"
+    CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
 
 
 class Permissions:
