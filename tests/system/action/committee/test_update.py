@@ -316,6 +316,96 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("committee/3", {"forward_to_committee_ids": []})
 
+    def test_update_complex_5(self) -> None:
+        """A->A, Try A->{}"""
+        self.set_models(
+            {
+                "organisation/1": {
+                    "name": "test_organisation1",
+                    "committee_ids": [1],
+                },
+                "committee/1": {
+                    "name": "committee_A",
+                    "organisation_id": 1,
+                    "forward_to_committee_ids": [1],
+                    "receive_forwardings_from_committee_ids": [1],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_to_committee_ids": [],
+                "receive_forwardings_from_committee_ids": [],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "receive_forwardings_from_committee_ids": [],
+            },
+        )
+
+    def test_update_complex_6(self) -> None:
+        """A->B, B->{C,D}: Try request B, C->B and B->D"""
+        self.set_models(
+            {
+                "organisation/1": {
+                    "name": "test_organisation1",
+                    "committee_ids": [1, 2, 3, 4],
+                },
+                "committee/1": {
+                    "name": "committee_A",
+                    "organisation_id": 1,
+                    "forward_to_committee_ids": [2],
+                },
+                "committee/2": {
+                    "name": "committee_B",
+                    "organisation_id": 1,
+                    "receive_forwardings_from_committee_ids": [1],
+                    "forward_to_committee_ids": [3, 4],
+                },
+                "committee/3": {
+                    "name": "committee_C",
+                    "organisation_id": 1,
+                    "receive_forwardings_from_committee_ids": [2],
+                },
+                "committee/4": {
+                    "name": "committee_D",
+                    "organisation_id": 1,
+                    "receive_forwardings_from_committee_ids": [2],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 2,
+                "forward_to_committee_ids": [4],
+                "receive_forwardings_from_committee_ids": [3],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "forward_to_committee_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "committee/2",
+            {
+                "forward_to_committee_ids": [4],
+                "receive_forwardings_from_committee_ids": [3],
+            },
+        )
+        self.assert_model_exists("committee/3", {"forward_to_committee_ids": [2]})
+        self.assert_model_exists(
+            "committee/4", {"receive_forwardings_from_committee_ids": [2]}
+        )
+
     def test_update_wrong_member_ids(self) -> None:
         self.create_data()
         response = self.request(
