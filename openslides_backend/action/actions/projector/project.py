@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
-from ....shared.filters import And, FilterOperator, Not
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -12,6 +12,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from ..projection.create import ProjectionCreate
+from ..projection.delete import ProjectionDelete
 from ..projection.update import ProjectionUpdate
 
 
@@ -47,8 +48,8 @@ class ProjectorProject(SingularActionMixin, UpdateAction):
                 meeting_id,
             )
 
+            self.move_equal_projections_to_history_or_unset(instance, meeting_id)
             if not instance.get("stable"):
-                self.move_equal_projections_to_history(instance, meeting_id)
                 self.move_unstable_projections_to_history(instance)
 
             create_data = []
@@ -68,40 +69,42 @@ class ProjectorProject(SingularActionMixin, UpdateAction):
                 for projector_id in instance["ids"]:
                     yield {"id": projector_id, "scroll": 0}
 
-    def move_equal_projections_to_history(
+    def move_equal_projections_to_history_or_unset(
         self, instance: Dict[str, Any], meeting_id: int
     ) -> None:
         filter_ = And(
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("content_object_id", "=", instance["content_object_id"]),
-            FilterOperator("stable", "=", False),
+            FilterOperator("stable", "=", instance.get("stable", False)),
             FilterOperator("type", "=", instance.get("type")),
-            *[
-                Not(FilterOperator("current_projector_id", "=", id_))
-                for id_ in instance["ids"]
-            ],
         )
         result = self.datastore.filter(
-            Collection("projection"), filter_, ["id", "current_projector_id"]
+            Collection("projection"), filter_, ["id", "current_projector_id", "stable"]
         )
         counter = 1
         for projection_id in result:
             if result[projection_id]["current_projector_id"]:
-                max_weight = self.get_max_projection_weight(
-                    result[projection_id]["current_projector_id"]
-                )
-                action_data = [
-                    {
-                        "id": int(projection_id),
-                        "current_projector_id": None,
-                        "history_projector_id": result[projection_id][
-                            "current_projector_id"
-                        ],
-                        "weight": max_weight + counter,
-                    }
-                ]
-                self.execute_other_action(ProjectionUpdate, action_data)
-                counter += 1
+                # Unset stable equal projections
+                if result[projection_id]["stable"]:
+                    action_del_data = [{"id": int(projection_id)}]
+                    self.execute_other_action(ProjectionDelete, action_del_data)
+                # Move unstable equal projections to history
+                else:
+                    max_weight = self.get_max_projection_weight(
+                        result[projection_id]["current_projector_id"]
+                    )
+                    action_data = [
+                        {
+                            "id": int(projection_id),
+                            "current_projector_id": None,
+                            "history_projector_id": result[projection_id][
+                                "current_projector_id"
+                            ],
+                            "weight": max_weight + counter,
+                        }
+                    ]
+                    self.execute_other_action(ProjectionUpdate, action_data)
+                    counter += 1
 
     def move_unstable_projections_to_history(self, instance: Dict[str, Any]) -> None:
         for projector_id in instance["ids"]:
