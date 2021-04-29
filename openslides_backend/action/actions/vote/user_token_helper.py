@@ -1,8 +1,5 @@
-from random import choice
-
-USER_TOKEN_LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+from ...util.crypto import get_random_string
 
 
 def get_user_token() -> str:
-    random_letter_list = [choice(USER_TOKEN_LETTERS) for _ in range(16)]
-    return "".join(random_letter_list)
+    return get_random_string(16)
