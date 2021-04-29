@@ -28,7 +28,6 @@ from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
 from ..shared.exceptions import (
     ActionException,
-    MissingPermission,
     PermissionDenied,
     RequiredFieldsException,
 )
