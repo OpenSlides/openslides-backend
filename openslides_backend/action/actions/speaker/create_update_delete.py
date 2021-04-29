@@ -190,7 +190,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         meeting_id = self.get_meeting_id(instance)
         if has_perm(self.datastore, self.user_id, permission, meeting_id):
             return
-        raise MissingPermission(permission, self.name)
+        raise MissingPermission(permission)
 
 
 @register_action("speaker.update")

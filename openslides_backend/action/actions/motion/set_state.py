@@ -87,4 +87,4 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         ):
             return
 
-        raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA, self.name)
+        raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)

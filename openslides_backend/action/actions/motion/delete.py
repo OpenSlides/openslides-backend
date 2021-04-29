@@ -43,4 +43,4 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
         ):
             return
 
-        raise MissingPermission(Permissions.Motion.CAN_MANAGE, self.name)
+        raise MissingPermission(Permissions.Motion.CAN_MANAGE)

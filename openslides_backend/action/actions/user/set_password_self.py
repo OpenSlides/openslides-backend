@@ -52,4 +52,4 @@ class UserSetPasswordSelf(UpdateAction):
                 instance["meeting_id"],
             ):
                 return
-            raise MissingPermission(Permissions.User.CAN_CHANGE_OWN_PASSWORD, self.name)
+            raise MissingPermission(Permissions.User.CAN_CHANGE_OWN_PASSWORD)

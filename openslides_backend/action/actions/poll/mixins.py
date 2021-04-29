@@ -40,4 +40,4 @@ def check_poll_or_option_perms(
     else:
         perm = Permissions.Poll.CAN_MANAGE
     if not has_perm(datastore, user_id, perm, meeting_id):
-        raise MissingPermission(perm, action_name)
+        raise MissingPermission(perm)

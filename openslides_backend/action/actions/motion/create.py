@@ -185,12 +185,12 @@ class MotionCreate(
         if instance.get("lead_motion_id"):
             perm = Permissions.Motion.CAN_CREATE_AMENDMENTS
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                raise MissingPermission(perm, self.name)
+                raise MissingPermission(perm)
 
         else:
             perm = Permissions.Motion.CAN_CREATE
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                raise MissingPermission(perm, self.name)
+                raise MissingPermission(perm)
 
         # if not can manage whitelist the fields.
         perm = Permissions.Motion.CAN_MANAGE
