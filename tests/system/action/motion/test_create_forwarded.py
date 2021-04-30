@@ -113,6 +113,20 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Committee id 52 not in []" in response.json["message"]
 
+    def test_missing_origin(self) -> None:
+        self.set_models({"meeting/1": {"name": "meeting_1"}})
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "text": "text",
+                "meeting_id": 222,
+                "origin_id": 12,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Model 'motion/12' does not exist." in response.json["message"]
+
     def test_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
