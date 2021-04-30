@@ -1,5 +1,10 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
+from ..permissions.permissions import Permission
 from .patterns import FullQualifiedId
 
 
@@ -94,5 +99,10 @@ class PermissionDenied(ViewException):
 
 
 class MissingPermission(PermissionDenied):
-    def __init__(self, permission: Any) -> None:
+    def __init__(
+        self,
+        permission: Union[
+            Permission, OrganisationManagementLevel, CommitteeManagementLevel
+        ],
+    ) -> None:
         self.message = f"Missing permission: {permission}"
