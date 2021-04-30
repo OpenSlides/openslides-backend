@@ -195,7 +195,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     meeting_id,
                 ):
                     return
-                msg_appendix = f" Missing permission: {self.permission}"
+                raise MissingPermission(self.permission)
         else:
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
