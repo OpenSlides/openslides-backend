@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,6 +36,33 @@ class MotionCreateForwarded(MotionCreateBase):
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         return instance
+
+    def check_for_origin_id(self, instance: Dict[str, Any]) -> None:
+        if instance.get("origin_id"):
+            meeting = self.datastore.get(
+                FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+                ["committee_id"],
+            )
+            forwarded_from = self.datastore.get(
+                FullQualifiedId(Collection("motion"), instance["origin_id"]),
+                ["meeting_id"],
+            )
+            forwarded_from_meeting = self.datastore.get(
+                FullQualifiedId(Collection("meeting"), forwarded_from["meeting_id"]),
+                ["committee_id"],
+            )
+            committee = self.datastore.get(
+                FullQualifiedId(
+                    Collection("committee"), forwarded_from_meeting["committee_id"]
+                ),
+                ["forward_to_committee_ids"],
+            )
+            if meeting["committee_id"] not in committee.get(
+                "forward_to_committee_ids", []
+            ):
+                raise ActionException(
+                    f"Committee id {meeting['committee_id']} not in {committee.get('forward_to_committee_ids', [])}"
+                )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         perm = Permissions.Motion.CAN_CREATE
