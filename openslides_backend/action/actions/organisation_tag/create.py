@@ -13,6 +13,6 @@ class OrganisationTagCreate(CreateAction):
 
     model = OrganisationTag()
     schema = DefaultSchema(OrganisationTag()).get_create_schema(
-        required_properties=["name", "color"]
+        required_properties=["name", "color", "organisation_id"]
     )
     permission = OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
