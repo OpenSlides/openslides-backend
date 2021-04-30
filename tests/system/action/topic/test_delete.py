@@ -1,9 +1,18 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class TopicDeleteActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "topic/111": {"title": "title_srtgb123", "meeting_id": 1}
+        }
+
     def test_delete_correct(self) -> None:
-        self.create_model("topic/111", {"title": "title_srtgb123"})
+        self.set_models(
+            {"topic/111": {"title": "title_srtgb123", "meeting_id": 1}, "meeting/1": {}}
+        )
         response = self.request("topic.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("topic/111")
@@ -17,18 +26,22 @@ class TopicDeleteActionTest(BaseActionTestCase):
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
             {
+                "meeting/1": {},
                 "topic/111": {
                     "title": "title_srtgb123",
                     "list_of_speakers_id": 222,
                     "agenda_item_id": 333,
+                    "meeting_id": 1,
                 },
                 "list_of_speakers/222": {
                     "closed": False,
                     "content_object_id": "topic/111",
+                    "meeting_id": 1,
                 },
                 "agenda_item/333": {
                     "comment": "test_comment_ewoirzewoirioewr",
                     "content_object_id": "topic/111",
+                    "meeting_id": 1,
                 },
             }
         )
@@ -85,3 +98,16 @@ class TopicDeleteActionTest(BaseActionTestCase):
         user_1 = self.get_model("user/1")
         assert user_1.get("speaker_$1_ids") == []
         assert user_1.get("speaker_$_ids") == []
+
+    def test_delete_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model, "topic.delete", {"id": 111}
+        )
+
+    def test_delete_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "topic.delete",
+            {"id": 111},
+            Permissions.AgendaItem.CAN_MANAGE,
+        )

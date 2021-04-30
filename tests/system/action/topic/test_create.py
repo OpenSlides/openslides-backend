@@ -1,4 +1,5 @@
 from openslides_backend.models.models import AgendaItem
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -118,3 +119,16 @@ class TopicSystemTest(BaseActionTestCase):
         self.assertEqual(meeting.get("topic_ids"), [1, 2])
         self.assertEqual(meeting.get("agenda_item_ids"), [1, 2])
         self.assertEqual(meeting.get("list_of_speakers_ids"), [1, 2])
+
+    def test_create_no_permission(self) -> None:
+        self.base_permission_test(
+            {}, "topic.create", {"meeting_id": 1, "title": "test"}
+        )
+
+    def test_create_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "topic.create",
+            {"meeting_id": 1, "title": "test"},
+            Permissions.AgendaItem.CAN_MANAGE,
+        )
