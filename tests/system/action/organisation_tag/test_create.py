@@ -18,3 +18,26 @@ class OrganisationTagCreate(BaseActionTestCase):
             "data must contain ['name', 'color'] properties",
             response.json["message"],
         )
+
+    def test_no_permission(self) -> None:
+        self.set_models(
+            {"user/1": {"organisation_management_level": "can_manage_users"}}
+        )
+        response = self.request(
+            "organisation_tag.create", {"name": "wSvQHymN", "color": "#eeeeee"}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "You are not allowed to perform action organisation_tag.create. Missing Organisation Management Level: can_manage_organisation"
+            in response.json["message"]
+        )
+
+    def test_permission(self) -> None:
+        self.set_models(
+            {"user/1": {"organisation_management_level": "can_manage_organisation"}}
+        )
+        response = self.request(
+            "organisation_tag.create", {"name": "wSvQHymN", "color": "#eeeeee"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("organisation_tag/1")
