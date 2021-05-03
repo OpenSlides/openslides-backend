@@ -20,5 +20,6 @@ class CommitteeUpdateAction(UpdateAction):
             "member_ids",
             "manager_ids",
             "forward_to_committee_ids",
+            "receive_forwardings_from_committee_ids",
         ]
     )
