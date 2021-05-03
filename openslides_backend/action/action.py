@@ -216,7 +216,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 FullQualifiedId(model.collection, instance[identifier]),
                 ["meeting_id"],
                 exception=True,
-                lock_result=True,
             )
             return db_instance["meeting_id"]
 
@@ -349,12 +348,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for event in write_request.events:
                 events_by_type[event["type"]].append(event)
             write_request.events = []
-            for type in (EventType.Create, EventType.Update, EventType.Delete):
-                write_request.events.extend(events_by_type[type])
-
-            # Get locked_fields and reset them in datastore
-            write_request.locked_fields = self.datastore.locked_fields
-            self.datastore.locked_fields = {}
+            for event_type in (EventType.Create, EventType.Update, EventType.Delete):
+                write_request.events.extend(events_by_type[event_type])
         return write_request
 
     def validate_required_fields(self, write_request: WriteRequest) -> None:
@@ -432,7 +427,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     db_instance = self.datastore.fetch_model(
                         fqid,
                         [equal_field],
-                        lock_result=True,
                     )
                     if not (own_equal_field_value := db_instance.get(equal_field)):
                         raise ActionException(

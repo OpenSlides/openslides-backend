@@ -112,6 +112,7 @@ class ActionHandler(BaseHandler):
                 except ActionException as exception:
                     error = cast(ActionError, exception.get_json())
                     results.append(error)
+                self.datastore.reset()
 
         # Return action result
         self.logger.debug("Request was successful. Send response now.")
@@ -201,6 +202,10 @@ class ActionHandler(BaseHandler):
             write_request, results = action.perform(action_data, self.user_id)
             if write_request:
                 action.validate_required_fields(write_request)
+
+                # add locked_fields to request
+                write_request.locked_fields = self.datastore.locked_fields
+
             return (write_request, results)
         except ActionException as exception:
             self.logger.debug(

@@ -53,7 +53,6 @@ class CreateActionWithAgendaItemMixin(Action):
         meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
             ["agenda_item_creation"],
-            lock_result=True,
         )
         agenda_item_creation = meeting.get("agenda_item_creation")
         agenda_create = instance.get("agenda_create")

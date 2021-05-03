@@ -26,7 +26,6 @@ class MotionWorkflowDeleteAction(DeleteAction):
         workflow = self.datastore.fetch_model(
             FullQualifiedId(Collection("motion_workflow"), instance["id"]),
             ["meeting_id"],
-            lock_result=True,
         )
         meeting = self.datastore.fetch_model(
             FullQualifiedId(Collection("meeting"), int(workflow["meeting_id"])),
@@ -36,7 +35,6 @@ class MotionWorkflowDeleteAction(DeleteAction):
                 "motions_default_statute_amendment_workflow_id",
                 "motion_workflow_ids",
             ],
-            lock_result=True,
         )
         if instance["id"] in (
             meeting.get("motions_default_workflow_id"),

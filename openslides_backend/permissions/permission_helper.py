@@ -20,6 +20,7 @@ def has_perm(
                 "guest_meeting_ids",
                 "organisation_management_level",
             ],
+            lock_result=False,
         )
     else:
         user = {}

@@ -136,7 +136,6 @@ class RelationManager:
                                 replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
-                            lock_result=True,
                             exception=True,
                         )
                     template_field.append(replacement)

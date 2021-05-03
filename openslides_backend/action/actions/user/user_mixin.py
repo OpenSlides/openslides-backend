@@ -19,7 +19,6 @@ class UserMixin(Action):
                 Collection("user"),
                 FilterOperator("username", "=", instance["username"]),
                 ["id"],
-                lock_result=True,
             )
             if result and instance["id"] not in result.keys():
                 raise ActionException(
@@ -44,7 +43,7 @@ class UserMixin(Action):
         if not mapped_fields:
             return
         user_self = self.datastore.fetch_model(
-            user_fqid, mapped_fields, lock_result=True, exception=False
+            user_fqid, mapped_fields, exception=False
         )
         if "vote_delegations_$_from_ids" in instance:
             update_dict = {
@@ -67,7 +66,6 @@ class UserMixin(Action):
             user_delegated_to = self.datastore.fetch_model(
                 FullQualifiedId(Collection("user"), delegated_to_id),
                 [mapped_field],
-                lock_result=True,
             )
             if user_delegated_to.get(mapped_field):
                 raise ActionException(
@@ -87,7 +85,7 @@ class UserMixin(Action):
         if not mapped_fields:
             return
         user_self = self.datastore.fetch_model(
-            user_fqid, mapped_fields, lock_result=True, exception=False
+            user_fqid, mapped_fields, exception=False
         )
         if "vote_delegated_$_to_id" in instance:
             update_dict = {
@@ -114,7 +112,6 @@ class UserMixin(Action):
                 user = self.datastore.fetch_model(
                     FullQualifiedId(Collection("user"), user_id),
                     [mapped_field],
-                    lock_result=True,
                 )
                 if user.get(mapped_field):
                     error_user_ids.append(user_id)

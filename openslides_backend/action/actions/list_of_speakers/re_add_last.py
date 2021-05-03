@@ -31,7 +31,6 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
             self.model.collection,
             FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
             mapped_fields=["end_time", "user_id", "weight", "point_of_order"],
-            lock_result=True,
         )
         if not speakers:
             raise ActionException(

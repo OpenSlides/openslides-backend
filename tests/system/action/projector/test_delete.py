@@ -28,7 +28,6 @@ class ProjectorDelete(BaseActionTestCase):
         )
 
     def test_delete_correct(self) -> None:
-        meeting = self.get_model("meeting/1")
         response = self.request("projector.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projector/111")

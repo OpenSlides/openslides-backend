@@ -1,4 +1,4 @@
-from typing import TypedDict, Union
+from typing import List, TypedDict, Union
 
 from ..filters import Filter
 
@@ -8,5 +8,8 @@ CollectionFieldLockWithFilter = TypedDict(
         "position": int,
         "filter": Filter,
     },
+    total=False,
 )
-CollectionFieldLock = Union[int, CollectionFieldLockWithFilter]
+CollectionFieldLock = Union[
+    int, CollectionFieldLockWithFilter, List[CollectionFieldLockWithFilter]
+]

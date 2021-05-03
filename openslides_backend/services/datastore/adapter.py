@@ -1,12 +1,15 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import simplejson as json
 from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
-from ...shared.interfaces.collection_field_lock import CollectionFieldLock
+from ...shared.interfaces.collection_field_lock import (
+    CollectionFieldLock,
+    CollectionFieldLockWithFilter,
+)
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
@@ -41,7 +44,6 @@ class DatastoreAdapter(DatastoreService):
         self.engine = engine
         self.locked_fields = {}
         self.additional_relation_models: ModelMap = defaultdict(dict)
-        self.additional_relation_models_lock: Dict[Any, Any] = defaultdict(dict)
 
     def retrieve(self, command: commands.Command) -> DatastoreResponse:
         """
@@ -95,7 +97,7 @@ class DatastoreAdapter(DatastoreService):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> PartialModel:
         mapped_fields_set = set()
         if mapped_fields:
@@ -118,7 +120,9 @@ class DatastoreAdapter(DatastoreService):
                 raise DatastoreException(
                     "Response from datastore does not contain field 'meta_position' but this is required."
                 )
-            self.update_locked_fields(fqid, instance_position)
+            self.update_locked_fields_from_mapped_fields(
+                fqid, instance_position, mapped_fields_set
+            )
         return response
 
     def get_many(
@@ -127,7 +131,7 @@ class DatastoreAdapter(DatastoreService):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if mapped_fields is not None:
             raise NotImplementedError(
@@ -148,12 +152,16 @@ class DatastoreAdapter(DatastoreService):
             f"Start GET_MANY request to datastore with the following data: {command.data}"
         )
         response = self.retrieve(command)
-        result = {}
-        for collection_str in response.keys():
-            inner_result = {}
-            collection = Collection(collection_str)
-            for id_str, value in response[collection_str].items():
-                instance_id = int(id_str)
+        result: Dict[Collection, Dict[int, PartialModel]] = defaultdict(dict)
+        for get_many_request in get_many_requests:
+            collection = get_many_request.collection
+            if collection.collection not in response:
+                continue
+
+            for instance_id in get_many_request.ids:
+                if str(instance_id) not in response[collection.collection]:
+                    continue
+                value = response[collection.collection][str(instance_id)]
                 if lock_result:
                     instance_position = value.get("meta_position")
                     if instance_position is None:
@@ -161,9 +169,10 @@ class DatastoreAdapter(DatastoreService):
                             "Response from datastore does not contain field 'meta_position' but this is required."
                         )
                     fqid = FullQualifiedId(collection, instance_id)
-                    self.update_locked_fields(fqid, instance_position)
-                inner_result[instance_id] = value
-            result[collection] = inner_result
+                    self.update_locked_fields_from_mapped_fields(
+                        fqid, instance_position, get_many_request.mapped_fields
+                    )
+                result[collection][instance_id] = value
         return result
 
     def get_all(
@@ -171,7 +180,7 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         mapped_fields: List[str] = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
         mapped_fields_set = set()
         if mapped_fields:
@@ -187,16 +196,20 @@ class DatastoreAdapter(DatastoreService):
             f"Start GET_ALL request to datastore with the following data: {command.data}"
         )
         response = self.retrieve(command)
-        if lock_result:
-            for item in response:
-                instance_id = item.get("id")
-                instance_position = item.get("meta_position")
-                if instance_id is None or instance_position is None:
+        if lock_result and len(response) > 0:
+            if not mapped_fields:
+                raise DatastoreException(
+                    "You cannot lock in get_all without mapped_fields"
+                )
+            for field in mapped_fields_set:
+                # just take the first position, new positions will always be higher anyway
+                instance_position = list(response.values())[0].get("meta_position")
+                if instance_position is None:
                     raise DatastoreException(
-                        "Response from datastore does not contain fields 'id' and 'meta_position' but they are both required."
+                        "Response from datastore does not contain field 'meta_position' but this is required."
                     )
-                fqid = FullQualifiedId(collection=collection, id=instance_id)
-                self.update_locked_fields(fqid, instance_position)
+                collection_field = CollectionField(collection, field)
+                self.update_locked_fields(collection_field, instance_position)
         return response
 
     def filter(
@@ -205,7 +218,7 @@ class DatastoreAdapter(DatastoreService):
         filter: Filter,
         mapped_fields: List[str] = [],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
@@ -237,7 +250,7 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> bool:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
@@ -263,7 +276,7 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> int:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
@@ -291,7 +304,7 @@ class DatastoreAdapter(DatastoreService):
         field: str,
         type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> Optional[int]:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
@@ -322,7 +335,7 @@ class DatastoreAdapter(DatastoreService):
         field: str,
         type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
     ) -> Optional[int]:
         # TODO: This method does not reflect the position of the fetched objects.
         full_filter = self.apply_deleted_models_behaviour_to_filter(
@@ -364,10 +377,22 @@ class DatastoreAdapter(DatastoreService):
         )
         return And(filter, deleted_models_filter)
 
+    def update_locked_fields_from_mapped_fields(
+        self, fqid: FullQualifiedId, position: int, mapped_fields: Optional[Set[str]]
+    ) -> None:
+        if mapped_fields:
+            for field in mapped_fields:
+                if not field.startswith("meta_"):
+                    self.update_locked_fields(
+                        FullQualifiedField(fqid.collection, fqid.id, field), position
+                    )
+        else:
+            self.update_locked_fields(fqid, position)
+
     def update_locked_fields(
         self,
         key: Union[FullQualifiedId, FullQualifiedField, CollectionField],
-        lock: CollectionFieldLock,
+        lock: Union[int, CollectionFieldLockWithFilter],
     ) -> None:
         """
         Updates the locked_fields map by adding the new value for the given FQId or
@@ -377,32 +402,24 @@ class DatastoreAdapter(DatastoreService):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"
             )
+        new_value: CollectionFieldLock = lock
         if (old_pos := self.locked_fields.get(str(key))) :
             if isinstance(old_pos, int) and isinstance(lock, int):
                 # keep the smaller position
                 if old_pos <= lock:
                     return
-            elif isinstance(old_pos, int) and not isinstance(lock, int):
-                # old lock locked already more than new lock, so we can skip it
-                if old_pos <= lock["position"]:
-                    return
-                else:
-                    # we have to remove the filter and lock everything with the lower position
-                    lock = lock["position"]
-                    self.logger.warning(
-                        f"You locked the field {key} twice: first to pos {old_pos} and then with a filter to pos {lock}. This results in locking the whole collectionfield to position {lock}."
-                    )
-            elif not isinstance(old_pos, int) and isinstance(lock, int):
-                # old lock locked already more than new lock, so we can skip it
-                if old_pos["position"] < lock:
-                    # we have to remove the filter and lock everything with the lower position
-                    self.logger.warning(
-                        f"You locked the field {key} twice: first to pos {old_pos} with a filter and then to pos {lock}. This results in locking the whole collectionfield to position {old_pos['position']}."
-                    )
-                    lock = old_pos["position"]
             else:
-                raise NotImplementedError("Can't lock the same key twice with a filter")
-        self.locked_fields[str(key)] = lock
+                # if we currently have a position saved, transform it into a list with one entry
+                if isinstance(old_pos, int):
+                    old_pos = [{"position": old_pos}]
+                elif not isinstance(old_pos, list):
+                    old_pos = [old_pos]
+                # add the new lock to the list
+                if isinstance(lock, int):
+                    new_value = old_pos + [{"position": lock}]
+                else:
+                    new_value = old_pos + [lock]
+        self.locked_fields[str(key)] = new_value
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)
@@ -451,7 +468,7 @@ class DatastoreAdapter(DatastoreService):
         mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = False,
+        lock_result: bool = True,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
     ) -> Dict[str, Any]:
@@ -486,10 +503,6 @@ class DatastoreAdapter(DatastoreService):
                             complete = False
                 else:
                     instance = self.additional_relation_models[fqid]
-                if lock_result and fqid in self.additional_relation_models_lock:
-                    self.update_locked_fields(
-                        fqid, self.additional_relation_models_lock[fqid]
-                    )
                 return (complete, instance)
             else:
                 return (False, {})
@@ -503,10 +516,6 @@ class DatastoreAdapter(DatastoreService):
                     get_deleted_models=get_deleted_models,
                     lock_result=lock_result,
                 )
-                if lock_result:
-                    self.additional_relation_models_lock[fqid] = self.locked_fields[
-                        str(fqid)
-                    ]
                 return (
                     True,
                     instance,
@@ -550,5 +559,5 @@ class DatastoreAdapter(DatastoreService):
         return result
 
     def reset(self) -> None:
+        self.locked_fields = {}
         self.additional_relation_models.clear()
-        self.additional_relation_models_lock.clear()
