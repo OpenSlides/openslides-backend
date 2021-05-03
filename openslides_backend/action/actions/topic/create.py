@@ -1,6 +1,7 @@
 from typing import Any, Dict, Type
 
 from ....models.models import Topic
+from ....permissions.permissions import Permissions
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -33,6 +34,7 @@ class TopicCreate(
         additional_optional_fields=agenda_creation_properties,
     )
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
+    permission = Permissions.AgendaItem.CAN_MANAGE
 
     def check_dependant_action_execution_agenda_item(
         self, element: Dict[str, Any], CreateActionClass: Type[Action]

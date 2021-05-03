@@ -1,7 +1,15 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class TopicUpdateTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "meeting/1": {"name": "test"},
+            "topic/1": {"title": "test", "meeting_id": 1},
+        }
+
     def test_update_simple(self) -> None:
         self.set_models(
             {
@@ -60,3 +68,18 @@ class TopicUpdateTest(BaseActionTestCase):
         self.assertEqual(topic.get("tag_ids"), [])
         tag = self.get_model("tag/1")
         self.assertEqual(tag.get("tagged_ids"), [])
+
+    def test_update_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "topic.update",
+            {"id": 1, "title": "test2", "text": "text"},
+        )
+
+    def test_update_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "topic.update",
+            {"id": 1, "title": "test2", "text": "text"},
+            Permissions.AgendaItem.CAN_MANAGE,
+        )
