@@ -50,3 +50,26 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
             "meeting/22",
             response.json["message"],
         )
+
+    def test_delete_no_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {"user/1": {"organisation_management_level": "can_manage_users"}}
+        )
+
+        response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing Organisation Management Level: can_manage_organisation"
+            in response.json["message"]
+        )
+
+    def test_delete_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {"user/1": {"organisation_management_level": "can_manage_organisation"}}
+        )
+
+        response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(self.COMMITTEE_FQID)
