@@ -272,6 +272,23 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert submitter_2.get("user_id") == 57
         assert submitter_2.get("motion_id") == 1
 
+    def test_create_missing_origin_id(self) -> None:
+        self.set_models(self.permission_test_model)
+        self.create_meeting()
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "origin_id": 12,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "data must not contain {'origin_id'} properties" in response.json["message"]
+    
+
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
