@@ -1,14 +1,17 @@
+from typing import Any, Dict
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class CommitteeCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_model = {
+        self.test_model: Dict[str, Dict[str, Any]] = {
             "organisation/1": {"name": "test_organisation1"},
             "user/20": {"username": "test_user20"},
             "user/21": {"username": "test_user21"},
             "user/22": {"username": "test_user22"},
+            "organisation_tag/12": {"organisation_id": 1},
         }
 
     def test_create(self) -> None:
