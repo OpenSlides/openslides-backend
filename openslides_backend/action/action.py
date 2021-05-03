@@ -168,7 +168,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Checks permission by requesting permission service or using internal check.
         """
         # switch between internal and external permission service
-        msg_appendix = None
         if self.permission:
             if type(self.permission) == OrganisationManagementLevel:
                 if has_organisation_management_level(
@@ -177,9 +176,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     cast(OrganisationManagementLevel, self.permission),
                 ):
                     return
-                msg_appendix = (
-                    f" Missing Organisation Management Level: {self.permission}"
-                )
+                raise MissingPermission(self.permission)
             elif type(self.permission) == CommitteeManagementLevel:
                 """
                 set permission in class to: permission = CommitteeManagementLevel.MANAGER
@@ -201,8 +198,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 return
 
         msg = f"You are not allowed to perform action {self.name}."
-        if msg_appendix:
-            msg += msg_appendix
         raise PermissionDenied(msg)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
