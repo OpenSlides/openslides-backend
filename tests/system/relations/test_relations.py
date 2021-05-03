@@ -1,16 +1,13 @@
-from openslides_backend.action.relations.single_relation_handler import (
-    SingleRelationHandler,
-)
 from tests.util import get_fqfield
 
 from ..action.base import BaseActionTestCase
-from .setup import FakeModelA
+from .setup import FakeModelA, SingleRelationHandlerWithContext
 
 
 class RelationHandlerTest(BaseActionTestCase):
     def test_O2O_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_oo,
             field_name="fake_model_b_oo",
@@ -34,7 +31,7 @@ class RelationHandlerTest(BaseActionTestCase):
                 "fake_model_b/3": {"fake_model_a_oo": 2},
             }
         )
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_oo,
             field_name="fake_model_b_oo",
@@ -57,7 +54,7 @@ class RelationHandlerTest(BaseActionTestCase):
                 "fake_model_b/2": {"fake_model_a_oo": 1},
             }
         )
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_oo,
             field_name="fake_model_b_oo",
@@ -75,7 +72,7 @@ class RelationHandlerTest(BaseActionTestCase):
 
     def test_O2M_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_om,
             field_name="fake_model_b_om",
@@ -99,7 +96,7 @@ class RelationHandlerTest(BaseActionTestCase):
                 "fake_model_b/3": {"fake_model_a_mo": [1]},
             }
         )
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_om,
             field_name="fake_model_b_om",
@@ -122,7 +119,7 @@ class RelationHandlerTest(BaseActionTestCase):
                 "fake_model_b/2": {"fake_model_a_mo": [1]},
             }
         )
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_om,
             field_name="fake_model_b_om",
@@ -140,7 +137,7 @@ class RelationHandlerTest(BaseActionTestCase):
 
     def test_M2M_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_mm,
             field_name="fake_model_b_mm",
@@ -164,7 +161,7 @@ class RelationHandlerTest(BaseActionTestCase):
                 "fake_model_b/3": {"fake_model_a_mm": [1]},
             }
         )
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_mm,
             field_name="fake_model_b_mm",
@@ -187,7 +184,7 @@ class RelationHandlerTest(BaseActionTestCase):
                 "fake_model_b/2": {"fake_model_a_mm": [1]},
             }
         )
-        handler = SingleRelationHandler(
+        handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=FakeModelA.fake_model_b_mm,
             field_name="fake_model_b_mm",

@@ -1,5 +1,7 @@
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from enum import Enum
+from typing import Any, ContextManager, Dict, List, Optional, Sequence, Tuple, Union
 
+from shared.util import DeletedModelsBehaviour
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter
@@ -8,15 +10,18 @@ from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
 from .commands import GetManyRequest
-from .deleted_models_behaviour import (
-    DeletedModelsBehaviour,
-    InstanceAdditionalBehaviour,
-)
 
 PartialModel = Dict[str, Any]
 
 
 LockResult = Union[bool, List[str]]
+
+
+class InstanceAdditionalBehaviour(int, Enum):
+    ADDITIONAL_BEFORE_DBINST = 1
+    DBINST_BEFORE_ADDITIONAL = 2
+    ONLY_DBINST = 3
+    ONLY_ADDITIONAL = 4
 
 
 class DatastoreService(Protocol):
@@ -27,6 +32,9 @@ class DatastoreService(Protocol):
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
     locked_fields: Dict[str, CollectionFieldLock]
     additional_relation_models: ModelMap
+
+    def get_database_context(self) -> ContextManager[None]:
+        ...
 
     def get(
         self,
@@ -142,9 +150,10 @@ class DatastoreService(Protocol):
 
 class Engine(Protocol):
     """
-    Engine defines the interface to the engine used by the datastore. This will
-    be the HTTPEngine per default
+    Engine defines the interface to the engine used by the datastore.
     """
 
-    def retrieve(self, endpoint: str, data: str) -> Tuple[bytes, int]:
+    def retrieve(
+        self, endpoint: str, data: Optional[str]
+    ) -> Tuple[Union[bytes, str], int]:
         ...

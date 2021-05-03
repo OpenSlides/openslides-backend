@@ -1,4 +1,5 @@
 from typing import Any, Dict, cast
+from unittest.mock import MagicMock
 
 import requests
 from authlib import COOKIE_NAME, HEADER_NAME
@@ -46,8 +47,8 @@ class Client(WerkzeugClient):
             self.login(username, password)
 
     def login(self, username: str, password: str) -> None:
-        auth_endpoint = (
-            self.application.services.authentication().auth_handler.http_handler.get_endpoint()
+        auth_endpoint = self.application.services.authentication().auth_handler.http_handler.get_endpoint(
+            MagicMock()
         )
         url = f"{auth_endpoint}/system/auth/login"
         try:

@@ -1,13 +1,10 @@
 from typing import cast
 
-from openslides_backend.action.relations.single_relation_handler import (
-    SingleRelationHandler,
-)
 from openslides_backend.models import fields
 from tests.util import get_fqfield
 
 from ..action.base import BaseActionTestCase
-from .setup import FakeModelB, FakeModelC
+from .setup import FakeModelB, FakeModelC, SingleRelationHandlerWithContext
 
 
 class StructuredRelationTester(BaseActionTestCase):
@@ -22,7 +19,7 @@ class StructuredRelationTester(BaseActionTestCase):
             fields.BaseRelationField,
             FakeModelB().get_field("structured_relation_field"),
         )
-        relations_handler = SingleRelationHandler(
+        relations_handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=field,
             field_name="structured_relation_field",
@@ -61,7 +58,7 @@ class StructuredRelationTester(BaseActionTestCase):
             fields.BaseRelationField,
             FakeModelC().get_field("structured_relation_field"),
         )
-        relations_handler = SingleRelationHandler(
+        relations_handler = SingleRelationHandlerWithContext(
             datastore=self.datastore,
             field=field,
             field_name="structured_relation_field",

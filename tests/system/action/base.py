@@ -9,6 +9,9 @@ from openslides_backend.permissions.management_levels import (
 )
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.services.datastore.with_database_context import (
+    with_database_context,
+)
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import Collection
@@ -231,6 +234,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         assert user.get("default_password")
         self.client.login(user["username"], user["default_password"])
 
+    @with_database_context
     def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
         """
         Helper method to partition the groups by their meeting id.

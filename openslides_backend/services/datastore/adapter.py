@@ -1,11 +1,27 @@
 from collections import defaultdict
 from copy import deepcopy
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import (
+    Any,
+    ContextManager,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 import simplejson as json
+from reader.core.reader import Reader
+from reader.core.requests import AggregateRequest, FilterRequest, GetAllRequest
+from reader.core.requests import GetManyRequest as FullGetManyRequest
+from reader.core.requests import GetManyRequestPart, GetRequest, MinMaxRequest
+from shared.di import injector
+from shared.util import DeletedModelsBehaviour
 from simplejson.errors import JSONDecodeError
 
-from ...shared.exceptions import DatastoreException, DatastoreLockedException
+from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator, filter_visitor
 from ...shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
@@ -21,12 +37,14 @@ from ...shared.patterns import (
 )
 from ...shared.typing import DeletedModel, ModelMap
 from . import commands
-from .deleted_models_behaviour import (
-    DeletedModelsBehaviour,
+from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
+from .interface import (
+    DatastoreService,
+    Engine,
     InstanceAdditionalBehaviour,
+    LockResult,
+    PartialModel,
 )
-from .http_engine import HTTPEngine as Engine
-from .interface import DatastoreService, LockResult, PartialModel
 
 # TODO: Use proper typing here.
 DatastoreResponse = Any
@@ -37,6 +55,8 @@ class DatastoreAdapter(DatastoreService):
     Adapter to connect to readable and writeable datastore.
     """
 
+    reader: Reader
+
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
     locked_fields: Dict[str, CollectionFieldLock]
     additional_relation_models: ModelMap
@@ -45,6 +65,7 @@ class DatastoreAdapter(DatastoreService):
     def __init__(self, engine: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.engine = engine
+        self.reader = injector.get(Reader)
         self.locked_fields = {}
         self.additional_relation_models = defaultdict(dict)
         self.additional_relation_model_locks = {}
@@ -66,40 +87,15 @@ class DatastoreAdapter(DatastoreService):
             payload = None
         self.logger.debug(f"Get response with status code {status_code}: {payload}")
         if status_code >= 400:
-            error_message = f"Datastore service sends HTTP {status_code}."
-            additional_error_message = (
-                payload.get("error") if isinstance(payload, dict) else None
+            raise_datastore_error(
+                payload, f"Datastore service sends HTTP {status_code}."
             )
-            if additional_error_message is not None:
-                type_verbose = additional_error_message.get("type_verbose")
-                if type_verbose == "MODEL_LOCKED":
-                    broken_locks = (
-                        "'"
-                        + "', '".join(sorted(additional_error_message.get("keys")))
-                        + "'"
-                    )
-                    raise DatastoreLockedException(
-                        " ".join(
-                            (
-                                error_message,
-                                f"The following locks were broken: {broken_locks}",
-                            )
-                        )
-                    )
-                elif type_verbose == "MODEL_DOES_NOT_EXIST":
-                    error_message = " ".join(
-                        (
-                            error_message,
-                            f"Model '{additional_error_message.get('fqid')}' does not exist.",
-                        )
-                    )
-                else:
-                    error_message = " ".join(
-                        (error_message, str(additional_error_message))
-                    )
-            raise DatastoreException(error_message)
         return payload
 
+    def get_database_context(self) -> ContextManager[None]:
+        return self.reader.get_database_context()
+
+    @handle_datastore_errors
     def get(
         self,
         fqid: FullQualifiedId,
@@ -113,16 +109,16 @@ class DatastoreAdapter(DatastoreService):
             mapped_fields_set.update(mapped_fields)
             if lock_result:
                 mapped_fields_set.add("meta_position")
-        command = commands.Get(
-            fqid=fqid,
+        request = GetRequest(
+            fqid=str(fqid),
             mapped_fields=mapped_fields_set,
             position=position,
             get_deleted_models=get_deleted_models,
         )
         self.logger.debug(
-            f"Start GET request to datastore with the following data: {command.data}"
+            f"Start GET request to datastore with the following data: {request}"
         )
-        response = self.retrieve(command)
+        response = self.reader.get(request)
         if lock_result:
             instance_position = response.get("meta_position")
             if instance_position is None:
@@ -136,33 +132,30 @@ class DatastoreAdapter(DatastoreService):
             )
         return response
 
+    @handle_datastore_errors
     def get_many(
         self,
         get_many_requests: List[commands.GetManyRequest],
-        mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[Collection, Dict[int, PartialModel]]:
-        if mapped_fields is not None:
-            raise NotImplementedError(
-                "The keyword 'mapped_fields' is not supported. Please use mapped_fields inside the GetManyRequest."
-            )
         if lock_result:
             for get_many_request in get_many_requests:
                 if get_many_request.mapped_fields is not None:
                     get_many_request.mapped_fields.add("meta_position")
 
-        command = commands.GetMany(
-            get_many_requests=get_many_requests,
-            mapped_fields=mapped_fields,
-            position=position,
-            get_deleted_models=get_deleted_models,
-        )
+        request_parts = [
+            GetManyRequestPart(
+                str(gmr.collection), gmr.ids, list(gmr.mapped_fields or [])
+            )
+            for gmr in get_many_requests
+        ]
+        request = FullGetManyRequest(request_parts, [], position, get_deleted_models)
         self.logger.debug(
-            f"Start GET_MANY request to datastore with the following data: {command.data}"
+            f"Start GET_MANY request to datastore with the following data: {request}"
         )
-        response = self.retrieve(command)
+        response = self.reader.get_many(request)
         result: Dict[Collection, Dict[int, PartialModel]] = defaultdict(dict)
         for get_many_request in get_many_requests:
             collection = get_many_request.collection
@@ -170,9 +163,9 @@ class DatastoreAdapter(DatastoreService):
                 continue
 
             for instance_id in get_many_request.ids:
-                if str(instance_id) not in response[collection.collection]:
+                if instance_id not in response[collection.collection]:
                     continue
-                value = response[collection.collection][str(instance_id)]
+                value = response[collection.collection][instance_id]
                 if lock_result:
                     instance_position = value.get("meta_position")
                     if instance_position is None:
@@ -186,6 +179,7 @@ class DatastoreAdapter(DatastoreService):
                 result[collection][instance_id] = value
         return result
 
+    @handle_datastore_errors
     def get_all(
         self,
         collection: Collection,
@@ -197,16 +191,16 @@ class DatastoreAdapter(DatastoreService):
         if mapped_fields:
             mapped_fields_set.update(mapped_fields)
             if lock_result:
-                mapped_fields_set.update(("id", "meta_position"))
-        command = commands.GetAll(
-            collection=collection,
-            mapped_fields=mapped_fields_set,
+                mapped_fields_set.add("meta_position")
+        request = GetAllRequest(
+            collection=str(collection),
+            mapped_fields=list(mapped_fields_set),
             get_deleted_models=get_deleted_models,
         )
         self.logger.debug(
-            f"Start GET_ALL request to datastore with the following data: {command.data}"
+            f"Start GET_ALL request to datastore with the following data: {request}"
         )
-        response = self.retrieve(command)
+        response = self.reader.get_all(request)
         if lock_result and len(response) > 0:
             if not mapped_fields:
                 raise DatastoreException(
@@ -223,6 +217,7 @@ class DatastoreAdapter(DatastoreService):
                 self.update_locked_fields(collection_field, instance_position)
         return response
 
+    @handle_datastore_errors
     def filter(
         self,
         collection: Collection,
@@ -234,13 +229,13 @@ class DatastoreAdapter(DatastoreService):
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
         )
-        command = commands.Filter(
-            collection=collection, filter=full_filter, mapped_fields=set(mapped_fields)
+        request = FilterRequest(
+            collection=str(collection), filter=full_filter, mapped_fields=mapped_fields
         )
         self.logger.debug(
-            f"Start FILTER request to datastore with the following data: {command.data}"
+            f"Start FILTER request to datastore with the following data: {request}"
         )
-        response = self.retrieve(command)
+        response = self.reader.filter(request)
         pos = response["position"]
         data = response["data"]
         if lock_result:
@@ -253,7 +248,6 @@ class DatastoreAdapter(DatastoreService):
             for field in fields:
                 cf = CollectionField(collection, field)
                 self.update_locked_fields(cf, {"position": pos, "filter": full_filter})
-        data = {int(key): val for key, val in data.items()}
         return data
 
     def exists(
@@ -263,24 +257,9 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> bool:
-        full_filter = self.apply_deleted_models_behaviour_to_filter(
-            filter, get_deleted_models
+        return self._aggregate(
+            "exists", collection, filter, get_deleted_models, lock_result
         )
-        command = commands.Exists(collection=collection, filter=full_filter)
-        self.logger.debug(
-            f"Start EXISTS request to datastore with the following data: {command.data}"
-        )
-        response = self.retrieve(command)
-        if lock_result:
-            if (pos := response.get("position")) is None:
-                raise DatastoreException("Invalid response from datastore.")
-            filter_visitor(
-                filter,
-                lambda fo: self.update_locked_fields(
-                    CollectionField(collection, fo.field), pos
-                ),
-            )
-        return response["exists"]
 
     def count(
         self,
@@ -289,14 +268,27 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> int:
+        return self._aggregate(
+            "count", collection, filter, get_deleted_models, lock_result
+        )
+
+    @handle_datastore_errors
+    def _aggregate(
+        self,
+        route: str,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour,
+        lock_result: bool,
+    ) -> Any:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
         )
-        command = commands.Count(collection=collection, filter=full_filter)
+        request = AggregateRequest(collection=str(collection), filter=full_filter)
         self.logger.debug(
-            f"Start COUNT request to datastore with the following data: {command.data}"
+            f"Start {route.upper()} request to datastore with the following data: {request}"
         )
-        response = self.retrieve(command)
+        response = getattr(self.reader, route)(request)
         if lock_result:
             if (pos := response.get("position")) is None:
                 raise DatastoreException("Invalid response from datastore.")
@@ -306,7 +298,7 @@ class DatastoreAdapter(DatastoreService):
                     CollectionField(collection, fo.field), pos
                 ),
             )
-        return response["count"]
+        return response[route]
 
     def min(
         self,
@@ -317,27 +309,9 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
-        full_filter = self.apply_deleted_models_behaviour_to_filter(
-            filter, get_deleted_models
+        return self._minmax(
+            "min", collection, filter, field, type, get_deleted_models, lock_result
         )
-        command = commands.Min(
-            collection=collection, filter=full_filter, field=field, type=type
-        )
-        self.logger.debug(
-            f"Start MIN request to datastore with the following data: {command.data}"
-        )
-        response = self.retrieve(command)
-        if lock_result:
-            if (pos := response.get("position")) is None:
-                raise DatastoreException("Invalid response from datastore.")
-            self.update_locked_fields(CollectionField(collection, field), pos)
-            filter_visitor(
-                filter,
-                lambda fo: self.update_locked_fields(
-                    CollectionField(collection, fo.field), pos
-                ),
-            )
-        return response.get("min")
 
     def max(
         self,
@@ -348,17 +322,31 @@ class DatastoreAdapter(DatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
-        # TODO: This method does not reflect the position of the fetched objects.
+        return self._minmax(
+            "max", collection, filter, field, type, get_deleted_models, lock_result
+        )
+
+    @handle_datastore_errors
+    def _minmax(
+        self,
+        route: str,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        type: str,
+        get_deleted_models: DeletedModelsBehaviour,
+        lock_result: bool,
+    ) -> Optional[int]:
         full_filter = self.apply_deleted_models_behaviour_to_filter(
             filter, get_deleted_models
         )
-        command = commands.Max(
-            collection=collection, filter=full_filter, field=field, type=type
+        request = MinMaxRequest(
+            collection=str(collection), filter=full_filter, field=field, type=type
         )
         self.logger.debug(
-            f"Start MAX request to datastore with the following data: {command.data}"
+            f"Start {route.upper()} request to datastore with the following data: {request}"
         )
-        response = self.retrieve(command)
+        response = getattr(self.reader, route)(request)
         if lock_result:
             if (pos := response.get("position")) is None:
                 raise DatastoreException("Invalid response from datastore.")
@@ -369,7 +357,7 @@ class DatastoreAdapter(DatastoreService):
                     CollectionField(collection, fo.field), pos
                 ),
             )
-        return response.get("max")
+        return response.get(route)
 
     def apply_deleted_models_behaviour_to_filter(
         self, filter: Filter, get_deleted_models: DeletedModelsBehaviour

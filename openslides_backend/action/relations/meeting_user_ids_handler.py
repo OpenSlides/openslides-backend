@@ -1,8 +1,6 @@
 from typing import Any, Dict
 
-from openslides_backend.services.datastore.deleted_models_behaviour import (
-    InstanceAdditionalBehaviour,
-)
+from openslides_backend.services.datastore.interface import InstanceAdditionalBehaviour
 
 from ...models.fields import Field
 from ...shared.exceptions import ActionException

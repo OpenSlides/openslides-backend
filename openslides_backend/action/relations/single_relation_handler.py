@@ -1,6 +1,8 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Set, Tuple, Union, cast
 
+from shared.util import DeletedModelsBehaviour
+
 from ...models.base import model_registry
 from ...models.fields import (
     BaseGenericRelationField,
@@ -12,13 +14,10 @@ from ...models.fields import (
     RelationField,
     RelationListField,
 )
-from ...services.datastore.deleted_models_behaviour import (
-    DeletedModelsBehaviour,
-    InstanceAdditionalBehaviour,
-)
 from ...services.datastore.interface import (
     DatastoreService,
     GetManyRequest,
+    InstanceAdditionalBehaviour,
     PartialModel,
 )
 from ...shared.exceptions import ActionException

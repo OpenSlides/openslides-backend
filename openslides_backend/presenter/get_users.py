@@ -2,8 +2,8 @@ from operator import itemgetter
 from typing import Any, Dict, List
 
 import fastjsonschema
+from shared.util import DeletedModelsBehaviour
 
-from ..services.datastore.deleted_models_behaviour import DeletedModelsBehaviour
 from ..shared.exceptions import PresenterException
 from ..shared.patterns import Collection
 from ..shared.schema import schema_version

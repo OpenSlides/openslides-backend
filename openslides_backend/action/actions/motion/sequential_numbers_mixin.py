@@ -1,4 +1,5 @@
-from ....services.datastore.deleted_models_behaviour import DeletedModelsBehaviour
+from shared.util import DeletedModelsBehaviour
+
 from ....shared.filters import FilterOperator
 from ...generics.create import CreateAction
 

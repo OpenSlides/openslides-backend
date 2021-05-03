@@ -199,7 +199,8 @@ class ActionHandler(BaseHandler):
         action_data = deepcopy(action_payload_element["data"])
 
         try:
-            write_request, results = action.perform(action_data, self.user_id)
+            with self.datastore.get_database_context():
+                write_request, results = action.perform(action_data, self.user_id)
             if write_request:
                 action.validate_required_fields(write_request)
 
