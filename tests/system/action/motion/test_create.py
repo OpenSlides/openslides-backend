@@ -286,8 +286,9 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "data must not contain {'origin_id'} properties" in response.json["message"]
-    
+        assert (
+            "data must not contain {'origin_id'} properties" in response.json["message"]
+        )
 
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
