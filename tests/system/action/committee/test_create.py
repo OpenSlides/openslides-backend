@@ -1,14 +1,17 @@
+from typing import Any, Dict
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class CommitteeCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_model = {
+        self.test_model: Dict[str, Dict[str, Any]] = {
             "organisation/1": {"name": "test_organisation1"},
             "user/20": {"username": "test_user20"},
             "user/21": {"username": "test_user21"},
             "user/22": {"username": "test_user22"},
+            "organisation_tag/12": {"organisation_id": 1},
         }
 
     def test_create(self) -> None:
@@ -24,6 +27,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "description": description,
                 "member_ids": [20, 21],
                 "manager_ids": [20, 22],
+                "organisation_tag_ids": [12],
             },
         )
         self.assert_status_code(response, 200)
@@ -33,6 +37,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("meeting_ids") is None
         assert model.get("member_ids") == [20, 21]
         assert model.get("manager_ids") == [20, 22]
+        assert model.get("organisation_tag_ids") == [12]
 
     def test_create_only_required(self) -> None:
         self.create_model("organisation/1", {"name": "test_organisation1"})
