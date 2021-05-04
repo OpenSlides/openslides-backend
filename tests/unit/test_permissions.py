@@ -4,7 +4,6 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganisationManagementLevel,
 )
-from openslides_backend.shared.exceptions import PermissionException
 
 
 def test_orgamanagement_level_lt() -> None:
