@@ -2,6 +2,7 @@ from time import time
 from typing import Any, Dict
 
 from ....models.models import MotionChangeRecommendation
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Not
 from ...action_set import ActionSet
@@ -83,4 +84,5 @@ class MotionChangeRecommendationActionSet(ActionSet):
     )
     delete_schema = DefaultSchema(MotionChangeRecommendation()).get_delete_schema()
 
+    permission = Permissions.Motion.CAN_MANAGE
     CreateActionClass = MotionChangeRecommendationCreateAction
