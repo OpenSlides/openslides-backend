@@ -105,4 +105,11 @@ class MissingPermission(PermissionDenied):
             Permission, OrganisationManagementLevel, CommitteeManagementLevel
         ],
     ) -> None:
-        self.message = f"Missing permission: {permission}"
+        if isinstance(permission, Permission):
+            permission_type = "permission"
+        elif isinstance(permission, OrganisationManagementLevel):
+            permission_type = "Organisation Management Level"
+        else:
+            permission_type = "Committee Management Level"
+
+        self.message = f"Missing {permission_type}: {permission}"

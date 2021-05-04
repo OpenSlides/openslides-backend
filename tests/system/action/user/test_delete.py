@@ -45,7 +45,7 @@ class UserDeleteActionTest(BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.delete. Missing permission: can_manage_users",
+            "You are not allowed to perform action user.delete. Missing Organisation Management Level: can_manage_users",
             response.json["message"],
         )
 

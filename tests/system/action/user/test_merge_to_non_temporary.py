@@ -44,6 +44,6 @@ class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.merge_to_non_temporary. Missing permission: can_manage_users",
+            "You are not allowed to perform action user.merge_to_non_temporary. Missing Organisation Management Level: can_manage_users",
             response.json["message"],
         )
