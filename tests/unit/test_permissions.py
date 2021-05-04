@@ -4,7 +4,6 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganisationManagementLevel,
 )
-from openslides_backend.shared.exceptions import PermissionException
 
 
 def test_orgamanagement_level_lt() -> None:
@@ -49,7 +48,7 @@ def test_committee_level_ge() -> None:
 
 
 def test_committee_level_string_CML() -> None:
-    with pytest.raises(PermissionException) as exc:
+    with pytest.raises(TypeError) as exc:
         "A" < CommitteeManagementLevel.MANAGER
     assert (
         "The comparison expect an <enum 'CommitteeManagementLevel'>-type and no string!"
@@ -58,7 +57,7 @@ def test_committee_level_string_CML() -> None:
 
 
 def test_committee_level_CML_string() -> None:
-    with pytest.raises(PermissionException) as exc:
+    with pytest.raises(TypeError) as exc:
         CommitteeManagementLevel.MANAGER > "A"
     assert (
         "The comparison expect an <enum 'CommitteeManagementLevel'>-type and no string!"

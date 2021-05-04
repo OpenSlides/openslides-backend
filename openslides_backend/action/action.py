@@ -28,6 +28,7 @@ from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
 from ..shared.exceptions import (
     ActionException,
+    MissingPermission,
     PermissionDenied,
     RequiredFieldsException,
 )
@@ -122,7 +123,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.validate_instance(instance)
             # perform permission check not for internal actions
             if not internal:
-                self.check_permissions(instance)
+                try:
+                    self.check_permissions(instance)
+                except MissingPermission as e:
+                    msg = f"You are not allowed to perform action {self.name}."
+                    e.message = msg + " " + e.message
+                    raise e
+
             self.index += 1
         self.index = -1
 
@@ -161,7 +168,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Checks permission by requesting permission service or using internal check.
         """
         # switch between internal and external permission service
-        msg_appendix = None
         if self.permission:
             if type(self.permission) == OrganisationManagementLevel:
                 if has_organisation_management_level(
@@ -170,9 +176,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     cast(OrganisationManagementLevel, self.permission),
                 ):
                     return
-                msg_appendix = (
-                    f" Missing Organisation Management Level: {self.permission}"
-                )
+                raise MissingPermission(self.permission)
             elif type(self.permission) == CommitteeManagementLevel:
                 """
                 set permission in class to: permission = CommitteeManagementLevel.MANAGER
@@ -188,14 +192,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     meeting_id,
                 ):
                     return
-                msg_appendix = f" Missing permission: {self.permission}"
+                raise MissingPermission(self.permission)
         else:
             if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
                 return
 
         msg = f"You are not allowed to perform action {self.name}."
-        if msg_appendix:
-            msg += msg_appendix
         raise PermissionDenied(msg)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

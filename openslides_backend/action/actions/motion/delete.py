@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import MissingPermission
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -43,6 +43,4 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
         ):
             return
 
-        msg = f"You are not allowed to perform action {self.name}."
-        msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE}"
-        raise PermissionDenied(msg)
+        raise MissingPermission(Permissions.Motion.CAN_MANAGE)

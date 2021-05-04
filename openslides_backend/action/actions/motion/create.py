@@ -4,7 +4,7 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -185,16 +185,12 @@ class MotionCreate(
         if instance.get("lead_motion_id"):
             perm = Permissions.Motion.CAN_CREATE_AMENDMENTS
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Missing permission: {perm}"
-                raise PermissionDenied(msg)
+                raise MissingPermission(perm)
 
         else:
             perm = Permissions.Motion.CAN_CREATE
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Missing permission: {perm}"
-                raise PermissionDenied(msg)
+                raise MissingPermission(perm)
 
         # if not can manage whitelist the fields.
         perm = Permissions.Motion.CAN_MANAGE
@@ -219,6 +215,6 @@ class MotionCreate(
                     forbidden_fields.append(field)
 
             if forbidden_fields:
-                msg = f"You are not allowed to perform action {self.name}."
-                msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
+                msg = f"You are not allowed to perform action {self.name}. "
+                msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
                 raise PermissionDenied(msg)

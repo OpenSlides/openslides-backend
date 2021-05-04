@@ -1,5 +1,10 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
+from ..permissions.permissions import Permission
 from .patterns import FullQualifiedId
 
 
@@ -91,3 +96,20 @@ class MediaServiceException(ServiceException):
 
 class PermissionDenied(ViewException):
     status_code = 403
+
+
+class MissingPermission(PermissionDenied):
+    def __init__(
+        self,
+        permission: Union[
+            Permission, OrganisationManagementLevel, CommitteeManagementLevel
+        ],
+    ) -> None:
+        if isinstance(permission, Permission):
+            permission_type = "permission"
+        elif isinstance(permission, OrganisationManagementLevel):
+            permission_type = "Organisation Management Level"
+        else:
+            permission_type = "Committee Management Level"
+
+        self.message = f"Missing {permission_type}: {permission}"

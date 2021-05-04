@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.interface import DatastoreService
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import MissingPermission
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
 
@@ -40,6 +40,4 @@ def check_poll_or_option_perms(
     else:
         perm = Permissions.Poll.CAN_MANAGE
     if not has_perm(datastore, user_id, perm, meeting_id):
-        msg = f"You are not allowed to perform action {action_name}."
-        msg += f" Missing permission: {perm}"
-        raise PermissionDenied(msg)
+        raise MissingPermission(perm)

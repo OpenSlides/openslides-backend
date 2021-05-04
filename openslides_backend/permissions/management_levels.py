@@ -1,7 +1,5 @@
 from enum import Enum
 
-from ..shared.exceptions import PermissionException
-
 
 class CompareRightLevel(str, Enum):
     def __new__(cls, value: str, weight: int):  # type: ignore
@@ -12,7 +10,7 @@ class CompareRightLevel(str, Enum):
 
     def check_instance(self, other: str) -> None:
         if not isinstance(other, self.__class__):
-            raise PermissionException(
+            raise TypeError(
                 f"The comparison expect an {self.__class__}-type and no string!"
             )
 

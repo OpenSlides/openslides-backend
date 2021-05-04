@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
@@ -186,9 +186,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         meeting_id = self.get_meeting_id(instance)
         if has_perm(self.datastore, self.user_id, permission, meeting_id):
             return
-        msg = f"You are not allowed to perform action {self.name}."
-        msg += f" Missing permission: {permission}"
-        raise PermissionDenied(msg)
+        raise MissingPermission(permission)
 
 
 @register_action("speaker.update")

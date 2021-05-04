@@ -4,7 +4,7 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -87,6 +87,4 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         ):
             return
 
-        msg = f"You are not allowed to perform action {self.name}."
-        msg += f" Missing permission: {Permissions.Motion.CAN_MANAGE_METADATA}"
-        raise PermissionDenied(msg)
+        raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)
