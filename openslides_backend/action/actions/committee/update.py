@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Committee
 from ....permissions.management_levels import OrganisationManagementLevel
 from ....permissions.permission_helper import has_organisation_management_level
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -82,14 +82,10 @@ class CommitteeUpdateAction(UpdateAction):
             )
             and not can_manage_organisation
         ):
-            raise PermissionDenied(
-                f"Missing {OrganisationManagementLevel.CAN_MANAGE_ORGANISATION}"
-            )
+            raise MissingPermission(OrganisationManagementLevel.CAN_MANAGE_ORGANISATION)
         if (
             "organisation_tag_ids" in instance
             and not is_manager
             and not can_manage_organisation
         ):
-            raise PermissionDenied(
-                f"Missing {OrganisationManagementLevel.CAN_MANAGE_ORGANISATION} and not manager."
-            )
+            raise PermissionDenied("Missing can_manage_organisation and not manager.")
