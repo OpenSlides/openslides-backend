@@ -9,6 +9,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
                 "user/1": {
                     "personal_note_$111_ids": [1],
                     "personal_note_$_ids": ["111"],
+                    "meeting_ids": [111],
                 },
                 "personal_note/1": {
                     "star": True,
@@ -39,6 +40,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
                     "user_id": 2,
                     "meeting_id": 111,
                 },
+                "user/1": {"meeting_ids": [111]},
             }
         )
         response = self.request("personal_note.delete", {"id": 1})

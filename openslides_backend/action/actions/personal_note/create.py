@@ -9,10 +9,13 @@ from ...mixins.create_action_with_inferred_meeting import (
 )
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionMixin
 
 
 @register_action("personal_note.create")
-class PersonalNoteCreateAction(CreateActionWithInferredMeetingMixin, CreateAction):
+class PersonalNoteCreateAction(
+    CreateActionWithInferredMeetingMixin, CreateAction, PermissionMixin
+):
     """
     Action to create a personal note.
     """
@@ -26,17 +29,13 @@ class PersonalNoteCreateAction(CreateActionWithInferredMeetingMixin, CreateActio
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        * Check user_id if anonymous
         * set user_id from action.
         * check star or note.
-        * set meeting_id from content_object_id
         """
-        if self.auth.is_anonymous(self.user_id):
-            raise ActionException("Can't create personal note for anonymous")
+
         instance["user_id"] = self.user_id
         if not (instance.get("star") or instance.get("note")):
             raise ActionException("Can't create personal note without star or note.")
-        instance = self.update_instance_with_meeting_id(instance)
 
         # check, if (user_id, content_object_id) already in the databse.
         filter_ = And(
@@ -49,3 +48,7 @@ class PersonalNoteCreateAction(CreateActionWithInferredMeetingMixin, CreateActio
         if exists:
             raise ActionException("(user_id, content_object_id) must be unique.")
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        instance = self.update_instance_with_meeting_id(instance)
+        self.check_anonymous_and_user_in_meeting(instance["meeting_id"])

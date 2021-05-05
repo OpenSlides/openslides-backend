@@ -6,10 +6,11 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import PermissionMixin
 
 
 @register_action("personal_note.delete")
-class PersonalNoteDeleteAction(DeleteAction):
+class PersonalNoteDeleteAction(DeleteAction, PermissionMixin):
     """
     Action to delete a personal note.
     """
@@ -28,3 +29,7 @@ class PersonalNoteDeleteAction(DeleteAction):
         if self.user_id != personal_note.get("user_id"):
             raise ActionException("Cannot delete not owned personal note.")
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        meeting_id = self.get_meeting_id(instance)
+        self.check_anonymous_and_user_in_meeting(meeting_id)

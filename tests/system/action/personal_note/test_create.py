@@ -7,6 +7,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
             {
                 "meeting/110": {"name": "name_meeting_110"},
                 "motion/23": {"meeting_id": 110},
+                "user/1": {"meeting_ids": [110]},
             }
         )
         response = self.request(
@@ -31,6 +32,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
             {
                 "meeting/110": {"name": "name_meeting_110"},
                 "motion/23": {"meeting_id": 110},
+                "user/1": {"meeting_ids": [110]},
             }
         )
         response = self.request(
@@ -53,6 +55,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
                     "user_id": 1,
                     "content_object_id": "motion/23",
                 },
+                "user/1": {"meeting_ids": [110]},
             }
         )
         response = self.request(
