@@ -3,6 +3,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class PersonalNoteDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
+        # checks permissions too.
         self.set_models(
             {
                 "meeting/111": {"personal_note_ids": [1]},
@@ -49,3 +50,52 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
             "Cannot delete not owned personal note.", response.json["message"]
         )
         self.assert_model_exists("personal_note/1")
+
+    def test_delete_no_permission_user_not_in_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {"personal_note_ids": [1]},
+                "user/1": {
+                    "personal_note_$111_ids": [1],
+                    "personal_note_$_ids": ["111"],
+                    "meeting_ids": [],
+                },
+                "personal_note/1": {
+                    "star": True,
+                    "note": "blablabla",
+                    "user_id": 1,
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request("personal_note.delete", {"id": 1})
+        self.assert_status_code(response, 403)
+        assert "User not associated with meeting." in response.json["message"]
+
+    def test_delete_no_permission_anon_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {"personal_note_ids": [1]},
+                "user/1": {
+                    "personal_note_$111_ids": [1],
+                    "personal_note_$_ids": ["111"],
+                    "meeting_ids": [1],
+                },
+                "personal_note/1": {
+                    "star": True,
+                    "note": "blablabla",
+                    "user_id": 1,
+                    "meeting_id": 111,
+                },
+            }
+        )
+        self.set_anonymous(meeting_id=111)
+        response = self.request(
+            "personal_note.delete",
+            {"id": 1},
+            anonymous=True,
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Anonymous user cannot do personal_note.delete." in response.json["message"]
+        )

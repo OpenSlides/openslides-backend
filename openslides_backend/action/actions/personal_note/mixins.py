@@ -6,7 +6,7 @@ from ...action import Action
 class PermissionMixin(Action):
     def check_anonymous_and_user_in_meeting(self, meeting_id: int) -> None:
         if self.auth.is_anonymous(self.user_id):
-            raise PermissionDenied("Can't create personal note for anonymous")
+            raise PermissionDenied(f"Anonymous user cannot do {self.name}.")
 
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id), ["meeting_ids"]
