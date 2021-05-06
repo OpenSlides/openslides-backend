@@ -1,5 +1,6 @@
 from . import (  # noqa
     create,
+    create_forwarded,
     delete,
     follow_recommendation,
     reset_recommendation,
