@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 
 from ....models.models import Meeting
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
@@ -24,6 +25,7 @@ class BaseMeetingSetMediafileAction(UpdateAction):
             "mediafile_id": required_id_schema,
         },
     )
+    permission = Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         if not self.field or not self.allowed_mimetypes:
@@ -49,3 +51,6 @@ class BaseMeetingSetMediafileAction(UpdateAction):
 
         instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
         return instance
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return instance["id"]

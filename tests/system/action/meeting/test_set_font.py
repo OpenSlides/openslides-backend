@@ -1,7 +1,19 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingSetFontActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.permission_test_model = {
+            "meeting/1": {"name": "name_meeting1"},
+            "mediafile/17": {
+                "is_directory": False,
+                "mimetype": "font/woff",
+                "meeting_id": 1,
+            },
+        }
+
     def test_set_font_correct(self) -> None:
         self.set_models(
             {
@@ -53,3 +65,18 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "Invalid mimetype" in response.json["message"]
+
+    def test_set_font_no_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "meeting.set_font",
+            {"id": 1, "mediafile_id": 17, "place": "1"},
+        )
+
+    def test_set_font_permission(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "meeting.set_font",
+            {"id": 1, "mediafile_id": 17, "place": "1"},
+            Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
+        )
