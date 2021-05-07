@@ -69,8 +69,14 @@ class MotionCreate(MotionCreateBase):
                 raise ActionException(
                     "You can't give amendment_paragraph_$ in this context"
                 )
-        # if lead_motion use category_id and block_id from the lead_motion
-        if instance.get("lead_motion_id"):
+        # if lead_motion and not has perm motion_can_manage
+        # use category_id and block_id from the lead_motion
+        if instance.get("lead_motion_id") and not has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Motion.CAN_MANAGE,
+            instance["meeting_id"],
+        ):
             lead_motion = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["lead_motion_id"]),
                 ["block_id", "category_id"],
@@ -125,7 +131,7 @@ class MotionCreate(MotionCreateBase):
                 "meeting_id",
             ]
             if instance.get("lead_motion_id"):
-                whitelist.append("motion_block_id")
+                whitelist.append("block_id")
             forbidden_fields = []
             for field in instance:
                 if field not in whitelist:

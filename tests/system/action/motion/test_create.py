@@ -308,6 +308,8 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "workflow_id": 12,
                 "text": "test",
                 "lead_motion_id": 3,
+                "block_id": 13,
+                "category_id": 12,
             },
         )
         self.assert_status_code(response, 200)
@@ -414,7 +416,13 @@ class MotionCreateActionTest(BaseActionTestCase):
             3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
         )
         self.set_models(self.permission_test_model)
-        self.set_models({"motion/3": {"meeting_id": 1}})
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
+                "motion_category/12": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+            }
+        )
         response = self.request(
             "motion.create",
             {
@@ -426,3 +434,4 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/4", {"block_id": 13, "category_id": 12})
