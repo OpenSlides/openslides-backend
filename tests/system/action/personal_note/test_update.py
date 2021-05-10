@@ -34,7 +34,7 @@ class PersonalNoteUpdateActionTest(BaseActionTestCase):
         response = self.request(
             "personal_note.update", {"id": 1, "star": False, "note": "blopblop"}
         )
-        self.assert_status_code(response, 400)
+        self.assert_status_code(response, 403)
         self.assertIn(
             "Cannot change not owned personal note.", response.json["message"]
         )

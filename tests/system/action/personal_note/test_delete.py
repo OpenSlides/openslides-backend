@@ -49,7 +49,7 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
             }
         )
         response = self.request("personal_note.delete", {"id": 1})
-        self.assert_status_code(response, 400)
+        self.assert_status_code(response, 403)
         self.assertIn(
             "Cannot delete not owned personal note.", response.json["message"]
         )
