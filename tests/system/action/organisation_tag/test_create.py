@@ -12,6 +12,8 @@ class OrganisationTagCreate(BaseActionTestCase):
         organisation_tag = self.get_model("organisation_tag/1")
         assert organisation_tag.get("name") == "wSvQHymN"
         assert organisation_tag.get("color") == "#eeeeee"
+        assert organisation_tag.get("organisation_id") == 1
+        self.assert_model_exists("organisation/1", {"organisation_tag_ids": [1]})
 
     def test_create_empty_data(self) -> None:
         self.set_models({"organisation/1": {}})
