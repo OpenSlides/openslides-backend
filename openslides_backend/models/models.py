@@ -156,6 +156,7 @@ class User(Model):
         replacement="meeting_id",
         to={Collection("user"): "vote_delegated_$_to_id"},
     )
+    meeting_ids = fields.NumberArrayField(read_only=True)
 
 
 class Resource(Model):
