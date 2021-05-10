@@ -71,7 +71,7 @@ start-dev-interactive:
 run-dev-attach:
 	docker-compose -f dev/docker-compose.dev.yml exec backend bash --rcfile dev/bashrc
 
-run-dev run-bash: | start-dev run-dev-standalone
+run-dev run-bash: | start-dev run-dev-attach
 
 run-tests:
 	dev/run-tests.sh
