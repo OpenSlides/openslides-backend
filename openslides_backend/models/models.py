@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "7a55bbe9a772550b07d617265e9a90ee"
+MODELS_YML_CHECKSUM = "19689b101d4d852e5c607def447b15c4"
 
 
 class Organisation(Model):
@@ -153,9 +153,7 @@ class User(Model):
     )
     meeting_ids = fields.NumberArrayField(
         read_only=True,
-        constraints={
-            "description": "Calculated. All ids from group_$_ids as integers."
-        },
+        constraints={"decription": "Calculated. All ids from group_$_ids as integers."},
     )
 
 
@@ -550,7 +548,7 @@ class Meeting(Model):
     user_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
-            "description": "Calculated. All user ids from all users assigned to groups of this meeting."
+            "decription": "Calculated. All user ids from all users assigned to groups of this meeting."
         },
     )
     reference_projector_id = fields.RelationField(

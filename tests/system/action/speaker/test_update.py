@@ -26,8 +26,6 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
         self.assert_status_code(response, 200)
-        model = self.get_model("speaker/890")
-        assert model.get("speech_state") == "pro"
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
