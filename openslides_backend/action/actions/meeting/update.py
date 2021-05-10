@@ -116,7 +116,6 @@ class MeetingUpdate(UpdateAction):
         optional_properties=[
             *meeting_settings_keys,
             "template_for_committee_id",
-            "guest_ids",
             "reference_projector_id",
         ],
         additional_optional_fields={

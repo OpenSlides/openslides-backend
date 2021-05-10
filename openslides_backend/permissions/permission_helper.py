@@ -36,14 +36,14 @@ def has_perm(
     if user.get(f"group_${meeting_id}_ids"):
         group_ids = user[f"group_${meeting_id}_ids"]
     else:
-        # guests, temporary users and anonymous are in the default group
-        if meeting_id in user.get("guest_meeting_ids", []) or user_id == 0:
+        # anonymous users are in the default group
+        if user_id == 0:
             meeting = datastore.get(
                 FullQualifiedId(Collection("meeting"), meeting_id),
                 ["default_group_id", "enable_anonymous"],
             )
             # check if anonymous is allowed
-            if user_id == 0 and not meeting.get("enable_anonymous"):
+            if not meeting.get("enable_anonymous"):
                 raise PermissionDenied(
                     f"Anonymous is not enabled for meeting {meeting_id}"
                 )

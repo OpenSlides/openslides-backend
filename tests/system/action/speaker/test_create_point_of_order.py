@@ -9,8 +9,8 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
                 },
-                "user/1": {"meeting_id": 7844},
-                "user/7": {"username": "talking", "meeting_id": 7844},
+                "user/1": {"meeting_ids": [7844]},
+                "user/7": {"username": "talking", "meeting_ids": [7844]},
                 "speaker/1": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
@@ -43,12 +43,12 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
                 },
-                "user/7": {"username": "talking with poo", "meeting_id": 7844},
-                "user/8": {"username": "waiting with poo", "meeting_id": 7844},
+                "user/7": {"username": "talking with poo", "meeting_ids": [7844]},
+                "user/8": {"username": "waiting with poo", "meeting_ids": [7844]},
                 "user/1": {
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "speaker/1": {
                     "user_id": 7,
@@ -120,12 +120,12 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
                 },
-                "user/7": {"username": "waiting with poo1", "meeting_id": 7844},
-                "user/8": {"username": "waiting with poo2", "meeting_id": 7844},
+                "user/7": {"username": "waiting with poo1", "meeting_ids": [7844]},
+                "user/8": {"username": "waiting with poo2", "meeting_ids": [7844]},
                 "user/1": {
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "speaker/1": {
                     "user_id": 7,
@@ -222,11 +222,11 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
                 },
-                "user/7": {"username": "waiting with poo", "meeting_id": 7844},
+                "user/7": {"username": "waiting with poo", "meeting_ids": [7844]},
                 "user/1": {
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "speaker/1": {
                     "user_id": 7,
@@ -267,7 +267,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "user/1": {
                     "username": "test_username1",
                     "speaker_$7844_ids": [42],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "list_of_speakers/23": {"speaker_ids": [42], "meeting_id": 7844},
                 "speaker/42": {
@@ -323,8 +323,8 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
                 },
-                "user/7": {"username": "talking", "meeting_id": 7844},
-                "user/8": {"username": "waiting", "meeting_id": 7844},
+                "user/7": {"username": "talking", "meeting_ids": [7844]},
+                "user/8": {"username": "waiting", "meeting_ids": [7844]},
                 "speaker/1": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,

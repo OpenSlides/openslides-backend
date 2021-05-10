@@ -7,7 +7,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_model = {
             "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
-            "user/78": {"username": "username_loetzbfg", "meeting_id": 1},
+            "user/78": {"username": "username_loetzbfg", "meeting_ids": [1]},
         }
 
     def test_create(self) -> None:
@@ -15,7 +15,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
             {
                 "meeting/111": {"name": "name_m123etrd"},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
-                "user/78": {"username": "username_loetzbfg", "meeting_id": 111},
+                "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
             }
         )
         response = self.request(
@@ -32,7 +32,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
             {
                 "meeting/111": {"name": "name_m123etrd"},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
-                "user/78": {"username": "username_loetzbfg", "meeting_id": 111},
+                "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
                 "motion_submitter/12": {
                     "motion_id": 357,
                     "user_id": 78,
@@ -57,13 +57,6 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.set_models(
-            {
-                "meeting/111": {"name": "name_m123etrd"},
-                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
-                "user/78": {"username": "username_lskeuebe", "meeting_id": 111},
-            }
-        )
         response = self.request(
             "motion_submitter.create",
             {
@@ -84,7 +77,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
                 "meeting/111": {"name": "name_m123etrd"},
                 "meeting/112": {"name": "name_ewadetrd"},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
-                "user/78": {"username": "username_loetzbfg", "meeting_id": 112},
+                "user/78": {"username": "username_loetzbfg", "meeting_ids": [112]},
             }
         )
         response = self.request(
@@ -92,7 +85,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Cannot create motion_submitter, meeting id of motion and (temporary) user don't match.",
+            "The following models do not belong to meeting 111: ['user/78']",
             response.json["message"],
         )
 

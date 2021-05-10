@@ -463,7 +463,8 @@ class CreatePoll(BaseActionTestCase):
         )
 
     def test_unique_no_error_mixed_text_content_object_id_options(self) -> None:
-        self.update_model("user/1", {"meeting_id": 1})
+        self.create_meeting()
+        self.set_user_groups(1, [1])
         response = self.request(
             "poll.create",
             {
@@ -540,7 +541,11 @@ class CreatePoll(BaseActionTestCase):
             {
                 "meeting/42": {},
                 "group/5": {"meeting_id": 42, "user_ids": [1]},
-                "user/1": {"group_$42_ids": [5], "group_$_ids": ["42"]},
+                "user/1": {
+                    "group_$42_ids": [5],
+                    "group_$_ids": ["42"],
+                    "meeting_ids": [42],
+                },
             }
         )
         response = self.request(
@@ -575,7 +580,11 @@ class CreatePoll(BaseActionTestCase):
                 "meeting/42": {},
                 "meeting/7": {},
                 "group/5": {"meeting_id": 42, "user_ids": [1]},
-                "user/1": {"group_$42_ids": [5], "group_$_ids": ["42"]},
+                "user/1": {
+                    "group_$42_ids": [5],
+                    "group_$_ids": ["42"],
+                    "meeting_ids": [42],
+                },
             }
         )
         response = self.request(

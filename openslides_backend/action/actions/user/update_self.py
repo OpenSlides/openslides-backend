@@ -31,7 +31,7 @@ class UserUpdateSelf(UpdateAction, UserMixin):
             meeting_id_str = str(
                 self.datastore.get(
                     FullQualifiedId(Collection("user"), self.user_id), ["meeting_id"]
-                ).get("meeting_id")
+                ).get("meeting_id", "")
             )
             if meeting_id_str:
                 diff = [

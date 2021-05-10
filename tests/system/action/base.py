@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Union, cast
 
+from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import Payload
 from openslides_backend.permissions.management_levels import OrganisationManagementLevel
 from openslides_backend.permissions.permissions import Permission
@@ -142,19 +143,41 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         return id
 
+    def create_user_for_meeting(self, meeting_id: int) -> int:
+        meeting = self.get_model(f"meeting/{meeting_id}")
+        if not meeting.get("default_group_id"):
+            id = self.datastore.reserve_id(Collection("group"))
+            self.set_models(
+                {
+                    f"meeting/{meeting_id}": {
+                        "group_ids": meeting.get("group_ids", []) + [id],
+                        "default_group_id": id,
+                    },
+                    f"group/{id}": {
+                        "meeting_id": meeting_id,
+                        "default_group_for_meeting_id": meeting_id,
+                    },
+                }
+            )
+            meeting["default_group_id"] = id
+        user_id = self.create_user("user_" + get_random_string(6))
+        self.set_user_groups(user_id, [meeting["default_group_id"]])
+        return user_id
+
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
         partitioned_groups = self._fetch_groups(group_ids)
         user = self.get_model(f"user/{user_id}")
+        new_group_ids = list(
+            str(meeting_id)
+            for meeting_id in set(
+                user.get("group_$_ids", []) + list(partitioned_groups.keys())
+            )
+        )
         self.set_models(
             {
                 f"user/{user_id}": {
-                    "group_$_ids": list(
-                        str(meeting_id)
-                        for meeting_id in set(
-                            user.get("group_$_ids", [])
-                            + list(partitioned_groups.keys())
-                        )
-                    ),
+                    "group_$_ids": new_group_ids,
+                    "meeting_ids": [int(group_id) for group_id in new_group_ids],
                     **{
                         f"group_${meeting_id}_ids": list(
                             set(
@@ -195,7 +218,8 @@ class BaseActionTestCase(BaseSystemTestCase):
                 GetManyRequest(
                     Collection("group"), group_ids, ["id", "meeting_id", "user_ids"]
                 )
-            ]
+            ],
+            lock_result=False,
         )
         partitioned_groups: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
         for group in response.get(Collection("group"), {}).values():

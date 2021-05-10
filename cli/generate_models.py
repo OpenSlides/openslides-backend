@@ -74,7 +74,7 @@ def main() -> None:
               field:
                 type: structured-relation
                 name: another_$_attribute
-                replacement: ...
+                replacement_collection: ...
                 through:
                 - ...
                 - ...
@@ -82,7 +82,7 @@ def main() -> None:
         another_model:
           another_$_attribute:
             type: template
-            replacement: ...
+            replacement_collection: ...
             fields:
               type: relation-list
               to:
@@ -218,7 +218,7 @@ class Model(Node):
 
 class Attribute(Node):
     type: str
-    replacement: Optional[str] = None
+    replacement_collection: Optional[Collection] = None
     to: Optional["To"] = None
     fields: Optional["Attribute"] = None
     required: bool = False
@@ -249,7 +249,10 @@ class Attribute(Node):
             self.type = value.get("type", "")
             if self.type == "template":
                 self.is_template = True
-                self.replacement = value.get("replacement")
+                replacement_str = value.get("replacement_collection")
+                self.replacement_collection = (
+                    Collection(replacement_str) if replacement_str else None
+                )
                 inner_value = value.get("fields")
                 assert not is_inner_attribute and inner_value
                 self.fields = type(self)(inner_value, is_inner_attribute=True)
@@ -325,8 +328,8 @@ class Attribute(Node):
         assert self.fields is not None
         field_class = f"Template{self.FIELD_CLASSES[self.fields.type]}"
         properties = f"index={index}, "
-        if self.replacement:
-            properties += f'replacement="{self.replacement}",'
+        if self.replacement_collection:
+            properties += f"replacement_collection={repr(self.replacement_collection)},"
         if self.fields.to:
             properties += self.fields.to.get_properties()
         if self.fields.required:

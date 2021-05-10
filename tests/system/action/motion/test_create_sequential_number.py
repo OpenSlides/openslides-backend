@@ -26,7 +26,12 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         )
 
     def test_create_sequential_numbers(self) -> None:
-        self.create_model("meeting/222", {"name": "meeting222"})
+        self.set_models(
+            {
+                "meeting/222": {},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
         self.create_workflow()
 
         response = self.request(
@@ -61,6 +66,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
             {
                 "meeting/222": {"name": "meeting222"},
                 "meeting/223": {"name": "meeting223"},
+                "user/1": {"meeting_ids": [222]},
             }
         )
 
@@ -93,7 +99,12 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         self.assertEqual(model.get("sequential_number"), 1)
 
     def test_create_sequential_numbers_deleted_motion(self) -> None:
-        self.create_model("meeting/222", {"name": "meeting222"})
+        self.set_models(
+            {
+                "meeting/222": {},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
         self.create_workflow()
 
         response = self.request(
@@ -138,7 +149,12 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         If possible you should pass as an argument to the thread function(s).
         """
         pytest_thread_local.name = "MainThread_RC"
-        self.create_model("meeting/222", {"name": "meeting222"})
+        self.set_models(
+            {
+                "meeting/222": {},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
         self.create_workflow(workflow_id=12, meeting_id=222)
         self.create_workflow(workflow_id=13, meeting_id=222)
 

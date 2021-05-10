@@ -27,7 +27,7 @@ test-unit-integration:
 	pytest tests/unit tests/integration
 
 generate-models:
-	PYTHONPATH=. python3 cli/generate_models.py
+	PYTHONPATH=. python3 cli/generate_models.py $(MODELS_PATH)
 	black openslides_backend/models/models.py
 
 generate-permissions:
@@ -68,10 +68,10 @@ stop-dev:
 start-dev-interactive:
 	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
 
-run-dev-standalone: | start-dev
+run-dev-attach:
 	docker-compose -f dev/docker-compose.dev.yml exec backend bash --rcfile dev/bashrc
 
-run-dev run-bash: | run-dev-standalone
+run-dev run-bash: | start-dev run-dev-standalone
 
 run-tests:
 	dev/run-tests.sh

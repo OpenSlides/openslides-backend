@@ -14,6 +14,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "motions_default_workflow_id": 12,
                 "committee_id": 52,
             },
+            "user/1": {"meeting_ids": [1, 2]},
             "motion_workflow/12": {
                 "name": "name_workflow1",
                 "first_state_id": 34,

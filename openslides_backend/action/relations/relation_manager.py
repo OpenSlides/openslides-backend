@@ -4,7 +4,12 @@ from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import DatastoreException
-from ...shared.patterns import FullQualifiedField, FullQualifiedId, transform_to_fqids
+from ...shared.patterns import (
+    Collection,
+    FullQualifiedField,
+    FullQualifiedId,
+    transform_to_fqids,
+)
 from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
@@ -124,27 +129,24 @@ class RelationManager:
 
             if value is not None:
                 if replacement not in template_field:
-                    if field.replacement:
+                    if field.replacement_collection:
                         # check if the model the replacement is referring to exists
-                        replacement_field = model.get_field(field.replacement)
-                        assert isinstance(replacement_field, BaseRelationField)
-                        replacement_collection = (
-                            replacement_field.get_target_collection()
-                        )
                         self.datastore.fetch_model(
                             fqid=FullQualifiedId(
-                                replacement_collection, int(replacement)
+                                field.replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
                             exception=True,
                         )
                     template_field.append(replacement)
 
-                if field.replacement and isinstance(field, BaseRelationField):
+                if field.replacement_collection and isinstance(
+                    field, BaseRelationField
+                ):
                     # check that the given (fq)ids are valid for this replacement
-                    if field.replacement != "meeting_id":
+                    if field.replacement_collection != Collection("meeting"):
                         raise NotImplementedError(
-                            "Replacements other than meeting_id are not permitted"
+                            "Structured relation fields with a replacement collection other than meeting are not permitted"
                         )
 
                     fqids = transform_to_fqids(value, field.get_target_collection())
@@ -158,7 +160,7 @@ class RelationManager:
             field_value = instance[field_name]
             assert isinstance(
                 field_value, dict
-            ), f"Field '{field_name}'' has no dict as value: '{field_value}'"
+            ), f"Field '{field_name}' has no dict as value: '{field_value}'"
             additional_instance_fields[field_name] = get_template_field_db_value(
                 field_name
             )

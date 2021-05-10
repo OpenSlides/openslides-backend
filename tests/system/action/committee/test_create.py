@@ -8,7 +8,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "organisation/1": {"name": "test_organisation1"},
                 "user/20": {"username": "test_user20"},
                 "user/21": {"username": "test_user21"},
-                "user/22": {"username": "test_user22"},
             }
         )
         committee_name = "test_committee1"
@@ -20,8 +19,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "name": committee_name,
                 "organisation_id": 1,
                 "description": description,
-                "member_ids": [20, 21],
-                "manager_ids": [20, 22],
+                "user_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 200)
@@ -29,8 +27,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("name") == committee_name
         assert model.get("description") == description
         assert model.get("meeting_ids") is None
-        assert model.get("member_ids") == [20, 21]
-        assert model.get("manager_ids") == [20, 22]
+        assert model.get("user_ids") == [20, 21]
 
     def test_create_only_required(self) -> None:
         self.create_model("organisation/1", {"name": "test_organisation1"})
@@ -96,8 +93,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "organisation_id": 1,
-                "member_ids": [20, 21],
-                "manager_ids": [20, 22],
+                "user_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 400)

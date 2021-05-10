@@ -17,8 +17,7 @@ class CommitteeUpdateAction(UpdateAction):
             "description",
             "template_meeting_id",
             "default_meeting_id",
-            "member_ids",
-            "manager_ids",
+            "user_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
         ]

@@ -21,7 +21,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         )
 
     def test_create_statute_amendment(self) -> None:
-        self.create_model("meeting/222")
+        self.set_models(
+            {
+                "meeting/222": {},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
         response = self.request(
             "motion.create",
             {
@@ -40,8 +45,11 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         assert model.get("text") == "text"
 
     def test_create_statute_amendment_default_workflow(self) -> None:
-        self.create_model(
-            "meeting/222", {"motions_default_statute_amendment_workflow_id": 12}
+        self.set_models(
+            {
+                "meeting/222": {"motions_default_statute_amendment_workflow_id": 12},
+                "user/1": {"meeting_ids": [222]},
+            }
         )
         response = self.request(
             "motion.create",
@@ -61,7 +69,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         assert model.get("state_id") == 34
 
     def test_create_with_amendment_paragraphs(self) -> None:
-        self.create_model("meeting/222")
+        self.set_models(
+            {
+                "meeting/222": {},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
         response = self.request(
             "motion.create",
             {
@@ -76,7 +89,12 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
         assert "give amendment_paragraph_$ in this context" in response.json["message"]
 
     def test_create_reason_missing(self) -> None:
-        self.create_model("meeting/222", {"motions_reason_required": True})
+        self.set_models(
+            {
+                "meeting/222": {"motions_reason_required": True},
+                "user/1": {"meeting_ids": [222]},
+            }
+        )
         response = self.request(
             "motion.create",
             {

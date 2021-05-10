@@ -315,11 +315,11 @@ class OrganisationField(RelationField):
 
 class BaseTemplateField(Field):
 
-    replacement: Optional[str]
+    replacement_collection: Optional[Collection]
     index: int
 
     def __init__(self, **kwargs: Any) -> None:
-        self.replacement = kwargs.pop("replacement", None)
+        self.replacement_collection = kwargs.pop("replacement_collection", None)
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
 
@@ -327,7 +327,7 @@ class BaseTemplateField(Field):
         self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
     ) -> Schema:
         if not replacement_pattern:
-            if self.replacement:
+            if self.replacement_collection:
                 replacement_pattern = ID_REGEX
             else:
                 replacement_pattern = ".*"
@@ -381,7 +381,7 @@ class BaseTemplateField(Field):
             raise ValueError(
                 "You try to get the replacement of a template field: " + field_name
             )
-        if self.replacement and not replacement.isnumeric():
+        if self.replacement_collection and not replacement.isnumeric():
             raise ValueError(
                 f"Replacements for Structured Relation Fields must be ids. Invalid replacement: {replacement}"
             )

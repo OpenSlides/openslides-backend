@@ -83,13 +83,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert meeting.get("users_email_subject") == "blablabla"
         assert meeting.get("users_email_body") == "testtesttest"
 
-    def test_single_relation_guest_ids(self) -> None:
-        self.create_model("user/3")
-        meeting, _ = self.basic_test({"guest_ids": [3]})
-        assert meeting.get("guest_ids") == [3]
-        user_3 = self.get_model("user/3")
-        assert user_3.get("guest_meeting_ids") == [1]
-
     def test_update_projector_related_fields(self) -> None:
         self.set_models(
             {

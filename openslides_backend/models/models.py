@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a39feda3b18c7a4ae1beb8e5b3a2570b"
+MODELS_YML_CHECKSUM = "19689b101d4d852e5c607def447b15c4"
 
 
 class Organisation(Model):
@@ -61,102 +61,100 @@ class User(Model):
     is_present_in_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "present_user_ids"}
     )
-    meeting_id = fields.RelationField(to={Collection("meeting"): "temporary_user_ids"})
-    guest_meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "guest_ids"}
-    )
-    committee_as_member_ids = fields.RelationListField(
-        to={Collection("committee"): "member_ids"}
-    )
-    committee_as_manager_ids = fields.RelationListField(
-        to={Collection("committee"): "manager_ids"}
+    committee_ids = fields.RelationListField(to={Collection("committee"): "user_ids"})
+    committee__management_level = fields.TemplateCharField(
+        index=10,
+        replacement_collection=Collection("committee"),
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
     )
     number_ = fields.TemplateCharField(
         index=7,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
     )
     structure_level_ = fields.TemplateCharField(
         index=16,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
     )
     about_me_ = fields.TemplateHTMLStrictField(
         index=9,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
     )
     vote_weight_ = fields.TemplateDecimalField(
         index=12,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
     )
     group__ids = fields.TemplateRelationListField(
         index=6,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("group"): "user_ids"},
     )
     speaker__ids = fields.TemplateRelationListField(
         index=8,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("speaker"): "user_id"},
     )
     personal_note__ids = fields.TemplateRelationListField(
         index=14,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("personal_note"): "user_id"},
     )
     supported_motion__ids = fields.TemplateRelationListField(
         index=17,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("motion"): "supporter_ids"},
     )
     submitted_motion__ids = fields.TemplateRelationListField(
         index=17,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("motion_submitter"): "user_id"},
     )
     poll_voted__ids = fields.TemplateRelationListField(
         index=11,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("poll"): "voted_ids"},
     )
     option__ids = fields.TemplateRelationListField(
         index=7,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("option"): "content_object_id"},
     )
     vote__ids = fields.TemplateRelationListField(
         index=5,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("vote"): "user_id"},
     )
     vote_delegated_vote__ids = fields.TemplateRelationListField(
         index=20,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("vote"): "delegated_user_id"},
     )
     assignment_candidate__ids = fields.TemplateRelationListField(
         index=21,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("assignment_candidate"): "user_id"},
     )
     projection__ids = fields.TemplateRelationListField(
         index=11,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("projection"): "content_object_id"},
     )
     vote_delegated__to_id = fields.TemplateRelationField(
         index=15,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("user"): "vote_delegations_$_from_ids"},
     )
     vote_delegations__from_ids = fields.TemplateRelationListField(
         index=17,
-        replacement="meeting_id",
+        replacement_collection=Collection("meeting"),
         to={Collection("user"): "vote_delegated_$_to_id"},
     )
-    meeting_ids = fields.NumberArrayField(read_only=True)
+    meeting_ids = fields.NumberArrayField(
+        read_only=True,
+        constraints={"decription": "Calculated. All ids from group_$_ids as integers."},
+    )
 
 
 class Resource(Model):
@@ -206,12 +204,7 @@ class Committee(Model):
     default_meeting_id = fields.RelationField(
         to={Collection("meeting"): "default_meeting_for_committee_id"}
     )
-    member_ids = fields.RelationListField(
-        to={Collection("user"): "committee_as_member_ids"}
-    )
-    manager_ids = fields.RelationListField(
-        to={Collection("user"): "committee_as_manager_ids"}
-    )
+    user_ids = fields.RelationListField(to={Collection("user"): "committee_ids"})
     forward_to_committee_ids = fields.RelationListField(
         to={Collection("committee"): "receive_forwardings_from_committee_ids"}
     )
@@ -298,6 +291,9 @@ class Meeting(Model):
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
     list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=False)
+    list_of_speakers_enable_pro_contra_speech = fields.BooleanField(default=False)
+    list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
+    list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=False)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
     motions_default_workflow_id = fields.RelationField(
         to={Collection("motion_workflow"): "default_workflow_meeting_id"}, required=True
@@ -318,7 +314,7 @@ class Meeting(Model):
     motions_default_line_numbering = fields.CharField(
         default="outside", constraints={"enum": ["outside", "inline", "none"]}
     )
-    motions_line_length = fields.IntegerField(default=85, constraints={"minimium": 40})
+    motions_line_length = fields.IntegerField(default=85, constraints={"minimum": 40})
     motions_reason_required = fields.BooleanField(default=False)
     motions_enable_text_on_projector = fields.BooleanField(default=True)
     motions_enable_reason_on_projector = fields.BooleanField(default=True)
@@ -549,12 +545,10 @@ class Meeting(Model):
     present_user_ids = fields.RelationListField(
         to={Collection("user"): "is_present_in_meeting_ids"}
     )
-    temporary_user_ids = fields.RelationListField(to={Collection("user"): "meeting_id"})
-    guest_ids = fields.RelationListField(to={Collection("user"): "guest_meeting_ids"})
     user_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
-            "decription": "Calculated. All ids from temporary_user_ids, guest_ids and all users assigned to groups."
+            "decription": "Calculated. All user ids from all users assigned to groups of this meeting."
         },
     )
     reference_projector_id = fields.RelationField(
@@ -802,7 +796,10 @@ class Speaker(Model):
     begin_time = fields.TimestampField(read_only=True)
     end_time = fields.TimestampField(read_only=True)
     weight = fields.IntegerField(default=10000)
-    marked = fields.BooleanField()
+    speech_state = fields.CharField(
+        constraints={"enum": ["contribution", "pro", "contra"]}
+    )
+    note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
         to={Collection("list_of_speakers"): "speaker_ids"},

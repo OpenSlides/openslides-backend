@@ -1,7 +1,10 @@
+import pytest
+
 from .base import BasePresenterTestCase
 
 
 class TestGetUsers(BasePresenterTestCase):
+    @pytest.mark.skip()
     def test_temporary_filter_pagenation(self) -> None:
         self.set_models(
             {
@@ -37,6 +40,7 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [2, 3]})
 
+    @pytest.mark.skip()
     def test_keywords_filter(self) -> None:
         self.set_models(
             {
@@ -78,6 +82,7 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [5, 4]})
 
+    @pytest.mark.skip()
     def test_keywords_pagenated(self) -> None:
         self.set_models(
             {
@@ -119,6 +124,7 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [4]})
 
+    @pytest.mark.skip()
     def test_check_defaults(self) -> None:
         self.set_models(
             {
@@ -150,6 +156,7 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [1, 2, 3, 5]})
 
+    @pytest.mark.skip()
     def test_check_sort_title(self) -> None:
         self.set_models(
             {

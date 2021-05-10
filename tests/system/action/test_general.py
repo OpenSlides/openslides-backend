@@ -55,7 +55,6 @@ class GeneralActionWSGITester(BaseActionTestCase):
         some_example_actions = (
             "topic.create",
             "motion.delete",
-            "user.update_temporary",
         )
         for action in some_example_actions:
             self.assertIn(action, actions.keys())

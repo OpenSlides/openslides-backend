@@ -117,7 +117,7 @@ class UserMixin(Action):
                     error_user_ids.append(user_id)
             if error_user_ids:
                 raise ActionException(
-                    f"User(s) {error_user_ids} can't delegate their votes , because they receive vote delegations."
+                    f"User(s) {error_user_ids} can't delegate their votes because they receive vote delegations."
                 )
 
     def check_existence_of_to_and_from_users(self, instance: Dict[str, Any]) -> None:
@@ -154,8 +154,13 @@ class UserMixin(Action):
         if instance.get("group_$_ids") is not None:
             self.datastore.additional_relation_models[user_fqid].update(
                 {
-                    f"group_${meeting_id}_ids": ids
-                    for meeting_id, ids in instance.get("group_$_ids").items()  # type: ignore
+                    **{
+                        f"group_${meeting_id}_ids": ids
+                        for meeting_id, ids in instance.get("group_$_ids", {}).items()
+                    },
+                    "meeting_ids": [
+                        int(id) for id in instance.get("group_$_ids", {}).keys()
+                    ],
                 }
             )
         for field_name in ("meeting_id", "guest_meeting_ids"):
