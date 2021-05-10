@@ -56,8 +56,8 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
         self.assert_model_exists("personal_note/1")
 
     def test_delete_no_permission_user_not_in_meeting(self) -> None:
+        self.test_models["user/1"]["meeting_ids"] = []
         self.set_models(self.test_models)
-        self.set_models({"user/1": {"meeting_ids": []}})
         response = self.request("personal_note.delete", {"id": 1})
         self.assert_status_code(response, 403)
         assert "User not associated with meeting." in response.json["message"]

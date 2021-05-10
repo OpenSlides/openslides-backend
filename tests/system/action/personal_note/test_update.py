@@ -40,8 +40,8 @@ class PersonalNoteUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_no_permission_user_not_in_meeting(self) -> None:
+        self.test_models["user/1"]["meeting_ids"] = []
         self.set_models(self.test_models)
-        self.set_models({"user/1": {"meeting_ids": []}})
         response = self.request(
             "personal_note.update", {"id": 1, "star": False, "note": "blopblop"}
         )

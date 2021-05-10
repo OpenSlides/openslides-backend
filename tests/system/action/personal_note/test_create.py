@@ -43,9 +43,9 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_not_unique(self) -> None:
-        self.set_models(self.test_models)
         self.set_models(
             {
+                **self.test_models,
                 "personal_note/1": {
                     "star": True,
                     "note": "blablabla",
@@ -68,12 +68,8 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_no_permission_user_not_in_meeting(self) -> None:
+        self.test_models["user/1"]["meeting_ids"] = []
         self.set_models(self.test_models)
-        self.set_models(
-            {
-                "user/1": {"meeting_ids": []},
-            }
-        )
         response = self.request(
             "personal_note.create", {"content_object_id": "motion/23", "star": True}
         )
