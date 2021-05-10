@@ -1,3 +1,4 @@
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
@@ -79,6 +80,31 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         self.assertIn(
             "data must not contain {'wrong_field'} properties",
             response.json["message"],
+        )
+
+    def test_create_no_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_change_recommendation.create",
+            {
+                "line_from": 125,
+                "line_to": 234,
+                "text": "text_DvLXGcdW",
+                "motion_id": 233,
+            },
+        )
+
+    def test_create_permission(self) -> None:
+        self.base_permission_test(
+            {},
+            "motion_change_recommendation.create",
+            {
+                "line_from": 125,
+                "line_to": 234,
+                "text": "text_DvLXGcdW",
+                "motion_id": 233,
+            },
+            Permissions.Motion.CAN_MANAGE,
         )
 
 
