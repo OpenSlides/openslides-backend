@@ -84,13 +84,13 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_model,
             "meeting.unset_logo",
-            {"id": 1, "place": "place"},
+            {"id": 1, "place": "web_header"},
         )
 
     def test_unset_logo_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
             "meeting.unset_logo",
-            {"id": 1, "place": "place"},
+            {"id": 1, "place": "web_header"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )

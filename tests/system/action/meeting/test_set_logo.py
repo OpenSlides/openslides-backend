@@ -26,11 +26,11 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "1"}
+            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("meeting/222")
-        assert model.get("logo_$1_id") == 17
+        assert model.get("logo_$web_header_id") == 17
 
     def test_set_logo_wrong_directory(self) -> None:
         self.set_models(
@@ -44,7 +44,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "1"}
+            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
         )
         self.assert_status_code(response, 400)
         assert "Cannot set a directory." in response.json["message"]
@@ -61,7 +61,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "1"}
+            "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
         )
         self.assert_status_code(response, 400)
         assert "Invalid mimetype" in response.json["message"]
@@ -70,13 +70,13 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_model,
             "meeting.set_logo",
-            {"id": 1, "mediafile_id": 17, "place": "1"},
+            {"id": 1, "mediafile_id": 17, "place": "web_header"},
         )
 
     def test_set_logo_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
             "meeting.set_logo",
-            {"id": 1, "mediafile_id": 17, "place": "1"},
+            {"id": 1, "mediafile_id": 17, "place": "web_header"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )
