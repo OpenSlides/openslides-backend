@@ -362,40 +362,12 @@ class ProjectorProject(BaseActionTestCase):
     def test_user_as_content_object_okay(self) -> None:
         self.create_model(
             "user/2",
-            {"username": "normal user", "group_$1_ids": [1], "group_$_ids": ["1"]},
-        )
-        response = self.request(
-            "projector.project",
-            {"ids": [75], "content_object_id": "user/2", "meeting_id": 1},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/2", {"projection_$1_ids": [112], "projection_$_ids": ["1"]}
-        )
-        self.assert_model_exists(
-            "projector/75",
             {
-                "current_projection_ids": [111, 112],
-                "history_projection_ids": [110],
-                "scroll": 0,
+                "username": "normal user",
+                "group_$1_ids": [1],
+                "group_$_ids": ["1"],
+                "meeting_ids": [1],
             },
-        )
-        self.assert_model_exists(
-            "projection/112",
-            {
-                "content_object_id": "user/2",
-                "current_projector_id": 75,
-                "stable": False,
-            },
-        )
-
-    def test_temporary_user_as_content_object_okay(self) -> None:
-        """
-        Although the temporaray user has to have a group, this test checks the temporary user without group set
-        """
-        self.create_model(
-            "user/2",
-            {"username": "temporary", "meeting_id": 1},
         )
         response = self.request(
             "projector.project",
@@ -448,9 +420,10 @@ class ProjectorProject(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 2: ['assignment/452', 'projector/23']",
-            response.json["message"],
+            "The following models do not belong to meeting 2", response.json["message"]
         )
+        self.assertIn("'assignment/452'", response.json["message"])
+        self.assertIn("'projector/23'", response.json["message"])
 
     def test_project_wrong_meeting_by_content_user(self) -> None:
         self.create_model(

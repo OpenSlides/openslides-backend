@@ -9,11 +9,11 @@ DEFAULT_PASSWORD = "password"
 class SpeakerCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+        self.test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"name": "name_asdewqasd"},
             "user/7": {
                 "username": "test_username1",
-                "meeting_id": 1,
+                "meeting_ids": [1],
                 "is_active": True,
                 "default_password": DEFAULT_PASSWORD,
                 "password": self.auth.hash(DEFAULT_PASSWORD),
@@ -22,13 +22,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         }
 
     def test_create(self) -> None:
-        self.set_models(
-            {
-                "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "test_username1", "meeting_id": 7844},
-                "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
-            }
-        )
+        self.set_models(self.test_models)
         response = self.request(
             "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
         )
@@ -40,8 +34,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [1]
         user = self.get_model("user/7")
-        assert user.get("speaker_$7844_ids") == [1]
-        assert user.get("speaker_$_ids") == ["7844"]
+        assert user.get("speaker_$1_ids") == [1]
+        assert user.get("speaker_$_ids") == ["1"]
 
     def test_create_empty_data(self) -> None:
         response = self.request("speaker.create", {})
@@ -60,15 +54,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_already_exist(self) -> None:
+        self.test_models["list_of_speakers/23"]["speaker_ids"] = [42]
         self.set_models(
             {
-                "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {
-                    "username": "test_username1",
-                    "speaker_$7844_ids": [42],
-                    "meeting_id": 7844,
-                },
-                "list_of_speakers/23": {"speaker_ids": [42], "meeting_id": 7844},
+                **self.test_models,
                 "speaker/42": {"user_id": 7, "list_of_speakers_id": 23},
             }
         )
@@ -82,19 +71,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_add_2_speakers_in_1_action(self) -> None:
         self.set_models(
             {
-                "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "test_username6", "meeting_id": 7844},
-                "user/8": {"username": "test_username7", "meeting_id": 7844},
-                "user/9": {"username": "test_username8", "meeting_id": 7844},
-                "speaker/1": {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000},
-                "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 7844},
+                "list_of_speakers/23": {"meeting_id": 7844},
             }
         )
         response = self.request_multi(
             "speaker.create",
             [
-                {"user_id": 8, "list_of_speakers_id": 23},
-                {"user_id": 9, "list_of_speakers_id": 23},
+                {"user_id": 1, "list_of_speakers_id": 23},
+                {"user_id": 2, "list_of_speakers_id": 23},
             ],
         )
         self.assert_status_code(response, 400)
@@ -107,9 +91,9 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "test_username6", "meeting_id": 7844},
-                "user/8": {"username": "test_username7", "meeting_id": 7844},
-                "user/9": {"username": "test_username8", "meeting_id": 7844},
+                "user/7": {"username": "test_username6", "meeting_ids": [7844]},
+                "user/8": {"username": "test_username7", "meeting_ids": [7844]},
+                "user/9": {"username": "test_username8", "meeting_ids": [7844]},
                 "speaker/1": {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000},
                 "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 7844},
             }
@@ -148,7 +132,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
                     "is_present_in_meeting_ids": [7844],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
             }
@@ -174,7 +158,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                     "username": "user9",
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
             }
@@ -197,8 +181,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {"name": "name_asdewqasd"},
-                "user/1": {"meeting_id": 7844},
-                "user/7": {"username": "talking", "meeting_id": 7844},
+                "user/1": {"meeting_ids": [7844]},
+                "user/7": {"username": "talking", "meeting_ids": [7844]},
                 "speaker/1": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
@@ -223,12 +207,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {"name": "name_asdewqasd"},
-                "user/7": {"username": "talking", "meeting_id": 7844},
-                "user/8": {"username": "waiting", "meeting_id": 7844},
+                "user/7": {"username": "talking", "meeting_ids": [7844]},
+                "user/8": {"username": "waiting", "meeting_ids": [7844]},
                 "user/1": {
                     "speaker_$7844_ids": [3],
                     "speaker_$_ids": ["7844"],
-                    "meeting_id": 7844,
+                    "meeting_ids": [7844],
                 },
                 "speaker/1": {
                     "user_id": 7,
@@ -267,29 +251,12 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2, 3, 4]})
 
-    def test_create_guest_in_meeting(self) -> None:
-        self.set_models(
-            {
-                "meeting/2": {},
-                "user/7": {"guest_meeting_ids": [2]},
-                "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
-            }
-        )
-        response = self.request(
-            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "speaker/1",
-            {"user_id": 7, "meeting_id": 2},
-        )
-
     def test_create_not_in_meeting(self) -> None:
         self.set_models(
             {
                 "meeting/1": {},
                 "meeting/2": {},
-                "user/7": {"meeting_id": 1},
+                "user/7": {"meeting_ids": [1]},
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
             }
         )
@@ -300,14 +267,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.test_models,
             "speaker.create",
             {"user_id": 7, "list_of_speakers_id": 23},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.test_models,
             "speaker.create",
             {"user_id": 7, "list_of_speakers_id": 23},
             Permissions.ListOfSpeakers.CAN_MANAGE,
@@ -316,7 +283,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_permissions_selfadd(self) -> None:
         self.create_meeting()
         self.user_id = 7
-        self.set_models(self.permission_test_model)
+        self.set_models(self.test_models)
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])

@@ -60,22 +60,3 @@ class UserDeleteActionTest(BaseActionTestCase):
         response = self.request("user.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("user/111")
-
-    def test_delete_temporary_user(self) -> None:
-        self.create_meeting()
-        self.update_model(
-            "user/1",
-            {
-                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
-            },
-        )
-        self.create_model(
-            "user/111", {"username": "username_srtgb123", "meeting_id": 1}
-        )
-        response = self.request("user.delete", {"id": 111})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "User 111 in payload may not be a temporary user.",
-            response.json["message"],
-        )
-        self.assert_model_exists("user/111")

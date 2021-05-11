@@ -59,23 +59,6 @@ class TestPermissions(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
 
-    def test_guest_user_no_permission(self) -> None:
-        self.update_model(f"user/{self.user_id}", {"guest_meeting_ids": [1]})
-        self.set_group_permissions(1, [])
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
-        self.assert_status_code(response, 403)
-        assert (
-            response.json["message"]
-            == "You are not allowed to perform action fake_model_p.create. Missing permission: motion.can_create"
-        )
-
-    def test_guest_user_valid(self) -> None:
-        self.update_model(f"user/{self.user_id}", {"guest_meeting_ids": [1]})
-        self.set_group_permissions(1, [Permissions.Motion.CAN_CREATE])
-        response = self.request("fake_model_p.create", {"meeting_id": 1})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("fake_model_p/1")
-
     def test_not_related_user(self) -> None:
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 403)

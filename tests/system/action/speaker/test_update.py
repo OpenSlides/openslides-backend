@@ -2,7 +2,7 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class SpeakerSystemTest(BaseActionTestCase):
+class SpeakerUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
@@ -24,10 +24,10 @@ class SpeakerSystemTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request("speaker.update", {"id": 890, "marked": True})
+        response = self.request("speaker.update", {"id": 890, "speech_state": "pro"})
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        assert model.get("marked") is True
+        assert model.get("speech_state") == "pro"
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -39,23 +39,26 @@ class SpeakerSystemTest(BaseActionTestCase):
                     "user_id": 7,
                     "list_of_speakers_id": 23,
                     "meeting_id": 1,
+                    "speech_state": "contra",
                 },
             }
         )
-        response = self.request("speaker.update", {"id": 889, "marked": True})
+        response = self.request("speaker.update", {"id": 889, "speech_state": "pro"})
         self.assert_status_code(response, 400)
         model = self.get_model("speaker/890")
-        assert model.get("marked") is None
+        assert model.get("speech_state") == "contra"
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model, "speaker.update", {"id": 890, "marked": True}
+            self.permission_test_model,
+            "speaker.update",
+            {"id": 890, "speech_state": "pro"},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
             "speaker.update",
-            {"id": 890, "marked": True},
+            {"id": 890, "speech_state": "pro"},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )

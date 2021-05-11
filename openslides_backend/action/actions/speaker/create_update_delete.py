@@ -23,7 +23,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
         required_properties=["list_of_speakers_id", "user_id"],
-        optional_properties=["marked", "point_of_order"],
+        optional_properties=["point_of_order"],
     )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
@@ -192,7 +192,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
 @register_action("speaker.update")
 class SpeakerUpdate(UpdateAction):
     model = Speaker()
-    schema = DefaultSchema(Speaker()).get_update_schema(["marked"])
+    schema = DefaultSchema(Speaker()).get_update_schema(["speech_state"])
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
 

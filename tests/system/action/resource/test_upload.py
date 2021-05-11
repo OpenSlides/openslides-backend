@@ -179,8 +179,8 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.assert_model_not_exists("resource/2")
         self.assert_model_not_exists("resource/3")
 
-        # TODO: When the retry-problem (issue440) is solved, the 9 has to be substituted with a 3
-        self.media.upload_resource.assert_called_with(file_content2, 9, used_mimetype)
+        # TODO: When the retry-problem (issue440) is solved, the 7 has to be substituted with a 3
+        self.media.upload_resource.assert_called_with(file_content2, 7, used_mimetype)
 
     def test_upload_and_mixed_one_action(self) -> None:
         """

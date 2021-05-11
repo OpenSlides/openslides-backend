@@ -125,7 +125,7 @@ class ActionHandler(BaseHandler):
         get_write_requests: Callable[..., Tuple[List[WriteRequest], T]],
         *args: Any,
     ) -> T:
-        retried = 0
+        retries = 0
         while True:
             try:
                 write_requests, data = get_write_requests(*args)
@@ -133,8 +133,8 @@ class ActionHandler(BaseHandler):
                     self.datastore.write(write_requests)
                 return data
             except DatastoreLockedException as exception:
-                retried += 1
-                if retried > self.MAX_RETRY:
+                retries += 1
+                if retries >= self.MAX_RETRY:
                     raise ActionException(exception.message)
                 else:
                     self.datastore.reset()

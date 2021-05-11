@@ -238,8 +238,8 @@ class SingleRelationHandler:
         else:
             if not isinstance(self.field, BaseTemplateField):
                 # We have a one-sided structured relation, insert replacement
-                replacement_field = related_field.replacement
-                assert replacement_field
+                assert related_field.replacement_collection
+                replacement_field = str(related_field.replacement_collection) + "_id"
                 replacement = self.instance.get(replacement_field)
                 if replacement is None:
                     # replacement field was not fetched from db yet

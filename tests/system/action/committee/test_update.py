@@ -17,24 +17,25 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             }
         )
 
-        self.request(
+        response = self.request(
             "committee.create",
             {
                 "name": self.COMMITTEE_NAME,
                 "organisation_id": 1,
                 "description": "<p>Test description</p>",
-                "member_ids": [20],
-                "manager_ids": [21],
+                "user_ids": [20, 21],
             },
         )
+        self.assert_status_code(response, 200)
 
-        self.request(
+        response = self.request(
             "committee.create",
             {
                 "name": "forwarded_committee",
                 "organisation_id": 1,
             },
         )
+        self.assert_status_code(response, 200)
 
     def create_meetings(self) -> None:
         self.create_model("meeting/200")
@@ -61,8 +62,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "id": self.COMMITTEE_ID,
                 "name": new_name,
                 "description": new_description,
-                "member_ids": [21],
-                "manager_ids": [20],
+                "user_ids": [20, 21],
                 "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
                 "template_meeting_id": 200,
                 "default_meeting_id": 201,
@@ -72,8 +72,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("name"), new_name)
         self.assertEqual(model.get("description"), new_description)
-        self.assertEqual(model.get("member_ids"), [21])
-        self.assertEqual(model.get("manager_ids"), [20])
+        self.assertEqual(model.get("user_ids"), [20, 21])
         self.assertEqual(
             model.get("forward_to_committee_ids"), [self.COMMITTEE_ID_FORWARD]
         )
@@ -367,35 +366,18 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee/4", {"receive_forwardings_from_committee_ids": [2]}
         )
 
-    def test_update_wrong_member_ids(self) -> None:
+    def test_update_wrong_user_ids(self) -> None:
         self.create_data()
         response = self.request(
             "committee.update",
             {
                 "id": self.COMMITTEE_ID,
-                "member_ids": [30],
+                "user_ids": [30],
             },
         )
         self.assert_status_code(response, 400)
         model = self.get_model(self.COMMITTEE_FQID)
-        self.assertEqual(model.get("member_ids"), [20])
-        self.assertIn(
-            "Model 'user/30' does not exist.",
-            response.json["message"],
-        )
-
-    def test_update_wrong_manager_ids(self) -> None:
-        self.create_data()
-        response = self.request(
-            "committee.update",
-            {
-                "id": self.COMMITTEE_ID,
-                "manager_ids": [20, 30],
-            },
-        )
-        self.assert_status_code(response, 400)
-        model = self.get_model(self.COMMITTEE_FQID)
-        self.assertEqual(model.get("manager_ids"), [21])
+        self.assertEqual(model.get("user_ids"), [20, 21])
         self.assertIn(
             "Model 'user/30' does not exist.",
             response.json["message"],

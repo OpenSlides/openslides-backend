@@ -52,25 +52,25 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
 
     def test_create_simple_fields(self) -> None:
+        self.create_meeting()
+        self.set_user_groups(1, [1])
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
                 "motion_workflow/12": {
                     "name": "name_workflow1",
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 222},
+                "motion_state/34": {"name": "name_state34", "meeting_id": 1},
                 "motion/1": {
                     "title": "title_eJveLQIh",
                     "sort_child_ids": [],
-                    "meeting_id": 222,
+                    "meeting_id": 1,
                 },
-                "motion_category/124": {"name": "name_wbtlHQro", "meeting_id": 222},
-                "motion_block/78": {"title": "title_kXTvKvjc", "meeting_id": 222},
-                "user/47": {"username": "username_47", "meeting_id": 222},
-                "tag/56": {"name": "name_56", "meeting_id": 222},
-                "mediafile/8": {"meeting_id": 222},
+                "motion_category/124": {"name": "name_wbtlHQro", "meeting_id": 1},
+                "motion_block/78": {"title": "title_kXTvKvjc", "meeting_id": 1},
+                "tag/56": {"name": "name_56", "meeting_id": 1},
+                "mediafile/8": {"meeting_id": 1},
             }
         )
 
@@ -78,14 +78,14 @@ class MotionCreateActionTest(BaseActionTestCase):
             "motion.create",
             {
                 "title": "test_Xcdfgee",
-                "meeting_id": 222,
+                "meeting_id": 1,
                 "workflow_id": 12,
                 "number": "001",
                 "state_extension": "test_EhbkOWqd",
                 "sort_parent_id": 1,
                 "category_id": 124,
                 "block_id": 78,
-                "supporter_ids": [47],
+                "supporter_ids": [1],
                 "tag_ids": [56],
                 "attachment_ids": [8],
                 "text": "test",
@@ -95,13 +95,13 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion/2")
         assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 222
+        assert model.get("meeting_id") == 1
         assert model.get("number") == "001"
         assert model.get("state_extension") == "test_EhbkOWqd"
         assert model.get("sort_parent_id") == 1
         assert model.get("category_id") == 124
         assert model.get("block_id") == 78
-        assert model.get("supporter_ids") == [47]
+        assert model.get("supporter_ids") == [1]
         assert model.get("tag_ids") == [56]
         assert model.get("attachment_ids") == [8]
 
@@ -139,6 +139,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "state_ids": [34],
                 },
                 "motion_state/34": {"name": "name_state34", "meeting_id": 222},
+                "user/1": {"meeting_ids": [222]},
             }
         )
         response = self.request(
@@ -249,7 +250,9 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_state/34": {"name": "name_state34", "meeting_id": 222},
             }
         )
-        self.set_models({"user/56": {}, "user/57": {}})
+        self.set_models(
+            {"user/56": {"meeting_ids": [222]}, "user/57": {"meeting_ids": [222]}}
+        )
         response = self.request(
             "motion.create",
             {

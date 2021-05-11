@@ -1,7 +1,6 @@
-from typing import Any, Dict, Iterable, List, Type, cast
+from typing import Any, Dict, List, Type
 
 from ....models.models import Meeting
-from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -28,7 +27,6 @@ class MeetingCreate(CreateActionWithDependencies):
             "end_time",
             "url_name",
             "enable_anonymous",
-            "guest_ids",
         ],
     )
     dependencies = [
@@ -185,24 +183,3 @@ class MeetingCreate(CreateActionWithDependencies):
                 }
             ]
         return []
-
-    def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Check for guest_ids being in committee/member_ids or committee/manager_ids
-        """
-        instance = super().validate_fields(instance)
-        if instance.get("guest_ids"):
-            committee = self.datastore.get(
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
-                ["member_ids", "manager_ids"],
-            )
-            diff = (
-                set(cast(Iterable[Any], instance.get("guest_ids")))
-                - set(cast(Iterable[Any], committee.get("member_ids", ())))
-                - set(cast(Iterable[Any], committee.get("manager_ids", ())))
-            )
-            if diff:
-                raise ActionException(
-                    f"Guest-ids {diff} are not part of committee-member or manager_ids."
-                )
-        return instance

@@ -126,7 +126,8 @@ class BaseSystemTestCase(TestCase):
             [
                 GetManyRequest(get_fqid(fqid).collection, [get_fqid(fqid).id], ["id"])
                 for fqid in models.keys()
-            ]
+            ],
+            lock_result=False,
         )
         requests: List[WriteRequest] = []
         for fqid_str, model in models.items():
@@ -160,7 +161,9 @@ class BaseSystemTestCase(TestCase):
 
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(
-            get_fqid(fqid), get_deleted_models=DeletedModelsBehaviour.ALL_MODELS
+            get_fqid(fqid),
+            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
+            lock_result=False,
         )
         self.assertTrue(model)
         self.assertEqual(model.get("id"), get_id_from_fqid(fqid))
@@ -192,6 +195,8 @@ class BaseSystemTestCase(TestCase):
 
     def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
         db_count = self.datastore.count(
-            Collection(collection), FilterOperator("meeting_id", "=", meeting_id)
+            Collection(collection),
+            FilterOperator("meeting_id", "=", meeting_id),
+            lock_result=False,
         )
         self.assertEqual(db_count, count)
