@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ....models.models import Meeting, Speaker
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.patterns import Collection
 from ...generics.delete import DeleteAction
@@ -19,6 +22,7 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
         title="Delete all speakers of all list of a meeting.",
         description="An array of meeting objects which speakers to be deleted",
     )
+    permission = Permissions.ListOfSpeakers.CAN_MANAGE
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         new_action_data = []
@@ -41,3 +45,6 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
             for speaker in los.get("speaker_ids", []):
                 new_action_data.append({"id": speaker})
         return new_action_data
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return instance["id"]
