@@ -456,7 +456,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_organisation", "committee_$1_management_level": "can_manage"},
+                "user/1": {
+                    "organisation_management_level": "can_manage_organisation",
+                    "committee_$1_management_level": "can_manage",
+                },
                 "committee/1": {"organisation_id": 1},
             }
         )
@@ -469,7 +472,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_users",  "committee_$1_management_level": "can_manage"},
+                "user/1": {
+                    "organisation_management_level": "can_manage_users",
+                    "committee_$1_management_level": "can_manage",
+                },
                 "committee/1": {"user_ids": [1]},
             }
         )
@@ -484,7 +490,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_organisation", "committee_$1_management_level": "can_manage"},
+                "user/1": {
+                    "organisation_management_level": "can_manage_organisation",
+                    "committee_$1_management_level": "can_manage",
+                },
                 "committee/1": {"user_ids": [1]},
             }
         )
@@ -526,7 +535,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_users",  "committee_$1_management_level": "can_manage"},
+                "user/1": {
+                    "organisation_management_level": "can_manage_users",
+                    "committee_$1_management_level": "can_manage",
+                },
                 "committee/1": {"user_ids": [1]},
                 "organisation_tag/12": {"organisation_id": 1},
             }
