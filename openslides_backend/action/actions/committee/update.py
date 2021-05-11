@@ -4,7 +4,7 @@ from ....models.models import Committee
 from ....permissions.management_levels import OrganisationManagementLevel
 from ....permissions.permission_helper import has_organisation_management_level
 from ....shared.exceptions import MissingPermission, PermissionDenied
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,17 +36,11 @@ class CommitteeUpdateAction(UpdateAction):
         ):
             return
 
-        manager_ids = None
-        if "manager_ids" in instance:
-            manager_ids = instance["manager_ids"]
-        else:
-            committee = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["manager_ids"]
-            )
-            manager_ids = committee.get("manager_ids")
-        if manager_ids is None:
-            manager_ids = []
-        is_manager = self.user_id in manager_ids
+        cml_field = f"committee_${instance['id']}_management_level"
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), self.user_id), [cml_field]
+        )
+        is_manager = user.get(cml_field) == "can_manage"
         can_manage_organisation = has_organisation_management_level(
             self.datastore,
             self.user_id,
@@ -72,8 +66,7 @@ class CommitteeUpdateAction(UpdateAction):
                 [
                     field in instance
                     for field in [
-                        "member_ids",
-                        "manager_ids",
+                        "user_ids",
                         "forward_to_committee_ids",
                         "receive_forwardings_from_committee_ids",
                     ]

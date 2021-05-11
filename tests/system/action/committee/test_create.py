@@ -117,8 +117,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee",
                 "organisation_id": 1,
-                "member_ids": [20, 21],
-                "manager_ids": [20, 22],
+                "user_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 403)
@@ -138,8 +137,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee",
                 "organisation_id": 1,
-                "member_ids": [20, 21],
-                "manager_ids": [20, 22],
+                "user_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 200)
