@@ -125,7 +125,7 @@ class ActionHandler(BaseHandler):
         get_write_requests: Callable[..., Tuple[List[WriteRequest], T]],
         *args: Any,
     ) -> T:
-        retried = 1
+        retries = 0
         while True:
             try:
                 write_requests, data = get_write_requests(*args)
