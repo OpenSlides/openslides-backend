@@ -1,6 +1,13 @@
 from typing import Any, Dict
 
 from ....models.models import Meeting
+from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.permission_helper import (
+    has_organisation_management_level,
+    has_perm,
+)
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -16,8 +23,6 @@ meeting_settings_keys = [
     "location",
     "start_time",
     "end_time",
-    "url_name",
-    "enable_anonymous",
     "conference_show",
     "conference_auto_connect",
     "conference_los_restriction",
@@ -117,6 +122,10 @@ class MeetingUpdate(UpdateAction):
             *meeting_settings_keys,
             "template_for_committee_id",
             "reference_projector_id",
+            "organisation_tag_ids",
+            "url_name",
+            "enable_anonymous",
+            "present_user_ids",
         ],
         additional_optional_fields={
             "default_projector_$_id": used_as_default_for_schema_required,
@@ -144,3 +153,79 @@ class MeetingUpdate(UpdateAction):
         if meeting_check:
             assert_belongs_to_meeting(self.datastore, meeting_check, instance["id"])
         return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        # group A check
+        if any([field in instance for field in meeting_settings_keys]) and not has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Meeting.CAN_MANAGE_SETTINGS,
+            instance["id"],
+        ):
+            raise MissingPermission(Permissions.Meeting.CAN_MANAGE_SETTINGS)
+
+        # group B check
+        if "present_user_ids" in instance and not has_perm(
+            self.datastore, self.user_id, Permissions.User.CAN_MANAGE, instance["id"]
+        ):
+            raise MissingPermission(Permissions.User.CAN_MANAGE)
+
+        # group C check
+        if (
+            "reference_projector_id" in instance
+            or any(
+                [field for field in instance if field.startswith("default_projector")]
+            )
+        ) and not has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Projector.CAN_MANAGE,
+            instance["id"],
+        ):
+            raise MissingPermission(Permissions.Projector.CAN_MANAGE)
+
+        # group D check
+        if any(
+            [
+                field in instance
+                for field in [
+                    "jitsi_domain",
+                    "jitsi_room_name",
+                    "jitsi_room_password",
+                    "url_name",
+                    "enable_anonymous",
+                ]
+            ]
+        ):
+            meeting = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["id"]),
+                ["admin_group_id"],
+            )
+            user = self.datastore.get(
+                FullQualifiedId(Collection("user"), self.user_id),
+                [f"group_${instance['id']}_ids"],
+            )
+            if meeting.get("admin_group_id") not in user.get(
+                f"group_${instance['id']}_ids", []
+            ):
+                raise PermissionDenied("Missing permission: Not admin of this meeting")
+
+        # group E check
+        if "organisation_tag_ids" in instance:
+            meeting = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
+            )
+            cml_field = f"committee_${meeting['committee_id']}_management_level"
+            user = self.datastore.get(
+                FullQualifiedId(Collection("user"), self.user_id), [cml_field]
+            )
+            has_cml_permission = user.get(cml_field) == "can_manage"
+            can_manage_organisation = has_organisation_management_level(
+                self.datastore,
+                self.user_id,
+                OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+            )
+            if not has_cml_permission and not can_manage_organisation:
+                raise PermissionDenied(
+                    "Missing permission: Not manager and not can_manage_organisation"
+                )
