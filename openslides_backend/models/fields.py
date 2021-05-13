@@ -43,7 +43,7 @@ class Field:
         constraints: Dict[str, Any] = None,
     ) -> None:
         self.required = required
-        self.read_only = read_only  # TODO: Use this flag in generic and custom actions.
+        self.read_only = read_only
         self.default = default
         if not self.required and constraints and "enum" in constraints:
             constraints["enum"].append(None)
