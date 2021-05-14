@@ -1,6 +1,9 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ....shared.exceptions import ActionException
+from ....shared.filters import FilterOperator
+from ....shared.patterns import Collection
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -19,9 +22,9 @@ class UserCreate(
 
     model = User()
     schema = DefaultSchema(User()).get_create_schema(
-        required_properties=["username"],
         optional_properties=[
             "title",
+            "username",
             "first_name",
             "last_name",
             "is_active",
@@ -47,8 +50,37 @@ class UserCreate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if not (
+            instance.get("username")
+            or instance.get("first_name")
+            or instance.get("last_name")
+        ):
+            raise ActionException("Need username or first_name or last_name")
+        if not instance.get("username"):
+            instance["username"] = self.generate_username(instance)
         if not instance.get("default_password"):
             instance = self.generate_and_set_password(instance)
         else:
             instance = self.set_password(instance)
         return super().update_instance(instance)
+
+    def generate_username(self, instance: Dict[str, Any]) -> str:
+        count = 0
+
+        while True:
+            new_username = instance.get("first_name", "") + instance.get(
+                "last_name", ""
+            )
+            if count > 0:
+                new_username += str(count)
+
+            result = self.datastore.filter(
+                Collection("user"),
+                FilterOperator("username", "=", new_username),
+                ["id"],
+            )
+            if result and instance["id"] not in result.keys():
+                count += 1
+            else:
+                break
+        return new_username
