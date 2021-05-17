@@ -41,5 +41,12 @@ class OrganisationManagementLevel(CompareRightLevel):
 class CommitteeManagementLevel(CompareRightLevel):
     """ 2nd Permission Type, implemented as User.committee_as_manager_ids """
 
+    @classmethod
+    def get_level(cls, value: str):  # type: ignore
+        if value == "can_manage":
+            return cls.MANAGER
+        else:
+            return cls.NO_RIGHT
+
     MANAGER = ("can_manage", 1)
     NO_RIGHT = ("no_right", 0)

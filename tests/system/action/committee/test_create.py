@@ -6,7 +6,7 @@ from tests.system.action.base import BaseActionTestCase
 class CommitteeCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_model: Dict[str, Dict[str, Any]] = {
+        self.test_models: Dict[str, Dict[str, Any]] = {
             "organisation/1": {"name": "test_organisation1"},
             "user/20": {"username": "test_user20"},
             "user/21": {"username": "test_user21"},
@@ -15,7 +15,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         }
 
     def test_create(self) -> None:
-        self.set_models(self.test_model)
+        self.set_models(self.test_models)
         committee_name = "test_committee1"
         description = "<p>Test Committee</p>"
 
@@ -107,10 +107,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("committee/1")
 
     def test_no_permission(self) -> None:
-        self.test_model["user/1"] = {
+        self.test_models["user/1"] = {
             "organisation_management_level": "can_manage_users"
         }
-        self.set_models(self.test_model)
+        self.set_models(self.test_models)
 
         response = self.request(
             "committee.create",
@@ -127,10 +127,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_permission(self) -> None:
-        self.test_model["user/1"] = {
+        self.test_models["user/1"] = {
             "organisation_management_level": "can_manage_organisation"
         }
-        self.set_models(self.test_model)
+        self.set_models(self.test_models)
 
         response = self.request(
             "committee.create",

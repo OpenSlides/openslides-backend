@@ -450,7 +450,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
         )
         self.assert_status_code(response, 403)
-        assert "Not manager" in response.json["message"]
+        assert (
+            "Missing Committee Management Level: can_manage" in response.json["message"]
+        )
 
     def test_update_group_a_permission(self) -> None:
         self.create_data()

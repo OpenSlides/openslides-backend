@@ -1,7 +1,10 @@
 from typing import Any, Dict
 
 from ....models.models import Committee
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
 from ....permissions.permission_helper import has_organisation_management_level
 from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
@@ -40,7 +43,10 @@ class CommitteeUpdateAction(UpdateAction):
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id), [cml_field]
         )
-        is_manager = user.get(cml_field) == "can_manage"
+        is_manager = (
+            CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
+            >= CommitteeManagementLevel.MANAGER
+        )
         can_manage_organisation = has_organisation_management_level(
             self.datastore,
             self.user_id,
@@ -60,7 +66,7 @@ class CommitteeUpdateAction(UpdateAction):
             )
             and not is_manager
         ):
-            raise PermissionDenied("Not manager.")
+            raise MissingPermission(CommitteeManagementLevel.MANAGER)
         if (
             any(
                 [
