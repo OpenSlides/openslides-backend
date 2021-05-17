@@ -33,11 +33,11 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_first_name_and_count(self) -> None:
         self.set_models(
-            {"user/2": {"username": "John"}, "user/3": {"username": "John1"}}
+            {"user/2": {"username": "John"}, "user/3": {"username": "John 1"}}
         )
         response = self.request("user.create", {"first_name": "John"})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/4", {"username": "John2"})
+        self.assert_model_exists("user/4", {"username": "John 2"})
 
     def test_create_some_more_fields(self) -> None:
         """

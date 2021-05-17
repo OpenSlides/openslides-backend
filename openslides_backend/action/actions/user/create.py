@@ -77,7 +77,7 @@ class UserCreate(
                 + instance.get("last_name", "")
             )
             if count > 0:
-                new_username += str(count)
+                new_username += f" {count}"
 
             result = self.datastore.filter(
                 Collection("user"),
