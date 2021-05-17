@@ -60,7 +60,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
         self.assert_status_code(response, 403)
         assert (
-            "Missing Organisation Management Level: can_manage_organisation"
+            "Missing OrganisationManagementLevel: can_manage_organisation"
             in response.json["message"]
         )
 

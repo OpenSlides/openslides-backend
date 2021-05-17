@@ -36,7 +36,6 @@ class CommitteeUpdateAction(UpdateAction):
     )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-
         is_manager = has_committee_management_level(
             self.datastore,
             self.user_id,

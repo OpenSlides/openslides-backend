@@ -451,7 +451,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing Committee Management Level: can_manage" in response.json["message"]
+            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
         )
 
     def test_update_group_a_permission(self) -> None:
@@ -484,7 +484,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         response = self.request("committee.update", {"id": 1, "user_ids": [1, 20]})
         self.assert_status_code(response, 403)
         assert (
-            "Missing Organisation Management Level: can_manage_organisation"
+            "Missing OrganisationManagementLevel: can_manage_organisation"
             in response.json["message"]
         )
 

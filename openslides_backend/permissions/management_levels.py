@@ -49,10 +49,3 @@ class CommitteeManagementLevel(CompareRightLevel):
 
     def get_base_model(self) -> str:
         return "committee"
-
-    @classmethod
-    def get_level(cls, value: str):  # type: ignore
-        if value == "can_manage":
-            return cls.CAN_MANAGE
-        else:
-            return cls.NO_RIGHT
