@@ -195,6 +195,17 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"] == "A user with the username admin already exists."
         )
 
+    def test_username_already_exists(self) -> None:
+        self.set_models({"user/2": {"username": "test1"}})
+        response = self.request(
+            "user.create",
+            {"username": "test1", "first_name": "Testy", "last_name": "Test"},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "A user with the username test1 already exists."
+        )
+
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         response = self.request(
             "user.create", {"username": "testname", "vote_delegations_$_from_ids": {}}
