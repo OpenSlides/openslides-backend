@@ -68,8 +68,13 @@ class UserCreate(
         count = 0
 
         while True:
-            new_username = instance.get("first_name", "") + instance.get(
-                "last_name", ""
+            possible_space = (
+                " " if instance.get("first_name") and instance.get("last_name") else ""
+            )
+            new_username = (
+                instance.get("first_name", "")
+                + possible_space
+                + instance.get("last_name", "")
             )
             if count > 0:
                 new_username += str(count)
@@ -79,7 +84,7 @@ class UserCreate(
                 FilterOperator("username", "=", new_username),
                 ["id"],
             )
-            if result and instance["id"] not in result.keys():
+            if result:
                 count += 1
             else:
                 break

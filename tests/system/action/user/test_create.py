@@ -29,7 +29,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create", {"first_name": "John", "last_name": "Smith"}
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "JohnSmith"})
+        self.assert_model_exists("user/2", {"username": "John Smith"})
 
     def test_create_first_name_and_count(self) -> None:
         self.set_models(
