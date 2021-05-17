@@ -3,14 +3,7 @@
 from enum import Enum
 from typing import Dict, List
 
-from .get_permission_parts import get_permission_parts
-
-
-class Permission(str):
-    """ Marker class to use typing with permissions. """
-
-    def __str__(self) -> str:
-        return self.value  # type: ignore
+from .base_classes import BasePermissionsContainer, Permission
 
 
 class _AgendaItem(Permission, Enum):
@@ -77,13 +70,7 @@ class _User(Permission, Enum):
     CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
 
 
-class Permissions:
-    @classmethod
-    def parse(cls, permission: str) -> Permission:
-        parts = get_permission_parts(permission)
-        PermissionClass = getattr(cls, parts[0])
-        return getattr(PermissionClass, parts[1])
-
+class Permissions(BasePermissionsContainer):
     AgendaItem = _AgendaItem
     Assignment = _Assignment
     ListOfSpeakers = _ListOfSpeakers

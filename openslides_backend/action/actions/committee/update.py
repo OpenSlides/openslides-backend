@@ -40,8 +40,8 @@ class CommitteeUpdateAction(UpdateAction):
         is_manager = has_committee_management_level(
             self.datastore,
             self.user_id,
-            instance["id"],
             CommitteeManagementLevel.CAN_MANAGE,
+            instance["id"],
         )
         can_manage_organisation = has_organisation_management_level(
             self.datastore,

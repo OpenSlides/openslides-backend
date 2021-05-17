@@ -165,6 +165,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         return user_id
 
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
+        assert isinstance(group_ids, list)
         partitioned_groups = self._fetch_groups(group_ids)
         user = self.get_model(f"user/{user_id}")
         new_group_ids = list(

@@ -24,7 +24,7 @@ class OrganisationTagUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "You are not allowed to perform action organisation_tag.update. Missing Organisation Management Level: can_manage_organisation"
+            "You are not allowed to perform action organisation_tag.update. Missing OrganisationManagementLevel: can_manage_organisation"
             in response.json["message"]
         )
 

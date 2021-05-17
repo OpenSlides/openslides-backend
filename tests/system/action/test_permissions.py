@@ -47,7 +47,7 @@ class TestPermissions(BaseActionTestCase):
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action fake_model_p.create. Missing permission: motion.can_create"
+            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
         )
 
     def test_anonymous_valid(self) -> None:
@@ -62,7 +62,10 @@ class TestPermissions(BaseActionTestCase):
     def test_not_related_user(self) -> None:
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 403)
-        assert response.json["message"] == "You do not belong to meeting 1"
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
+        )
 
     def test_superadmin(self) -> None:
         self.set_management_level(OrganisationManagementLevel.SUPERADMIN, self.user_id)
@@ -98,5 +101,5 @@ class TestPermissions(BaseActionTestCase):
         self.assert_status_code(response, 403)
         assert (
             response.json["message"]
-            == "You are not allowed to perform action fake_model_p.create. Missing permission: motion.can_create"
+            == "You are not allowed to perform action fake_model_p.create. Missing Permission: motion.can_create"
         )

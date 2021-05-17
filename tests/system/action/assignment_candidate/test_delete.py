@@ -137,7 +137,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         response = self.request("assignment_candidate.delete", {"id": 111})
         self.assert_status_code(response, 403)
-        assert "Missing permission: assignment.can_manage" in response.json["message"]
+        assert "Missing Permission: assignment.can_manage" in response.json["message"]
 
     def test_delete_both_permissions(self) -> None:
         self.create_meeting()
@@ -179,7 +179,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
         self.login(self.user_id)
         response = self.request("assignment_candidate.delete", {"id": 111})
         self.assert_status_code(response, 403)
-        assert "Missing permission: assignment.can_manage" in response.json["message"]
+        assert "Missing Permission: assignment.can_manage" in response.json["message"]
 
     def test_delete_permission_no_voting(self) -> None:
         self.permission_test_model["assignment/111"]["phase"] = "search"
