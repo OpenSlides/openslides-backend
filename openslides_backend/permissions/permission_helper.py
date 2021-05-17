@@ -4,7 +4,7 @@ from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
 from ..shared.patterns import Collection, FullQualifiedId
-from .management_levels import OrganisationManagementLevel
+from .management_levels import CommitteeManagementLevel, OrganisationManagementLevel
 from .permissions import Permission, permission_parents
 
 
@@ -97,6 +97,29 @@ def has_organisation_management_level(
         return expected_level <= OrganisationManagementLevel(  # type: ignore
             user.get("organisation_management_level", "no_right")
         )
+    return False
+
+
+def has_committee_management_level(
+    datastore: DatastoreService,
+    user_id: int,
+    committee_id: int,
+    expected_level: CommitteeManagementLevel,
+) -> bool:
+
+    if has_organisation_management_level(
+        datastore, user_id, OrganisationManagementLevel.SUPERADMIN
+    ):
+        return True
+
+    cml_field = f"committee_${committee_id}_management_level"
+    if user_id > 0:
+        user = datastore.get(FullQualifiedId(Collection("user"), user_id), [cml_field])
+        is_manager = (
+            CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
+            >= expected_level
+        )
+        return is_manager
     return False
 
 
