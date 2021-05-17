@@ -3,7 +3,7 @@
 from enum import Enum
 from typing import Dict, List
 
-from .base_classes import BasePermissionsContainer, Permission
+from .base_classes import Permission
 
 
 class _AgendaItem(Permission, Enum):
@@ -70,7 +70,7 @@ class _User(Permission, Enum):
     CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
 
 
-class Permissions(BasePermissionsContainer):
+class Permissions:
     AgendaItem = _AgendaItem
     Assignment = _Assignment
     ListOfSpeakers = _ListOfSpeakers
