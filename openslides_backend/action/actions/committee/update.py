@@ -45,7 +45,7 @@ class CommitteeUpdateAction(UpdateAction):
         )
         is_manager = (
             CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
-            >= CommitteeManagementLevel.MANAGER
+            >= CommitteeManagementLevel.CAN_MANAGE
         )
         can_manage_organisation = has_organisation_management_level(
             self.datastore,
@@ -66,7 +66,7 @@ class CommitteeUpdateAction(UpdateAction):
             )
             and not is_manager
         ):
-            raise MissingPermission(CommitteeManagementLevel.MANAGER)
+            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
         if (
             any(
                 [

@@ -34,22 +34,22 @@ def test_orgamanagement_level_ge() -> None:
 
 
 def test_committee_level_le() -> None:
-    assert CommitteeManagementLevel.MANAGER <= CommitteeManagementLevel.MANAGER
+    assert CommitteeManagementLevel.CAN_MANAGE <= CommitteeManagementLevel.CAN_MANAGE
 
 
 def test_committee_level_gt() -> None:
     # with pytest.raises(AssertionError) as excinfo:
-    assert not CommitteeManagementLevel.MANAGER > CommitteeManagementLevel.MANAGER
+    assert not CommitteeManagementLevel.CAN_MANAGE > CommitteeManagementLevel.CAN_MANAGE
     # assert "xxxxx" in str(excinfo.value)
 
 
 def test_committee_level_ge() -> None:
-    assert CommitteeManagementLevel.MANAGER >= CommitteeManagementLevel.MANAGER
+    assert CommitteeManagementLevel.CAN_MANAGE >= CommitteeManagementLevel.CAN_MANAGE
 
 
 def test_committee_level_string_CML() -> None:
     with pytest.raises(TypeError) as exc:
-        "A" < CommitteeManagementLevel.MANAGER
+        "A" < CommitteeManagementLevel.CAN_MANAGE
     assert (
         "The comparison expect an <enum 'CommitteeManagementLevel'>-type and no string!"
         in str(exc.value)
@@ -58,7 +58,7 @@ def test_committee_level_string_CML() -> None:
 
 def test_committee_level_CML_string() -> None:
     with pytest.raises(TypeError) as exc:
-        CommitteeManagementLevel.MANAGER > "A"
+        CommitteeManagementLevel.CAN_MANAGE > "A"
     assert (
         "The comparison expect an <enum 'CommitteeManagementLevel'>-type and no string!"
         in str(exc.value)

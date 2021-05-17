@@ -44,9 +44,9 @@ class CommitteeManagementLevel(CompareRightLevel):
     @classmethod
     def get_level(cls, value: str):  # type: ignore
         if value == "can_manage":
-            return cls.MANAGER
+            return cls.CAN_MANAGE
         else:
             return cls.NO_RIGHT
 
-    MANAGER = ("can_manage", 1)
+    CAN_MANAGE = ("can_manage", 1)
     NO_RIGHT = ("no_right", 0)

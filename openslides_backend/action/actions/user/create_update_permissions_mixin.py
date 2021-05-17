@@ -42,7 +42,7 @@ class CreateUpdatePermissionsMixin(Action):
         "vote_delegations_$_from_ids": [Permissions.User.CAN_MANAGE],
         # Group C
         "group_$_ids": [
-            CommitteeManagementLevel.MANAGER,
+            CommitteeManagementLevel.CAN_MANAGE,
             Permissions.User.CAN_MANAGE,
         ],
     }
