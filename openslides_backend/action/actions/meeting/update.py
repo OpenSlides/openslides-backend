@@ -1,7 +1,10 @@
 from typing import Any, Dict
 
 from ....models.models import Meeting
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
 from ....permissions.permission_helper import (
     has_organisation_management_level,
     has_perm,
@@ -172,10 +175,7 @@ class MeetingUpdate(UpdateAction):
 
         # group C check
         if (
-            "reference_projector_id" in instance
-            or any(
-                [field for field in instance if field.startswith("default_projector")]
-            )
+            "reference_projector_id" in instance or "default_projector_$_id" in instance
         ) and not has_perm(
             self.datastore,
             self.user_id,
@@ -219,7 +219,10 @@ class MeetingUpdate(UpdateAction):
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), self.user_id), [cml_field]
             )
-            has_cml_permission = user.get(cml_field) == "can_manage"
+            has_cml_permission = (
+                CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
+                >= CommitteeManagementLevel.CAN_MANAGE
+            )
             can_manage_organisation = has_organisation_management_level(
                 self.datastore,
                 self.user_id,
