@@ -150,7 +150,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "or alternative {'CommitteeManagementLevel.MANAGER for meetings {1}'}. Conflicting fields:",
+            "or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}. Conflicting fields:",
             response.json["message"],
         )
 
@@ -251,7 +251,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.MANAGER for meetings {4}'}. Conflicting fields: group_$_ids/meeting: 4",
+            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {4}'}. Conflicting fields: group_$_ids/meeting: 4",
             response.json["message"],
         )
 

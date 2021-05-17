@@ -440,3 +440,112 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("name"), self.COMMITTEE_NAME)
+
+    def test_update_group_a_no_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {"user/1": {"organisation_management_level": "can_manage_organisation"}}
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing Committee Management Level: can_manage" in response.json["message"]
+        )
+
+    def test_update_group_a_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": "can_manage_organisation",
+                    "committee_$1_management_level": "can_manage",
+                },
+                "committee/1": {"organisation_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_b_no_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": "can_manage_users",
+                    "committee_$1_management_level": "can_manage",
+                },
+                "committee/1": {"user_ids": [1]},
+            }
+        )
+        response = self.request("committee.update", {"id": 1, "user_ids": [1, 20]})
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing Organisation Management Level: can_manage_organisation"
+            in response.json["message"]
+        )
+
+    def test_update_group_b_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": "can_manage_organisation",
+                    "committee_$1_management_level": "can_manage",
+                },
+                "committee/1": {"user_ids": [1]},
+            }
+        )
+        response = self.request("committee.update", {"id": 1, "user_ids": [1, 20]})
+        self.assert_status_code(response, 200)
+
+    def test_update_group_c_no_permission(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {"organisation_management_level": "can_manage_users"},
+                "organisation_tag/12": {"organisation_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "organisation_tag_ids": [12]}
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing can_manage_organisation and not manager."
+            in response.json["message"]
+        )
+
+    def test_update_group_c_permission_1(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {"organisation_management_level": "can_manage_organisation"},
+                "committee/1": {"user_ids": [20]},
+                "organisation_tag/12": {"organisation_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "organisation_tag_ids": [12]}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_c_permission_2(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": "can_manage_users",
+                    "committee_$1_management_level": "can_manage",
+                },
+                "committee/1": {"user_ids": [1]},
+                "organisation_tag/12": {"organisation_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "organisation_tag_ids": [12]}
+        )
+        self.assert_status_code(response, 200)

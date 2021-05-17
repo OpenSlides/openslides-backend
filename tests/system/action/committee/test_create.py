@@ -1,15 +1,21 @@
+from typing import Any, Dict
+
 from tests.system.action.base import BaseActionTestCase
 
 
 class CommitteeCreateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.test_models: Dict[str, Dict[str, Any]] = {
+            "organisation/1": {"name": "test_organisation1"},
+            "user/20": {"username": "test_user20"},
+            "user/21": {"username": "test_user21"},
+            "user/22": {"username": "test_user22"},
+            "organisation_tag/12": {"organisation_id": 1},
+        }
+
     def test_create(self) -> None:
-        self.set_models(
-            {
-                "organisation/1": {"name": "test_organisation1"},
-                "user/20": {"username": "test_user20"},
-                "user/21": {"username": "test_user21"},
-            }
-        )
+        self.set_models(self.test_models)
         committee_name = "test_committee1"
         description = "<p>Test Committee</p>"
 
@@ -99,3 +105,40 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn("does not exist", response.json["message"])
         self.assert_model_not_exists("committee/1")
+
+    def test_no_permission(self) -> None:
+        self.test_models["user/1"] = {
+            "organisation_management_level": "can_manage_users"
+        }
+        self.set_models(self.test_models)
+
+        response = self.request(
+            "committee.create",
+            {
+                "name": "test_committee",
+                "organisation_id": 1,
+                "user_ids": [20, 21],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing Organisation Management Level: can_manage_organisation"
+            in response.json["message"]
+        )
+
+    def test_permission(self) -> None:
+        self.test_models["user/1"] = {
+            "organisation_management_level": "can_manage_organisation"
+        }
+        self.set_models(self.test_models)
+
+        response = self.request(
+            "committee.create",
+            {
+                "name": "test_committee",
+                "organisation_id": 1,
+                "user_ids": [20, 21],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/1")
