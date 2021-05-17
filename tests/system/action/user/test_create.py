@@ -24,6 +24,21 @@ class UserCreateActionTest(BaseActionTestCase):
             model.get("default_password", ""), model.get("password", "")
         )
 
+    def test_create_first_and_last_name(self) -> None:
+        response = self.request(
+            "user.create", {"first_name": "John", "last_name": "Smith"}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "John Smith"})
+
+    def test_create_first_name_and_count(self) -> None:
+        self.set_models(
+            {"user/2": {"username": "John"}, "user/3": {"username": "John 1"}}
+        )
+        response = self.request("user.create", {"first_name": "John"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/4", {"username": "John 2"})
+
     def test_create_some_more_fields(self) -> None:
         """
         Also checks if the correct password is stored from the given default_password
@@ -161,10 +176,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_empty_data(self) -> None:
         response = self.request("user.create", {})
         self.assert_status_code(response, 400)
-        self.assertIn(
-            "data must contain ['username'] properties",
-            response.json["message"],
-        )
+        assert "Need username or first_name or last_name" in response.json["message"]
 
     def test_create_wrong_field(self) -> None:
         response = self.request(
@@ -181,6 +193,17 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
+        )
+
+    def test_username_already_exists(self) -> None:
+        self.set_models({"user/2": {"username": "test1"}})
+        response = self.request(
+            "user.create",
+            {"username": "test1", "first_name": "Testy", "last_name": "Test"},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"] == "A user with the username test1 already exists."
         )
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
