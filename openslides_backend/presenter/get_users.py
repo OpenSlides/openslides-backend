@@ -27,7 +27,6 @@ get_users_schema = fastjsonschema.compile(
                 },
             },
             "reverse": {"type": "boolean"},
-            "include_temporary": {"type": "boolean"},
             "filter": {"type": ["string", "null"]},
         },
         "required": [],
@@ -63,7 +62,6 @@ class GetUsers(BasePresenter):
     def get_result(self) -> Any:
         criteria = self.get_and_check_criteria()
         users = self.get_all_users(criteria)
-        users = self.filter_temp_users(users)
         users = self.filter_keyword(users)
         users = self.sort_users(users, criteria)
         users = self.paginate_users(users)
@@ -80,7 +78,7 @@ class GetUsers(BasePresenter):
 
     def get_all_users(self, criteria: List[str]) -> List[Dict[str, Any]]:
         fields = criteria[:]
-        for name in ("username", "first_name", "last_name", "id", "meeting_id"):
+        for name in ("username", "first_name", "last_name", "id"):
             if name not in fields:
                 fields.append(name)
 
@@ -91,11 +89,6 @@ class GetUsers(BasePresenter):
                 DeletedModelsBehaviour.NO_DELETED,
             ).values()
         )
-
-    def filter_temp_users(self, users: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        if not self.data.get("include_temporary", False):
-            users = [user for user in users if user.get("meeting_id") is None]
-        return users
 
     def _check_name(self, user: Dict[str, Any], name: str) -> bool:
         return user.get(name) is not None and self.data["filter"] in user[name]
