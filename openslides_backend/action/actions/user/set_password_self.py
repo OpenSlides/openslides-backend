@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from openslides_backend.permissions.permission_helper import has_perm, is_temporary
+from openslides_backend.permissions.permission_helper import has_perm, is_meeting_scope
 from openslides_backend.permissions.permissions import Permissions
 
 from ....models.models import User
@@ -44,12 +44,15 @@ class UserSetPasswordSelf(UpdateAction):
             raise ActionException("Can't set password for anonymous")
 
         instance["id"] = self.user_id
-        if is_temporary(self.datastore, instance):
+        if is_meeting_scope(self.datastore, instance["id"]):
+            user = self.datastore.get(
+                FullQualifiedId(self.model.collection, self.user_id), ["meeting_ids"]
+            )
             if has_perm(
                 self.datastore,
                 self.user_id,
                 Permissions.User.CAN_CHANGE_OWN_PASSWORD,
-                instance["meeting_id"],
+                user["meeting_ids"][0],
             ):
                 return
             raise MissingPermission(Permissions.User.CAN_CHANGE_OWN_PASSWORD)
