@@ -65,6 +65,6 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.set_password_self. Missing permission: user.can_change_own_password",
+            "You are not allowed to perform action user.set_password_self. Missing Permission: user.can_change_own_password",
             response.json["message"],
         )
