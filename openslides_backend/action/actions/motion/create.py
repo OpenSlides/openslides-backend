@@ -71,12 +71,7 @@ class MotionCreate(MotionCreateBase):
                 )
         # if lead_motion and not has perm motion_can_manage
         # use category_id and block_id from the lead_motion
-        if instance.get("lead_motion_id") and not has_perm(
-            self.datastore,
-            self.user_id,
-            Permissions.Motion.CAN_MANAGE,
-            instance["meeting_id"],
-        ):
+        if instance.get("lead_motion_id"):
             lead_motion = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["lead_motion_id"]),
                 ["block_id", "category_id"],
@@ -131,7 +126,7 @@ class MotionCreate(MotionCreateBase):
                 "meeting_id",
             ]
             if instance.get("lead_motion_id"):
-                whitelist.append("block_id")
+                whitelist.remove("category_id")
             forbidden_fields = []
             for field in instance:
                 if field not in whitelist:
