@@ -152,3 +152,37 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("end_time") == 1608121653
         assert meeting.get("url_name") == "JWdYZqDX"
         assert meeting.get("enable_anonymous") is False
+
+    def test_create_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {"organisation_management_level": "can_manage_users"},
+                "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
+                "group/1": {},
+                "user/2": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "welcome_title": "test_wel_title",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing Committee Management Level: can_manage" in response.json["message"]
+        )
+
+    def test_create_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": "can_manage_users",
+                    "committee_$1_management_level": "can_manage",
+                }
+            }
+        )
+        self.basic_test({})

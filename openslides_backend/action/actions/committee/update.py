@@ -5,9 +5,11 @@ from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganisationManagementLevel,
 )
-from ....permissions.permission_helper import has_organisation_management_level
+from ....permissions.permission_helper import (
+    has_committee_management_level,
+    has_organisation_management_level,
+)
 from ....shared.exceptions import MissingPermission, PermissionDenied
-from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -34,18 +36,12 @@ class CommitteeUpdateAction(UpdateAction):
     )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if has_organisation_management_level(
-            self.datastore, self.user_id, OrganisationManagementLevel.SUPERADMIN
-        ):
-            return
 
-        cml_field = f"committee_${instance['id']}_management_level"
-        user = self.datastore.get(
-            FullQualifiedId(Collection("user"), self.user_id), [cml_field]
-        )
-        is_manager = (
-            CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
-            >= CommitteeManagementLevel.CAN_MANAGE
+        is_manager = has_committee_management_level(
+            self.datastore,
+            self.user_id,
+            instance["id"],
+            CommitteeManagementLevel.CAN_MANAGE,
         )
         can_manage_organisation = has_organisation_management_level(
             self.datastore,
