@@ -282,7 +282,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [])
         self.set_models(self.test_models)
-        response = self.request("meeting.update", {"id": 1, "url_name": "url_name_1"})
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "url_name": "url_name_1", "jitsi_room_name": "test_room"},
+        )
         self.assert_status_code(response, 403)
         assert "Missing permission:" in response.json["message"]
 
@@ -292,7 +295,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [1])
         self.set_models(self.test_models)
-        response = self.request("meeting.update", {"id": 1, "url_name": "url_name_1"})
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "url_name": "url_name_1", "jitsi_domain": "test_domain"},
+        )
         self.assert_status_code(response, 200)
 
     def test_update_group_e_no_permission(self) -> None:
