@@ -7,6 +7,7 @@ from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordMixin
+from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
@@ -22,8 +23,13 @@ class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
 
 @register_action("user.generate_new_password")
 class UserGenerateNewPassword(
-    CheckTemporaryNoForInstanceMixin, UserGenerateNewPasswordMixin
+    CheckTemporaryNoForInstanceMixin,
+    UserGenerateNewPasswordMixin,
+    UserScopePermissionCheckMixin,
 ):
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
     permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        self.check_permissions_for_scope(instance)

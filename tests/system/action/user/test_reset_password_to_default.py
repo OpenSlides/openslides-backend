@@ -1,29 +1,127 @@
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
+from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
 
-class UserResetPasswordToDefaultTest(BaseActionTestCase):
-    def test_reset_password_to_default(self) -> None:
+
+class UserResetPasswordToDefaultTest(ScopePermissionsTestMixin, BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.password = "pw_quSEYapV"
         self.create_model(
             "user/111",
-            {"username": "username_srtgb123", "default_password": "pw_quSEYapV"},
+            {"username": "username_srtgb123", "default_password": self.password},
         )
+
+    def test_reset_password_to_default(self) -> None:
         response = self.request("user.reset_password_to_default", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert self.auth.is_equals("pw_quSEYapV", str(model.get("password")))
+        assert self.auth.is_equals(self.password, model.get("password", ""))
 
-    def test_generate_no_permissions(self) -> None:
-        self.base_permission_test(
-            {"user/10": {"username": "permission_test_user"}},
-            "user.reset_password_to_default",
-            {"id": 10},
+    def test_scope_meeting_no_permission(self) -> None:
+        self.setup_admin_scope_permissions(None)
+        self.setup_scoped_user(UserScope.Meeting)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganisationManagementLevel can_manage_users in organisation 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_change_own_password in meeting 1",
+            response.json["message"],
         )
 
-    def test_generate_permissions(self) -> None:
-        self.base_permission_test(
-            {"user/10": {"username": "permission_test_user"}},
-            "user.reset_password_to_default",
-            {"id": 10},
-            OrganisationManagementLevel.CAN_MANAGE_USERS,
+    def test_scope_meeting_permission_in_organisation(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Organisation)
+        self.setup_scoped_user(UserScope.Meeting)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equals(self.password, model.get("password", ""))
+
+    def test_scope_meeting_permission_in_committee(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Committee)
+        self.setup_scoped_user(UserScope.Meeting)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equals(self.password, model.get("password", ""))
+
+    def test_scope_meeting_permission_in_meeting(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Meeting)
+        self.setup_scoped_user(UserScope.Meeting)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equals(self.password, model.get("password", ""))
+
+    def test_scope_committee_no_permission(self) -> None:
+        self.setup_admin_scope_permissions(None)
+        self.setup_scoped_user(UserScope.Committee)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganisationManagementLevel can_manage_users in organisation 1 or CommitteeManagementLevel can_manage in committee 1",
+            response.json["message"],
+        )
+
+    def test_scope_committee_permission_in_organisation(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Organisation)
+        self.setup_scoped_user(UserScope.Committee)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equals(self.password, model.get("password", ""))
+
+    def test_scope_committee_permission_in_committee(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Committee)
+        self.setup_scoped_user(UserScope.Committee)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equals(self.password, model.get("password", ""))
+
+    def test_scope_committee_permission_in_meeting(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Meeting)
+        self.setup_scoped_user(UserScope.Committee)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permissions: OrganisationManagementLevel can_manage_users in organisation 1 or CommitteeManagementLevel can_manage in committee 1",
+            response.json["message"],
+        )
+
+    def test_scope_organisation_no_permission(self) -> None:
+        self.setup_admin_scope_permissions(None)
+        self.setup_scoped_user(UserScope.Organisation)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganisationManagementLevel can_manage_users in organisation 1",
+            response.json["message"],
+        )
+
+    def test_scope_organisation_permission_in_organisation(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Organisation)
+        self.setup_scoped_user(UserScope.Organisation)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("user/111")
+        assert self.auth.is_equals(self.password, model.get("password", ""))
+
+    def test_scope_organisation_permission_in_committee(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Committee)
+        self.setup_scoped_user(UserScope.Organisation)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganisationManagementLevel can_manage_users in organisation 1",
+            response.json["message"],
+        )
+
+    def test_scope_organisation_permission_in_meeting(self) -> None:
+        self.setup_admin_scope_permissions(UserScope.Meeting)
+        self.setup_scoped_user(UserScope.Organisation)
+        response = self.request("user.reset_password_to_default", {"id": 111})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.reset_password_to_default. Missing permission: OrganisationManagementLevel can_manage_users in organisation 1",
+            response.json["message"],
         )

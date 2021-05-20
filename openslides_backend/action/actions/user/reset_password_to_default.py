@@ -7,6 +7,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
+from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 class UserResetPasswordToDefaultMixin(UpdateAction):
@@ -25,7 +26,9 @@ class UserResetPasswordToDefaultMixin(UpdateAction):
 
 @register_action("user.reset_password_to_default")
 class UserResetPasswordToDefaultAction(
-    CheckTemporaryNoForInstanceMixin, UserResetPasswordToDefaultMixin
+    CheckTemporaryNoForInstanceMixin,
+    UserResetPasswordToDefaultMixin,
+    UserScopePermissionCheckMixin,
 ):
     """
     Action to reset a password to default of a user.
@@ -34,3 +37,6 @@ class UserResetPasswordToDefaultAction(
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
     permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        self.check_permissions_for_scope(instance)

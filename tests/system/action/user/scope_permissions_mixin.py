@@ -11,7 +11,7 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class ScopePermissionsMixin(BaseActionTestCase):
+class ScopePermissionsTestMixin(BaseActionTestCase):
     def setup_admin_scope_permissions(self, scope: Optional[UserScope]) -> None:
         """
         Helper function to setup permissions for different scopes for user 1. If no scope is given, the user has no permissions.

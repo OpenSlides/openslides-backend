@@ -1,9 +1,9 @@
 from tests.system.action.base import BaseActionTestCase
 
-from .scope_permissions_mixin import ScopePermissionsMixin, UserScope
+from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
 
 
-class UserDeleteActionTest(ScopePermissionsMixin, BaseActionTestCase):
+class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.create_model("user/111", {"username": "username_srtgb123"})
         response = self.request("user.delete", {"id": 111})
