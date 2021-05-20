@@ -63,7 +63,7 @@ class UserScopePermissionCheckMixin(Action):
                     {
                         OrganisationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
-                        Permissions.User.CAN_CHANGE_OWN_PASSWORD: scope_id,
+                        Permissions.User.CAN_MANAGE: scope_id,
                     }
                 )
         else:
