@@ -284,7 +284,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "meeting.update",
-            {"id": 1, "url_name": "url_name_1", "jitsi_room_name": "test_room"},
+            {"id": 1, "url_name": "url_name_1"},
         )
         self.assert_status_code(response, 403)
         assert "Missing permission:" in response.json["message"]
@@ -297,7 +297,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "meeting.update",
-            {"id": 1, "url_name": "url_name_1", "jitsi_domain": "test_domain"},
+            {"id": 1, "url_name": "url_name_1"},
         )
         self.assert_status_code(response, 200)
 
@@ -321,4 +321,29 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {"id": 1, "organisation_tag_ids": [1]},
             OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+        )
+
+    def test_update_group_f_no_permission(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+        )
+
+    def test_update_group_f_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+            OrganisationManagementLevel.SUPERADMIN,
         )

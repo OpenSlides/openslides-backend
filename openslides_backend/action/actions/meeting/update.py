@@ -192,9 +192,6 @@ class MeetingUpdate(UpdateAction):
             [
                 field in instance
                 for field in [
-                    "jitsi_domain",
-                    "jitsi_room_name",
-                    "jitsi_room_password",
                     "url_name",
                     "enable_anonymous",
                 ]
@@ -235,3 +232,21 @@ class MeetingUpdate(UpdateAction):
                 raise PermissionDenied(
                     "Missing permission: Not manager and not can_manage_organisation"
                 )
+
+        # group F check
+        if any(
+            [
+                field in instance
+                for field in [
+                    "jitsi_domain",
+                    "jitsi_room_name",
+                    "jitsi_room_password",
+                ]
+            ]
+        ):
+
+            is_superadmin = has_organisation_management_level(
+                self.datastore, self.user_id, OrganisationManagementLevel.SUPERADMIN
+            )
+            if not is_superadmin:
+                raise MissingPermission(OrganisationManagementLevel.SUPERADMIN)
