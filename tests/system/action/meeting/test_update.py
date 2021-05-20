@@ -3,11 +3,42 @@ from typing import Any, Dict, Tuple
 from openslides_backend.action.actions.meeting.shared_meeting import (
     meeting_projector_default_replacements,
 )
+from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
 
 class MeetingUpdateActionTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.test_models: Dict[str, Dict[str, Any]] = {
+            "committee/1": {"name": "test_committee"},
+            "meeting/1": {
+                "name": "test_name",
+                "committee_id": 1,
+                "default_group_id": 1,
+                "admin_group_id": 1,
+                "projector_ids": [1],
+                "reference_projector_id": 1,
+                "default_projector_$_id": meeting_projector_default_replacements,
+                **{
+                    f"default_projector_${name}_id": 1
+                    for name in meeting_projector_default_replacements
+                },
+            },
+            "projector/1": {
+                "name": "Projector 1",
+                "meeting_id": 1,
+                "used_as_reference_projector_meeting_id": 1,
+                "used_as_default_$_in_meeting_id": meeting_projector_default_replacements,
+                **{
+                    f"used_as_default_${name}_in_meeting_id": 1
+                    for name in meeting_projector_default_replacements
+                },
+            },
+        }
+
     def basic_test(
         self, datapart: Dict[str, Any], check_200: bool = True
     ) -> Tuple[Dict[str, Any], Response]:
@@ -204,4 +235,115 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "The following models do not belong to meeting 1: ['projector/2']",
             response.json["message"],
+        )
+
+    def test_update_group_a_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
+        )
+
+    def test_update_group_a_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "welcome_title": "Hallo"},
+            Permissions.Meeting.CAN_MANAGE_SETTINGS,
+        )
+
+    def test_update_group_b_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models, "meeting.update", {"id": 1, "present_user_ids": [2]}
+        )
+
+    def test_update_group_b_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "present_user_ids": [2]},
+            Permissions.User.CAN_MANAGE,
+        )
+
+    def test_update_group_c_no_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models, "meeting.update", {"id": 1, "reference_projector_id": 1}
+        )
+
+    def test_update_group_c_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "reference_projector_id": 1},
+            Permissions.Projector.CAN_MANAGE,
+        )
+
+    def test_update_group_d_no_permissions(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [])
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "url_name": "url_name_1"},
+        )
+        self.assert_status_code(response, 403)
+        assert "Missing permission:" in response.json["message"]
+
+    def test_update_group_d_permissions(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [1])
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update",
+            {"id": 1, "url_name": "url_name_1"},
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_e_no_permission(self) -> None:
+        self.set_models({"organisation_tag/1": {}})
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.update", {"id": 1, "organisation_tag_ids": [1]}
+        )
+        self.assert_status_code(response, 403)
+        assert "Missing permission:" in response.json["message"]
+
+    def test_update_group_e_permission(self) -> None:
+        self.set_models({"organisation_tag/1": {}})
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {"id": 1, "organisation_tag_ids": [1]},
+            OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+        )
+
+    def test_update_group_f_no_permission(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+        )
+
+    def test_update_group_f_permissions(self) -> None:
+        self.base_permission_test(
+            self.test_models,
+            "meeting.update",
+            {
+                "id": 1,
+                "jitsi_domain": "test",
+                "jitsi_room_name": "room1",
+                "jitsi_room_password": "blablabla",
+            },
+            OrganisationManagementLevel.SUPERADMIN,
         )

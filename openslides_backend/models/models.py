@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "7a55bbe9a772550b07d617265e9a90ee"
+MODELS_YML_CHECKSUM = "cc2f753b00eab63ada512449d2fc86e5"
 
 
 class Organisation(Model):
@@ -45,6 +45,7 @@ class User(Model):
     is_physical_person = fields.BooleanField(default=True)
     password = fields.CharField()
     default_password = fields.CharField()
+    can_change_own_password = fields.BooleanField(default=True)
     gender = fields.CharField()
     email = fields.CharField()
     default_number = fields.CharField()
@@ -235,9 +236,9 @@ class Meeting(Model):
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
-    jitsi_domain = fields.CharField(read_only=True)
-    jitsi_room_name = fields.CharField(read_only=True)
-    jitsi_room_password = fields.CharField(read_only=True)
+    jitsi_domain = fields.CharField()
+    jitsi_room_name = fields.CharField()
+    jitsi_room_password = fields.CharField()
     url_name = fields.CharField(constraints={"description": "For unique urls."})
     template_for_committee_id = fields.RelationField(
         to={Collection("committee"): "template_meeting_id"}
@@ -621,7 +622,6 @@ class Group(Model):
                 "projector.can_manage",
                 "projector.can_see",
                 "tag.can_manage",
-                "user.can_change_own_password",
                 "user.can_manage",
                 "user.can_see",
                 "user.can_see_extra_data",
