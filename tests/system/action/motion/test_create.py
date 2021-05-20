@@ -295,9 +295,11 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"name": "meeting_1 _test"},
-                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
+                "motion/3": {"meeting_id": 1, "category_id": 114, "block_id": 123},
                 "motion_category/12": {"meeting_id": 1},
                 "motion_block/13": {"meeting_id": 1},
+                "motion_category/114": {"meeting_id": 1},
+                "motion_block/123": {"meeting_id": 1},
             }
         )
         response = self.request(
@@ -314,7 +316,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/4", {"lead_motion_id": 3, "block_id": 13, "category_id": 12}
+            "motion/4", {"lead_motion_id": 3, "block_id": 123, "category_id": 114}
         )
 
     def test_create_no_permission(self) -> None:
@@ -418,9 +420,11 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         self.set_models(
             {
-                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
+                "motion/3": {"meeting_id": 1, "category_id": 56, "block_id": 57},
                 "motion_category/12": {"meeting_id": 1},
+                "motion_category/56": {"meeting_id": 1},
                 "motion_block/13": {"meeting_id": 1},
+                "motion_block/57": {"meeting_id": 1},
             }
         )
         response = self.request(
@@ -434,9 +438,9 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/4", {"block_id": 13, "category_id": 12})
+        self.assert_model_exists("motion/4", {"block_id": 57, "category_id": 56})
 
-    def test_create_permission_amendment_2(self) -> None:
+    def test_create_permission_amendment_non_admin(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -452,9 +456,15 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         self.set_models(
             {
-                "motion/3": {"meeting_id": 1},
+                "motion/3": {
+                    "meeting_id": 1,
+                    "category_id": 56,
+                    "block_id": 57,
+                },
                 "motion_category/12": {"meeting_id": 1},
+                "motion_category/56": {"meeting_id": 1},
                 "motion_block/13": {"meeting_id": 1},
+                "motion_block/57": {"meeting_id": 1},
             }
         )
         response = self.request(
@@ -465,10 +475,12 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "workflow_id": 12,
                 "text": "test",
                 "lead_motion_id": 3,
+                "category_id": 12,
+                "block_id": 13,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/4", {"block_id": None, "category_id": None})
+        self.assert_model_exists("motion/4", {"block_id": 57, "category_id": 56})
 
     def test_create_amendment_no_perms_category_id(self) -> None:
         self.create_meeting()
