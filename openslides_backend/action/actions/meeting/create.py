@@ -51,7 +51,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "motion.can_see",
                     "projector.can_see",
                     "user.can_see",
-                    "user.can_change_own_password",
                 ],
             },
             {
@@ -74,7 +73,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "motion.can_support",
                     "projector.can_see",
                     "user.can_see",
-                    "user.can_change_own_password",
                 ],
             },
             {
@@ -93,7 +91,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "projector.can_manage",
                     "tag.can_manage",
                     "user.can_manage",
-                    "user.can_change_own_password",
                 ],
             },
             {
