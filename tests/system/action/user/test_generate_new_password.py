@@ -20,7 +20,7 @@ class UserGenerateNewPasswordActionTest(ScopePermissionsTestMixin, BaseActionTes
         response = self.request("user.generate_new_password", {"id": 111})
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.generate_new_password. Missing permissions: OrganisationManagementLevel can_manage_users in organisation 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_change_own_password in meeting 1",
+            "You are not allowed to perform action user.generate_new_password. Missing permissions: OrganisationManagementLevel can_manage_users in organisation 1 or CommitteeManagementLevel can_manage in committee 1 or Permission user.can_manage in meeting 1",
             response.json["message"],
         )
 
