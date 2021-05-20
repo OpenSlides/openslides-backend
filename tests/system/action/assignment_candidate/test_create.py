@@ -100,7 +100,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
         )
         self.assert_status_code(response, 403)
-        assert "Missing permission: assignment.can_manage" in response.json["message"]
+        assert "Missing Permission: assignment.can_manage" in response.json["message"]
 
     def test_create_both_permissions(self) -> None:
         self.create_meeting()
@@ -148,7 +148,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
             "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
         )
         self.assert_status_code(response, 403)
-        assert "Missing permission: assignment.can_manage" in response.json["message"]
+        assert "Missing Permission: assignment.can_manage" in response.json["message"]
 
     def test_create_permissions_no_voting_self(self) -> None:
         self.permission_test_model["assignment/111"]["phase"] = "search"

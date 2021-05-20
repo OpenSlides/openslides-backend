@@ -379,7 +379,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing permission: motion.can_create_amendments"
+            "Missing Permission: motion.can_create_amendments"
             in response.json["message"]
         )
 

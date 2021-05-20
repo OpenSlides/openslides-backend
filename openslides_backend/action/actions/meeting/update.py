@@ -6,6 +6,7 @@ from ....permissions.management_levels import (
     OrganisationManagementLevel,
 )
 from ....permissions.permission_helper import (
+    has_committee_management_level,
     has_organisation_management_level,
     has_perm,
 )
@@ -215,20 +216,18 @@ class MeetingUpdate(UpdateAction):
             meeting = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
             )
-            cml_field = f"committee_${meeting['committee_id']}_management_level"
-            user = self.datastore.get(
-                FullQualifiedId(Collection("user"), self.user_id), [cml_field]
-            )
-            has_cml_permission = (
-                CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
-                >= CommitteeManagementLevel.CAN_MANAGE
+            is_manager = has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                meeting["committee_id"],
             )
             can_manage_organisation = has_organisation_management_level(
                 self.datastore,
                 self.user_id,
                 OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
             )
-            if not has_cml_permission and not can_manage_organisation:
+            if not is_manager and not can_manage_organisation:
                 raise PermissionDenied(
                     "Missing permission: Not manager and not can_manage_organisation"
                 )

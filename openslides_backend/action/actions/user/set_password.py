@@ -6,6 +6,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
+from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
 class UserSetPasswordMixin(UpdateAction):
@@ -25,7 +26,11 @@ class UserSetPasswordMixin(UpdateAction):
 
 
 @register_action("user.set_password")
-class UserSetPasswordAction(CheckTemporaryNoForInstanceMixin, UserSetPasswordMixin):
+class UserSetPasswordAction(
+    CheckTemporaryNoForInstanceMixin,
+    UserSetPasswordMixin,
+    UserScopePermissionCheckMixin,
+):
     """
     Action to set the password and default_pasword.
     """
@@ -36,3 +41,6 @@ class UserSetPasswordAction(CheckTemporaryNoForInstanceMixin, UserSetPasswordMix
         additional_optional_fields={"set_as_default": {"type": "boolean"}},
     )
     permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        self.check_permissions_for_scope(instance)

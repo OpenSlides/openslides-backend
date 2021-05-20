@@ -1,7 +1,9 @@
 from enum import Enum
 
+from .base_classes import VerbosePermission
 
-class CompareRightLevel(str, Enum):
+
+class CompareRightLevel(str, VerbosePermission, Enum):
     def __new__(cls, value: str, weight: int):  # type: ignore
         obj = str.__new__(cls, value)  # type: ignore
         obj._value_ = value
@@ -37,16 +39,13 @@ class OrganisationManagementLevel(CompareRightLevel):
     CAN_MANAGE_ORGANISATION = ("can_manage_organisation", 2)
     NO_RIGHT = ("no_right", 0)
 
+    def get_base_model(self) -> str:
+        return "organisation"
+
 
 class CommitteeManagementLevel(CompareRightLevel):
-    """ 2nd Permission Type, implemented as User.committee_as_manager_ids """
-
-    @classmethod
-    def get_level(cls, value: str):  # type: ignore
-        if value == "can_manage":
-            return cls.CAN_MANAGE
-        else:
-            return cls.NO_RIGHT
-
     CAN_MANAGE = ("can_manage", 1)
     NO_RIGHT = ("no_right", 0)
+
+    def get_base_model(self) -> str:
+        return "committee"

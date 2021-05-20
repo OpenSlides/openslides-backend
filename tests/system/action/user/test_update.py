@@ -446,7 +446,10 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 403)
-        self.assertIn("You do not belong to meeting 4", response.json["message"])
+        self.assertIn(
+            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            response.json["message"],
+        )
 
     def test_update_permission_set_2(self) -> None:
         """ Rights for all field groups,1 one meeting with admin group, other meeting with single right """

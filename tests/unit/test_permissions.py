@@ -38,9 +38,7 @@ def test_committee_level_le() -> None:
 
 
 def test_committee_level_gt() -> None:
-    # with pytest.raises(AssertionError) as excinfo:
     assert not CommitteeManagementLevel.CAN_MANAGE > CommitteeManagementLevel.CAN_MANAGE
-    # assert "xxxxx" in str(excinfo.value)
 
 
 def test_committee_level_ge() -> None:

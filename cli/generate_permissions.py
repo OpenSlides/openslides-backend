@@ -28,27 +28,7 @@ FILE_TEMPLATE = dedent(
     from enum import Enum
     from typing import Dict, List
 
-    from .get_permission_parts import get_permission_parts
-
-
-    class Permission(str):
-        \""" Marker class to use typing with permissions. \"""
-
-        def __str__(self) -> str:
-            return self.value  # type: ignore
-
-
-    """
-)
-
-PERMISSION_CLASS_TEMPLATE = dedent(
-    """
-    class Permissions:
-        @classmethod
-        def parse(cls, permission: str) -> Permission:
-            parts = get_permission_parts(permission)
-            PermissionClass = getattr(cls, parts[0])
-            return getattr(PermissionClass, parts[1])
+    from .base_classes import Permission
     """
 )
 
@@ -97,7 +77,7 @@ def main() -> None:
                 _, perm_str = get_permission_parts(permission)
                 dest.write(f"    {perm_str} = '{permission}'\n")
 
-        dest.write(PERMISSION_CLASS_TEMPLATE)
+        dest.write("class Permissions:\n")
         for collection in all_permissions.keys():
             dest.write(f"    {collection} = _{collection}\n")
 

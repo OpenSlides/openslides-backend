@@ -49,7 +49,7 @@ def has_perm(
                 )
             group_ids = [meeting["default_group_id"]]
         else:
-            raise PermissionDenied(f"You do not belong to meeting {meeting_id}")
+            return False
 
     gmr = GetManyRequest(
         Collection("group"),
@@ -103,23 +103,24 @@ def has_organisation_management_level(
 def has_committee_management_level(
     datastore: DatastoreService,
     user_id: int,
-    committee_id: int,
     expected_level: CommitteeManagementLevel,
+    committee_id: int,
 ) -> bool:
-
-    if has_organisation_management_level(
-        datastore, user_id, OrganisationManagementLevel.SUPERADMIN
-    ):
-        return True
-
-    cml_field = f"committee_${committee_id}_management_level"
+    """ Checks wether a user has the minimum necessary CommitteeManagementLevel """
     if user_id > 0:
-        user = datastore.get(FullQualifiedId(Collection("user"), user_id), [cml_field])
-        is_manager = (
-            CommitteeManagementLevel.get_level(user.get(cml_field, "no_right"))
-            >= expected_level
+        cml_field = f"committee_${committee_id}_management_level"
+        user = datastore.get(
+            FullQualifiedId(Collection("user"), user_id),
+            ["organisation_management_level", cml_field],
         )
-        return is_manager
+        if (
+            user.get("organisation_management_level")
+            == OrganisationManagementLevel.SUPERADMIN
+        ):
+            return True
+        return expected_level <= CommitteeManagementLevel(  # type: ignore
+            user.get(cml_field, "no_right")
+        )
     return False
 
 

@@ -45,6 +45,6 @@ class TagActionTest(BaseActionTestCase):
         self.assert_status_code(response, 403)
         self.assert_model_not_exists("tag/1")
         self.assertIn(
-            "You do not belong to meeting 577",
+            "You are not allowed to perform action tag.create. Missing Permission: tag.can_manage",
             response.json["message"],
         )

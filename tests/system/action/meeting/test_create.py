@@ -173,7 +173,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing Committee Management Level: can_manage" in response.json["message"]
+            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
         )
 
     def test_create_permissions(self) -> None:

@@ -524,4 +524,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 403)
-        self.assertIn("You do not belong to meeting 4", response.json["message"])
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            response.json["message"],
+        )
