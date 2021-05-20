@@ -28,7 +28,7 @@ FILE_TEMPLATE = dedent(
     from enum import Enum
     from typing import Dict, List
 
-    from .base_classes import BasePermissionsContainer, Permission
+    from .base_classes import Permission
     """
 )
 

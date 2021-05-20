@@ -1,7 +1,5 @@
 from enum import Enum
 
-from .get_permission_parts import get_permission_parts
-
 
 class VerbosePermission:
     """
@@ -26,11 +24,3 @@ class Permission(str, VerbosePermission, Enum):
 
     def get_base_model(self) -> str:
         return "meeting"
-
-
-class BasePermissionsContainer:
-    @classmethod
-    def parse(cls, permission: str) -> Permission:
-        parts = get_permission_parts(permission)
-        PermissionClass = getattr(cls, parts[0])
-        return getattr(PermissionClass, parts[1])
