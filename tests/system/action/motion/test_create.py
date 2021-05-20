@@ -290,7 +290,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             "data must not contain {'origin_id'} properties" in response.json["message"]
         )
 
-    def test_create_lead_motion(self) -> None:
+    def test_create_amendment(self) -> None:
         self.set_models(self.permission_test_model)
         self.set_models(
             {
@@ -383,7 +383,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_create_no_permission_lead_motion(self) -> None:
+    def test_create_no_permission_amendment(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -407,7 +407,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_create_permission_lead_motion(self) -> None:
+    def test_create_permission_amendment(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -436,7 +436,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion/4", {"block_id": 13, "category_id": 12})
 
-    def test_create_lead_motion_extra_category_id(self) -> None:
+    def test_create_amendment_extra_category_id(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
