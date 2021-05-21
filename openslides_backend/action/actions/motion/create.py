@@ -69,7 +69,7 @@ class MotionCreate(MotionCreateBase):
                 raise ActionException(
                     "You can't give amendment_paragraph_$ in this context"
                 )
-        # if lead_motion and not has perm motion_can_manage
+        # if lead_motion and not has perm motion.can_manage
         # use category_id and block_id from the lead_motion
         if instance.get("lead_motion_id") and not has_perm(
             self.datastore,
