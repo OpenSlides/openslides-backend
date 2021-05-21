@@ -71,7 +71,12 @@ class MotionCreate(MotionCreateBase):
                 )
         # if lead_motion and not has perm motion_can_manage
         # use category_id and block_id from the lead_motion
-        if instance.get("lead_motion_id"):
+        if instance.get("lead_motion_id") and not has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.Motion.CAN_MANAGE,
+            instance["meeting_id"],
+        ):
             lead_motion = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["lead_motion_id"]),
                 ["block_id", "category_id"],

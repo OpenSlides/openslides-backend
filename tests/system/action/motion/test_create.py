@@ -316,7 +316,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "motion/4", {"lead_motion_id": 3, "block_id": 123, "category_id": 114}
+            "motion/4", {"lead_motion_id": 3, "block_id": 13, "category_id": 12}
         )
 
     def test_create_no_permission(self) -> None:
@@ -480,7 +480,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/4", {"block_id": 57, "category_id": 56})
+        self.assert_model_exists("motion/4", {"block_id": 13, "category_id": 12})
 
     def test_create_amendment_no_perms_category_id(self) -> None:
         self.create_meeting()
