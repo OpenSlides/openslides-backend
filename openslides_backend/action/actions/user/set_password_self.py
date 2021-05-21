@@ -1,19 +1,15 @@
 from typing import Any, Dict
 
-from openslides_backend.permissions.permission_helper import has_perm
-from openslides_backend.permissions.permissions import Permissions
-
 from ....models.models import User
-from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .user_scope_permission_check_mixin import UserScope, UserScopePermissionCheckMixin
 
 
 @register_action("user.set_password_self")
-class UserSetPasswordSelf(UpdateAction, UserScopePermissionCheckMixin):
+class UserSetPasswordSelf(UpdateAction):
     """
     Action to update the own password.
     """
@@ -43,15 +39,10 @@ class UserSetPasswordSelf(UpdateAction, UserScopePermissionCheckMixin):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if self.auth.is_anonymous(self.user_id):
             raise ActionException("Can't set password for anonymous")
-
         instance["id"] = self.user_id
-        scope, scope_id = self.get_user_scope(self.user_id)
-        if scope == UserScope.Meeting:
-            if has_perm(
-                self.datastore,
-                self.user_id,
-                Permissions.User.CAN_CHANGE_OWN_PASSWORD,
-                scope_id,
-            ):
-                return
-            raise MissingPermission(Permissions.User.CAN_CHANGE_OWN_PASSWORD)
+        user = self.datastore.get(
+            FullQualifiedId(self.model.collection, self.user_id),
+            ["can_change_own_password"],
+        )
+        if not user.get("can_change_own_password"):
+            raise PermissionDenied("Missing Permission: can_change_own_password")
