@@ -1,6 +1,9 @@
 import pytest
 
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -15,7 +18,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """
         Also checks if a default_password is generated and the correct hashed password stored
         """
-        response = self.request("user.create", {"username": "test_Xcdfgee"})
+        response = self.request("user.create", {"username": "test_Xcdfgee", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS})
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
@@ -26,7 +29,7 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_first_and_last_name(self) -> None:
         response = self.request(
-            "user.create", {"first_name": "John", "last_name": "Smith"}
+            "user.create", {"first_name": "John", "last_name": "Smith", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "John Smith"})
@@ -35,7 +38,7 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_models(
             {"user/2": {"username": "John"}, "user/3": {"username": "John 1"}}
         )
-        response = self.request("user.create", {"first_name": "John"})
+        response = self.request("user.create", {"first_name": "John", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"username": "John 2"})
 
@@ -134,6 +137,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "comment_$": {2: "comment"},
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
         self.assert_status_code(response, 400)
@@ -189,27 +193,16 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_username_already_given(self) -> None:
-        response = self.request("user.create", {"username": "admin"})
+    def test_username_already_exists(self) -> None:
+        response = self.request("user.create", {"username": "admin", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS})
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
         )
 
-    def test_username_already_exists(self) -> None:
-        self.set_models({"user/2": {"username": "test1"}})
-        response = self.request(
-            "user.create",
-            {"username": "test1", "first_name": "Testy", "last_name": "Test"},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            response.json["message"] == "A user with the username test1 already exists."
-        )
-
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         response = self.request(
-            "user.create", {"username": "testname", "vote_delegations_$_from_ids": {}}
+            "user.create", {"username": "testname", "vote_delegations_$_from_ids": {}, "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS}
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -236,7 +229,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {1}",
             response.json["message"],
         )
 
@@ -290,8 +283,6 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-    # TODO: fix when committee permission system is implemented
-    @pytest.mark.skip()
     def test_create_permission_committee_manager(self) -> None:
         """May create group A and C fields"""
         self.permission_setup()
@@ -326,6 +317,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_committee_manager_no_permission(self) -> None:
         """vote_weight_$ is in group B and may only work with meeting-Permission"""
         self.permission_setup()
+        self.create_meeting(4)
         self.update_model(
             f"user/{self.user_id}",
             {
@@ -341,12 +333,12 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "username",
                 "group_$_ids": {1: [1], 4: [5]},
-                "vote_weight_$": {1: "1.000000"},
+                "vote_weight_$": {1: "1.000000", 4: "2.000000"},
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1, 4}'}.",
+            "You are not allowed to perform action user.create. Missing permission: Permission user.can_manage in meeting 4",
             response.json["message"],
         )
 
@@ -398,8 +390,6 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-    # TODO: fix when committee permission system is implemented
-    @pytest.mark.skip()
     def test_create_permission_user_can_manage(self) -> None:
         """May create all group-fields"""
         self.permission_setup()
@@ -472,7 +462,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'}",
+            "You are not allowed to perform action user.create. Missing permission: Permission user.can_manage in meeting 4",
             response.json["message"],
         )
 
@@ -513,8 +503,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 # Group A
                 "username": "username",
                 "default_vote_weight": "1.700000",
-                "organization_management_level": "can_manage_users",
-                "committee_ids": [78],
                 # Group B
                 "vote_delegations_$_from_ids": {1: [222]},
                 "comment_$": {1: "comment<iframe></iframe>"},
@@ -524,11 +512,28 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_weight_$": {1: "1.000000", 4: "2.333333"},
                 # Group C
                 "group_$_ids": {1: [1]},
+                # Group D
+                "committee_ids": [78],
+                "committee_$_management_level": {
+                    78: CommitteeManagementLevel.CAN_MANAGE
+                },
+                # Group E
+                "organization_management_level": "can_manage_users",
             },
         )
 
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            "You are not allowed to perform action user.create. Missing permission: Permission user.can_manage in meeting 4",
+            response.json["message"],
+        )
+
+    def test_create_no_OML_Committee_or_group_error(self) -> None:
+        response = self.request(
+            "user.create", {"username": "John"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "To create a user you need to add him to a permission-group, add him to a committee or give him an Organization Management Level of at least 'can manage users'.",
             response.json["message"],
         )

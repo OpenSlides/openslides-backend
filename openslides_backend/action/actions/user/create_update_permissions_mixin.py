@@ -1,143 +1,99 @@
+import re
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple, cast
+from typing import Any, Dict, List, Set, Tuple
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ....permissions.permission_helper import has_perm
-from ....permissions.permissions import Permission, Permissions
+from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import PermissionDenied
+from ....services.datastore.interface import DatastoreService
+from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
-from ...action import Action
+from .user_scope_permission_check_mixin import UserScope, UserScopePermissionCheckMixin
 
 
-class CreateUpdatePermissionsMixin(Action):
-    field_rights: Dict[str, list] = {
-        # Group A
-        "username": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "title": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "first_name": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "last_name": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "is_active": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "is_physical_person": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "default_password": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "gender": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "email": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "default_number": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "default_structure_level": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "default_vote_weight": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "organization_management_level": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "committee_as_member_ids": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "committee_as_manager_ids": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        "guest_meeting_ids": [OrganizationManagementLevel.CAN_MANAGE_USERS],
-        # Group B
-        "number_$": [Permissions.User.CAN_MANAGE],
-        "structure_level_$": [Permissions.User.CAN_MANAGE],
-        "vote_weight_$": [Permissions.User.CAN_MANAGE],
-        "about_me_$": [Permissions.User.CAN_MANAGE],
-        "comment_$": [Permissions.User.CAN_MANAGE],
-        "vote_delegated_$_to_id": [Permissions.User.CAN_MANAGE],
-        "vote_delegations_$_from_ids": [Permissions.User.CAN_MANAGE],
-        # Group C
-        "group_$_ids": [
-            CommitteeManagementLevel.CAN_MANAGE,
-            Permissions.User.CAN_MANAGE,
-        ],
-    }
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        """
-        Precondition:
-         If there is more than one right sufficient for one field (Group C), the Meeting-Level-Permissions
-         are expected to be the last in the field_rights list
-        """
-        self.assert_not_anonymous()
-
-        user = self.datastore.get(
+class PermissionVarStore:
+    def __init__(self, datastore: DatastoreService, user_id: int) -> None:
+        self.datastore = datastore
+        self.user_id = user_id
+        self.user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id),
-            ["organization_management_level", "committee_as_manager_ids"],
+            [
+                "organization_management_level",
+                "committee_$_management_level",
+                "group_$_ids",
+            ],
         )
-        user_oml = OrganizationManagementLevel(
-            user.get("organization_management_level")
+        self.user_oml = OrganizationManagementLevel(  # type: ignore
+            self.user.get("organization_management_level", "no_right")
         )
-        if user_oml == OrganizationManagementLevel.SUPERADMIN:
-            return
+        self.called_get_user_committees_and_meetings = False
+        self.called_get_user_meetings_with_user_can_manage = False
 
-        if "organization_management_level" in instance:
-            if (
-                OrganizationManagementLevel(instance["organization_management_level"])
-                > user_oml
-            ):
-                raise PermissionDenied(
-                    f"Your organization management level is not high enough to set a Level of {instance['organization_management_level']}!"
-                )
+    def user_committees(self, committee_ids: List[str] = []) -> Set[int]:
+        """ Set of committee-ids where the request user has manage rights """
+        if not self.called_get_user_committees_and_meetings:
+            (
+                self._user_committees,
+                self._user_committees_meetings,
+            ) = self._get_user_committees_and_meetings(committee_ids)
+            self.called_get_user_committees_and_meetings = True
+        return self._user_committees
 
-        user_meetings = self._get_user_meetings_set(
-            cast(List[int], user.get("committee_as_manager_ids", []))
-        )
-        necessary_permissions: Set[Tuple[Permission, int]] = set()
+    def user_committees_meetings(self, committee_ids: List[str] = []) -> Set[int]:
+        """ Set of meetings where the request user has manage rights from committee """
+        if not self.called_get_user_committees_and_meetings:
+            (
+                self._user_committees,
+                self._user_committees_meetings,
+            ) = self._get_user_committees_and_meetings(committee_ids)
+            self.called_get_user_committees_and_meetings = True
+        return self._user_committees_meetings
 
-        necessary_fields: Dict[Tuple[str, int], List[str]] = defaultdict(list)
-        missing_rights: Set[str] = set()
-        missing_fields: List[str] = []
-        potentially_missing_rights: Set[str] = set()
+    def user_meetings(self, meeting_ids: List[str] = []) -> Set[int]:
+        """ Set of meetings where the request user has user.can_message permissions """
+        if not self.called_get_user_meetings_with_user_can_manage:
+            self._user_meetings = self._get_user_meetings_with_user_can_manage(
+                meeting_ids
+            )
+            self.called_get_user_meetings_with_user_can_manage = True
+        return self._user_meetings
 
-        for fieldname, value in instance.items():
-            temp_right = False
-            temp_missing_rights: Set[str] = set()
-            for right in self.field_rights.get(fieldname, []):
-                if type(right) == OrganizationManagementLevel:
-                    if right <= user_oml:
-                        temp_right = True
-                        break
-                    temp_missing_rights.add(str(right))
-                elif type(right) == CommitteeManagementLevel:
-                    result = (
-                        set(int(meeting_id) for meeting_id in value.keys())
-                        - user_meetings
-                    )
-                    if result:
-                        temp_missing_rights.add(f"{str(right)} for meetings {result}")
-                    else:
-                        temp_right = True
-                        break
-                else:
-                    potentially_missing_rights.update(temp_missing_rights)
-                    temp_missing_rights = set()
-                    for meeting_id in value.keys():
-                        necessary_permissions.add((right, int(meeting_id)))
-                        necessary_fields[(right, int(meeting_id))].append(
-                            f"{fieldname}/meeting: {meeting_id}"
-                        )
-            if not temp_right and temp_missing_rights:
-                missing_rights.update(temp_missing_rights)
-                missing_fields.append(fieldname)
-
-        if necessary_permissions:
-            for right in necessary_permissions:
-                permission, meeting_id = right
-                if not has_perm(self.datastore, self.user_id, permission, meeting_id):
-                    missing_rights.add(f"{str(permission)} for meeting {meeting_id}")
-                    missing_fields.extend(necessary_fields[right])
-
-        if missing_rights:
-            msg = f"You are not allowed to perform action {self.name}."
-            msg += f" Missing permissions {missing_rights}"
-            if potentially_missing_rights:
-                msg += f" or alternative {potentially_missing_rights}"
-            msg += f". Conflicting fields: {', '.join(missing_fields)}"
-            raise PermissionDenied(msg)
-
-    def _get_user_meetings_set(self, committee_ids: List[int]) -> Set[int]:
+    def _get_user_committees_and_meetings(
+        self, committee_ids: List[str]
+    ) -> Tuple[Set[int], Set[int]]:
+        """
+        Returns a set of committees, where the request user has minimum
+        CommitteeManagementLevel.CAN_MANAGE and a set of meetings belonging to those committees
+        """
+        user_committees = set()
         user_meetings = set()
         if committee_ids:
+            user = self.datastore.get(
+                FullQualifiedId(Collection("user"), self.user_id),
+                [
+                    f"committee_${committee_id}_management_level"
+                    for committee_id in committee_ids
+                ],
+            )
+            for key, value in user.items():
+                r = re.search("\\$[0-9]+", key)
+                if (
+                    r
+                    and CommitteeManagementLevel(value)  # type: ignore
+                    >= CommitteeManagementLevel.CAN_MANAGE
+                ):
+                    user_committees.add(int(r.group(0)[1:]))
+
             committees = (
                 self.datastore.get_many(
                     [
                         GetManyRequest(
-                            Collection("committee"), committee_ids, ["meeting_ids"]
+                            Collection("committee"),
+                            list(user_committees),
+                            ["meeting_ids"],
                         )
                     ]
                 )
@@ -147,4 +103,319 @@ class CreateUpdatePermissionsMixin(Action):
             for committee in committees:
                 user_meetings.update(committee.get("meeting_ids", []))
 
+        return user_committees, user_meetings
+
+    def _get_user_meetings_with_user_can_manage(
+        self, meeting_ids: List[str] = []
+    ) -> Set[int]:
+        """
+        Returns a set of meetings, where the request user has user.can_manage permissions
+        """
+        user_meetings = set()
+        if meeting_ids:
+            user = self.datastore.get(
+                FullQualifiedId(Collection("user"), self.user_id),
+                [f"group_${meeting_id}_ids" for meeting_id in meeting_ids],
+            )
+            all_groups: List[int] = []
+            for groups in user.values():
+                if type(groups) == list:
+                    all_groups.extend(groups)
+            groups = (
+                self.datastore.get_many(
+                    [
+                        GetManyRequest(
+                            Collection("group"),
+                            list(all_groups),
+                            ["meeting_id", "permissions", "admin_group_for_meeting_id"],
+                        )
+                    ]
+                )
+                .get(Collection("group"), {})
+                .values()
+            )
+
+            for group in groups:
+                if "user.can_manage" in group.get("permissions", []) or group.get(
+                    "admin_group_for_meeting_id"
+                ):
+                    user_meetings.add(group.get("meeting_id"))
+
         return user_meetings
+
+
+class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
+    field_rights: Dict[str, list] = {
+        "A": [
+            "title",
+            "first_name",
+            "last_name",
+            "username",
+            "is_active",
+            "is_physical_person",
+            "default_password",
+            "gender",
+            "email",
+            "default_number",
+            "default_structure_level",
+            "default_vote_weight",
+        ],
+        "B": [
+            "number_$",
+            "structure_level_$",
+            "vote_weight_$",
+            "about_me_$",
+            "comment_$",
+            "vote_delegated_$_to_id",
+            "vote_delegations_$_from_ids",
+        ],
+        "C": ["group_$_ids"],
+        "D": ["committee_ids", "committee_$_management_level"],
+        "E": ["organization_management_level"],
+        "F": ["is_demo_user"],
+    }
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        """
+        Checks the permissions on a per field and user.scope base, details see
+        https://github.com/OpenSlides/OpenSlides/wiki/user.update or user.create
+        The fields groups and their necessary permissions are also documented there.
+        """
+        self.assert_not_anonymous()
+
+        permstore = PermissionVarStore(self.datastore, self.user_id)
+        if permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
+            return
+
+        self._check_OML_in_instance(permstore, instance)
+        actual_group_fields = self._get_actual_grouping_from_instance(instance)
+
+        self.check_group_E(permstore, actual_group_fields["E"])
+        self.check_group_D(permstore, actual_group_fields["D"], instance)
+        self.check_group_C(permstore, actual_group_fields["C"], instance)
+        self.check_group_B(permstore, actual_group_fields["B"], instance)
+        self.check_group_A(permstore, actual_group_fields["A"], instance)
+        self.check_group_F(actual_group_fields["F"])
+
+    def check_group_A(
+        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
+    ) -> None:
+        """ Check Group A common fields: Depending on scope of user to act on """
+        if (
+            not fields
+            or permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            return
+
+        if (uid := instance.get("id", -1) == -1) :
+            self.datastore.update_additional_models(
+                FullQualifiedId(Collection("user"), uid), instance
+            )
+
+        scope, scope_id = self.get_user_scope(uid)
+        if scope == UserScope.Organization:
+            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
+        elif scope == UserScope.Committee:
+            if scope_id not in permstore.user_committees(
+                permstore.user.get("committee_$_management_level", [])
+            ):
+                raise MissingPermission(
+                    {
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                        CommitteeManagementLevel.CAN_MANAGE: scope_id,
+                    }
+                )
+        elif scope_id not in permstore.user_committees_meetings(
+            permstore.user.get("committee_$_management_level", [])
+        ) and scope_id not in permstore.user_meetings(
+            permstore.user.get("group_$_ids", [])
+        ):
+            meeting = self.datastore.fetch_model(
+                FullQualifiedId(Collection("meeting"), scope_id), ["committee_id"]
+            )
+            raise MissingPermission(
+                {
+                    OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                    CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
+                    Permissions.User.CAN_MANAGE: scope_id,
+                }
+            )
+
+    def check_group_B(
+        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
+    ) -> None:
+        """ Check Group B meeting template fields: Only meeting.permissions for each meeting """
+        if fields:
+            meeting_ids = self._meetings_from_group_B_fields_from_instance(
+                fields, instance
+            )
+            if (
+                diff := meeting_ids
+                - permstore.user_meetings(permstore.user.get("group_$_ids", []))
+            ) :
+                raise MissingPermission(
+                    {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
+                )
+
+    def check_group_C(
+        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
+    ) -> None:
+        """ Check Group C group_$_ids: OML, CML or meeting.permissions for each meeting """
+        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
+            touch_meeting_ids: Set[int] = set(
+                map(int, instance.get("group_$_ids", dict()).keys())
+            )
+            remove_meeting_ids: Set[int] = set(
+                map(
+                    lambda item: int(item[0]),
+                    filter(
+                        lambda item: not item[1],
+                        instance.get("group_$_ids", dict()).items(),
+                    ),
+                )
+            )
+            old_meeting_ids: Set[int] = set()
+            if (instance_user_id := instance.get("id")) :
+                old_meeting_ids = set(
+                    map(
+                        int,
+                        self.datastore.get(
+                            FullQualifiedId(Collection("user"), instance_user_id),
+                            ["group_$_ids"],
+                        ).get("group_$_ids", []),
+                    )
+                )
+
+            # Check scope on removing/adding meetings
+            if remove_meeting_ids or touch_meeting_ids - old_meeting_ids:
+                all_meeting_ids = touch_meeting_ids | old_meeting_ids
+                if len(all_meeting_ids) > 1:
+                    committee_ids = list(set(
+                        map(
+                            lambda x: x.get("committee_id"),
+                            self.datastore.get_many(
+                                [
+                                    GetManyRequest(
+                                        Collection("meeting"),
+                                        list(all_meeting_ids),
+                                        ["committee_id"],
+                                    )
+                                ]
+                            )
+                            .get(Collection("meeting"), {})
+                            .values(),
+                        )
+                    ))
+                    if len(committee_ids) > 1:
+                        raise PermissionDenied(
+                            "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!"
+                        )
+                    elif committee_ids[0] not in permstore.user_committees(
+                        permstore.user.get("committee_$_management_level", [])
+                    ):
+                        raise PermissionDenied(
+                            f"You need CommitteeManagementLevel.can_manage permission for committee {committee_ids[0]}, because you try to add or remove meetings in Committee-scope!"
+                        )
+
+            # Check permission for each change operation/meeting
+            if diff := touch_meeting_ids - permstore.user_committees_meetings(
+                permstore.user.get("committee_$_management_level", [])
+            ):
+                if diff := diff - permstore.user_meetings(
+                    permstore.user.get("group_$_ids", [])
+                ):
+                    raise PermissionDenied(
+                        f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {diff}"
+                    )
+
+    def check_group_D(
+        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
+    ) -> None:
+        """ Check Group D committee-related fields: OML or CML level for each committee """
+        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
+            committees = self._get_all_committees_from_instance(instance)
+            if (
+                diff := committees
+                - permstore.user_committees(
+                    permstore.user.get("committee_$_management_level", [])
+                )
+            ) :
+                raise MissingPermission(
+                    {
+                        CommitteeManagementLevel.CAN_MANAGE: committee_id
+                        for committee_id in diff
+                    }
+                )
+
+    def check_group_E(self, permstore: PermissionVarStore, fields: List[str]) -> None:
+        """ Check Group E organization_management_level: OML level necessary """
+        if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+
+    def check_group_F(self, fields: List[str]) -> None:
+        """ Group F: OML SUPERADMIN necessary, which is checked before """
+        if fields:
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+
+    def _check_OML_in_instance(
+        self, permstore: PermissionVarStore, instance: Dict[str, Any]
+    ) -> None:
+        if "organization_management_level" in instance:
+            if (
+                OrganizationManagementLevel(instance["organization_management_level"])
+                > permstore.user_oml
+            ):
+                raise PermissionDenied(
+                    f"Your organization management level is not high enough to set a Level of {instance['organization_management_level']}!"
+                )
+
+    def _get_actual_grouping_from_instance(
+        self, instance: Dict[str, Any]
+    ) -> Dict[str, list]:
+        """
+        Returns a dictionary with an entry for each field group A-E with
+        a list of fields from payload instance.
+        The field groups A-F refer to https://github.com/OpenSlides/OpenSlides/wiki/user.create
+        or user.update
+        """
+        act_grouping: Dict[str, list] = defaultdict(list)
+        for key, _ in instance.items():
+            for group in "ABCDEF":
+                if key in self.field_rights[group]:
+                    act_grouping[group].append(key)
+                    break
+            else:
+                if key not in ["id"]:
+                    raise PermissionDenied(
+                        f"There is no field group for field {key} in payload"
+                    )
+        return act_grouping
+
+    def _get_all_committees_from_instance(self, instance: Dict[str, Any]) -> Set[int]:
+        """
+        Gets a Set of all committees from the instance regarding committees from group D
+        """
+        committees = set(instance.get("committee_ids", []))
+
+        # In case of create there is no id, in case of update the user can remove committees only with the committee right
+        if instance_user_id := instance.get("id"):
+            user = self.datastore.get(
+                FullQualifiedId(Collection("user"), instance_user_id), ["committee_ids"]
+            )
+            committees.update(user.get("committee_ids", []))
+
+        if committee_str := user.get("committee_$_management_level", []):
+            committees.update(map(int, committee_str))
+        return committees
+
+    def _meetings_from_group_B_fields_from_instance(
+        self, fields_to_search_for: List[str], instance: Dict[str, Any]
+    ) -> Set[int]:
+        """
+        Gets a set of all meetings from the fields of group B in instance
+        """
+        meetings: Set[int] = set()
+        for field in fields_to_search_for:
+            if "_$" in field:
+                meetings.update(map(int, instance.get(field, dict()).keys()))
+        return meetings

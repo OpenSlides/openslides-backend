@@ -2,14 +2,12 @@ from ....models.models import User
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .user_mixin import UserMixin
 
 
 @register_action("user.update")
 class UserUpdate(
-    CheckTemporaryNoForInstanceMixin,
     UserMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
@@ -35,6 +33,7 @@ class UserUpdate(
             "default_vote_weight",
             "organization_management_level",
             "committee_ids",
+            "committee_$_management_level",
             "number_$",
             "structure_level_$",
             "vote_weight_$",

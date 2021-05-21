@@ -1,6 +1,9 @@
 import pytest
 
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -151,7 +154,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}. Conflicting fields:",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {1}",
             response.json["message"],
         )
 
@@ -209,12 +212,19 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    # TODO: fix when permission is correctly implemented
-    @pytest.mark.skip()
     def test_update_permission_committee_manager(self) -> None:
         """May update group C fields"""
         self.permission_setup()
-        self.update_model(f"user/{self.user_id}", {"committee_as_manager_ids": [60]})
+        self.update_model(
+            f"user/{self.user_id}",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$61_management_level": CommitteeManagementLevel.NO_RIGHT,
+                "committee_$100_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["60", "61", "100", "1"],
+            },
+        )
 
         response = self.request(
             "user.update",
@@ -229,11 +239,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"group_$_ids": ["1"], "group_$1_ids": [1]},
         )
 
-    # TODO: fix when permission is correctly implemented
-    @pytest.mark.skip()
     def test_update_permission_committee_manager_no_permission(self) -> None:
         """vote_weight_$ is in group B and may only work with meeting-Permission"""
         self.permission_setup()
+        self.create_meeting(base=4)
         self.update_model(
             f"user/{self.user_id}",
             {
@@ -249,13 +258,44 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "group_$_ids": {1: [1], 4: [5]},
-                "vote_weight_$": {1: "1.000000"},
+                "vote_weight_$": {1: "1.000000", 4: "3.000000"},
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {4}'}. Conflicting fields: group_$_ids/meeting: 4",
+            "You are not allowed to perform action user.update. Missing permission: Permission user.can_manage in meeting 4",
             response.json["message"],
+        )
+
+    def test_update_permission_user_can_manage_for_group_C(self) -> None:
+        """ May update group C field group_$_id  """
+        self.permission_setup()
+        self.set_models(
+            {
+                f"user/{self.user_id}": {
+                    "committee_$60_management_level": CommitteeManagementLevel.NO_RIGHT,
+                    "committee_$_management_level": ["60"],
+                },
+                "group/1": {
+                    "permissions": [
+                        "projector.can_see",
+                        "user.can_manage",
+                    ],
+                },
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "group_$_ids": {1: [1, 2]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {"group_$_ids": ["1"], "group_$1_ids": [1, 2]},
         )
 
     def test_update_permission_manage_user(self) -> None:
@@ -385,7 +425,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'}. Conflicting fields: number_$/meeting: 4",
+            "You are not allowed to perform action user.update. Missing permission: Permission user.can_manage in meeting 4",
             response.json["message"],
         )
 
@@ -451,7 +491,7 @@ class UserUpdateActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.update. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            "You are not allowed to perform action user.update. Missing permission: Permission user.can_manage in meeting 4",
             response.json["message"],
         )
 
@@ -518,3 +558,104 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/222", {"meeting_ids": [4]})
+    """ Group C group_$_ids tests """
+    def test_update_permission_group_C_missing_OML_permission(self) -> None:
+        """ OML scope necessary, because 3 Committees with add and remove meetings involved """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.create_meeting(base=7)
+        self.set_user_groups(111, [7, 8])
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "group_$_ids": {1: [1, 2], 4: [5], 7: []},
+            },
+        )
+
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!",
+            response.json["message"],
+        )
+
+    def test_update_permission_group_C_missing_CML_permission(self) -> None:
+        """ CML scope necessary, because 1 Committees with 3 meetings, add and remove meetings involved """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.create_meeting(base=7)
+        self.set_user_groups(111, [7, 8])
+        self.set_models(
+            {
+                "meeting/4": {"committee_id": 60},
+                "meeting/7": {"committee_id": 60},
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "group_$_ids": {1: [1, 2], 4: [5], 7: []},
+            },
+        )
+
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You need CommitteeManagementLevel.can_manage permission for committee 60, because you try to add or remove meetings in Committee-scope!",
+            response.json["message"],
+        )
+
+    def test_update_permission_group_C_with_CML_permission(self) -> None:
+        """ CML permission sufficient for Committee scope """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.create_meeting(base=7)
+        self.set_user_groups(111, [7, 8])
+        self.set_models(
+            {
+                f"user/{self.user_id}": {"committee_$_management_level": ["60"], "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE},
+                "meeting/4": {"committee_id": 60},
+                "meeting/7": {"committee_id": 60},
+                "committee/60": {"meeting_ids": [1, 4, 7]}
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "group_$_ids": {1: [1, 2], 4: [5], 7: []},
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        # I think the "7" shouldn't be here anymore, not in group_$_ids, not as group_$7_ids and not in calculated meeting_ids. There I miss the 1 and 4
+        self.assert_model_exists("user/111", {"group_$_ids": ["7", "1", "4"], "group_$1_ids": [1, 2], "group_$4_ids": [5], "group_$7_ids": [], "meeting_ids": [7]})
+
+    def test_update_permission_group_C_user_permissions(self) -> None:
+        """ No add/remove and no CML permission, okay with user.can_manage permissions """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.create_meeting(base=7)
+        self.set_user_groups(self.user_id, [2, 5, 8])  # Admin-groups
+        self.set_user_groups(111, [2, 3, 5, 6, 7])
+        self.set_models(
+            {
+                "meeting/4": {"committee_id": 60},
+                "meeting/7": {"committee_id": 60},
+                "committee/60": {"meeting_ids": [1, 4, 7]}
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "group_$_ids": {1: [2], 4: [5]},
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/111", {"group_$_ids": ["1", "4", "7"], "group_$1_ids": [2], "group_$4_ids": [5], "group_$7_ids": [7], "meeting_ids": [1, 4, 7]})

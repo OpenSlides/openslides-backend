@@ -128,6 +128,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "group_$_ids": list(
                         str(meeting_id) for meeting_id in partitioned_groups.keys()
                     ),
+                    "meeting_ids": list(partitioned_groups.keys()),
                     **{
                         f"group_${meeting_id}_ids": [group["id"] for group in groups]
                         for meeting_id, groups in partitioned_groups.items()
