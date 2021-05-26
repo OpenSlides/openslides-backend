@@ -96,6 +96,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert user.get("vote_weight_$1") == "1.000000"
         assert user.get("vote_weight_$2") == "2.333333"
         assert set(user.get("vote_weight_$", [])) == {"1", "2"}
+        assert user.get("meeting_ids") == [1, 2]
         user = self.get_model("user/222")
         assert user.get("vote_delegated_$1_to_id") == 223
         assert user.get("vote_delegated_$_to_id") == ["1"]
@@ -358,6 +359,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_delegations_$4_from_ids": [5, 6],
                 "group_$1_ids": [2, 3],
                 "group_$4_ids": [5],
+                "meeting_ids": [1, 4],
             },
         )
 

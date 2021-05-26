@@ -114,6 +114,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert user.get("vote_weight_$1") == "1.000000"
         assert user.get("vote_weight_$2") == "2.333333"
         assert set(user.get("vote_weight_$", [])) == {"1", "2"}
+        assert user.get("meeting_ids") == [1, 2]
         user = self.get_model("user/222")
         assert user.get("vote_delegated_$1_to_id") == 223
         assert user.get("vote_delegated_$_to_id") == ["1"]
@@ -283,6 +284,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_weight_$1": "1.000000",
                 "group_$_ids": ["1"],
                 "group_$1_ids": [1],
+                "meeting_ids": [1],
             },
         )
 
