@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
@@ -67,4 +67,69 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
             )
         instance["votesinvalid"] = "0.000000"
 
+        # set entitled users at stop.
+        instance["entitled_users_at_stop"] = self.get_entitled_user_ids(poll)
         return instance
+
+    def get_entitled_user_ids(self, poll: Dict[str, Any]) -> List[Any]:
+        entitled_users = []
+        entitled_users_ids = set()
+        all_voted_users = poll.get("voted_ids", [])
+
+        # get all users from the groups.
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), poll["meeting_id"]), ["group_ids"]
+        )
+        gmr = GetManyRequest(
+            Collection("group"), meeting.get("group_ids", []), ["user_ids"]
+        )
+        gm_result = self.datastore.get_many([gmr])
+        groups = gm_result.get(Collection("group"), {}).values()
+
+        for group in groups:
+            user_ids = group.get("user_ids", [])
+            if not user_ids:
+                continue
+            gmr2 = GetManyRequest(
+                Collection("user"),
+                list(user_ids),
+                [
+                    "id",
+                    "is_present_in_meeting_ids",
+                    f"vote_delegated_${poll['meeting_id']}_to_id",
+                ],
+            )
+            gm_result2 = self.datastore.get_many([gmr2])
+            users = gm_result2.get(Collection("user"), {}).values()
+            for user in users:
+                vote_delegated = {}
+                if user.get(f"vote_delegated_${poll['meeting_id']}_to_id"):
+                    vote_delegated = self.datastore.get(
+                        FullQualifiedId(
+                            Collection("user"),
+                            user[f"vote_delegated_${poll['meeting_id']}_to_id"],
+                        ),
+                        ["is_present_in_meeting_ids"],
+                    )
+
+                if user["id"] in entitled_users_ids:
+                    pass
+                elif poll["meeting_id"] in user.get(
+                    "is_present_in_meeting_ids", []
+                ) or (
+                    user.get(f"vote_delegated_${poll['meeting_id']}_to_id")
+                    and poll["meeting_id"]
+                    in vote_delegated.get("is_present_in_meeting_ids", [])
+                ):
+                    entitled_users_ids.add(user["id"])
+                    entitled_users.append(
+                        {
+                            "user_id": user["id"],
+                            "voted": user["id"] in all_voted_users,
+                            "vote_delegated_to_id": user.get(
+                                f"vote_delegated_${poll['meeting_id']}_to_id"
+                            ),
+                        }
+                    )
+
+        return entitled_users
