@@ -37,8 +37,7 @@ class UserSetPasswordSelf(UpdateAction):
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if self.auth.is_anonymous(self.user_id):
-            raise ActionException("Can't set password for anonymous")
+        self.assert_not_anonymous()
         instance["id"] = self.user_id
         user = self.datastore.get(
             FullQualifiedId(self.model.collection, self.user_id),

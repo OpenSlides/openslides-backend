@@ -253,7 +253,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Anonymous user is not allowed to change user data.",
+            "Anonymous is not allowed to execute user.create",
             response.json["message"],
         )
 
@@ -263,7 +263,9 @@ class UserCreateActionTest(BaseActionTestCase):
         The SUPERADMIN don't need to belong to a meeting in any way to change data!
         """
         self.permission_setup()
-        self.set_management_level(OrganisationManagementLevel.SUPERADMIN, self.user_id)
+        self.set_organisation_management_level(
+            OrganisationManagementLevel.SUPERADMIN, self.user_id
+        )
 
         response = self.request(
             "user.create",
@@ -352,7 +354,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May create group A fields only """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
@@ -402,7 +404,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May create all group-fields """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(
@@ -455,7 +457,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May create group A, B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(self.user_id, [3, 6])
@@ -477,7 +479,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_OML_not_high_enough(self) -> None:
         """ May create group A fields only """
         self.permission_setup()
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
@@ -502,7 +504,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "test", group_ids=[2]
         )  # admin-group of meeting/1
         self.login(self.user_id)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         response = self.request(

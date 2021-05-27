@@ -17,9 +17,11 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         Helper function to setup permissions for different scopes for user 1. If no scope is given, the user has no permissions.
         """
         if scope is None:
-            self.set_management_level(None)
+            self.set_organisation_management_level(None)
         elif scope == UserScope.Organisation:
-            self.set_management_level(OrganisationManagementLevel.CAN_MANAGE_USERS)
+            self.set_organisation_management_level(
+                OrganisationManagementLevel.CAN_MANAGE_USERS
+            )
         elif scope == UserScope.Committee:
             self.update_model(
                 "user/1",
@@ -30,7 +32,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
             )
         elif scope == UserScope.Meeting:
             self.create_meeting()
-            self.set_management_level(None)
+            self.set_organisation_management_level(None)
             self.set_user_groups(1, [3])
             self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
 

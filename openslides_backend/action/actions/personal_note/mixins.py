@@ -5,9 +5,7 @@ from ...action import Action
 
 class PermissionMixin(Action):
     def check_anonymous_and_user_in_meeting(self, meeting_id: int) -> None:
-        if self.auth.is_anonymous(self.user_id):
-            raise PermissionDenied(f"Anonymous user cannot do {self.name}.")
-
+        self.assert_not_anonymous()
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id), ["meeting_ids"]
         )

@@ -403,6 +403,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "organisation/1": {"name": "test_organisation1"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                },
             }
         )
         filename = "test_picture.jpg"

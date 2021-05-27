@@ -58,5 +58,6 @@ class PersonalNoteUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert (
-            "Anonymous user cannot do personal_note.update." in response.json["message"]
+            "Anonymous is not allowed to execute personal_note.update"
+            in response.json["message"]
         )

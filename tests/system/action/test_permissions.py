@@ -68,7 +68,9 @@ class TestPermissions(BaseActionTestCase):
         )
 
     def test_superadmin(self) -> None:
-        self.set_management_level(OrganisationManagementLevel.SUPERADMIN, self.user_id)
+        self.set_organisation_management_level(
+            OrganisationManagementLevel.SUPERADMIN, self.user_id
+        )
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("fake_model_p/1")
