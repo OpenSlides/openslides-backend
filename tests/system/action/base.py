@@ -6,6 +6,7 @@ from openslides_backend.action.util.typing import Payload
 from openslides_backend.permissions.management_levels import OrganisationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
+from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import Collection
 from tests.system.base import BaseSystemTestCase
@@ -167,7 +168,10 @@ class BaseActionTestCase(BaseSystemTestCase):
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
         assert isinstance(group_ids, list)
         partitioned_groups = self._fetch_groups(group_ids)
-        user = self.get_model(f"user/{user_id}")
+        try:
+            user = self.get_model(f"user/{user_id}")
+        except DatastoreException:
+            user = {}
         new_group_ids = list(
             str(meeting_id)
             for meeting_id in set(
