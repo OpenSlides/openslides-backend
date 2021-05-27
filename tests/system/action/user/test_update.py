@@ -501,3 +501,24 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("default_vote_weight") == "1.700000"
         assert model.get("committee_ids") == [78, 79]
         assert model.get("organisation_management_level") == "can_manage_users"
+
+    def test_update_group_switch_change_meeting_ids(self) -> None:
+        """Set a group and a meeting_ids to a user. Then change the group."""
+        self.set_models(
+            {
+                "meeting/1": {},
+                "meeting/2": {},
+                "user/222": {"meeting_ids": [1]},
+                "group/11": {"meeting_id": 1},
+                "group/12": {"meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 222,
+                "group_$_ids":  {1: [], 2: [12]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/222", {"meeting_ids": [2]})
