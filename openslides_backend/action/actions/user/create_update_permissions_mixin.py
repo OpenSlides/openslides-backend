@@ -59,15 +59,13 @@ class CreateUpdatePermissionsMixin(Action):
             FullQualifiedId(Collection("user"), self.user_id),
             ["organisation_management_level", "committee_as_manager_ids"],
         )
-        user_oml = OrganisationManagementLevel(
-            user.get("organisation_management_level", "no_right")
-        )  # type: ignore
+        user_oml = OrganisationManagementLevel(user.get("organisation_management_level"))
         if user_oml == OrganisationManagementLevel.SUPERADMIN:
             return
 
         if "organisation_management_level" in instance:
             if (
-                OrganisationManagementLevel(instance["organisation_management_level"])  # type: ignore
+                OrganisationManagementLevel(instance["organisation_management_level"])
                 > user_oml
             ):
                 raise PermissionDenied(

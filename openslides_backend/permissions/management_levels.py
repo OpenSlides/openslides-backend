@@ -1,14 +1,24 @@
 from enum import Enum
+from typing import Optional
 
 from .base_classes import VerbosePermission
 
 
 class CompareRightLevel(str, VerbosePermission, Enum):
-    def __new__(cls, value: str, weight: int):  # type: ignore
+    def __new__(
+        cls, value: Optional[str], weight: Optional[int] = None
+    ) -> "CompareRightLevel":
         obj = str.__new__(cls, value)  # type: ignore
         obj._value_ = value
         obj.weight = weight
         return obj
+
+    @classmethod
+    def _missing_(cls, value: object) -> "CompareRightLevel":
+        """
+        Always return the first enum item if no matching one was found. -> NO_RIGHT must always be listed first.
+        """
+        return next(iter(cls))
 
     def check_instance(self, other: str) -> None:
         if not isinstance(other, self.__class__):
@@ -34,18 +44,18 @@ class CompareRightLevel(str, VerbosePermission, Enum):
 
 
 class OrganisationManagementLevel(CompareRightLevel):
-    SUPERADMIN = ("superadmin", 3)
+    NO_RIGHT = ("no_right", 0)
     CAN_MANAGE_USERS = ("can_manage_users", 1)
     CAN_MANAGE_ORGANISATION = ("can_manage_organisation", 2)
-    NO_RIGHT = ("no_right", 0)
+    SUPERADMIN = ("superadmin", 3)
 
     def get_base_model(self) -> str:
         return "organisation"
 
 
 class CommitteeManagementLevel(CompareRightLevel):
-    CAN_MANAGE = ("can_manage", 1)
     NO_RIGHT = ("no_right", 0)
+    CAN_MANAGE = ("can_manage", 1)
 
     def get_base_model(self) -> str:
         return "committee"

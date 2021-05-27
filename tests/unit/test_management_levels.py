@@ -61,3 +61,11 @@ def test_committee_level_CML_string() -> None:
         "The comparison expect an <enum 'CommitteeManagementLevel'>-type and no string!"
         in str(exc.value)
     )
+
+
+def test_implicit_no_right_1() -> None:
+    assert OrganisationManagementLevel(None) == OrganisationManagementLevel.NO_RIGHT
+
+
+def test_implicit_no_right_2() -> None:
+    assert OrganisationManagementLevel("") == OrganisationManagementLevel.NO_RIGHT
