@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -28,21 +28,19 @@ class UserUpdateSelf(UpdateAction, UserMixin):
         instance = super().update_instance(instance)
 
         if "about_me_$" in instance:
-            meeting_id_str = str(
-                self.datastore.get(
-                    FullQualifiedId(Collection("user"), self.user_id), ["meeting_id"]
-                ).get("meeting_id", "")
+            user = self.datastore.get(
+                FullQualifiedId(self.model.collection, self.user_id), ["meeting_ids"]
             )
-            if meeting_id_str:
-                diff = [
-                    meeting
-                    for meeting in instance["about_me_$"].keys()
-                    if meeting != meeting_id_str
-                ]
-                if diff:
-                    raise ActionException(
-                        f"Temporary user may update about_me_$ only in his meeting, but tries in {diff}."
-                    )
+
+            not_supported_meetings = [
+                meeting
+                for meeting in [int(key) for key in instance["about_me_$"].keys()]
+                if meeting not in user.get("meeting_ids", [])
+            ]
+            if not_supported_meetings:
+                raise ActionException(
+                    f"User may update about_me_$ only in his meetings, but tries in {not_supported_meetings}"
+                )
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

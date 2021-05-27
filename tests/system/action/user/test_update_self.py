@@ -1,5 +1,3 @@
-import pytest
-
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -38,7 +36,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn("Can't update for anonymous", response.json["message"])
 
-    def test_update_self_temporary_about_me(self) -> None:
+    def test_update_self_about_me(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
         self.login(self.user_id)
@@ -54,9 +52,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"about_me_$1": "This is for meeting/1"})
 
-    # TODO: fix when the user restructure is finished
-    @pytest.mark.skip()
-    def test_update_self_temporary_about_me_wrong_meeting(self) -> None:
+    def test_update_self_about_me_wrong_meeting(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
         self.login(self.user_id)
@@ -77,6 +73,6 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Temporary user may update about_me_$ only in his meeting, but tries in ['2'].",
+            "User may update about_me_$ only in his meetings, but tries in [2]",
             response.json["message"],
         )
