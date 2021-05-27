@@ -305,8 +305,8 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "vote_delegations_$222_from_ids": [],
-                "vote_delegations_$_from_ids": ["222"],
+                "vote_delegations_$222_from_ids": None,
+                "vote_delegations_$_from_ids": [],
             },
         )
         self.assert_model_exists(
@@ -623,8 +623,8 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             {
                 "vote_delegated_$222_to_id": 1,
                 "vote_delegated_$_to_id": ["222"],
-                "vote_delegations_$222_from_ids": [],
-                "vote_delegations_$_from_ids": ["222"],
+                "vote_delegations_$222_from_ids": None,
+                "vote_delegations_$_from_ids": [],
             },
         )
         self.assert_model_exists(

@@ -147,7 +147,7 @@ class CreateActionWithTemplateFieldTester(BaseActionTestCase):
                 },
             }
         )
-        # when setting to empty array, the replacement is not removed from the template field
+        # empty array behaves the same as None
         response = self.request(
             "fake_model_a.update", {"id": 234, "fake_model_b_$_ids": {43: []}}
         )
@@ -155,8 +155,8 @@ class CreateActionWithTemplateFieldTester(BaseActionTestCase):
         self.assert_model_exists("fake_model_a/234")
         model = self.get_model("fake_model_a/234")
         self.assertEqual(model.get("fake_model_b_$42_ids"), [3451])
-        self.assertEqual(model.get("fake_model_b_$43_ids"), [])
-        self.assertEqual(model.get("fake_model_b_$_ids"), ["42", "43"])
+        self.assertEqual(model.get("fake_model_b_$43_ids"), None)
+        self.assertEqual(model.get("fake_model_b_$_ids"), ["42"])
         model = self.get_model("fake_model_b/3452")
         self.assertEqual(model.get("structured_relation_field"), None)
 
