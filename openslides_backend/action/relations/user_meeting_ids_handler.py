@@ -21,7 +21,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
     ) -> RelationUpdates:
         if field_name != "group_$_ids":
             return {}
-        ids_set = set([int(x) for x in instance.get(field_name, []) or []])
+        ids_set = set(int(x) for x in instance.get(field_name, []))
         fqid = FullQualifiedId(field.own_collection, instance["id"])
         db_instance = self.datastore.fetch_model(
             fqid,
@@ -30,7 +30,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
             exception=False,
         )
-        db_ids_set = set([int(x) for x in db_instance.get(field_name, []) or []])
+        db_ids_set = set(int(x) for x in db_instance.get(field_name, []))
         added_ids = ids_set.difference(db_ids_set)
         removed_ids = db_ids_set.difference(ids_set)
 
