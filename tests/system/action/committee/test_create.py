@@ -26,6 +26,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "organisation_id": 1,
                 "description": description,
                 "user_ids": [20, 21],
+                "organisation_tag_ids": [12],
             },
         )
         self.assert_status_code(response, 200)
@@ -34,6 +35,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("description") == description
         assert model.get("meeting_ids") is None
         assert model.get("user_ids") == [20, 21]
+        assert model.get("organisation_tag_ids") == [12]
 
     def test_create_only_required(self) -> None:
         self.create_model("organisation/1", {"name": "test_organisation1"})

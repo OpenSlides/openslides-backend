@@ -14,6 +14,6 @@ class CommitteeCreate(CreateAction):
     model = Committee()
     schema = DefaultSchema(Committee()).get_create_schema(
         required_properties=["organisation_id", "name"],
-        optional_properties=["description", "user_ids"],
+        optional_properties=["description", "user_ids", "organisation_tag_ids"],
     )
     permission = OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
