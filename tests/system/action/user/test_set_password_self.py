@@ -2,7 +2,7 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class UserSetPasswordSelfActionTest(BaseActionTestCase):
-    def test_update_correct_permission(self) -> None:
+    def test_set_password_correct_permission(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
         self.login(self.user_id)
@@ -19,7 +19,7 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         assert model.get("new_password") is None
         assert self.auth.is_equals("new", model.get("password", ""))
 
-    def test_update_wrong_password(self) -> None:
+    def test_set_password_wrong_password(self) -> None:
         old_hash = self.auth.hash("old")
         self.update_model(
             "user/1",
@@ -41,23 +41,6 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn("Can't set password for anonymous", response.json["message"])
 
-    def test_set_password_self_permissions(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("test", group_ids=[1])
-
-        self.login(self.user_id)
-        old_hash = self.auth.hash("old")
-        self.update_model(
-            "user/2",
-            {"password": old_hash, "meeting_ids": [1], "can_change_own_password": True},
-        )
-        response = self.request(
-            "user.set_password_self", {"old_password": "old", "new_password": "new"}
-        )
-        self.assert_status_code(response, 200)
-        model = self.get_model("user/2")
-        assert self.auth.is_equals("new", model.get("password", ""))
-
     def test_set_password_self_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("test", group_ids=[1])
@@ -67,7 +50,6 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
             "user/2",
             {
                 "password": old_hash,
-                "meeting_ids": [1],
                 "can_change_own_password": False,
             },
         )
@@ -76,6 +58,6 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Missing Permission: can_change_own_password",
+            "You cannot change your password.",
             response.json["message"],
         )

@@ -45,4 +45,4 @@ class UserSetPasswordSelf(UpdateAction):
             ["can_change_own_password"],
         )
         if not user.get("can_change_own_password"):
-            raise PermissionDenied("Missing Permission: can_change_own_password")
+            raise PermissionDenied("You cannot change your password.")
