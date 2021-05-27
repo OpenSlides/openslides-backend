@@ -122,6 +122,13 @@ class RelationManager:
         def set_structured_field(
             field: BaseTemplateField, replacement: str, value: Any
         ) -> None:
+            if (
+                isinstance(field, BaseRelationField)
+                and field.is_list_field
+                and value == []
+            ):
+                value = None
+
             template_field_name = field.get_template_field_name()
             structured_field_name = field.get_structured_field_name(replacement)
             additional_instance_fields[structured_field_name] = value

@@ -96,6 +96,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert user.get("vote_weight_$1") == "1.000000"
         assert user.get("vote_weight_$2") == "2.333333"
         assert set(user.get("vote_weight_$", [])) == {"1", "2"}
+        assert user.get("meeting_ids") == [1, 2]
         user = self.get_model("user/222")
         assert user.get("vote_delegated_$1_to_id") == 223
         assert user.get("vote_delegated_$_to_id") == ["1"]
@@ -358,6 +359,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_delegations_$4_from_ids": [5, 6],
                 "group_$1_ids": [2, 3],
                 "group_$4_ids": [5],
+                "meeting_ids": [1, 4],
             },
         )
 
@@ -499,3 +501,18 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert model.get("default_vote_weight") == "1.700000"
         assert model.get("committee_ids") == [78, 79]
         assert model.get("organisation_management_level") == "can_manage_users"
+
+    def test_update_group_switch_change_meeting_ids(self) -> None:
+        """Set a group and a meeting_ids to a user. Then change the group."""
+        self.create_meeting()
+        self.create_meeting(base=4)
+        self.set_user_groups(222, [1])
+        response = self.request(
+            "user.update",
+            {
+                "id": 222,
+                "group_$_ids": {1: [], 4: [4]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/222", {"meeting_ids": [4]})
