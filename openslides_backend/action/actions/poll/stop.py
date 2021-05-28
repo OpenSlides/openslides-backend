@@ -46,7 +46,7 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
 
         # calculate votescast, votesvalid, votesinvalid
         voted_ids = poll.get("voted_ids", [])
-        instance["votescast"] = f"{len(voted_ids)}.000000"
+        instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
         if not meeting.get("users_enable_vote_weight") or not voted_ids:
             instance["votesvalid"] = instance["votescast"]
         else:
@@ -57,12 +57,8 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
             users = gm_result.get(Collection("user"), {}).values()
             instance["votesvalid"] = str(
                 sum(
-                    [
-                        Decimal(
-                            entry.get(f"vote_weight_${poll['meeting_id']}", "1.000000")
-                        )
-                        for entry in users
-                    ]
+                    Decimal(entry.get(f"vote_weight_${poll['meeting_id']}", "1.000000"))
+                    for entry in users
                 )
             )
         instance["votesinvalid"] = "0.000000"
