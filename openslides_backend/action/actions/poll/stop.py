@@ -68,10 +68,10 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_user_ids(poll)
+        instance["entitled_users_at_stop"] = self.get_entitled_user(poll)
         return instance
 
-    def get_entitled_user_ids(self, poll: Dict[str, Any]) -> List[Any]:
+    def get_entitled_user(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
         entitled_users = []
         entitled_users_ids = set()
         all_voted_users = poll.get("voted_ids", [])
@@ -91,7 +91,7 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
             user_ids = group.get("user_ids", [])
             if not user_ids:
                 continue
-            gmr2 = GetManyRequest(
+            gmr = GetManyRequest(
                 Collection("user"),
                 list(user_ids),
                 [
@@ -100,8 +100,8 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
                     f"vote_delegated_${meeting_id}_to_id",
                 ],
             )
-            gm_result2 = self.datastore.get_many([gmr2])
-            users = gm_result2.get(Collection("user"), {}).values()
+            gm_result = self.datastore.get_many([gmr])
+            users = gm_result.get(Collection("user"), {}).values()
             for user in users:
                 vote_delegated = {}
                 if user.get(f"vote_delegated_${meeting_id}_to_id"):
