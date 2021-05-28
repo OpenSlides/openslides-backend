@@ -49,14 +49,7 @@ class PollStopActionTest(BaseActionTestCase):
                 "user/2": {"vote_weight_$1": "2.000000"},
                 "user/3": {"vote_weight_$1": "3.000000"},
                 "meeting/1": {
-                    "poll_couple_countdown": True,
-                    "poll_countdown_id": 1,
                     "users_enable_vote_weight": True,
-                },
-                "projector_countdown/1": {
-                    "running": True,
-                    "default_time": 60,
-                    "countdown_time": 30.0,
                 },
             }
         )
@@ -67,9 +60,6 @@ class PollStopActionTest(BaseActionTestCase):
         assert poll.get("votescast") == "2.000000"
         assert poll.get("votesinvalid") == "0.000000"
         assert poll.get("votesvalid") == "5.000000"
-        countdown = self.get_model("projector_countdown/1")
-        assert countdown.get("running") is False
-        assert countdown.get("countdown_time") == 60
 
     def test_entitled_users_at_stop(self) -> None:
         self.set_models(
@@ -88,15 +78,8 @@ class PollStopActionTest(BaseActionTestCase):
                 "user/4": {"vote_delegated_$1_to_id": 2},
                 "group/3": {"user_ids": [2, 3, 4]},
                 "meeting/1": {
-                    "poll_couple_countdown": True,
-                    "poll_countdown_id": 1,
                     "users_enable_vote_weight": True,
                     "group_ids": [3],
-                },
-                "projector_countdown/1": {
-                    "running": True,
-                    "default_time": 60,
-                    "countdown_time": 30.0,
                 },
             }
         )
