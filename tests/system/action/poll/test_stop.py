@@ -91,6 +91,34 @@ class PollStopActionTest(BaseActionTestCase):
             {"voted": False, "user_id": 4, "vote_delegated_to_id": 2},
         ]
 
+    def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {
+                    "state": "started",
+                    "meeting_id": 1,
+                    "voted_ids": [2],
+                    "entitled_group_ids": [3, 4],
+                },
+                "user/2": {
+                    "vote_weight_$1": "2.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                "group/3": {"user_ids": [2]},
+                "group/4": {"user_ids": [2]},
+                "meeting/1": {
+                    "users_enable_vote_weight": True,
+                    "group_ids": [3, 4],
+                },
+            }
+        )
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_users_at_stop") == [
+            {"voted": True, "user_id": 2, "vote_delegated_to_id": None},
+        ]
+
     def test_stop_wrong_state(self) -> None:
         self.set_models(
             {
