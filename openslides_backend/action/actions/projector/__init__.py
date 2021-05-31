@@ -8,6 +8,6 @@ from . import (  # noqa
     project,
     project_preview,
     sort_preview,
-    toggle_stable,
+    toggle,
     update,
 )
