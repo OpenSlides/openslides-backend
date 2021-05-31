@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
@@ -12,19 +12,20 @@ from ...util.register import register_action
 from ...util.typing import ActionData
 from ..projection.create import ProjectionCreate
 from ..projection.delete import ProjectionDelete
+from ..projection.update import ProjectionUpdate
 
 
-@register_action("projector.toggle_stable")
-class ProjectorToggleStable(UpdateAction):
+@register_action("projector.toggle")
+class ProjectorToggle(UpdateAction):
     """
-    Action to toggle stable projectors.
+    Action to toggle projections.
     """
 
     model = Projector()
     schema = DefaultSchema(Projection()).get_default_schema(
         title="Projector toggle stable schema",
         required_properties=["content_object_id", "meeting_id"],
-        optional_properties=["options", "type"],
+        optional_properties=["options", "type", "stable"],
         additional_required_fields={
             "ids": {
                 "type": "array",
@@ -52,28 +53,33 @@ class ProjectorToggleStable(UpdateAction):
             )
 
             for projector_id in instance["ids"]:
+                stable = instance.get("stable", False)
                 filter_ = And(
                     FilterOperator("current_projector_id", "=", projector_id),
                     FilterOperator(
                         "content_object_id", "=", instance["content_object_id"]
                     ),
-                    FilterOperator("stable", "=", True),
+                    FilterOperator("stable", "=", stable),
                 )
                 if instance.get("type"):
                     filter_ = And(
                         filter_, FilterOperator("type", "=", instance["type"])
                     )
-                results = self.datastore.filter(
+                result = self.datastore.filter(
                     Collection("projection"), filter_, ["id"]
                 )
-                if results:
-                    self.execute_other_action(
-                        ProjectionDelete, [{"id": id_} for id_ in results]
-                    )
+                if result:
+                    projection_ids = [id_ for id_ in result]
+                    if stable:
+                        self.execute_other_action(
+                            ProjectionDelete, [{"id": id_} for id_ in projection_ids]
+                        )
+                    else:
+                        self.move_projections_to_history(projector_id, projection_ids)
                 else:
                     data: Dict[str, Any] = {
                         "current_projector_id": projector_id,
-                        "stable": True,
+                        "stable": stable,
                         "type": instance.get("type"),
                         "content_object_id": instance["content_object_id"],
                         "options": instance.get("options"),
@@ -81,3 +87,28 @@ class ProjectorToggleStable(UpdateAction):
                     }
                     self.execute_other_action(ProjectionCreate, [data])
         return []
+
+    def move_projections_to_history(
+        self, projector_id: int, projection_ids: List[int]
+    ) -> None:
+        max_weight = self.get_max_projection_weight(projector_id)
+        for projection_id in projection_ids:
+            self.execute_other_action(
+                ProjectionUpdate,
+                [
+                    {
+                        "id": int(projection_id),
+                        "current_projector_id": None,
+                        "history_projector_id": projector_id,
+                        "weight": max_weight + 1,
+                    }
+                ],
+            )
+            max_weight += 1
+
+    def get_max_projection_weight(self, projector_id: int) -> int:
+        filter_ = FilterOperator("history_projector_id", "=", projector_id)
+        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
+        if maximum is None:
+            maximum = 0
+        return maximum

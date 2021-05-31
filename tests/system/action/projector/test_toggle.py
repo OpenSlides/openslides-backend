@@ -2,7 +2,7 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class ProjectorToggleStable(BaseActionTestCase):
+class ProjectorToggle(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
@@ -10,7 +10,7 @@ class ProjectorToggleStable(BaseActionTestCase):
             "poll/788": {"meeting_id": 1},
         }
 
-    def test_correct_remove_projection(self) -> None:
+    def setup_models(self, stable: bool) -> None:
         self.set_models(
             {
                 "meeting/1": {},
@@ -19,19 +19,42 @@ class ProjectorToggleStable(BaseActionTestCase):
                     "meeting_id": 1,
                     "content_object_id": "poll/788",
                     "current_projector_id": 23,
-                    "stable": True,
+                    "stable": stable,
                 },
                 "poll/788": {"meeting_id": 1},
             }
         )
+
+    def test_correct_remove_stable_projection(self) -> None:
+        self.setup_models(True)
         response = self.request(
-            "projector.toggle_stable",
-            {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
+            "projector.toggle",
+            {
+                "ids": [23],
+                "content_object_id": "poll/788",
+                "meeting_id": 1,
+                "stable": True,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projection/33")
         projector = self.get_model("projector/23")
         assert projector.get("current_projection_ids") == []
+
+    def test_correct_remove_unstable_projection(self) -> None:
+        self.setup_models(False)
+        response = self.request(
+            "projector.toggle",
+            {
+                "ids": [23],
+                "content_object_id": "poll/788",
+                "meeting_id": 1,
+                "stable": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        projector = self.get_model("projector/23")
+        assert projector.get("history_projection_ids") == [33]
 
     def test_correct_add_projection(self) -> None:
         self.set_models(
@@ -42,8 +65,13 @@ class ProjectorToggleStable(BaseActionTestCase):
             }
         )
         response = self.request(
-            "projector.toggle_stable",
-            {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
+            "projector.toggle",
+            {
+                "ids": [23],
+                "content_object_id": "poll/788",
+                "meeting_id": 1,
+                "stable": True,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -58,17 +86,17 @@ class ProjectorToggleStable(BaseActionTestCase):
         projector = self.get_model("projector/23")
         assert projector.get("current_projection_ids") == [1]
 
-    def test_toggle_stable_no_permissions(self) -> None:
+    def test_toggle_no_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
-            "projector.toggle_stable",
+            "projector.toggle",
             {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
         )
 
-    def test_toggle_stable_permission(self) -> None:
+    def test_toggle_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
-            "projector.toggle_stable",
+            "projector.toggle",
             {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
             Permissions.Projector.CAN_MANAGE,
         )
