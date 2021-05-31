@@ -53,8 +53,7 @@ class CreateUpdatePermissionsMixin(Action):
          If there is more than one right sufficient for one field (Group C), the Meeting-Level-Permissions
          are expected to be the last in the field_rights list
         """
-        if self.auth.is_anonymous(self.user_id):
-            raise PermissionDenied("Anonymous user is not allowed to change user data.")
+        self.assert_not_anonymous()
 
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id),

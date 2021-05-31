@@ -38,8 +38,11 @@ class UserSetPasswordSelfActionTest(BaseActionTestCase):
             {"old_password": "wrong", "new_password": "new"},
             anonymous=True,
         )
-        self.assert_status_code(response, 400)
-        self.assertIn("Can't set password for anonymous", response.json["message"])
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Anonymous is not allowed to execute user.set_password_self",
+            response.json["message"],
+        )
 
     def test_set_password_self_no_permissions(self) -> None:
         self.create_meeting()

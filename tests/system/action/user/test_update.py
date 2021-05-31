@@ -169,7 +169,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Anonymous user is not allowed to change user data.",
+            "Anonymous is not allowed to execute user.update",
             response.json["message"],
         )
 
@@ -179,7 +179,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         The SUPERADMIN don't need to belong to a meeting in any way to change data!
         """
         self.permission_setup()
-        self.set_management_level(OrganisationManagementLevel.SUPERADMIN, self.user_id)
+        self.set_organisation_management_level(
+            OrganisationManagementLevel.SUPERADMIN, self.user_id
+        )
         self.set_models(
             {"user/111": {"username": "User 111"}},
         )
@@ -260,7 +262,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         """ May update group A fields only """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
@@ -309,7 +311,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         """ May update group B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_management_level(None, self.user_id)
+        self.set_organisation_management_level(None, self.user_id)
         self.set_user_groups(
             self.user_id, [3, 6]
         )  # Empty groups of meeting/1 and meeting/4
@@ -367,7 +369,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         """ May update group B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_management_level(None, self.user_id)
+        self.set_organisation_management_level(None, self.user_id)
         self.set_user_groups(
             self.user_id, [3, 6]
         )  # Empty groups of meeting/1 and meeting/4
@@ -390,7 +392,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_update_permission_OML_not_high_enough(self) -> None:
         """ May update group A fields only """
         self.permission_setup()
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
@@ -415,7 +417,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "test", group_ids=[2]
         )  # admin-group of meeting/1
         self.login(self.user_id)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_models(
@@ -462,7 +464,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )  # admin-group of meeting/1 and group of meeting 4
         self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
         self.login(self.user_id)
-        self.set_management_level(
+        self.set_organisation_management_level(
             OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_models(

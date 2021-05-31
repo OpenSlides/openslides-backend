@@ -83,7 +83,7 @@ class BaseActionTestCase(BaseSystemTestCase):
     def set_anonymous(self, enable: bool = True, meeting_id: int = 1) -> None:
         self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
 
-    def set_management_level(
+    def set_organisation_management_level(
         self, level: Optional[OrganisationManagementLevel], user_id: int = 1
     ) -> None:
         self.update_model(f"user/{user_id}", {"organisation_management_level": level})
@@ -244,7 +244,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         self.set_user_groups(self.user_id, [3])
         if permission:
             if type(permission) == OrganisationManagementLevel:
-                self.set_management_level(
+                self.set_organisation_management_level(
                     cast(OrganisationManagementLevel, permission), self.user_id
                 )
             else:

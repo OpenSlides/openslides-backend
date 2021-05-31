@@ -28,6 +28,7 @@ from ..services.media.interface import MediaService
 from ..services.permission.interface import PermissionService
 from ..shared.exceptions import (
     ActionException,
+    AnonymousNotAllowed,
     MissingPermission,
     PermissionDenied,
     RequiredFieldsException,
@@ -199,6 +200,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
         msg = f"You are not allowed to perform action {self.name}."
         raise PermissionDenied(msg)
+
+    def assert_not_anonymous(self) -> None:
+        """
+        Checks if the request user is the Anonymous and raises an error if it is.
+        """
+        if self.auth.is_anonymous(self.user_id):
+            raise AnonymousNotAllowed(self.name)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         """

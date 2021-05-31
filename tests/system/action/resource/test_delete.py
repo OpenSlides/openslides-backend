@@ -35,6 +35,9 @@ class ResourceDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "resource/111": {"token": "srtgb123"},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                },
             }
         )
         response = self.request("resource.delete", {"id": 111})

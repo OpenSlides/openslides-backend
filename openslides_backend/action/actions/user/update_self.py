@@ -44,5 +44,4 @@ class UserUpdateSelf(UpdateAction, UserMixin):
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if self.auth.is_anonymous(self.user_id):
-            raise ActionException("Can't update for anonymous")
+        self.assert_not_anonymous()

@@ -33,8 +33,11 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             {"email": "user@openslides.org"},
             anonymous=True,
         )
-        self.assert_status_code(response, 400)
-        self.assertIn("Can't update for anonymous", response.json["message"])
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Anonymous is not allowed to execute user.update_self",
+            response.json["message"],
+        )
 
     def test_update_self_about_me(self) -> None:
         self.create_meeting()
