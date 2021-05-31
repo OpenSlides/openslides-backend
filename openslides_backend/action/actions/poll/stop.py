@@ -64,10 +64,10 @@ class PollStopAction(CountdownControl, UpdateAction, PollPermissionMixin):
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_user(poll)
+        instance["entitled_users_at_stop"] = self.get_entitled_users(poll)
         return instance
 
-    def get_entitled_user(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def get_entitled_users(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
         entitled_users = []
         entitled_users_ids = set()
         all_voted_users = poll.get("voted_ids", [])
