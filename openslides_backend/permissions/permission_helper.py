@@ -94,8 +94,8 @@ def has_organisation_management_level(
             FullQualifiedId(Collection("user"), user_id),
             ["organisation_management_level"],
         )
-        return expected_level <= OrganisationManagementLevel(  # type: ignore
-            user.get("organisation_management_level", "no_right")
+        return expected_level <= OrganisationManagementLevel(
+            user.get("organisation_management_level")
         )
     return False
 
@@ -118,9 +118,7 @@ def has_committee_management_level(
             == OrganisationManagementLevel.SUPERADMIN
         ):
             return True
-        return expected_level <= CommitteeManagementLevel(  # type: ignore
-            user.get(cml_field, "no_right")
-        )
+        return expected_level <= CommitteeManagementLevel(user.get(cml_field))
     return False
 
 
