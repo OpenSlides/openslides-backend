@@ -220,7 +220,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_$61_management_level": CommitteeManagementLevel.NO_RIGHT,
+                "committee_$61_management_level": None,
                 "committee_$100_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 "committee_$_management_level": ["60", "61", "100", "1"],
             },
@@ -273,7 +273,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 f"user/{self.user_id}": {
-                    "committee_$60_management_level": CommitteeManagementLevel.NO_RIGHT,
+                    "committee_$60_management_level": None,
                     "committee_$_management_level": ["60"],
                 },
                 "group/1": {
@@ -558,7 +558,9 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/222", {"meeting_ids": [4]})
+
     """ Group C group_$_ids tests """
+
     def test_update_permission_group_C_missing_OML_permission(self) -> None:
         """ OML scope necessary, because 3 Committees with add and remove meetings involved """
         self.permission_setup()
@@ -615,10 +617,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(111, [7, 8])
         self.set_models(
             {
-                f"user/{self.user_id}": {"committee_$_management_level": ["60"], "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE},
+                f"user/{self.user_id}": {
+                    "committee_$_management_level": ["60"],
+                    "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                },
                 "meeting/4": {"committee_id": 60},
                 "meeting/7": {"committee_id": 60},
-                "committee/60": {"meeting_ids": [1, 4, 7]}
+                "committee/60": {"meeting_ids": [1, 4, 7]},
             }
         )
 
@@ -632,7 +637,16 @@ class UserUpdateActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         # I think the "7" shouldn't be here anymore, not in group_$_ids, not as group_$7_ids and not in calculated meeting_ids. There I miss the 1 and 4
-        self.assert_model_exists("user/111", {"group_$_ids": ["7", "1", "4"], "group_$1_ids": [1, 2], "group_$4_ids": [5], "group_$7_ids": [], "meeting_ids": [7]})
+        self.assert_model_exists(
+            "user/111",
+            {
+                "group_$_ids": ["1", "4"],
+                "group_$1_ids": [1, 2],
+                "group_$4_ids": [5],
+                "group_$7_ids": None,
+                "meeting_ids": [1, 4],
+            },
+        )
 
     def test_update_permission_group_C_user_permissions(self) -> None:
         """ No add/remove and no CML permission, okay with user.can_manage permissions """
@@ -645,7 +659,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/4": {"committee_id": 60},
                 "meeting/7": {"committee_id": 60},
-                "committee/60": {"meeting_ids": [1, 4, 7]}
+                "committee/60": {"meeting_ids": [1, 4, 7]},
             }
         )
 
@@ -658,4 +672,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/111", {"group_$_ids": ["1", "4", "7"], "group_$1_ids": [2], "group_$4_ids": [5], "group_$7_ids": [7], "meeting_ids": [1, 4, 7]})
+        self.assert_model_exists(
+            "user/111",
+            {
+                "group_$_ids": ["1", "4", "7"],
+                "group_$1_ids": [2],
+                "group_$4_ids": [5],
+                "group_$7_ids": [7],
+                "meeting_ids": [1, 4, 7],
+            },
+        )

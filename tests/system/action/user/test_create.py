@@ -18,7 +18,13 @@ class UserCreateActionTest(BaseActionTestCase):
         """
         Also checks if a default_password is generated and the correct hashed password stored
         """
-        response = self.request("user.create", {"username": "test_Xcdfgee", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS})
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
@@ -29,7 +35,12 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_first_and_last_name(self) -> None:
         response = self.request(
-            "user.create", {"first_name": "John", "last_name": "Smith", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS}
+            "user.create",
+            {
+                "first_name": "John",
+                "last_name": "Smith",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "John Smith"})
@@ -38,7 +49,13 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_models(
             {"user/2": {"username": "John"}, "user/3": {"username": "John 1"}}
         )
-        response = self.request("user.create", {"first_name": "John", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS})
+        response = self.request(
+            "user.create",
+            {
+                "first_name": "John",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"username": "John 2"})
 
@@ -194,7 +211,13 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_username_already_exists(self) -> None:
-        response = self.request("user.create", {"username": "admin", "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS})
+        response = self.request(
+            "user.create",
+            {
+                "username": "admin",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
@@ -202,7 +225,12 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         response = self.request(
-            "user.create", {"username": "testname", "vote_delegations_$_from_ids": {}, "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS}
+            "user.create",
+            {
+                "username": "testname",
+                "vote_delegations_$_from_ids": {},
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -529,9 +557,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_no_OML_Committee_or_group_error(self) -> None:
-        response = self.request(
-            "user.create", {"username": "John"}
-        )
+        response = self.request("user.create", {"username": "John"})
         self.assert_status_code(response, 400)
         self.assertIn(
             "To create a user you need to add him to a permission-group, add him to a committee or give him an Organization Management Level of at least 'can manage users'.",

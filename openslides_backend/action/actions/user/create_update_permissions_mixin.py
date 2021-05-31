@@ -1,4 +1,3 @@
-import re
 from collections import defaultdict
 from typing import Any, Dict, List, Set, Tuple
 
@@ -53,7 +52,7 @@ class PermissionVarStore:
         return self._user_committees_meetings
 
     def user_meetings(self, meeting_ids: List[str] = []) -> Set[int]:
-        """ Set of meetings where the request user has user.can_message permissions """
+        """ Set of meetings where the request user has user.can_manage permissions """
         if not self.called_get_user_meetings_with_user_can_manage:
             self._user_meetings = self._get_user_meetings_with_user_can_manage(
                 meeting_ids
@@ -78,14 +77,13 @@ class PermissionVarStore:
                     for committee_id in committee_ids
                 ],
             )
-            for key, value in user.items():
-                r = re.search("\\$[0-9]+", key)
+            for committee_id in committee_ids:
+                value = user.get(f"committee_${committee_id}_management_level")
                 if (
-                    r
-                    and CommitteeManagementLevel(value)  # type: ignore
+                    CommitteeManagementLevel(value)
                     >= CommitteeManagementLevel.CAN_MANAGE
                 ):
-                    user_committees.add(int(r.group(0)[1:]))
+                    user_committees.add(int(committee_id))
 
             committees = (
                 self.datastore.get_many(
@@ -207,12 +205,12 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         ):
             return
 
-        if (uid := instance.get("id", -1) == -1) :
+        if uid := instance.get("id"):
             self.datastore.update_additional_models(
                 FullQualifiedId(Collection("user"), uid), instance
             )
 
-        scope, scope_id = self.get_user_scope(uid)
+        scope, scope_id = self.get_user_scope(uid, None if uid else instance)
         if scope == UserScope.Organization:
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
         elif scope == UserScope.Committee:
@@ -290,22 +288,24 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             if remove_meeting_ids or touch_meeting_ids - old_meeting_ids:
                 all_meeting_ids = touch_meeting_ids | old_meeting_ids
                 if len(all_meeting_ids) > 1:
-                    committee_ids = list(set(
-                        map(
-                            lambda x: x.get("committee_id"),
-                            self.datastore.get_many(
-                                [
-                                    GetManyRequest(
-                                        Collection("meeting"),
-                                        list(all_meeting_ids),
-                                        ["committee_id"],
-                                    )
-                                ]
+                    committee_ids = list(
+                        set(
+                            map(
+                                lambda x: x.get("committee_id"),
+                                self.datastore.get_many(
+                                    [
+                                        GetManyRequest(
+                                            Collection("meeting"),
+                                            list(all_meeting_ids),
+                                            ["committee_id"],
+                                        )
+                                    ]
+                                )
+                                .get(Collection("meeting"), {})
+                                .values(),
                             )
-                            .get(Collection("meeting"), {})
-                            .values(),
                         )
-                    ))
+                    )
                     if len(committee_ids) > 1:
                         raise PermissionDenied(
                             "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!"

@@ -1,9 +1,7 @@
 from typing import Any, Dict
-from ....permissions.management_levels import (
-    OrganisationManagementLevel,
-)
 
 from ....models.models import User
+from ....permissions.management_levels import OrganisationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection
@@ -60,8 +58,17 @@ class UserCreate(
             or instance.get("last_name")
         ):
             raise ActionException("Need username or first_name or last_name")
-        if OrganisationManagementLevel(instance.get("organisation_management_level", "no_right")) < OrganisationManagementLevel.CAN_MANAGE_USERS and len(instance.get("group_$_ids", [])) == 0 and len(instance.get("committee_ids", [])) == 0:
-            raise ActionException("To create a user you need to add him to a permission-group, add him to a committee or give him an Organisation Management Level of at least 'can manage users'.")
+        if (
+            OrganisationManagementLevel(
+                instance.get("organisation_management_level", "")
+            )
+            < OrganisationManagementLevel.CAN_MANAGE_USERS
+            and len(instance.get("group_$_ids", [])) == 0
+            and len(instance.get("committee_ids", [])) == 0
+        ):
+            raise ActionException(
+                "To create a user you need to add him to a permission-group, add him to a committee or give him an Organisation Management Level of at least 'can manage users'."
+            )
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)
         if not instance.get("default_password"):
