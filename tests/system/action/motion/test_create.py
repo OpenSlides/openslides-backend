@@ -293,6 +293,35 @@ class MotionCreateActionTest(BaseActionTestCase):
             "data must not contain {'origin_id'} properties" in response.json["message"]
         )
 
+    def test_create_amendment(self) -> None:
+        self.set_models(self.permission_test_model)
+        self.set_models(
+            {
+                "meeting/1": {"name": "meeting_1 _test"},
+                "motion/3": {"meeting_id": 1, "category_id": 114, "block_id": 123},
+                "motion_category/12": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+                "motion_category/114": {"meeting_id": 1},
+                "motion_block/123": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+                "block_id": 13,
+                "category_id": 12,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/4", {"lead_motion_id": 3, "block_id": 13, "category_id": 12}
+        )
+
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
@@ -359,7 +388,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
-    def test_create_no_permission_lead_motion(self) -> None:
+    def test_create_no_permission_amendment(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -383,7 +412,7 @@ class MotionCreateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
-    def test_create_permission_lead_motion(self) -> None:
+    def test_create_permission_amendment(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
@@ -392,7 +421,15 @@ class MotionCreateActionTest(BaseActionTestCase):
             3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
         )
         self.set_models(self.permission_test_model)
-        self.set_models({"motion/3": {"meeting_id": 1}})
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "category_id": 56, "block_id": 57},
+                "motion_category/12": {"meeting_id": 1},
+                "motion_category/56": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+                "motion_block/57": {"meeting_id": 1},
+            }
+        )
         response = self.request(
             "motion.create",
             {
@@ -404,3 +441,106 @@ class MotionCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/4", {"block_id": 57, "category_id": 56})
+
+    def test_create_permission_amendment_non_admin(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3,
+            [
+                Permissions.Motion.CAN_CREATE,
+                Permissions.Motion.CAN_CREATE_AMENDMENTS,
+                Permissions.Motion.CAN_MANAGE,
+            ],
+        )
+        self.set_models(self.permission_test_model)
+        self.set_models(
+            {
+                "motion/3": {
+                    "meeting_id": 1,
+                    "category_id": 56,
+                    "block_id": 57,
+                },
+                "motion_category/12": {"meeting_id": 1},
+                "motion_category/56": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+                "motion_block/57": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+                "category_id": 12,
+                "block_id": 13,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/4", {"block_id": 13, "category_id": 12})
+
+    def test_create_amendment_no_perms_category_id(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
+        )
+        self.set_models(self.permission_test_model)
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
+                "motion_category/12": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+                "category_id": 12,
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: category_id" in response.json["message"]
+
+    def test_create_amendment_no_perms_block_id(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(
+            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
+        )
+        self.set_models(self.permission_test_model)
+        self.set_models(
+            {
+                "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
+                "motion_category/12": {"meeting_id": 1},
+                "motion_block/13": {"meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "workflow_id": 12,
+                "text": "test",
+                "lead_motion_id": 3,
+                "block_id": 13,
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: block_id" in response.json["message"]
