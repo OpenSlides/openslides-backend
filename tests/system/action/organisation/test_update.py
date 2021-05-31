@@ -95,7 +95,12 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "organisation.update", {"id": 3, "reset_password_verbose_errors": True}
+            "organisation.update",
+            {
+                "id": 3,
+                "reset_password_verbose_errors": True,
+                "enable_electronic_voting": True,
+            },
         )
         self.assert_status_code(response, 403)
 
@@ -109,6 +114,11 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "organisation.update", {"id": 3, "reset_password_verbose_errors": True}
+            "organisation.update",
+            {
+                "id": 3,
+                "reset_password_verbose_errors": True,
+                "enable_electronic_voting": True,
+            },
         )
         self.assert_status_code(response, 200)

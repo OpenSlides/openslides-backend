@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "cc2f753b00eab63ada512449d2fc86e5"
+MODELS_YML_CHECKSUM = "ee62a89a88ff4a86a30553f6b917ef7d"
 
 
 class Organisation(Model):
@@ -20,7 +20,7 @@ class Organisation(Model):
     theme = fields.CharField()
     custom_translations = fields.JSONField()
     reset_password_verbose_errors = fields.BooleanField()
-    enable_electronic_voting = fields.BooleanField(read_only=True)
+    enable_electronic_voting = fields.BooleanField()
     committee_ids = fields.RelationListField(
         to={Collection("committee"): "organisation_id"}
     )

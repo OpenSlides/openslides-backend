@@ -25,7 +25,7 @@ class OrganisationUpdate(UpdateAction):
             "login_text",
             "theme",
             "custom_translations",
-            #     "enable_electronic_voting", TODO
+            "enable_electronic_voting",
             "reset_password_verbose_errors",
         ]
     )
