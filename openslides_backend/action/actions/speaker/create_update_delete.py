@@ -23,7 +23,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
         required_properties=["list_of_speakers_id", "user_id"],
-        optional_properties=["point_of_order"],
+        optional_properties=["point_of_order", "note"],
     )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
@@ -41,6 +41,10 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+
+        if "note" in instance and not instance.get("point_of_order"):
+            raise ActionException("Not allowed to set note if not point of order.")
+
         weight_max = self._get_max_weight(instance["list_of_speakers_id"])
         if weight_max is None:
             instance["weight"] = 1

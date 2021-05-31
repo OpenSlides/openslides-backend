@@ -265,6 +265,17 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
 
+    def test_create_note_and_not_point_of_order(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {"user_id": 7, "list_of_speakers_id": 23, "note": "blablabla"},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Not allowed to set note if not point of order." in response.json["message"]
+        )
+
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models,

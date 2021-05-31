@@ -26,12 +26,13 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "user_id": 1,
                 "list_of_speakers_id": 23,
                 "point_of_order": True,
+                "note": "blablabla",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "speaker/2",
-            {"user_id": 1, "point_of_order": True, "weight": 1},
+            {"user_id": 1, "point_of_order": True, "weight": 1, "note": "blablabla"},
         )
         self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1, 2]})
 
