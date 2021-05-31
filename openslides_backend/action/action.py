@@ -25,7 +25,6 @@ from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
-from ..shared.env import is_dev_mode
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -192,8 +191,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 ):
                     return
                 raise MissingPermission(self.permission)
-        elif is_dev_mode():
-            return
 
         msg = f"You are not allowed to perform action {self.name}."
         raise PermissionDenied(msg)

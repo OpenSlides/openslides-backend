@@ -110,13 +110,13 @@ class FakeModelC(Model):
     )
 
 
-@register_action("fake_model_a.create")
+@register_action("fake_model_a.create", internal=True)
 class FakeModelACreateAction(CreateAction):
     model = FakeModelA()
     schema = {}  # type: ignore
 
 
-@register_action("fake_model_a.update")
+@register_action("fake_model_a.update", internal=True)
 class FakeModelAUpdateAction(UpdateAction):
     model = FakeModelA()
     schema = {}  # type: ignore
