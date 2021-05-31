@@ -18,8 +18,12 @@ class PollStopActionTest(BaseActionTestCase):
     def test_stop_correct(self) -> None:
         self.set_models(
             {
-                "poll/1": {"state": "started", "meeting_id": 1},
-                "meeting/1": {"poll_couple_countdown": True, "poll_countdown_id": 1},
+                "poll/1": {"state": "started", "meeting_id": 1, "voted_ids": [1]},
+                "meeting/1": {
+                    "poll_couple_countdown": True,
+                    "poll_countdown_id": 1,
+                    "users_enable_vote_weight": False,
+                },
                 "projector_countdown/1": {
                     "running": True,
                     "default_time": 60,
@@ -31,9 +35,89 @@ class PollStopActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == "finished"
+        assert poll.get("votescast") == "1.000000"
+        assert poll.get("votesinvalid") == "0.000000"
+        assert poll.get("votesvalid") == "1.000000"
         countdown = self.get_model("projector_countdown/1")
         assert countdown.get("running") is False
         assert countdown.get("countdown_time") == 60
+
+    def test_stop_auto_calc_fields(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {"state": "started", "meeting_id": 1, "voted_ids": [2, 3]},
+                "user/2": {"vote_weight_$1": "2.000000"},
+                "user/3": {"vote_weight_$1": "3.000000"},
+                "meeting/1": {
+                    "users_enable_vote_weight": True,
+                },
+            }
+        )
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("state") == "finished"
+        assert poll.get("votescast") == "2.000000"
+        assert poll.get("votesinvalid") == "0.000000"
+        assert poll.get("votesvalid") == "5.000000"
+
+    def test_entitled_users_at_stop(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {
+                    "state": "started",
+                    "meeting_id": 1,
+                    "voted_ids": [2],
+                    "entitled_group_ids": [3],
+                },
+                "user/2": {
+                    "vote_weight_$1": "2.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                "user/3": {"vote_weight_$1": "3.000000"},
+                "user/4": {"vote_delegated_$1_to_id": 2},
+                "group/3": {"user_ids": [2, 3, 4]},
+                "meeting/1": {
+                    "users_enable_vote_weight": True,
+                    "group_ids": [3],
+                },
+            }
+        )
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_users_at_stop") == [
+            {"voted": True, "user_id": 2, "vote_delegated_to_id": None},
+            {"voted": False, "user_id": 4, "vote_delegated_to_id": 2},
+        ]
+
+    def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {
+                    "state": "started",
+                    "meeting_id": 1,
+                    "voted_ids": [2],
+                    "entitled_group_ids": [3, 4],
+                },
+                "user/2": {
+                    "vote_weight_$1": "2.000000",
+                    "is_present_in_meeting_ids": [1],
+                },
+                "group/3": {"user_ids": [2]},
+                "group/4": {"user_ids": [2]},
+                "meeting/1": {
+                    "users_enable_vote_weight": True,
+                    "group_ids": [3, 4],
+                },
+            }
+        )
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll.get("entitled_users_at_stop") == [
+            {"voted": True, "user_id": 2, "vote_delegated_to_id": None},
+        ]
 
     def test_stop_wrong_state(self) -> None:
         self.set_models(
