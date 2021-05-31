@@ -59,7 +59,9 @@ class CreateUpdatePermissionsMixin(Action):
             FullQualifiedId(Collection("user"), self.user_id),
             ["organisation_management_level", "committee_as_manager_ids"],
         )
-        user_oml = OrganisationManagementLevel(user.get("organisation_management_level"))
+        user_oml = OrganisationManagementLevel(
+            user.get("organisation_management_level")
+        )
         if user_oml == OrganisationManagementLevel.SUPERADMIN:
             return
 
