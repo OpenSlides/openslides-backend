@@ -6,11 +6,11 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import PollPermissionMixin
+from .mixins import PollPermissionMixin, StopControl
 
 
 @register_action("poll.publish")
-class PollPublishAction(UpdateAction, PollPermissionMixin):
+class PollPublishAction(StopControl, UpdateAction, PollPermissionMixin):
     """
     Action to publish a poll.
     """
@@ -22,9 +22,12 @@ class PollPublishAction(UpdateAction, PollPermissionMixin):
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["state"]
         )
-        if poll.get("state") != Poll.STATE_FINISHED:
+        if poll.get("state") not in [Poll.STATE_FINISHED, Poll.STATE_STARTED]:
             raise ActionException(
-                f"Cannot publish poll {instance['id']}, because it is not in state finished."
+                f"Cannot publish poll {instance['id']}, because it is not in state finished or started."
             )
+        if poll["state"] == Poll.STATE_STARTED:
+            self.on_stop(instance)
+
         instance["state"] = Poll.STATE_PUBLISHED
         return instance
