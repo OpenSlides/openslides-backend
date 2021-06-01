@@ -42,5 +42,6 @@ class UserUpdate(
             "vote_delegated_$_to_id",
             "vote_delegations_$_from_ids",
             "group_$_ids",
+            "is_demo_user",
         ],
     )

@@ -310,12 +310,13 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                         raise PermissionDenied(
                             "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!"
                         )
-                    elif committee_ids[0] not in permstore.user_committees(
+                    if committee_ids[0] not in permstore.user_committees(
                         permstore.user.get("committee_$_management_level", [])
                     ):
                         raise PermissionDenied(
                             f"You need CommitteeManagementLevel.can_manage permission for committee {committee_ids[0]}, because you try to add or remove meetings in Committee-scope!"
                         )
+                    return
 
             # Check permission for each change operation/meeting
             if diff := touch_meeting_ids - permstore.user_committees_meetings(
@@ -355,7 +356,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     def check_group_F(self, fields: List[str]) -> None:
         """ Group F: OML SUPERADMIN necessary, which is checked before """
         if fields:
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+            raise MissingPermission(OrganisationManagementLevel.SUPERADMIN)
 
     def _check_OML_in_instance(
         self, permstore: PermissionVarStore, instance: Dict[str, Any]
@@ -396,16 +397,18 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         Gets a Set of all committees from the instance regarding committees from group D
         """
         committees = set(instance.get("committee_ids", []))
+        if committee_str := instance.get("committee_$_management_level", {}).keys():
+            committees.update(map(int, committee_str))
 
         # In case of create there is no id, in case of update the user can remove committees only with the committee right
         if instance_user_id := instance.get("id"):
             user = self.datastore.get(
-                FullQualifiedId(Collection("user"), instance_user_id), ["committee_ids"]
+                FullQualifiedId(Collection("user"), instance_user_id),
+                ["committee_ids", "committee_$_management_level"],
             )
             committees.update(user.get("committee_ids", []))
-
-        if committee_str := user.get("committee_$_management_level", []):
-            committees.update(map(int, committee_str))
+            if committee_str := user.get("committee_$_management_level", []):
+                committees.update(map(int, committee_str))
         return committees
 
     def _meetings_from_group_B_fields_from_instance(

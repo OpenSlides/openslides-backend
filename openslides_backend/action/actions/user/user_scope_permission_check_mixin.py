@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -70,18 +70,24 @@ class UserScopePermissionCheckMixin(Action):
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
 
     def get_user_scope(
-        self, id: int, user: Optional[Dict[str, Any]] = None
+        self, id: int, instance: Optional[Dict[str, Any]] = None
     ) -> Tuple[UserScope, int]:
         """
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
         """
-        if not user:
+        meetings: List[int] = []
+        committees: List[int] = []
+
+        if instance:
+            meetings = list(map(int, instance.get("group_$_ids", {}).keys()))
+            committees = instance.get("committee_ids", [])
+        else:
             user = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, id),
                 ["meeting_ids", "committee_ids"],
             )
-        meetings = user.get("meeting_ids", [])
-        committees = user.get("committee_ids", [])
+            meetings = user.get("meeting_ids", [])
+            committees = user.get("committee_ids", [])
         if len(meetings) == 1 and len(committees) == 0:
             return UserScope.Meeting, meetings[0]
         elif len(committees) == 1:
