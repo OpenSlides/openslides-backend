@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganisationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -59,3 +60,65 @@ class OrganisationUpdateActionTest(BaseActionTestCase):
         model = self.get_model("organisation/3")
         assert model.get("name") == "aBuwxoYU"
         assert model.get("description") == "XrHbAWiF"
+
+    def test_update_group_a_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                },
+                "organisation/3": {"name": "aBuwxoYU", "description": "XrHbAWiF"},
+            }
+        )
+        response = self.request("organisation.update", {"id": 3, "name": "blablabla"})
+        self.assert_status_code(response, 403)
+
+    def test_update_group_a_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+                "organisation/3": {"name": "aBuwxoYU", "description": "XrHbAWiF"},
+            }
+        )
+        response = self.request("organisation.update", {"id": 3, "name": "blablabla"})
+        self.assert_status_code(response, 200)
+
+    def test_update_group_b_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                },
+                "organisation/3": {"name": "aBuwxoYU", "description": "XrHbAWiF"},
+            }
+        )
+        response = self.request(
+            "organisation.update",
+            {
+                "id": 3,
+                "reset_password_verbose_errors": True,
+                "enable_electronic_voting": True,
+            },
+        )
+        self.assert_status_code(response, 403)
+
+    def test_update_group_b_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.SUPERADMIN
+                },
+                "organisation/3": {"name": "aBuwxoYU", "description": "XrHbAWiF"},
+            }
+        )
+        response = self.request(
+            "organisation.update",
+            {
+                "id": 3,
+                "reset_password_verbose_errors": True,
+                "enable_electronic_voting": True,
+            },
+        )
+        self.assert_status_code(response, 200)
