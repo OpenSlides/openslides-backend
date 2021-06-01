@@ -44,15 +44,17 @@ class PollPublishActionTest(BaseActionTestCase):
                 "meeting/1": {},
             }
         )
-        response = self.request("poll.publish", {"id": 1})    
+        response = self.request("poll.publish", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("poll/1",
+        self.assert_model_exists(
+            "poll/1",
             {
                 "votescast": "0.000000",
                 "votesinvalid": "0.000000",
                 "votesvalid": "0.000000",
                 "entitled_users_at_stop": [],
-                })
+            },
+        )
 
     def test_publish_no_permissions(self) -> None:
         self.base_permission_test(self.permission_test_model, "poll.publish", {"id": 1})
