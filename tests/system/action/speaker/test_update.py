@@ -6,6 +6,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
+            "meeting/1": {"list_of_speakers_enable_pro_contra_speech": True},
             "user/7": {"username": "test_username1"},
             "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
             "speaker/890": {"user_id": 7, "list_of_speakers_id": 23, "meeting_id": 1},
@@ -14,7 +15,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"list_of_speakers_enable_pro_contra_speech": True},
                 "user/7": {"username": "test_username1"},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
@@ -28,6 +29,26 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
         assert model.get("speech_state") == "pro"
+
+    def test_update_correct_contribution(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"list_of_speakers_can_set_contribution_self": True},
+                "user/7": {"username": "test_username1"},
+                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "speaker.update", {"id": 890, "speech_state": "contribution"}
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("speaker/890")
+        assert model.get("speech_state") == "contribution"
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
