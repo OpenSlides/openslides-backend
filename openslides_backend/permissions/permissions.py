@@ -64,7 +64,6 @@ class _Tag(Permission, Enum):
 
 
 class _User(Permission, Enum):
-    CAN_CHANGE_OWN_PASSWORD = "user.can_change_own_password"
     CAN_MANAGE = "user.can_manage"
     CAN_SEE = "user.can_see"
     CAN_SEE_EXTRA_DATA = "user.can_see_extra_data"
@@ -131,5 +130,4 @@ permission_parents: Dict[Permission, List[Permission]] = {
     _User.CAN_SEE: [_User.CAN_SEE_EXTRA_DATA],
     _User.CAN_SEE_EXTRA_DATA: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
-    _User.CAN_CHANGE_OWN_PASSWORD: [],
 }
