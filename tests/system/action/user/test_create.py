@@ -293,7 +293,7 @@ class UserCreateActionTest(BaseActionTestCase):
     # TODO: fix when committee permission system is implemented
     @pytest.mark.skip()
     def test_create_permission_committee_manager(self) -> None:
-        """ May create group A and C fields """
+        """May create group A and C fields"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_user_groups(self.user_id, [6])
@@ -324,7 +324,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_committee_manager_no_permission(self) -> None:
-        """ vote_weight_$ is in group B and may only work with meeting-Permission  """
+        """vote_weight_$ is in group B and may only work with meeting-Permission"""
         self.permission_setup()
         self.update_model(
             f"user/{self.user_id}",
@@ -351,7 +351,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_manage_user(self) -> None:
-        """ May create group A fields only """
+        """May create group A fields only"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -401,7 +401,7 @@ class UserCreateActionTest(BaseActionTestCase):
     # TODO: fix when committee permission system is implemented
     @pytest.mark.skip()
     def test_create_permission_user_can_manage(self) -> None:
-        """ May create all group-fields """
+        """May create all group-fields"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -454,7 +454,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_user_can_manage_no_permission(self) -> None:
-        """ May create group A, B and C fields """
+        """May create group A, B and C fields"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -477,7 +477,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_OML_not_high_enough(self) -> None:
-        """ May create group A fields only """
+        """May create group A fields only"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -497,7 +497,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_set_1(self) -> None:
-        """ Rights for all field groups, but missing rights for meeting/4 """
+        """Rights for all field groups, but missing rights for meeting/4"""
         self.create_meeting()
         self.create_meeting(base=4)
         self.user_id = self.create_user(

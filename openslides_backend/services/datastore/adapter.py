@@ -403,7 +403,7 @@ class DatastoreAdapter(DatastoreService):
                 "You can only lock collection fields with a filter"
             )
         new_value: CollectionFieldLock = lock
-        if (old_pos := self.locked_fields.get(str(key))) :
+        if old_pos := self.locked_fields.get(str(key)):
             if isinstance(old_pos, int) and isinstance(lock, int):
                 # keep the smaller position
                 if old_pos <= lock:

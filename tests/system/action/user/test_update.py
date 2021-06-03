@@ -212,7 +212,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     # TODO: fix when permission is correctly implemented
     @pytest.mark.skip()
     def test_update_permission_committee_manager(self) -> None:
-        """ May update group C fields """
+        """May update group C fields"""
         self.permission_setup()
         self.update_model(f"user/{self.user_id}", {"committee_as_manager_ids": [60]})
 
@@ -232,7 +232,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     # TODO: fix when permission is correctly implemented
     @pytest.mark.skip()
     def test_update_permission_committee_manager_no_permission(self) -> None:
-        """ vote_weight_$ is in group B and may only work with meeting-Permission  """
+        """vote_weight_$ is in group B and may only work with meeting-Permission"""
         self.permission_setup()
         self.update_model(
             f"user/{self.user_id}",
@@ -259,7 +259,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_manage_user(self) -> None:
-        """ May update group A fields only """
+        """May update group A fields only"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -308,7 +308,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_user_can_manage(self) -> None:
-        """ May update group B and C fields """
+        """May update group B and C fields"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(None, self.user_id)
@@ -366,7 +366,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_user_can_manage_no_permission(self) -> None:
-        """ May update group B and C fields """
+        """May update group B and C fields"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(None, self.user_id)
@@ -390,7 +390,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_OML_not_high_enough(self) -> None:
-        """ May update group A fields only """
+        """May update group A fields only"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -410,7 +410,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_set_1(self) -> None:
-        """ Rights for all field groups, but missing rights for meeting/4 """
+        """Rights for all field groups, but missing rights for meeting/4"""
         self.create_meeting()
         self.create_meeting(base=4)
         self.user_id = self.create_user(
@@ -456,7 +456,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permission_set_2(self) -> None:
-        """ Rights for all field groups,1 one meeting with admin group, other meeting with single right """
+        """Rights for all field groups,1 one meeting with admin group, other meeting with single right"""
         self.create_meeting()
         self.create_meeting(base=4)
         self.user_id = self.create_user(

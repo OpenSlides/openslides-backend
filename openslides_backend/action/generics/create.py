@@ -49,5 +49,5 @@ class CreateAction(Action):
     def create_action_result_element(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
-        """ Returns the newly created id. """
+        """Returns the newly created id."""
         return {"id": instance["id"]}

@@ -1,10 +1,10 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import requests
 from authlib import COOKIE_NAME, HEADER_NAME
 from werkzeug.test import Client as WerkzeugClient
-from werkzeug.wrappers import BaseResponse, CommonResponseDescriptorsMixin
-from werkzeug.wrappers.json import JSONMixin
+from werkzeug.test import TestResponse
+from werkzeug.wrappers import Response as BaseResponse
 
 from openslides_backend.shared.exceptions import AuthenticationException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
@@ -16,15 +16,30 @@ from openslides_backend.shared.patterns import (
 )
 
 
-class Response(JSONMixin, CommonResponseDescriptorsMixin, BaseResponse):
-    pass
+class ResponseWrapper(BaseResponse):
+    """
+    Customized response wrapper to adjust the typing of the json property.
+    """
+
+    @property
+    def json(self) -> Any:
+        return self.get_json()
+
+
+class Response(ResponseWrapper, TestResponse):
+    """
+    Since the wrapper provided to the client can not inherit from TestResponse,
+    we have to create this dummy class for correct typing of the Response.
+    """
 
 
 class Client(WerkzeugClient):
+    application: WSGIApplication
+
     def __init__(
         self, application: WSGIApplication, username: str = None, password: str = None
     ):
-        super().__init__(application, Response)
+        super().__init__(application, ResponseWrapper)
         self.application = application
         self.headers: Dict[str, str] = {}
         if username and password is not None:
@@ -48,8 +63,17 @@ class Client(WerkzeugClient):
         self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
         self.headers = {HEADER_NAME: response.headers[HEADER_NAME]}
 
+    def get(self, *args: Any, **kwargs: Any) -> Response:
+        """
+        Overwrite the return type since it's actually our Response type.
+        """
+        return cast(Response, super().get(*args, **kwargs))
+
     def post(self, *args: Any, **kwargs: Any) -> Response:
-        return super().post(*args, headers=self.headers, **kwargs)
+        """
+        Overwrite the return type since it's actually our Response type. Also add headers.
+        """
+        return cast(Response, super().post(*args, headers=self.headers, **kwargs))
 
 
 def get_fqid(value: str) -> FullQualifiedId:

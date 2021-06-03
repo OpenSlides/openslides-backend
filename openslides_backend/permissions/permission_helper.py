@@ -88,7 +88,7 @@ def has_organization_management_level(
     user_id: int,
     expected_level: OrganizationManagementLevel,
 ) -> bool:
-    """ Checks wether a user has the minimum necessary OrganizationManagementLevel """
+    """Checks wether a user has the minimum necessary OrganizationManagementLevel"""
     if user_id > 0:
         user = datastore.get(
             FullQualifiedId(Collection("user"), user_id),
@@ -106,7 +106,7 @@ def has_committee_management_level(
     expected_level: CommitteeManagementLevel,
     committee_id: int,
 ) -> bool:
-    """ Checks wether a user has the minimum necessary CommitteeManagementLevel """
+    """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
         cml_field = f"committee_${committee_id}_management_level"
         user = datastore.get(
