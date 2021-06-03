@@ -93,6 +93,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         user = self.get_model("user/223")
+        assert user.get("committee_$1_management_level") is None
         assert (
             CommitteeManagementLevel(user.get("committee_$1_management_level"))
             == CommitteeManagementLevel.NO_RIGHT
@@ -646,6 +647,46 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertIn(
             "You are not allowed to perform action user.update. Missing permission: CommitteeManagementLevel can_manage in committee 63",
             response.json["message"],
+        )
+
+    def test_update_permission_group_D_permission_with_CML_and_untouched_committee(
+        self,
+    ) -> None:
+        """
+        May update Group D committee fields with CML permission for all committees.
+        One committee without permission is untouched in payload and doesn#t matter.
+        """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_models(
+            {
+                f"user/{self.user_id}": {
+                    "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["60"],
+                },
+                "user/111": {
+                    "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["63"],
+                },
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                },
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
+            },
         )
 
     def test_update_permission_group_E_OML_high_enough(self) -> None:

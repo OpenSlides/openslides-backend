@@ -404,11 +404,9 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         if instance_user_id := instance.get("id"):
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), instance_user_id),
-                ["committee_ids", "committee_$_management_level"],
+                ["committee_ids"],
             )
             committees.update(user.get("committee_ids", []))
-            if committee_str := user.get("committee_$_management_level", []):
-                committees.update(map(int, committee_str))
         return committees
 
     def _meetings_from_group_B_fields_from_instance(

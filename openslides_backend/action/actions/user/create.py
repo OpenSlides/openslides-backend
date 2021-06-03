@@ -59,9 +59,7 @@ class UserCreate(
         ):
             raise ActionException("Need username or first_name or last_name")
         if (
-            OrganisationManagementLevel(
-                instance.get("organisation_management_level", "")
-            )
+            OrganisationManagementLevel(instance.get("organisation_management_level"))
             < OrganisationManagementLevel.CAN_MANAGE_USERS
             and len(instance.get("group_$_ids", [])) == 0
             and len(instance.get("committee_ids", [])) == 0

@@ -70,7 +70,7 @@ class UserScopePermissionCheckMixin(Action):
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
 
     def get_user_scope(
-        self, id: int, instance: Optional[Dict[str, Any]] = None
+        self, id: Optional[int] = None, instance: Optional[Dict[str, Any]] = None
     ) -> Tuple[UserScope, int]:
         """
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
@@ -81,7 +81,7 @@ class UserScopePermissionCheckMixin(Action):
         if instance:
             meetings = list(map(int, instance.get("group_$_ids", {}).keys()))
             committees = instance.get("committee_ids", [])
-        else:
+        elif id:
             user = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, id),
                 ["meeting_ids", "committee_ids"],
