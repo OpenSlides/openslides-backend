@@ -1,4 +1,4 @@
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,7 +8,7 @@ class ResourceDeleteActionTest(BaseActionTestCase):
             {
                 "resource/111": {"token": "srtgb123"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -22,7 +22,7 @@ class ResourceDeleteActionTest(BaseActionTestCase):
             {
                 "resource/112": {"token": "srtgb123"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -36,7 +36,7 @@ class ResourceDeleteActionTest(BaseActionTestCase):
             {
                 "resource/111": {"token": "srtgb123"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
                 },
             }
         )

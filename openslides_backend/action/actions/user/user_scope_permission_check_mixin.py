@@ -3,11 +3,11 @@ from typing import Any, Dict, Tuple
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from ....permissions.permission_helper import (
     has_committee_management_level,
-    has_organisation_management_level,
+    has_organization_management_level,
     has_perm,
 )
 from ....permissions.permissions import Permissions
@@ -20,7 +20,7 @@ from ...action import Action
 class UserScope(Enum):
     Meeting = auto()
     Committee = auto()
-    Organisation = auto()
+    Organization = auto()
 
 
 class UserScopePermissionCheckMixin(Action):
@@ -28,8 +28,8 @@ class UserScopePermissionCheckMixin(Action):
         """
         Checks the permissions for user-altering actions depending on the user scope.
         """
-        if has_organisation_management_level(
-            self.datastore, self.user_id, OrganisationManagementLevel.CAN_MANAGE_USERS
+        if has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
 
@@ -43,7 +43,7 @@ class UserScopePermissionCheckMixin(Action):
             ):
                 raise MissingPermission(
                     {
-                        OrganisationManagementLevel.CAN_MANAGE_USERS: 1,
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: scope_id,
                     }
                 )
@@ -61,17 +61,17 @@ class UserScopePermissionCheckMixin(Action):
             ):
                 raise MissingPermission(
                     {
-                        OrganisationManagementLevel.CAN_MANAGE_USERS: 1,
+                        OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: meeting["committee_id"],
                         Permissions.User.CAN_MANAGE: scope_id,
                     }
                 )
         else:
-            raise MissingPermission({OrganisationManagementLevel.CAN_MANAGE_USERS: 1})
+            raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
 
     def get_user_scope(self, id: int) -> Tuple[UserScope, int]:
         """
-        Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organisation).
+        Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
         """
         user = self.datastore.fetch_model(
             FullQualifiedId(self.model.collection, id), ["meeting_ids", "committee_ids"]
@@ -91,4 +91,4 @@ class UserScopePermissionCheckMixin(Action):
                 meeting["committee_id"] == committees[0] for meeting in db_meetings
             ):
                 return UserScope.Committee, committees[0]
-        return UserScope.Organisation, 1
+        return UserScope.Organization, 1

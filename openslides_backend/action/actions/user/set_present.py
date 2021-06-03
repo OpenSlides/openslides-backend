@@ -3,11 +3,11 @@ from typing import Any, Dict
 from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from ....permissions.permission_helper import (
     has_committee_management_level,
-    has_organisation_management_level,
+    has_organization_management_level,
     has_perm,
 )
 from ....permissions.permissions import Permissions
@@ -61,8 +61,8 @@ class UserSetPresentAction(UpdateAction):
                     yield instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if has_organisation_management_level(
-            self.datastore, self.user_id, OrganisationManagementLevel.CAN_MANAGE_USERS
+        if has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
         if has_perm(

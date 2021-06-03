@@ -1,5 +1,5 @@
 from ....models.models import Committee
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -13,7 +13,7 @@ class CommitteeCreate(CreateAction):
 
     model = Committee()
     schema = DefaultSchema(Committee()).get_create_schema(
-        required_properties=["organisation_id", "name"],
-        optional_properties=["description", "user_ids", "organisation_tag_ids"],
+        required_properties=["organization_id", "name"],
+        optional_properties=["description", "user_ids", "organization_tag_ids"],
     )
-    permission = OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANISATION

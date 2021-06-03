@@ -7,9 +7,9 @@ from openslides_backend.shared.patterns import Collection
 MODELS_YML_CHECKSUM = "ee62a89a88ff4a86a30553f6b917ef7d"
 
 
-class Organisation(Model):
-    collection = Collection("organisation")
-    verbose_name = "organisation"
+class Organization(Model):
+    collection = Collection("organization")
+    verbose_name = "organization"
 
     id = fields.IntegerField()
     name = fields.CharField()
@@ -22,13 +22,13 @@ class Organisation(Model):
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     committee_ids = fields.RelationListField(
-        to={Collection("committee"): "organisation_id"}
+        to={Collection("committee"): "organization_id"}
     )
     resource_ids = fields.RelationListField(
-        to={Collection("resource"): "organisation_id"}
+        to={Collection("resource"): "organization_id"}
     )
-    organisation_tag_ids = fields.RelationListField(
-        to={Collection("organisation_tag"): "organisation_id"}
+    organization_tag_ids = fields.RelationListField(
+        to={Collection("organization_tag"): "organization_id"}
     )
 
 
@@ -53,10 +53,10 @@ class User(Model):
     default_vote_weight = fields.DecimalField(default="1.000000")
     last_email_send = fields.TimestampField()
     is_demo_user = fields.BooleanField(read_only=True)
-    organisation_management_level = fields.CharField(
+    organization_management_level = fields.CharField(
         constraints={
-            "description": "Hierarchical permission level for the whole organisation.",
-            "enum": ["superadmin", "can_manage_organisation", "can_manage_users"],
+            "description": "Hierarchical permission level for the whole organization.",
+            "enum": ["superadmin", "can_manage_organization", "can_manage_users"],
         }
     )
     is_present_in_meeting_ids = fields.RelationListField(
@@ -168,26 +168,26 @@ class Resource(Model):
     token = fields.CharField()
     filesize = fields.IntegerField()
     mimetype = fields.CharField()
-    organisation_id = fields.OrganisationField(
-        to={Collection("organisation"): "resource_ids"}
+    organization_id = fields.OrganizationField(
+        to={Collection("organization"): "resource_ids"}
     )
 
 
-class OrganisationTag(Model):
-    collection = Collection("organisation_tag")
-    verbose_name = "organisation tag"
+class OrganizationTag(Model):
+    collection = Collection("organization_tag")
+    verbose_name = "organization tag"
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     color = fields.ColorField(required=True)
     tagged_ids = fields.GenericRelationListField(
         to={
-            Collection("committee"): "organisation_tag_ids",
-            Collection("meeting"): "organisation_tag_ids",
+            Collection("committee"): "organization_tag_ids",
+            Collection("meeting"): "organization_tag_ids",
         }
     )
-    organisation_id = fields.OrganisationField(
-        to={Collection("organisation"): "organisation_tag_ids"}
+    organization_id = fields.OrganizationField(
+        to={Collection("organization"): "organization_tag_ids"}
     )
 
 
@@ -214,11 +214,11 @@ class Committee(Model):
     receive_forwardings_from_committee_ids = fields.RelationListField(
         to={Collection("committee"): "forward_to_committee_ids"}
     )
-    organisation_tag_ids = fields.RelationListField(
-        to={Collection("organisation_tag"): "tagged_ids"}
+    organization_tag_ids = fields.RelationListField(
+        to={Collection("organization_tag"): "tagged_ids"}
     )
-    organisation_id = fields.OrganisationField(
-        to={Collection("organisation"): "committee_ids"}, required=True
+    organization_id = fields.OrganizationField(
+        to={Collection("organization"): "committee_ids"}, required=True
     )
 
 
@@ -542,8 +542,8 @@ class Meeting(Model):
     default_meeting_for_committee_id = fields.RelationField(
         to={Collection("committee"): "default_meeting_id"}
     )
-    organisation_tag_ids = fields.RelationListField(
-        to={Collection("organisation_tag"): "tagged_ids"}
+    organization_tag_ids = fields.RelationListField(
+        to={Collection("organization_tag"): "tagged_ids"}
     )
     present_user_ids = fields.RelationListField(
         to={Collection("user"): "is_present_in_meeting_ids"}

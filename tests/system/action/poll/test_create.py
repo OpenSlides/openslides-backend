@@ -14,7 +14,7 @@ class CreatePoll(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "meeting/1": {},
-                "organisation/1": {"enable_electronic_voting": True},
+                "organization/1": {"enable_electronic_voting": True},
                 "user/3": {"username": "User3"},
             },
         )
@@ -255,7 +255,7 @@ class CreatePoll(BaseActionTestCase):
         self.assert_model_not_exists("poll/1")
 
     def test_not_allowed_type(self) -> None:
-        self.update_model("organisation/1", {"enable_electronic_voting": False})
+        self.update_model("organization/1", {"enable_electronic_voting": False})
         response = self.request(
             "poll.create",
             {

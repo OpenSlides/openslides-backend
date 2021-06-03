@@ -1,6 +1,6 @@
 import base64
 
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,9 +8,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_upload_and_create(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -22,7 +22,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         response = self.request(
             "resource.upload",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "token": token,
                 "filename": filename,
                 "file": file_content,
@@ -31,7 +31,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "organisation/1",
+            "organization/1",
             {
                 "resource_ids": [
                     1,
@@ -41,7 +41,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "resource/1",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "mimetype": used_mimetype,
                 "filesize": len(raw_content),
                 "token": token,
@@ -53,20 +53,20 @@ class ResourceUploadActionTest(BaseActionTestCase):
         token = "mytoken"
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "resource_ids": [
                         1,
                     ],
                 },
                 "resource/1": {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token,
                     "filesize": 2345,
                     "mimetype": "image/png",
                 },
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -78,7 +78,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         response = self.request(
             "resource.upload",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "token": token,
                 "filename": filename,
                 "file": file_content,
@@ -90,14 +90,14 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "resource/2",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "mimetype": used_mimetype,
                 "filesize": len(raw_content),
                 "token": token,
             },
         )
         self.assert_model_exists(
-            "organisation/1",
+            "organization/1",
             {
                 "resource_ids": [
                     2,
@@ -116,20 +116,20 @@ class ResourceUploadActionTest(BaseActionTestCase):
         token2 = "t2"
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "resource_ids": [
                         1,
                     ],
                 },
                 "resource/1": {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token1,
                     "filesize": 2345,
                     "mimetype": "image/png",
                 },
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -148,7 +148,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "action": "resource.upload",
                     "data": [
                         {
-                            "organisation_id": 1,
+                            "organization_id": 1,
                             "token": token1,
                             "filename": filename1,
                             "file": file_content1,
@@ -159,7 +159,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "action": "resource.upload",
                     "data": [
                         {
-                            "organisation_id": 1,
+                            "organization_id": 1,
                             "token": token2,
                             "filename": filename2,
                             "file": file_content2,
@@ -174,7 +174,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
             "Datastore service sends HTTP 400. Model 'resource/1' raises MODEL_LOCKED error.",
             response.json["message"],
         )
-        self.assert_model_exists("organisation/1", {"resource_ids": [1]})
+        self.assert_model_exists("organization/1", {"resource_ids": [1]})
         self.assert_model_exists("resource/1", {"meta_deleted": False, "token": token1})
         self.assert_model_not_exists("resource/2")
         self.assert_model_not_exists("resource/3")
@@ -191,20 +191,20 @@ class ResourceUploadActionTest(BaseActionTestCase):
         token2 = "t2"
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "resource_ids": [
                         1,
                     ],
                 },
                 "resource/1": {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token1,
                     "filesize": 2345,
                     "mimetype": "image/png",
                 },
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -221,13 +221,13 @@ class ResourceUploadActionTest(BaseActionTestCase):
             "resource.upload",
             [
                 {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token1,
                     "filename": filename1,
                     "file": file_content1,
                 },
                 {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token2,
                     "filename": filename2,
                     "file": file_content2,
@@ -236,13 +236,13 @@ class ResourceUploadActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 200)
-        organisation = self.get_model("organisation/1")
-        self.assertCountEqual(organisation["resource_ids"], [2, 3])
+        organization = self.get_model("organization/1")
+        self.assertCountEqual(organization["resource_ids"], [2, 3])
         self.assert_model_deleted("resource/1")
         self.assert_model_exists(
             "resource/2",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "mimetype": used_mimetype,
                 "filesize": len(raw_content1),
                 "token": token1,
@@ -251,7 +251,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "resource/3",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "mimetype": used_mimetype,
                 "filesize": len(raw_content2),
                 "token": token2,
@@ -263,9 +263,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_error_in_resource_upload(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -277,7 +277,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         response = self.request(
             "resource.upload",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "token": token,
                 "filename": filename,
                 "file": file_content,
@@ -292,9 +292,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_create_cannot_guess_mimetype(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -303,7 +303,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         response = self.request(
             "resource.upload",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "token": token,
                 "filename": "test.no_guilty_mimetype",
                 "file": file_content,
@@ -320,9 +320,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_error_token_used_twice_in_a_request(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -332,13 +332,13 @@ class ResourceUploadActionTest(BaseActionTestCase):
             "resource.upload",
             [
                 {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token,
                     "filename": "test1.jpg",
                     "file": file_content,
                 },
                 {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token,
                     "filename": "test2.jpg",
                     "file": file_content,
@@ -357,9 +357,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_error_token_used_in_a_request(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
                 },
             }
         )
@@ -367,13 +367,13 @@ class ResourceUploadActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "resource/1": {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token,
                     "filesize": 11,
                     "mimetype": "image/png",
                 },
                 "resource/2": {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "token": token,
                     "filesize": 22,
                     "mimetype": "image/png",
@@ -384,7 +384,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         response = self.request(
             "resource.upload",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "token": token,
                 "filename": "test1.jpg",
                 "file": file_content,
@@ -402,9 +402,9 @@ class ResourceUploadActionTest(BaseActionTestCase):
     def test_upload_no_permissions(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
                 },
             }
         )
@@ -415,7 +415,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
         response = self.request(
             "resource.upload",
             {
-                "organisation_id": 1,
+                "organization_id": 1,
                 "token": token,
                 "filename": filename,
                 "file": file_content,

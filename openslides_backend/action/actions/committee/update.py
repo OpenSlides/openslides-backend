@@ -3,11 +3,11 @@ from typing import Any, Dict
 from ....models.models import Committee
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from ....permissions.permission_helper import (
     has_committee_management_level,
-    has_organisation_management_level,
+    has_organization_management_level,
 )
 from ....shared.exceptions import MissingPermission, PermissionDenied
 from ...generics.update import UpdateAction
@@ -31,7 +31,7 @@ class CommitteeUpdateAction(UpdateAction):
             "user_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
-            "organisation_tag_ids",
+            "organization_tag_ids",
         ]
     )
 
@@ -42,10 +42,10 @@ class CommitteeUpdateAction(UpdateAction):
             CommitteeManagementLevel.CAN_MANAGE,
             instance["id"],
         )
-        can_manage_organisation = has_organisation_management_level(
+        can_manage_organization = has_organization_management_level(
             self.datastore,
             self.user_id,
-            OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
         )
         if (
             any(
@@ -73,12 +73,12 @@ class CommitteeUpdateAction(UpdateAction):
                     ]
                 ]
             )
-            and not can_manage_organisation
+            and not can_manage_organization
         ):
-            raise MissingPermission(OrganisationManagementLevel.CAN_MANAGE_ORGANISATION)
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANISATION)
         if (
-            "organisation_tag_ids" in instance
+            "organization_tag_ids" in instance
             and not is_manager
-            and not can_manage_organisation
+            and not can_manage_organization
         ):
-            raise PermissionDenied("Missing can_manage_organisation and not manager.")
+            raise PermissionDenied("Missing can_manage_organization and not manager.")

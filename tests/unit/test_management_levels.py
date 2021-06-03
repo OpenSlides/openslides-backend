@@ -2,34 +2,34 @@ import pytest
 
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 
 
 def test_orgamanagement_level_lt() -> None:
     assert (
-        OrganisationManagementLevel.CAN_MANAGE_USERS
-        < OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+        OrganizationManagementLevel.CAN_MANAGE_USERS
+        < OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
     )
 
 
 def test_orgamanagement_level_le() -> None:
     assert (
-        OrganisationManagementLevel.CAN_MANAGE_USERS
-        <= OrganisationManagementLevel.CAN_MANAGE_USERS
+        OrganizationManagementLevel.CAN_MANAGE_USERS
+        <= OrganizationManagementLevel.CAN_MANAGE_USERS
     )
 
 
 def test_orgamanagement_level_gt() -> None:
     assert (
-        OrganisationManagementLevel.SUPERADMIN
-        > OrganisationManagementLevel.CAN_MANAGE_ORGANISATION
+        OrganizationManagementLevel.SUPERADMIN
+        > OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
     )
 
 
 def test_orgamanagement_level_ge() -> None:
     assert (
-        OrganisationManagementLevel.SUPERADMIN >= OrganisationManagementLevel.SUPERADMIN
+        OrganizationManagementLevel.SUPERADMIN >= OrganizationManagementLevel.SUPERADMIN
     )
 
 
@@ -64,8 +64,8 @@ def test_committee_level_CML_string() -> None:
 
 
 def test_implicit_no_right_1() -> None:
-    assert OrganisationManagementLevel(None) == OrganisationManagementLevel.NO_RIGHT
+    assert OrganizationManagementLevel(None) == OrganizationManagementLevel.NO_RIGHT
 
 
 def test_implicit_no_right_2() -> None:
-    assert OrganisationManagementLevel("") == OrganisationManagementLevel.NO_RIGHT
+    assert OrganizationManagementLevel("") == OrganizationManagementLevel.NO_RIGHT

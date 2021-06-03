@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -36,7 +36,7 @@ class UserResetPasswordToDefaultAction(
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
-    permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance)

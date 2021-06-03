@@ -2,7 +2,7 @@ from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import Collection
 
@@ -68,8 +68,8 @@ class TestPermissions(BaseActionTestCase):
         )
 
     def test_superadmin(self) -> None:
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.SUPERADMIN, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
         response = self.request("fake_model_p.create", {"meeting_id": 1})
         self.assert_status_code(response, 200)

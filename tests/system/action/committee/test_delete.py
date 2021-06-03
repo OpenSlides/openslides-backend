@@ -8,11 +8,11 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"committee_ids": [self.COMMITTEE_ID]},
+                "organization/1": {"committee_ids": [self.COMMITTEE_ID]},
                 "user/20": {"committee_ids": [self.COMMITTEE_ID]},
                 "user/21": {"committee_ids": [self.COMMITTEE_ID]},
                 self.COMMITTEE_FQID: {
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "user_ids": [20, 21],
                 },
             }
@@ -26,7 +26,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted(self.COMMITTEE_FQID)
         self.assert_model_exists("user/20", {"committee_ids": []})
         self.assert_model_exists("user/21", {"committee_ids": []})
-        self.assert_model_exists("organisation/1", {"committee_ids": []})
+        self.assert_model_exists("organization/1", {"committee_ids": []})
 
     def test_delete_wrong_id(self) -> None:
         self.create_data()
@@ -54,20 +54,20 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
     def test_delete_no_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organisation_management_level": "can_manage_users"}}
+            {"user/1": {"organization_management_level": "can_manage_users"}}
         )
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
         self.assert_status_code(response, 403)
         assert (
-            "Missing OrganisationManagementLevel: can_manage_organisation"
+            "Missing OrganizationManagementLevel: can_manage_organization"
             in response.json["message"]
         )
 
     def test_delete_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organisation_management_level": "can_manage_organisation"}}
+            {"user/1": {"organization_management_level": "can_manage_organization"}}
         )
 
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})

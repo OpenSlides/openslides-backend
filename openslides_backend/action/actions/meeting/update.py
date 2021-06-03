@@ -3,11 +3,11 @@ from typing import Any, Dict
 from ....models.models import Meeting
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from ....permissions.permission_helper import (
     has_committee_management_level,
-    has_organisation_management_level,
+    has_organization_management_level,
     has_perm,
 )
 from ....permissions.permissions import Permissions
@@ -130,7 +130,7 @@ class MeetingUpdate(UpdateAction):
             *meeting_settings_keys,
             "template_for_committee_id",
             "reference_projector_id",
-            "organisation_tag_ids",
+            "organization_tag_ids",
             "url_name",
             "jitsi_domain",
             "jitsi_room_name",
@@ -216,7 +216,7 @@ class MeetingUpdate(UpdateAction):
                 raise PermissionDenied("Missing permission: Not admin of this meeting")
 
         # group E check
-        if "organisation_tag_ids" in instance:
+        if "organization_tag_ids" in instance:
             meeting = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
             )
@@ -226,14 +226,14 @@ class MeetingUpdate(UpdateAction):
                 CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             )
-            can_manage_organisation = has_organisation_management_level(
+            can_manage_organization = has_organization_management_level(
                 self.datastore,
                 self.user_id,
-                OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
             )
-            if not is_manager and not can_manage_organisation:
+            if not is_manager and not can_manage_organization:
                 raise PermissionDenied(
-                    "Missing permission: Not manager and not can_manage_organisation"
+                    "Missing permission: Not manager and not can_manage_organization"
                 )
 
         # group F check
@@ -248,8 +248,8 @@ class MeetingUpdate(UpdateAction):
             ]
         ):
 
-            is_superadmin = has_organisation_management_level(
-                self.datastore, self.user_id, OrganisationManagementLevel.SUPERADMIN
+            is_superadmin = has_organization_management_level(
+                self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
             )
             if not is_superadmin:
-                raise MissingPermission(OrganisationManagementLevel.SUPERADMIN)
+                raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)

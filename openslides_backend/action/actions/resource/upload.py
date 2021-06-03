@@ -23,7 +23,7 @@ class MediafileUploadAction(PermissionMixin, CreateAction):
 
     model = Resource()
     schema = DefaultSchema(model).get_create_schema(
-        required_properties=["token", "organisation_id"],
+        required_properties=["token", "organization_id"],
         additional_required_fields={
             "file": {"type": "string"},
             "filename": {"type": "string"},
@@ -56,7 +56,7 @@ class MediafileUploadAction(PermissionMixin, CreateAction):
                 self.model.collection,
                 And(
                     FilterOperator("token", "=", instance["token"]),
-                    FilterOperator("organisation_id", "=", instance["organisation_id"]),
+                    FilterOperator("organization_id", "=", instance["organization_id"]),
                 ),
             )
             if len(results) == 0:

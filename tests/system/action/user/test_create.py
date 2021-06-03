@@ -1,6 +1,6 @@
 import pytest
 
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -56,7 +56,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "default_vote_weight": "1.500000",
-                "organisation_management_level": "can_manage_users",
+                "organization_management_level": "can_manage_users",
                 "committee_ids": [78, 79],
                 "default_password": "password",
             },
@@ -66,7 +66,7 @@ class UserCreateActionTest(BaseActionTestCase):
         assert model.get("username") == "test_Xcdfgee"
         assert model.get("default_vote_weight") == "1.500000"
         assert model.get("committee_ids") == [78, 79]
-        assert model.get("organisation_management_level") == "can_manage_users"
+        assert model.get("organization_management_level") == "can_manage_users"
         assert model.get("default_password") == "password"
         assert self.auth.is_equals(
             model.get("default_password", ""), model.get("password", "")
@@ -263,15 +263,15 @@ class UserCreateActionTest(BaseActionTestCase):
         The SUPERADMIN don't need to belong to a meeting in any way to change data!
         """
         self.permission_setup()
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.SUPERADMIN, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
         )
 
         response = self.request(
             "user.create",
             {
                 "username": "username_new",
-                "organisation_management_level": OrganisationManagementLevel.SUPERADMIN,
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 "vote_weight_$": {1: "1.000000"},
                 "group_$_ids": {1: [1]},
             },
@@ -281,7 +281,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/3",
             {
                 "username": "username_new",
-                "organisation_management_level": OrganisationManagementLevel.SUPERADMIN,
+                "organization_management_level": OrganizationManagementLevel.SUPERADMIN,
                 "vote_weight_$": ["1"],
                 "vote_weight_$1": "1.000000",
                 "group_$_ids": ["1"],
@@ -301,7 +301,7 @@ class UserCreateActionTest(BaseActionTestCase):
             f"user/{self.user_id}",
             {
                 "committee_ids": [60, 63],
-                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
 
@@ -330,7 +330,7 @@ class UserCreateActionTest(BaseActionTestCase):
             f"user/{self.user_id}",
             {
                 "committee_ids": [60],
-                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "group_$_ids": ["1", "4"],
                 "group_$1_ids": [2],  # admin group of meeting/1
                 "group_$4_ids": [4],  # default group of meeting/4
@@ -354,8 +354,8 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May create group A fields only """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
         response = self.request(
@@ -373,7 +373,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_number": "new default_number",
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
-                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_ids": [60, 63],
             },
         )
@@ -393,7 +393,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_number": "new default_number",
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
-                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "committee_ids": [60, 63],
             },
         )
@@ -404,8 +404,8 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May create all group-fields """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(
             self.user_id, [2, 6]
@@ -457,8 +457,8 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May create group A, B and C fields """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         self.set_user_groups(self.user_id, [3, 6])
         self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
@@ -479,20 +479,20 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_OML_not_high_enough(self) -> None:
         """ May create group A fields only """
         self.permission_setup()
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
         response = self.request(
             "user.create",
             {
                 "username": "username",
-                "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "Your organisation management level is not high enough to set a Level of can_manage_organisation!",
+            "Your organization management level is not high enough to set a Level of can_manage_organization!",
             response.json["message"],
         )
 
@@ -504,8 +504,8 @@ class UserCreateActionTest(BaseActionTestCase):
             "test", group_ids=[2]
         )  # admin-group of meeting/1
         self.login(self.user_id)
-        self.set_organisation_management_level(
-            OrganisationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
         response = self.request(
             "user.create",
@@ -513,7 +513,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 # Group A
                 "username": "username",
                 "default_vote_weight": "1.700000",
-                "organisation_management_level": "can_manage_users",
+                "organization_management_level": "can_manage_users",
                 "committee_ids": [78],
                 # Group B
                 "vote_delegations_$_from_ids": {1: [222]},

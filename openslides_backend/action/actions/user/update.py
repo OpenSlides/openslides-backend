@@ -33,7 +33,7 @@ class UserUpdate(
             "default_number",
             "default_structure_level",
             "default_vote_weight",
-            "organisation_management_level",
+            "organization_management_level",
             "committee_ids",
             "number_$",
             "structure_level_$",

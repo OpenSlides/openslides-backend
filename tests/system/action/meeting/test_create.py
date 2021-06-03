@@ -11,7 +11,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.create_model("committee/1", {"name": "test_committee", "user_ids": [2]})
         self.create_model("group/1")
         self.create_model("user/2")
-        self.create_model("organisation_tag/3")
+        self.create_model("organization_tag/3")
 
         response = self.request(
             "meeting.create",
@@ -19,7 +19,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "test_name",
                 "committee_id": 1,
                 "welcome_title": "test_wel_title",
-                "organisation_tag_ids": [3],
+                "organization_tag_ids": [3],
                 **datapart,
             },
         )
@@ -48,7 +48,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "list_of_speakers_countdown_id": 1,
                 "poll_countdown_id": 2,
                 "projector_countdown_warning_time": 0,
-                "organisation_tag_ids": [3],
+                "organization_tag_ids": [3],
                 **{
                     f"default_projector_${name}_id": 1
                     for name in meeting_projector_default_replacements
@@ -159,7 +159,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_no_permissions(self) -> None:
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_users"},
+                "user/1": {"organization_management_level": "can_manage_users"},
                 "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
                 "group/1": {},
                 "user/2": {},
@@ -183,7 +183,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": "can_manage_users",
+                    "organization_management_level": "can_manage_users",
                     "committee_$1_management_level": "can_manage",
                 }
             }

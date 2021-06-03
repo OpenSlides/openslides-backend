@@ -303,10 +303,10 @@ class GenericRelationListField(BaseGenericRelationField):
         return [string_to_fqid(fqid) for fqid in value]
 
 
-class OrganisationField(RelationField):
+class OrganizationField(RelationField):
     """
-    Special field for foreign key to organisation model. We support only one
-    organisation (with id 1) at the moment.
+    Special field for foreign key to organization model. We support only one
+    organization (with id 1) at the moment.
     """
 
     def get_schema(self) -> Schema:

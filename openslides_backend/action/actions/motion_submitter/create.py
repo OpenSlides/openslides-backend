@@ -1,8 +1,8 @@
 from typing import Any, Dict
 
 from ....models.models import MotionSubmitter
-from ....permissions.management_levels import OrganisationManagementLevel
-from ....permissions.permission_helper import has_organisation_management_level
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -36,8 +36,8 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
         """
         instance = self.update_instance_with_meeting_id(instance)
         meeting_id = instance["meeting_id"]  # meeting_id is set from motion
-        if not has_organisation_management_level(
-            self.datastore, instance["user_id"], OrganisationManagementLevel.SUPERADMIN
+        if not has_organization_management_level(
+            self.datastore, instance["user_id"], OrganizationManagementLevel.SUPERADMIN
         ):
             assert_belongs_to_meeting(
                 self.datastore,

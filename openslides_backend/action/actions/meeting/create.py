@@ -28,7 +28,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             "end_time",
             "url_name",
             "enable_anonymous",
-            "organisation_tag_ids",
+            "organization_tag_ids",
         ],
     )
     dependencies = [

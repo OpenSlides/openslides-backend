@@ -55,7 +55,7 @@ class BaseSystemTestCase(TestCase):
                 "username": ADMIN_USERNAME,
                 "password": self.auth.hash(ADMIN_PASSWORD),
                 "is_active": True,
-                "organisation_management_level": "superadmin",
+                "organization_management_level": "superadmin",
             },
         )
         self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)

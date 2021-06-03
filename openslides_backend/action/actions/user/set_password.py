@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -40,7 +40,7 @@ class UserSetPasswordAction(
         required_properties=["password"],
         additional_optional_fields={"set_as_default": {"type": "boolean"}},
     )
-    permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance)

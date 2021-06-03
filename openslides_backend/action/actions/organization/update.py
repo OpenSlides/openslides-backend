@@ -1,22 +1,22 @@
 from typing import Any, Dict
 
-from ....models.models import Organisation
-from ....permissions.management_levels import OrganisationManagementLevel
-from ....permissions.permission_helper import has_organisation_management_level
+from ....models.models import Organization
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import MissingPermission
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("organisation.update")
-class OrganisationUpdate(UpdateAction):
+@register_action("organization.update")
+class OrganizationUpdate(UpdateAction):
     """
-    Action to update a organisation.
+    Action to update a organization.
     """
 
-    model = Organisation()
-    schema = DefaultSchema(Organisation()).get_update_schema(
+    model = Organization()
+    schema = DefaultSchema(Organization()).get_update_schema(
         optional_properties=[
             "name",
             "description",
@@ -45,12 +45,12 @@ class OrganisationUpdate(UpdateAction):
                     "custom_translations",
                 ]
             ]
-        ) and not has_organisation_management_level(
+        ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
-            OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
         ):
-            raise MissingPermission(OrganisationManagementLevel.CAN_MANAGE_ORGANISATION)
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANISATION)
 
         # check group B fields
         if any(
@@ -61,9 +61,9 @@ class OrganisationUpdate(UpdateAction):
                     "reset_password_verbose_errors",
                 ]
             ]
-        ) and not has_organisation_management_level(
+        ) and not has_organization_management_level(
             self.datastore,
             self.user_id,
-            OrganisationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.SUPERADMIN,
         ):
-            raise MissingPermission(OrganisationManagementLevel.SUPERADMIN)
+            raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)

@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Set, Tuple, cast
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
@@ -16,22 +16,22 @@ from ...action import Action
 class CreateUpdatePermissionsMixin(Action):
     field_rights: Dict[str, list] = {
         # Group A
-        "username": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "title": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "first_name": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "last_name": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "is_active": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "is_physical_person": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "default_password": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "gender": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "email": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "default_number": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "default_structure_level": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "default_vote_weight": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "organisation_management_level": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "committee_as_member_ids": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "committee_as_manager_ids": [OrganisationManagementLevel.CAN_MANAGE_USERS],
-        "guest_meeting_ids": [OrganisationManagementLevel.CAN_MANAGE_USERS],
+        "username": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "title": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "first_name": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "last_name": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "is_active": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "is_physical_person": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "default_password": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "gender": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "email": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "default_number": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "default_structure_level": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "default_vote_weight": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "organization_management_level": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "committee_as_member_ids": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "committee_as_manager_ids": [OrganizationManagementLevel.CAN_MANAGE_USERS],
+        "guest_meeting_ids": [OrganizationManagementLevel.CAN_MANAGE_USERS],
         # Group B
         "number_$": [Permissions.User.CAN_MANAGE],
         "structure_level_$": [Permissions.User.CAN_MANAGE],
@@ -57,21 +57,21 @@ class CreateUpdatePermissionsMixin(Action):
 
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id),
-            ["organisation_management_level", "committee_as_manager_ids"],
+            ["organization_management_level", "committee_as_manager_ids"],
         )
-        user_oml = OrganisationManagementLevel(
-            user.get("organisation_management_level")
+        user_oml = OrganizationManagementLevel(
+            user.get("organization_management_level")
         )
-        if user_oml == OrganisationManagementLevel.SUPERADMIN:
+        if user_oml == OrganizationManagementLevel.SUPERADMIN:
             return
 
-        if "organisation_management_level" in instance:
+        if "organization_management_level" in instance:
             if (
-                OrganisationManagementLevel(instance["organisation_management_level"])
+                OrganizationManagementLevel(instance["organization_management_level"])
                 > user_oml
             ):
                 raise PermissionDenied(
-                    f"Your organisation management level is not high enough to set a Level of {instance['organisation_management_level']}!"
+                    f"Your organization management level is not high enough to set a Level of {instance['organization_management_level']}!"
                 )
 
         user_meetings = self._get_user_meetings_set(
@@ -88,7 +88,7 @@ class CreateUpdatePermissionsMixin(Action):
             temp_right = False
             temp_missing_rights: Set[str] = set()
             for right in self.field_rights.get(fieldname, []):
-                if type(right) == OrganisationManagementLevel:
+                if type(right) == OrganizationManagementLevel:
                     if right <= user_oml:
                         temp_right = True
                         break

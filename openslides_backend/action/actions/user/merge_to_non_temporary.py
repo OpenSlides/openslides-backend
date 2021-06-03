@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...generics.create import CreateAction
@@ -46,7 +46,7 @@ class UserMergeToNonTemporaray(CreateAction):
             }
         },
     )
-    permission = permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+    permission = permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         raise ActionException(

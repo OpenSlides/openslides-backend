@@ -43,14 +43,14 @@ class CompareRightLevel(str, VerbosePermission, Enum):
         return self.weight >= other.weight  # type: ignore
 
 
-class OrganisationManagementLevel(CompareRightLevel):
+class OrganizationManagementLevel(CompareRightLevel):
     NO_RIGHT = ("no_right", 0)
     CAN_MANAGE_USERS = ("can_manage_users", 1)
-    CAN_MANAGE_ORGANISATION = ("can_manage_organisation", 2)
+    CAN_MANAGE_ORGANISATION = ("can_manage_organization", 2)
     SUPERADMIN = ("superadmin", 3)
 
     def get_base_model(self) -> str:
-        return "organisation"
+        return "organization"
 
 
 class CommitteeManagementLevel(CompareRightLevel):

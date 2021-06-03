@@ -35,7 +35,7 @@ class UserCreate(
             "default_number",
             "default_structure_level",
             "default_vote_weight",
-            "organisation_management_level",
+            "organization_management_level",
             "is_present_in_meeting_ids",
             "committee_ids",
             "group_$_ids",
