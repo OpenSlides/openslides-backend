@@ -25,7 +25,6 @@ from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
-from ..services.permission.interface import PermissionService
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -67,7 +66,6 @@ class BaseAction:  # pragma: no cover
     """
 
     services: Services
-    permission_service: PermissionService
     datastore: DatastoreService
     auth: AuthenticationService
     media: MediaService
@@ -102,7 +100,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         logging: LoggingModule,
     ) -> None:
         self.services = services
-        self.permission_service = services.permission()
         self.auth = services.authentication()
         self.media = services.media()
         self.datastore = datastore
@@ -123,7 +120,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         for instance in action_data:
             self.validate_instance(instance)
             # perform permission check not for internal actions
-            if not internal:
+            if not internal and not self.internal:
                 try:
                     self.check_permissions(instance)
                 except MissingPermission as e:
@@ -194,9 +191,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 ):
                     return
                 raise MissingPermission(self.permission)
-        else:
-            if self.permission_service.is_allowed(self.name, self.user_id, [instance]):
-                return
 
         msg = f"You are not allowed to perform action {self.name}."
         raise PermissionDenied(msg)

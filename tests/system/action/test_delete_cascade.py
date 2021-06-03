@@ -71,19 +71,19 @@ class FakeModelCDC(Model):
     )
 
 
-@register_action("fake_model_cd_a.delete")
+@register_action("fake_model_cd_a.delete", internal=True)
 class FakeModelCDADeleteAction(DeleteAction):
     model = FakeModelCDA()
     schema = {}  # type: ignore
 
 
-@register_action("fake_model_cd_b.delete")
+@register_action("fake_model_cd_b.delete", internal=True)
 class FakeModelCDBDeleteAction(DeleteAction):
     model = FakeModelCDB()
     schema = {}  # type: ignore
 
 
-@register_action("fake_model_cd_c.delete")
+@register_action("fake_model_cd_c.delete", internal=True)
 class FakeModelCDCDeleteAction(DeleteAction):
     model = FakeModelCDC()
     schema = {}  # type: ignore

@@ -67,13 +67,13 @@ class FakeModelEFC(Model):
     )
 
 
-@register_action("fake_model_ef_b.create")
+@register_action("fake_model_ef_b.create", internal=True)
 class FakeModelEFBCreateAction(CreateAction):
     model = FakeModelEFB()
     schema = {}  # type: ignore
 
 
-@register_action("fake_model_ef_b.update")
+@register_action("fake_model_ef_b.update", internal=True)
 class FakeModelEFBUpdateAction(UpdateAction):
     model = FakeModelEFB()
     schema = {}  # type: ignore

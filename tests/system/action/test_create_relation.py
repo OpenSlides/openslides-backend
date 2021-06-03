@@ -60,19 +60,19 @@ class FakeModelCRD(Model):
     )
 
 
-@register_action("fake_model_cr_a.create")
+@register_action("fake_model_cr_a.create", internal=True)
 class FakeModelCRACreateAction(CreateAction):
     model = FakeModelCRA()
     schema = {}  # type: ignore
 
 
-@register_action("fake_model_cr_c.create")
+@register_action("fake_model_cr_c.create", internal=True)
 class FakeModelCRCCreateAction(CreateAction):
     model = FakeModelCRC()
     schema = {}  # type: ignore
 
 
-@register_action("fake_model_cr_b.create")
+@register_action("fake_model_cr_b.create", internal=True)
 class FakeModelCRBCreateAction(CreateActionWithDependencies):
     model = FakeModelCRB()
     schema = {}  # type: ignore
@@ -90,7 +90,7 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
         ]
 
 
-@register_action("fake_model_cr_d.create")
+@register_action("fake_model_cr_d.create", internal=True)
 class FakeModelCRDCreateAction(CreateAction):
     model = FakeModelCRD()
     schema = {}  # type: ignore

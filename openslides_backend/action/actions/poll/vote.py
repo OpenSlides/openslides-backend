@@ -299,3 +299,6 @@ class PollVote(UpdateAction):
             <= self.poll.get("max_votes_amount", 1)
         ):
             raise ActionException("Total amount of votes is not in min-max-interval.")
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        return

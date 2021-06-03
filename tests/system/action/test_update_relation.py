@@ -33,7 +33,7 @@ class FakeModelURB(Model):
     )
 
 
-@register_action("fake_model_ur_a.update")
+@register_action("fake_model_ur_a.update", internal=True)
 class FakeModelURAUpdateAction(UpdateAction):
     model = FakeModelURA()
     schema = {}  # type: ignore

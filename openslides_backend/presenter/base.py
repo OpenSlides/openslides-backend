@@ -3,7 +3,6 @@ from typing import Any, Callable, Optional
 from fastjsonschema import JsonSchemaException
 
 from ..services.datastore.interface import DatastoreService
-from ..services.permission.interface import PermissionService
 from ..shared.exceptions import PresenterException
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -15,7 +14,6 @@ class BasePresenter:
     """
 
     data: Any
-    permission: PermissionService
     datastore: DatastoreService
     logging: LoggingModule
     schema: Optional[Callable[[Any], None]] = None
@@ -30,7 +28,6 @@ class BasePresenter:
     ):
         self.data = data
         self.services = services
-        self.permission = self.services.permission()
         self.datastore = datastore
         self.logging = logging
         self.logger = logging.getLogger(__name__)
