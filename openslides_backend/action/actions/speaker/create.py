@@ -6,8 +6,6 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, FullQualifiedId
-from ...generics.delete import DeleteAction
-from ...generics.update import UpdateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -191,84 +189,3 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         if has_perm(self.datastore, self.user_id, permission, meeting_id):
             return
         raise MissingPermission(permission)
-
-
-@register_action("speaker.update")
-class SpeakerUpdate(UpdateAction):
-    model = Speaker()
-    schema = DefaultSchema(Speaker()).get_update_schema(["speech_state"])
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        speaker = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
-            ["speech_state", "meeting_id"],
-        )
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), speaker["meeting_id"]),
-            [
-                "list_of_speakers_can_set_contribution_self",
-                "list_of_speakers_enable_pro_contra_speech",
-            ],
-        )
-        has_can_manage = has_perm(
-            self.datastore,
-            self.user_id,
-            Permissions.ListOfSpeakers.CAN_MANAGE,
-            speaker["meeting_id"],
-        )
-        allowed_self_contribution = has_can_manage or meeting.get(
-            "list_of_speakers_can_set_contribution_self"
-        )
-        allowed_pro_contra = meeting.get("list_of_speakers_enable_pro_contra_speech")
-        msg = "Not allowed to set speech_state"
-        if speaker.get("speech_state") == instance.get("speech_state"):
-            pass
-        elif instance.get("speech_state") == "contribution":
-            if not allowed_self_contribution:
-                raise ActionException(msg)
-        elif instance.get("speech_state") in ["pro", "contra"]:
-            if not allowed_pro_contra:
-                raise ActionException(msg)
-        elif (
-            speaker.get("speech_state") == "contribution"
-            and instance.get("speech_state") is None
-        ):
-            if not allowed_self_contribution:
-                raise ActionException(msg)
-        elif (
-            speaker.get("speech_state") in ["pro", "contra"]
-            and instance.get("speech_state") is None
-        ):
-            if not allowed_pro_contra:
-                raise ActionException(msg)
-        return instance
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        speaker = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
-            ["user_id", "meeting_id"],
-        )
-        if speaker.get("user_id") == self.user_id and has_perm(
-            self.datastore,
-            self.user_id,
-            Permissions.ListOfSpeakers.CAN_SEE,
-            speaker["meeting_id"],
-        ):
-            return
-        super().check_permissions(instance)
-
-
-@register_action("speaker.delete")
-class SpeakerDeleteAction(DeleteAction):
-    model = Speaker()
-    schema = DefaultSchema(Speaker()).get_delete_schema()
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        speaker = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["user_id"]
-        )
-        if speaker.get("user_id") == self.user_id:
-            return
-        super().check_permissions(instance)
