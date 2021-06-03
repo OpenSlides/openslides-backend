@@ -14,7 +14,7 @@ from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
 
 
-@register_action("poll.vote")
+@register_action("poll.vote", internal=True)
 class PollVote(UpdateAction):
     """
     Action to vote for a poll.
