@@ -1,10 +1,19 @@
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
+from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
 class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_add_correct(self) -> None:
         self.set_models(
-            {"meeting/1": {}, "user/111": {"username": "username_srtgb123"}}
+            {
+                "meeting/1": {"committee_id": 1},
+                "user/111": {"username": "username_srtgb123"},
+                "committee/1": {},
+            }
         )
         response = self.request(
             "user.set_present", {"id": 111, "meeting_id": 1, "present": True}
@@ -18,11 +27,12 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_del_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"present_user_ids": [111]},
+                "meeting/1": {"present_user_ids": [111], "committee_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "is_present_in_meeting_ids": [1],
                 },
+                "committee/1": {},
             }
         )
         response = self.request(
@@ -37,11 +47,12 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_null_action(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"present_user_ids": []},
+                "meeting/1": {"present_user_ids": [], "committee_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "is_present_in_meeting_ids": [],
                 },
+                "committee/1": {},
             }
         )
         response = self.request(
@@ -54,7 +65,12 @@ class UserSetPresentActionTest(BaseActionTestCase):
         assert meeting.get("present_user_ids") == []
 
     def test_set_present_add_self_correct(self) -> None:
-        self.create_model("meeting/1", {"users_allow_self_set_present": True})
+        self.set_models(
+            {
+                "meeting/1": {"users_allow_self_set_present": True, "committee_id": 1},
+                "committee/1": {},
+            }
+        )
         response = self.request(
             "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
         )
@@ -64,13 +80,84 @@ class UserSetPresentActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/1")
         assert meeting.get("present_user_ids") == [1]
 
-    def test_set_present_add_self_not_allowed(self) -> None:
-        self.create_model("meeting/1", {"users_allow_self_set_present": False})
+    def test_set_present_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
+                "user/1": {"organisation_management_level": None},
+                "committee/1": {},
+            }
+        )
         response = self.request(
             "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
         )
-        self.assert_status_code(response, 400)
-        assert (
-            "Users are not allowed to set present self in this meeting."
-            in response.json["message"]
+        self.assert_status_code(response, 403)
+
+    def test_set_present_orga_can_manage_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
+                "user/1": {
+                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                },
+                "committee/1": {},
+            }
         )
+        response = self.request(
+            "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_set_present_committee_can_manage_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
+                "committee/1": {"user_ids": [1]},
+                "user/1": {
+                    "organisation_management_level": None,
+                    "committee_ids": [1],
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                },
+            }
+        )
+        response = self.request(
+            "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_set_present_meeting_can_manage_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "group_ids": [1],
+                    "committee_id": 1,
+                },
+                "group/1": {
+                    "user_ids": [1],
+                    "permissions": [Permissions.User.CAN_MANAGE],
+                },
+                "user/1": {
+                    "organisation_management_level": None,
+                    "group_$1_ids": [1],
+                },
+                "committee/1": {},
+            }
+        )
+        response = self.request(
+            "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_set_present_self_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"users_allow_self_set_present": True, "committee_id": 1},
+                "user/1": {"organisation_management_level": None},
+                "committee/1": {},
+            }
+        )
+        response = self.request(
+            "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
+        )
+        self.assert_status_code(response, 200)

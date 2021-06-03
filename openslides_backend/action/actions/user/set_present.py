@@ -1,5 +1,17 @@
+from typing import Any, Dict
+
 from ....models.models import User
-from ....shared.exceptions import ActionException
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganisationManagementLevel,
+)
+from ....permissions.permission_helper import (
+    has_committee_management_level,
+    has_organisation_management_level,
+    has_perm,
+)
+from ....permissions.permissions import Permissions
+from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -29,15 +41,6 @@ class UserSetPresentAction(UpdateAction):
         remove meeting_id if present is False.
         """
         for instance in action_data:
-            if self.user_id == instance["id"]:
-                meeting = self.datastore.get(
-                    FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
-                    ["users_allow_self_set_present"],
-                )
-                if not meeting.get("users_allow_self_set_present"):
-                    raise ActionException(
-                        "Users are not allowed to set present self in this meeting."
-                    )
             meeting_id = instance.pop("meeting_id")
             present = instance.pop("present")
             user = self.datastore.get(
@@ -56,3 +59,32 @@ class UserSetPresentAction(UpdateAction):
                     is_present.remove(meeting_id)
                     instance["is_present_in_meeting_ids"] = is_present
                     yield instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        if has_organisation_management_level(
+            self.datastore, self.user_id, OrganisationManagementLevel.CAN_MANAGE_USERS
+        ):
+            return
+        if has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.User.CAN_MANAGE,
+            instance["meeting_id"],
+        ):
+            return
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            ["committee_id", "users_allow_self_set_present"],
+        )
+        if has_committee_management_level(
+            self.datastore,
+            self.user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            meeting["committee_id"],
+        ):
+            return
+        if self.user_id == instance["id"] and meeting.get(
+            "users_allow_self_set_present"
+        ):
+            return
+        raise PermissionDenied("You are not allowed to set present.")
