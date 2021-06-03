@@ -5,7 +5,7 @@ from openslides_backend.action.actions.user.user_scope_permission_check_mixin im
 )
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -17,22 +17,22 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         Helper function to setup permissions for different scopes for user 1. If no scope is given, the user has no permissions.
         """
         if scope is None:
-            self.set_organisation_management_level(None)
-        elif scope == UserScope.Organisation:
-            self.set_organisation_management_level(
-                OrganisationManagementLevel.CAN_MANAGE_USERS
+            self.set_organization_management_level(None)
+        elif scope == UserScope.Organization:
+            self.set_organization_management_level(
+                OrganizationManagementLevel.CAN_MANAGE_USERS
             )
         elif scope == UserScope.Committee:
             self.update_model(
                 "user/1",
                 {
-                    "organisation_management_level": None,
+                    "organization_management_level": None,
                     "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 },
             )
         elif scope == UserScope.Meeting:
             self.create_meeting()
-            self.set_organisation_management_level(None)
+            self.set_organization_management_level(None)
             self.set_user_groups(1, [3])
             self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
 
@@ -40,7 +40,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         """
         Helper function to setup user 111 in different scopes.
         """
-        if scope == UserScope.Organisation:
+        if scope == UserScope.Organization:
             self.set_models(
                 {
                     "meeting/1": {"committee_id": 1},

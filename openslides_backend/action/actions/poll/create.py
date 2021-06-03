@@ -65,11 +65,11 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
 
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
-            organisation = self.datastore.get(
-                FullQualifiedId(Collection("organisation"), 1),
+            organization = self.datastore.get(
+                FullQualifiedId(Collection("organization"), 1),
                 ["enable_electronic_voting"],
             )
-            if not organisation.get("enable_electronic_voting"):
+            if not organization.get("enable_electronic_voting"):
                 raise ActionException("Electronic voting is not allowed.")
 
         self.check_100_percent_base(instance)

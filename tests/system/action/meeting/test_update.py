@@ -3,7 +3,7 @@ from typing import Any, Dict, Tuple
 from openslides_backend.action.actions.meeting.shared_meeting import (
     meeting_projector_default_replacements,
 )
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
@@ -302,25 +302,25 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_update_group_e_no_permission(self) -> None:
-        self.set_models({"organisation_tag/1": {}})
+        self.set_models({"organization_tag/1": {}})
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_models(self.test_models)
         response = self.request(
-            "meeting.update", {"id": 1, "organisation_tag_ids": [1]}
+            "meeting.update", {"id": 1, "organization_tag_ids": [1]}
         )
         self.assert_status_code(response, 403)
         assert "Missing permission:" in response.json["message"]
 
     def test_update_group_e_permission(self) -> None:
-        self.set_models({"organisation_tag/1": {}})
+        self.set_models({"organization_tag/1": {}})
         self.base_permission_test(
             self.test_models,
             "meeting.update",
-            {"id": 1, "organisation_tag_ids": [1]},
-            OrganisationManagementLevel.CAN_MANAGE_ORGANISATION,
+            {"id": 1, "organization_tag_ids": [1]},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
         )
 
     def test_update_group_f_no_permission(self) -> None:
@@ -345,5 +345,5 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_room_name": "room1",
                 "jitsi_room_password": "blablabla",
             },
-            OrganisationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.SUPERADMIN,
         )

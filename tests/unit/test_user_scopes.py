@@ -31,7 +31,7 @@ class UserScopeTest(TestCase):
 
     def test_no_relations(self) -> None:
         self.set_user_data({})
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization
 
     def test_single_meeting(self) -> None:
         self.set_user_data({"meeting_ids": [1]})
@@ -39,7 +39,7 @@ class UserScopeTest(TestCase):
 
     def test_multiple_meetings(self) -> None:
         self.set_user_data({"meeting_ids": [1, 2]})
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization
 
     def test_single_committee_no_meetings(self) -> None:
         self.set_user_data({"committee_ids": [1]})
@@ -58,23 +58,23 @@ class UserScopeTest(TestCase):
     def test_single_committee_differing_meeting(self) -> None:
         self.set_user_data({"committee_ids": [1], "meeting_ids": [1]})
         self.set_meeting_committees([2])
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization
 
     def test_single_committee_mixed_meetings(self) -> None:
         self.set_user_data({"committee_ids": [1], "meeting_ids": [1, 2]})
         self.set_meeting_committees([1, 2])
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization
 
     def test_multiple_committees_no_meetings(self) -> None:
         self.set_user_data({"committee_ids": [1, 2]})
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization
 
     def test_multiple_committees_related_meeting(self) -> None:
         self.set_user_data({"committee_ids": [1, 2], "meeting_ids": [1]})
         self.set_meeting_committees([1])
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization
 
     def test_multiple_committees_differing_meeting(self) -> None:
         self.set_user_data({"committee_ids": [1, 2], "meeting_ids": [1]})
         self.set_meeting_committees([3])
-        assert self.get_scope() == UserScope.Organisation
+        assert self.get_scope() == UserScope.Organization

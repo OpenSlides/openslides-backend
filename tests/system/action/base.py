@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import Payload
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.exceptions import DatastoreException
@@ -83,10 +83,10 @@ class BaseActionTestCase(BaseSystemTestCase):
     def set_anonymous(self, enable: bool = True, meeting_id: int = 1) -> None:
         self.set_models({f"meeting/{meeting_id}": {"enable_anonymous": enable}})
 
-    def set_organisation_management_level(
-        self, level: Optional[OrganisationManagementLevel], user_id: int = 1
+    def set_organization_management_level(
+        self, level: Optional[OrganizationManagementLevel], user_id: int = 1
     ) -> None:
-        self.update_model(f"user/{user_id}", {"organisation_management_level": level})
+        self.update_model(f"user/{user_id}", {"organization_management_level": level})
 
     def add_group_permissions(
         self, group_id: int, permissions: List[Permission]
@@ -110,10 +110,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         self,
         username: str,
         group_ids: List[int] = [],
-        organisation_management_level: Optional[OrganisationManagementLevel] = None,
+        organization_management_level: Optional[OrganizationManagementLevel] = None,
     ) -> int:
         """
-        Create a user with the given username, groups and organisation management level.
+        Create a user with the given username, groups and organization management level.
         """
         partitioned_groups = self._fetch_groups(group_ids)
         id = self.datastore.reserve_id(Collection("user"))
@@ -121,7 +121,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             {
                 f"user/{id}": {
                     "username": username,
-                    "organisation_management_level": organisation_management_level,
+                    "organization_management_level": organization_management_level,
                     "is_active": True,
                     "default_password": DEFAULT_PASSWORD,
                     "password": self.auth.hash(DEFAULT_PASSWORD),
@@ -236,16 +236,16 @@ class BaseActionTestCase(BaseSystemTestCase):
         models: Dict[str, Any],
         action: str,
         action_data: Dict[str, Any],
-        permission: Optional[Union[Permission, OrganisationManagementLevel]] = None,
+        permission: Optional[Union[Permission, OrganizationManagementLevel]] = None,
     ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         if permission:
-            if type(permission) == OrganisationManagementLevel:
-                self.set_organisation_management_level(
-                    cast(OrganisationManagementLevel, permission), self.user_id
+            if type(permission) == OrganizationManagementLevel:
+                self.set_organization_management_level(
+                    cast(OrganizationManagementLevel, permission), self.user_id
                 )
             else:
                 self.set_group_permissions(3, [cast(Permission, permission)])

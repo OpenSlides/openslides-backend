@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional, Union
 
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from ..permissions.permissions import Permission
 from .patterns import FullQualifiedId
@@ -103,7 +103,7 @@ class AnonymousNotAllowed(PermissionDenied):
         self.message = f"Anonymous is not allowed to execute {action_name}"
 
 
-AnyPermission = Union[Permission, OrganisationManagementLevel, CommitteeManagementLevel]
+AnyPermission = Union[Permission, OrganizationManagementLevel, CommitteeManagementLevel]
 
 
 class MissingPermission(PermissionDenied):

@@ -18,9 +18,9 @@ from ..models.base import Model, model_registry
 from ..models.fields import BaseTemplateField, BaseTemplateRelationField
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
-from ..permissions.permission_helper import has_organisation_management_level, has_perm
+from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
@@ -84,7 +84,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     schema_validator: Callable[[Dict[str, Any]], None]
     is_singular: bool = False
     internal: bool = False
-    permission: Optional[Union[Permission, OrganisationManagementLevel]] = None
+    permission: Optional[Union[Permission, OrganizationManagementLevel]] = None
     permission_model: Optional[Model] = None
     permission_id: Optional[str] = None
     relation_manager: RelationManager
@@ -167,11 +167,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         # switch between internal and external permission service
         if self.permission:
-            if type(self.permission) == OrganisationManagementLevel:
-                if has_organisation_management_level(
+            if type(self.permission) == OrganizationManagementLevel:
+                if has_organization_management_level(
                     self.datastore,
                     self.user_id,
-                    cast(OrganisationManagementLevel, self.permission),
+                    cast(OrganizationManagementLevel, self.permission),
                 ):
                     return
                 raise MissingPermission(self.permission)

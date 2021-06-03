@@ -11,7 +11,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                "organisation/1": {"name": "test_organisation1"},
+                "organization/1": {"name": "test_organization1"},
                 "user/20": {"username": "test_user20"},
                 "user/21": {"username": "test_user21"},
             }
@@ -21,7 +21,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.create",
             {
                 "name": self.COMMITTEE_NAME,
-                "organisation_id": 1,
+                "organization_id": 1,
                 "description": "<p>Test description</p>",
                 "user_ids": [20, 21],
             },
@@ -32,7 +32,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.create",
             {
                 "name": "forwarded_committee",
-                "organisation_id": 1,
+                "organization_id": 1,
             },
         )
         self.assert_status_code(response, 200)
@@ -101,13 +101,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_both_forwarded_and_received(self) -> None:
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "committee_ids": [1, 2, 3],
                 },
-                "committee/1": {"name": "committee_1", "organisation_id": 1},
-                "committee/2": {"name": "committee_2", "organisation_id": 1},
-                "committee/3": {"name": "committee_3", "organisation_id": 1},
+                "committee/1": {"name": "committee_1", "organization_id": 1},
+                "committee/2": {"name": "committee_2", "organization_id": 1},
+                "committee/3": {"name": "committee_3", "organization_id": 1},
             }
         )
         response = self.request(
@@ -135,26 +135,26 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->C and B->C exist, test that the request for C with {B, D}->C works and sets the reverse relations on A and D correctly."""
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "committee_ids": [1, 2, 3, 4],
                 },
                 "committee/1": {
                     "name": "committee_A",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "forward_to_committee_ids": [3],
                 },
                 "committee/2": {
                     "name": "committee_B",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "forward_to_committee_ids": [3],
                 },
                 "committee/3": {
                     "name": "committee_C",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [1, 2],
                 },
-                "committee/4": {"name": "committee_D", "organisation_id": 1},
+                "committee/4": {"name": "committee_D", "organization_id": 1},
             }
         )
         response = self.request(
@@ -181,26 +181,26 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """C->A and C->B exists, test that the request for C with C->{B,D} works and sets the reverse relations on A and D correctly"""
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "committee_ids": [1, 2, 3, 4],
                 },
                 "committee/1": {
                     "name": "committee_A",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [3],
                 },
                 "committee/2": {
                     "name": "committee_B",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [3],
                 },
                 "committee/3": {
                     "name": "committee_C",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "forward_to_committee_ids": [1, 2],
                 },
-                "committee/4": {"name": "committee_D", "organisation_id": 1},
+                "committee/4": {"name": "committee_D", "organization_id": 1},
             }
         )
         response = self.request(
@@ -229,23 +229,23 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """C->A and C->B exists, test that the request for C with C->{} works and sets the reverse relations on A and B correctly"""
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "committee_ids": [1, 2, 3],
                 },
                 "committee/1": {
                     "name": "committee_A",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [3],
                 },
                 "committee/2": {
                     "name": "committee_B",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [3],
                 },
                 "committee/3": {
                     "name": "committee_C",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "forward_to_committee_ids": [1, 2],
                 },
             }
@@ -273,13 +273,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->A, Try A->{}"""
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "committee_ids": [1],
                 },
                 "committee/1": {
                     "name": "committee_A",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "forward_to_committee_ids": [1],
                     "receive_forwardings_from_committee_ids": [1],
                 },
@@ -306,29 +306,29 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->B, B->{C,D}: Try request B, C->B and B->D"""
         self.set_models(
             {
-                "organisation/1": {
-                    "name": "test_organisation1",
+                "organization/1": {
+                    "name": "test_organization1",
                     "committee_ids": [1, 2, 3, 4],
                 },
                 "committee/1": {
                     "name": "committee_A",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "forward_to_committee_ids": [2],
                 },
                 "committee/2": {
                     "name": "committee_B",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [1],
                     "forward_to_committee_ids": [3, 4],
                 },
                 "committee/3": {
                     "name": "committee_C",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [2],
                 },
                 "committee/4": {
                     "name": "committee_D",
-                    "organisation_id": 1,
+                    "organization_id": 1,
                     "receive_forwardings_from_committee_ids": [2],
                 },
             }
@@ -444,7 +444,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organisation_management_level": "can_manage_organisation"}}
+            {"user/1": {"organization_management_level": "can_manage_organization"}}
         )
         response = self.request(
             "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
@@ -459,10 +459,10 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": "can_manage_organisation",
+                    "organization_management_level": "can_manage_organization",
                     "committee_$1_management_level": "can_manage",
                 },
-                "committee/1": {"organisation_id": 1},
+                "committee/1": {"organization_id": 1},
             }
         )
         response = self.request(
@@ -475,7 +475,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": "can_manage_users",
+                    "organization_management_level": "can_manage_users",
                     "committee_$1_management_level": "can_manage",
                 },
                 "committee/1": {"user_ids": [1]},
@@ -484,7 +484,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         response = self.request("committee.update", {"id": 1, "user_ids": [1, 20]})
         self.assert_status_code(response, 403)
         assert (
-            "Missing OrganisationManagementLevel: can_manage_organisation"
+            "Missing OrganizationManagementLevel: can_manage_organization"
             in response.json["message"]
         )
 
@@ -493,7 +493,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": "can_manage_organisation",
+                    "organization_management_level": "can_manage_organization",
                     "committee_$1_management_level": "can_manage",
                 },
                 "committee/1": {"user_ids": [1]},
@@ -506,16 +506,16 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_users"},
-                "organisation_tag/12": {"organisation_id": 1},
+                "user/1": {"organization_management_level": "can_manage_users"},
+                "organization_tag/12": {"organization_id": 1},
             }
         )
         response = self.request(
-            "committee.update", {"id": 1, "organisation_tag_ids": [12]}
+            "committee.update", {"id": 1, "organization_tag_ids": [12]}
         )
         self.assert_status_code(response, 403)
         assert (
-            "Missing can_manage_organisation and not manager."
+            "Missing can_manage_organization and not manager."
             in response.json["message"]
         )
 
@@ -523,13 +523,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.create_data()
         self.set_models(
             {
-                "user/1": {"organisation_management_level": "can_manage_organisation"},
+                "user/1": {"organization_management_level": "can_manage_organization"},
                 "committee/1": {"user_ids": [20]},
-                "organisation_tag/12": {"organisation_id": 1},
+                "organization_tag/12": {"organization_id": 1},
             }
         )
         response = self.request(
-            "committee.update", {"id": 1, "organisation_tag_ids": [12]}
+            "committee.update", {"id": 1, "organization_tag_ids": [12]}
         )
         self.assert_status_code(response, 200)
 
@@ -538,14 +538,14 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": "can_manage_users",
+                    "organization_management_level": "can_manage_users",
                     "committee_$1_management_level": "can_manage",
                 },
                 "committee/1": {"user_ids": [1]},
-                "organisation_tag/12": {"organisation_id": 1},
+                "organization_tag/12": {"organization_id": 1},
             }
         )
         response = self.request(
-            "committee.update", {"id": 1, "organisation_tag_ids": [12]}
+            "committee.update", {"id": 1, "organization_tag_ids": [12]}
         )
         self.assert_status_code(response, 200)

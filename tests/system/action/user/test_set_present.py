@@ -1,6 +1,6 @@
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -84,7 +84,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
-                "user/1": {"organisation_management_level": None},
+                "user/1": {"organization_management_level": None},
                 "committee/1": {},
             }
         )
@@ -98,7 +98,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
                 },
                 "committee/1": {},
             }
@@ -114,7 +114,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
                 "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
                 "committee/1": {"user_ids": [1]},
                 "user/1": {
-                    "organisation_management_level": None,
+                    "organization_management_level": None,
                     "committee_ids": [1],
                     "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 },
@@ -138,7 +138,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
                     "permissions": [Permissions.User.CAN_MANAGE],
                 },
                 "user/1": {
-                    "organisation_management_level": None,
+                    "organization_management_level": None,
                     "group_$1_ids": [1],
                 },
                 "committee/1": {},
@@ -153,7 +153,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {"users_allow_self_set_present": True, "committee_id": 1},
-                "user/1": {"organisation_management_level": None},
+                "user/1": {"organization_management_level": None},
                 "committee/1": {},
             }
         )

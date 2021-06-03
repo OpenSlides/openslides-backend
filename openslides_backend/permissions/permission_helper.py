@@ -4,7 +4,7 @@ from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
 from ..shared.patterns import Collection, FullQualifiedId
-from .management_levels import CommitteeManagementLevel, OrganisationManagementLevel
+from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
 from .permissions import Permission, permission_parents
 
 
@@ -18,7 +18,7 @@ def has_perm(
             [
                 f"group_${meeting_id}_ids",
                 "guest_meeting_ids",
-                "organisation_management_level",
+                "organization_management_level",
             ],
             lock_result=False,
         )
@@ -27,8 +27,8 @@ def has_perm(
 
     # superadmins have all permissions
     if (
-        user.get("organisation_management_level")
-        == OrganisationManagementLevel.SUPERADMIN
+        user.get("organization_management_level")
+        == OrganizationManagementLevel.SUPERADMIN
     ):
         return True
 
@@ -83,19 +83,19 @@ def is_child_permission(child: Permission, parent: Permission) -> bool:
     return False
 
 
-def has_organisation_management_level(
+def has_organization_management_level(
     datastore: DatastoreService,
     user_id: int,
-    expected_level: OrganisationManagementLevel,
+    expected_level: OrganizationManagementLevel,
 ) -> bool:
-    """ Checks wether a user has the minimum necessary OrganisationManagementLevel """
+    """ Checks wether a user has the minimum necessary OrganizationManagementLevel """
     if user_id > 0:
         user = datastore.get(
             FullQualifiedId(Collection("user"), user_id),
-            ["organisation_management_level"],
+            ["organization_management_level"],
         )
-        return expected_level <= OrganisationManagementLevel(
-            user.get("organisation_management_level")
+        return expected_level <= OrganizationManagementLevel(
+            user.get("organization_management_level")
         )
     return False
 
@@ -111,11 +111,11 @@ def has_committee_management_level(
         cml_field = f"committee_${committee_id}_management_level"
         user = datastore.get(
             FullQualifiedId(Collection("user"), user_id),
-            ["organisation_management_level", cml_field],
+            ["organization_management_level", cml_field],
         )
         if (
-            user.get("organisation_management_level")
-            == OrganisationManagementLevel.SUPERADMIN
+            user.get("organization_management_level")
+            == OrganizationManagementLevel.SUPERADMIN
         ):
             return True
         return expected_level <= CommitteeManagementLevel(user.get(cml_field))

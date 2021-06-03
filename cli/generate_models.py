@@ -294,8 +294,8 @@ class Attribute(Node):
         return self.get_code_for_template(field_name, structured_field_sign)
 
     def get_code_for_normal(self, field_name: str) -> str:
-        if field_name == "organisation_id":
-            field_class = "OrganisationField"
+        if field_name == "organization_id":
+            field_class = "OrganizationField"
         else:
             field_class = self.FIELD_CLASSES[self.type]
         properties = ""

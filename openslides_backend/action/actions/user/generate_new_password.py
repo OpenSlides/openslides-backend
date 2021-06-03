@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....permissions.management_levels import OrganisationManagementLevel
+from ....permissions.management_levels import OrganizationManagementLevel
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
@@ -29,7 +29,7 @@ class UserGenerateNewPassword(
 ):
     model = User()
     schema = DefaultSchema(User()).get_update_schema()
-    permission = OrganisationManagementLevel.CAN_MANAGE_USERS
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance)

@@ -1,4 +1,4 @@
-from openslides_backend.permissions.management_levels import OrganisationManagementLevel
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -24,7 +24,7 @@ class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
     def test_correct_permission(self) -> None:
         self.user_id = self.create_user(
             "test",
-            organisation_management_level=OrganisationManagementLevel.CAN_MANAGE_USERS,
+            organization_management_level=OrganizationManagementLevel.CAN_MANAGE_USERS,
         )
         self.login(self.user_id)
         response = self.request(
@@ -44,6 +44,6 @@ class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.merge_to_non_temporary. Missing OrganisationManagementLevel: can_manage_users",
+            "You are not allowed to perform action user.merge_to_non_temporary. Missing OrganizationManagementLevel: can_manage_users",
             response.json["message"],
         )
