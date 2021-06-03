@@ -61,31 +61,30 @@ class UserSetPresentAction(UpdateAction):
                     yield instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
-            ["committee_id", "users_allow_self_set_present"],
-        )
         if has_organisation_management_level(
             self.datastore, self.user_id, OrganisationManagementLevel.CAN_MANAGE_USERS
         ):
             return
-        elif meeting.get("committee_id") and has_committee_management_level(
-            self.datastore,
-            self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
-            meeting["committee_id"],
-        ):
-            return
-        elif has_perm(
+        if has_perm(
             self.datastore,
             self.user_id,
             Permissions.User.CAN_MANAGE,
             instance["meeting_id"],
         ):
             return
-        elif self.user_id == instance["id"] and meeting.get(
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            ["committee_id", "users_allow_self_set_present"],
+        )
+        if has_committee_management_level(
+            self.datastore,
+            self.user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            meeting["committee_id"],
+        ):
+            return
+        if self.user_id == instance["id"] and meeting.get(
             "users_allow_self_set_present"
         ):
             return
-        else:
-            raise PermissionDenied("You are not allowed to set present.")
+        raise PermissionDenied("You are not allowed to set present.")
