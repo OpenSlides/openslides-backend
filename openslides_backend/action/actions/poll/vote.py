@@ -14,7 +14,7 @@ from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
 
 
-@register_action("poll.vote", internal=True)
+@register_action("poll.vote")
 class PollVote(UpdateAction):
     """
     Action to vote for a poll.
@@ -299,3 +299,6 @@ class PollVote(UpdateAction):
             <= self.poll.get("max_votes_amount", 1)
         ):
             raise ActionException("Total amount of votes is not in min-max-interval.")
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        return
