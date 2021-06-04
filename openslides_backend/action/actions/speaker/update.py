@@ -38,27 +38,26 @@ class SpeakerUpdate(UpdateAction):
             "list_of_speakers_can_set_contribution_self"
         )
         allowed_pro_contra = meeting.get("list_of_speakers_enable_pro_contra_speech")
-        msg = "Not allowed to set speech_state"
         if speaker.get("speech_state") == instance.get("speech_state"):
             pass
         elif instance.get("speech_state") == "contribution":
             if not allowed_self_contribution:
-                raise ActionException(msg)
+                raise ActionException("Self contribution is not allowed")
         elif instance.get("speech_state") in ["pro", "contra"]:
             if not allowed_pro_contra:
-                raise ActionException(msg)
+                raise ActionException("Pro/Contra is not enabled")
         elif (
             speaker.get("speech_state") == "contribution"
             and instance.get("speech_state") is None
         ):
             if not allowed_self_contribution:
-                raise ActionException(msg)
+                raise ActionException("Self contribution is not allowed")
         elif (
             speaker.get("speech_state") in ["pro", "contra"]
             and instance.get("speech_state") is None
         ):
             if not allowed_pro_contra:
-                raise ActionException(msg)
+                raise ActionException("Pro/Contra is not enabled")
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
