@@ -56,7 +56,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.permission_test_model["speaker/890"]["user_id"] = 1
         self.set_models(self.permission_test_model)
-        self.set_models({"user/1": {"organisation_management_level": None}})
+        self.set_models({"user/1": {"organization_management_level": None}})
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
 
@@ -100,7 +100,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.create_meeting()
         self.permission_test_model["speaker/890"]["user_id"] = 1
         self.set_models(self.permission_test_model)
-        self.set_models({"user/1": {"organisation_management_level": None}})
+        self.set_models({"user/1": {"organization_management_level": None}})
         self.set_user_groups(1, [3])
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
         response = self.request("speaker.update", {"id": 890, "speech_state": None})
@@ -164,7 +164,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         self.set_models(
             {
-                "user/1": {"organisation_management_level": None},
+                "user/1": {"organization_management_level": None},
                 "speaker/890": {"user_id": 1},
             }
         )
@@ -176,7 +176,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         self.set_models(
             {
-                "user/1": {"organisation_management_level": None},
+                "user/1": {"organization_management_level": None},
                 "speaker/890": {"user_id": 1},
             }
         )
@@ -190,7 +190,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         self.set_models(
             {
-                "user/1": {"organisation_management_level": None},
+                "user/1": {"organization_management_level": None},
             }
         )
         self.set_user_groups(1, [3])
