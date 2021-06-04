@@ -1,4 +1,3 @@
-
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
