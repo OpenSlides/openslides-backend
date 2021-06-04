@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -23,61 +23,70 @@ class PermissionVarStore:
                 "organization_management_level",
                 "committee_$_management_level",
                 "group_$_ids",
+                "committee_ids",
             ],
         )
-        self.user_oml = OrganizationManagementLevel(  # type: ignore
-            self.user.get("organization_management_level", "no_right")
+        self.user_oml = OrganizationManagementLevel(
+            self.user.get("organization_management_level")
         )
-        self.called_get_user_committees_and_meetings = False
-        self.called_get_user_meetings_with_user_can_manage = False
+        self._user_committees: Optional[Set[int]] = None
+        self._user_meetings: Optional[Set[int]] = None
 
-    def user_committees(self, committee_ids: List[str] = []) -> Set[int]:
+    @property
+    def user_committees(self) -> Set[int]:
         """ Set of committee-ids where the request user has manage rights """
-        if not self.called_get_user_committees_and_meetings:
+        if self._user_committees is None:
             (
                 self._user_committees,
                 self._user_committees_meetings,
-            ) = self._get_user_committees_and_meetings(committee_ids)
-            self.called_get_user_committees_and_meetings = True
+            ) = self._get_user_committees_and_meetings(
+                self.user.get("committee_$_management_level", [])
+            )
         return self._user_committees
 
-    def user_committees_meetings(self, committee_ids: List[str] = []) -> Set[int]:
+    @property
+    def user_committees_meetings(self) -> Set[int]:
         """ Set of meetings where the request user has manage rights from committee """
-        if not self.called_get_user_committees_and_meetings:
+        if self._user_committees is None:
             (
                 self._user_committees,
                 self._user_committees_meetings,
-            ) = self._get_user_committees_and_meetings(committee_ids)
-            self.called_get_user_committees_and_meetings = True
+            ) = self._get_user_committees_and_meetings(
+                self.user.get("committee_$_management_level", [])
+            )
         return self._user_committees_meetings
 
-    def user_meetings(self, meeting_ids: List[str] = []) -> Set[int]:
+    @property
+    def user_meetings(self) -> Set[int]:
         """ Set of meetings where the request user has user.can_manage permissions """
-        if not self.called_get_user_meetings_with_user_can_manage:
+        if self._user_meetings is None:
             self._user_meetings = self._get_user_meetings_with_user_can_manage(
-                meeting_ids
+                self.user.get("group_$_ids", [])
             )
-            self.called_get_user_meetings_with_user_can_manage = True
         return self._user_meetings
 
     def _get_user_committees_and_meetings(
-        self, committee_ids: List[str]
+        self, committee_manage_ids: List[str]
     ) -> Tuple[Set[int], Set[int]]:
         """
-        Returns a set of committees, where the request user has minimum
-        CommitteeManagementLevel.CAN_MANAGE and a set of meetings belonging to those committees
+        Returns a set of committees and a set of meetings
+        belonging to those committees, where the request user has minimum
+        CommitteeManagementLevel.CAN_MANAGE and is member of committee_id,
         """
-        user_committees = set()
+        user_committees = set(map(int, committee_manage_ids))
         user_meetings = set()
-        if committee_ids:
+        user_committees = user_committees & set(self.user.get("committee_ids", set()))
+        if user_committees:
+            committees = tuple(user_committees)
+            user_committees = set()
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), self.user_id),
                 [
                     f"committee_${committee_id}_management_level"
-                    for committee_id in committee_ids
+                    for committee_id in committees
                 ],
             )
-            for committee_id in committee_ids:
+            for committee_id in committees:
                 value = user.get(f"committee_${committee_id}_management_level")
                 if (
                     CommitteeManagementLevel(value)
@@ -85,7 +94,7 @@ class PermissionVarStore:
                 ):
                     user_committees.add(int(committee_id))
 
-            committees = (
+            committees_d = (
                 self.datastore.get_many(
                     [
                         GetManyRequest(
@@ -98,7 +107,7 @@ class PermissionVarStore:
                 .get(Collection("committee"), {})
                 .values()
             )
-            for committee in committees:
+            for committee in committees_d:
                 user_meetings.update(committee.get("meeting_ids", []))
 
         return user_committees, user_meetings
@@ -134,9 +143,9 @@ class PermissionVarStore:
             )
 
             for group in groups:
-                if "user.can_manage" in group.get("permissions", []) or group.get(
-                    "admin_group_for_meeting_id"
-                ):
+                if Permissions.User.CAN_MANAGE in group.get(
+                    "permissions", []
+                ) or group.get("admin_group_for_meeting_id"):
                     user_meetings.add(group.get("meeting_id"))
 
         return user_meetings
@@ -188,6 +197,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         self._check_OML_in_instance(permstore, instance)
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
+        # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
         self.check_group_E(permstore, actual_group_fields["E"])
         self.check_group_D(permstore, actual_group_fields["D"], instance)
         self.check_group_C(permstore, actual_group_fields["C"], instance)
@@ -214,19 +224,16 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         if scope == UserScope.Organization:
             raise MissingPermission({OrganizationManagementLevel.CAN_MANAGE_USERS: 1})
         elif scope == UserScope.Committee:
-            if scope_id not in permstore.user_committees(
-                permstore.user.get("committee_$_management_level", [])
-            ):
+            if scope_id not in permstore.user_committees:
                 raise MissingPermission(
                     {
                         OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
                         CommitteeManagementLevel.CAN_MANAGE: scope_id,
                     }
                 )
-        elif scope_id not in permstore.user_committees_meetings(
-            permstore.user.get("committee_$_management_level", [])
-        ) and scope_id not in permstore.user_meetings(
-            permstore.user.get("group_$_ids", [])
+        elif (
+            scope_id not in permstore.user_committees_meetings
+            and scope_id not in permstore.user_meetings
         ):
             meeting = self.datastore.fetch_model(
                 FullQualifiedId(Collection("meeting"), scope_id), ["committee_id"]
@@ -247,10 +254,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             meeting_ids = self._meetings_from_group_B_fields_from_instance(
                 fields, instance
             )
-            if (
-                diff := meeting_ids
-                - permstore.user_meetings(permstore.user.get("group_$_ids", []))
-            ) :
+            if diff := meeting_ids - permstore.user_meetings:
                 raise MissingPermission(
                     {Permissions.User.CAN_MANAGE: meeting_id for meeting_id in diff}
                 )
@@ -310,21 +314,15 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                         raise PermissionDenied(
                             "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!"
                         )
-                    if committee_ids[0] not in permstore.user_committees(
-                        permstore.user.get("committee_$_management_level", [])
-                    ):
+                    if committee_ids[0] not in permstore.user_committees:
                         raise PermissionDenied(
                             f"You need CommitteeManagementLevel.can_manage permission for committee {committee_ids[0]}, because you try to add or remove meetings in Committee-scope!"
                         )
                     return
 
             # Check permission for each change operation/meeting
-            if diff := touch_meeting_ids - permstore.user_committees_meetings(
-                permstore.user.get("committee_$_management_level", [])
-            ):
-                if diff := diff - permstore.user_meetings(
-                    permstore.user.get("group_$_ids", [])
-                ):
+            if diff := touch_meeting_ids - permstore.user_committees_meetings:
+                if diff := diff - permstore.user_meetings:
                     raise PermissionDenied(
                         f"The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {diff}"
                     )
@@ -335,12 +333,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         """ Check Group D committee-related fields: OML or CML level for each committee """
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
             committees = self._get_all_committees_from_instance(instance)
-            if (
-                diff := committees
-                - permstore.user_committees(
-                    permstore.user.get("committee_$_management_level", [])
-                )
-            ) :
+            if (diff := committees - permstore.user_committees) :
                 raise MissingPermission(
                     {
                         CommitteeManagementLevel.CAN_MANAGE: committee_id
@@ -356,7 +349,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     def check_group_F(self, fields: List[str]) -> None:
         """ Group F: OML SUPERADMIN necessary, which is checked before """
         if fields:
-            raise MissingPermission(OrganisationManagementLevel.SUPERADMIN)
+            raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def _check_OML_in_instance(
         self, permstore: PermissionVarStore, instance: Dict[str, Any]
@@ -396,17 +389,21 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         """
         Gets a Set of all committees from the instance regarding committees from group D
         """
+        committee_ids_affected = instance.get("committee_ids") is not None
         committees = set(instance.get("committee_ids", []))
-        if committee_str := instance.get("committee_$_management_level", {}).keys():
-            committees.update(map(int, committee_str))
 
         # In case of create there is no id, in case of update the user can remove committees only with the committee right
-        if instance_user_id := instance.get("id"):
+        if (instance_user_id := instance.get("id")) and committee_ids_affected:
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), instance_user_id),
                 ["committee_ids"],
             )
-            committees.update(user.get("committee_ids", []))
+            # Just changes with ^ symmetric_difference operator
+            committees = committees ^ set(user.get("committee_ids", []))
+
+        if committee_str := instance.get("committee_$_management_level", {}).keys():
+            committees.update(map(int, committee_str))
+
         return committees
 
     def _meetings_from_group_B_fields_from_instance(

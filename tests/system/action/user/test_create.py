@@ -274,6 +274,31 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/2", {"username": "testname", "vote_delegations_$_from_ids": []}
         )
 
+    def test_create_committe_manager_without_committee_ids(self) -> None:
+        """ Giving committee management level requires committee_ids """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                    "63": CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "committee_ids": [63],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You must add the user to the committee(s) '60', because you want to give him committee management level permissions.",
+            response.json["message"],
+        )
+
     def test_create_empty_username(self) -> None:
         response = self.request("user.create", {"username": ""})
         self.assert_status_code(response, 400)
@@ -395,6 +420,63 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_create_permission_group_A_cml_manage_user(self) -> None:
+        """ May create group A fields on cml scope"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_models(
+            {
+                f"user/{self.user_id}": {
+                    "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["60"],
+                    "committee_ids": [60],
+                },
+                "meeting/4": {
+                    "committee_id": 60,
+                },
+                "committee/60": {"meeting_ids": [1, 4]},
+            }
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {"1": [1], "4": [4]},
+                "committee_ids": [60],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "usersname",
+                "group_$1_ids": [1],
+                "group_$4_ids": [4],
+                "committee_ids": [60],
+            },
+        )
+
+    def test_create_permission_group_A_user_can_manage(self) -> None:
+        """ May create group A fields on meeting scope"""
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {"1": [1]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "usersname",
+                "group_$1_ids": [1],
+            },
+        )
+
     def test_create_permission_group_A_no_permission(self) -> None:
         """ May not create group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
@@ -405,6 +487,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 "committee_$_management_level": ["60", "63"],
+                "committee_ids": [60, 63],
             },
         )
 
@@ -514,13 +597,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_permission_group_C_committee_manager(self) -> None:
         """ May create group C group_$_ids by committee permission """
         self.permission_setup()
-        self.update_model(
-            f"user/{self.user_id}",
-            {
-                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_$_management_level": ["60"],
-            },
-        )
+        self.set_committee_management_level([60], self.user_id)
 
         response = self.request(
             "user.create",
@@ -593,6 +670,7 @@ class UserCreateActionTest(BaseActionTestCase):
                     "63": CommitteeManagementLevel.CAN_MANAGE,
                 },
                 "committee_ids": [60, 63],
+                "organization_management_level": None,
             },
         )
         self.assert_status_code(response, 200)
@@ -602,26 +680,27 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_ids": [60, 63],
                 "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "organization_management_level": None,
                 "username": "usersname",
             },
+        )
+        user3 = self.get_model("user/3")
+        assert user3.get("organization_management_level") is None
+        assert (
+            OrganizationManagementLevel(user3.get("organization_management_level"))
+            == OrganizationManagementLevel.NO_RIGHT
         )
 
     def test_create_permission_group_D_permission_with_CML(self) -> None:
         """
-        May create Group D committee fields with CML permission.
-        The new user can be manager of more than one Committees, but only member of 1 committee.
-        For being member in 2 committees the request user has to have OML permissions for organization scope.
+        May create Group D committee fields with CML permission for one committee only.
+        Note: For 2 committees he can't set the username, which is required, but within 2 committees
+        it would be organizational scope with organizational rights required.
+        To do this he could create a user with 1 committee and later he could update the
+        same user with second committee, if he has the permission for the committees.
         """
         self.permission_setup()
-        self.create_meeting(base=4)
-        self.update_model(
-            f"user/{self.user_id}",
-            {
-                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_$_management_level": ["60", "63"],
-            },
-        )
+        self.set_committee_management_level([60], self.user_id)
 
         response = self.request(
             "user.create",
@@ -629,7 +708,6 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "usersname",
                 "committee_$_management_level": {
                     "60": CommitteeManagementLevel.CAN_MANAGE,
-                    "63": CommitteeManagementLevel.CAN_MANAGE,
                 },
                 "committee_ids": [60],
             },
@@ -640,7 +718,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee_ids": [60],
                 "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 "username": "usersname",
             },
         )
@@ -649,14 +726,7 @@ class UserCreateActionTest(BaseActionTestCase):
         """ May not create Group D committee fields, because of missing CML permission for one committee """
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_models(
-            {
-                f"user/{self.user_id}": {
-                    "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                    "committee_$_management_level": ["60"],
-                },
-            }
-        )
+        self.set_committee_management_level([60], self.user_id)
 
         response = self.request(
             "user.create",
