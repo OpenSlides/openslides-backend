@@ -160,6 +160,35 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("url_name") == "JWdYZqDX"
         assert meeting.get("enable_anonymous") is False
 
+    def test_create_check_users(self) -> None:
+        meeting = self.basic_test({"user_ids": [2]})
+        default_group_id = meeting.get("default_group_id")
+        self.assert_model_exists(
+            "user/2", {f"group_${meeting['id']}_ids": [default_group_id]}
+        )
+
+    def test_create_users_not_committee_user(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "test_committee", "user_ids": [2]},
+                "group/1": {},
+                "user/2": {},
+                "user/3": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "welcome_title": "test_wel_title",
+                "user_ids": [3],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Only allowed to add users from committee." in response.json["message"]
+
     def test_create_no_permissions(self) -> None:
         self.set_models(
             {
