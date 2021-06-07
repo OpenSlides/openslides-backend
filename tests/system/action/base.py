@@ -3,7 +3,10 @@ from typing import Any, Dict, List, Optional, Union, cast
 
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import Payload
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from openslides_backend.permissions.permissions import Permission
 from openslides_backend.services.datastore.commands import GetManyRequest
 from openslides_backend.shared.exceptions import DatastoreException
@@ -88,6 +91,22 @@ class BaseActionTestCase(BaseSystemTestCase):
     ) -> None:
         self.update_model(f"user/{user_id}", {"organization_management_level": level})
 
+    def set_committee_management_level(
+        self, committee_ids: List[int], user_id: int = 1
+    ) -> None:
+        d1 = {
+            "committee_ids": committee_ids,
+            "committee_$_management_level": list(map(str, committee_ids)),
+        }
+        d1.update(
+            {
+                f"committee_${id}_management_level": CommitteeManagementLevel.CAN_MANAGE
+                for id in committee_ids
+            }
+        )
+
+        self.set_models({f"user/{user_id}": d1})
+
     def add_group_permissions(
         self, group_id: int, permissions: List[Permission]
     ) -> None:
@@ -128,6 +147,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "group_$_ids": list(
                         str(meeting_id) for meeting_id in partitioned_groups.keys()
                     ),
+                    "meeting_ids": list(partitioned_groups.keys()),
                     **{
                         f"group_${meeting_id}_ids": [group["id"] for group in groups]
                         for meeting_id, groups in partitioned_groups.items()

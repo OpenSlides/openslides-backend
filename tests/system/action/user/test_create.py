@@ -1,7 +1,7 @@
-import pytest
-
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
-from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -15,7 +15,13 @@ class UserCreateActionTest(BaseActionTestCase):
         """
         Also checks if a default_password is generated and the correct hashed password stored
         """
-        response = self.request("user.create", {"username": "test_Xcdfgee"})
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
         assert model.get("username") == "test_Xcdfgee"
@@ -26,7 +32,12 @@ class UserCreateActionTest(BaseActionTestCase):
 
     def test_create_first_and_last_name(self) -> None:
         response = self.request(
-            "user.create", {"first_name": "John", "last_name": "Smith"}
+            "user.create",
+            {
+                "first_name": "John",
+                "last_name": "Smith",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "John Smith"})
@@ -35,7 +46,13 @@ class UserCreateActionTest(BaseActionTestCase):
         self.set_models(
             {"user/2": {"username": "John"}, "user/3": {"username": "John 1"}}
         )
-        response = self.request("user.create", {"first_name": "John"})
+        response = self.request(
+            "user.create",
+            {
+                "first_name": "John",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"username": "John 2"})
 
@@ -75,8 +92,10 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_template_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
-                "meeting/2": {},
+                "committee/1": {"name": "C1", "meeting_ids": [1]},
+                "committee/2": {"name": "C2", "meeting_ids": [2]},
+                "meeting/1": {"committee_id": 1},
+                "meeting/2": {"committee_id": 2},
                 "user/222": {"meeting_ids": [1]},
                 "group/11": {"meeting_id": 1},
                 "group/22": {"meeting_id": 2},
@@ -93,10 +112,24 @@ class UserCreateActionTest(BaseActionTestCase):
                 "structure_level_$": {1: "level_1", 2: "level_2"},
                 "about_me_$": {1: "<p>about</p><iframe></iframe>"},
                 "vote_weight_$": {1: "1.000000", 2: "2.333333"},
+                "committee_$_management_level": {
+                    1: CommitteeManagementLevel.CAN_MANAGE,
+                    2: None,
+                },
+                "committee_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 200)
         user = self.get_model("user/223")
+        assert (
+            CommitteeManagementLevel(user.get("committee_$1_management_level"))
+            == CommitteeManagementLevel.CAN_MANAGE
+        )
+        assert (
+            CommitteeManagementLevel(user.get("committee_$2_management_level"))
+            == CommitteeManagementLevel.NO_RIGHT
+        )
+        assert user.get("committee_ids") == [1, 2]
         assert user.get("group_$1_ids") == [11]
         assert user.get("group_$2_ids") == [22]
         assert set(user.get("group_$_ids", [])) == {"1", "2"}
@@ -127,6 +160,28 @@ class UserCreateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/2")
         assert meeting.get("user_ids") == [223]
 
+    def test_invalid_template_field_replacement_invalid_committee(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "C1", "meeting_ids": [1]},
+                "meeting/1": {"committee_id": 1},
+                "user/222": {"meeting_ids": [1]},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "committee_$_management_level": {
+                    1: None,
+                    2: CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "committee_ids": [1, 2],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("'committee/2' does not exist.", response.json["message"])
+
     def test_invalid_template_field_replacement_invalid_meeting(self) -> None:
         self.create_model("meeting/1")
         response = self.request(
@@ -134,6 +189,7 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "test_Xcdfgee",
                 "comment_$": {2: "comment"},
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
         self.assert_status_code(response, 400)
@@ -189,31 +245,56 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_username_already_given(self) -> None:
-        response = self.request("user.create", {"username": "admin"})
+    def test_username_already_exists(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "admin",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
         self.assert_status_code(response, 400)
         assert (
             response.json["message"] == "A user with the username admin already exists."
         )
 
-    def test_username_already_exists(self) -> None:
-        self.set_models({"user/2": {"username": "test1"}})
-        response = self.request(
-            "user.create",
-            {"username": "test1", "first_name": "Testy", "last_name": "Test"},
-        )
-        self.assert_status_code(response, 400)
-        assert (
-            response.json["message"] == "A user with the username test1 already exists."
-        )
-
     def test_user_create_with_empty_vote_delegation_from_ids(self) -> None:
         response = self.request(
-            "user.create", {"username": "testname", "vote_delegations_$_from_ids": {}}
+            "user.create",
+            {
+                "username": "testname",
+                "vote_delegations_$_from_ids": {},
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/2", {"username": "testname", "vote_delegations_$_from_ids": []}
+        )
+
+    def test_create_committe_manager_without_committee_ids(self) -> None:
+        """Giving committee management level requires committee_ids"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                    "63": CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "committee_ids": [63],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You must add the user to the committee(s) '60', because you want to give him committee management level permissions.",
+            response.json["message"],
         )
 
     def test_create_empty_username(self) -> None:
@@ -236,7 +317,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {1}",
             response.json["message"],
         )
 
@@ -290,152 +371,171 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
 
-    # TODO: fix when committee permission system is implemented
-    @pytest.mark.skip()
-    def test_create_permission_committee_manager(self) -> None:
-        """May create group A and C fields"""
+    def test_create_permission_group_A_oml_manage_user(self) -> None:
+        """May create group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
         self.permission_setup()
         self.create_meeting(base=4)
-        self.set_user_groups(self.user_id, [6])
-        self.update_model(
-            f"user/{self.user_id}",
-            {
-                "committee_ids": [60, 63],
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-            },
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
 
         response = self.request(
             "user.create",
             {
-                "username": "username",
-                "group_$_ids": {1: [1], 4: [5]},
+                "username": "new username",
+                "title": "new title",
+                "first_name": "new first_name",
+                "last_name": "new last_name",
+                "is_active": True,
+                "is_physical_person": True,
+                "default_password": "new default_password",
+                "gender": "female",
+                "email": "info@openslides.com ",
+                "default_number": "new default_number",
+                "default_structure_level": "new default_structure_level",
+                "default_vote_weight": "1.234000",
+                "group_$_ids": {"1": [1], "4": [4]},
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "user/3",
             {
-                "group_$_ids": ["1", "4"],
+                "username": "new username",
+                "title": "new title",
+                "first_name": "new first_name",
+                "last_name": "new last_name",
+                "is_active": True,
+                "is_physical_person": True,
+                "default_password": "new default_password",
+                "gender": "female",
+                "email": "info@openslides.com ",
+                "default_number": "new default_number",
+                "default_structure_level": "new default_structure_level",
+                "default_vote_weight": "1.234000",
                 "group_$1_ids": [1],
-                "group_$4_ids": [5],
-                "username": "username",
+                "group_$4_ids": [4],
             },
         )
 
-    def test_create_permission_committee_manager_no_permission(self) -> None:
-        """vote_weight_$ is in group B and may only work with meeting-Permission"""
+    def test_create_permission_group_A_cml_manage_user(self) -> None:
+        """May create group A fields on cml scope"""
         self.permission_setup()
-        self.update_model(
-            f"user/{self.user_id}",
+        self.create_meeting(base=4)
+        self.set_models(
             {
-                "committee_ids": [60],
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "group_$_ids": ["1", "4"],
-                "group_$1_ids": [2],  # admin group of meeting/1
-                "group_$4_ids": [4],  # default group of meeting/4
-            },
+                f"user/{self.user_id}": {
+                    "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["60"],
+                    "committee_ids": [60],
+                },
+                "meeting/4": {
+                    "committee_id": 60,
+                },
+                "committee/60": {"meeting_ids": [1, 4]},
+            }
         )
+
         response = self.request(
             "user.create",
             {
-                "username": "username",
-                "group_$_ids": {1: [1], 4: [5]},
-                "vote_weight_$": {1: "1.000000"},
+                "username": "usersname",
+                "group_$_ids": {"1": [1], "4": [4]},
+                "committee_ids": [60],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "usersname",
+                "group_$1_ids": [1],
+                "group_$4_ids": [4],
+                "committee_ids": [60],
+            },
+        )
+
+    def test_create_permission_group_A_user_can_manage(self) -> None:
+        """May create group A fields on meeting scope"""
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {"1": [1]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "usersname",
+                "group_$1_ids": [1],
+            },
+        )
+
+    def test_create_permission_group_A_no_permission(self) -> None:
+        """May not create group A fields on organsisation scope, although having both committee permissions"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.update_model(
+            f"user/{self.user_id}",
+            {
+                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["60", "63"],
+                "committee_ids": [60, 63],
+            },
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "new username",
+                "committee_ids": [60],
+                "group_$_ids": {"4": [4]},
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1, 4}'}.",
+            "You are not allowed to perform action user.create. Missing permission: OrganizationManagementLevel can_manage_users in organization 1",
             response.json["message"],
         )
 
-    def test_create_permission_manage_user(self) -> None:
-        """May create group A fields only"""
+    def test_create_permission_group_B_user_can_manage(self) -> None:
+        """create group B fields with simple user.can_manage permissions"""
         self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        self.set_organization_management_level(None, self.user_id)
+        self.set_user_groups(self.user_id, [2])  # Admin groups of meeting/1
+
+        self.set_models(
+            {
+                "user/5": {"username": "user5", "meeting_ids": [1]},
+                "user/6": {"username": "user6", "meeting_ids": [1]},
+            }
         )
 
         response = self.request(
             "user.create",
             {
-                "username": "username",
-                "title": "title",
-                "first_name": "first_name",
-                "last_name": "last_name",
-                "is_active": True,
-                "is_physical_person": True,
-                "default_password": "new default_password",
-                "gender": "female",
-                "email": "info@openslides.com ",
-                "default_number": "new default_number",
-                "default_structure_level": "new default_structure_level",
-                "default_vote_weight": "1.234000",
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "committee_ids": [60, 63],
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/3",
-            {
-                "username": "username",
-                "title": "title",
-                "first_name": "first_name",
-                "last_name": "last_name",
-                "is_active": True,
-                "is_physical_person": True,
-                "default_password": "new default_password",
-                "gender": "female",
-                "email": "info@openslides.com ",
-                "default_number": "new default_number",
-                "default_structure_level": "new default_structure_level",
-                "default_vote_weight": "1.234000",
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                "committee_ids": [60, 63],
-            },
-        )
-
-    # TODO: fix when committee permission system is implemented
-    @pytest.mark.skip()
-    def test_create_permission_user_can_manage(self) -> None:
-        """May create all group-fields"""
-        self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
-        )
-        self.set_user_groups(
-            self.user_id, [2, 6]
-        )  # admin-group of meeting/1 and group of meeting/4
-        self.set_group_permissions(6, [Permissions.User.CAN_MANAGE])
-        self.create_user("user3", [4])
-        self.create_user("user4", [4])
-
-        response = self.request(
-            "user.create",
-            {
-                "username": "username",
-                "number_$": {"1": "number1", "4": "number1 in 4"},
+                "username": "username7",
+                "number_$": {"1": "number1"},
                 "structure_level_$": {"1": "structure_level 1"},
                 "vote_weight_$": {"1": "12.002345"},
                 "about_me_$": {"1": "about me 1"},
                 "comment_$": {"1": "comment zu meeting/1"},
-                "vote_delegated_$_to_id": {"1": self.user_id},
-                "vote_delegations_$_from_ids": {"4": [3, 4]},
-                "group_$_ids": {"1": [2, 3], "4": [5]},
+                "vote_delegations_$_from_ids": {"1": [5, 6]},
+                "group_$_ids": {"1": [1]},
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/5",
+            "user/7",
             {
-                "username": "username",
-                "number_$": ["1", "4"],
+                "username": "username7",
+                "number_$": ["1"],
                 "number_$1": "number1",
-                "number_$4": "number1 in 4",
                 "structure_level_$": ["1"],
                 "structure_level_$1": "structure_level 1",
                 "vote_weight_$": ["1"],
@@ -444,40 +544,206 @@ class UserCreateActionTest(BaseActionTestCase):
                 "about_me_$1": "about me 1",
                 "comment_$": ["1"],
                 "comment_$1": "comment zu meeting/1",
-                "vote_delegated_$_to_id": ["1"],
-                "vote_delegated_$1_to_id": self.user_id,
-                "vote_delegations_$_from_ids": ["4"],
-                "vote_delegations_$4_from_ids": [3, 4],
-                "group_$1_ids": [2, 3],
-                "group_$4_ids": [5],
+                "vote_delegations_$_from_ids": ["1"],
+                "vote_delegations_$1_from_ids": [5, 6],
+                "meeting_ids": [1],
             },
         )
 
-    def test_create_permission_user_can_manage_no_permission(self) -> None:
-        """May create group A, B and C fields"""
+    def test_create_permission_group_B_user_can_manage_no_permission(self) -> None:
+        """Group B fields needs explicit user.can_manage permission for meeting"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+        self.set_user_groups(self.user_id, [3])  # Empty group of meeting/1
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "number_$": {"1": "number1"},
+                "group_$_ids": {"1": [1]},
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "You are not allowed to perform action user.create. Missing permission: Permission user.can_manage in meeting 1",
+            response.json["message"],
+        )
+
+    def test_create_permission_group_C_oml_manager(self) -> None:
+        """May create group C group_$_ids by OML permission"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {1: [1]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {"group_$_ids": ["1"], "group_$1_ids": [1], "username": "usersname"},
+        )
+
+    def test_create_permission_group_C_committee_manager(self) -> None:
+        """May create group C group_$_ids by committee permission"""
+        self.permission_setup()
+        self.set_committee_management_level([60], self.user_id)
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {1: [1]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {"group_$_ids": ["1"], "group_$1_ids": [1], "username": "usersname"},
+        )
+
+    def test_create_permission_group_C_user_can_manage(self) -> None:
+        """May create group C group_$_ids by user.can_manage permission"""
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])  # Admin-group
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {1: [2]},
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "usersname",
+                "group_$_ids": ["1"],
+                "group_$1_ids": [2],
+                "meeting_ids": [1],
+            },
+        )
+
+    def test_create_permission_group_C_no_permission(self) -> None:
+        """May not create group C group_$_ids"""
+        self.permission_setup()
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "group_$_ids": {1: [1]},
+            },
+        )
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {1}",
+            response.json["message"],
+        )
+
+    def test_create_permission_group_D_permission_with_OML(self) -> None:
+        """May create Group D committee fields with OML level permission for more than one committee"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
         )
-        self.set_user_groups(self.user_id, [3, 6])
-        self.set_group_permissions(3, [Permissions.User.CAN_MANAGE])
 
         response = self.request(
             "user.create",
             {
-                "username": "username",
-                "number_$": {"1": "number1", "4": "number1 in 4"},
+                "username": "usersname",
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                    "63": CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "committee_ids": [60, 63],
+                "organization_management_level": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "committee_ids": [60, 63],
+                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$63_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "organization_management_level": None,
+                "username": "usersname",
+            },
+        )
+        user3 = self.get_model("user/3")
+        assert user3.get("organization_management_level") is None
+        assert (
+            OrganizationManagementLevel(user3.get("organization_management_level"))
+            == OrganizationManagementLevel.NO_RIGHT
+        )
+
+    def test_create_permission_group_D_permission_with_CML(self) -> None:
+        """
+        May create Group D committee fields with CML permission for one committee only.
+        Note: For 2 committees he can't set the username, which is required, but within 2 committees
+        it would be organizational scope with organizational rights required.
+        To do this he could create a user with 1 committee and later he could update the
+        same user with second committee, if he has the permission for the committees.
+        """
+        self.permission_setup()
+        self.set_committee_management_level([60], self.user_id)
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "committee_ids": [60],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "committee_ids": [60],
+                "committee_$60_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "username": "usersname",
+            },
+        )
+
+    def test_create_permission_group_D_no_permission(self) -> None:
+        """May not create Group D committee fields, because of missing CML permission for one committee"""
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_committee_management_level([60], self.user_id)
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                    "63": CommitteeManagementLevel.CAN_MANAGE,
+                },
             },
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'}",
+            "You are not allowed to perform action user.create. Missing permission: CommitteeManagementLevel can_manage in committee 63",
             response.json["message"],
         )
 
-    def test_create_permission_OML_not_high_enough(self) -> None:
-        """May create group A fields only"""
+    def test_create_permission_group_E_OML_high_enough(self) -> None:
+        """OML level to set is sufficient"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -486,7 +752,30 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "username": "username",
+                "username": "usersname",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "username": "usersname",
+            },
+        )
+
+    def test_create_permission_group_E_OML_not_high_enough(self) -> None:
+        """OML level to set is higher than level of request user"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+        )
+
+        response = self.request(
+            "user.create",
+            {
+                "username": "usersname",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             },
         )
@@ -496,39 +785,19 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_create_permission_set_1(self) -> None:
-        """Rights for all field groups, but missing rights for meeting/4"""
-        self.create_meeting()
-        self.create_meeting(base=4)
-        self.user_id = self.create_user(
-            "test", group_ids=[2]
-        )  # admin-group of meeting/1
-        self.login(self.user_id)
-        self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
-        )
+    def test_create_demo_user(self) -> None:
+        """demo_user only with user.update"""
+        self.permission_setup()
+
         response = self.request(
             "user.create",
             {
-                # Group A
-                "username": "username",
-                "default_vote_weight": "1.700000",
-                "organization_management_level": "can_manage_users",
-                "committee_ids": [78],
-                # Group B
-                "vote_delegations_$_from_ids": {1: [222]},
-                "comment_$": {1: "comment<iframe></iframe>"},
-                "number_$": {4: "number"},
-                "structure_level_$": {1: "level_1", 4: "level_2"},
-                "about_me_$": {1: "<p>about</p><iframe></iframe>"},
-                "vote_weight_$": {1: "1.000000", 4: "2.333333"},
-                # Group C
-                "group_$_ids": {1: [1]},
+                "is_demo_user": True,
             },
         )
 
-        self.assert_status_code(response, 403)
+        self.assert_status_code(response, 400)
         self.assertIn(
-            "You are not allowed to perform action user.create. Missing permissions {'user.can_manage for meeting 4'} or alternative {'CommitteeManagementLevel.CAN_MANAGE for meetings {1}'}.",
+            "data must not contain {'is_demo_user'} properties",
             response.json["message"],
         )

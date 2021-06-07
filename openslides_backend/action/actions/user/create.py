@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
+from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection
@@ -38,6 +39,7 @@ class UserCreate(
             "organization_management_level",
             "is_present_in_meeting_ids",
             "committee_ids",
+            "committee_$_management_level",
             "group_$_ids",
             "vote_delegations_$_from_ids",
             "vote_delegated_$_to_id",
@@ -56,6 +58,24 @@ class UserCreate(
             or instance.get("last_name")
         ):
             raise ActionException("Need username or first_name or last_name")
+        if (
+            OrganizationManagementLevel(instance.get("organization_management_level"))
+            < OrganizationManagementLevel.CAN_MANAGE_USERS
+            and len(instance.get("group_$_ids", [])) == 0
+            and len(instance.get("committee_ids", [])) == 0
+        ):
+            raise ActionException(
+                "To create a user you need to add him to a permission-group, add him to a committee or give him an Organization Management Level of at least 'can manage users'."
+            )
+
+        if instance.get("committee_$_management_level"):
+            if diff := set(
+                instance.get("committee_$_management_level", {}).keys()
+            ) - set(map(str, instance.get("committee_ids", []))):
+                raise ActionException(
+                    f"You must add the user to the committee(s) '{', '.join(diff)}', because you want to give him committee management level permissions."
+                )
+
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)
         if not instance.get("default_password"):
