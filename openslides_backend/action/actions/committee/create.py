@@ -16,4 +16,4 @@ class CommitteeCreate(CreateAction):
         required_properties=["organization_id", "name"],
         optional_properties=["description", "user_ids", "organization_tag_ids"],
     )
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION

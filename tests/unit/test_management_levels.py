@@ -9,7 +9,7 @@ from openslides_backend.permissions.management_levels import (
 def test_orgamanagement_level_lt() -> None:
     assert (
         OrganizationManagementLevel.CAN_MANAGE_USERS
-        < OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+        < OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     )
 
 
@@ -23,7 +23,7 @@ def test_orgamanagement_level_le() -> None:
 def test_orgamanagement_level_gt() -> None:
     assert (
         OrganizationManagementLevel.SUPERADMIN
-        > OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+        > OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
     )
 
 

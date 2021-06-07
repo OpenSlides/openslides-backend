@@ -12,6 +12,6 @@ class PermissionMixin(Action):
         if not has_organization_management_level(
             self.datastore,
             self.user_id,
-            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANISATION)
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)

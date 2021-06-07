@@ -320,7 +320,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             self.test_models,
             "meeting.update",
             {"id": 1, "organization_tag_ids": [1]},
-            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
 
     def test_update_group_f_no_permission(self) -> None:

@@ -400,7 +400,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             },
         )
         self.assert_status_code(response, 403)

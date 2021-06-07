@@ -10,7 +10,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
             {
                 "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -66,7 +66,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                 },
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -129,7 +129,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                 },
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -204,7 +204,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
                     "mimetype": "image/png",
                 },
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -265,7 +265,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
             {
                 "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -294,7 +294,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
             {
                 "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -322,7 +322,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
             {
                 "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -359,7 +359,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
             {
                 "organization/1": {"name": "test_organization1"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )

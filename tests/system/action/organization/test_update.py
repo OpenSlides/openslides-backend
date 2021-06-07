@@ -77,7 +77,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
                 "organization/3": {"name": "aBuwxoYU", "description": "XrHbAWiF"},
             }
@@ -89,7 +89,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
                 "organization/3": {"name": "aBuwxoYU", "description": "XrHbAWiF"},
             }

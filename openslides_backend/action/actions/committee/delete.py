@@ -13,4 +13,4 @@ class CommitteeDeleteAction(DeleteAction):
 
     model = Committee()
     schema = DefaultSchema(Committee()).get_delete_schema()
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
