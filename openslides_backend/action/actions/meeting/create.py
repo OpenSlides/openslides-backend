@@ -2,7 +2,9 @@ from typing import Any, Dict, List, Type
 
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.schema import id_list_schema
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
@@ -31,6 +33,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             "enable_anonymous",
             "organization_tag_ids",
         ],
+        additional_optional_fields={"user_ids": id_list_schema},
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
@@ -137,7 +140,28 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             }
         ]
         self.execute_other_action(UserUpdate, action_data)
+        # Add users to default group
+        if instance.get("user_ids"):
+            user_ids = instance.pop("user_ids")
+            committee = self.datastore.get(
+                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                ["user_ids"],
+            )
+            if not all(
+                user_id in committee.get("user_ids", []) for user_id in user_ids
+            ):
+                raise ActionException("Only allowed to add users from committee.")
+            action_data = [
+                {
+                    "id": user_id,
+                    "group_$_ids": {str(instance["id"]): [fqid_default_group.id]},
+                }
+                for user_id in user_ids
+            ]
+
+            self.execute_other_action(UserUpdate, action_data)
         self.apply_instance(instance)
+
         action_data_countdowns = [
             {
                 "title": "List of speakers countdown",
