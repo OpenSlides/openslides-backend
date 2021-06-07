@@ -827,7 +827,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             },
         )
         self.assert_status_code(response, 403)
@@ -863,7 +863,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         """ demo_user only editable by Superadmin """
         self.permission_setup()
         self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION, self.user_id
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
         )
         self.update_model(
             f"user/{self.user_id}",

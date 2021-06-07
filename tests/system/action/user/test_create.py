@@ -776,7 +776,7 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "usersname",
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
             },
         )
         self.assert_status_code(response, 403)
