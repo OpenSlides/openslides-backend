@@ -3,6 +3,10 @@ from typing import Any, Dict, Iterable, cast
 from openslides_backend.action.actions.meeting.shared_meeting import (
     meeting_projector_default_replacements,
 )
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -159,7 +163,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_no_permissions(self) -> None:
         self.set_models(
             {
-                "user/1": {"organization_management_level": "can_manage_users"},
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
                 "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
                 "group/1": {},
                 "user/2": {},
@@ -183,8 +189,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": "can_manage_users",
-                    "committee_$1_management_level": "can_manage",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 }
             }
         )
