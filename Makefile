@@ -81,3 +81,6 @@ run-tests:
 
 build-dev:
 	docker build --file=dev/Dockerfile-dev . --tag=openslides-backend-dev
+
+rebuild-dev:
+	docker build --file=dev/Dockerfile-dev . --tag=openslides-backend-dev --no-cache

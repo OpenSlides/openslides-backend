@@ -56,7 +56,7 @@ class Field:
         return dict(**self.constraints)
 
     def get_payload_schema(self, *args: Any, **kwargs: Any) -> Schema:
-        """ Calls get_schema by default. """
+        """Calls get_schema by default."""
         return self.get_schema()
 
     def extend_schema(self, schema: Schema, **kwargs: Any) -> Schema:

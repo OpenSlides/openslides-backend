@@ -34,7 +34,7 @@ class BasePresenter:
         self.user_id = user_id
 
     def validate(self) -> None:
-        """ Validates the given data. If schema is not set, assumes that no data should be given. """
+        """Validates the given data. If schema is not set, assumes that no data should be given."""
         schema = type(self).schema
         if schema:
             if self.data is None:
@@ -48,5 +48,5 @@ class BasePresenter:
                 raise PresenterException("This presenter does not take data.")
 
     def get_result(self) -> Any:
-        """ Does the actual work and returns the result depending on the data. """
+        """Does the actual work and returns the result depending on the data."""
         ...

@@ -14,7 +14,7 @@ class VerbosePermission:
 
 
 class Permission(str, VerbosePermission, Enum):
-    """ Marker class to use typing with permissions. """
+    """Marker class to use typing with permissions."""
 
     def __str__(self) -> str:
         return self.value

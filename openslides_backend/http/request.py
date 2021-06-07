@@ -1,8 +1,17 @@
+from typing import Any
+
 from werkzeug.wrappers import Request as WerkzeugRequest
-from werkzeug.wrappers.json import JSONMixin
+
+from .http_exceptions import BadRequest
 
 
-class Request(JSONMixin, WerkzeugRequest):
+class Request(WerkzeugRequest):
     """
-    Customized request object. We use the JSONMixin here.
+    Customized request object to make sure a value is returned by json().
     """
+
+    @property
+    def json(self) -> Any:
+        if json := self.get_json():
+            return json
+        raise BadRequest()

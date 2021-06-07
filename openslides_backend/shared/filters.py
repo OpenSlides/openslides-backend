@@ -7,7 +7,7 @@ FilterData = Dict[str, Any]
 class Filter(ABC):
     @abstractmethod
     def to_dict(self) -> FilterData:
-        """ Return a dict representation of this filter. """
+        """Return a dict representation of this filter."""
 
 
 class FilterOperator(Filter):

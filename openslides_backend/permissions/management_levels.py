@@ -5,10 +5,13 @@ from .base_classes import VerbosePermission
 
 
 class CompareRightLevel(str, VerbosePermission, Enum):
+    _value_: Optional[str]
+    weight: Optional[int]
+
     def __new__(
         cls, value: Optional[str], weight: Optional[int] = None
     ) -> "CompareRightLevel":
-        obj = str.__new__(cls, value)  # type: ignore
+        obj = str.__new__(cls, value)
         obj._value_ = value
         obj.weight = weight
         return obj

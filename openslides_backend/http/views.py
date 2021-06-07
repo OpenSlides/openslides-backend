@@ -6,7 +6,7 @@ from ..presenter.presenter import PresenterHandler
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.wsgi import Headers, ResponseBody, View
-from .application import Request
+from .request import Request
 
 
 class BaseView(View):
