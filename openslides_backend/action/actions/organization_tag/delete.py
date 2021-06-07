@@ -13,4 +13,4 @@ class OrganizationTagDelete(DeleteAction):
 
     model = OrganizationTag()
     schema = DefaultSchema(OrganizationTag()).get_delete_schema()
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION

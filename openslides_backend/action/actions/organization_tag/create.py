@@ -15,4 +15,4 @@ class OrganizationTagCreate(CreateAction):
     schema = DefaultSchema(OrganizationTag()).get_create_schema(
         required_properties=["name", "color", "organization_id"]
     )
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION

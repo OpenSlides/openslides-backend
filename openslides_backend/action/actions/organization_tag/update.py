@@ -15,4 +15,4 @@ class OrganizationTagUpdate(UpdateAction):
     schema = DefaultSchema(OrganizationTag()).get_update_schema(
         optional_properties=["name", "color"]
     )
-    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+    permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION

@@ -8,7 +8,7 @@ class ResourceDeleteActionTest(BaseActionTestCase):
             {
                 "resource/111": {"token": "srtgb123"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )
@@ -22,7 +22,7 @@ class ResourceDeleteActionTest(BaseActionTestCase):
             {
                 "resource/112": {"token": "srtgb123"},
                 "user/1": {
-                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANISATION
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 },
             }
         )

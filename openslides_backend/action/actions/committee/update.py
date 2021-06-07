@@ -45,7 +45,7 @@ class CommitteeUpdateAction(UpdateAction):
         can_manage_organization = has_organization_management_level(
             self.datastore,
             self.user_id,
-            OrganizationManagementLevel.CAN_MANAGE_ORGANISATION,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
         if (
             any(
@@ -75,7 +75,7 @@ class CommitteeUpdateAction(UpdateAction):
             )
             and not can_manage_organization
         ):
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANISATION)
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
         if (
             "organization_tag_ids" in instance
             and not is_manager
