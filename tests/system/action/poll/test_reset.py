@@ -82,3 +82,38 @@ class PollResetActionTest(BaseActionTestCase):
             {"id": 1},
             Permissions.Poll.CAN_MANAGE,
         )
+
+    def test_reset_not_allowed_to_vote_again(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "group/1": {"user_ids": [1]},
+                "user/1": {"group_$1_ids": [1], "is_present_in_meeting_ids": [1]},
+                "poll/1": {
+                    "state": "started",
+                    "option_ids": [1],
+                    "global_option_id": 2,
+                    "meeting_id": 1,
+                    "entitled_group_ids": [1],
+                    "pollmethod": "Y",
+                },
+                "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
+                "option/2": {
+                    "vote_ids": [3],
+                    "used_as_global_option_in_poll_id": 1,
+                    "meeting_id": 1,
+                },
+                "vote/1": {"option_id": 1, "meeting_id": 1},
+                "vote/2": {"option_id": 1, "meeting_id": 1},
+                "vote/3": {"option_id": 2, "meeting_id": 1},
+            }
+        )
+
+        response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": {"1": 1}})
+        self.assert_status_code(response, 200)
+        response = self.request("poll.reset", {"id": 1})
+        self.assert_status_code(response, 200)
+        response = self.request("poll.start", {"id": 1})
+        self.assert_status_code(response, 200)
+        response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": {"1": 1}})
+        self.assert_status_code(response, 200)
