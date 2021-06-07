@@ -34,7 +34,7 @@ class PermissionVarStore:
 
     @property
     def user_committees(self) -> Set[int]:
-        """ Set of committee-ids where the request user has manage rights """
+        """Set of committee-ids where the request user has manage rights"""
         if self._user_committees is None:
             (
                 self._user_committees,
@@ -46,7 +46,7 @@ class PermissionVarStore:
 
     @property
     def user_committees_meetings(self) -> Set[int]:
-        """ Set of meetings where the request user has manage rights from committee """
+        """Set of meetings where the request user has manage rights from committee"""
         if self._user_committees is None:
             (
                 self._user_committees,
@@ -58,7 +58,7 @@ class PermissionVarStore:
 
     @property
     def user_meetings(self) -> Set[int]:
-        """ Set of meetings where the request user has user.can_manage permissions """
+        """Set of meetings where the request user has user.can_manage permissions"""
         if self._user_meetings is None:
             self._user_meetings = self._get_user_meetings_with_user_can_manage(
                 self.user.get("group_$_ids", [])
@@ -208,7 +208,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     def check_group_A(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """ Check Group A common fields: Depending on scope of user to act on """
+        """Check Group A common fields: Depending on scope of user to act on"""
         if (
             not fields
             or permstore.user_oml >= OrganizationManagementLevel.CAN_MANAGE_USERS
@@ -249,7 +249,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     def check_group_B(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """ Check Group B meeting template fields: Only meeting.permissions for each meeting """
+        """Check Group B meeting template fields: Only meeting.permissions for each meeting"""
         if fields:
             meeting_ids = self._meetings_from_group_B_fields_from_instance(
                 fields, instance
@@ -262,7 +262,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     def check_group_C(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """ Check Group C group_$_ids: OML, CML or meeting.permissions for each meeting """
+        """Check Group C group_$_ids: OML, CML or meeting.permissions for each meeting"""
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
             touch_meeting_ids: Set[int] = set(
                 map(int, instance.get("group_$_ids", dict()).keys())
@@ -277,7 +277,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                 )
             )
             old_meeting_ids: Set[int] = set()
-            if (instance_user_id := instance.get("id")) :
+            if instance_user_id := instance.get("id"):
                 old_meeting_ids = set(
                     map(
                         int,
@@ -330,10 +330,10 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     def check_group_D(
         self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
     ) -> None:
-        """ Check Group D committee-related fields: OML or CML level for each committee """
+        """Check Group D committee-related fields: OML or CML level for each committee"""
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
             committees = self._get_all_committees_from_instance(instance)
-            if (diff := committees - permstore.user_committees) :
+            if diff := committees - permstore.user_committees:
                 raise MissingPermission(
                     {
                         CommitteeManagementLevel.CAN_MANAGE: committee_id
@@ -342,12 +342,12 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                 )
 
     def check_group_E(self, permstore: PermissionVarStore, fields: List[str]) -> None:
-        """ Check Group E organization_management_level: OML level necessary """
+        """Check Group E organization_management_level: OML level necessary"""
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
     def check_group_F(self, fields: List[str]) -> None:
-        """ Group F: OML SUPERADMIN necessary, which is checked before """
+        """Group F: OML SUPERADMIN necessary, which is checked before"""
         if fields:
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 

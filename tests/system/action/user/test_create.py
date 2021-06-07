@@ -273,7 +273,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_committe_manager_without_committee_ids(self) -> None:
-        """ Giving committee management level requires committee_ids """
+        """Giving committee management level requires committee_ids"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -372,7 +372,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_A_oml_manage_user(self) -> None:
-        """ May create group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
+        """May create group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -419,7 +419,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_A_cml_manage_user(self) -> None:
-        """ May create group A fields on cml scope"""
+        """May create group A fields on cml scope"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_models(
@@ -456,7 +456,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_A_user_can_manage(self) -> None:
-        """ May create group A fields on meeting scope"""
+        """May create group A fields on meeting scope"""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
         response = self.request(
@@ -476,7 +476,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_A_no_permission(self) -> None:
-        """ May not create group A fields on organsisation scope, although having both committee permissions"""
+        """May not create group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.update_model(
@@ -504,7 +504,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_B_user_can_manage(self) -> None:
-        """ create group B fields with simple user.can_manage permissions """
+        """create group B fields with simple user.can_manage permissions"""
         self.permission_setup()
         self.set_organization_management_level(None, self.user_id)
         self.set_user_groups(self.user_id, [2])  # Admin groups of meeting/1
@@ -551,7 +551,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_B_user_can_manage_no_permission(self) -> None:
-        """ Group B fields needs explicit user.can_manage permission for meeting """
+        """Group B fields needs explicit user.can_manage permission for meeting"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -573,7 +573,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_C_oml_manager(self) -> None:
-        """ May create group C group_$_ids by OML permission """
+        """May create group C group_$_ids by OML permission"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -593,7 +593,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_C_committee_manager(self) -> None:
-        """ May create group C group_$_ids by committee permission """
+        """May create group C group_$_ids by committee permission"""
         self.permission_setup()
         self.set_committee_management_level([60], self.user_id)
 
@@ -611,7 +611,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_C_user_can_manage(self) -> None:
-        """ May create group C group_$_ids by user.can_manage permission """
+        """May create group C group_$_ids by user.can_manage permission"""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])  # Admin-group
 
@@ -635,7 +635,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_C_no_permission(self) -> None:
-        """ May not create group C group_$_ids """
+        """May not create group C group_$_ids"""
         self.permission_setup()
 
         response = self.request(
@@ -652,7 +652,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_D_permission_with_OML(self) -> None:
-        """ May create Group D committee fields with OML level permission for more than one committee """
+        """May create Group D committee fields with OML level permission for more than one committee"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_organization_management_level(
@@ -721,7 +721,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_D_no_permission(self) -> None:
-        """ May not create Group D committee fields, because of missing CML permission for one committee """
+        """May not create Group D committee fields, because of missing CML permission for one committee"""
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_committee_management_level([60], self.user_id)
@@ -743,7 +743,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_E_OML_high_enough(self) -> None:
-        """ OML level to set is sufficient """
+        """OML level to set is sufficient"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -766,7 +766,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_permission_group_E_OML_not_high_enough(self) -> None:
-        """ OML level to set is higher than level of request user """
+        """OML level to set is higher than level of request user"""
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
@@ -786,7 +786,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_demo_user(self) -> None:
-        """ demo_user only with user.update """
+        """demo_user only with user.update"""
         self.permission_setup()
 
         response = self.request(
