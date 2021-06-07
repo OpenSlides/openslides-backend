@@ -6,8 +6,6 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import Collection, FullQualifiedId
-from ...generics.delete import DeleteAction
-from ...generics.update import UpdateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -191,25 +189,3 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         if has_perm(self.datastore, self.user_id, permission, meeting_id):
             return
         raise MissingPermission(permission)
-
-
-@register_action("speaker.update")
-class SpeakerUpdate(UpdateAction):
-    model = Speaker()
-    schema = DefaultSchema(Speaker()).get_update_schema(["speech_state"])
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
-
-
-@register_action("speaker.delete")
-class SpeakerDeleteAction(DeleteAction):
-    model = Speaker()
-    schema = DefaultSchema(Speaker()).get_delete_schema()
-    permission = Permissions.ListOfSpeakers.CAN_MANAGE
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        speaker = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["user_id"]
-        )
-        if speaker.get("user_id") == self.user_id:
-            return
-        super().check_permissions(instance)
