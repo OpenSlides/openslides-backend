@@ -166,6 +166,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/2", {f"group_${meeting['id']}_ids": [default_group_id]}
         )
+        admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists(
+            "user/1", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )
 
     def test_create_users_not_committee_user(self) -> None:
         self.set_models(
