@@ -5,7 +5,7 @@ from openslides_backend.action.actions.meeting.shared_meeting import (
 )
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
-    OrganisationManagementLevel,
+    OrganizationManagementLevel,
 )
 from tests.system.action.base import BaseActionTestCase
 
@@ -164,7 +164,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
                 },
                 "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
                 "group/1": {},
@@ -189,7 +189,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organisation_management_level": OrganisationManagementLevel.CAN_MANAGE_USERS,
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 }
             }
