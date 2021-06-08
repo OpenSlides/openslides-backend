@@ -22,15 +22,13 @@ from .shared_meeting import meeting_projector_default_replacements
 class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_create_schema(
-        required_properties=["committee_id", "name", "welcome_title"],
+        required_properties=["committee_id", "name"],
         optional_properties=[
-            "welcome_text",
             "description",
             "location",
             "start_time",
             "end_time",
             "url_name",
-            "enable_anonymous",
             "organization_tag_ids",
         ],
         additional_optional_fields={"user_ids": id_list_schema},
