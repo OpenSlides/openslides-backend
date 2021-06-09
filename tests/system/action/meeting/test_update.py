@@ -239,14 +239,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
-            self.test_models, "meeting.update", {"id": 1, "name": "Hallo"}
+            self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
         )
 
     def test_update_group_a_permissions(self) -> None:
         self.base_permission_test(
             self.test_models,
             "meeting.update",
-            {"id": 1, "name": "Hallo"},
+            {"id": 1, "welcome_title": "Hallo"},
             Permissions.Meeting.CAN_MANAGE_SETTINGS,
         )
 

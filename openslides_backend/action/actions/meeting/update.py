@@ -20,6 +20,8 @@ from ...util.register import register_action
 from ..meeting.shared_meeting import used_as_default_for_schema_required
 
 meeting_settings_keys = [
+    "welcome_title",
+    "welcome_text",
     "name",
     "description",
     "location",
@@ -133,6 +135,7 @@ class MeetingUpdate(UpdateAction):
             "jitsi_domain",
             "jitsi_room_name",
             "jitsi_room_password",
+            "enable_anonymous",
             "present_user_ids",
         ],
         additional_optional_fields={
@@ -190,7 +193,15 @@ class MeetingUpdate(UpdateAction):
             raise MissingPermission(Permissions.Projector.CAN_MANAGE)
 
         # group D check
-        if "url_name" in instance:
+        if any(
+            [
+                field in instance
+                for field in [
+                    "url_name",
+                    "enable_anonymous",
+                ]
+            ]
+        ):
             meeting = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 ["admin_group_id"],
