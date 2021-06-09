@@ -27,6 +27,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
             FullQualifiedId(self.model.collection, instance["id"]), ["type"]
         )
         instance["is_pseudoanonymized"] = poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS
+        instance["voted_ids"] = []
         return instance
 
     def delete_all_votes(self, poll_id: int) -> None:
