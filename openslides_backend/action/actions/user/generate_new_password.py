@@ -4,7 +4,6 @@ from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 from .password_mixin import PasswordCreateMixin
 from .set_password import UserSetPasswordMixin
 from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
@@ -23,7 +22,6 @@ class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
 
 @register_action("user.generate_new_password")
 class UserGenerateNewPassword(
-    CheckTemporaryNoForInstanceMixin,
     UserGenerateNewPasswordMixin,
     UserScopePermissionCheckMixin,
 ):
