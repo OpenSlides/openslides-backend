@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "1cd96af207781c2cae32125ed2bf8f28"
+MODELS_YML_CHECKSUM = "6c8e1c905d50e9d199b288c51e205fe4"
 
 
 class Organization(Model):
@@ -239,6 +239,7 @@ class Meeting(Model):
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()
+    enable_chat = fields.BooleanField()
     url_name = fields.CharField(constraints={"description": "For unique urls."})
     template_for_committee_id = fields.RelationField(
         to={Collection("committee"): "template_meeting_id"}
@@ -528,6 +529,9 @@ class Meeting(Model):
         to={Collection("personal_note"): "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
+    chat_group_ids = fields.RelationListField(
+        to={Collection("chat_group"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     logo__id = fields.TemplateRelationField(
         index=5,
         to={Collection("mediafile"): "used_as_logo_$_in_meeting_id"},
@@ -599,6 +603,7 @@ class Group(Model):
                 "assignment.can_nominate_other",
                 "assignment.can_nominate_self",
                 "assignment.can_see",
+                "chat.can_manage",
                 "list_of_speakers.can_be_speaker",
                 "list_of_speakers.can_manage",
                 "list_of_speakers.can_see",
@@ -651,6 +656,12 @@ class Group(Model):
     write_comment_section_ids = fields.RelationListField(
         to={Collection("motion_comment_section"): "write_group_ids"},
         equal_fields="meeting_id",
+    )
+    read_chat_group_ids = fields.RelationListField(
+        to={Collection("chat_group"): "read_group_ids"}, equal_fields="meeting_id"
+    )
+    write_chat_group_ids = fields.RelationListField(
+        to={Collection("chat_group"): "write_group_ids"}, equal_fields="meeting_id"
     )
     poll_ids = fields.RelationListField(
         to={Collection("poll"): "entitled_group_ids"}, equal_fields="meeting_id"
@@ -1626,4 +1637,22 @@ class ProjectorCountdown(Model):
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "projector_countdown_ids"}
+    )
+
+
+class ChatGroup(Model):
+    collection = Collection("chat_group")
+    verbose_name = "chat group"
+
+    id = fields.IntegerField()
+    name = fields.CharField(required=True)
+    weight = fields.IntegerField(default=10000)
+    read_group_ids = fields.RelationListField(
+        to={Collection("group"): "read_chat_group_ids"}, equal_fields="meeting_id"
+    )
+    write_group_ids = fields.RelationListField(
+        to={Collection("group"): "write_chat_group_ids"}, equal_fields="meeting_id"
+    )
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "chat_group_ids"}, required=True
     )

@@ -19,6 +19,10 @@ class _Assignment(Permission, Enum):
     CAN_SEE = "assignment.can_see"
 
 
+class _Chat(Permission, Enum):
+    CAN_MANAGE = "chat.can_manage"
+
+
 class _ListOfSpeakers(Permission, Enum):
     CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
     CAN_MANAGE = "list_of_speakers.can_manage"
@@ -72,6 +76,7 @@ class _User(Permission, Enum):
 class Permissions:
     AgendaItem = _AgendaItem
     Assignment = _Assignment
+    Chat = _Chat
     ListOfSpeakers = _ListOfSpeakers
     Mediafile = _Mediafile
     Meeting = _Meeting
@@ -94,6 +99,7 @@ permission_parents: Dict[Permission, List[Permission]] = {
     _Assignment.CAN_NOMINATE_OTHER: [_Assignment.CAN_MANAGE],
     _Assignment.CAN_MANAGE: [],
     _Assignment.CAN_NOMINATE_SELF: [],
+    _Chat.CAN_MANAGE: [],
     _ListOfSpeakers.CAN_SEE: [
         _ListOfSpeakers.CAN_MANAGE,
         _ListOfSpeakers.CAN_BE_SPEAKER,
