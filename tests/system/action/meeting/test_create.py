@@ -22,7 +22,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
-                "welcome_title": "test_wel_title",
                 "organization_tag_ids": [3],
                 **datapart,
             },
@@ -143,22 +142,18 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_check_action_data_fields(self) -> None:
         meeting = self.basic_test(
             {
-                "welcome_text": "htXiSgbj",
                 "description": "RRfnzxHA",
                 "location": "LSFHPTgE",
                 "start_time": 1608120653,
                 "end_time": 1608121653,
                 "url_name": "JWdYZqDX",
-                "enable_anonymous": False,
             }
         )
-        assert meeting.get("welcome_text") == "htXiSgbj"
         assert meeting.get("description") == "RRfnzxHA"
         assert meeting.get("location") == "LSFHPTgE"
         assert meeting.get("start_time") == 1608120653
         assert meeting.get("end_time") == 1608121653
         assert meeting.get("url_name") == "JWdYZqDX"
-        assert meeting.get("enable_anonymous") is False
 
     def test_create_check_users(self) -> None:
         meeting = self.basic_test({"user_ids": [2]})
@@ -186,7 +181,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
-                "welcome_title": "test_wel_title",
                 "user_ids": [3],
             },
         )
@@ -210,7 +204,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_name",
                 "committee_id": 1,
-                "welcome_title": "test_wel_title",
             },
         )
         self.assert_status_code(response, 403)
