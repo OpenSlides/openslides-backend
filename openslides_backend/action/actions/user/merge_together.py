@@ -9,10 +9,10 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("user.merge_to_non_temporary")
-class UserMergeToNonTemporaray(CreateAction):
+@register_action("user.merge_together")
+class UserMergeTogether(CreateAction):
     """
-    Action to merge temporary users to one standard user.
+    Action to merge users together.
     """
 
     model = User()
@@ -35,7 +35,7 @@ class UserMergeToNonTemporaray(CreateAction):
         ],
         additional_required_fields={
             "user_ids": {
-                "description": "A list of temporary user ids to merge into a standard user.",
+                "description": "A list of user ids to merge into a user.",
                 **id_list_schema,
             }
         },
