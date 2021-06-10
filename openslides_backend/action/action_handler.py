@@ -99,8 +99,8 @@ class ActionHandler(BaseHandler):
         else:
 
             def transform_to_list(
-                tuple: Tuple[Optional[WriteRequest], ActionResults]
-            ) -> Tuple[List[WriteRequest], ActionResults]:
+                tuple: Tuple[Optional[WriteRequest], Optional[ActionResults]]
+            ) -> Tuple[List[WriteRequest], Optional[ActionResults]]:
                 return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 
             for element in payload:
@@ -184,7 +184,7 @@ class ActionHandler(BaseHandler):
         self,
         action_payload_element: PayloadElement,
         relation_manager: Optional[RelationManager] = None,
-    ) -> Tuple[Optional[WriteRequest], ActionResults]:
+    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
         if ActionClass is None or (ActionClass.internal and not is_dev_mode()):

@@ -111,7 +111,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
-    ) -> Tuple[Optional[WriteRequest], ActionResults]:
+    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
         """
         Entrypoint to perform the action.
         """
@@ -157,7 +157,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         final_write_request = self.process_write_requests()
         # by default, for actions which changed the updated instances, just return None
         if not is_original_instances and not self.results:
-            self.results = [None]
+            return (final_write_request, None)
 
         return (final_write_request, self.results)
 
@@ -488,7 +488,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self,
         ActionClass: Type["Action"],
         action_data: ActionData,
-    ) -> ActionResults:
+    ) -> Optional[ActionResults]:
         """
         Executes the given action class as a dependent action with the given action
         data and the given addtional relation models. Merges its own additional
