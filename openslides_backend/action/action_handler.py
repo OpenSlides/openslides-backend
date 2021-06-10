@@ -205,6 +205,9 @@ class ActionHandler(BaseHandler):
 
                 # add locked_fields to request
                 write_request.locked_fields = self.datastore.locked_fields
+                # reset locked fields, but not addtional relation models - these might be needed
+                # by another action
+                self.datastore.locked_fields = {}
 
             return (write_request, results)
         except ActionException as exception:

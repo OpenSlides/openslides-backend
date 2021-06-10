@@ -171,7 +171,7 @@ class ResourceUploadActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'organization/1/resource_ids', 'resource/1', 'resource/1/organization_id', 'resource/organization_id', 'resource/token'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'organization/1/resource_ids'",
             response.json["message"],
         )
         self.assert_model_exists("organization/1", {"resource_ids": [1]})

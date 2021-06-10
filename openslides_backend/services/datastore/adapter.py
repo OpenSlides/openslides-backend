@@ -25,7 +25,7 @@ from .deleted_models_behaviour import (
     InstanceAdditionalBehaviour,
 )
 from .http_engine import HTTPEngine as Engine
-from .interface import DatastoreService, PartialModel
+from .interface import DatastoreService, LockResult, PartialModel
 
 # TODO: Use proper typing here.
 DatastoreResponse = Any
@@ -38,12 +38,15 @@ class DatastoreAdapter(DatastoreService):
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
     locked_fields: Dict[str, CollectionFieldLock]
+    additional_relation_models: ModelMap
+    additional_relation_model_locks: Dict[FullQualifiedId, int]
 
     def __init__(self, engine: Engine, logging: LoggingModule) -> None:
         self.logger = logging.getLogger(__name__)
         self.engine = engine
         self.locked_fields = {}
-        self.additional_relation_models: ModelMap = defaultdict(dict)
+        self.additional_relation_models = defaultdict(dict)
+        self.additional_relation_model_locks = {}
 
     def retrieve(self, command: commands.Command) -> DatastoreResponse:
         """
@@ -102,7 +105,7 @@ class DatastoreAdapter(DatastoreService):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = True,
+        lock_result: LockResult = True,
     ) -> PartialModel:
         mapped_fields_set = set()
         if mapped_fields:
@@ -125,6 +128,8 @@ class DatastoreAdapter(DatastoreService):
                 raise DatastoreException(
                     "Response from datastore does not contain field 'meta_position' but this is required."
                 )
+            if isinstance(lock_result, list):
+                mapped_fields_set = set(lock_result)
             self.update_locked_fields_from_mapped_fields(
                 fqid, instance_position, mapped_fields_set
             )
@@ -425,6 +430,15 @@ class DatastoreAdapter(DatastoreService):
                 else:
                     new_value = old_pos + [lock]
         self.locked_fields[str(key)] = new_value
+        # save to additional models locks in case it is needed later
+        if isinstance(key, (FullQualifiedId, FullQualifiedField)):
+            if isinstance(key, FullQualifiedId):
+                fqid = key
+            else:
+                fqid = FullQualifiedId(key.collection, key.id)
+            # new value already holds the lower of both locks if there previously was one
+            assert isinstance(new_value, int)
+            self.additional_relation_model_locks[fqid] = new_value
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
         command = commands.ReserveIds(collection=collection, amount=amount)
@@ -489,25 +503,33 @@ class DatastoreAdapter(DatastoreService):
         datastore_exception: Optional[DatastoreException] = None
 
         def get_additional() -> Tuple[bool, Dict[str, Any]]:
-            if fqid in self.additional_relation_models and (
+            if (model := self.additional_relation_models.get(fqid)) and (
                 get_deleted_models == DeletedModelsBehaviour.ALL_MODELS
                 or (
-                    isinstance(self.additional_relation_models[fqid], DeletedModel)
+                    isinstance(model, DeletedModel)
                     == (get_deleted_models == DeletedModelsBehaviour.ONLY_DELETED)
                 )
             ):
+                found_fields = set()
                 complete = True
                 if mapped_fields:
                     instance = {}
                     for field in mapped_fields:
-                        if field in self.additional_relation_models[fqid]:
-                            instance[field] = self.additional_relation_models[fqid][
-                                field
-                            ]
-                        else:
-                            complete = False
+                        if field in model:
+                            instance[field] = model[field]
+                            found_fields.add(field)
+                    if len(mapped_fields) != len(found_fields):
+                        complete = False
+                    if lock_result and fqid in self.additional_relation_model_locks:
+                        position = self.additional_relation_model_locks[fqid]
+                        self.update_locked_fields_from_mapped_fields(
+                            fqid, position, found_fields
+                        )
                 else:
-                    instance = self.additional_relation_models[fqid]
+                    instance = model
+                    if lock_result and fqid in self.additional_relation_model_locks:
+                        position = self.additional_relation_model_locks[fqid]
+                        self.update_locked_fields(fqid, position)
                 return (complete, instance)
             else:
                 return (False, {})

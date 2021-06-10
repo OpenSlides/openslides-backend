@@ -230,7 +230,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'committee/1/meeting_ids', 'meeting/1/committee_id'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'committee/1/meeting_ids'",
             response.json["message"],
         )
         self.assert_model_exists("meeting/1")
