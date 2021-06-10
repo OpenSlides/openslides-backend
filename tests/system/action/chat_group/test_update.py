@@ -44,6 +44,28 @@ class ChatGroupUpdate(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Chat is not enabled." in response.json["message"]
 
+    def test_update_group_from_different_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"enable_chat": True},
+                "meeting/2": {},
+                "chat_group/1": {
+                    "meeting_id": 1,
+                    "name": "redekreis1",
+                },
+                "group/1": {"meeting_id": 2},
+            }
+        )
+        response = self.request(
+            "chat_group.update",
+            {"id": 1, "name": "test", "read_group_ids": [1], "write_group_ids": [1]},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "The following models do not belong to meeting 1: ['group/1']"
+            in response.json["message"]
+        )
+
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "chat_group.update", {"id": 1, "name": "test"}
