@@ -25,6 +25,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/111")
+        assert response.json["results"] == [None]
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

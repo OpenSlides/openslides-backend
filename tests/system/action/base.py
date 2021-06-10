@@ -43,7 +43,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         if response.status_code == 200:
             results = response.json.get("results", [])
             assert len(results) == 1
-            assert len(results[0]) == len(data)
+            assert results[0] is None or len(results[0]) == len(data)
         return response
 
     def request_json(self, payload: Payload, anonymous: bool = False) -> Response:
