@@ -332,6 +332,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_domain": "test",
                 "jitsi_room_name": "room1",
                 "jitsi_room_password": "blablabla",
+                "enable_chat": True,
             },
         )
 
@@ -344,6 +345,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "jitsi_domain": "test",
                 "jitsi_room_name": "room1",
                 "jitsi_room_password": "blablabla",
+                "enable_chat": True,
             },
             OrganizationManagementLevel.SUPERADMIN,
         )

@@ -135,6 +135,7 @@ class MeetingUpdate(UpdateAction):
             "jitsi_domain",
             "jitsi_room_name",
             "jitsi_room_password",
+            "enable_chat",
             "enable_anonymous",
             "present_user_ids",
         ],
@@ -244,6 +245,7 @@ class MeetingUpdate(UpdateAction):
                     "jitsi_domain",
                     "jitsi_room_name",
                     "jitsi_room_password",
+                    "enable_chat",
                 ]
             ]
         ):
