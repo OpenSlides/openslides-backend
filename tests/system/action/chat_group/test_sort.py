@@ -79,7 +79,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Id 32 not in db_instances." in response.json["message"]
 
-    def test_sort_another_section_db(self) -> None:
+    def test_sort_additional_chat_groups_in_meeting(self) -> None:
         self.set_models(
             {
                 "meeting/222": {"name": "name_SNLGsvIV", "enable_chat": True},

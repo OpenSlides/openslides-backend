@@ -4,7 +4,7 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class ChatGroupDelete(BaseActionTestCase):
+class ChatGroupUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
