@@ -2,16 +2,16 @@ from typing import Any, Dict
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import Collection
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import ChatEnabledMixin
 
 
 @register_action("chat_group.create")
-class ChatGroupCreate(CreateAction):
+class ChatGroupCreate(ChatEnabledMixin, CreateAction):
     """
     Action to create a chat group.
     """
@@ -24,15 +24,7 @@ class ChatGroupCreate(CreateAction):
     permission = Permissions.Chat.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
-            ["enable_chat"],
-        )
-
-        # if chat is not enabled raise error
-        if not meeting.get("enable_chat"):
-            raise ActionException("Chat is not enabled.")
-
+        instance = super().update_instance(instance)
         instance["weight"] = self.get_weight(instance["meeting_id"])
         return instance
 
