@@ -163,11 +163,10 @@ class UserMixin(Action):
                     ],
                 }
             )
-        for field_name in ("meeting_id", "guest_meeting_ids"):
-            if instance.get(field_name) is not None:
-                self.datastore.additional_relation_models[user_fqid].update(
-                    {field_name: instance.get(field_name)}
-                )
+        if instance.get("meeting_id") is not None:
+            self.datastore.additional_relation_models[user_fqid].update(
+                {"meeting_id": instance.get("meeting_id")}
+            )
         for meeting_id, user_id in instance.get("vote_delegated_$_to_id", {}).items():
             if user_id:
                 meeting_users[meeting_id].append(

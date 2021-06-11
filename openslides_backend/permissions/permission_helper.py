@@ -17,7 +17,6 @@ def has_perm(
             FullQualifiedId(Collection("user"), user_id),
             [
                 f"group_${meeting_id}_ids",
-                "guest_meeting_ids",
                 "organization_management_level",
             ],
             lock_result=False,
