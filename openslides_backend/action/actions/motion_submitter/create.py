@@ -31,6 +31,9 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
     relation_field_for_meeting = "motion_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Check if motion and user belong to the same meeting.
+        """
         instance = self.update_instance_with_meeting_id(instance)
         meeting_id = instance["meeting_id"]  # meeting_id is set from motion
         if not has_organization_management_level(
