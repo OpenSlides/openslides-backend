@@ -6,7 +6,6 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .check_temporary_mixin import CheckTemporaryNoForInstanceMixin
 from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
@@ -26,7 +25,6 @@ class UserResetPasswordToDefaultMixin(UpdateAction):
 
 @register_action("user.reset_password_to_default")
 class UserResetPasswordToDefaultAction(
-    CheckTemporaryNoForInstanceMixin,
     UserResetPasswordToDefaultMixin,
     UserScopePermissionCheckMixin,
 ):

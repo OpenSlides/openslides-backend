@@ -2,10 +2,10 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from tests.system.action.base import BaseActionTestCase
 
 
-class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
+class UserMergeTogether(BaseActionTestCase):
     def test_not_implemented_with_superadmin(self) -> None:
         response = self.request(
-            "user.merge_to_non_temporary", {"username": "new user", "user_ids": []}
+            "user.merge_together", {"username": "new user", "user_ids": []}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -14,7 +14,7 @@ class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
         )
 
     def test_empty_payload_fields(self) -> None:
-        response = self.request("user.merge_to_non_temporary", {})
+        response = self.request("user.merge_together", {})
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must contain ['username', 'user_ids'] properties",
@@ -28,7 +28,7 @@ class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
         )
         self.login(self.user_id)
         response = self.request(
-            "user.merge_to_non_temporary", {"username": "new user", "user_ids": []}
+            "user.merge_together", {"username": "new user", "user_ids": []}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -40,10 +40,10 @@ class UserMergeToNonTemporaryActionTest(BaseActionTestCase):
         self.user_id = self.create_user("test")
         self.login(self.user_id)
         response = self.request(
-            "user.merge_to_non_temporary", {"username": "new user", "user_ids": []}
+            "user.merge_together", {"username": "new user", "user_ids": []}
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action user.merge_to_non_temporary. Missing OrganizationManagementLevel: can_manage_users",
+            "You are not allowed to perform action user.merge_together. Missing OrganizationManagementLevel: can_manage_users",
             response.json["message"],
         )

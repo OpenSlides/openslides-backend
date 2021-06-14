@@ -14,9 +14,9 @@ from .typing import ListUpdateElement, RelationUpdates
 
 class MeetingUserIdsHandler(CalculatedFieldHandler):
     """
-    CalculatedFieldsHandler to fill the field meeting.user_ids. It is a union of
-    meeting.temporary_user_ids, meeting.guest_ids and all users in all groups of the
-    meeting. This handles all necessary field updates simultaniously.
+    CalculatedFieldsHandler to fill the field meeting.user_ids.
+    It uses all users in all groups of the meeting.
+    This handles all necessary field updates simultaniously.
     """
 
     def process_field(

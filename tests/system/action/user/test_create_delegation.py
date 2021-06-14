@@ -33,22 +33,14 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
 
     def request_executor(self, action: str, user4_update: Dict[str, Any]) -> Response:
         request_data: Dict[str, Any] = {"username": "user/4"}
-        if action == "user.create":
-            request_data["group_$_ids"] = {"222": [1]}
-        else:
-            request_data["meeting_id"] = 222
+        request_data["group_$_ids"] = {"222": [1]}
         request_data.update(user4_update)
         return self.request(action, request_data)
 
     def test_create_delegated_to_error_standard_user(self) -> None:
-        self.t_create_delegated_to_error(
+        response = self.request_executor(
             "user.create", {"vote_delegated_$_to_id": {222: 2}}
         )
-
-    def t_create_delegated_to_error(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> None:
-        response = self.request_executor(action, user4_update)
         self.assert_status_code(response, 400)
         self.assertIn(
             "User 4 cannot delegate his vote to user 2, because that user has delegated his vote himself.",
@@ -56,50 +48,31 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_create_delegated_to_standard_user(self) -> None:
-        self.t_create_delegated_to("user.create", {"vote_delegated_$_to_id": {222: 3}})
-
-    def t_create_delegated_to(self, action: str, user4_update: Dict[str, Any]) -> None:
-        response = self.request_executor(action, user4_update)
+        response = self.request_executor(
+            "user.create", {"vote_delegated_$_to_id": {222: 3}}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"vote_delegated_$222_to_id": 3})
         self.assert_model_exists("user/3", {"vote_delegations_$222_from_ids": [2, 4]})
 
     def test_create_delegated_to_error_meeting_1_standard_user(self) -> None:
-        response = self.t_create_delegated_to_error_meeting_1(
-            "user.create",
-            {"vote_delegated_$_to_id": {"222": 2}, "group_$_ids": {"223": [2]}},
-        )
-        self.assertIn(
-            "The following models do not belong to meeting 222: ['user/4']",
-            response.json["message"],
-        )
-
-    def t_create_delegated_to_error_meeting_1(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> Response:
         self.set_models(
             {
                 "meeting/223": {"name": "Meeting223"},
                 "group/2": {"meeting_id": 223},
             }
         )
-        response = self.request_executor(action, user4_update)
-        self.assert_status_code(response, 400)
-        return response
-
-    def test_create_delegated_to_error_meeting_2_standard_user(self) -> None:
-        response = self.t_create_delegated_to_error_meeting_2(
+        response = self.request_executor(
             "user.create",
-            {"vote_delegated_$_to_id": {"223": 1}, "group_$_ids": {"222": [1]}},
+            {"vote_delegated_$_to_id": {"222": 2}, "group_$_ids": {"223": [2]}},
         )
+        self.assert_status_code(response, 400)
         self.assertIn(
-            "The following models do not belong to meeting 223: ['user/4']",
+            "The following models do not belong to meeting 222: ['user/4']",
             response.json["message"],
         )
 
-    def t_create_delegated_to_error_meeting_2(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> Response:
+    def test_create_delegated_to_error_meeting_2_standard_user(self) -> None:
         self.set_models(
             {
                 "meeting/223": {"name": "Meeting223"},
@@ -111,32 +84,28 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
                 },
             }
         )
-        response = self.request_executor(action, user4_update)
+        response = self.request_executor(
+            "user.create",
+            {"vote_delegated_$_to_id": {"223": 1}, "group_$_ids": {"222": [1]}},
+        )
         self.assert_status_code(response, 400)
-        return response
-
-    def test_create_delegations_from_user2_standard_user(self) -> None:
-        self.t_create_delegations_from_user2(
-            "user.create", {"vote_delegations_$_from_ids": {222: [2]}}
+        self.assertIn(
+            "The following models do not belong to meeting 223: ['user/4']",
+            response.json["message"],
         )
 
-    def t_create_delegations_from_user2(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> None:
-        response = self.request_executor(action, user4_update)
+    def test_create_delegations_from_user2_standard_user(self) -> None:
+        response = self.request_executor(
+            "user.create", {"vote_delegations_$_from_ids": {222: [2]}}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"vote_delegations_$222_from_ids": [2]})
         self.assert_model_exists("user/2", {"vote_delegated_$222_to_id": 4})
 
     def test_create_delegations_from_user3_error_standard_user(self) -> None:
-        self.t_create_delegations_from_user3_error(
+        response = self.request_executor(
             "user.create", {"vote_delegations_$_from_ids": {222: [3]}}
         )
-
-    def t_create_delegations_from_user3_error(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> None:
-        response = self.request_executor(action, user4_update)
         self.assert_status_code(response, 400)
         self.assertIn(
             "User(s) [3] can't delegate their votes because they receive vote delegations.",
@@ -144,27 +113,21 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_create_delegations_from_error_meeting_1_standard_user(self) -> None:
-        response = self.t_create_delegations_from_error_meeting_1(
-            "user.create",
-            {"vote_delegations_$_from_ids": {"222": [2]}, "group_$_ids": {"223": [2]}},
-        )
-        self.assertIn(
-            "The following models do not belong to meeting 222: ['user/4']",
-            response.json["message"],
-        )
-
-    def t_create_delegations_from_error_meeting_1(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> Response:
         self.set_models(
             {
                 "meeting/223": {"name": "Meeting223"},
                 "group/2": {"meeting_id": 223},
             }
         )
-        response = self.request_executor(action, user4_update)
+        response = self.request_executor(
+            "user.create",
+            {"vote_delegations_$_from_ids": {"222": [2]}, "group_$_ids": {"223": [2]}},
+        )
         self.assert_status_code(response, 400)
-        return response
+        self.assertIn(
+            "The following models do not belong to meeting 222: ['user/4']",
+            response.json["message"],
+        )
 
     def test_create_delegations_from_error_meeting_2_standard_user(self) -> None:
         self.set_models(
@@ -187,25 +150,3 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
             "The following models do not belong to meeting 223: ['user/4']",
             response.json["message"],
         )
-
-    def t_create_delegations_from_error_guest_meeting(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> Response:
-        self.set_models(
-            {
-                "meeting/223": {"name": "Meeting223"},
-                "group/2": {"meeting_id": 223},
-            }
-        )
-        return self.request_executor(action, user4_update)
-
-    def t_create_delegated_to_error_guest_meeting(
-        self, action: str, user4_update: Dict[str, Any]
-    ) -> Response:
-        self.set_models(
-            {
-                "meeting/223": {"name": "Meeting223"},
-                "group/2": {"meeting_id": 223},
-            }
-        )
-        return self.request_executor(action, user4_update)

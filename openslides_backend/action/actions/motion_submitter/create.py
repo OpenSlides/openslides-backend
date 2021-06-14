@@ -32,7 +32,7 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Check if motion and user belong to the same meeting if the user is a temporary user.
+        Check if motion and user belong to the same meeting.
         """
         instance = self.update_instance_with_meeting_id(instance)
         meeting_id = instance["meeting_id"]  # meeting_id is set from motion
