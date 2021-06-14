@@ -48,7 +48,7 @@ class TopicSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'meeting/1' raises MODEL_LOCKED error.",
+            "Datastore service sends HTTP 400. The following locks were broken: 'meeting/1/topic_ids', 'meeting/1/list_of_speakers_ids', 'meeting/1/agenda_item_ids', 'meeting/1/topic_ids', 'meeting/1/list_of_speakers_ids', 'meeting/1/agenda_item_ids', 'meeting/1/list_of_speakers_ids', 'meeting/1/topic_ids'",
             response.json["message"],
         )
         self.assert_model_not_exists("topic/1")

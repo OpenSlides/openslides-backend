@@ -69,11 +69,14 @@ class DatastoreAdapter(DatastoreService):
             if additional_error_message is not None:
                 type_verbose = additional_error_message.get("type_verbose")
                 if type_verbose == "MODEL_LOCKED":
+                    broken_locks = (
+                        "'" + "', '".join(additional_error_message.get("keys")) + "'"
+                    )
                     raise DatastoreLockedException(
                         " ".join(
                             (
                                 error_message,
-                                f"Model '{additional_error_message.get('key')}' raises {type_verbose} error.",
+                                f"The following locks were broken: {broken_locks}",
                             )
                         )
                     )
