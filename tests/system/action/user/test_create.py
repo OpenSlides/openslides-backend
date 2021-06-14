@@ -305,6 +305,18 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_user_without_explicit_scope(self) -> None:
+        response = self.request("user.create", {"username": "user/2"})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "meeting_ids": [],
+                "organization_management_level": None,
+                "committee_$_management_level": None,
+            },
+        )
+
     def test_create_permission_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
