@@ -57,15 +57,6 @@ class UserCreate(
             or instance.get("last_name")
         ):
             raise ActionException("Need username or first_name or last_name")
-        # if (
-        #     OrganizationManagementLevel(instance.get("organization_management_level"))
-        #     < OrganizationManagementLevel.CAN_MANAGE_USERS
-        #     and len(instance.get("group_$_ids", [])) == 0
-        #     and len(instance.get("committee_ids", [])) == 0
-        # ):
-        #     raise ActionException(
-        #         "To create a user you need to add him to a permission-group, add him to a committee or give him an Organization Management Level of at least 'can manage users'."
-        #     )
 
         if instance.get("committee_$_management_level"):
             if diff := set(
