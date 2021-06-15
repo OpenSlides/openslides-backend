@@ -259,3 +259,25 @@ class AgendaItemSystemTest(BaseActionTestCase):
             {"content_object_id": "topic/1"},
             Permissions.AgendaItem.CAN_MANAGE,
         )
+
+    def test_create_replace_reverse_of_multi_content_object_id_required_error(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"name": "test"},
+                "assignment/1": {"meeting_id": 1, "agenda_item_id": 1},
+                "agenda_item/1": {"meeting_id": 1, "content_object_id": "assignment/1"},
+            }
+        )
+        response = self.request(
+            "agenda_item.create", {"content_object_id": "assignment/1"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Update of agenda_item/1: You try to set following required fields to an empty value: ['content_object_id']",
+            response.json["message"],
+        )
+        self.assert_model_exists("assignment/1", {"agenda_item_id": 1})
+        self.assert_model_exists("agenda_item/1", {"content_object_id": "assignment/1"})
+        self.assert_model_not_exists("agenda_item/2")
