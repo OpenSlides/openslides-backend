@@ -18,6 +18,7 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
+from .add_custom_mimetypes import add_mimetypes
 from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 PDFInformation = TypedDict(
@@ -51,6 +52,7 @@ class MediafileUploadAction(
     dependencies = [ListOfSpeakersCreate]
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        add_mimetypes()
         instance["create_timestamp"] = time()
         instance["mimetype"] = mimetypes.guess_type(instance["filename"])[0]
         if instance["mimetype"] is None:

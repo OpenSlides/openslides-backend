@@ -170,3 +170,18 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
             Permissions.Mediafile.CAN_MANAGE,
         )
+
+    def test_create_added_mimetype_ttf(self) -> None:
+        self.create_model("meeting/110", {"name": "name"})
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "meeting_id": 110,
+                "filename": "fn_jumbo.ttf",
+                "file": file_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/1", {"mimetype": "font/ttf"})
