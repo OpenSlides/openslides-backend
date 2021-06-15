@@ -297,9 +297,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "meeting.update",
-            {"id": 1, "url_name": "url_name_1"},
+            {"id": 1, "url_name": "url_name_1", "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"}},
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"}})
 
     def test_update_group_e_no_permission(self) -> None:
         self.set_models({"organization_tag/1": {}})

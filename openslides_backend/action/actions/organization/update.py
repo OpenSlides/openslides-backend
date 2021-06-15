@@ -24,7 +24,6 @@ class OrganizationUpdate(UpdateAction):
             "privacy_policy",
             "login_text",
             "theme",
-            "custom_translations",
             "enable_electronic_voting",
             "reset_password_verbose_errors",
         ]
@@ -42,7 +41,6 @@ class OrganizationUpdate(UpdateAction):
                     "privacy_policy",
                     "login_text",
                     "theme",
-                    "custom_translations",
                 ]
             ]
         ) and not has_organization_management_level(
