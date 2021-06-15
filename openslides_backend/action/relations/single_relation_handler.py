@@ -201,9 +201,7 @@ class SingleRelationHandler:
         "fqid": fqid,
         "origin_modified_fqid": own_fqid,
         """
-        if len(chained_field["field"]) != 1:
-            raise NotImplementedError()
-        collection, _ = list(chained_field["field"].items())[0]
+        collection = chained_field["fqid"].collection
         field_name = self.get_related_name(collection)
         field = self.get_reverse_field(collection)
         instance = self.datastore.fetch_model(chained_field["fqid"], ["id", field_name])
