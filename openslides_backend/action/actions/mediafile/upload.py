@@ -52,7 +52,7 @@ class MediafileUploadAction(
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["create_timestamp"] = time()
-        instance["mimetype"] = mimetypes.guess_type(instance["filename"], strict=False)[0]
+        instance["mimetype"] = mimetypes.guess_type(instance["filename"])[0]
         if instance["mimetype"] is None:
             raise ActionException(f"Cannot guess mimetype for {instance['filename']}.")
         decoded_file = base64.b64decode(instance["file"])
