@@ -137,6 +137,7 @@ class MeetingUpdate(UpdateAction):
             "jitsi_room_password",
             "enable_chat",
             "enable_anonymous",
+            "custom_translations",
             "present_user_ids",
         ],
         additional_optional_fields={
@@ -200,6 +201,7 @@ class MeetingUpdate(UpdateAction):
                 for field in [
                     "url_name",
                     "enable_anonymous",
+                    "custom_translations",
                 ]
             ]
         ):

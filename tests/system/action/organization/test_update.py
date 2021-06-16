@@ -30,7 +30,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "privacy_policy": "test1",
                 "login_text": "test2",
                 "theme": "test3",
-                "custom_translations": {},
                 "reset_password_verbose_errors": False,
             },
         )
@@ -42,7 +41,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("privacy_policy") == "test1"
         assert model.get("login_text") == "test2"
         assert model.get("theme") == "test3"
-        assert model.get("custom_translations") == {}
         assert model.get("reset_password_verbose_errors") is False
 
     def test_update_wrong_field(self) -> None:

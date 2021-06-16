@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "6c8e1c905d50e9d199b288c51e205fe4"
+MODELS_YML_CHECKSUM = "d90e0d9118ca2550593c08ebd3f7fe39"
 
 
 class Organization(Model):
@@ -18,7 +18,6 @@ class Organization(Model):
     privacy_policy = fields.CharField()
     login_text = fields.CharField()
     theme = fields.CharField()
-    custom_translations = fields.JSONField()
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     committee_ids = fields.RelationListField(
@@ -245,6 +244,7 @@ class Meeting(Model):
         to={Collection("committee"): "template_meeting_id"}
     )
     enable_anonymous = fields.BooleanField(default=False)
+    custom_translations = fields.JSONField()
     conference_show = fields.BooleanField(default=False)
     conference_auto_connect = fields.BooleanField(default=False)
     conference_los_restriction = fields.BooleanField(default=False)
