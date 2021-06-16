@@ -1,6 +1,6 @@
 FROM python:3.8.5-slim-buster
 
-RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion
+RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support
 
 WORKDIR /app
 RUN mkdir dev

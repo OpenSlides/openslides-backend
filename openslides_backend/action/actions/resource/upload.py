@@ -10,7 +10,6 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..mediafile.add_custom_mimetypes import add_mimetypes
 from .delete import ResourceDelete
 from .mixins import PermissionMixin
 
@@ -32,7 +31,6 @@ class MediafileUploadAction(PermissionMixin, CreateAction):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        add_mimetypes()
         filename_ = instance.pop("filename")
         file_ = instance.pop("file")
         instance["mimetype"] = mimetypes.guess_type(filename_)[0]
