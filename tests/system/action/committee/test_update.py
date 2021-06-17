@@ -131,6 +131,30 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("committee/3", {"forward_to_committee_ids": [1]})
 
+    def test_update_both_forwarded_and_received_self_involved(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test_organization1",
+                    "committee_ids": [1],
+                },
+                "committee/1": {"name": "committee_1", "organization_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": 1,
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Forwarding or receiving from own committee is not possible!",
+            response.json["message"],
+        )
+
     def test_update_complex_1(self) -> None:
         """A->C and B->C exist, test that the request for C with {B, D}->C works and sets the reverse relations on A and D correctly."""
         self.set_models(
@@ -444,22 +468,37 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_organization"}}
+            {"user/1": {"organization_management_level": "can_manage_users"}}
         )
         response = self.request(
             "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+        self.assertIn(
+            "Missing can_manage_organization or can_manage_committee.",
+            response.json["message"],
         )
 
-    def test_update_group_a_permission(self) -> None:
+    def test_update_group_a_permission_1(self) -> None:
         self.create_data()
         self.set_models(
             {
                 "user/1": {
                     "organization_management_level": "can_manage_organization",
+                },
+                "committee/1": {"organization_id": 1},
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
+        )
+        self.assert_status_code(response, 200)
+
+    def test_update_group_a_permission_2(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/1": {
                     "committee_$1_management_level": "can_manage",
                 },
                 "committee/1": {"organization_id": 1},
@@ -500,52 +539,4 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             }
         )
         response = self.request("committee.update", {"id": 1, "user_ids": [1, 20]})
-        self.assert_status_code(response, 200)
-
-    def test_update_group_c_no_permission(self) -> None:
-        self.create_data()
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": "can_manage_users"},
-                "organization_tag/12": {"organization_id": 1},
-            }
-        )
-        response = self.request(
-            "committee.update", {"id": 1, "organization_tag_ids": [12]}
-        )
-        self.assert_status_code(response, 403)
-        assert (
-            "Missing can_manage_organization and not manager."
-            in response.json["message"]
-        )
-
-    def test_update_group_c_permission_1(self) -> None:
-        self.create_data()
-        self.set_models(
-            {
-                "user/1": {"organization_management_level": "can_manage_organization"},
-                "committee/1": {"user_ids": [20]},
-                "organization_tag/12": {"organization_id": 1},
-            }
-        )
-        response = self.request(
-            "committee.update", {"id": 1, "organization_tag_ids": [12]}
-        )
-        self.assert_status_code(response, 200)
-
-    def test_update_group_c_permission_2(self) -> None:
-        self.create_data()
-        self.set_models(
-            {
-                "user/1": {
-                    "organization_management_level": "can_manage_users",
-                    "committee_$1_management_level": "can_manage",
-                },
-                "committee/1": {"user_ids": [1]},
-                "organization_tag/12": {"organization_id": 1},
-            }
-        )
-        response = self.request(
-            "committee.update", {"id": 1, "organization_tag_ids": [12]}
-        )
         self.assert_status_code(response, 200)
