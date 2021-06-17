@@ -16,6 +16,9 @@ from .deleted_models_behaviour import (
 PartialModel = Dict[str, Any]
 
 
+LockResult = Union[bool, List[str]]
+
+
 class DatastoreService(Protocol):
     """
     Datastore defines the interface to the datastore.
@@ -31,7 +34,7 @@ class DatastoreService(Protocol):
         mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = True,
+        lock_result: LockResult = True,
     ) -> PartialModel:
         ...
 

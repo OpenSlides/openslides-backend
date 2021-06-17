@@ -165,3 +165,55 @@ class OptionUpdateActionTest(BaseActionTestCase):
             {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
             Permissions.Poll.CAN_MANAGE,
         )
+
+    def test_update_together_with_poll(self) -> None:
+        self.set_models(
+            {
+                "meeting/110": {},
+                "poll/6": {
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "YN",
+                    "meeting_id": 110,
+                    "option_ids": [14, 15],
+                },
+                "option/14": {
+                    "yes": "0.000000",
+                    "no": "0.000000",
+                    "abstain": "0.000000",
+                    "meeting_id": 110,
+                    "poll_id": 6,
+                },
+                "option/15": {
+                    "yes": "0.000000",
+                    "no": "0.000000",
+                    "abstain": "0.000000",
+                    "meeting_id": 110,
+                    "poll_id": 6,
+                },
+            }
+        )
+        response = self.request_json(
+            [
+                {
+                    "action": "poll.update",
+                    "data": [
+                        {
+                            "id": 6,
+                            "majority_method": "simple",
+                            "onehundred_percent_base": "valid",
+                            "pollmethod": "YNA",
+                            "title": "Ballot",
+                        }
+                    ],
+                },
+                {
+                    "action": "option.update",
+                    "data": [
+                        {"id": 14, "Y": "1.000000", "A": "3.000000", "N": "2.000000"},
+                        {"id": 15, "Y": "4.000000", "N": "-1.000000"},
+                    ],
+                },
+            ]
+        )
+        self.assert_status_code(response, 200)

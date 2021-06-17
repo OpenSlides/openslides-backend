@@ -3,7 +3,7 @@ from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
 
-class TopicSystemTest(BaseActionTestCase):
+class TopicCreateSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models({"topic/41": {}, "meeting/1": {"name": "test"}})
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
@@ -26,7 +26,7 @@ class TopicSystemTest(BaseActionTestCase):
         self.assertEqual(response.json["message"], "Actions handled successfully")
         self.assertEqual(response.json["results"], [[{"id": 42}]])
 
-    def test_create_multi(self) -> None:
+    def test_create_multiple_requests(self) -> None:
         self.create_model("meeting/1", {"name": "test"})
         response = self.request_json(
             [
@@ -80,7 +80,7 @@ class TopicSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["duration"], 60)
         self.assertEqual(agenda_item["weight"], 10000)
 
-    def test_create_multiple(self) -> None:
+    def test_create_multiple_in_one_request(self) -> None:
         self.create_model("meeting/1")
         response = self.request_multi(
             "topic.create",

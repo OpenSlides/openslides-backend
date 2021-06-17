@@ -118,6 +118,7 @@ class OptionUpdateAction(UpdateAction):
                     "meeting_id",
                     "content_object_id",
                 ],
+                lock_result=["state", "type"],
             ),
             option,
         )
