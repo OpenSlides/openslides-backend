@@ -363,3 +363,47 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/1", {"list_of_speakers_enable_point_of_order_speakers": True}
         )
+
+    def test_update_with_user(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"meeting_ids": [3]},
+                "meeting/3": {
+                    "committee_id": 1,
+                    "group_ids": [11],
+                    "admin_group_id": 11,
+                },
+                "group/11": {"meeting_id": 3, "admin_group_for_meeting_id": 3},
+                "user/4": {},
+            }
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+        )
+        self.set_user_groups(1, [11])
+        response = self.request_json(
+            [
+                {
+                    "action": "meeting.update",
+                    "data": [
+                        {
+                            "name": "meeting",
+                            "welcome_title": "title",
+                            "welcome_text": "",
+                            "description": "",
+                            "location": "",
+                            "start_time": 1623016800,
+                            "end_time": 1623016800,
+                            "enable_anonymous": True,
+                            "organization_tag_ids": [],
+                            "id": 3,
+                        }
+                    ],
+                },
+                {
+                    "action": "user.update",
+                    "data": [{"id": 4, "group_$_ids": {"3": [11]}}],
+                },
+            ]
+        )
+        self.assert_status_code(response, 200)
