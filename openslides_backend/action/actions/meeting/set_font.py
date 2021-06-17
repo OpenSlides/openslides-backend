@@ -12,6 +12,7 @@ class MeetingSetFontAction(BaseMeetingSetMediafileAction):
     allowed_mimetypes = [
         "font/ttf",
         "font/woff",
+        "font/woff2",
         "application/font-woff",
         "application/font-sfnt",
     ]

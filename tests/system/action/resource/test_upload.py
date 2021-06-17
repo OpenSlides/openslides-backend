@@ -423,3 +423,34 @@ class ResourceUploadActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 403)
+
+    def test_create_added_mimetype_odt(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"name": "test_organization1"},
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                },
+            }
+        )
+        filename = "test_picture.odt"
+        token = "mytoken"
+        raw_content = b"test_the_picture"
+        file_content = base64.b64encode(raw_content).decode()
+        response = self.request(
+            "resource.upload",
+            {
+                "organization_id": 1,
+                "token": token,
+                "filename": filename,
+                "file": file_content,
+            },
+        )
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "resource/1",
+            {
+                "mimetype": "application/vnd.oasis.opendocument.text",
+            },
+        )
