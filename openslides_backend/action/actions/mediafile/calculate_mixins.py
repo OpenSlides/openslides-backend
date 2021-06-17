@@ -13,10 +13,10 @@ class MediafileCalculatedFieldsMixin(BaseAction):
 
     def calculate_inherited_groups(
         self,
-        access_group_ids: List[int],
+        access_group_ids: Optional[List[int]],
         parent_is_public: Optional[bool],
         parent_inherited_access_group_ids: Optional[List[int]],
-    ) -> Tuple[bool, List[int]]:
+    ) -> Tuple[bool, Optional[List[int]]]:
 
         parent: Dict[str, Any] = dict()
         parent["inherited_access_group_ids"] = parent_inherited_access_group_ids

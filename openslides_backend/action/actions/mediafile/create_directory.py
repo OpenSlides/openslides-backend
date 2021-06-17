@@ -38,11 +38,11 @@ class MediafileUpdate(MediafileCalculatedFieldsMixin, CreateAction):
                 instance["is_public"],
                 instance["inherited_access_group_ids"],
             ) = self.calculate_inherited_groups(
-                instance["access_group_ids"],
+                instance.get("access_group_ids"),
                 parent.get("is_public"),
                 parent.get("inherited_access_group_ids"),
             )
         else:
-            instance["inherited_access_group_ids"] = instance["access_group_ids"]
+            instance["inherited_access_group_ids"] = instance.get("access_group_ids")
             instance["is_public"] = not bool(instance["inherited_access_group_ids"])
         return instance
