@@ -131,14 +131,27 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("committee/3", {"forward_to_committee_ids": [1]})
 
-    def test_update_both_forwarded_and_received_self_involved(self) -> None:
+    def test_update_both_forwarded_and_received_async(self) -> None:
         self.set_models(
             {
                 "organization/1": {
                     "name": "test_organization1",
                     "committee_ids": [1],
                 },
-                "committee/1": {"name": "committee_1", "organization_id": 1},
+                "committee/1": {
+                    "name": "committee_1",
+                    "organization_id": 1,
+                    "forward_to_committee_ids": [2],
+                    "receive_forwardings_from_committee_ids": [2],
+                },
+                "committee/2": {
+                    "name": "committee_2",
+                    "organization_id": 1,
+                    "forward_to_committee_ids": [1],
+                    "receive_forwardings_from_committee_ids": [
+                        1,
+                    ],
+                },
             }
         )
         response = self.request(
@@ -146,12 +159,12 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "id": 1,
                 "forward_to_committee_ids": [1],
-                "receive_forwardings_from_committee_ids": [],
+                "receive_forwardings_from_committee_ids": [2],
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Forwarding or receiving from own committee is not possible!",
+            "Forwarding or receiving to/from own must be configured in both directions!",
             response.json["message"],
         )
 
