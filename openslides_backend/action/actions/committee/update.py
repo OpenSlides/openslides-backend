@@ -9,7 +9,7 @@ from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
 )
-from ....shared.exceptions import MissingPermission, PermissionDenied
+from ....shared.exceptions import MissingPermission
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -64,6 +64,9 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         ):
             return
 
-        raise PermissionDenied(
-            "Missing can_manage_organization or can_manage_committee."
+        raise MissingPermission(
+            {
+                OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                CommitteeManagementLevel.CAN_MANAGE: instance["id"],
+            }
         )
