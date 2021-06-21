@@ -9,14 +9,15 @@ from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
 )
-from ....shared.exceptions import MissingPermission, PermissionDenied
+from ....shared.exceptions import MissingPermission
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .committee_common_mixin import CommitteeCommonCreateUpdateMixin
 
 
 @register_action("committee.update")
-class CommitteeUpdateAction(UpdateAction):
+class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
     """
     Action to update a committee.
     """
@@ -36,49 +37,36 @@ class CommitteeUpdateAction(UpdateAction):
     )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        is_manager = has_committee_management_level(
+        if has_organization_management_level(
+            self.datastore,
+            self.user_id,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+        ):
+            return
+
+        if any(
+            [
+                field in instance
+                for field in [
+                    "user_ids",
+                    "forward_to_committee_ids",
+                    "receive_forwardings_from_committee_ids",
+                ]
+            ]
+        ):
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
+
+        if has_committee_management_level(
             self.datastore,
             self.user_id,
             CommitteeManagementLevel.CAN_MANAGE,
             instance["id"],
+        ):
+            return
+
+        raise MissingPermission(
+            {
+                OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                CommitteeManagementLevel.CAN_MANAGE: instance["id"],
+            }
         )
-        can_manage_organization = has_organization_management_level(
-            self.datastore,
-            self.user_id,
-            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-        )
-        if (
-            any(
-                [
-                    field in instance
-                    for field in [
-                        "name",
-                        "description",
-                        "template_meeting_id",
-                        "default_meeting_id",
-                    ]
-                ]
-            )
-            and not is_manager
-        ):
-            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
-        if (
-            any(
-                [
-                    field in instance
-                    for field in [
-                        "user_ids",
-                        "forward_to_committee_ids",
-                        "receive_forwardings_from_committee_ids",
-                    ]
-                ]
-            )
-            and not can_manage_organization
-        ):
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION)
-        if (
-            "organization_tag_ids" in instance
-            and not is_manager
-            and not can_manage_organization
-        ):
-            raise PermissionDenied("Missing can_manage_organization and not manager.")

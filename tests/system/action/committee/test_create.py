@@ -16,7 +16,8 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
     def test_create(self) -> None:
         self.set_models(self.test_models)
-        committee_name = "test_committee1"
+        self.set_models({"committee/1": {"organization_id": 1, "name": "c1"}})
+        committee_name = "test_committee2"
         description = "<p>Test Committee</p>"
 
         response = self.request(
@@ -27,15 +28,26 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "description": description,
                 "user_ids": [20, 21],
                 "organization_tag_ids": [12],
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("committee/1")
+        model = self.get_model("committee/2")
         assert model.get("name") == committee_name
         assert model.get("description") == description
         assert model.get("meeting_ids") is None
         assert model.get("user_ids") == [20, 21]
         assert model.get("organization_tag_ids") == [12]
+        assert model.get("forward_to_committee_ids") == [1]
+        assert model.get("receive_forwardings_from_committee_ids") == [1]
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "forward_to_committee_ids": [2],
+                "receive_forwardings_from_committee_ids": [2],
+            },
+        )
 
     def test_create_only_required(self) -> None:
         self.create_model("organization/1", {"name": "test_organization1"})
@@ -107,6 +119,103 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn("does not exist", response.json["message"])
         self.assert_model_not_exists("committee/1")
+
+    def test_create_self_forwarded_and_received_ok_self_self(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test_organization1",
+                },
+            }
+        )
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee 1",
+                "organization_id": 1,
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [1],
+            },
+        )
+
+    def test_create_self_forwarded_and_received_ok_self_None(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test_organization1",
+                },
+            }
+        )
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee 1",
+                "organization_id": 1,
+                "forward_to_committee_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [1],
+            },
+        )
+
+    def test_create_self_forwarded_and_received_asyn1(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test_organization1",
+                },
+            }
+        )
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee 1",
+                "organization_id": 1,
+                "forward_to_committee_ids": [1],
+                "receive_forwardings_from_committee_ids": [],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Forwarding or receiving to/from own must be configured in both directions!",
+            response.json["message"],
+        )
+
+    def test_create_self_forwarded_and_received_asyn2(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test_organization1",
+                },
+            }
+        )
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee 1",
+                "organization_id": 1,
+                "forward_to_committee_ids": [],
+                "receive_forwardings_from_committee_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Forwarding or receiving to/from own must be configured in both directions!",
+            response.json["message"],
+        )
 
     def test_no_permission(self) -> None:
         self.test_models["user/1"] = {
