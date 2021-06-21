@@ -184,7 +184,7 @@ class PollVoteTest(BaseActionTestCase):
                 "poll/1": {
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
-                    "pollmethod": "YN",
+                    "pollmethod": "Y",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
@@ -204,7 +204,7 @@ class PollVoteTest(BaseActionTestCase):
             {
                 "id": 1,
                 "user_id": 1,
-                "value": {"11": "Y", "12": "N"},
+                "value": {"11": "Y", "12": "Y"},
             },
         )
         self.assert_status_code(response, 400)
@@ -225,7 +225,7 @@ class PollVoteTest(BaseActionTestCase):
                 "poll/1": {
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
-                    "pollmethod": "YN",
+                    "pollmethod": "Y",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
