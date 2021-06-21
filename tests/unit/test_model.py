@@ -76,7 +76,14 @@ class ModelBaseTester(TestCase):
 
     def test_get_fields_fake_model(self) -> None:
         self.assertEqual(
-            ["fake_model_2_generic_ids", "fake_model_2_ids", "id", "read_only", "text"],
+            [
+                "fake_model_2_generic_ids",
+                "fake_model_2_ids",
+                "id",
+                "json",
+                "read_only",
+                "text",
+            ],
             [field.own_field_name for field in FakeModel().get_fields()],
         )
 
