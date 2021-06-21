@@ -1,8 +1,7 @@
 from openslides_backend.shared.filters import And, FilterOperator, Not, Or
 
 
-# TODO: fix casing, dont mix camle and snake case...
-def test_FilterOperator() -> None:
+def test_filter_operator() -> None:
     field = "f"
     value = "1"
     operator = "="
@@ -14,7 +13,7 @@ def test_FilterOperator() -> None:
     }
 
 
-def test_NotOperator() -> None:
+def test_not_operator() -> None:
     field = "f"
     value = "1"
     operator = "="
@@ -23,7 +22,7 @@ def test_NotOperator() -> None:
     assert not_.to_dict() == {"not_filter": filter.to_dict()}
 
 
-def test_AndOperator() -> None:
+def test_and_operator() -> None:
     field1 = "f"
     value1 = "1"
     operator1 = "="
@@ -36,7 +35,7 @@ def test_AndOperator() -> None:
     assert and_.to_dict() == {"and_filter": [filter1.to_dict(), filter2.to_dict()]}
 
 
-def test_OrOperator() -> None:
+def test_or_operator() -> None:
     field1 = "f"
     value1 = "1"
     operator1 = "="
@@ -49,7 +48,7 @@ def test_OrOperator() -> None:
     assert or_.to_dict() == {"or_filter": [filter1.to_dict(), filter2.to_dict()]}
 
 
-def test_ComplexOperator() -> None:
+def test_complex_operator() -> None:
     field1 = "f"
     value1 = "1"
     operator1 = "="
