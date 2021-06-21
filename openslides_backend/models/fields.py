@@ -122,11 +122,10 @@ class CharField(TextField):
 
 class JSONField(Field):
     def get_schema(self) -> Schema:
-        if self.required:
-            return self.extend_schema(
-                super().get_schema(), type="object", minProperties=1
-            )
-        return self.extend_schema(super().get_schema(), type=["object", "null"])
+        types = ["object", "array"]
+        if not self.required:
+            types.append("null")
+        return self.extend_schema(super().get_schema(), type=types)
 
 
 class HTMLStrictField(TextField):
