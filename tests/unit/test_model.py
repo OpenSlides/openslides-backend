@@ -1,6 +1,9 @@
 from typing import cast
 from unittest import TestCase
 
+from fastjsonschema import validate
+
+from openslides_backend.action.util.default_schema import DefaultSchema
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.exceptions import ActionException
@@ -17,6 +20,7 @@ class FakeModel(Model):
 
     id = fields.IntegerField(required=True)
     read_only = fields.IntegerField(read_only=True)
+    json = fields.JSONField()
     text = fields.CharField(
         required=True, constraints={"description": "The text of this fake model."}
     )
@@ -81,10 +85,9 @@ class ModelBaseTester(TestCase):
             FakeModel().get_field("fake_model_2_ids"),
             FakeModel().get_field("fake_model_2_generic_ids"),
         ]
-        field = cast(fields.BaseRelationField, rels[0])
-        self.assertEqual(str(field.own_collection), "fake_model")
-        field = cast(fields.BaseRelationField, rels[1])
-        self.assertEqual(str(field.own_collection), "fake_model")
+        for rel in rels:
+            field = cast(fields.BaseRelationField, rel)
+            self.assertEqual(str(field.own_collection), "fake_model")
 
     def test_get_field_unknown_field(self) -> None:
         with self.assertRaises(ValueError):
@@ -93,3 +96,9 @@ class ModelBaseTester(TestCase):
     def test_get_read_only_field(self) -> None:
         with self.assertRaises(ActionException):
             FakeModel().get_property("read_only")
+
+    def test_json_field_array(self) -> None:
+        schema = DefaultSchema(FakeModel()).get_default_schema(
+            optional_properties=["json"]
+        )
+        validate(schema, {"json": [1, 2]})

@@ -12,10 +12,6 @@ class ActionBaseTester(TestCase):
     Tests methods of base Action class and also some helper functions.
     """
 
-    # TODO: Write some more unit tests, e.g. that `perform` calls `validate`,
-    # `check_permissions` etc., that `validate` uses the given schema and
-    # throws an exception etc.
-
     def setUp(self) -> None:
         self.write_request_1 = WriteRequest(
             events=[
