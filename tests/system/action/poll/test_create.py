@@ -34,6 +34,8 @@ class CreatePoll(BaseActionTestCase):
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
                 "majority_method": "simple",
+                "min_votes_amount": 5,
+                "max_votes_amount": 10,
             },
         )
         self.assert_status_code(response, 200)
@@ -49,6 +51,8 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("onehundred_percent_base") == "Y"
         assert poll.get("majority_method") == "simple"
         assert poll.get("is_pseudoanonymized") is False
+        assert poll.get("min_votes_amount") == 5
+        assert poll.get("max_votes_amount") == 10
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
