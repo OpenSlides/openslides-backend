@@ -65,3 +65,39 @@ class CommitteeImportMeeting(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "User password must be an empty string." in response.json["message"]
+
+    def test_save_meeting(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+            }
+        )
+        response = self.request(
+            "committee.import_meeting",
+            {
+                "id": 1,
+                "meeting_json": {
+                    "meeting": [
+                        {
+                            "id": 1,
+                            "name": "Test",
+                            "description": "blablabla",
+                            "committee_id": 1,
+                            "default_group_id": 1,
+                            "motions_default_amendment_workflow_id": 1,
+                            "motions_default_statute_amendment_workflow_id": 1,
+                            "motions_default_workflow_id": 1,
+                            "projector_countdown_default_time": 60,
+                            "projector_countdown_warning_time": 60,
+                            "reference_projector_id": 1,
+                        }
+                    ],
+                    "user": [{"id": 2, "password": "", "username": "test"}],
+                },
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1", {"name": "Test", "description": "blablabla"}
+        )
+        self.assert_model_exists("user/2", {"username": "test"})

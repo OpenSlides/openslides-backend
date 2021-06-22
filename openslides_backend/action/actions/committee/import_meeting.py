@@ -1,8 +1,10 @@
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 from ....models.models import Committee
 from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
+from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -62,6 +64,22 @@ class CommitteeImportMeeting(Action):
             if not user["password"] == "":
                 raise ActionException("User password must be an empty string.")
         return instance
+
+    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+        json_data = instance["meeting_json"]
+        write_requests = []
+        for collection in json_data:
+            for entry in json_data[collection]:
+                fqid = FullQualifiedId(Collection(collection), entry["id"])
+                write_requests.append(
+                    self.build_write_request(
+                        EventType.Create,
+                        fqid,
+                        f"import meeting {json_data['meeting'][0]['id']}",
+                        entry,
+                    )
+                )
+        return write_requests
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         return
