@@ -70,6 +70,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
         self.set_models(
             {
                 "committee/1": {},
+                "meeting/1": {},
             }
         )
         response = self.request(
@@ -92,12 +93,27 @@ class CommitteeImportMeeting(BaseActionTestCase):
                             "reference_projector_id": 1,
                         }
                     ],
-                    "user": [{"id": 2, "password": "", "username": "test"}],
+                    "user": [{"id": 1, "password": "", "username": "test"}],
+                    "group": [{"id": 1, "meeting_id": 1, "name": "testgroup"}],
+                    "motion_workflow": [
+                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
+                    ],
+                    "motion_state": [
+                        {
+                            "id": 1,
+                            "css_class": "line",
+                            "meeting_id": 1,
+                            "workflow_id": 1,
+                            "name": "test",
+                        }
+                    ],
+                    "projector": [{"id": 1, "meeting_id": 1}],
                 },
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/1", {"name": "Test", "description": "blablabla"}
+            "meeting/2", {"name": "Test", "description": "blablabla"}
         )
         self.assert_model_exists("user/2", {"username": "test"})
+        self.assert_model_exists("projector/1", {"meeting_id": 2})
