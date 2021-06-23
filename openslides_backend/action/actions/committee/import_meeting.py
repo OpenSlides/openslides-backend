@@ -223,6 +223,16 @@ class CommitteeImportMeeting(Action):
                         entry,
                     )
                 )
+        # add meeting to committee/meeting_ids
+        write_requests.append(
+            self.build_write_request(
+                EventType.Update,
+                FullQualifiedId(Collection("committee"), instance["id"]),
+                f"import meeting {json_data['meeting'][0]['id']}",
+                None,
+                {"add": {"meeting_ids": [json_data["meeting"][0]["id"]]}, "remove": {}},
+            )
+        )
         return write_requests
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

@@ -72,7 +72,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
         start = round(time.time())
         self.set_models(
             {
-                "committee/1": {},
+                "committee/1": {"meeting_ids": []},
                 "meeting/1": {},
                 "motion/1": {},
             }
@@ -170,6 +170,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
         )
+        self.assert_model_exists("committee/1", {"meeting_ids": [2]})
 
     def test_check_usernames(self) -> None:
         self.set_models(
