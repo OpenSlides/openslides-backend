@@ -55,7 +55,6 @@ class CommitteeImportMeeting(Action):
         instances = self.get_updated_instances(action_data)
         for instance in instances:
             instance = self.base_update_instance(instance)
-
             write_request = self.create_write_requests(instance)
             self.write_requests.extend(write_request)
 
@@ -83,6 +82,8 @@ class CommitteeImportMeeting(Action):
         self.generate_random_passwords(meeting_json)
         self.set_enable_anonymous(meeting_json)
         self.set_imported_at(meeting_json)
+
+        # replace ids in the meeting_json
         replace_map = self.create_replace_map(meeting_json)
         self.replace_fields(instance, replace_map)
         return instance
