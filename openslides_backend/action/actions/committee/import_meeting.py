@@ -11,6 +11,7 @@ from ....models.fields import (
 )
 from ....models.models import Committee
 from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -77,6 +78,7 @@ class CommitteeImportMeeting(Action):
             if not user["password"] == "":
                 raise ActionException("User password must be an empty string.")
 
+        self.check_usernames_and_generate_new_ones(meeting_json)
         self.update_committee_id(instance)
         self.generate_random_passwords(meeting_json)
         self.set_enable_anonymous(meeting_json)
@@ -84,6 +86,29 @@ class CommitteeImportMeeting(Action):
         replace_map = self.create_replace_map(meeting_json)
         self.replace_fields(instance, replace_map)
         return instance
+
+    def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
+        used_usernames = set()
+        for entry in json_data["user"]:
+            username_unique = False
+            template_username = entry["username"].rstrip("0123456789")
+            count = 1
+            while not username_unique:
+                if entry["username"] in used_usernames:
+                    entry["username"] = template_username + str(count)
+                    count += 1
+                    continue
+                result = self.datastore.filter(
+                    Collection("user"),
+                    FilterOperator("username", "=", entry["username"]),
+                    ["id"],
+                )
+                if result:
+                    entry["username"] = template_username + str(count)
+                    count += 1
+                    continue
+                username_unique = True
+            used_usernames.add(entry["username"])
 
     def update_committee_id(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting_json"]

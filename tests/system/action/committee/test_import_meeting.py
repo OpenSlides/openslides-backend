@@ -170,3 +170,127 @@ class CommitteeImportMeeting(BaseActionTestCase):
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
         )
+
+    def test_check_usernames(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+                "user/1": {"username": "admin"},
+            }
+        )
+        response = self.request(
+            "committee.import_meeting",
+            {
+                "id": 1,
+                "meeting_json": {
+                    "meeting": [
+                        {
+                            "id": 1,
+                            "name": "Test",
+                            "description": "blablabla",
+                            "default_group_id": 1,
+                            "motions_default_amendment_workflow_id": 1,
+                            "motions_default_statute_amendment_workflow_id": 1,
+                            "motions_default_workflow_id": 1,
+                            "projector_countdown_default_time": 60,
+                            "projector_countdown_warning_time": 60,
+                            "reference_projector_id": 1,
+                        }
+                    ],
+                    "user": [
+                        {
+                            "id": 1,
+                            "password": "",
+                            "username": "admin",
+                            "group_$_ids": ["1"],
+                            "group_$1_ids": [1],
+                        }
+                    ],
+                    "group": [
+                        {"id": 1, "meeting_id": 1, "name": "testgroup", "user_ids": [1]}
+                    ],
+                    "motion_workflow": [
+                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
+                    ],
+                    "motion_state": [
+                        {
+                            "id": 1,
+                            "css_class": "line",
+                            "meeting_id": 1,
+                            "workflow_id": 1,
+                            "name": "test",
+                        }
+                    ],
+                    "projector": [{"id": 1, "meeting_id": 1}],
+                },
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "admin1"})
+
+    def test_check_usernames_2(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+                "user/1": {"username": "admin"},
+            }
+        )
+        response = self.request(
+            "committee.import_meeting",
+            {
+                "id": 1,
+                "meeting_json": {
+                    "meeting": [
+                        {
+                            "id": 1,
+                            "name": "Test",
+                            "description": "blablabla",
+                            "default_group_id": 1,
+                            "motions_default_amendment_workflow_id": 1,
+                            "motions_default_statute_amendment_workflow_id": 1,
+                            "motions_default_workflow_id": 1,
+                            "projector_countdown_default_time": 60,
+                            "projector_countdown_warning_time": 60,
+                            "reference_projector_id": 1,
+                        }
+                    ],
+                    "user": [
+                        {
+                            "id": 1,
+                            "password": "",
+                            "username": "admin",
+                            "group_$_ids": ["1"],
+                            "group_$1_ids": [1],
+                        },
+                        {
+                            "id": 2,
+                            "password": "",
+                            "username": "admin1",
+                        },
+                    ],
+                    "group": [
+                        {"id": 1, "meeting_id": 1, "name": "testgroup", "user_ids": [1]}
+                    ],
+                    "motion_workflow": [
+                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
+                    ],
+                    "motion_state": [
+                        {
+                            "id": 1,
+                            "css_class": "line",
+                            "meeting_id": 1,
+                            "workflow_id": 1,
+                            "name": "test",
+                        }
+                    ],
+                    "projector": [{"id": 1, "meeting_id": 1}],
+                },
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"username": "admin1"})
+        self.assert_model_exists("user/3", {"username": "admin2"})
