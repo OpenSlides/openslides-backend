@@ -130,10 +130,11 @@ class CommitteeImportMeeting(Action):
         replace_map: Dict[str, Dict[int, int]] = {}
         for collection in json_data:
             replace_map[collection] = {}
-            for entry in json_data[collection]:
-                replace_map[collection][entry["id"]] = self.datastore.reserve_id(
-                    Collection(collection)
-                )
+            new_ids = self.datastore.reserve_ids(
+                Collection(collection), len(json_data[collection])
+            )
+            for entry, new_id in zip(json_data[collection], new_ids):
+                replace_map[collection][entry["id"]] = new_id
         return replace_map
 
     def replace_fields(
