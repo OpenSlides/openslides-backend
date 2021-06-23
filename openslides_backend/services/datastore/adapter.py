@@ -521,7 +521,11 @@ class DatastoreAdapter(DatastoreService):
                             found_fields.add(field)
                     if len(mapped_fields) != len(found_fields):
                         complete = False
-                    if lock_result and fqid in self.additional_relation_model_locks:
+                    if (
+                        lock_result
+                        and found_fields
+                        and fqid in self.additional_relation_model_locks
+                    ):
                         position = self.additional_relation_model_locks[fqid]
                         self.update_locked_fields_from_mapped_fields(
                             fqid, position, found_fields

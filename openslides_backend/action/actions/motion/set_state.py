@@ -36,6 +36,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
                 "number",
                 "number_value",
             ],
+            lock_result=["state_id"],
         )
         state_id = motion["state_id"]
 
@@ -43,15 +44,16 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
             FullQualifiedId(Collection("motion_state"), state_id),
             ["next_state_ids", "previous_state_ids"],
         )
-        is_in_next_state_ids = instance["state_id"] in motion_state["next_state_ids"]
-        is_in_previous_state_ids = (
-            instance["state_id"] in motion_state["previous_state_ids"]
+        is_in_next_state_ids = instance["state_id"] in motion_state.get(
+            "next_state_ids", []
+        )
+        is_in_previous_state_ids = instance["state_id"] in motion_state.get(
+            "previous_state_ids", []
         )
         if not (is_in_next_state_ids or is_in_previous_state_ids):
             raise ActionException(
                 f"State '{instance['state_id']}' is not in next or previous states of the state '{state_id}'."
             )
-        # Set number code.
 
         self.set_number(
             instance,
