@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict, Iterable, Optional, Tuple
 
 from ....models.base import model_registry
@@ -14,6 +15,7 @@ from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
+from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
@@ -66,6 +68,7 @@ class CommitteeImportMeeting(Action):
         if not len(meeting_json.get("meeting", [])) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
         shall_be_empty = ("organization", "organization_tag", "committee", "resource")
+
         for collection in shall_be_empty:
             if meeting_json.get(collection):
                 raise ActionException(f"{collection} must be empty.")
@@ -74,9 +77,27 @@ class CommitteeImportMeeting(Action):
             if not user["password"] == "":
                 raise ActionException("User password must be an empty string.")
 
+        self.update_committee_id(instance)
+        self.generate_random_passwords(meeting_json)
+        self.set_enable_anonymous(meeting_json)
+        self.set_imported_at(meeting_json)
         replace_map = self.create_replace_map(meeting_json)
         self.replace_fields(instance, replace_map)
         return instance
+
+    def update_committee_id(self, instance: Dict[str, Any]) -> None:
+        json_data = instance["meeting_json"]
+        json_data["meeting"][0]["committee_id"] = instance["id"]
+
+    def generate_random_passwords(self, json_data: Dict[str, Any]) -> None:
+        for entry in json_data["user"]:
+            entry["password"] = get_random_string(10)
+
+    def set_enable_anonymous(self, json_data: Dict[str, Any]) -> None:
+        json_data["meeting"][0]["enable_anonymous"] = False
+
+    def set_imported_at(self, json_data: Dict[str, Any]) -> None:
+        json_data["meeting"][0]["imported_at"] = round(time.time())
 
     def create_replace_map(
         self, json_data: Dict[str, Any]

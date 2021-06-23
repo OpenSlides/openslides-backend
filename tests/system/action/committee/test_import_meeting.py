@@ -1,3 +1,5 @@
+import time
+
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -67,6 +69,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
         assert "User password must be an empty string." in response.json["message"]
 
     def test_replace_ids_and_write_to_datastore(self) -> None:
+        start = round(time.time())
         self.set_models(
             {
                 "committee/1": {},
@@ -84,7 +87,6 @@ class CommitteeImportMeeting(BaseActionTestCase):
                             "id": 1,
                             "name": "Test",
                             "description": "blablabla",
-                            "committee_id": 1,
                             "default_group_id": 1,
                             "motions_default_amendment_workflow_id": 1,
                             "motions_default_statute_amendment_workflow_id": 1,
@@ -135,20 +137,36 @@ class CommitteeImportMeeting(BaseActionTestCase):
                         {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
                     ],
                     "tag": [
-                            {"id": 1, "meeting_id": 1, "tagged_ids": ["motion/1"], "name": "testag"}
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "tagged_ids": ["motion/1"],
+                            "name": "testag",
+                        }
                     ],
                 },
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "meeting/2", {"name": "Test", "description": "blablabla"}
+            "meeting/2",
+            {
+                "name": "Test",
+                "description": "blablabla",
+                "committee_id": 1,
+                "enable_anonymous": False,
+            },
         )
+        meeting_2 = self.get_model("meeting/2")
+        assert start <= meeting_2.get("imported_at", 0) <= start + 300
         self.assert_model_exists(
             "user/2", {"username": "test", "group_$2_ids": [1], "group_$_ids": ["2"]}
         )
+        user_2 = self.get_model("user/2")
+        assert len(user_2.get("password", "")) == 10
         self.assert_model_exists("projector/1", {"meeting_id": 2})
         self.assert_model_exists("group/1", {"user_ids": [2]})
         self.assert_model_exists("personal_note/1", {"content_object_id": "motion/2"})
-        self.assert_model_exists("tag/1", {"tagged_ids": ["motion/2"], "name":"testag"})
-
+        self.assert_model_exists(
+            "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
+        )
