@@ -152,7 +152,8 @@ class UserMixin(Action):
         user_collection = Collection("user")
         meeting_users = defaultdict(list)
         if instance.get("group_$_ids") is not None:
-            self.datastore.additional_relation_models[user_fqid].update(
+            self.datastore.update_additional_models(
+                user_fqid,
                 {
                     **{
                         f"group_${meeting_id}_ids": ids
@@ -161,11 +162,11 @@ class UserMixin(Action):
                     "meeting_ids": [
                         int(id) for id in instance.get("group_$_ids", {}).keys()
                     ],
-                }
+                },
             )
         if instance.get("meeting_id") is not None:
-            self.datastore.additional_relation_models[user_fqid].update(
-                {"meeting_id": instance.get("meeting_id")}
+            self.datastore.update_additional_models(
+                user_fqid, {"meeting_id": instance.get("meeting_id")}
             )
         for meeting_id, user_id in instance.get("vote_delegated_$_to_id", {}).items():
             if user_id:

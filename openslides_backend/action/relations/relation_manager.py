@@ -252,7 +252,7 @@ class RelationManager:
         if a["type"] in ("add", "remove"):
             a = cast(FieldUpdateElement, a)
             assert isinstance(a["value"], list)
-            new_value: List[Any] = a["value"]
+            new_value: List[Any] = list(a["value"])  # copy list to prevent data leaks
             if b["type"] == "add":
                 b = cast(FieldUpdateElement, b)
                 new_value.append(b["modified_element"])

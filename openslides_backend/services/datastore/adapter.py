@@ -1,4 +1,5 @@
 from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
 import simplejson as json
@@ -516,7 +517,7 @@ class DatastoreAdapter(DatastoreService):
                     instance = {}
                     for field in mapped_fields:
                         if field in model:
-                            instance[field] = model[field]
+                            instance[field] = deepcopy(model[field])
                             found_fields.add(field)
                     if len(mapped_fields) != len(found_fields):
                         complete = False
@@ -526,7 +527,7 @@ class DatastoreAdapter(DatastoreService):
                             fqid, position, found_fields
                         )
                 else:
-                    instance = model
+                    instance = deepcopy(model)
                     if lock_result and fqid in self.additional_relation_model_locks:
                         position = self.additional_relation_model_locks[fqid]
                         self.update_locked_fields(fqid, position)
