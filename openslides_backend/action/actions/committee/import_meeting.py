@@ -96,7 +96,7 @@ class CommitteeImportMeeting(Action):
         json_data = instance["meeting_json"]
         for collection in json_data:
             for entry in json_data[collection]:
-                for field in entry:
+                for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field, replace_map)
 
     def replace_field_ids(
@@ -112,7 +112,20 @@ class CommitteeImportMeeting(Action):
             pass
         else:
             model_field = model_registry[Collection(collection)]().try_get_field(field)
-            if isinstance(model_field, RelationField):
+            if (
+                isinstance(model_field, BaseTemplateField)
+                and model_field.is_template_field(field)
+                and model_field.replacement_collection
+            ):
+                entry[field] = [
+                    str(
+                        replace_map[model_field.replacement_collection.collection][
+                            int(id_)
+                        ]
+                    )
+                    for id_ in entry[field]
+                ]
+            elif isinstance(model_field, RelationField):
                 target_collection = model_field.get_target_collection().collection
                 if entry[field]:
                     entry[field] = replace_map[target_collection][entry[field]]
@@ -124,24 +137,31 @@ class CommitteeImportMeeting(Action):
             elif isinstance(model_field, GenericRelationField):
                 if entry[field]:
                     name, id_ = entry[field].split(KEYSEPARATOR)
-                    entry[field] = name + KEYSEPARATOR + replace_map[name][id_]
+                    entry[field] = (
+                        name + KEYSEPARATOR + str(replace_map[name][int(id_)])
+                    )
             elif isinstance(model_field, GenericRelationListField):
                 new_fqid_list = []
                 for fqid in entry[field]:
-                    name, id_ = entry[field].split(KEYSEPARATOR)
-                    new_fqid_list.append(name + KEYSEPARATOR + replace_map[name][id_])
+                    name, id_ = fqid.split(KEYSEPARATOR)
+                    new_fqid_list.append(
+                        name + KEYSEPARATOR + str(replace_map[name][int(id_)])
+                    )
                 entry[field] = new_fqid_list
-            if isinstance(model_field, BaseTemplateField):
-                if model_field.replacement_collection:
-                    replacement = model_field.get_replacement(field)
-                    id_ = int(replacement)
-                    new_id_ = replace_map[
-                        model_field.replacement_collection.collection
-                    ][id_]
-                    new_field = model_field.get_structured_field_name(new_id_)
-                    tmp = entry[field]
-                    del entry[field]
-                    entry[new_field] = tmp
+            if (
+                isinstance(model_field, BaseTemplateField)
+                and model_field.replacement_collection
+                and not model_field.is_template_field(field)
+            ):
+                replacement = model_field.get_replacement(field)
+                id_ = int(replacement)
+                new_id_ = replace_map[model_field.replacement_collection.collection][
+                    id_
+                ]
+                new_field = model_field.get_structured_field_name(new_id_)
+                tmp = entry[field]
+                del entry[field]
+                entry[new_field] = tmp
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["meeting_json"]
