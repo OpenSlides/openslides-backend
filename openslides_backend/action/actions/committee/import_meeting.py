@@ -10,6 +10,8 @@ from ....models.fields import (
     RelationListField,
 )
 from ....models.models import Committee
+from ....permissions.management_levels import CommitteeManagementLevel
+from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
@@ -253,4 +255,10 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
         return write_requests
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        return
+        if not has_committee_management_level(
+            self.datastore,
+            self.user_id,
+            CommitteeManagementLevel.CAN_MANAGE,
+            instance["id"],
+        ):
+            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
