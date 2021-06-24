@@ -116,11 +116,11 @@ class CommitteeImportMeeting(Action):
         used_usernames = set()
         for entry in json_data["user"]:
             username_unique = False
-            template_username = entry["username"].rstrip("0123456789")
+            template_username = entry["username"].rstrip(" 0123456789")
             count = 1
             while not username_unique:
                 if entry["username"] in used_usernames:
-                    entry["username"] = template_username + str(count)
+                    entry["username"] = template_username + " " + str(count)
                     count += 1
                     continue
                 result = self.datastore.filter(
@@ -129,7 +129,7 @@ class CommitteeImportMeeting(Action):
                     ["id"],
                 )
                 if result:
-                    entry["username"] = template_username + str(count)
+                    entry["username"] = template_username + " " + str(count)
                     count += 1
                     continue
                 username_unique = True

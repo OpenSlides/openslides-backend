@@ -210,7 +210,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "admin1"})
+        self.assert_model_exists("user/2", {"username": "admin 1"})
 
     def test_check_usernames_2(self) -> None:
         self.set_models(
@@ -251,7 +251,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
                         {
                             "id": 2,
                             "password": "",
-                            "username": "admin1",
+                            "username": "admin 1",
                         },
                     ],
                     "group": [
@@ -274,5 +274,5 @@ class CommitteeImportMeeting(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "admin1"})
-        self.assert_model_exists("user/3", {"username": "admin2"})
+        self.assert_model_exists("user/2", {"username": "admin 1"})
+        self.assert_model_exists("user/3", {"username": "admin 2"})
