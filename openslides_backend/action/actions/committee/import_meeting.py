@@ -102,7 +102,7 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
                 raise ActionException(f"{collection} must be empty.")
 
         self.check_usernames_and_generate_new_ones(meeting_json)
-        self.update_meeting_and_generate_passwords(instance)
+        self.update_meeting_users_and_mediafiles(instance)
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
@@ -132,7 +132,7 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
                 is_username_unique = True
             used_usernames.add(entry["username"])
 
-    def update_meeting_and_generate_passwords(self, instance: Dict[str, Any]) -> None:
+    def update_meeting_users_and_mediafiles(self, instance: Dict[str, Any]) -> None:
         # update committee_id
         json_data = instance["meeting_json"]
         json_data["meeting"][0]["committee_id"] = instance["id"]
@@ -146,6 +146,11 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
 
         # set imported_at
         json_data["meeting"][0]["imported_at"] = round(time.time())
+
+        # delete blob from mediafiles
+        for entry in json_data.get("mediafile", []):
+            if "blob" in entry:
+                del entry["blob"]
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = {}
