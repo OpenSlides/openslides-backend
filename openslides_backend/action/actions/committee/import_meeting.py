@@ -108,17 +108,17 @@ class CommitteeImportMeeting(Action):
         self.update_meeting_and_generate_passwords(instance)
 
         # replace ids in the meeting_json
-        replace_map = self.create_replace_map(meeting_json)
-        self.replace_fields(instance, replace_map)
+        self.create_replace_map(meeting_json)
+        self.replace_fields(instance)
         return instance
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
         used_usernames = set()
         for entry in json_data["user"]:
-            username_unique = False
+            is_username_unique = False
             template_username = entry["username"].rstrip(" 0123456789")
             count = 1
-            while not username_unique:
+            while not is_username_unique:
                 if entry["username"] in used_usernames:
                     entry["username"] = template_username + " " + str(count)
                     count += 1
@@ -132,7 +132,7 @@ class CommitteeImportMeeting(Action):
                     entry["username"] = template_username + " " + str(count)
                     count += 1
                     continue
-                username_unique = True
+                is_username_unique = True
             used_usernames.add(entry["username"])
 
     def update_meeting_and_generate_passwords(self, instance: Dict[str, Any]) -> None:
@@ -150,9 +150,7 @@ class CommitteeImportMeeting(Action):
         # set imported_at
         json_data["meeting"][0]["imported_at"] = round(time.time())
 
-    def create_replace_map(
-        self, json_data: Dict[str, Any]
-    ) -> Dict[str, Dict[int, int]]:
+    def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = {}
         for collection in json_data:
             replace_map[collection] = {}
@@ -161,26 +159,23 @@ class CommitteeImportMeeting(Action):
             )
             for entry, new_id in zip(json_data[collection], new_ids):
                 replace_map[collection][entry["id"]] = new_id
-        return replace_map
+        self.replace_map = replace_map
 
-    def replace_fields(
-        self, instance: Dict[str, Any], replace_map: Dict[str, Dict[int, int]]
-    ) -> None:
+    def replace_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting_json"]
         for collection in json_data:
             for entry in json_data[collection]:
                 for field in list(entry.keys()):
-                    self.replace_field_ids(collection, entry, field, replace_map)
+                    self.replace_field_ids(collection, entry, field)
 
     def replace_field_ids(
         self,
         collection: str,
         entry: Dict[str, Any],
         field: str,
-        replace_map: Dict[str, Dict[int, int]],
     ) -> None:
         if field == "id":
-            entry["id"] = replace_map[collection][entry["id"]]
+            entry["id"] = self.replace_map[collection][entry["id"]]
         elif collection == "meeting" and field == "committee_id":
             pass
         else:
@@ -192,7 +187,7 @@ class CommitteeImportMeeting(Action):
             ):
                 entry[field] = [
                     str(
-                        replace_map[model_field.replacement_collection.collection][
+                        self.replace_map[model_field.replacement_collection.collection][
                             int(id_)
                         ]
                     )
@@ -201,24 +196,24 @@ class CommitteeImportMeeting(Action):
             elif isinstance(model_field, RelationField):
                 target_collection = model_field.get_target_collection().collection
                 if entry[field]:
-                    entry[field] = replace_map[target_collection][entry[field]]
+                    entry[field] = self.replace_map[target_collection][entry[field]]
             elif isinstance(model_field, RelationListField):
                 target_collection = model_field.get_target_collection().collection
                 entry[field] = [
-                    replace_map[target_collection][id_] for id_ in entry[field]
+                    self.replace_map[target_collection][id_] for id_ in entry[field]
                 ]
             elif isinstance(model_field, GenericRelationField):
                 if entry[field]:
                     name, id_ = entry[field].split(KEYSEPARATOR)
                     entry[field] = (
-                        name + KEYSEPARATOR + str(replace_map[name][int(id_)])
+                        name + KEYSEPARATOR + str(self.replace_map[name][int(id_)])
                     )
             elif isinstance(model_field, GenericRelationListField):
                 new_fqid_list = []
                 for fqid in entry[field]:
                     name, id_ = fqid.split(KEYSEPARATOR)
                     new_fqid_list.append(
-                        name + KEYSEPARATOR + str(replace_map[name][int(id_)])
+                        name + KEYSEPARATOR + str(self.replace_map[name][int(id_)])
                     )
                 entry[field] = new_fqid_list
             if (
@@ -228,9 +223,9 @@ class CommitteeImportMeeting(Action):
             ):
                 replacement = model_field.get_replacement(field)
                 id_ = int(replacement)
-                new_id_ = replace_map[model_field.replacement_collection.collection][
-                    id_
-                ]
+                new_id_ = self.replace_map[
+                    model_field.replacement_collection.collection
+                ][id_]
                 new_field = model_field.get_structured_field_name(new_id_)
                 tmp = entry[field]
                 del entry[field]
