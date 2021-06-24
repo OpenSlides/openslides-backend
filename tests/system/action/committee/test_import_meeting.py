@@ -49,25 +49,6 @@ class CommitteeImportMeeting(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "organization must be empty." in response.json["message"]
 
-    def test_not_empty_password(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-            }
-        )
-        response = self.request(
-            "committee.import_meeting",
-            {
-                "id": 1,
-                "meeting_json": {
-                    "meeting": [{"id": 1}],
-                    "user": [{"id": 1, "password": "test"}],
-                },
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "User password must be an empty string." in response.json["message"]
-
     def test_replace_ids_and_write_to_datastore(self) -> None:
         start = round(time.time())
         self.set_models(

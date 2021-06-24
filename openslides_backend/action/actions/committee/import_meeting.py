@@ -73,10 +73,6 @@ class CommitteeImportMeeting(Action):
             if meeting_json.get(collection):
                 raise ActionException(f"{collection} must be empty.")
 
-        for user in meeting_json.get("user", []):
-            if not user["password"] == "":
-                raise ActionException("User password must be an empty string.")
-
         self.check_usernames_and_generate_new_ones(meeting_json)
         self.update_meeting_and_generate_passwords(instance)
 
