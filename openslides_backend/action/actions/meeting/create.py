@@ -149,12 +149,14 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 user_id in committee.get("user_ids", []) for user_id in user_ids
             ):
                 raise ActionException("Only allowed to add users from committee.")
+            # filter out request user since he was already added
             action_data = [
                 {
                     "id": user_id,
                     "group_$_ids": {str(instance["id"]): [fqid_default_group.id]},
                 }
                 for user_id in user_ids
+                if user_id != self.user_id
             ]
 
             self.execute_other_action(UserUpdate, action_data)

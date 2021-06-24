@@ -1,7 +1,6 @@
 from typing import Any, Dict
 
 from openslides_backend.services.datastore.deleted_models_behaviour import (
-    DeletedModelsBehaviour,
     InstanceAdditionalBehaviour,
 )
 
@@ -27,7 +26,6 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         db_instance = self.datastore.fetch_model(
             fqid,
             [field_name, "meeting_id"],
-            get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST
             if field.own_collection.collection == "meeting"
             else InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
