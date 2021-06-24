@@ -441,7 +441,9 @@ class CommitteeImportMeeting(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/4", {"username": "admin 3", "group_$3_ids": [2], "group_$_ids": ["3"]})
+        self.assert_model_exists(
+            "user/4", {"username": "admin 3", "group_$3_ids": [2], "group_$_ids": ["3"]}
+        )
         self.assert_model_exists("user/5", {"username": "admin 4"})
         self.assert_model_exists(
             "meeting/3",
@@ -468,7 +470,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
                 "committee/1": {},
                 "meeting/1": {},
                 "motion/1": {},
-                "user/1": {"username": "admin", "organization_management_level": "can_manage_users"},
+                "user/1": {
+                    "username": "admin",
+                    "organization_management_level": "can_manage_users",
+                },
             }
         )
         response = self.request(
@@ -524,5 +529,6 @@ class CommitteeImportMeeting(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
-
+        assert (
+            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+        )
