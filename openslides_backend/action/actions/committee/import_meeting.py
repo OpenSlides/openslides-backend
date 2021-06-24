@@ -16,6 +16,7 @@ from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
+from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,7 +24,7 @@ from ...util.typing import ActionData, ActionResults
 
 
 @register_action("committee.import_meeting")
-class CommitteeImportMeeting(Action):
+class CommitteeImportMeeting(SingularActionMixin, Action):
     """
     Action to import a meeting.
     """
@@ -41,23 +42,17 @@ class CommitteeImportMeeting(Action):
         """
         self.user_id = user_id
         self.index = 0
-        for instance in action_data:
-            self.validate_instance(instance)
-            try:
-                self.check_permissions(instance)
-            except MissingPermission as e:
-                msg = f"You are not allowed to perform action {self.name}."
-                e.message = msg + " " + e.message
-                raise e
-            self.index += 1
-        self.index = -1
-
-        instances = self.get_updated_instances(action_data)
-        for instance in instances:
-            instance = self.base_update_instance(instance)
-            write_request = self.create_write_requests(instance)
-            self.write_requests.extend(write_request)
-
+        action_data = self.get_updated_instances(action_data)
+        instance = next(iter(action_data))
+        self.validate_instance(instance)
+        try:
+            self.check_permissions(instance)
+        except MissingPermission as e:
+            msg = f"You are not allowed to perform action {self.name}."
+            e.message = msg + " " + e.message
+            raise e
+        instance = self.base_update_instance(instance)
+        self.write_requests.extend(self.create_write_requests(instance))
         final_write_request = self.process_write_requests()
         return (final_write_request, None)
 
