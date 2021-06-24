@@ -67,10 +67,41 @@ class CommitteeImportMeeting(Action):
         # checks if the meeting_json is correct
         if not len(meeting_json.get("meeting", [])) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
-        shall_be_empty = ("organization", "organization_tag", "committee", "resource")
+        allowed_collections = (
+            "user",
+            "meeting",
+            "group",
+            "personal_note",
+            "tag",
+            "agenda_item",
+            "list_of_speakers",
+            "speaker",
+            "topic",
+            "motion",
+            "motion_submitter",
+            "motion_comment",
+            "motion_comment_section",
+            "motion_category",
+            "motion_block",
+            "motion_change_recommendation",
+            "motion_state",
+            "motion_workflow",
+            "motion_statute_paragraph",
+            "poll",
+            "option",
+            "vote",
+            "assignment",
+            "assignment_candidate",
+            "mediafile",
+            "projector",
+            "projection",
+            "projector_message",
+            "projector_countdown",
+            "chat_group",
+        )
 
-        for collection in shall_be_empty:
-            if meeting_json.get(collection):
+        for collection in meeting_json:
+            if meeting_json.get(collection) and collection not in allowed_collections:
                 raise ActionException(f"{collection} must be empty.")
 
         self.check_usernames_and_generate_new_ones(meeting_json)
