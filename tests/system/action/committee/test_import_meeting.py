@@ -163,7 +163,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
             "user/2", {"username": "test", "group_$2_ids": [1], "group_$_ids": ["2"]}
         )
         user_2 = self.get_model("user/2")
-        assert len(user_2.get("password", "")) == 10
+        assert user_2.get("password", "")
         self.assert_model_exists("projector/1", {"meeting_id": 2})
         self.assert_model_exists("group/1", {"user_ids": [2]})
         self.assert_model_exists("personal_note/1", {"content_object_id": "motion/2"})

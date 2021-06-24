@@ -78,10 +78,7 @@ class CommitteeImportMeeting(Action):
                 raise ActionException("User password must be an empty string.")
 
         self.check_usernames_and_generate_new_ones(meeting_json)
-        self.update_committee_id(instance)
-        self.generate_random_passwords(meeting_json)
-        self.set_enable_anonymous(meeting_json)
-        self.set_imported_at(meeting_json)
+        self.update_meeting_and_generate_passwords(instance)
 
         # replace ids in the meeting_json
         replace_map = self.create_replace_map(meeting_json)
@@ -111,18 +108,19 @@ class CommitteeImportMeeting(Action):
                 username_unique = True
             used_usernames.add(entry["username"])
 
-    def update_committee_id(self, instance: Dict[str, Any]) -> None:
+    def update_meeting_and_generate_passwords(self, instance: Dict[str, Any]) -> None:
+        # update committee_id
         json_data = instance["meeting_json"]
         json_data["meeting"][0]["committee_id"] = instance["id"]
 
-    def generate_random_passwords(self, json_data: Dict[str, Any]) -> None:
+        # generate passwords
         for entry in json_data["user"]:
-            entry["password"] = get_random_string(10)
+            entry["password"] = self.auth.hash(get_random_string(10))
 
-    def set_enable_anonymous(self, json_data: Dict[str, Any]) -> None:
+        # set enable_anonymous
         json_data["meeting"][0]["enable_anonymous"] = False
 
-    def set_imported_at(self, json_data: Dict[str, Any]) -> None:
+        # set imported_at
         json_data["meeting"][0]["imported_at"] = round(time.time())
 
     def create_replace_map(
