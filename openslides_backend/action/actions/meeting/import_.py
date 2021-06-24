@@ -9,7 +9,7 @@ from ....models.fields import (
     RelationField,
     RelationListField,
 )
-from ....models.models import Committee
+from ....models.models import Meeting
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, MissingPermission
@@ -25,15 +25,18 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
 
 
-@register_action("committee.import_meeting")
-class CommitteeImportMeeting(SingularActionMixin, Action):
+@register_action("meeting.import")
+class MeetingImport(SingularActionMixin, Action):
     """
     Action to import a meeting.
     """
 
-    model = Committee()
-    schema = DefaultSchema(Committee()).get_update_schema(
-        additional_required_fields={"meeting_json": {"type": "object"}}
+    model = Meeting()
+    schema = DefaultSchema(Meeting()).get_default_schema(
+        required_properties=["committee_id"],
+        additional_required_fields={"meeting": {"type": "object"}},
+        title="Import meeting",
+        description="Import a meeting into the committee.",
     )
 
     def perform(
@@ -59,9 +62,9 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
         return (final_write_request, None)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_json = instance["meeting_json"]
+        meeting_json = instance["meeting"]
 
-        # checks if the meeting_json is correct
+        # checks if the meeting is correct
         if not len(meeting_json.get("meeting", [])) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
         allowed_collections = (
@@ -134,8 +137,8 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
 
     def update_meeting_users_and_mediafiles(self, instance: Dict[str, Any]) -> None:
         # update committee_id
-        json_data = instance["meeting_json"]
-        json_data["meeting"][0]["committee_id"] = instance["id"]
+        json_data = instance["meeting"]
+        json_data["meeting"][0]["committee_id"] = instance["committee_id"]
 
         # generate passwords
         for entry in json_data["user"]:
@@ -164,7 +167,7 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
         self.replace_map = replace_map
 
     def replace_fields(self, instance: Dict[str, Any]) -> None:
-        json_data = instance["meeting_json"]
+        json_data = instance["meeting"]
         for collection in json_data:
             for entry in json_data[collection]:
                 for field in list(entry.keys()):
@@ -234,7 +237,7 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
                 entry[new_field] = tmp
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
-        json_data = instance["meeting_json"]
+        json_data = instance["meeting"]
         write_requests = []
         for collection in json_data:
             for entry in json_data[collection]:
@@ -251,7 +254,7 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
         write_requests.append(
             self.build_write_request(
                 EventType.Update,
-                FullQualifiedId(Collection("committee"), instance["id"]),
+                FullQualifiedId(Collection("committee"), instance["committee_id"]),
                 f"import meeting {json_data['meeting'][0]['id']}",
                 None,
                 {"add": {"meeting_ids": [json_data["meeting"][0]["id"]]}, "remove": {}},
@@ -264,6 +267,6 @@ class CommitteeImportMeeting(SingularActionMixin, Action):
             self.datastore,
             self.user_id,
             CommitteeManagementLevel.CAN_MANAGE,
-            instance["id"],
+            instance["committee_id"],
         ):
             raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)

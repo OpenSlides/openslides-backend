@@ -3,7 +3,7 @@ import time
 from tests.system.action.base import BaseActionTestCase
 
 
-class CommitteeImportMeeting(BaseActionTestCase):
+class MeetingImport(BaseActionTestCase):
     def test_no_meeting_collection(self) -> None:
         self.set_models(
             {
@@ -11,7 +11,7 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting", {"id": 1, "meeting_json": {"meeting": []}}
+            "meeting.import", {"committee_id": 1, "meeting": {"meeting": []}}
         )
         self.assert_status_code(response, 400)
         assert (
@@ -25,8 +25,8 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
-            {"id": 1, "meeting_json": {"meeting": [{"id": 1}, {"id": 2}]}},
+            "meeting.import",
+            {"committee_id": 1, "meeting": {"meeting": [{"id": 1}, {"id": 2}]}},
         )
         self.assert_status_code(response, 400)
         assert (
@@ -40,10 +40,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {"meeting": [{"id": 1}], "organization": [{"id": 1}]},
+                "committee_id": 1,
+                "meeting": {"meeting": [{"id": 1}], "organization": [{"id": 1}]},
             },
         )
         self.assert_status_code(response, 400)
@@ -59,10 +59,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
@@ -163,10 +163,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
@@ -222,10 +222,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
@@ -288,10 +288,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
@@ -366,10 +366,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
         self.assert_model_exists("user/2", {"username": "admin 1"})
         self.assert_model_exists("user/3", {"username": "admin 2"})
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
@@ -477,10 +477,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
@@ -542,10 +542,10 @@ class CommitteeImportMeeting(BaseActionTestCase):
             }
         )
         response = self.request(
-            "committee.import_meeting",
+            "meeting.import",
             {
-                "id": 1,
-                "meeting_json": {
+                "committee_id": 1,
+                "meeting": {
                     "meeting": [
                         {
                             "id": 1,
