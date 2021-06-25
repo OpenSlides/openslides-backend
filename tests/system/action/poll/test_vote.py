@@ -184,6 +184,84 @@ class PollVoteTest(BaseActionTestCase):
                 "poll/1": {
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
+                    "pollmethod": "Y",
+                    "meeting_id": 113,
+                    "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                },
+                "meeting/113": {"name": "my meeting"},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+            }
+        )
+        response = self.request(
+            "poll.vote",
+            {
+                "id": 1,
+                "user_id": 1,
+                "value": {"11": "Y", "12": "Y"},
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Total amount of votes is not in min-max-interval."
+            in response.data.decode()
+        )
+        self.assert_model_not_exists("vote/1")
+
+    def test_vote_no_votes_total_check_by_YNA(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"enable_electronic_voting": True},
+                "group/1": {"user_ids": [1]},
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
+                "poll/1": {
+                    "title": "my test poll",
+                    "option_ids": [11, 12, 13],
+                    "pollmethod": "YNA",
+                    "meeting_id": 113,
+                    "entitled_group_ids": [1],
+                    "state": Poll.STATE_STARTED,
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                },
+                "meeting/113": {"name": "my meeting"},
+                "user/1": {
+                    "is_present_in_meeting_ids": [113],
+                    "group_$113_ids": [1],
+                    "group_$_ids": ["113"],
+                },
+            }
+        )
+        response = self.request(
+            "poll.vote",
+            {
+                "id": 1,
+                "user_id": 1,
+                "value": {"11": "Y", "12": "A"},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("vote/1")
+
+    def test_vote_no_votes_total_check_by_YN(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"enable_electronic_voting": True},
+                "group/1": {"user_ids": [1]},
+                "option/11": {"meeting_id": 113, "poll_id": 1},
+                "option/12": {"meeting_id": 113, "poll_id": 1},
+                "option/13": {"meeting_id": 113, "poll_id": 1},
+                "poll/1": {
+                    "title": "my test poll",
+                    "option_ids": [11, 12, 13],
                     "pollmethod": "YN",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
@@ -207,12 +285,8 @@ class PollVoteTest(BaseActionTestCase):
                 "value": {"11": "Y", "12": "N"},
             },
         )
-        self.assert_status_code(response, 400)
-        assert (
-            "Total amount of votes is not in min-max-interval."
-            in response.data.decode()
-        )
-        self.assert_model_not_exists("vote/1")
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("vote/1")
 
     def test_vote_wrong_votes_total_min_case(self) -> None:
         self.set_models(
@@ -225,7 +299,7 @@ class PollVoteTest(BaseActionTestCase):
                 "poll/1": {
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
-                    "pollmethod": "YN",
+                    "pollmethod": "Y",
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,

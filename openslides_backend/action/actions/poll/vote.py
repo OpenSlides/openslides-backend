@@ -293,7 +293,7 @@ class PollVote(UpdateAction):
         }
 
     def check_total_votes(self, total: int) -> None:
-        if not (
+        if self.poll["pollmethod"] in ("Y", "N") and not (
             self.poll.get("min_votes_amount", 1)
             <= total
             <= self.poll.get("max_votes_amount", 1)
