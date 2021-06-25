@@ -357,3 +357,9 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
             OrganizationManagementLevel.SUPERADMIN,
         )
+
+    def test_update_list_of_speakers_enable_point_of_order_speakers(self) -> None:
+        self.basic_test({"list_of_speakers_enable_point_of_order_speakers": True})
+        self.assert_model_exists(
+            "meeting/1", {"list_of_speakers_enable_point_of_order_speakers": True}
+        )
