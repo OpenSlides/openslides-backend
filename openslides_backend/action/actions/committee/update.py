@@ -66,7 +66,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
 
         raise MissingPermission(
             {
-                OrganizationManagementLevel.CAN_MANAGE_USERS: 1,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION: 1,
                 CommitteeManagementLevel.CAN_MANAGE: instance["id"],
             }
         )
