@@ -813,3 +813,14 @@ class UserCreateActionTest(BaseActionTestCase):
             "data must not contain {'is_demo_user'} properties",
             response.json["message"],
         )
+
+    def test_create_forbidden_username(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "   ",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "This username is forbidden." in response.json["message"]

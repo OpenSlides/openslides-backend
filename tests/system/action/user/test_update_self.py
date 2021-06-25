@@ -79,3 +79,19 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             "User may update about_me_$ only in his meetings, but tries in [2]",
             response.json["message"],
         )
+
+    def test_update_self_forbidden_username(self) -> None:
+        self.update_model(
+            "user/1",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request(
+            "user.update_self",
+            {
+                "username": "   ",
+            },
+        )
+        self.assert_status_code(response, 400)
+        model = self.get_model("user/1")
+        assert model.get("username") == "username_srtgb123"
+        assert "This username is forbidden." in response.json["message"]
