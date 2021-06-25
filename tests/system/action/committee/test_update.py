@@ -488,7 +488,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_users in organization 1 or CommitteeManagementLevel can_manage in committee 1",
+            "You are not allowed to perform action committee.update. Missing permissions: OrganizationManagementLevel can_manage_organization in organization 1 or CommitteeManagementLevel can_manage in committee 1",
             response.json["message"],
         )
 
@@ -546,7 +546,6 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": "can_manage_organization",
-                    "committee_$1_management_level": "can_manage",
                 },
                 "committee/1": {"user_ids": [1]},
             }
