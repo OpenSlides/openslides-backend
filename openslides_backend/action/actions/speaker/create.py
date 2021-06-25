@@ -21,7 +21,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
         required_properties=["list_of_speakers_id", "user_id"],
-        optional_properties=["point_of_order", "note"],
+        optional_properties=["point_of_order", "note", "speech_state"],
     )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
@@ -42,6 +42,30 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
 
         if "note" in instance and not instance.get("point_of_order"):
             raise ActionException("Not allowed to set note if not point of order.")
+
+        # check speech_state
+        if instance.get("speech_state") in ("pro", "contra"):
+            meeting = self.datastore.get(
+                FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+                ["list_of_speakers_enable_pro_contra_speech"],
+            )
+            if not meeting.get("list_of_speakers_enable_pro_contra_speech"):
+                raise ActionException("Pro or contra speech is not enabled.")
+        if instance.get("speech_state") == "contribution":
+            meeting = self.datastore.get(
+                FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+                ["list_of_speakers_can_set_contribution_self"],
+            )
+            has_los_can_manage = has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.ListOfSpeakers.CAN_MANAGE,
+                instance["meeting_id"],
+            )
+            if not has_los_can_manage and not meeting.get(
+                "list_of_speakers_can_set_contribution_self"
+            ):
+                raise ActionException("Contribution speech_state is not allowed.")
 
         weight_max = self._get_max_weight(instance["list_of_speakers_id"])
         if weight_max is None:
