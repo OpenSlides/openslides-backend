@@ -887,3 +887,14 @@ class UserUpdateActionTest(BaseActionTestCase):
             "You are not allowed to perform action user.update. Missing OrganizationManagementLevel: superadmin",
             response.json["message"],
         )
+
+    def test_update_forbidden_username(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request("user.update", {"id": 111, "username": "   "})
+        self.assert_status_code(response, 400)
+        assert "This username is forbidden." in response.json["message"]
+        model = self.get_model("user/111")
+        assert model.get("username") == "username_srtgb123"

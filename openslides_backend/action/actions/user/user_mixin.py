@@ -30,6 +30,8 @@ class UserMixin(Action):
             self.check_vote_delegated__to_id(instance, user_fqid)
         if "vote_delegations_$_from_ids" in instance:
             self.check_vote_delegations__from_ids(instance, user_fqid)
+        if "username" in instance and not instance["username"].strip():
+            raise ActionException("This username is forbidden.")
         return instance
 
     def check_vote_delegated__to_id(
