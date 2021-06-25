@@ -65,7 +65,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
             if not has_los_can_manage and not meeting.get(
                 "list_of_speakers_can_set_contribution_self"
             ):
-                raise ActionException("Contribution speech_state is not allowed.")
+                raise ActionException("Contribution speech is not allowed.")
 
         weight_max = self._get_max_weight(instance["list_of_speakers_id"])
         if weight_max is None:
