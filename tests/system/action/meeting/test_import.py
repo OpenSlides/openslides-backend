@@ -21,6 +21,7 @@ class MeetingImport(BaseActionTestCase):
                         "projector_countdown_default_time": 60,
                         "projector_countdown_warning_time": 60,
                         "reference_projector_id": 1,
+                        "user_ids": [1],
                     }
                 ],
                 "user": [
@@ -346,3 +347,15 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
         assert mediafile.get("blob") is None
+
+    def test_meeting_user_ids(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+        response = self.request("meeting.import", self.create_request_data({}))
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"user_ids": [2]})
