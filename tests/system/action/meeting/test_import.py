@@ -1,12 +1,12 @@
 import time
+from typing import Any, Dict
 
 from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingImport(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        self.test_models = {
+    def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+        return {
             "committee_id": 1,
             "meeting": {
                 "meeting": [
@@ -48,29 +48,7 @@ class MeetingImport(BaseActionTestCase):
                     }
                 ],
                 "projector": [{"id": 1, "meeting_id": 1}],
-                "personal_note": [
-                    {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
-                ],
-                "motion": [
-                    {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 1,
-                        "state_id": 1,
-                        "title": "bla",
-                    }
-                ],
-                "list_of_speakers": [
-                    {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
-                ],
-                "tag": [
-                    {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "tagged_ids": ["motion/1"],
-                        "name": "testag",
-                    }
-                ],
+                **datapart,
             },
         }
 
@@ -130,7 +108,33 @@ class MeetingImport(BaseActionTestCase):
         )
         response = self.request(
             "meeting.import",
-            self.test_models,
+            self.create_request_data(
+                {
+                    "personal_note": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
+                    ],
+                    "motion": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "list_of_speakers_id": 1,
+                            "state_id": 1,
+                            "title": "bla",
+                        }
+                    ],
+                    "list_of_speakers": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
+                    ],
+                    "tag": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "tagged_ids": ["motion/1"],
+                            "name": "testag",
+                        }
+                    ],
+                }
+            ),
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -166,53 +170,17 @@ class MeetingImport(BaseActionTestCase):
                 "user/1": {"username": "admin"},
             }
         )
-        response = self.request(
-            "meeting.import",
+        request_data = self.create_request_data({})
+        request_data["meeting"]["user"] = [
             {
-                "committee_id": 1,
-                "meeting": {
-                    "meeting": [
-                        {
-                            "id": 1,
-                            "name": "Test",
-                            "description": "blablabla",
-                            "default_group_id": 1,
-                            "motions_default_amendment_workflow_id": 1,
-                            "motions_default_statute_amendment_workflow_id": 1,
-                            "motions_default_workflow_id": 1,
-                            "projector_countdown_default_time": 60,
-                            "projector_countdown_warning_time": 60,
-                            "reference_projector_id": 1,
-                        }
-                    ],
-                    "user": [
-                        {
-                            "id": 1,
-                            "password": "",
-                            "username": "admin",
-                            "group_$_ids": ["1"],
-                            "group_$1_ids": [1],
-                        }
-                    ],
-                    "group": [
-                        {"id": 1, "meeting_id": 1, "name": "testgroup", "user_ids": [1]}
-                    ],
-                    "motion_workflow": [
-                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
-                    ],
-                    "motion_state": [
-                        {
-                            "id": 1,
-                            "css_class": "line",
-                            "meeting_id": 1,
-                            "workflow_id": 1,
-                            "name": "test",
-                        }
-                    ],
-                    "projector": [{"id": 1, "meeting_id": 1}],
-                },
-            },
-        )
+                "id": 1,
+                "password": "",
+                "username": "admin",
+                "group_$_ids": ["1"],
+                "group_$1_ids": [1],
+            }
+        ]
+        response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "admin 1"})
 
@@ -225,58 +193,23 @@ class MeetingImport(BaseActionTestCase):
                 "user/1": {"username": "admin"},
             }
         )
-        response = self.request(
-            "meeting.import",
+        request_data = self.create_request_data({})
+        request_data["meeting"]["user"] = [
             {
-                "committee_id": 1,
-                "meeting": {
-                    "meeting": [
-                        {
-                            "id": 1,
-                            "name": "Test",
-                            "description": "blablabla",
-                            "default_group_id": 1,
-                            "motions_default_amendment_workflow_id": 1,
-                            "motions_default_statute_amendment_workflow_id": 1,
-                            "motions_default_workflow_id": 1,
-                            "projector_countdown_default_time": 60,
-                            "projector_countdown_warning_time": 60,
-                            "reference_projector_id": 1,
-                        }
-                    ],
-                    "user": [
-                        {
-                            "id": 1,
-                            "password": "",
-                            "username": "admin",
-                            "group_$_ids": ["1"],
-                            "group_$1_ids": [1],
-                        },
-                        {
-                            "id": 2,
-                            "password": "",
-                            "username": "admin 1",
-                        },
-                    ],
-                    "group": [
-                        {"id": 1, "meeting_id": 1, "name": "testgroup", "user_ids": [1]}
-                    ],
-                    "motion_workflow": [
-                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
-                    ],
-                    "motion_state": [
-                        {
-                            "id": 1,
-                            "css_class": "line",
-                            "meeting_id": 1,
-                            "workflow_id": 1,
-                            "name": "test",
-                        }
-                    ],
-                    "projector": [{"id": 1, "meeting_id": 1}],
-                },
+                "id": 1,
+                "password": "",
+                "username": "admin",
+                "group_$_ids": ["1"],
+                "group_$1_ids": [1],
             },
-        )
+            {
+                "id": 2,
+                "password": "",
+                "username": "admin 1",
+            },
+        ]
+
+        response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "admin 1"})
         self.assert_model_exists("user/3", {"username": "admin 1 1"})
@@ -293,13 +226,65 @@ class MeetingImport(BaseActionTestCase):
         )
         response = self.request(
             "meeting.import",
-            self.test_models,
+            self.create_request_data(
+                {
+                    "personal_note": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
+                    ],
+                    "motion": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "list_of_speakers_id": 1,
+                            "state_id": 1,
+                            "title": "bla",
+                        }
+                    ],
+                    "list_of_speakers": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
+                    ],
+                    "tag": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "tagged_ids": ["motion/1"],
+                            "name": "testag",
+                        }
+                    ],
+                }
+            ),
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "test"})
         response = self.request(
             "meeting.import",
-            self.test_models,
+            self.create_request_data(
+                {
+                    "personal_note": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
+                    ],
+                    "motion": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "list_of_speakers_id": 1,
+                            "state_id": 1,
+                            "title": "bla",
+                        }
+                    ],
+                    "list_of_speakers": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"}
+                    ],
+                    "tag": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "tagged_ids": ["motion/1"],
+                            "name": "testag",
+                        }
+                    ],
+                }
+            ),
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -336,58 +321,7 @@ class MeetingImport(BaseActionTestCase):
                 },
             }
         )
-        response = self.request(
-            "meeting.import",
-            {
-                "committee_id": 1,
-                "meeting": {
-                    "meeting": [
-                        {
-                            "id": 1,
-                            "name": "Test",
-                            "description": "blablabla",
-                            "default_group_id": 1,
-                            "motions_default_amendment_workflow_id": 1,
-                            "motions_default_statute_amendment_workflow_id": 1,
-                            "motions_default_workflow_id": 1,
-                            "projector_countdown_default_time": 60,
-                            "projector_countdown_warning_time": 60,
-                            "reference_projector_id": 1,
-                        }
-                    ],
-                    "user": [
-                        {
-                            "id": 1,
-                            "password": "",
-                            "username": "admin",
-                            "group_$_ids": ["1"],
-                            "group_$1_ids": [1],
-                        },
-                        {
-                            "id": 2,
-                            "password": "",
-                            "username": "admin 1",
-                        },
-                    ],
-                    "group": [
-                        {"id": 1, "meeting_id": 1, "name": "testgroup", "user_ids": [1]}
-                    ],
-                    "motion_workflow": [
-                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
-                    ],
-                    "motion_state": [
-                        {
-                            "id": 1,
-                            "css_class": "line",
-                            "meeting_id": 1,
-                            "workflow_id": 1,
-                            "name": "test",
-                        }
-                    ],
-                    "projector": [{"id": 1, "meeting_id": 1}],
-                },
-            },
-        )
+        response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 403)
         assert (
             "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
@@ -403,56 +337,11 @@ class MeetingImport(BaseActionTestCase):
         )
         response = self.request(
             "meeting.import",
-            {
-                "committee_id": 1,
-                "meeting": {
-                    "meeting": [
-                        {
-                            "id": 1,
-                            "name": "Test",
-                            "description": "blablabla",
-                            "default_group_id": 1,
-                            "motions_default_amendment_workflow_id": 1,
-                            "motions_default_statute_amendment_workflow_id": 1,
-                            "motions_default_workflow_id": 1,
-                            "projector_countdown_default_time": 60,
-                            "projector_countdown_warning_time": 60,
-                            "reference_projector_id": 1,
-                        }
-                    ],
-                    "user": [
-                        {
-                            "id": 1,
-                            "password": "",
-                            "username": "admin",
-                            "group_$_ids": ["1"],
-                            "group_$1_ids": [1],
-                        },
-                        {
-                            "id": 2,
-                            "password": "",
-                            "username": "admin 1",
-                        },
-                    ],
-                    "group": [
-                        {"id": 1, "meeting_id": 1, "name": "testgroup", "user_ids": [1]}
-                    ],
-                    "motion_workflow": [
-                        {"id": 1, "meeting_id": 1, "name": "blup", "first_state_id": 1}
-                    ],
-                    "motion_state": [
-                        {
-                            "id": 1,
-                            "css_class": "line",
-                            "meeting_id": 1,
-                            "workflow_id": 1,
-                            "name": "test",
-                        }
-                    ],
-                    "projector": [{"id": 1, "meeting_id": 1}],
+            self.create_request_data(
+                {
                     "mediafile": [{"id": 1, "meeting_id": 1, "blob": "blablabla"}],
-                },
-            },
+                }
+            ),
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
