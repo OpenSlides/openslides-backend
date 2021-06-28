@@ -192,32 +192,24 @@ class MeetingImport(SingularActionMixin, Action):
             fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
                 entry[field]
             )
-            # split the entry in different parts.
             entry_str = entry[field]
             entry_list = []
             for fqid in fqids_str:
                 search_str = "[" + fqid + "]"
                 idx = entry_str.find(search_str)
                 entry_list.append(entry_str[:idx])
-                entry_list.append(entry_str[idx : idx + len(search_str)])
-                entry_str = entry_str[idx + len(search_str) :]
+                col, id_ = fqid.split(KEYSEPARATOR)
+                replace_str = (
+                    "["
+                    + collection
+                    + KEYSEPARATOR
+                    + str(self.replace_map[col][int(id_)])
+                    + "]"
+                )
+                entry_list.append(replace_str)
+                entry_str = entry_str[idx + len(replace_str) :]
             entry_list.append(entry_str)
-            # replace the ids and generate the new_entry
-            new_entry = []
-            for tmp_entry in entry_list:
-                if tmp_entry.startswith("[") and tmp_entry.endswith("]"):
-                    fqid = tmp_entry.strip("[]")
-                    collection, id_ = fqid.split(KEYSEPARATOR)
-                    new_entry.append(
-                        "["
-                        + collection
-                        + KEYSEPARATOR
-                        + str(self.replace_map[collection][int(id_)])
-                        + "]"
-                    )
-                else:
-                    new_entry.append(tmp_entry)
-            entry[field] = "".join(new_entry)
+            entry[field] = "".join(entry_list)
         else:
             model_field = model_registry[Collection(collection)]().try_get_field(field)
             if (
