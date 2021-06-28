@@ -184,6 +184,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        # user/1 is only added to the admin group (2), not the default group
         self.assert_model_exists(
             "user/1",
             {
