@@ -202,7 +202,6 @@ class MeetingImport(SingularActionMixin, Action):
                 entry_list.append(entry_str[idx : idx + len(search_str)])
                 entry_str = entry_str[idx + len(search_str) :]
             entry_list.append(entry_str)
-            print("XXX", entry_list)
             # replace the ids and generate the new_entry
             new_entry = []
             for tmp_entry in entry_list:
