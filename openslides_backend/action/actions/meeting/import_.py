@@ -189,27 +189,28 @@ class MeetingImport(SingularActionMixin, Action):
         elif collection == "user" and field == "meeting_ids":
             entry[field] = list(self.replace_map["meeting"].values())
         elif collection == "motion" and field == "recommendation_extension":
-            fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
-                entry[field]
-            )
-            entry_str = entry[field]
-            entry_list = []
-            for fqid in fqids_str:
-                search_str = "[" + fqid + "]"
-                idx = entry_str.find(search_str)
-                entry_list.append(entry_str[:idx])
-                col, id_ = fqid.split(KEYSEPARATOR)
-                replace_str = (
-                    "["
-                    + collection
-                    + KEYSEPARATOR
-                    + str(self.replace_map[col][int(id_)])
-                    + "]"
+            if entry[field]:
+                fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
+                    entry[field]
                 )
-                entry_list.append(replace_str)
-                entry_str = entry_str[idx + len(replace_str) :]
-            entry_list.append(entry_str)
-            entry[field] = "".join(entry_list)
+                entry_str = entry[field]
+                entry_list = []
+                for fqid in fqids_str:
+                    search_str = "[" + fqid + "]"
+                    idx = entry_str.find(search_str)
+                    entry_list.append(entry_str[:idx])
+                    col, id_ = fqid.split(KEYSEPARATOR)
+                    replace_str = (
+                        "["
+                        + collection
+                        + KEYSEPARATOR
+                        + str(self.replace_map[col][int(id_)])
+                        + "]"
+                    )
+                    entry_list.append(replace_str)
+                    entry_str = entry_str[idx + len(replace_str) :]
+                entry_list.append(entry_str)
+                entry[field] = "".join(entry_list)
         else:
             model_field = model_registry[Collection(collection)]().try_get_field(field)
             if (
@@ -225,6 +226,8 @@ class MeetingImport(SingularActionMixin, Action):
                     )
                     for id_ in entry[field]
                 ]
+            elif isinstance(model_field, RelationField) and isinstance(model_field, BaseTemplateField):
+                pass
             elif isinstance(model_field, RelationField):
                 target_collection = model_field.get_target_collection().collection
                 if entry[field]:
