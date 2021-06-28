@@ -185,6 +185,8 @@ class MeetingImport(SingularActionMixin, Action):
             pass
         elif collection == "meeting" and field == "user_ids":
             entry[field] = [self.replace_map["user"][id_] for id_ in entry[field]]
+        elif collection == "user" and field == "meeting_ids":
+            entry[field] = list(self.replace_map["meeting"].values())
         else:
             model_field = model_registry[Collection(collection)]().try_get_field(field)
             if (

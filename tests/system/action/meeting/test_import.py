@@ -31,6 +31,7 @@ class MeetingImport(BaseActionTestCase):
                         "username": "test",
                         "group_$_ids": ["1"],
                         "group_$1_ids": [1],
+                        "meeting_ids": [1],
                     }
                 ],
                 "group": [
@@ -359,3 +360,15 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"user_ids": [2]})
+
+    def test_user_meeting_ids(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+        response = self.request("meeting.import", self.create_request_data({}))
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2", {"meeting_ids": [2]})
