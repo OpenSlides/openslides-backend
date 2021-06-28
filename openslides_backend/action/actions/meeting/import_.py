@@ -226,7 +226,9 @@ class MeetingImport(SingularActionMixin, Action):
                     )
                     for id_ in entry[field]
                 ]
-            elif isinstance(model_field, RelationField) and isinstance(model_field, BaseTemplateField):
+            elif isinstance(model_field, RelationField) and isinstance(
+                model_field, BaseTemplateField
+            ):
                 pass
             elif isinstance(model_field, RelationField):
                 target_collection = model_field.get_target_collection().collection
