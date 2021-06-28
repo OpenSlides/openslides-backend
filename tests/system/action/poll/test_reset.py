@@ -63,10 +63,10 @@ class PollResetActionTest(BaseActionTestCase):
         assert poll.get("voted_ids") == []
 
         # check if auto generated fields are cleared
-        assert poll.get("entitled_users_at_stop") == []
-        assert poll.get("votesvalid") == "0.000000"
-        assert poll.get("votesinvalid") == "0.000000"
-        assert poll.get("votescast") == "0.000000"
+        assert poll.get("entitled_users_at_stop") is None
+        assert poll.get("votesvalid") is None
+        assert poll.get("votesinvalid") is None
+        assert poll.get("votescast") is None
 
         # check if the votes are deleted
         self.assert_model_deleted("vote/1")
