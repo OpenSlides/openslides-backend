@@ -116,7 +116,7 @@ class MeetingImport(SingularActionMixin, Action):
         used_usernames = set()
         for entry in json_data["user"]:
             is_username_unique = False
-            template_username = entry["username"].rstrip(" 0123456789")
+            template_username = entry["username"]
             count = 1
             while not is_username_unique:
                 if entry["username"] in used_usernames:

@@ -279,7 +279,7 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"username": "admin 1"})
-        self.assert_model_exists("user/3", {"username": "admin 2"})
+        self.assert_model_exists("user/3", {"username": "admin 1 1"})
 
     def test_double_import(self) -> None:
         start = round(time.time())
