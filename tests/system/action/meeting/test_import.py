@@ -372,3 +372,44 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
+
+    def test_motion_recommendation_extension(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+        response = self.request(
+            "meeting.import",
+            self.create_request_data(
+                {
+                    "motion": [
+                        {
+                            "id": 1,
+                            "meeting_id": 1,
+                            "list_of_speakers_id": 1,
+                            "state_id": 1,
+                            "title": "bla",
+                        },
+                        {
+                            "id": 2,
+                            "meeting_id": 1,
+                            "list_of_speakers_id": 2,
+                            "state_id": 1,
+                            "title": "bla",
+                            "recommendation_extension": "bla[motion/1]bla",
+                        },
+                    ],
+                    "list_of_speakers": [
+                        {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"},
+                        {"id": 2, "meeting_id": 1, "content_object_id": "motion/2"},
+                    ],
+                }
+            ),
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/3", {"recommendation_extension": "bla[motion/2]bla"}
+        )

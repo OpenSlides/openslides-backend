@@ -23,6 +23,7 @@ from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
+from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
 
 
 @register_action("meeting.import")
@@ -187,6 +188,37 @@ class MeetingImport(SingularActionMixin, Action):
             entry[field] = [self.replace_map["user"][id_] for id_ in entry[field]]
         elif collection == "user" and field == "meeting_ids":
             entry[field] = list(self.replace_map["meeting"].values())
+        elif collection == "motion" and field == "recommendation_extension":
+            fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
+                entry[field]
+            )
+            # split the entry in different parts.
+            entry_str = entry[field]
+            entry_list = []
+            for fqid in fqids_str:
+                search_str = "[" + fqid + "]"
+                idx = entry_str.find(search_str)
+                entry_list.append(entry_str[:idx])
+                entry_list.append(entry_str[idx : idx + len(search_str)])
+                entry_str = entry_str[idx + len(search_str) :]
+            entry_list.append(entry_str)
+            print("XXX", entry_list)
+            # replace the ids and generate the new_entry
+            new_entry = []
+            for tmp_entry in entry_list:
+                if tmp_entry.startswith("[") and tmp_entry.endswith("]"):
+                    fqid = tmp_entry.strip("[]")
+                    collection, id_ = fqid.split(KEYSEPARATOR)
+                    new_entry.append(
+                        "["
+                        + collection
+                        + KEYSEPARATOR
+                        + str(self.replace_map[collection][int(id_)])
+                        + "]"
+                    )
+                else:
+                    new_entry.append(tmp_entry)
+            entry[field] = "".join(new_entry)
         else:
             model_field = model_registry[Collection(collection)]().try_get_field(field)
             if (
