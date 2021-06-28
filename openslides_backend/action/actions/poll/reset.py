@@ -28,6 +28,10 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         )
         instance["is_pseudoanonymized"] = poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS
         instance["voted_ids"] = []
+        instance["entitled_users_at_stop"] = None
+        instance["votesvalid"] = None
+        instance["votesinvalid"] = None
+        instance["votescast"] = None
         return instance
 
     def delete_all_votes(self, poll_id: int) -> None:

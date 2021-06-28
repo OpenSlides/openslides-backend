@@ -32,6 +32,10 @@ class PollResetActionTest(BaseActionTestCase):
                     "option_ids": [1],
                     "global_option_id": 2,
                     "meeting_id": 1,
+                    "votesvalid": "3.000000",
+                    "votesinvalid": "1.000000",
+                    "votescast": "5.000000",
+                    "entitled_users_at_stop": [{"user_id": 1, "voted": True}],
                 },
                 "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
                 "option/2": {
@@ -57,6 +61,12 @@ class PollResetActionTest(BaseActionTestCase):
 
         # check if voted_ids is cleared
         assert poll.get("voted_ids") == []
+
+        # check if auto generated fields are cleared
+        assert poll.get("entitled_users_at_stop") is None
+        assert poll.get("votesvalid") is None
+        assert poll.get("votesinvalid") is None
+        assert poll.get("votescast") is None
 
         # check if the votes are deleted
         self.assert_model_deleted("vote/1")
