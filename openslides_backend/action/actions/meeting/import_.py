@@ -22,7 +22,7 @@ from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData, ActionResults
+from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
 
 
@@ -60,7 +60,8 @@ class MeetingImport(SingularActionMixin, Action):
         instance = self.base_update_instance(instance)
         self.write_requests.extend(self.create_write_requests(instance))
         final_write_request = self.process_write_requests()
-        return (final_write_request, None)
+        result = [self.create_action_result_element(instance)]
+        return (final_write_request, result)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]
@@ -293,6 +294,12 @@ class MeetingImport(SingularActionMixin, Action):
             )
         )
         return write_requests
+
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        """Returns the newly created id."""
+        return {"id": instance["meeting"]["meeting"][0]["id"]}
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if not has_committee_management_level(
