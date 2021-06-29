@@ -350,6 +350,7 @@ class MeetingImport(BaseActionTestCase):
         assert mediafile.get("blob") is None
 
     def test_meeting_user_ids(self) -> None:
+        # Calculated field.
         self.set_models(
             {
                 "committee/1": {},
@@ -362,6 +363,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("meeting/2", {"user_ids": [2]})
 
     def test_user_meeting_ids(self) -> None:
+        # Calculated field.
         self.set_models(
             {
                 "committee/1": {},
@@ -374,6 +376,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
 
     def test_motion_recommendation_extension(self) -> None:
+        # Special field
         self.set_models(
             {
                 "committee/1": {},
@@ -415,6 +418,7 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_logo_dollar_id(self) -> None:
+        # Template Relation Field
         self.set_models(
             {
                 "committee/1": {},
