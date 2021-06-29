@@ -14,6 +14,7 @@ class MeetingImport(BaseActionTestCase):
                         "id": 1,
                         "name": "Test",
                         "description": "blablabla",
+                        "admin_group_id": 1,
                         "default_group_id": 1,
                         "motions_default_amendment_workflow_id": 1,
                         "motions_default_statute_amendment_workflow_id": 1,
@@ -156,7 +157,7 @@ class MeetingImport(BaseActionTestCase):
         user_2 = self.get_model("user/2")
         assert user_2.get("password", "")
         self.assert_model_exists("projector/1", {"meeting_id": 2})
-        self.assert_model_exists("group/1", {"user_ids": [2]})
+        self.assert_model_exists("group/1", {"user_ids": [1, 2]})
         self.assert_model_exists("personal_note/1", {"content_object_id": "motion/2"})
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
@@ -304,7 +305,7 @@ class MeetingImport(BaseActionTestCase):
         meeting_2 = self.get_model("meeting/3")
         assert start <= meeting_2.get("imported_at", 0) <= start + 300
         self.assert_model_exists("projector/2", {"meeting_id": 3})
-        self.assert_model_exists("group/2", {"user_ids": [3]})
+        self.assert_model_exists("group/2", {"user_ids": [1, 3]})
         self.assert_model_exists("personal_note/2", {"content_object_id": "motion/3"})
         self.assert_model_exists(
             "tag/2", {"tagged_ids": ["motion/3"], "name": "testag"}
@@ -360,7 +361,7 @@ class MeetingImport(BaseActionTestCase):
         )
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"user_ids": [2]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
 
     def test_user_meeting_ids(self) -> None:
         # Calculated field.
@@ -437,3 +438,16 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "meeting/2", {"logo_$_id": ["web_header"], "logo_$web_header_id": 1}
         )
+
+    def test_request_user_in_admin_group(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+        response = self.request("meeting.import", self.create_request_data({}))
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
+        self.assert_model_exists("group/1", {"user_ids": [1, 2]})

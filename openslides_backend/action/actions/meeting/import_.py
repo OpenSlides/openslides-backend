@@ -112,6 +112,7 @@ class MeetingImport(SingularActionMixin, Action):
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
         self.replace_fields(instance)
+        self.update_admin_group(meeting_json)
         return instance
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
@@ -270,6 +271,17 @@ class MeetingImport(SingularActionMixin, Action):
                 tmp = entry[field]
                 del entry[field]
                 entry[new_field] = tmp
+
+    def update_admin_group(self, data_json: Dict[str, Any]) -> None:
+        admin_group_id = data_json["meeting"][0]["admin_group_id"]
+        for entry in data_json["group"]:
+            if entry["id"] == admin_group_id:
+                if entry["user_ids"]:
+                    entry["user_ids"].insert(0, self.user_id)
+                else:
+                    entry["user_ids"] = [self.user_id]
+
+        data_json["meeting"][0]["user_ids"].insert(0, self.user_id)
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
