@@ -103,7 +103,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert user.get("committee_ids") == [2]
         assert user.get("group_$1_ids") == [11]
         assert user.get("group_$2_ids") == [22]
-        assert set(user.get("group_$_ids", [])) == {"1", "2"}
+        self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
         assert user.get("vote_delegations_$1_from_ids") == [222]
         assert user.get("vote_delegations_$_from_ids") == ["1"]
         assert user.get("comment_$1") == "comment&lt;iframe&gt;&lt;/iframe&gt;"
@@ -112,13 +112,13 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert user.get("number_$") == ["2"]
         assert user.get("structure_level_$1") == "level_1"
         assert user.get("structure_level_$2") == "level_2"
-        assert set(user.get("structure_level_$", [])) == {"1", "2"}
+        self.assertCountEqual(user.get("structure_level_$", []), ["1", "2"])
         assert user.get("about_me_$1") == "<p>about</p>&lt;iframe&gt;&lt;/iframe&gt;"
         assert user.get("about_me_$") == ["1"]
         assert user.get("vote_weight_$1") == "1.000000"
         assert user.get("vote_weight_$2") == "2.333333"
-        assert set(user.get("vote_weight_$", [])) == {"1", "2"}
-        assert user.get("meeting_ids") == [1, 2]
+        self.assertCountEqual(user.get("vote_weight_$", []), ["1", "2"])
+        self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
         user = self.get_model("user/222")
         assert user.get("vote_delegated_$1_to_id") == 223
         assert user.get("vote_delegated_$_to_id") == ["1"]

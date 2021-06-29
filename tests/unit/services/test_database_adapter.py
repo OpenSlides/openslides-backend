@@ -19,7 +19,7 @@ class DatastoreAdapterTester(TestCase):
 
     def test_get(self) -> None:
         fqid = FullQualifiedId(Collection("fakeModel"), 1)
-        fields = set(["a", "b", "c"])
+        fields = {"a", "b", "c"}
         command = commands.Get(fqid=fqid, mapped_fields=fields)
         self.engine.retrieve.return_value = (
             json.dumps({"f": 1, "meta_deleted": False, "meta_position": 1}),
@@ -29,14 +29,14 @@ class DatastoreAdapterTester(TestCase):
         raw_data = command.get_raw_data()
         assert raw_data["fqid"] == str(fqid)
         assert isinstance(raw_data["mapped_fields"], list)
-        assert set(raw_data["mapped_fields"]) == fields
+        self.assertCountEqual(raw_data["mapped_fields"], fields)
         assert partial_model is not None
         self.engine.retrieve.assert_called()
         call_args = self.engine.retrieve.call_args[0]
         assert call_args[0] == "get"
         data = json.loads(call_args[1])
         assert data["fqid"] == str(fqid)
-        assert set(data["mapped_fields"]) == fields
+        self.assertCountEqual(data["mapped_fields"], fields)
 
     def test_get_many(self) -> None:
         fields = ["a", "b", "c"]
@@ -59,7 +59,7 @@ class DatastoreAdapterTester(TestCase):
         self.engine.retrieve.assert_called_with("get_many", command.data)
 
     def test_get_all(self) -> None:
-        fields = set(["a", "b", "c"])
+        fields = {"a", "b", "c"}
         collection = Collection("a")
         command = commands.GetAll(collection=collection, mapped_fields=fields)
         self.engine.retrieve.return_value = (
@@ -72,14 +72,14 @@ class DatastoreAdapterTester(TestCase):
         raw_data = command.get_raw_data()
         assert raw_data["collection"] == str(collection)
         assert isinstance(raw_data["mapped_fields"], list)
-        assert set(raw_data["mapped_fields"]) == fields
+        self.assertCountEqual(raw_data["mapped_fields"], fields)
         assert partial_models is not None
         self.engine.retrieve.assert_called()
         call_args = self.engine.retrieve.call_args[0]
         assert call_args[0] == "get_all"
         data = json.loads(call_args[1])
         assert data["collection"] == str(collection)
-        assert set(data["mapped_fields"]) == fields
+        self.assertCountEqual(data["mapped_fields"], fields)
 
     def test_simple_filter(self) -> None:
         collection = Collection("a")

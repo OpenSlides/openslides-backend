@@ -104,12 +104,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "name": "Default projector",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-            }.update(
-                {
+                **{
                     f"used_as_default_${name}_in_meeting_id": 1
                     for name in meeting_projector_default_replacements
-                }
-            ),
+                },
+            },
         )
         self.assert_model_exists(
             "user/1",
@@ -165,6 +164,48 @@ class MeetingCreateActionTest(BaseActionTestCase):
         admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
             "user/1", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )
+
+    def test_create_with_request_user(self) -> None:
+        self.set_models(
+            {
+                "committee/3": {"user_ids": [1, 3]},
+                "user/3": {},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "committee_id": 3,
+                "name": "Kuchenfest des Jahres",
+                "start_time": 1623362400,
+                "end_time": 1623362400,
+                "user_ids": [1, 3],
+            },
+        )
+        self.assert_status_code(response, 200)
+        # user/1 is only added to the admin group (2), not the default group
+        self.assert_model_exists(
+            "user/1",
+            {
+                "group_$1_ids": [2],
+                "group_$_ids": ["1"],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/3",
+            {
+                "group_$1_ids": [1],
+                "group_$_ids": ["1"],
+                "meeting_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "user_ids": [1, 3],
+            },
         )
 
     def test_create_multiple_users(self) -> None:
