@@ -227,8 +227,10 @@ class MeetingImport(SingularActionMixin, Action):
                     )
                     for id_ in entry[field]
                 ]
-            elif isinstance(model_field, RelationField) and isinstance(
-                model_field, BaseTemplateField
+            elif (
+                isinstance(model_field, RelationField)
+                and isinstance(model_field, BaseTemplateField)
+                and model_field.is_template_field(field)
             ):
                 pass
             elif isinstance(model_field, RelationField):

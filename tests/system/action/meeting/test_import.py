@@ -413,3 +413,23 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists(
             "motion/3", {"recommendation_extension": "bla[motion/2]bla"}
         )
+
+    def test_logo_dollar_id(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+        request_data = self.create_request_data(
+            {"mediafile": [{"id": 3, "meeting_id": 1}]}
+        )
+        request_data["meeting"]["meeting"][0]["logo_$_id"] = ["web_header"]
+        request_data["meeting"]["meeting"][0]["logo_$web_header_id"] = 3
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/1")
+        self.assert_model_exists(
+            "meeting/2", {"logo_$_id": ["web_header"], "logo_$web_header_id": 1}
+        )
