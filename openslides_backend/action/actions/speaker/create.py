@@ -12,11 +12,12 @@ from ...mixins.create_action_with_inferred_meeting import (
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .mixins import CheckSpeechState
 from .sort import SpeakerSort
 
 
 @register_action("speaker.create")
-class SpeakerCreateAction(CreateActionWithInferredMeeting):
+class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
@@ -43,30 +44,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         if "note" in instance and not instance.get("point_of_order"):
             raise ActionException("Not allowed to set note if not point of order.")
 
-        # check speech_state
-        if instance.get("speech_state") in ("pro", "contra"):
-            meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
-                ["list_of_speakers_enable_pro_contra_speech"],
-            )
-            if not meeting.get("list_of_speakers_enable_pro_contra_speech"):
-                raise ActionException("Pro or contra speech is not enabled.")
-        if instance.get("speech_state") == "contribution":
-            meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
-                ["list_of_speakers_can_set_contribution_self"],
-            )
-            has_los_can_manage = has_perm(
-                self.datastore,
-                self.user_id,
-                Permissions.ListOfSpeakers.CAN_MANAGE,
-                instance["meeting_id"],
-            )
-            if not has_los_can_manage and not meeting.get(
-                "list_of_speakers_can_set_contribution_self"
-            ):
-                raise ActionException("Contribution speech is not allowed.")
-
+        self.check_speech_state(instance)
         weight_max = self._get_max_weight(instance["list_of_speakers_id"])
         if weight_max is None:
             instance["weight"] = 1

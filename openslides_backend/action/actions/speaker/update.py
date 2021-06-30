@@ -8,10 +8,11 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import CheckSpeechState
 
 
 @register_action("speaker.update")
-class SpeakerUpdate(UpdateAction):
+class SpeakerUpdate(UpdateAction, CheckSpeechState):
     model = Speaker()
     schema = DefaultSchema(Speaker()).get_update_schema(["speech_state"])
     permission = Permissions.ListOfSpeakers.CAN_MANAGE
@@ -40,18 +41,14 @@ class SpeakerUpdate(UpdateAction):
         allowed_pro_contra = meeting.get("list_of_speakers_enable_pro_contra_speech")
         if speaker.get("speech_state") == instance.get("speech_state"):
             pass
-        elif instance.get("speech_state") == "contribution":
-            if not allowed_self_contribution:
-                raise ActionException("Self contribution is not allowed")
-        elif instance.get("speech_state") in ["pro", "contra"]:
-            if not allowed_pro_contra:
-                raise ActionException("Pro/Contra is not enabled")
+        elif instance.get("speech_state") in ("contribution", "pro", "contra"):
+            self.check_speech_state(instance, meeting_id=speaker["meeting_id"])
         elif (
             speaker.get("speech_state") == "contribution"
             and instance.get("speech_state") is None
         ):
             if not allowed_self_contribution:
-                raise ActionException("Self contribution is not allowed")
+                raise ActionException("Contribution speech is not allowed.")
         elif (
             speaker.get("speech_state") in ["pro", "contra"]
             and instance.get("speech_state") is None
