@@ -44,7 +44,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         if "note" in instance and not instance.get("point_of_order"):
             raise ActionException("Not allowed to set note if not point of order.")
 
-        self.check_speech_state(instance)
+        self.check_speech_state({}, instance)
         weight_max = self._get_max_weight(instance["list_of_speakers_id"])
         if weight_max is None:
             instance["weight"] = 1

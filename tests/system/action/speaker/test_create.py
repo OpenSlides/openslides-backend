@@ -341,7 +341,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
 
     def test_create_not_allowed_pro_contra(self) -> None:
         self.base_state_speech_test(
-            400, "pro", False, False, "Pro or contra speech is not enabled."
+            400, "pro", False, False, "Pro/Contra is not enabled."
         )
 
     def test_create_not_allowed_contribution(self) -> None:
@@ -360,4 +360,4 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Contribution speech is not allowed." in response.json["message"]
+        assert "Self contribution is not allowed" in response.json["message"]

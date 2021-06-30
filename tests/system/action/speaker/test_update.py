@@ -64,7 +64,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
             "speaker.update", {"id": 890, "speech_state": "contribution"}
         )
         self.assert_status_code(response, 400)
-        assert "Contribution speech is not allowed." in response.json["message"]
+        assert "Self contribution is not allowed" in response.json["message"]
 
     def test_update_pro_contra_ok(self) -> None:
         self.set_models(self.permission_test_model)
@@ -105,7 +105,7 @@ class SpeakerUpdateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_SEE])
         response = self.request("speaker.update", {"id": 890, "speech_state": None})
         self.assert_status_code(response, 400)
-        assert "Contribution speech is not allowed." in response.json["message"]
+        assert "Self contribution is not allowed" in response.json["message"]
 
     def test_update_unset_pro_contra_ok(self) -> None:
         self.permission_test_model["speaker/890"]["speech_state"] = "contra"
