@@ -214,7 +214,9 @@ class MeetingUpdate(UpdateAction):
                 FullQualifiedId(Collection("user"), self.user_id),
                 [f"group_${instance['id']}_ids"],
             )
-            if meeting.get("admin_group_id") not in user.get(
+            if not has_organization_management_level(
+                self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
+            ) and meeting.get("admin_group_id") not in user.get(
                 f"group_${instance['id']}_ids", []
             ):
                 raise PermissionDenied("Missing permission: Not admin of this meeting")
