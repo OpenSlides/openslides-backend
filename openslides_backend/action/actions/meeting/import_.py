@@ -188,7 +188,11 @@ class MeetingImport(SingularActionMixin, Action):
         entry: Dict[str, Any],
         field: str,
     ) -> None:
-        if field == "id":
+
+        model_field = model_registry[Collection(collection)]().try_get_field(field)
+        if model_field is None:
+            raise ActionException(f"{collection}/{field} is not allowed.")
+        elif field == "id":
             entry["id"] = self.replace_map[collection][entry["id"]]
         elif collection == "meeting" and field == "committee_id":
             pass
@@ -220,7 +224,6 @@ class MeetingImport(SingularActionMixin, Action):
                 entry_list.append(entry_str)
                 entry[field] = "".join(entry_list)
         else:
-            model_field = model_registry[Collection(collection)]().try_get_field(field)
             if (
                 isinstance(model_field, BaseTemplateField)
                 and model_field.is_template_field(field)

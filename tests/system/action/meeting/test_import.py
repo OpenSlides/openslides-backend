@@ -483,3 +483,20 @@ class MeetingImport(BaseActionTestCase):
             "Motion forwarding_tree_motion_ids should be empty."
             in response.json["message"]
         )
+
+    def test_field_check(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+        request_data = self.create_request_data(
+            {
+                "mediafile": [{"id": 1, "foobar": "test this"}],
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert "mediafile/foobar is not allowed." in response.json["message"]
