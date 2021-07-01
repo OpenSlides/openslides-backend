@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "d90e0d9118ca2550593c08ebd3f7fe39"
+MODELS_YML_CHECKSUM = "7b19143568ec659b9a2431f613aa6d18"
 
 
 class Organization(Model):
@@ -235,6 +235,7 @@ class Meeting(Model):
     location = fields.CharField()
     start_time = fields.TimestampField()
     end_time = fields.TimestampField()
+    imported_at = fields.TimestampField()
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()

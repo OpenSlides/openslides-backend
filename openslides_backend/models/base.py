@@ -93,7 +93,7 @@ class Model(metaclass=ModelMetaClass):
 
     def get_fields(self) -> Iterable[fields.Field]:
         """
-        Yields all fields in form of a tuple containing field name and field.
+        Yields all fields of this model.
         """
         for attr_name in dir(self):
             attr = getattr(self, attr_name)

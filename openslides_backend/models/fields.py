@@ -133,8 +133,10 @@ class HTMLStrictField(TextField):
     Field for restricted HTML.
     """
 
-    def validate(self, html: str) -> str:
-        return validate_html(html, self.get_allowed_tags())
+    def validate(self, html: Optional[str]) -> Optional[str]:
+        if html is not None:
+            return validate_html(html, self.get_allowed_tags())
+        return None
 
     def get_allowed_tags(self) -> List[str]:
         return ALLOWED_HTML_TAGS_STRICT

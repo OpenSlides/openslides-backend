@@ -5,6 +5,7 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..user.update import UserUpdate
 from .mixins import MeetingPermissionMixin
 
 
@@ -16,6 +17,29 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
 
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_delete_schema()
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        meeting = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["id"]), ["user_ids"]
+        )
+        action_data = [
+            {
+                "id": user_id,
+                **{
+                    field: {str(instance["id"]): None}
+                    for field in (
+                        "comment_$",
+                        "number_$",
+                        "structure_level_$",
+                        "about_me_$",
+                        "vote_weight_$",
+                    )
+                },
+            }
+            for user_id in meeting.get("user_ids", [])
+        ]
+        self.execute_other_action(UserUpdate, action_data)
+        return instance
 
     def get_committee_id(self, instance: Dict[str, Any]) -> int:
         meeting = self.datastore.get(
