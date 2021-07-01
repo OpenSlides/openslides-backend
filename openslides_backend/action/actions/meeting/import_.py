@@ -210,7 +210,7 @@ class MeetingImport(SingularActionMixin, Action):
                     col, id_ = fqid.split(KEYSEPARATOR)
                     replace_str = (
                         "["
-                        + collection
+                        + col
                         + KEYSEPARATOR
                         + str(self.replace_map[col][int(id_)])
                         + "]"
