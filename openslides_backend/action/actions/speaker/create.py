@@ -12,16 +12,17 @@ from ...mixins.create_action_with_inferred_meeting import (
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .mixins import CheckSpeechState
 from .sort import SpeakerSort
 
 
 @register_action("speaker.create")
-class SpeakerCreateAction(CreateActionWithInferredMeeting):
+class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
     model = Speaker()
     relation_field_for_meeting = "list_of_speakers_id"
     schema = DefaultSchema(Speaker()).get_create_schema(
         required_properties=["list_of_speakers_id", "user_id"],
-        optional_properties=["point_of_order", "note"],
+        optional_properties=["point_of_order", "note", "speech_state"],
     )
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
@@ -43,6 +44,7 @@ class SpeakerCreateAction(CreateActionWithInferredMeeting):
         if "note" in instance and not instance.get("point_of_order"):
             raise ActionException("Not allowed to set note if not point of order.")
 
+        self.check_speech_state({}, instance)
         weight_max = self._get_max_weight(instance["list_of_speakers_id"])
         if weight_max is None:
             instance["weight"] = 1

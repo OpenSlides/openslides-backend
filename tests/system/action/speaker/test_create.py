@@ -302,3 +302,62 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
+
+    def base_state_speech_test(
+        self,
+        status_code: int,
+        speech_state: str,
+        self_contribution: bool = True,
+        pro_contra: bool = True,
+        assert_message: str = "",
+    ) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_MANAGE])
+        self.test_models["meeting/1"][
+            "list_of_speakers_enable_pro_contra_speech"
+        ] = pro_contra
+        self.test_models["meeting/1"][
+            "list_of_speakers_can_set_contribution_self"
+        ] = self_contribution
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {"user_id": 7, "list_of_speakers_id": 23, "speech_state": speech_state},
+        )
+        self.assert_status_code(response, status_code)
+        assert assert_message in response.json["message"]
+
+    def test_create_pro_contra(self) -> None:
+        self.base_state_speech_test(200, "pro", False, True)
+
+    def test_create_contradiction(self) -> None:
+        self.base_state_speech_test(200, "contribution")
+
+    def test_create_contradiction_2(self) -> None:
+        self.base_state_speech_test(200, "contribution", False)
+
+    def test_create_not_allowed_pro_contra(self) -> None:
+        self.base_state_speech_test(
+            400, "pro", False, False, "Pro/Contra is not enabled."
+        )
+
+    def test_create_not_allowed_contribution(self) -> None:
+        self.create_meeting()
+        self.user_id = self.create_user("user")
+        self.login(self.user_id)
+        self.set_user_groups(self.user_id, [3])
+        self.set_group_permissions(3, [Permissions.ListOfSpeakers.CAN_BE_SPEAKER])
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create",
+            {
+                "user_id": self.user_id,
+                "list_of_speakers_id": 23,
+                "speech_state": "contribution",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Self contribution is not allowed" in response.json["message"]
