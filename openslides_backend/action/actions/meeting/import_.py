@@ -238,9 +238,9 @@ class MeetingImport(SingularActionMixin, Action):
                     for id_ in entry[field]
                 ]
             elif (
-                isinstance(model_field, RelationField)
-                and isinstance(model_field, BaseTemplateField)
+                isinstance(model_field, BaseTemplateField)
                 and model_field.is_template_field(field)
+                and not model_field.replacement_collection
             ):
                 pass
             elif isinstance(model_field, RelationField):
