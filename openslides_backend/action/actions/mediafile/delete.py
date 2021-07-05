@@ -30,5 +30,8 @@ class MediafileDelete(DeleteAction):
         )
         if node.get("child_ids"):
             for child_id in node["child_ids"]:
-                tree_ids.extend(self.get_tree_ids(child_id))
+                if not self.is_deleted(
+                    FullQualifiedId(Collection("mediafile"), child_id)
+                ):
+                    tree_ids.extend(self.get_tree_ids(child_id))
         return tree_ids

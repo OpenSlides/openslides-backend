@@ -39,7 +39,7 @@ class BaseSystemTestCase(TestCase):
     client: Client
     anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
-    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/example-data.json"
+    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/d7c67248dce7548fe8077d22ca69a961c5c39e7f/docs/example-data.json"
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -66,11 +66,12 @@ class BaseSystemTestCase(TestCase):
         Useful for debug purposes when an action fails with the example data.
         Do NOT use in final tests since it takes a long time.
         """
-        self.datastore.truncate_db()
         example_data = json.loads(requests.get(self.EXAMPLE_DATA).content)
+        data = {}
         for collection, models in example_data.items():
             for model in models:
-                self.create_model(f"{collection}/{model['id']}", model)
+                data[f"{collection}/{model['id']}"] = model
+        self.set_models(data)
 
     def create_client(self, username: str = None, password: str = None) -> Client:
         return Client(self.app, username, password)
@@ -184,7 +185,7 @@ class BaseSystemTestCase(TestCase):
 
     def assert_model_deleted(self, fqid: str) -> None:
         model = self.get_model(fqid)
-        self.assertTrue(model.get("meta_deleted"))
+        self.assertTrue(model.get("meta_deleted"), f"Model '{fqid}' was not deleted.")
 
     def assert_defaults(self, model: Type[Model], instance: Dict[str, Any]) -> None:
         for field in model().get_fields():

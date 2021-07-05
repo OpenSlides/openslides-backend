@@ -1,14 +1,10 @@
 from typing import Any, Dict, Iterable, List, Tuple, Type
 
-from ...models.fields import (
-    BaseGenericRelationField,
-    BaseTemplateRelationField,
-    OnDelete,
-)
+from ...models.fields import BaseTemplateRelationField, OnDelete
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import FullQualifiedId, transform_to_fqids
+from ...shared.patterns import Collection, FullQualifiedId, transform_to_fqids
 from ...shared.typing import DeletedModel
 from ..action import Action
 from ..util.actions_map import actions_map
@@ -53,15 +49,8 @@ class DeleteAction(Action):
                     raise NotImplementedError
 
                 # Extract all foreign keys as fqids from the model
-                foreign_fqids = db_instance.get(field.own_field_name, [])
-                if not isinstance(foreign_fqids, list):
-                    foreign_fqids = [foreign_fqids]
-                if not isinstance(field, BaseGenericRelationField):
-                    assert len(field.to) == 1
-                    foreign_fqids = [
-                        FullQualifiedId(field.get_target_collection(), id)
-                        for id in foreign_fqids
-                    ]
+                value = db_instance.get(field.own_field_name, [])
+                foreign_fqids = transform_to_fqids(value, field.get_target_collection())
 
                 if field.on_delete == OnDelete.PROTECT:
                     protected_fqids = [
@@ -76,12 +65,6 @@ class DeleteAction(Action):
                         raise ProtectedModelsException(this_fqid, protected_fqids)
                 else:
                     # field.on_delete == OnDelete.CASCADE
-                    # Extract all foreign keys as fqids from the model
-                    value = db_instance.get(field.own_field_name, [])
-                    foreign_fqids = transform_to_fqids(
-                        value, field.get_target_collection()
-                    )
-
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:
                         if isinstance(
@@ -106,11 +89,13 @@ class DeleteAction(Action):
                 # field.on_delete == OnDelete.SET_NULL
                 if isinstance(field, BaseTemplateRelationField):
                     template_field_name = field.get_template_field_name()
-                    db_instance = self.datastore.fetch_model(
+                    template_db_instance = self.datastore.fetch_model(
                         fqid=FullQualifiedId(self.model.collection, instance["id"]),
                         mapped_fields=[template_field_name],
                     )
-                    for replacement in db_instance.get(template_field_name, []):
+                    for replacement in template_db_instance.get(
+                        template_field_name, []
+                    ):
                         structured_field_name = field.get_structured_field_name(
                             replacement
                         )
@@ -136,3 +121,17 @@ class DeleteAction(Action):
         fqid = FullQualifiedId(self.model.collection, instance["id"])
         information = "Object deleted"
         yield self.build_write_request(EventType.Delete, fqid, information)
+
+    def is_meeting_deleted(self, meeting_id: int) -> bool:
+        """
+        Returns whether the given meeting was deleted during this request or not.
+        """
+        return self.is_deleted(FullQualifiedId(Collection("meeting"), meeting_id))
+
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
+        """
+        Returns whether the given model was deleted during this request or not.
+        """
+        return isinstance(
+            self.datastore.additional_relation_models.get(fqid), DeletedModel
+        )
