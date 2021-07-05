@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import requests
 
@@ -34,7 +34,9 @@ class HTTPEngine:
         self.datastore_writer_url = datastore_writer_url
         self.headers = {"Content-Type": "application/json"}
 
-    def retrieve(self, endpoint: str, data: Optional[str]) -> Tuple[bytes, int]:
+    def retrieve(
+        self, endpoint: str, data: Optional[str]
+    ) -> Tuple[Union[bytes, str], int]:
         """
         Throws 2 kinds of DatastoreConnectionException:
         1. If there is no valid endpoint given to build a URL

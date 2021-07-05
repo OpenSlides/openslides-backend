@@ -1,5 +1,9 @@
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
+from openslides_backend.action.relations.single_relation_handler import (
+    SingleRelationHandler,
+)
+from openslides_backend.action.relations.typing import RelationFieldUpdates
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -120,3 +124,13 @@ class FakeModelACreateAction(CreateAction):
 class FakeModelAUpdateAction(UpdateAction):
     model = FakeModelA()
     schema = {}  # type: ignore
+
+
+class SingleRelationHandlerWithContext(SingleRelationHandler):
+    """
+    Overwrites the perform method of the SingleRelationHandler to provide a datastore context.
+    """
+
+    def perform(self) -> RelationFieldUpdates:
+        with self.datastore.get_database_context():
+            return super().perform()

@@ -103,7 +103,8 @@ class PresenterHandler(BaseHandler):
                     user_id,
                 )
                 presenter_instance.validate()
-                result = presenter_instance.get_result()
+                with self.datastore.get_database_context():
+                    result = presenter_instance.get_result()
                 response.append(result)
             else:
                 raise PresenterException(

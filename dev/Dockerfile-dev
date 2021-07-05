@@ -1,6 +1,6 @@
 FROM python:3.8.5-slim-buster
 
-RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support
+RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev
 
 WORKDIR /app
 RUN mkdir dev
@@ -20,6 +20,7 @@ COPY setup.cfg .
 
 RUN chmod 777 -R .
 RUN chmod 777 /root
+RUN chmod 777 -R /usr/local/lib/
 
 EXPOSE 9002
 EXPOSE 9003

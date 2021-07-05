@@ -207,7 +207,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'user/112' does not exist.",
+            "Model 'user/112' does not exist.",
             response.json["message"],
         )
         model = self.get_model("user/111")

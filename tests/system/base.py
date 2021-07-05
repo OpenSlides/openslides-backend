@@ -5,15 +5,15 @@ import requests
 import simplejson as json
 from fastjsonschema import validate
 from fastjsonschema.exceptions import JsonSchemaException
+from readerlib import DeletedModelsBehaviour
 
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.interface import (
-    Collection,
-    DatastoreService,
-    DeletedModelsBehaviour,
+from openslides_backend.services.datastore.interface import Collection, DatastoreService
+from openslides_backend.services.datastore.with_database_context import (
+    with_database_context,
 )
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.filters import FilterOperator
@@ -118,6 +118,7 @@ class BaseSystemTestCase(TestCase):
         request = self.get_update_request(fqid, data)
         self.datastore.write(request)
 
+    @with_database_context
     def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
         """
         Can be used to set multiple models at once, independent of create or update.
@@ -159,6 +160,7 @@ class BaseSystemTestCase(TestCase):
                     f"Invalid data for {fqid}/{field_name}: " + e.message
                 )
 
+    @with_database_context
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(
             get_fqid(fqid),
@@ -193,6 +195,7 @@ class BaseSystemTestCase(TestCase):
                     f"Field {field.own_field_name}: Value {instance.get(field.own_field_name, 'None')} is not equal default value {field.default}.",
                 )
 
+    @with_database_context
     def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
         db_count = self.datastore.count(
             Collection(collection),

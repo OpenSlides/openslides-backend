@@ -53,7 +53,7 @@ build-prod:
 	docker build . --tag=openslides-backend
 
 run-prod: | build-prod
-	docker run --interactive --tty \
+	docker run --interactive --tty --env-file=dev/database.env  \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
 
 
