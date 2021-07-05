@@ -1,9 +1,9 @@
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
-from shared.flask_frontend.errors import handle_internal_errors
-from shared.postgresql_backend.connection_handler import DatabaseError
-from shared.util.exceptions import DatastoreException as ReaderDatastoreException
+from readerlib import DatabaseError
+from readerlib import DatastoreException as ReaderDatastoreException
+from readerlib import handle_internal_errors
 
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
 

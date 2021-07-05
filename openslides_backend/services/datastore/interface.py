@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, ContextManager, Dict, List, Optional, Sequence, Tuple, Union
 
-from shared.util import DeletedModelsBehaviour
+from readerlib import DeletedModelsBehaviour
 from typing_extensions import Protocol
 
 from ...shared.filters import Filter

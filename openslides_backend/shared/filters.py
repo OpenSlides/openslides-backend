@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict
 
-from shared.util import And as BaseAnd
-from shared.util import FilterOperator as BaseFilterOperator
-from shared.util import Not as BaseNot
-from shared.util import Or as BaseOr
+from readerlib import And as BaseAnd
+from readerlib import FilterOperator as BaseFilterOperator
+from readerlib import Not as BaseNot
+from readerlib import Or as BaseOr
 
 FilterData = Dict[str, Any]
 

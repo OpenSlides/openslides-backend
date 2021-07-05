@@ -13,12 +13,14 @@ from typing import (
 )
 
 import simplejson as json
-from reader.core.reader import Reader
-from reader.core.requests import AggregateRequest, FilterRequest, GetAllRequest
-from reader.core.requests import GetManyRequest as FullGetManyRequest
-from reader.core.requests import GetManyRequestPart, GetRequest, MinMaxRequest
-from shared.di import injector
-from shared.util import DeletedModelsBehaviour
+from readerlib import (
+    AggregateRequest,
+    DeletedModelsBehaviour,
+    FilterRequest,
+    GetAllRequest,
+)
+from readerlib import GetManyRequest as FullGetManyRequest
+from readerlib import GetManyRequestPart, GetRequest, MinMaxRequest, Reader, injector
 from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatastoreException

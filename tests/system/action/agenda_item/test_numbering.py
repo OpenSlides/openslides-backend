@@ -26,7 +26,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 "agenda_item/3": {
                     "meeting_id": 1,
                     "parent_id": 1,
-                    "weight": 10,
+                    "weight": 11,
                     "type": AgendaItem.AGENDA_ITEM,
                 },
             }

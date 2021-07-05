@@ -5,7 +5,7 @@ import requests
 import simplejson as json
 from fastjsonschema import validate
 from fastjsonschema.exceptions import JsonSchemaException
-from shared.util import DeletedModelsBehaviour
+from readerlib import DeletedModelsBehaviour
 
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import BaseTemplateField

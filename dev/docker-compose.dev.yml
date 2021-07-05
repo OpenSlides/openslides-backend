@@ -15,17 +15,12 @@ services:
             - ../openslides_backend:/app/openslides_backend
             - ../tests:/app/tests
             - ../cli:/app/cli
+        env_file: database.env
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer
-            - DATASTORE_DATABASE_HOST=postgresql
-            - DATASTORE_DATABASE_PORT=5432
-            - DATASTORE_DATABASE_USER=openslides
-            - DATASTORE_DATABASE_NAME=openslides
-            - DATASTORE_DATABASE_PASSWORD=openslides
             - AUTH_HOST=auth
         depends_on:
-            - reader
             - writer
         networks:
             - datastore
