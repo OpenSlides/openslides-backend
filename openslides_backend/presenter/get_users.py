@@ -2,7 +2,7 @@ from operator import itemgetter
 from typing import Any, Dict, List
 
 import fastjsonschema
-from readerlib import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour
 
 from ..shared.exceptions import PresenterException
 from ..shared.patterns import Collection

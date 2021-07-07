@@ -14,6 +14,8 @@ USER appuser
 EXPOSE 9002
 EXPOSE 9003
 
+COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD [ "python", "-m", "openslides_backend" ]

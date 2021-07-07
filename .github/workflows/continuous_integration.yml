@@ -18,7 +18,7 @@ jobs:
       run: docker build . --tag=openslides-backend
 
     - name: Run docker production image
-      run: docker run --detach --env-file=dev/database.env --publish 9002:9002 --publish 9003:9003 openslides-backend
+      run: docker run --detach --publish 9002:9002 --publish 9003:9003 openslides-backend
 
     - name: Sleep for some seconds
       run: sleep 2
