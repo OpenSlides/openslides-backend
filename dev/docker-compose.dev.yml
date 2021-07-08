@@ -15,7 +15,6 @@ services:
             - ../openslides_backend:/app/openslides_backend
             - ../tests:/app/tests
             - ../cli:/app/cli
-        env_file: database.env
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer

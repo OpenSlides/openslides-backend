@@ -17,6 +17,7 @@ COPY dev/cleanup.sh .
 
 COPY Makefile Makefile
 COPY setup.cfg .
+COPY entrypoint.sh ./
 
 RUN chmod 777 -R .
 RUN chmod 777 /root
@@ -28,4 +29,5 @@ EXPOSE 5678
 
 ENV OPENSLIDES_DEVELOPMENT 1
 
+ENTRYPOINT ["./entrypoint.sh"]
 CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "openslides_backend"]

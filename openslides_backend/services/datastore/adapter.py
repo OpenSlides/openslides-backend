@@ -13,14 +13,11 @@ from typing import (
 )
 
 import simplejson as json
-from readerlib import (
-    AggregateRequest,
-    DeletedModelsBehaviour,
-    FilterRequest,
-    GetAllRequest,
-)
-from readerlib import GetManyRequest as FullGetManyRequest
-from readerlib import GetManyRequestPart, GetRequest, MinMaxRequest, Reader, injector
+from datastore.reader.core import AggregateRequest, FilterRequest, GetAllRequest
+from datastore.reader.core import GetManyRequest as FullGetManyRequest
+from datastore.reader.core import GetManyRequestPart, GetRequest, MinMaxRequest, Reader
+from datastore.shared.di import injector
+from datastore.shared.util import DeletedModelsBehaviour
 from simplejson.errors import JSONDecodeError
 
 from ...shared.exceptions import DatastoreException

@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Set, Tuple, Union, cast
 
-from readerlib import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour
 
 from ...models.base import model_registry
 from ...models.fields import (

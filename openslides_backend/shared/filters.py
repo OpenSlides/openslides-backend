@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, Dict
 
-from readerlib import And as BaseAnd
-from readerlib import FilterOperator as BaseFilterOperator
-from readerlib import Not as BaseNot
-from readerlib import Or as BaseOr
+from datastore.shared.util import And as BaseAnd
+from datastore.shared.util import FilterOperator as BaseFilterOperator
+from datastore.shared.util import Not as BaseNot
+from datastore.shared.util import Or as BaseOr
 
 FilterData = Dict[str, Any]
 

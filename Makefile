@@ -53,7 +53,7 @@ build-prod:
 	docker build . --tag=openslides-backend
 
 run-prod: | build-prod
-	docker run --interactive --tty --env-file=dev/database.env  \
+	docker run --interactive --tty \
 	--publish 9002:9002 --publish 9003:9003 --rm openslides-backend
 
 
@@ -69,7 +69,7 @@ start-dev-interactive:
 	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
 
 run-dev-attach:
-	docker-compose -f dev/docker-compose.dev.yml exec backend bash --rcfile dev/bashrc
+	docker-compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile dev/bashrc
 
 run-dev run-bash: | start-dev run-dev-attach
 

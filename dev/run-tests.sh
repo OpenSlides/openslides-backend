@@ -8,7 +8,7 @@ $DC up --build --detach
 $DC exec -T backend dev/wait.sh writer 9011
 $DC exec -T backend dev/wait.sh reader 9010
 $DC exec -T backend dev/wait.sh auth 9004
-$DC exec -T backend pytest --cov
+$DC exec -T backend ./entrypoint.sh pytest --cov
 error=$?
 $DC down --volumes
 exit $error
