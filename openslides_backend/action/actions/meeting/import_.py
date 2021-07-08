@@ -72,8 +72,8 @@ class MeetingImport(SingularActionMixin, Action):
         if not len(meeting_json.get("meeting", [])) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
 
-        self.check_usernames_and_generate_new_ones(meeting_json)
 
+        self.check_usernames_and_generate_new_ones(meeting_json)
         # delete blob from mediafiles
         json_data = instance["meeting"]
         for entry in json_data.get("mediafile", []):
