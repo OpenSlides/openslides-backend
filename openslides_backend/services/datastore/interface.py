@@ -138,7 +138,7 @@ class DatastoreService(Protocol):
         mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = True,
+        lock_result: LockResult = True,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
     ) -> Dict[str, Any]:

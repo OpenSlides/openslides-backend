@@ -381,7 +381,7 @@ class DatastoreAdapter(DatastoreService):
     def update_locked_fields_from_mapped_fields(
         self, fqid: FullQualifiedId, position: int, mapped_fields: Optional[Set[str]]
     ) -> None:
-        if mapped_fields:
+        if mapped_fields is not None:
             for field in mapped_fields:
                 if not field.startswith("meta_"):
                     self.update_locked_fields(
@@ -399,6 +399,8 @@ class DatastoreAdapter(DatastoreService):
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
+        # if key == FullQualifiedId(Collection("poll"), 13):
+        #     breakpoint()
         if not isinstance(lock, int) and not isinstance(key, CollectionField):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"
@@ -478,7 +480,7 @@ class DatastoreAdapter(DatastoreService):
         mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = True,
+        lock_result: LockResult = True,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
     ) -> Dict[str, Any]:
@@ -517,8 +519,12 @@ class DatastoreAdapter(DatastoreService):
                         and fqid in self.additional_relation_model_locks
                     ):
                         position = self.additional_relation_model_locks[fqid]
+                        if isinstance(lock_result, list):
+                            fields_to_lock = found_fields.intersection(lock_result)
+                        else:
+                            fields_to_lock = found_fields
                         self.update_locked_fields_from_mapped_fields(
-                            fqid, position, found_fields
+                            fqid, position, fields_to_lock
                         )
                 else:
                     instance = deepcopy(model)

@@ -105,7 +105,7 @@ class OptionUpdateAction(UpdateAction):
             raise ActionException("Dont find poll for option")
         return (
             poll_id_option,
-            self.datastore.get(
+            self.datastore.fetch_model(
                 FullQualifiedId(Collection("poll"), poll_id),
                 [
                     "id",
@@ -118,7 +118,7 @@ class OptionUpdateAction(UpdateAction):
                     "meeting_id",
                     "content_object_id",
                 ],
-                lock_result=["state", "type"],
+                lock_result=["type"],
             ),
             option,
         )
