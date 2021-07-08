@@ -74,6 +74,7 @@ class MeetingImport(SingularActionMixin, Action):
 
 
         self.check_usernames_and_generate_new_ones(meeting_json)
+
         # delete blob from mediafiles
         json_data = instance["meeting"]
         for entry in json_data.get("mediafile", []):

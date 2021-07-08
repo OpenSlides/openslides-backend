@@ -308,14 +308,14 @@ class Checker:
 
             if not isinstance(replacements, list):
                 self.errors.append(
-                    f"{collection}/{model['id']}/{template_field}: Replacements for the template field must be a list"
+                    f"{collection}/{model['id']}/{template_field.own_field_name}: Replacements for the template field must be a list"
                 )
                 field_error = True
                 continue
             for replacement in replacements:
                 if not isinstance(replacement, str):
                     self.errors.append(
-                        f"{collection}/{model['id']}/{template_field}: Each replacement for the template field must be a string"
+                        f"{collection}/{model['id']}/{template_field.own_field_name}: Each replacement for the template field must be a string"
                     )
                     field_error = True
             if field_error:
@@ -331,7 +331,7 @@ class Checker:
                 structured_field = self.make_structured(template_field, replacement)
                 if structured_field not in model:
                     self.errors.append(
-                        f"{collection}/{model['id']}/{template_field}: Missing {structured_field} since it is given as a replacement"
+                        f"{collection}/{model['id']}/{template_field.own_field_name}: Missing {structured_field} since it is given as a replacement"
                     )
                     errors = True
 
@@ -340,11 +340,11 @@ class Checker:
                         as_id = int(replacement)
                     except (TypeError, ValueError):
                         self.errors.append(
-                            f"{collection}/{model['id']}/{template_field}: Replacement {replacement} is not an integer"
+                            f"{collection}/{model['id']}/{template_field.own_field_name}: Replacement {replacement} is not an integer"
                         )
                     if not self.find_model(replacement_collection, as_id):
                         self.errors.append(
-                            f"{collection}/{model['id']}/{template_field}: Replacement {replacement} does not exist as a model of collection {replacement_collection}"
+                            f"{collection}/{model['id']}/{template_field.own_field_name}: Replacement {replacement} does not exist as a model of collection {replacement_collection}"
                         )
 
             for field in model.keys():
@@ -358,7 +358,7 @@ class Checker:
                             and _replacement not in model[template_field.own_field_name]
                         ):
                             self.errors.append(
-                                f"{collection}/{model['id']}/{field}: Invalid structured field. Missing replacement {_replacement} in {template_field}"
+                                f"{collection}/{model['id']}/{field}: Invalid structured field. Missing replacement {_replacement} in {template_field.own_field_name}"
                             )
                             errors = True
                     except CheckException as e:
