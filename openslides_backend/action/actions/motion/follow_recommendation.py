@@ -44,7 +44,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             FullQualifiedId(Collection("motion_state"), recommendation_id),
             ["show_state_extension_field", "show_recommendation_extension_field"],
         )
-        recommendation_extension = instance.pop("recommendation_extension")
+        recommendation_extension = instance.pop("recommendation_extension", None)
         if (
             recommendation_extension is not None
             and recommendation.get("show_state_extension_field")

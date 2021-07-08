@@ -136,6 +136,35 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         response = self.request("motion.follow_recommendation", {"id": 22})
         self.assert_status_code(response, 200)
 
+    def test_follow_recommendation_without_extension(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {},
+                "motion_state/76": {
+                    "meeting_id": 222,
+                    "next_state_ids": [77],
+                    "show_state_extension_field": True,
+                    "show_recommendation_extension_field": True,
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "previous_state_ids": [76],
+                },
+                "motion/22": {
+                    "meeting_id": 222,
+                    "state_id": 77,
+                    "recommendation_id": 76,
+                },
+            }
+        )
+        response = self.request("motion.follow_recommendation", {"id": 22})
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion/22")
+        assert model.get("state_id") == 76
+        assert model.get("state_extension") is None
+
     def test_follow_recommendation_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
