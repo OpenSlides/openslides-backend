@@ -140,10 +140,6 @@ class Checker:
 
     def modify_models_for_import(self) -> None:
         collection_allowlist = (
-            "organization",
-            "resource",
-            "organization_tag",
-            "committee",
             "user",
             "meeting",
             "group",
