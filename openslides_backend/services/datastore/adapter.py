@@ -399,8 +399,6 @@ class DatastoreAdapter(DatastoreService):
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
-        # if key == FullQualifiedId(Collection("poll"), 13):
-        #     breakpoint()
         if not isinstance(lock, int) and not isinstance(key, CollectionField):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"
