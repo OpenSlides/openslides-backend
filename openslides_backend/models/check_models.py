@@ -134,6 +134,7 @@ class Checker:
             str, Dict[str, Tuple[str, int, int]]
         ] = defaultdict(dict)
         self.generate_template_prefixes()
+        self.create_data_cache()
 
     def get_fields(self, collection: str) -> Iterable[Field]:
         return self.models[collection]().get_fields()
@@ -194,6 +195,12 @@ class Checker:
                     len(prefix),
                     len(suffix),
                 )
+
+    def create_data_cache(self) -> None:
+        self.data_cache: Dict[str, Dict[int, Any]] = defaultdict(dict)
+        for collection in self.data:
+            for entry in self.data[collection]:
+                self.data_cache[collection][int(entry["id"])] = entry
 
     def is_template_field(self, field: str) -> bool:
         return "$_" in field or field.endswith("$")
@@ -547,11 +554,8 @@ class Checker:
         )
 
     def find_model(self, collection: str, id: int) -> Optional[Dict[str, Any]]:
-        c = self.data.get(collection, [])
-        for model in c:
-            if model["id"] == id:
-                return model
-        return None
+        collection_dict = self.data_cache.get(collection, {})
+        return collection_dict.get(id)
 
     def check_reverse_relation(
         self,
