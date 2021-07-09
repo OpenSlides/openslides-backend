@@ -258,7 +258,9 @@ class CreatePoll(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "entitled_group_ids is not allowed for analog." in response.json["message"]
+        assert (
+            "entitled_group_ids is not allowed for analog." in response.json["message"]
+        )
 
     def test_not_supported_type(self) -> None:
         response = self.request(
