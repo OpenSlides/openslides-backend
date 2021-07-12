@@ -122,6 +122,26 @@ def get_own_field_name(field: Field) -> str:
     return field.own_field_name
 
 
+checker_map: Dict[Any, Callable] = {
+    CharField: check_string,
+    HTMLStrictField: check_string,
+    HTMLPermissiveField: check_string,
+    GenericRelationField: check_string,
+    IntegerField: check_number,
+    TimestampField: check_number,
+    RelationField: check_number,
+    FloatField: check_float,
+    BooleanField: check_boolean,
+    CharArrayField: check_string_list,
+    GenericRelationListField: check_string_list,
+    NumberArrayField: check_number_list,
+    RelationListField: check_number_list,
+    DecimalField: check_decimal,
+    ColorField: check_color,
+    JSONField: check_json,
+}
+
+
 class Checker:
     def __init__(self, data: Dict[str, List[Any]], is_import: bool = False) -> None:
         self.data = data
@@ -384,39 +404,11 @@ class Checker:
             enum = self.get_enum_from_collection_field(field, collection)
 
             checker: Optional[Callable[..., bool]] = None
-            if isinstance(field_type, CharField):
-                checker = check_string
-            elif isinstance(field_type, HTMLStrictField):
-                checker = check_string
-            elif isinstance(field_type, HTMLPermissiveField):
-                checker = check_string
-            elif isinstance(field_type, GenericRelationField):
-                checker = check_string
-            elif isinstance(field_type, IntegerField):
-                checker = check_number
-            elif isinstance(field_type, TimestampField):
-                checker = check_number
-            elif isinstance(field_type, RelationField):
-                checker = check_number
-            elif isinstance(field_type, FloatField):
-                checker = check_float
-            elif isinstance(field_type, BooleanField):
-                checker = check_boolean
-            elif isinstance(field_type, CharArrayField):
-                checker = check_string_list
-            elif isinstance(field_type, GenericRelationListField):
-                checker = check_string_list
-            elif isinstance(field_type, NumberArrayField):
-                checker = check_number_list
-            elif isinstance(field_type, RelationListField):
-                checker = check_number_list
-            elif isinstance(field_type, DecimalField):
-                checker = check_decimal
-            elif isinstance(field_type, ColorField):
-                checker = check_color
-            elif isinstance(field_type, JSONField):
-                checker = check_json
-            else:
+            for checker_key in checker_map:
+                if isinstance(field_type, checker_key):
+                    checker = checker_map[checker_key]
+                    break
+            if checker is None:
                 raise NotImplementedError(
                     f"TODO implement check for field type {field_type}"
                 )
