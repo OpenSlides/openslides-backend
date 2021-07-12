@@ -631,7 +631,7 @@ class Checker:
         if field not in [
             get_own_field_name(field)
             for field in self.models[collection]().get_fields()
-        ]:  # Note: this has to be adopted when supporting template fields
+        ]:
             raise CheckException(
                 f"Collectionfield {collectionfield} has an invalid field"
             )
