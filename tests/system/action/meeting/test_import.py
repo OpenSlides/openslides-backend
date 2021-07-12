@@ -40,11 +40,7 @@ class MeetingImport(BaseActionTestCase):
                         "conference_stream_poster_url": "",
                         "conference_open_microphone": True,
                         "conference_open_video": True,
-<<<<<<< HEAD
                         "conference_auto_connect_next_speakers": 1,
-=======
-                        "conference_auto_connect_next_speakers": True,
->>>>>>> Insert datavalidation to the meeting.import action.
                         "jitsi_room_name": "",
                         "jitsi_domain": "",
                         "jitsi_room_password": "",
