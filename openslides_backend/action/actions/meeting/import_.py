@@ -1,4 +1,5 @@
 import time
+from collections import defaultdict
 from typing import Any, Dict, Iterable, Optional, Tuple
 
 from ....models.base import model_registry
@@ -139,9 +140,8 @@ class MeetingImport(SingularActionMixin, Action):
         json_data["meeting"][0]["imported_at"] = round(time.time())
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
-        replace_map: Dict[str, Dict[int, int]] = {}
+        replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
         for collection in json_data:
-            replace_map[collection] = {}
             if not json_data[collection]:
                 continue
             new_ids = self.datastore.reserve_ids(
