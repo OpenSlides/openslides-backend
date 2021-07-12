@@ -182,7 +182,7 @@ class Checker:
             for field in self.get_fields(collection):
                 if not isinstance(field, BaseTemplateField):
                     continue
-                field_name = field.get_structured_field_name("")
+                field_name = field.get_template_field_name()
                 parts = field_name.split("$")
                 prefix = parts[0]
                 suffix = parts[1]
@@ -285,7 +285,7 @@ class Checker:
         collection_fields = set(
             field.own_field_name
             if not isinstance(field, BaseTemplateField)
-            else field.get_structured_field_name("")
+            else field.get_template_field_name()
             for field in collection_fields_types
         )
 
@@ -311,7 +311,7 @@ class Checker:
             if not isinstance(template_field, BaseTemplateField):
                 continue
             field_error = False
-            replacements = model.get(template_field.get_structured_field_name(""))
+            replacements = model.get(template_field.get_template_field_name())
 
             if not isinstance(replacements, list):
                 self.errors.append(
