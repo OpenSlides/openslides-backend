@@ -72,6 +72,10 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
             if not organization.get("enable_electronic_voting"):
                 raise ActionException("Electronic voting is not allowed.")
 
+        # check entitled_group_ids and analog
+        if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:
+            raise ActionException("entitled_group_ids is not allowed for analog.")
+
         self.check_100_percent_base(instance)
 
         # handle non-global options

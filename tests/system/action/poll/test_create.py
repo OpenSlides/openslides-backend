@@ -241,6 +241,27 @@ class CreatePoll(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("entitled_group_ids"), [])
 
+    def test_with_groups_and_analog(self) -> None:
+        self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "YN",
+                "majority_method": "simple",
+                "entitled_group_ids": [1, 2],
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "entitled_group_ids is not allowed for analog." in response.json["message"]
+        )
+
     def test_not_supported_type(self) -> None:
         response = self.request(
             "poll.create",
