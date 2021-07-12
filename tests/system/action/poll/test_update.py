@@ -270,6 +270,21 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("onehundred_percent_base"), "Y")
 
+    def test_update_wrong_100_percent_base_entitled_and_analog(self) -> None:
+        self.update_model(
+            "poll/1",
+            {"state": Poll.STATE_STARTED, "pollmethod": "YN", "type": Poll.TYPE_ANALOG},
+        )
+        response = self.request(
+            "poll.update",
+            {"onehundred_percent_base": "entitled", "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "onehundred_percent_base: value entitled is not allowed for analog."
+            in response.json["message"]
+        )
+
     def test_state_change(self) -> None:
         self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})
         response = self.request("poll.update", {"id": 1, "votescast": "1.000000"})
