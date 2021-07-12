@@ -378,7 +378,7 @@ class DatastoreAdapter(DatastoreService):
     def update_locked_fields_from_mapped_fields(
         self, fqid: FullQualifiedId, position: int, mapped_fields: Optional[Set[str]]
     ) -> None:
-        if mapped_fields:
+        if mapped_fields is not None:
             for field in mapped_fields:
                 if not field.startswith("meta_"):
                     self.update_locked_fields(
@@ -475,7 +475,7 @@ class DatastoreAdapter(DatastoreService):
         mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: bool = True,
+        lock_result: LockResult = True,
         db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
         exception: bool = True,
     ) -> Dict[str, Any]:
@@ -514,8 +514,12 @@ class DatastoreAdapter(DatastoreService):
                         and fqid in self.additional_relation_model_locks
                     ):
                         position = self.additional_relation_model_locks[fqid]
+                        if isinstance(lock_result, list):
+                            fields_to_lock = found_fields.intersection(lock_result)
+                        else:
+                            fields_to_lock = found_fields
                         self.update_locked_fields_from_mapped_fields(
-                            fqid, position, found_fields
+                            fqid, position, fields_to_lock
                         )
                 else:
                     instance = deepcopy(model)

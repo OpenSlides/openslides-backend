@@ -217,3 +217,51 @@ class OptionUpdateActionTest(BaseActionTestCase):
             ]
         )
         self.assert_status_code(response, 200)
+
+    def test_update_together_with_poll_2(self) -> None:
+        self.set_models(
+            {
+                "meeting/110": {},
+                "poll/13": {
+                    "type": "analog",
+                    "state": "created",
+                    "pollmethod": "YN",
+                    "meeting_id": 110,
+                    "option_ids": [30],
+                },
+                "option/30": {
+                    "yes": "0.000000",
+                    "no": "0.000000",
+                    "abstain": "0.000000",
+                    "meeting_id": 110,
+                    "poll_id": 13,
+                },
+            }
+        )
+        response = self.request_json(
+            [
+                {
+                    "action": "poll.update",
+                    "data": [
+                        {
+                            "id": 13,
+                            "max_votes_amount": 1,
+                            "min_votes_amount": 1,
+                            "onehundred_percent_base": "YNA",
+                            "pollmethod": "YNA",
+                            "title": "Abstimmung",
+                            "votescast": "10.000000",
+                            "votesinvalid": "10.000000",
+                            "votesvalid": "10.000000",
+                        }
+                    ],
+                },
+                {
+                    "action": "option.update",
+                    "data": [
+                        {"id": 30, "Y": "10.000000", "A": "10.000000", "N": "10.000000"}
+                    ],
+                },
+            ]
+        )
+        self.assert_status_code(response, 200)
