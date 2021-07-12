@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Any, Dict, Iterable, Optional, Tuple
 
 from ....models.base import model_registry
-from ....models.check_models import Checker, CheckException
+from ....models.checker import Checker, CheckException
 from ....models.fields import (
     BaseTemplateField,
     GenericRelationField,

@@ -1,6 +1,4 @@
-import json
 import re
-import sys
 from collections import defaultdict
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Type, cast
 
@@ -26,8 +24,6 @@ from openslides_backend.models.fields import (
     NumberArrayField,
     RelationField,
     RelationListField,
-    TemplateRelationField,
-    TemplateRelationListField,
     TimestampField,
 )
 from openslides_backend.models.models import Model
@@ -124,7 +120,7 @@ def get_own_field_name(field: Field) -> str:
     return field.own_field_name
 
 
-checker_map: Dict[Any, Callable] = {
+checker_map: Dict[Type[Field], Callable[..., bool]] = {
     CharField: check_string,
     HTMLStrictField: check_string,
     HTMLPermissiveField: check_string,
@@ -141,8 +137,6 @@ checker_map: Dict[Any, Callable] = {
     DecimalField: check_decimal,
     ColorField: check_color,
     JSONField: check_json,
-    TemplateRelationListField: check_number_list,
-    TemplateRelationField: check_number,
 }
 
 
@@ -408,8 +402,10 @@ class Checker:
             enum = self.get_enum_from_collection_field(field, collection)
 
             checker: Optional[Callable[..., bool]] = None
-            if type(field_type) in checker_map:
-                checker = checker_map[type(field_type)]
+            for _type in type(field_type).mro():
+                if _type in checker_map:
+                    checker = checker_map[_type]
+                    break
             else:
                 raise NotImplementedError(
                     f"TODO implement check for field type {field_type}"
@@ -658,27 +654,3 @@ class Checker:
         raise CheckException(
             f"The collection {foreign_collection} is not supported as a reverse relation in {collection}/{field}"
         )
-
-
-def main() -> int:
-    files = sys.argv[1:]
-
-    is_import = "--import" in files
-    if is_import:
-        files = [x for x in files if x != "--import"]
-
-    failed = False
-    for f in files:
-        with open(f) as data:
-            try:
-                Checker(json.load(data), is_import=is_import).run_check()
-            except CheckException as e:
-                print(f"Check for {f} failed:\n", e)
-                failed = True
-            else:
-                print(f"Check for {f} successful.")
-    return 1 if failed else 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
