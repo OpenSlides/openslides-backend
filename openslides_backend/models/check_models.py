@@ -26,6 +26,8 @@ from openslides_backend.models.fields import (
     NumberArrayField,
     RelationField,
     RelationListField,
+    TemplateRelationField,
+    TemplateRelationListField,
     TimestampField,
 )
 from openslides_backend.models.models import Model
@@ -139,6 +141,8 @@ checker_map: Dict[Any, Callable] = {
     DecimalField: check_decimal,
     ColorField: check_color,
     JSONField: check_json,
+    TemplateRelationListField: check_number_list,
+    TemplateRelationField: check_number,
 }
 
 
@@ -404,11 +408,9 @@ class Checker:
             enum = self.get_enum_from_collection_field(field, collection)
 
             checker: Optional[Callable[..., bool]] = None
-            for checker_key in checker_map:
-                if isinstance(field_type, checker_key):
-                    checker = checker_map[checker_key]
-                    break
-            if checker is None:
+            if type(field_type) in checker_map:
+                checker = checker_map[type(field_type)]
+            else:
                 raise NotImplementedError(
                     f"TODO implement check for field type {field_type}"
                 )
