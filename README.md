@@ -12,13 +12,21 @@ Use docker to build and start the application with your favorite tools. See [Doc
 
 ### Development with Docker Compose
 
-To start the development build run in a first terminal
+The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run 
+
+    $ make run-dev
+
+All containers can be stopped afterwards by running
+
+    $ make stop-dev
+
+You can also start the components manually. To do that, run
 
     $ make start-dev-interactive
 
 Then run in a separate terminal
 
-    $ make run-dev-standalone
+    $ make run-dev-attach
 
 Inside this terminal you may use some commands you find in the [Makefile](Makefile). You may want to use
 
@@ -26,19 +34,21 @@ Inside this terminal you may use some commands you find in the [Makefile](Makefi
     $ make test
     $ make  # Coding style tools, typechecker and tests all together
 
-You may also use
+### Generate models file
 
-    $ make run-dev
+To generate a new models.py file (updated in [OpenSlides Main Repository](https://github.com/OpenSlides/OpenSlides)) run (inside the docker container)
 
-to do everything at once. Do not forget to run
+    $ make generate-models
 
-    $ make stop-dev
-  
-when you are done.
+If you do not want to generate from the current master, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the master:
+
+    $ MODEL_PATH="https://raw.githubusercontent.com/OpenSlides/OpenSlides/0e56d1360e45f1ca3ef3dc004b87a8e23829c45b/docs/models.yml" make generate-models
+
+Note that you need to provide the raw file if you want to use a GitHub link.
 
 ### Development without Docker Compose
 
-You may use some commands you find in the [Makefile](Makefile) even outside a docker environment. Nevertheless we prefer some kind of system tests here that require other services of Openslides 4 (e. g. the datastore with postgres and redis). If you do not use Docker Compose, you have to provide these services in another way. Only for integration and unit tests all other services can be absent.
+It is highly encouraged to use docker for development purposes, since all requirements etc. are already fulfilled there. You may use some commands you find in the [Makefile](Makefile) even outside a docker environment. Nevertheless we prefer some kind of system tests here that require other services of Openslides 4 (e. g. the datastore with postgres and redis). If you do not use Docker Compose, you have to provide these services in another way. Only for integration and unit tests all other services can be absent.
 
 To setup and local development version run
 
@@ -49,13 +59,6 @@ To setup and local development version run
 To start it run
 
     $ make run-debug
-
-### Generate models file
-
-To generate a new models.py file (updated in [OpenSlides Main Repository](https://github.com/OpenSlides/OpenSlides)) run
-
-    $ make generate-models
-
 
 ## Listening ports
 
