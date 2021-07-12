@@ -40,6 +40,12 @@ To generate a new models.py file (updated in [OpenSlides Main Repository](https:
 
     $ make generate-models
 
+If you do not want to generate from the current master, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the master:
+
+    $ MODEL_PATH="https://raw.githubusercontent.com/OpenSlides/OpenSlides/0e56d1360e45f1ca3ef3dc004b87a8e23829c45b/docs/models.yml" make generate-models
+
+Note that you need to provide the raw file if you want to use a GitHub link.
+
 ### Development without Docker Compose
 
 It is highly encouraged to use docker for development purposes, since all requirements etc. are already fulfilled there. You may use some commands you find in the [Makefile](Makefile) even outside a docker environment. Nevertheless we prefer some kind of system tests here that require other services of Openslides 4 (e. g. the datastore with postgres and redis). If you do not use Docker Compose, you have to provide these services in another way. Only for integration and unit tests all other services can be absent.
