@@ -262,6 +262,27 @@ class CreatePoll(BaseActionTestCase):
             "entitled_group_ids is not allowed for analog." in response.json["message"]
         )
 
+    def test_with_100_percent_base_entitled_and_analog(self) -> None:
+        self.set_models({"group/1": {"meeting_id": 1}, "group/2": {"meeting_id": 1}})
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_Thoo2eiphohhi1eeXoow",
+                "pollmethod": "YNA",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "onehundred_percent_base": "entitled",
+                "majority_method": "simple",
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "onehundred_percent_base: value entitled is not allowed for analog."
+            in response.json["message"]
+        )
+
     def test_not_supported_type(self) -> None:
         response = self.request(
             "poll.create",

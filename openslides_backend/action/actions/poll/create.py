@@ -75,7 +75,14 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
         # check entitled_group_ids and analog
         if instance["type"] == Poll.TYPE_ANALOG and "entitled_group_ids" in instance:
             raise ActionException("entitled_group_ids is not allowed for analog.")
-
+        # check analog and 100percentbase entitled
+        if (
+            instance["type"] == Poll.TYPE_ANALOG
+            and instance.get("onehundred_percent_base") == "entitled"
+        ):
+            raise ActionException(
+                "onehundred_percent_base: value entitled is not allowed for analog."
+            )
         self.check_100_percent_base(instance)
 
         # handle non-global options

@@ -75,10 +75,18 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
             ):
                 if key in instance:
                     not_allowed.append(key)
+
         if not_allowed:
             raise ActionException(
                 "Following options are not allowed in this state and type: "
                 + ", ".join(not_allowed)
+            )
+        if (
+            poll.get("type") == Poll.TYPE_ANALOG
+            and instance.get("onehundred_percent_base") == "entitled"
+        ):
+            raise ActionException(
+                "onehundred_percent_base: value entitled is not allowed for analog."
             )
         if state_change:
             instance["state"] = Poll.STATE_FINISHED
