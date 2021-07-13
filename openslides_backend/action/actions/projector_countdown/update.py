@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import ProjectorCountdown
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.filters import And, FilterOperator
+from ....shared.filters import And, FilterOperator, Not
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -41,6 +41,7 @@ class ProjectorCountdownUpdate(UpdateAction):
         title_filter = And(
             FilterOperator("meeting_id", "=", projector_countdown["meeting_id"]),
             FilterOperator("title", "=", instance["title"]),
+            Not(FilterOperator("id", "=", instance["id"])),
         )
         if self.datastore.exists(self.model.collection, title_filter):
             raise ActionException("Title already exists in this meeting.")

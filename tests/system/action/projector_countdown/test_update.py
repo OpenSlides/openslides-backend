@@ -44,6 +44,25 @@ class ProjectorCountdownUpdate(BaseActionTestCase):
         assert model.get("default_time") == 30
         assert model.get("countdown_time") == 20
 
+    def test_update_same_title_in_same_id(self) -> None:
+        response = self.request(
+            "projector_countdown.update",
+            {
+                "id": 2,
+                "title": "test",
+                "description": "good bla",
+                "default_time": 30,
+                "countdown_time": 20,
+                "running": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("projector_countdown/2")
+        assert model.get("title") == "test"
+        assert model.get("description") == "good bla"
+        assert model.get("default_time") == 30
+        assert model.get("countdown_time") == 20
+
     def test_update_not_unique_title(self) -> None:
         response = self.request(
             "projector_countdown.update", {"id": 2, "title": "famousword"}
