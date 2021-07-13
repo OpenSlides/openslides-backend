@@ -75,11 +75,14 @@ class MeetingImport(SingularActionMixin, Action):
 
         self.check_usernames_and_generate_new_ones(meeting_json)
 
-        # delete blob from mediafiles
+        # save blobs from mediafiles
+        self.mediadata = []
         json_data = instance["meeting"]
         for entry in json_data.get("mediafile", []):
             if "blob" in entry:
-                del entry["blob"]
+                self.mediadata.append(
+                    (entry.pop("blob"), entry["id"], entry["mimetype"])
+                )
 
         # check datavalidation
         checker = Checker(data=instance["meeting"], is_import=True)
@@ -94,6 +97,7 @@ class MeetingImport(SingularActionMixin, Action):
         self.create_replace_map(meeting_json)
         self.replace_fields(instance)
         self.update_admin_group(meeting_json)
+        self.upload_mediadata()
         return instance
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
@@ -262,6 +266,11 @@ class MeetingImport(SingularActionMixin, Action):
                     entry["user_ids"] = [self.user_id]
 
         data_json["meeting"][0]["user_ids"].insert(0, self.user_id)
+
+    def upload_mediadata(self) -> None:
+        for blob, id_, mimetype in self.mediadata:
+            replaced_id = self.replace_map["mediafile"][id_]
+            self.media.upload_mediafile(blob, replaced_id, mimetype)
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]

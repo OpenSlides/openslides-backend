@@ -1,3 +1,4 @@
+import base64
 import time
 from typing import Any, Dict
 
@@ -816,7 +817,7 @@ class MeetingImport(BaseActionTestCase):
             "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
         )
 
-    def test_clean_blobs(self) -> None:
+    def test_use_blobs(self) -> None:
         self.set_models(
             {
                 "committee/1": {},
@@ -824,13 +825,14 @@ class MeetingImport(BaseActionTestCase):
                 "motion/1": {},
             }
         )
+        file_content = base64.b64encode(b"testtesttest").decode()
         request_data = self.create_request_data(
             {
                 "mediafile": [
                     {
                         "id": 1,
                         "meeting_id": 1,
-                        "blob": "blablabla",
+                        "blob": file_content,
                         "title": "A.txt",
                         "is_directory": False,
                         "filesize": 3,
@@ -857,6 +859,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
         assert mediafile.get("blob") is None
+        self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
