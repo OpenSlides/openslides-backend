@@ -39,7 +39,7 @@ class BaseSystemTestCase(TestCase):
     client: Client
     anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
-    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/d7c67248dce7548fe8077d22ca69a961c5c39e7f/docs/example-data.json"
+    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/9b3271277f5b8fd96c39645a9c51dcdf8fc91b9c/docs/example-data.json"
 
     def setUp(self) -> None:
         self.app = self.get_application()

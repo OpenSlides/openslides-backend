@@ -33,7 +33,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
             },
@@ -49,7 +48,6 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("global_option_id") == 2
         assert poll.get("state") == "finished"
         assert poll.get("onehundred_percent_base") == "Y"
-        assert poll.get("majority_method") == "simple"
         assert poll.get("is_pseudoanonymized") is False
         assert poll.get("min_votes_amount") == 5
         assert poll.get("max_votes_amount") == 10
@@ -76,7 +74,6 @@ class CreatePoll(BaseActionTestCase):
                 ],
                 "meeting_id": 1,
                 "onehundred_percent_base": "YNA",
-                "majority_method": "simple",
             },
         )
         self.assert_status_code(response, 200)
@@ -88,7 +85,6 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("option_ids") == [1, 2, 3]
         assert poll.get("global_option_id") == 4
         assert poll.get("onehundred_percent_base") == "YNA"
-        assert poll.get("majority_method") == "simple"
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
@@ -122,7 +118,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "pseudoanonymous",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "three_quarters",
                 "global_yes": False,
                 "global_no": False,
                 "global_abstain": False,
@@ -144,7 +139,6 @@ class CreatePoll(BaseActionTestCase):
             poll.get("description"), "test_description_ieM8ThuasoSh8aecai8p"
         )
         self.assertEqual(poll.get("onehundred_percent_base"), "YN")
-        self.assertEqual(poll.get("majority_method"), "three_quarters")
 
     def test_no_options(self) -> None:
         response = self.request(
@@ -155,7 +149,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [],
             },
@@ -175,7 +168,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{}],
             },
@@ -212,7 +204,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "entitled_group_ids": [1, 2],
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
@@ -231,7 +222,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "entitled_group_ids": [],
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
@@ -251,7 +241,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "analog",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "entitled_group_ids": [1, 2],
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
@@ -272,7 +261,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "analog",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "entitled",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -292,7 +280,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "not_existing",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -310,7 +297,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": Poll.TYPE_NAMED,
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -327,7 +313,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -344,7 +329,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "invalid base",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -352,27 +336,6 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data.onehundred_percent_base must be one of ['Y', 'YN', 'YNA', 'N', 'valid', 'cast', 'entitled', 'disabled']",
-            response.json["message"],
-        )
-        self.assert_model_not_exists("poll/1")
-
-    def test_not_supported_majority_method(self) -> None:
-        response = self.request(
-            "poll.create",
-            {
-                "title": "test_title_Thoo2eiphohhi1eeXoow",
-                "pollmethod": "YNA",
-                "type": "named",
-                "content_object_id": "assignment/1",
-                "onehundred_percent_base": "YN",
-                "majority_method": "invalid majority method",
-                "meeting_id": 1,
-                "options": [{"text": "test"}],
-            },
-        )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "data.majority_method must be one of ['simple', 'two_thirds', 'three_quarters', 'disabled']",
             response.json["message"],
         )
         self.assert_model_not_exists("poll/1")
@@ -386,7 +349,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -407,7 +369,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YNA",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -428,7 +389,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YNA",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test"}],
             },
@@ -449,7 +409,6 @@ class CreatePoll(BaseActionTestCase):
                         {
                             "meeting_id": 1,
                             "title": "Wahlgang (3)",
-                            "majority_method": "simple",
                             "onehundred_percent_base": "valid",
                             "pollmethod": "YN",
                             "type": "analog",
@@ -473,7 +432,6 @@ class CreatePoll(BaseActionTestCase):
                 "title": "test",
                 "type": "analog",
                 "pollmethod": "YNA",
-                "majority_method": "simple",
                 "onehundred_percent_base": "valid",
                 "options": [
                     {"text": "test", "Y": "10.000000"},
@@ -517,7 +475,6 @@ class CreatePoll(BaseActionTestCase):
                 "title": "test",
                 "type": "analog",
                 "pollmethod": "YN",
-                "majority_method": "simple",
                 "onehundred_percent_base": "valid",
                 "options": [
                     {"content_object_id": "user/1", "Y": "10.000000", "N": "5.000000"},
@@ -535,7 +492,6 @@ class CreatePoll(BaseActionTestCase):
             {
                 "meeting_id": 1,
                 "title": "Abstimmung",
-                "majority_method": "simple",
                 "onehundred_percent_base": "YNA",
                 "pollmethod": "YNA",
                 "type": "analog",
@@ -573,7 +529,6 @@ class CreatePoll(BaseActionTestCase):
                 "type": "named",
                 "content_object_id": "assignment/1",
                 "onehundred_percent_base": "YN",
-                "majority_method": "simple",
                 "meeting_id": 1,
                 "options": [{"text": "test1"}],
             },
@@ -605,7 +560,6 @@ class CreatePoll(BaseActionTestCase):
                 ],
                 "meeting_id": 42,
                 "onehundred_percent_base": "YN",
-                "majority_method": "three_quarters",
             },
         )
         self.assert_status_code(response, 200)
@@ -644,7 +598,6 @@ class CreatePoll(BaseActionTestCase):
                 ],
                 "meeting_id": 7,
                 "onehundred_percent_base": "YN",
-                "majority_method": "three_quarters",
             },
         )
         self.assert_status_code(response, 400)
@@ -668,7 +621,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
             },
         )
 
@@ -687,7 +639,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
             },
             Permissions.Assignment.CAN_MANAGE,
         )
@@ -707,7 +658,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
             },
         )
 
@@ -726,7 +676,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
             },
             Permissions.Motion.CAN_MANAGE_POLLS,
         )
@@ -745,7 +694,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
             },
             Permissions.Poll.CAN_MANAGE,
         )
@@ -764,6 +712,5 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
-                "majority_method": "simple",
             },
         )

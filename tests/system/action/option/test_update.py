@@ -200,7 +200,6 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "data": [
                         {
                             "id": 6,
-                            "majority_method": "simple",
                             "onehundred_percent_base": "valid",
                             "pollmethod": "YNA",
                             "title": "Ballot",

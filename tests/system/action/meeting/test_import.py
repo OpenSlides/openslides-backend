@@ -452,38 +452,6 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
         self.assert_model_exists("group/1", {"user_ids": [1, 2]})
 
-    def test_motion_forwarding_tree_motion_ids(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
-        request_data = self.create_request_data(
-            {
-                "motion": [
-                    {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 1,
-                        "state_id": 1,
-                        "title": "bla",
-                        "forwarding_tree_motion_ids": [1],
-                    },
-                ],
-                "list_of_speakers": [
-                    {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"},
-                ],
-            }
-        )
-        response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        assert (
-            "Motion forwarding_tree_motion_ids should be empty."
-            in response.json["message"]
-        )
-
     def test_field_check(self) -> None:
         self.set_models(
             {

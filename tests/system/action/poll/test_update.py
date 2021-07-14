@@ -22,7 +22,6 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "pollmethod": "Y",
                     "type": Poll.TYPE_NAMED,
                     "onehundred_percent_base": "Y",
-                    "majority_method": "simple",
                     "state": Poll.STATE_CREATED,
                     "meeting_id": 1,
                     "option_ids": [1, 2],
@@ -198,24 +197,6 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("onehundred_percent_base"), "Y")
 
-    def test_update_majority_method(self) -> None:
-        response = self.request(
-            "poll.update",
-            {"majority_method": "two_thirds", "id": 1},
-        )
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("majority_method"), "two_thirds")
-
-    def test_update_wrong_majority_method(self) -> None:
-        response = self.request(
-            "poll.update",
-            {"majority_method": "invalid majority method", "id": 1},
-        )
-        self.assert_status_code(response, 400)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("majority_method"), "simple")
-
     def test_update_multiple_fields(self) -> None:
         response = self.request(
             "poll.update",
@@ -235,16 +216,6 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assertTrue(poll.get("global_yes"))
         self.assertTrue(poll.get("global_no"))
         self.assertFalse(poll.get("global_abstain"))
-
-    def test_update_majority_method_state_not_created(self) -> None:
-        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
-        response = self.request(
-            "poll.update",
-            {"majority_method": "two_thirds", "id": 1},
-        )
-        self.assert_status_code(response, 200)
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("majority_method"), "two_thirds")
 
     def test_update_100_percent_base_state_not_created(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})

@@ -106,12 +106,6 @@ class MeetingImport(SingularActionMixin, Action):
             if meeting_json.get(collection) and collection not in allowed_collections:
                 raise ActionException(f"{collection} must be empty.")
 
-        for entry in meeting_json.get("motion", []):
-            if entry.get("forwarding_tree_motion_ids"):
-                raise ActionException(
-                    "Motion forwarding_tree_motion_ids should be empty."
-                )
-
         self.check_usernames_and_generate_new_ones(meeting_json)
         self.update_meeting_users_and_mediafiles(instance)
 
