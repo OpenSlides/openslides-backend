@@ -172,8 +172,6 @@ class TestGetUsers(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request(
-            "get_users", {"sort_criteria": ["title", "username"]}
-        )
+        status_code, data = self.request("get_users", {"sort_criteria": ["title", "username"]})
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [1, 5, 2, 3, 4]})
