@@ -237,6 +237,10 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_conference_enable_helpdesk(self) -> None:
+        meeting, _ = self.basic_test({"conference_enable_helpdesk": True})
+        assert meeting.get("conference_enable_helpdesk") is True
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
