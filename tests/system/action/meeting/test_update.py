@@ -241,6 +241,31 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         meeting, _ = self.basic_test({"conference_enable_helpdesk": True})
         assert meeting.get("conference_enable_helpdesk") is True
 
+    def test_update_applause(self) -> None:
+        self.basic_test(
+            {
+                "applause_enable": True,
+                "applause_type": "applause-type-particles",
+                "applause_show_level": True,
+                "applause_min_amount": 2,
+                "applause_max_amount": 3,
+                "applause_timeout": 6,
+                "applause_particle_image_url": "test",
+            }
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "applause_enable": True,
+                "applause_type": "applause-type-particles",
+                "applause_show_level": True,
+                "applause_min_amount": 2,
+                "applause_max_amount": 3,
+                "applause_timeout": 6,
+                "applause_particle_image_url": "test",
+            },
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}
