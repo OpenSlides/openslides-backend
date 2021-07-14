@@ -45,10 +45,14 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("motion/13")
-        assert model.get("title") == "test_Xcdfgee"
-        assert model.get("meeting_id") == 2
-        assert model.get("origin_id") == 12
+        self.assert_model_exists("motion/13", 
+            {"title":  "test_Xcdfgee",
+             "meeting_id": 2,
+             "origin_id": 12,
+             "all_derived_motion_ids": [],
+             "all_origin_ids": [12]})
+        self.assert_model_exists("motion/12", {"derived_motion_ids": [13],
+            "all_derived_motion_ids": [13]})
 
     def test_correct_origin_id_wrong_1(self) -> None:
         self.test_model["committee/53"]["forward_to_committee_ids"] = []
