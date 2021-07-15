@@ -6,6 +6,16 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class MeetingImport(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.set_models(
+            {
+                "committee/1": {},
+                "meeting/1": {},
+                "motion/1": {},
+            }
+        )
+
     def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "committee_id": 1,
@@ -184,50 +194,12 @@ class MeetingImport(BaseActionTestCase):
                     }
                 ],
                 "user": [
-                    {
-                        "id": 1,
-                        "password": "",
-                        "username": "test",
-                        "group_$_ids": ["1"],
-                        "group_$1_ids": [1],
-                        "committee_ids": [],
-                        "committee_$_management_level": [],
-                        "vote_weight_$": [],
-                        "id": 1,
-                        "title": "",
-                        "first_name": "",
-                        "last_name": "Administrator",
-                        "is_active": True,
-                        "is_physical_person": True,
-                        "default_password": "admin",
-                        "can_change_own_password": True,
-                        "gender": "",
-                        "email": "",
-                        "default_number": "",
-                        "default_structure_level": "",
-                        "default_vote_weight": "1.000000",
-                        "last_email_send": None,
-                        "is_demo_user": False,
-                        "organization_management_level": "superadmin",
-                        "is_present_in_meeting_ids": [],
-                        "comment_$": [],
-                        "number_$": [],
-                        "structure_level_$": [],
-                        "about_me_$": [],
-                        "speaker_$_ids": [],
-                        "personal_note_$_ids": [],
-                        "supported_motion_$_ids": [],
-                        "submitted_motion_$_ids": [],
-                        "assignment_candidate_$_ids": [],
-                        "poll_voted_$_ids": [],
-                        "option_$_ids": [],
-                        "vote_$_ids": [],
-                        "projection_$_ids": [],
-                        "vote_delegated_vote_$_ids": [],
-                        "vote_delegated_$_to_id": [],
-                        "vote_delegations_$_from_ids": [],
-                        "meeting_ids": [1],
-                    }
+                    self.get_user_data(
+                        {
+                            "group_$_ids": ["1"],
+                            "group_$1_ids": [1],
+                        }
+                    )
                 ],
                 "group": [
                     {
@@ -355,12 +327,100 @@ class MeetingImport(BaseActionTestCase):
 
         return data
 
+    def get_user_data(self, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+        return {
+            "id": 1,
+            "password": "",
+            "username": "test",
+            "group_$_ids": [],
+            "committee_ids": [],
+            "committee_$_management_level": [],
+            "vote_weight_$": [],
+            "title": "",
+            "first_name": "",
+            "last_name": "Administrator",
+            "is_active": True,
+            "is_physical_person": True,
+            "default_password": "admin",
+            "can_change_own_password": True,
+            "gender": "",
+            "email": "",
+            "default_number": "",
+            "default_structure_level": "",
+            "default_vote_weight": "1.000000",
+            "last_email_send": None,
+            "is_demo_user": False,
+            "organization_management_level": "superadmin",
+            "is_present_in_meeting_ids": [],
+            "comment_$": [],
+            "number_$": [],
+            "structure_level_$": [],
+            "about_me_$": [],
+            "speaker_$_ids": [],
+            "personal_note_$_ids": [],
+            "supported_motion_$_ids": [],
+            "submitted_motion_$_ids": [],
+            "assignment_candidate_$_ids": [],
+            "poll_voted_$_ids": [],
+            "option_$_ids": [],
+            "vote_$_ids": [],
+            "projection_$_ids": [],
+            "vote_delegated_vote_$_ids": [],
+            "vote_delegated_$_to_id": [],
+            "vote_delegations_$_from_ids": [],
+            "meeting_ids": [1],
+            **data,
+        }
+
+    def get_motion_data(self, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+        return {
+            "id": 1,
+            "meeting_id": 1,
+            "list_of_speakers_id": 1,
+            "state_id": 1,
+            "title": "bla",
+            "number": "1 - 1",
+            "number_value": 1,
+            "sequential_number": 2,
+            "text": "<p>l&ouml;mk</p>",
+            "amendment_paragraph_$": [],
+            "modified_final_version": "",
+            "reason": "",
+            "category_weight": 10000,
+            "state_extension": "<p>regeer</p>",
+            "recommendation_extension": None,
+            "sort_weight": 10000,
+            "created": 1584512346,
+            "last_modified": 1584512346,
+            "lead_motion_id": None,
+            "amendment_ids": [],
+            "sort_parent_id": None,
+            "sort_child_ids": [],
+            "origin_id": None,
+            "derived_motion_ids": [],
+            "all_origin_ids": [],
+            "all_derived_motion_ids": [],
+            "recommendation_id": None,
+            "recommendation_extension_reference_ids": [],
+            "referenced_in_motion_recommendation_extension_ids": [],
+            "category_id": None,
+            "block_id": None,
+            "submitter_ids": [],
+            "supporter_ids": [],
+            "poll_ids": [],
+            "option_ids": [],
+            "change_recommendation_ids": [],
+            "statute_paragraph_id": None,
+            "comment_ids": [],
+            "agenda_item_id": None,
+            "tag_ids": [],
+            "attachment_ids": [],
+            "projection_ids": [],
+            "personal_note_ids": [],
+            **data,
+        }
+
     def test_no_meeting_collection(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-            }
-        )
         response = self.request(
             "meeting.import", {"committee_id": 1, "meeting": {"meeting": []}}
         )
@@ -370,11 +430,6 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_too_many_meeting_collections(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-            }
-        )
         response = self.request(
             "meeting.import",
             {"committee_id": 1, "meeting": {"meeting": [{"id": 1}, {"id": 2}]}},
@@ -385,11 +440,6 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_include_organization(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-            }
-        )
         request_data = self.create_request_data({"organization": [{"id": 1}]})
 
         response = self.request("meeting.import", request_data)
@@ -398,13 +448,6 @@ class MeetingImport(BaseActionTestCase):
 
     def test_replace_ids_and_write_to_datastore(self) -> None:
         start = round(time.time())
-        self.set_models(
-            {
-                "committee/1": {"meeting_ids": []},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         request_data = self.create_request_data(
             {
                 "personal_note": [
@@ -418,51 +461,12 @@ class MeetingImport(BaseActionTestCase):
                     }
                 ],
                 "motion": [
-                    {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 1,
-                        "state_id": 1,
-                        "title": "bla",
-                        "number": "1 - 1",
-                        "number_value": 1,
-                        "sequential_number": 2,
-                        "text": "<p>l&ouml;mk</p>",
-                        "amendment_paragraph_$": [],
-                        "modified_final_version": "",
-                        "reason": "",
-                        "category_weight": 10000,
-                        "state_extension": "<p>regeer</p>",
-                        "recommendation_extension": None,
-                        "sort_weight": 10000,
-                        "created": 1584512346,
-                        "last_modified": 1584512346,
-                        "lead_motion_id": None,
-                        "amendment_ids": [],
-                        "sort_parent_id": None,
-                        "sort_child_ids": [],
-                        "origin_id": None,
-                        "derived_motion_ids": [],
-                        "all_origin_ids": [],
-                        "all_derived_motion_ids": [],
-                        "recommendation_id": None,
-                        "recommendation_extension_reference_ids": [],
-                        "referenced_in_motion_recommendation_extension_ids": [],
-                        "category_id": None,
-                        "block_id": None,
-                        "submitter_ids": [],
-                        "supporter_ids": [],
-                        "poll_ids": [],
-                        "option_ids": [],
-                        "change_recommendation_ids": [],
-                        "statute_paragraph_id": None,
-                        "comment_ids": [],
-                        "agenda_item_id": None,
-                        "tag_ids": [1],
-                        "attachment_ids": [],
-                        "projection_ids": [],
-                        "personal_note_ids": [1],
-                    }
+                    self.get_motion_data(
+                        {
+                            "tag_ids": [1],
+                            "personal_note_ids": [1],
+                        }
+                    )
                 ],
                 "list_of_speakers": [
                     {
@@ -521,58 +525,18 @@ class MeetingImport(BaseActionTestCase):
     def test_check_usernames(self) -> None:
         self.set_models(
             {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
                 "user/1": {"username": "admin"},
             }
         )
         request_data = self.create_request_data({})
         request_data["meeting"]["user"] = [
-            {
-                "id": 1,
-                "password": "",
-                "username": "admin",
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-                "committee_ids": [],
-                "committee_$_management_level": [],
-                "vote_weight_$": [],
-                "id": 1,
-                "title": "",
-                "first_name": "",
-                "last_name": "Administrator",
-                "is_active": True,
-                "is_physical_person": True,
-                "default_password": "admin",
-                "can_change_own_password": True,
-                "gender": "",
-                "email": "",
-                "default_number": "",
-                "default_structure_level": "",
-                "default_vote_weight": "1.000000",
-                "last_email_send": None,
-                "is_demo_user": False,
-                "organization_management_level": "superadmin",
-                "is_present_in_meeting_ids": [],
-                "comment_$": [],
-                "number_$": [],
-                "structure_level_$": [],
-                "about_me_$": [],
-                "speaker_$_ids": [],
-                "personal_note_$_ids": [],
-                "supported_motion_$_ids": [],
-                "submitted_motion_$_ids": [],
-                "assignment_candidate_$_ids": [],
-                "poll_voted_$_ids": [],
-                "option_$_ids": [],
-                "vote_$_ids": [],
-                "projection_$_ids": [],
-                "vote_delegated_vote_$_ids": [],
-                "vote_delegated_$_to_id": [],
-                "vote_delegations_$_from_ids": [],
-                "meeting_ids": [1],
-            }
+            self.get_user_data(
+                {
+                    "username": "admin",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                }
+            )
         ]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
@@ -581,100 +545,24 @@ class MeetingImport(BaseActionTestCase):
     def test_check_usernames_2(self) -> None:
         self.set_models(
             {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
                 "user/1": {"username": "admin"},
             }
         )
         request_data = self.create_request_data({})
         request_data["meeting"]["user"] = [
-            {
-                "id": 1,
-                "password": "",
-                "username": "admin",
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-                "committee_ids": [],
-                "committee_$_management_level": [],
-                "vote_weight_$": [],
-                "id": 1,
-                "title": "",
-                "first_name": "",
-                "last_name": "Administrator",
-                "is_active": True,
-                "is_physical_person": True,
-                "default_password": "admin",
-                "can_change_own_password": True,
-                "gender": "",
-                "email": "",
-                "default_number": "",
-                "default_structure_level": "",
-                "default_vote_weight": "1.000000",
-                "last_email_send": None,
-                "is_demo_user": False,
-                "organization_management_level": "superadmin",
-                "is_present_in_meeting_ids": [],
-                "comment_$": [],
-                "number_$": [],
-                "structure_level_$": [],
-                "about_me_$": [],
-                "speaker_$_ids": [],
-                "personal_note_$_ids": [],
-                "supported_motion_$_ids": [],
-                "submitted_motion_$_ids": [],
-                "assignment_candidate_$_ids": [],
-                "poll_voted_$_ids": [],
-                "option_$_ids": [],
-                "vote_$_ids": [],
-                "projection_$_ids": [],
-                "vote_delegated_vote_$_ids": [],
-                "vote_delegated_$_to_id": [],
-                "vote_delegations_$_from_ids": [],
-                "meeting_ids": [1],
-            },
-            {
-                "id": 2,
-                "password": "",
-                "username": "admin 1",
-                "group_$_ids": [],
-                "committee_ids": [],
-                "committee_$_management_level": [],
-                "vote_weight_$": [],
-                "title": "",
-                "first_name": "",
-                "last_name": "Administrator",
-                "is_active": True,
-                "is_physical_person": True,
-                "default_password": "admin",
-                "can_change_own_password": True,
-                "gender": "",
-                "email": "",
-                "default_number": "",
-                "default_structure_level": "",
-                "default_vote_weight": "1.000000",
-                "last_email_send": None,
-                "is_demo_user": False,
-                "organization_management_level": "superadmin",
-                "is_present_in_meeting_ids": [],
-                "comment_$": [],
-                "number_$": [],
-                "structure_level_$": [],
-                "about_me_$": [],
-                "speaker_$_ids": [],
-                "personal_note_$_ids": [],
-                "supported_motion_$_ids": [],
-                "submitted_motion_$_ids": [],
-                "assignment_candidate_$_ids": [],
-                "poll_voted_$_ids": [],
-                "option_$_ids": [],
-                "vote_$_ids": [],
-                "projection_$_ids": [],
-                "vote_delegated_vote_$_ids": [],
-                "vote_delegated_$_to_id": [],
-                "vote_delegations_$_from_ids": [],
-                "meeting_ids": [1],
-            },
+            self.get_user_data(
+                {
+                    "username": "admin",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                }
+            ),
+            self.get_user_data(
+                {
+                    "id": 2,
+                    "username": "admin 1",
+                }
+            ),
         ]
 
         response = self.request("meeting.import", request_data)
@@ -686,9 +574,6 @@ class MeetingImport(BaseActionTestCase):
         start = round(time.time())
         self.set_models(
             {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
                 "user/1": {"username": "admin"},
             }
         )
@@ -705,51 +590,12 @@ class MeetingImport(BaseActionTestCase):
                     }
                 ],
                 "motion": [
-                    {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 1,
-                        "state_id": 1,
-                        "title": "bla",
-                        "number": "1 - 1",
-                        "number_value": 1,
-                        "sequential_number": 2,
-                        "text": "<p>l&ouml;mk</p>",
-                        "amendment_paragraph_$": [],
-                        "modified_final_version": "",
-                        "reason": "",
-                        "category_weight": 10000,
-                        "state_extension": "<p>regeer</p>",
-                        "recommendation_extension": None,
-                        "sort_weight": 10000,
-                        "created": 1584512346,
-                        "last_modified": 1584512346,
-                        "lead_motion_id": None,
-                        "amendment_ids": [],
-                        "sort_parent_id": None,
-                        "sort_child_ids": [],
-                        "origin_id": None,
-                        "derived_motion_ids": [],
-                        "all_origin_ids": [],
-                        "all_derived_motion_ids": [],
-                        "recommendation_id": None,
-                        "recommendation_extension_reference_ids": [],
-                        "referenced_in_motion_recommendation_extension_ids": [],
-                        "category_id": None,
-                        "block_id": None,
-                        "submitter_ids": [],
-                        "supporter_ids": [],
-                        "poll_ids": [],
-                        "option_ids": [],
-                        "change_recommendation_ids": [],
-                        "statute_paragraph_id": None,
-                        "comment_ids": [],
-                        "agenda_item_id": None,
-                        "tag_ids": [1],
-                        "attachment_ids": [],
-                        "projection_ids": [],
-                        "personal_note_ids": [1],
-                    }
+                    self.get_motion_data(
+                        {
+                            "tag_ids": [1],
+                            "personal_note_ids": [1],
+                        }
+                    )
                 ],
                 "list_of_speakers": [
                     {
@@ -809,9 +655,6 @@ class MeetingImport(BaseActionTestCase):
     def test_no_permission(self) -> None:
         self.set_models(
             {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
                 "user/1": {
                     "username": "admin",
                     "organization_management_level": "can_manage_users",
@@ -825,13 +668,6 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_use_blobs(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         file_content = base64.b64encode(b"testtesttest").decode()
         request_data = self.create_request_data(
             {
@@ -870,136 +706,29 @@ class MeetingImport(BaseActionTestCase):
 
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
 
     def test_user_meeting_ids(self) -> None:
         # Calculated field.
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
 
     def test_motion_recommendation_extension(self) -> None:
         # Special field
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         request_data = self.create_request_data(
             {
                 "motion": [
-                    {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 1,
-                        "state_id": 1,
-                        "title": "bla",
-                        "state_id": 1,
-                        "title": "bla",
-                        "number": "1 - 1",
-                        "number_value": 1,
-                        "sequential_number": 2,
-                        "text": "<p>l&ouml;mk</p>",
-                        "amendment_paragraph_$": [],
-                        "modified_final_version": "",
-                        "reason": "",
-                        "category_weight": 10000,
-                        "state_extension": "<p>regeer</p>",
-                        "recommendation_extension": None,
-                        "sort_weight": 10000,
-                        "created": 1584512346,
-                        "last_modified": 1584512346,
-                        "lead_motion_id": None,
-                        "amendment_ids": [],
-                        "sort_parent_id": None,
-                        "sort_child_ids": [],
-                        "origin_id": None,
-                        "derived_motion_ids": [],
-                        "all_origin_ids": [],
-                        "all_derived_motion_ids": [],
-                        "recommendation_id": None,
-                        "recommendation_extension_reference_ids": [],
-                        "referenced_in_motion_recommendation_extension_ids": [],
-                        "category_id": None,
-                        "block_id": None,
-                        "submitter_ids": [],
-                        "supporter_ids": [],
-                        "poll_ids": [],
-                        "option_ids": [],
-                        "change_recommendation_ids": [],
-                        "statute_paragraph_id": None,
-                        "comment_ids": [],
-                        "agenda_item_id": None,
-                        "tag_ids": [],
-                        "attachment_ids": [],
-                        "projection_ids": [],
-                        "personal_note_ids": [],
-                    },
-                    {
-                        "id": 2,
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 2,
-                        "state_id": 1,
-                        "title": "bla",
-                        "recommendation_extension": "bla[motion/1]bla",
-                        "state_id": 1,
-                        "title": "bla",
-                        "number": "1 - 1",
-                        "number_value": 1,
-                        "sequential_number": 2,
-                        "text": "<p>l&ouml;mk</p>",
-                        "amendment_paragraph_$": [],
-                        "modified_final_version": "",
-                        "reason": "",
-                        "category_weight": 10000,
-                        "state_extension": "<p>regeer</p>",
-                        "sort_weight": 10000,
-                        "created": 1584512346,
-                        "last_modified": 1584512346,
-                        "lead_motion_id": None,
-                        "amendment_ids": [],
-                        "sort_parent_id": None,
-                        "sort_child_ids": [],
-                        "origin_id": None,
-                        "derived_motion_ids": [],
-                        "all_origin_ids": [],
-                        "all_derived_motion_ids": [],
-                        "recommendation_id": None,
-                        "recommendation_extension_reference_ids": [],
-                        "referenced_in_motion_recommendation_extension_ids": [],
-                        "category_id": None,
-                        "block_id": None,
-                        "submitter_ids": [],
-                        "supporter_ids": [],
-                        "poll_ids": [],
-                        "option_ids": [],
-                        "change_recommendation_ids": [],
-                        "statute_paragraph_id": None,
-                        "comment_ids": [],
-                        "agenda_item_id": None,
-                        "tag_ids": [],
-                        "attachment_ids": [],
-                        "projection_ids": [],
-                        "personal_note_ids": [],
-                    },
+                    self.get_motion_data(),
+                    self.get_motion_data(
+                        {
+                            "id": 2,
+                            "list_of_speakers_id": 2,
+                            "recommendation_extension": "bla[motion/1]bla",
+                        }
+                    ),
                 ],
                 "list_of_speakers": [
                     {
@@ -1033,13 +762,6 @@ class MeetingImport(BaseActionTestCase):
 
     def test_logo_dollar_id(self) -> None:
         # Template Relation Field
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         request_data = self.create_request_data(
             {
                 "mediafile": [
@@ -1080,14 +802,85 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_request_user_in_admin_group(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
         self.assert_model_exists("group/1", {"user_ids": [1, 2]})
+
+    def test_motion_all_derived_motion_ids(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "motion": [
+                    self.get_motion_data(
+                        {
+                            "all_derived_motion_ids": [1],
+                            "list_of_speakers_id": None,
+                            "state_id": None,
+                        }
+                    ),
+                ],
+            }
+        )
+        request_data["meeting"]["meeting"][0]["motion_ids"] = [1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "Motion all_origin_ids and all_derived_motion_ids should be empty."
+            in response.json["message"]
+        )
+
+    def test_motion_all_origin_ids(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "motion": [
+                    self.get_motion_data(
+                        {
+                            "all_origin_ids": [1],
+                            "list_of_speakers_id": None,
+                            "state_id": None,
+                        }
+                    ),
+                ],
+            }
+        )
+        request_data["meeting"]["meeting"][0]["motion_ids"] = [1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "Motion all_origin_ids and all_derived_motion_ids should be empty."
+            in response.json["message"]
+        )
+
+    def test_field_check(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "mediafile": [
+                    {
+                        "id": 1,
+                        "foobar": "test this",
+                        "meeting_id": 1,
+                        "title": "A.txt",
+                        "is_directory": False,
+                        "filesize": 3,
+                        "filename": "A.txt",
+                        "mimetype": "text/plain",
+                        "pdf_information": {},
+                        "create_timestamp": 1584513771,
+                        "is_public": True,
+                        "access_group_ids": [],
+                        "inherited_access_group_ids": [],
+                        "parent_id": None,
+                        "child_ids": [],
+                        "list_of_speakers_id": None,
+                        "projection_ids": [],
+                        "attachment_ids": [],
+                        "used_as_logo_$_in_meeting_id": [],
+                        "used_as_font_$_in_meeting_id": [],
+                        "blob": "bla",
+                    }
+                ]
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert "mediafile/1: Invalid fields foobar" in response.json["message"]

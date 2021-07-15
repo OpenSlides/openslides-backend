@@ -95,6 +95,7 @@ class User(Model):
         index=8,
         replacement_collection=Collection("meeting"),
         to={Collection("speaker"): "user_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     personal_note__ids = fields.TemplateRelationListField(
         index=14,

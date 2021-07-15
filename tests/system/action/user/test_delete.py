@@ -56,7 +56,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("user/111")
-        self.assert_model_exists("speaker/15", {"user_id": None})
+        self.assert_model_deleted("speaker/15")
 
     def test_delete_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)

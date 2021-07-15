@@ -28,7 +28,7 @@ class DeleteAction(Action):
         # Fetch db instance with all relevant fields
         this_fqid = FullQualifiedId(self.model.collection, instance["id"])
         relevant_fields = [
-            field.own_field_name
+            field.get_own_field_name()
             for field in self.model.get_relation_fields()
             if field.on_delete != OnDelete.SET_NULL
         ]
@@ -44,13 +44,25 @@ class DeleteAction(Action):
         for field in self.model.get_relation_fields():
             # Check on_delete.
             if field.on_delete != OnDelete.SET_NULL:
-                if isinstance(field, BaseTemplateRelationField):
-                    # We currently do not support such template fields.
-                    raise NotImplementedError
-
                 # Extract all foreign keys as fqids from the model
-                value = db_instance.get(field.own_field_name, [])
-                foreign_fqids = transform_to_fqids(value, field.get_target_collection())
+                foreign_fqids: List[FullQualifiedId] = []
+                if isinstance(field, BaseTemplateRelationField):
+                    structured_fields = list(
+                        self.get_all_structured_fields(field, instance["id"])
+                    )
+                    db_instance_structured_fields = self.datastore.fetch_model(
+                        this_fqid, structured_fields
+                    )
+                    for structured_field_name in structured_fields:
+                        foreign_fqids += transform_to_fqids(
+                            db_instance_structured_fields[structured_field_name],
+                            field.get_target_collection(),
+                        )
+                else:
+                    value = db_instance.get(field.own_field_name, [])
+                    foreign_fqids = transform_to_fqids(
+                        value, field.get_target_collection()
+                    )
 
                 if field.on_delete == OnDelete.PROTECT:
                     protected_fqids = [
@@ -88,17 +100,9 @@ class DeleteAction(Action):
             else:
                 # field.on_delete == OnDelete.SET_NULL
                 if isinstance(field, BaseTemplateRelationField):
-                    template_field_name = field.get_template_field_name()
-                    template_db_instance = self.datastore.fetch_model(
-                        fqid=FullQualifiedId(self.model.collection, instance["id"]),
-                        mapped_fields=[template_field_name],
-                    )
-                    for replacement in template_db_instance.get(
-                        template_field_name, []
+                    for structured_field_name in self.get_all_structured_fields(
+                        field, instance["id"]
                     ):
-                        structured_field_name = field.get_structured_field_name(
-                            replacement
-                        )
                         instance[structured_field_name] = None
                 else:
                     instance[field.own_field_name] = None
@@ -116,6 +120,17 @@ class DeleteAction(Action):
             raise ProtectedModelsException(this_fqid, all_protected_fqids)
 
         return instance
+
+    def get_all_structured_fields(
+        self, field: BaseTemplateRelationField, id: int
+    ) -> Iterable[str]:
+        template_field_name = field.get_template_field_name()
+        template_db_instance = self.datastore.fetch_model(
+            fqid=FullQualifiedId(self.model.collection, id),
+            mapped_fields=[template_field_name],
+        )
+        for replacement in template_db_instance.get(template_field_name, []):
+            yield field.get_structured_field_name(replacement)
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         fqid = FullQualifiedId(self.model.collection, instance["id"])
