@@ -103,7 +103,7 @@ class MotionCreateForwarded(MotionCreateBase):
         action_data = []
         for origin_id in instance["all_origin_ids"]:
             origin = self.datastore.get(
-                FullQualifiedId(Collection("motion"), instance["origin_id"]),
+                FullQualifiedId(Collection("motion"), origin_id),
                 ["all_derived_motion_ids"],
             )
             action_data.append(
