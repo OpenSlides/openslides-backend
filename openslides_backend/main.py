@@ -6,11 +6,14 @@ import sys
 import time
 from typing import Any
 
+from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
 from .shared.env import is_dev_mode
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
+
+register_services()
 
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".
