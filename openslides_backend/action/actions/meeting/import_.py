@@ -1,7 +1,9 @@
 import time
+from collections import defaultdict
 from typing import Any, Dict, Iterable, Optional, Tuple
 
 from ....models.base import model_registry
+from ....models.checker import Checker, CheckException
 from ....models.fields import (
     BaseTemplateField,
     GenericRelationField,
@@ -69,45 +71,23 @@ class MeetingImport(SingularActionMixin, Action):
         # checks if the meeting is correct
         if not len(meeting_json.get("meeting", [])) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
-        allowed_collections = (
-            "user",
-            "meeting",
-            "group",
-            "personal_note",
-            "tag",
-            "agenda_item",
-            "list_of_speakers",
-            "speaker",
-            "topic",
-            "motion",
-            "motion_submitter",
-            "motion_comment",
-            "motion_comment_section",
-            "motion_category",
-            "motion_block",
-            "motion_change_recommendation",
-            "motion_state",
-            "motion_workflow",
-            "motion_statute_paragraph",
-            "poll",
-            "option",
-            "vote",
-            "assignment",
-            "assignment_candidate",
-            "mediafile",
-            "projector",
-            "projection",
-            "projector_message",
-            "projector_countdown",
-            "chat_group",
-        )
-
-        for collection in meeting_json:
-            if meeting_json.get(collection) and collection not in allowed_collections:
-                raise ActionException(f"{collection} must be empty.")
 
         self.check_usernames_and_generate_new_ones(meeting_json)
-        self.update_meeting_users_and_mediafiles(instance)
+
+        # delete blob from mediafiles
+        json_data = instance["meeting"]
+        for entry in json_data.get("mediafile", []):
+            if "blob" in entry:
+                del entry["blob"]
+
+        # check datavalidation
+        checker = Checker(data=instance["meeting"], is_import=True)
+        try:
+            checker.run_check()
+        except CheckException as ce:
+            raise ActionException(str(ce))
+
+        self.update_meeting_and_users(instance)
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
@@ -117,7 +97,7 @@ class MeetingImport(SingularActionMixin, Action):
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
         used_usernames = set()
-        for entry in json_data["user"]:
+        for entry in json_data.get("user", []):
             is_username_unique = False
             template_username = entry["username"]
             count = 1
@@ -138,7 +118,7 @@ class MeetingImport(SingularActionMixin, Action):
                 is_username_unique = True
             used_usernames.add(entry["username"])
 
-    def update_meeting_users_and_mediafiles(self, instance: Dict[str, Any]) -> None:
+    def update_meeting_and_users(self, instance: Dict[str, Any]) -> None:
         # update committee_id
         json_data = instance["meeting"]
         json_data["meeting"][0]["committee_id"] = instance["committee_id"]
@@ -153,15 +133,11 @@ class MeetingImport(SingularActionMixin, Action):
         # set imported_at
         json_data["meeting"][0]["imported_at"] = round(time.time())
 
-        # delete blob from mediafiles
-        for entry in json_data.get("mediafile", []):
-            if "blob" in entry:
-                del entry["blob"]
-
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
-        replace_map: Dict[str, Dict[int, int]] = {}
+        replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
         for collection in json_data:
-            replace_map[collection] = {}
+            if not json_data[collection]:
+                continue
             new_ids = self.datastore.reserve_ids(
                 Collection(collection), len(json_data[collection])
             )
