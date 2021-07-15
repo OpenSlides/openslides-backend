@@ -50,7 +50,6 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
             "global_no",
             "global_abstain",
             "onehundred_percent_base",
-            "majority_method",
             "votesvalid",
             "votesinvalid",
             "votescast",

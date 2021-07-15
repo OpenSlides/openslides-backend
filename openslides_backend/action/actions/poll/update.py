@@ -29,7 +29,6 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
             "title",
             "description",
             "onehundred_percent_base",
-            "majority_method",
             "votesvalid",
             "votesinvalid",
             "votescast",

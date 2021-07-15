@@ -93,7 +93,6 @@ meeting_settings_keys = [
     "motion_poll_ballot_paper_number",
     "motion_poll_default_type",
     "motion_poll_default_100_percent_base",
-    "motion_poll_default_majority_method",
     "motion_poll_default_group_ids",
     "users_sort_by",
     "users_enable_presence_view",
@@ -118,7 +117,6 @@ meeting_settings_keys = [
     "assignment_poll_default_type",
     "assignment_poll_default_method",
     "assignment_poll_default_100_percent_base",
-    "assignment_poll_default_majority_method",
     "assignment_poll_default_group_ids",
 ]
 

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "7b19143568ec659b9a2431f613aa6d18"
+MODELS_YML_CHECKSUM = "19b2b33e4253faf27a312b3816c8a604"
 
 
 class Organization(Model):
@@ -254,6 +254,17 @@ class Meeting(Model):
     conference_open_microphone = fields.BooleanField(default=False)
     conference_open_video = fields.BooleanField(default=False)
     conference_auto_connect_next_speakers = fields.IntegerField(default=0)
+    conference_enable_helpdesk = fields.BooleanField(default=False)
+    applause_enable = fields.BooleanField(default=False)
+    applause_type = fields.CharField(
+        default="applause-type-bar",
+        constraints={"enum": ["applause-type-bar", "applause-type-particles"]},
+    )
+    applause_show_level = fields.BooleanField(default=False)
+    applause_min_amount = fields.IntegerField(default=1, constraints={"minimum": 0})
+    applause_max_amount = fields.IntegerField(default=0, constraints={"minimum": 0})
+    applause_timeout = fields.IntegerField(default=5, constraints={"minimum": 0})
+    applause_particle_image_url = fields.CharField()
     projector_countdown_default_time = fields.IntegerField(required=True, default=60)
     projector_countdown_warning_time = fields.IntegerField(
         required=True, default=0, constraints={"minimum": 0}
@@ -369,7 +380,6 @@ class Meeting(Model):
     motion_poll_ballot_paper_number = fields.IntegerField()
     motion_poll_default_type = fields.CharField(default="analog")
     motion_poll_default_100_percent_base = fields.CharField(default="YNA")
-    motion_poll_default_majority_method = fields.CharField()
     motion_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_motion_poll_default_id"}
     )
@@ -414,7 +424,6 @@ class Meeting(Model):
     assignment_poll_default_type = fields.CharField(default="analog")
     assignment_poll_default_method = fields.CharField()
     assignment_poll_default_100_percent_base = fields.CharField(default="YNA")
-    assignment_poll_default_majority_method = fields.CharField()
     assignment_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_assignment_poll_default_id"}
     )
@@ -432,7 +441,6 @@ class Meeting(Model):
     poll_default_type = fields.CharField(default="analog")
     poll_default_method = fields.CharField()
     poll_default_100_percent_base = fields.CharField(default="YNA")
-    poll_default_majority_method = fields.CharField()
     poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_poll_default_id"}
     )
@@ -915,7 +923,8 @@ class Motion(Model):
     derived_motion_ids = fields.RelationListField(
         to={Collection("motion"): "origin_id"}
     )
-    forwarding_tree_motion_ids = fields.NumberArrayField()
+    all_origin_ids = fields.NumberArrayField()
+    all_derived_motion_ids = fields.NumberArrayField()
     state_id = fields.RelationField(
         to={Collection("motion_state"): "motion_ids"},
         required=True,
@@ -1282,11 +1291,6 @@ class Poll(Model):
         constraints={
             "enum": ["Y", "YN", "YNA", "N", "valid", "cast", "entitled", "disabled"]
         },
-    )
-    majority_method = fields.CharField(
-        required=True,
-        default="disabled",
-        constraints={"enum": ["simple", "two_thirds", "three_quarters", "disabled"]},
     )
     votesvalid = fields.DecimalField()
     votesinvalid = fields.DecimalField()
