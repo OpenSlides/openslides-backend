@@ -38,8 +38,12 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def create_meetings(self) -> None:
-        self.create_model("meeting/200")
-        self.create_model("meeting/201")
+        self.set_models(
+            {
+                "meeting/200": {"committee_id": self.COMMITTEE_ID},
+                "meeting/201": {"committee_id": self.COMMITTEE_ID},
+            }
+        )
 
     def test_update_correct(self) -> None:
         self.create_data()
@@ -454,6 +458,24 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_update_template_meeting_wrong_committee(self) -> None:
+        self.create_data()
+        self.set_models({"meeting/299": {"committee_id": 2}})
+        response = self.request(
+            "committee.update",
+            {
+                "id": self.COMMITTEE_ID,
+                "template_meeting_id": 299,
+            },
+        )
+        self.assert_status_code(response, 400)
+        model = self.get_model(self.COMMITTEE_FQID)
+        self.assertIsNone(model.get("template_meeting_id"))
+        self.assertIn(
+            f"Meeting 299 does not belong to committee {self.COMMITTEE_ID}",
+            response.json["message"],
+        )
+
     def test_update_wrong_default_meeting(self) -> None:
         self.create_data()
         response = self.request(
@@ -468,6 +490,24 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assertIsNone(model.get("default_meeting_id"))
         self.assertIn(
             "Model 'meeting/299' does not exist.",
+            response.json["message"],
+        )
+
+    def test_update_default_meeting_wrong_committee(self) -> None:
+        self.create_data()
+        self.set_models({"meeting/299": {"committee_id": 2}})
+        response = self.request(
+            "committee.update",
+            {
+                "id": self.COMMITTEE_ID,
+                "default_meeting_id": 299,
+            },
+        )
+        self.assert_status_code(response, 400)
+        model = self.get_model(self.COMMITTEE_FQID)
+        self.assertIsNone(model.get("default_meeting_id"))
+        self.assertIn(
+            f"Meeting 299 does not belong to committee {self.COMMITTEE_ID}",
             response.json["message"],
         )
 

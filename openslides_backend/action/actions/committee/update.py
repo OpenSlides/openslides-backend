@@ -9,7 +9,8 @@ from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
 )
-from ....shared.exceptions import MissingPermission
+from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -35,6 +36,27 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "organization_tag_ids",
         ]
     )
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        if instance.get("template_meeting_id"):
+            self.check_meeting_in_committee(
+                instance["template_meeting_id"], instance["id"]
+            )
+        if instance.get("default_meeting_id"):
+            self.check_meeting_in_committee(
+                instance["default_meeting_id"], instance["id"]
+            )
+        return instance
+
+    def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), meeting_id), ["committee_id"]
+        )
+        if meeting.get("committee_id") != committee_id:
+            raise ActionException(
+                f"Meeting {meeting_id} does not belong to committee {committee_id}"
+            )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if has_organization_management_level(
