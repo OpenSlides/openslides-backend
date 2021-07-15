@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "19b2b33e4253faf27a312b3816c8a604"
+MODELS_YML_CHECKSUM = "0de0f2c0252a617545ea209b97cc06cd"
 
 
 class Organization(Model):
@@ -101,6 +101,7 @@ class User(Model):
         index=14,
         replacement_collection=Collection("meeting"),
         to={Collection("personal_note"): "user_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     supported_motion__ids = fields.TemplateRelationListField(
         index=17,
