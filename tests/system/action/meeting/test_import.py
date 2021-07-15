@@ -42,6 +42,14 @@ class MeetingImport(BaseActionTestCase):
                         "conference_open_microphone": True,
                         "conference_open_video": True,
                         "conference_auto_connect_next_speakers": 1,
+                        "conference_enable_helpdesk": False,
+                        "applause_enable": True,
+                        "applause_type": "applause-type-particles",
+                        "applause_show_level": True,
+                        "applause_min_amount": 2,
+                        "applause_max_amount": 3,
+                        "applause_timeout": 6,
+                        "applause_particle_image_url": "test",
                         "jitsi_room_name": "",
                         "jitsi_domain": "",
                         "jitsi_room_password": "",
@@ -102,7 +110,6 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "analog",
                         "motion_poll_default_100_percent_base": "YNA",
-                        "motion_poll_default_majority_method": "simple",
                         "motion_poll_default_group_ids": [],
                         "users_sort_by": "first_name",
                         "users_enable_presence_view": True,
@@ -127,7 +134,6 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_default_type": "nominal",
                         "assignment_poll_default_method": "votes",
                         "assignment_poll_default_100_percent_base": "valid",
-                        "assignment_poll_default_majority_method": "simple",
                         "assignment_poll_default_group_ids": [],
                         "poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "poll_ballot_paper_number": 8,
@@ -135,7 +141,6 @@ class MeetingImport(BaseActionTestCase):
                         "poll_default_type": "nominal",
                         "poll_default_method": "votes",
                         "poll_default_100_percent_base": "valid",
-                        "poll_default_majority_method": "simple",
                         "poll_default_group_ids": [],
                         "poll_couple_countdown": True,
                         "projector_ids": [1],
@@ -438,7 +443,8 @@ class MeetingImport(BaseActionTestCase):
                         "sort_child_ids": [],
                         "origin_id": None,
                         "derived_motion_ids": [],
-                        "forwarding_tree_motion_ids": [],
+                        "all_origin_ids": [],
+                        "all_derived_motion_ids": [],
                         "recommendation_id": None,
                         "recommendation_extension_reference_ids": [],
                         "referenced_in_motion_recommendation_extension_ids": [],
@@ -724,7 +730,8 @@ class MeetingImport(BaseActionTestCase):
                         "sort_child_ids": [],
                         "origin_id": None,
                         "derived_motion_ids": [],
-                        "forwarding_tree_motion_ids": [],
+                        "all_origin_ids": [],
+                        "all_derived_motion_ids": [],
                         "recommendation_id": None,
                         "recommendation_extension_reference_ids": [],
                         "referenced_in_motion_recommendation_extension_ids": [],
@@ -926,7 +933,8 @@ class MeetingImport(BaseActionTestCase):
                         "sort_child_ids": [],
                         "origin_id": None,
                         "derived_motion_ids": [],
-                        "forwarding_tree_motion_ids": [],
+                        "all_origin_ids": [],
+                        "all_derived_motion_ids": [],
                         "recommendation_id": None,
                         "recommendation_extension_reference_ids": [],
                         "referenced_in_motion_recommendation_extension_ids": [],
@@ -972,7 +980,8 @@ class MeetingImport(BaseActionTestCase):
                         "sort_child_ids": [],
                         "origin_id": None,
                         "derived_motion_ids": [],
-                        "forwarding_tree_motion_ids": [],
+                        "all_origin_ids": [],
+                        "all_derived_motion_ids": [],
                         "recommendation_id": None,
                         "recommendation_extension_reference_ids": [],
                         "referenced_in_motion_recommendation_extension_ids": [],
@@ -1082,77 +1091,3 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
         self.assert_model_exists("group/1", {"user_ids": [1, 2]})
-
-    def test_field_check(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
-        request_data = self.create_request_data(
-            {
-                "mediafile": [
-                    {
-                        "id": 1,
-                        "foobar": "test this",
-                        "meeting_id": 1,
-                        "list_of_speakers_id": 1,
-                        "state_id": 1,
-                        "title": "bla",
-                        "forwarding_tree_motion_ids": [1],
-                    },
-                ],
-                "list_of_speakers": [
-                    {"id": 1, "meeting_id": 1, "content_object_id": "motion/1"},
-                ],
-            }
-        )
-        response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        assert (
-            "Motion forwarding_tree_motion_ids should be empty."
-            in response.json["message"]
-        )
-
-    def test_field_check(self) -> None:
-        self.set_models(
-            {
-                "committee/1": {},
-                "meeting/1": {},
-                "motion/1": {},
-            }
-        )
-        request_data = self.create_request_data(
-            {
-                "mediafile": [
-                    {
-                        "id": 1,
-                        "foobar": "test this",
-                        "meeting_id": 1,
-                        "title": "A.txt",
-                        "is_directory": False,
-                        "filesize": 3,
-                        "filename": "A.txt",
-                        "mimetype": "text/plain",
-                        "pdf_information": {},
-                        "create_timestamp": 1584513771,
-                        "is_public": True,
-                        "access_group_ids": [],
-                        "inherited_access_group_ids": [],
-                        "parent_id": None,
-                        "child_ids": [],
-                        "list_of_speakers_id": None,
-                        "projection_ids": [],
-                        "attachment_ids": [],
-                        "used_as_logo_$_in_meeting_id": [],
-                        "used_as_font_$_in_meeting_id": [],
-                        "blob": "bla",
-                    }
-                ]
-            }
-        )
-        response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        assert "mediafile/1: Invalid fields foobar" in response.json["message"]

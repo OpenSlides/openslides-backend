@@ -72,7 +72,6 @@ class MeetingImport(SingularActionMixin, Action):
         if not len(meeting_json.get("meeting", [])) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
 
-
         self.check_usernames_and_generate_new_ones(meeting_json)
 
         # save blobs from mediafiles
