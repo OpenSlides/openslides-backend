@@ -3,7 +3,7 @@ FROM python:3.8.5-slim-buster
 RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev
 
 WORKDIR /app
-RUN mkdir dev
+RUN mkdir dev migrations
 
 COPY requirements.txt .
 COPY dev/requirements_development.txt dev/.
@@ -17,7 +17,10 @@ COPY dev/cleanup.sh .
 
 COPY Makefile Makefile
 COPY setup.cfg .
-COPY entrypoint.sh ./
+COPY dev/entrypoint.sh ./
+
+COPY migrations/migrate.py migrations/.
+COPY migrations/migrations migrations/migrations/.
 
 RUN chmod 777 -R .
 RUN chmod 777 /root
