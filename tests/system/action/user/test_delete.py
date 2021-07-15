@@ -40,6 +40,24 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         meeting = self.get_model("meeting/42")
         assert meeting.get("user_ids") == []
 
+    def test_delete_with_speaker(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "speaker_$_ids": ["1"],
+                    "speaker_$1_ids": [15],
+                },
+                "meeting/1": {},
+                "speaker/15": {"user_id": 111, "meeting_id": 1},
+            }
+        )
+        response = self.request("user.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("user/111")
+        self.assert_model_deleted("speaker/15")
+
     def test_delete_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Meeting)

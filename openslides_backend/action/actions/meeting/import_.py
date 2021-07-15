@@ -84,11 +84,17 @@ class MeetingImport(SingularActionMixin, Action):
                 )
 
         # check datavalidation
-        checker = Checker(data=instance["meeting"], is_import=True)
+        checker = Checker(data=json_data, is_import=True)
         try:
             checker.run_check()
         except CheckException as ce:
             raise ActionException(str(ce))
+
+        for entry in json_data.get("motion", []):
+            if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
+                raise ActionException(
+                    "Motion all_origin_ids and all_derived_motion_ids should be empty."
+                )
 
         self.update_meeting_and_users(instance)
 

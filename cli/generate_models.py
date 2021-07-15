@@ -333,9 +333,12 @@ class Attribute(Node):
         if self.fields.to:
             properties += self.fields.to.get_properties()
         if self.fields.required:
-            properties += "required=True, "
+            properties += "required=True,"
+        if self.fields.on_delete:
+            assert self.fields.on_delete in [mode.value for mode in OnDelete]
+            properties += f"on_delete=fields.OnDelete.{self.fields.on_delete},"
         if self.contraints:
-            properties += f"constraints={repr(self.contraints)}"
+            properties += f"constraints={repr(self.contraints)},"
         return self.FIELD_TEMPLATE.substitute(
             dict(field_name=field_name, field_class=field_class, properties=properties)
         )

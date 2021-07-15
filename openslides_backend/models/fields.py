@@ -79,6 +79,9 @@ class Field:
             return is_create
         return not instance[self.own_field_name]
 
+    def get_own_field_name(self) -> str:
+        return self.own_field_name
+
 
 class IntegerField(Field):
     def get_schema(self) -> Schema:
@@ -323,6 +326,9 @@ class BaseTemplateField(Field):
         self.replacement_collection = kwargs.pop("replacement_collection", None)
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
+
+    def get_own_field_name(self) -> str:
+        return self.get_template_field_name()
 
     def get_payload_schema(
         self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
