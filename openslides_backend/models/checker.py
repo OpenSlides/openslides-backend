@@ -27,7 +27,7 @@ from openslides_backend.models.fields import (
     TimestampField,
 )
 from openslides_backend.models.models import Model
-from openslides_backend.shared.patterns import Collection
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -525,6 +525,28 @@ class Checker:
                     basemsg,
                     replacement,
                 )
+        elif collection == "motion" and field == "recommendation_extension":
+            RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(
+                r"\[(?P<fqid>\w+/\d+)\]"
+            )
+            recommendation_extension = model["recommendation_extension"]
+            if recommendation_extension is None:
+                recommendation_extension = ""
+
+            possible_rerids = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
+                recommendation_extension
+            )
+            for fqid_str in possible_rerids:
+                re_collection, re_id_ = fqid_str.split(KEYSEPARATOR)
+                if re_collection != "motion":
+                    self.errors.append(
+                        basemsg + f"Found {fqid_str} but only motion is allowed."
+                    )
+                if not self.find_model(re_collection, int(re_id_)):
+                    self.errors.append(
+                        basemsg
+                        + f"Found {fqid_str} in recommendation_extension but not in models."
+                    )
 
     def get_to(self, field: str, collection: str) -> Tuple[str, Optional[str]]:
         if self.is_structured_field(field):
