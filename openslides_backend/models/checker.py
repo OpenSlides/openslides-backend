@@ -409,6 +409,13 @@ class Checker:
                 error = f"{collection}/{model['id']}/{field}: Type error: Type is not {field_type}"
                 self.errors.append(error)
 
+            # check if required field is not empty
+            # committee_id is a special case, because it is filled after the
+            # replacement
+            if field_type.required and not model[field] and field != "committee_id":
+                error = f"{collection}/{model['id']}/{field}: Field required but empty."
+                self.errors.append(error)
+
             if enum and model[field] not in enum:
                 error = f"{collection}/{model['id']}/{field}: Value error: Value {model[field]} is not a valid enum value"
                 self.errors.append(error)
