@@ -26,7 +26,7 @@ from openslides_backend.models.fields import (
     RelationListField,
     TimestampField,
 )
-from openslides_backend.models.models import Model
+from openslides_backend.models.models import Meeting, Model
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SCHEMA = fastjsonschema.compile(
@@ -412,7 +412,11 @@ class Checker:
             # check if required field is not empty
             # committee_id is a special case, because it is filled after the
             # replacement
-            if field_type.required and not model[field] and field != "committee_id":
+            if (
+                field_type.required
+                and field_type.check_required_not_fulfilled(model, False)
+                and field_type != Meeting.committee_id
+            ):
                 error = f"{collection}/{model['id']}/{field}: Field required but empty."
                 self.errors.append(error)
 
