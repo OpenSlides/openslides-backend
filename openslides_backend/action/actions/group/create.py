@@ -1,4 +1,7 @@
+from typing import Any, Dict
+
 from ....models.models import Group
+from ....permissions.permission_helper import filter_surplus_permissions
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -19,3 +22,10 @@ class GroupCreate(CreateAction):
         ],
     )
     permission = Permissions.User.CAN_MANAGE
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if instance.get("permissions"):
+            instance["permissions"] = filter_surplus_permissions(
+                instance["permissions"]
+            )
+        return instance
