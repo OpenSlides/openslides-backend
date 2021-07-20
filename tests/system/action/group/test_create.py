@@ -53,7 +53,12 @@ class GroupCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_Xcdfgee",
                 "meeting_id": 22,
-                "permissions": ["assignment.can_see", "assignment.can_manage", "assignment.can_nominate_other", "assignment.can_see"],
+                "permissions": [
+                    "assignment.can_see",
+                    "assignment.can_manage",
+                    "assignment.can_nominate_other",
+                    "assignment.can_see",
+                ],
             },
         )
         self.assert_status_code(response, 200)
