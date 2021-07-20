@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0de0f2c0252a617545ea209b97cc06cd"
+MODELS_YML_CHECKSUM = "cb15f20e5f5d765eecc201917a010513"
 
 
 class Organization(Model):
@@ -299,9 +299,11 @@ class Meeting(Model):
     )
     agenda_show_internal_items_on_projector = fields.BooleanField(default=True)
     list_of_speakers_amount_last_on_projector = fields.IntegerField(
-        default=0, constraints={"minimum": 0}
+        default=0, constraints={"minimum": -1}
     )
-    list_of_speakers_amount_next_on_projector = fields.IntegerField(default=-1)
+    list_of_speakers_amount_next_on_projector = fields.IntegerField(
+        default=-1, constraints={"minimum": -1}
+    )
     list_of_speakers_couple_countdown = fields.BooleanField(default=True)
     list_of_speakers_show_amount_of_speakers_on_slide = fields.BooleanField(
         default=True
