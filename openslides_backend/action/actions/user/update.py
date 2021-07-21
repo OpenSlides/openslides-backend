@@ -1,8 +1,4 @@
-from typing import Any, Dict
-
 from ....models.models import User
-from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -49,21 +45,3 @@ class UserUpdate(
             "is_demo_user",
         ],
     )
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if instance.get("committee_$_management_level"):
-            if diff := set(
-                instance.get("committee_$_management_level", {}).keys()
-            ) - set(map(str, instance.get("committee_ids", []))):
-                user = self.datastore.get(
-                    FullQualifiedId(Collection("user"), instance["id"]),
-                    [
-                        "committee_ids",
-                    ],
-                )
-                if diff := diff - set(map(str, user.get("committee_ids", []))):
-                    raise ActionException(
-                        f"You must add the user to the committee(s) '{', '.join(diff)}', because you want to give him committee management level permissions."
-                    )
-
-        return super().update_instance(instance)
