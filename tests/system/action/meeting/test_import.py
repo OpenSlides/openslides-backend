@@ -859,14 +859,26 @@ class MeetingImport(BaseActionTestCase):
                     self.get_motion_data(
                         {
                             "all_derived_motion_ids": [1],
-                            "list_of_speakers_id": None,
-                            "state_id": None,
+                            "list_of_speakers_id": 1,
+                            "state_id": 1,
                         }
                     ),
+                ],
+                "list_of_speakers": [
+                    {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/1",
+                        "closed": False,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    }
                 ],
             }
         )
         request_data["meeting"]["meeting"][0]["motion_ids"] = [1]
+        request_data["meeting"]["meeting"][0]["list_of_speakers_ids"] = [1]
+        request_data["meeting"]["motion_state"][0]["motion_ids"] = [1]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
@@ -881,18 +893,53 @@ class MeetingImport(BaseActionTestCase):
                     self.get_motion_data(
                         {
                             "all_origin_ids": [1],
+                            "list_of_speakers_id": 1,
+                            "state_id": 1,
+                        }
+                    ),
+                ],
+                "list_of_speakers": [
+                    {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/1",
+                        "closed": False,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                ],
+            }
+        )
+        request_data["meeting"]["meeting"][0]["motion_ids"] = [1]
+        request_data["meeting"]["meeting"][0]["list_of_speakers_ids"] = [1]
+        request_data["meeting"]["motion_state"][0]["motion_ids"] = [1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "Motion all_origin_ids and all_derived_motion_ids should be empty."
+            in response.json["message"]
+        )
+
+    def test_missing_required_field(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "motion": [
+                    self.get_motion_data(
+                        {
+                            "all_origin_ids": [],
                             "list_of_speakers_id": None,
-                            "state_id": None,
+                            "state_id": 1,
                         }
                     ),
                 ],
             }
         )
         request_data["meeting"]["meeting"][0]["motion_ids"] = [1]
+        request_data["meeting"]["motion_state"][0]["motion_ids"] = [1]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert (
-            "Motion all_origin_ids and all_derived_motion_ids should be empty."
+            "motion/1/list_of_speakers_id: Field required but empty."
             in response.json["message"]
         )
 
