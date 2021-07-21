@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Group
+from ....permissions.permission_helper import filter_surplus_permissions
 from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
@@ -40,6 +41,9 @@ class GroupSetPermissionAction(UpdateAction):
         if set_ is True and permission not in group["permissions"]:
             instance["permissions"] = group["permissions"]
             instance["permissions"].append(permission)
+            instance["permissions"] = filter_surplus_permissions(
+                instance["permissions"]
+            )
         elif set_ is False and permission in group["permissions"]:
             instance["permissions"] = group["permissions"]
             instance["permissions"].remove(permission)

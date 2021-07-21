@@ -119,3 +119,18 @@ def has_committee_management_level(
             return True
         return expected_level <= CommitteeManagementLevel(user.get(cml_field))
     return False
+
+
+def filter_surplus_permissions(permission_list: List[Permission]) -> List[Permission]:
+    reduced_permissions: List[Permission] = []
+    for permission in permission_list:
+        if any(
+            is_child_permission(permission, possible_parent)
+            for possible_parent in permission_list
+            if possible_parent != permission
+        ):
+            continue
+        elif permission in reduced_permissions:
+            continue
+        reduced_permissions.append(permission)
+    return reduced_permissions
