@@ -78,6 +78,36 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {"committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE},
         )
 
+    def test_create_manager_ids_2(self) -> None:
+        self.create_model("organization/1", {"name": "test_organization1"})
+        self.create_model(
+            "user/13",
+            {
+                "username": "test",
+                "committee_ids": [3],
+                "committee_$_management_level": ["3"],
+                "committee_$3_management_level": "can_manage",
+            },
+        )
+        self.create_model("committee/3", {"name": "test_committee2", "user_ids": [13]})
+        committee_name = "test_committee4"
+
+        response = self.request(
+            "committee.create",
+            {"name": committee_name, "organization_id": 1, "manager_ids": [13]},
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("committee/4")
+        assert model.get("name") == committee_name
+        self.assert_model_exists(
+            "user/13",
+            {
+                "committee_$4_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$3_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["3", "4"],
+            },
+        )
+
     def test_create_wrong_field(self) -> None:
         self.create_model("organization/1", {"name": "test_organization1"})
 
