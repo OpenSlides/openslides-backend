@@ -760,6 +760,51 @@ class MeetingImport(BaseActionTestCase):
             "motion/3", {"recommendation_extension": "bla[motion/2]bla"}
         )
 
+    def test_motion_recommendation_extension_missing_model(self) -> None:
+        # Special field
+        request_data = self.create_request_data(
+            {
+                "motion": [
+                    self.get_motion_data(),
+                    self.get_motion_data(
+                        {
+                            "id": 2,
+                            "list_of_speakers_id": 2,
+                            "recommendation_extension": "bla[motion/11]bla",
+                        }
+                    ),
+                ],
+                "list_of_speakers": [
+                    {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/1",
+                        "closed": False,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                    {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "content_object_id": "motion/2",
+                        "closed": False,
+                        "speaker_ids": [],
+                        "projection_ids": [],
+                    },
+                ],
+            }
+        )
+        request_data["meeting"]["meeting"][0]["motion_ids"] = [1, 2]
+        request_data["meeting"]["meeting"][0]["list_of_speakers_ids"] = [1, 2]
+        request_data["meeting"]["motion_state"][0]["motion_ids"] = [1, 2]
+
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "Found motion/11 in recommendation_extension but not in models."
+            in response.json["message"]
+        )
+
     def test_logo_dollar_id(self) -> None:
         # Template Relation Field
         request_data = self.create_request_data(
