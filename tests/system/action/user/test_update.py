@@ -131,6 +131,34 @@ class UserUpdateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/2")
         assert meeting.get("user_ids") == [223]
 
+    def test_update_committee_manager_without_committee_ids(self) -> None:
+        """Giving committee management level requires committee_ids"""
+        self.set_models(
+            {
+                "user/111": {"username": "username_srtgb123"},
+                "committee/60": {"name": "c60"},
+                "committee/61": {"name": "c61"},
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "usersname",
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE,
+                    "61": CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "committee_ids": [61],
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You must add the user to the committee(s) '60', because you want to give him committee management level permissions.",
+            response.json["message"],
+        )
+
     def test_update_group_switch_change_meeting_ids(self) -> None:
         """Set a group and a meeting_ids to a user. Then change the group."""
         self.create_meeting()
