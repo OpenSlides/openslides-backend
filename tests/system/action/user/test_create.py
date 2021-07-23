@@ -835,4 +835,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "Gender must be male, female or diverse." in response.json["message"]
+        assert (
+            "data.gender must be one of ['male', 'female', 'diverse', None]"
+            in response.json["message"]
+        )

@@ -908,7 +908,10 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update", {"id": 111, "username": "username_Xcdfgee", "gender": "test"}
         )
         self.assert_status_code(response, 400)
-        assert "Gender must be male, female or diverse." in response.json["message"]
+        assert (
+            "data.gender must be one of ['male', 'female', 'diverse', None]"
+            in response.json["message"]
+        )
 
         response = self.request(
             "user.update",

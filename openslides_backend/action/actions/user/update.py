@@ -66,5 +66,4 @@ class UserUpdate(
                         f"You must add the user to the committee(s) '{', '.join(diff)}', because you want to give him committee management level permissions."
                     )
 
-        self.check_gender(instance)
         return super().update_instance(instance)

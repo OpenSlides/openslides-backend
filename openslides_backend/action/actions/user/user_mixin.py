@@ -185,11 +185,3 @@ class UserMixin(Action):
         for meeting_id, users in meeting_users.items():
             users.append(user_fqid)
             assert_belongs_to_meeting(self.datastore, users, int(meeting_id))
-
-    def check_gender(self, instance: Dict[str, Any]) -> None:
-        if (
-            "gender" in instance
-            and instance["gender"] is not None
-            and not instance["gender"] in ("male", "female", "diverse")
-        ):
-            raise ActionException("Gender must be male, female or diverse.")
