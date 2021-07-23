@@ -72,6 +72,7 @@ class UserCreate(
             instance = self.generate_and_set_password(instance)
         else:
             instance = self.set_password(instance)
+        self.check_gender(instance)
         return super().update_instance(instance)
 
     def generate_username(self, instance: Dict[str, Any]) -> str:

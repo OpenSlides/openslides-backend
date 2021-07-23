@@ -898,3 +898,23 @@ class UserUpdateActionTest(BaseActionTestCase):
         assert "This username is forbidden." in response.json["message"]
         model = self.get_model("user/111")
         assert model.get("username") == "username_srtgb123"
+
+    def test_update_gender(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username_srtgb123"},
+        )
+        response = self.request(
+            "user.update", {"id": 111, "username": "username_Xcdfgee", "gender": "test"}
+        )
+        self.assert_status_code(response, 400)
+        assert "Gender must be male, female or diverse." in response.json["message"]
+
+        response = self.request(
+            "user.update",
+            {"id": 111, "username": "username_Xcdfgee", "gender": "diverse"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111", {"username": "username_Xcdfgee", "gender": "diverse"}
+        )
