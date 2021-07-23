@@ -343,7 +343,7 @@ class MeetingImport(BaseActionTestCase):
             "is_physical_person": True,
             "default_password": "admin",
             "can_change_own_password": True,
-            "gender": "",
+            "gender": "male",
             "email": "",
             "default_number": "",
             "default_structure_level": "",
