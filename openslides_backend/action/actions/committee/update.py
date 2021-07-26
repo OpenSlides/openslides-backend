@@ -10,10 +10,14 @@ from ....permissions.permission_helper import (
     has_organization_management_level,
 )
 from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
+from ..user.update import UserUpdate
 from .committee_common_mixin import CommitteeCommonCreateUpdateMixin
 
 
@@ -34,20 +38,56 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
             "organization_tag_ids",
-        ]
+        ],
+        additional_optional_fields={"manager_ids": id_list_schema},
     )
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
-        if instance.get("template_meeting_id"):
-            self.check_meeting_in_committee(
-                instance["template_meeting_id"], instance["id"]
-            )
-        if instance.get("default_meeting_id"):
-            self.check_meeting_in_committee(
-                instance["default_meeting_id"], instance["id"]
-            )
-        return instance
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        for instance in action_data:
+            instance = super().update_instance(instance)
+            if instance.get("template_meeting_id"):
+                self.check_meeting_in_committee(
+                    instance["template_meeting_id"], instance["id"]
+                )
+            if instance.get("default_meeting_id"):
+                self.check_meeting_in_committee(
+                    instance["default_meeting_id"], instance["id"]
+                )
+            if "manager_ids" in instance:
+                new_manager_ids = instance.pop("manager_ids")
+                filter_ = FilterOperator(
+                    f"committee_${instance['id']}_management_level", "=", "can_manage"
+                )
+                old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
+                old_manager_ids = [int(id_) for id_ in old_manager]
+
+                action_data = []
+                for manager_id in new_manager_ids:
+                    if manager_id not in old_manager_ids:
+                        action_data.append(
+                            {
+                                "id": manager_id,
+                                "committee_$_management_level": {
+                                    str(
+                                        instance["id"]
+                                    ): CommitteeManagementLevel.CAN_MANAGE,
+                                },
+                            }
+                        )
+                for manager_id in old_manager_ids:
+                    if manager_id not in new_manager_ids:
+                        action_data.append(
+                            {
+                                "id": manager_id,
+                                "committee_$_management_level": {
+                                    str(instance["id"]): None
+                                },
+                            }
+                        )
+                if action_data:
+                    self.execute_other_action(UserUpdate, action_data)
+            if any(key for key in instance if key != "id"):
+                yield instance
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
         meeting = self.datastore.get(
@@ -73,6 +113,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                     "user_ids",
                     "forward_to_committee_ids",
                     "receive_forwardings_from_committee_ids",
+                    "manager_ids",
                 ]
             ]
         ):

@@ -518,6 +518,50 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("name"), self.COMMITTEE_NAME)
 
+    def test_update_correct_manager_ids(self) -> None:
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/20",
+            {f"committee_${self.COMMITTEE_ID}_management_level": "can_manage"},
+        )
+
+    def test_update_manager_ids_not_in_committee(self) -> None:
+        self.create_data()
+        new_name = "committee_testname_updated"
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": new_name, "manager_ids": [1]},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "You must add the user to the committee(s) '1', because you want to give him committee management level permissions."
+            in response.json["message"]
+        )
+
+    def test_update_manager_ids_rm_manager(self) -> None:
+        # prepare data
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 200)
+        # important request.
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [21]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/21", {"committee_$1_management_level": "can_manage"}
+        )
+        self.assert_model_exists("user/20", {"committee_$_management_level": []})
+
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
         self.set_models(
