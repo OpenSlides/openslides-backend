@@ -824,3 +824,17 @@ class UserCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "This username is forbidden." in response.json["message"]
+
+    def test_create_gender(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "gender": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data.gender must be one of ['male', 'female', 'diverse', None]"
+            in response.json["message"]
+        )
