@@ -560,7 +560,13 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/21", {"committee_$1_management_level": "can_manage"}
         )
-        self.assert_model_exists("user/20", {"committee_$_management_level": []})
+        self.assert_model_exists(
+            "user/20",
+            {
+                "committee_$_management_level": [],
+                "committee_$1_management_level": None,
+            },
+        )
 
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
