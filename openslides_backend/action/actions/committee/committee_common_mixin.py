@@ -1,8 +1,9 @@
 from typing import Any, Dict, Set
 
 from ....permissions.management_levels import CommitteeManagementLevel
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import Collection
 from ...action import Action
 from ..user.update import UserUpdate
 
@@ -35,6 +36,14 @@ class CommitteeCommonCreateUpdateMixin(Action):
         create_case: bool,
     ) -> None:
         action_data = []
+        if new_manager_ids - old_manager_ids and create_case:
+            get_many_request = GetManyRequest(
+                Collection("user"),
+                list(new_manager_ids - old_manager_ids),
+                ["committee_ids"],
+            )
+            gm_result = self.datastore.get_many([get_many_request])
+            managers = gm_result.get(Collection("user"), {})
         for manager_id in new_manager_ids - old_manager_ids:
             data = {
                 "id": manager_id,
@@ -43,9 +52,7 @@ class CommitteeCommonCreateUpdateMixin(Action):
                 },
             }
             if create_case:
-                manager = self.datastore.get(
-                    FullQualifiedId(Collection("user"), manager_id), ["committee_ids"]
-                )
+                manager = managers.get(manager_id, {})
                 data["committee_ids"] = manager.get("committee_ids", []) + [
                     committee_id
                 ]
