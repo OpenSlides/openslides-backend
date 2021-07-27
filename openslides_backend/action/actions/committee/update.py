@@ -54,38 +54,34 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                     instance["default_meeting_id"], instance["id"]
                 )
             if "manager_ids" in instance:
-                new_manager_ids = instance.pop("manager_ids")
+                new_manager_ids = set(instance.pop("manager_ids"))
                 filter_ = FilterOperator(
                     f"committee_${instance['id']}_management_level",
                     "=",
                     CommitteeManagementLevel.CAN_MANAGE,
                 )
                 old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
-                old_manager_ids = [int(id_) for id_ in old_manager]
+                old_manager_ids = set(int(id_) for id_ in old_manager)
 
                 action_data = []
-                for manager_id in new_manager_ids:
-                    if manager_id not in old_manager_ids:
-                        action_data.append(
-                            {
-                                "id": manager_id,
-                                "committee_$_management_level": {
-                                    str(
-                                        instance["id"]
-                                    ): CommitteeManagementLevel.CAN_MANAGE,
-                                },
-                            }
-                        )
-                for manager_id in old_manager_ids:
-                    if manager_id not in new_manager_ids:
-                        action_data.append(
-                            {
-                                "id": manager_id,
-                                "committee_$_management_level": {
-                                    str(instance["id"]): None
-                                },
-                            }
-                        )
+                for manager_id in new_manager_ids - old_manager_ids:
+                    action_data.append(
+                        {
+                            "id": manager_id,
+                            "committee_$_management_level": {
+                                str(
+                                    instance["id"]
+                                ): CommitteeManagementLevel.CAN_MANAGE,
+                            },
+                        }
+                    )
+                for manager_id in old_manager_ids - new_manager_ids:
+                    action_data.append(
+                        {
+                            "id": manager_id,
+                            "committee_$_management_level": {str(instance["id"]): None},
+                        }
+                    )
                 if action_data:
                     self.execute_other_action(UserUpdate, action_data)
             if any(key for key in instance if key != "id"):
