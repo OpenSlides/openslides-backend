@@ -56,7 +56,9 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             if "manager_ids" in instance:
                 new_manager_ids = instance.pop("manager_ids")
                 filter_ = FilterOperator(
-                    f"committee_${instance['id']}_management_level", "=", "can_manage"
+                    f"committee_${instance['id']}_management_level",
+                    "=",
+                    CommitteeManagementLevel.CAN_MANAGE,
                 )
                 old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
                 old_manager_ids = [int(id_) for id_ in old_manager]
