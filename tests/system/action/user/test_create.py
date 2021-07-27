@@ -830,7 +830,6 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "test_Xcdfgee",
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                 "gender": "test",
             },
         )

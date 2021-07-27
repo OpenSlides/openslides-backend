@@ -904,20 +904,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {"username": "username_srtgb123"},
         )
-        response = self.request(
-            "user.update", {"id": 111, "username": "username_Xcdfgee", "gender": "test"}
-        )
+        response = self.request("user.update", {"id": 111, "gender": "test"})
         self.assert_status_code(response, 400)
         assert (
             "data.gender must be one of ['male', 'female', 'diverse', None]"
             in response.json["message"]
         )
 
-        response = self.request(
-            "user.update",
-            {"id": 111, "username": "username_Xcdfgee", "gender": "diverse"},
-        )
+        response = self.request("user.update", {"id": 111, "gender": "diverse"})
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111", {"username": "username_Xcdfgee", "gender": "diverse"}
-        )
+        self.assert_model_exists("user/111", {"gender": "diverse"})
