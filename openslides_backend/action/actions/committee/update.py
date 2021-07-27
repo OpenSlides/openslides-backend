@@ -16,7 +16,6 @@ from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
 from .committee_common_mixin import CommitteeCommonCreateUpdateMixin
 
 
@@ -41,31 +40,26 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         additional_optional_fields={"manager_ids": id_list_schema},
     )
 
-    def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        for instance in action_data:
-            instance = super().update_instance(instance)
-            if instance.get("template_meeting_id"):
-                self.check_meeting_in_committee(
-                    instance["template_meeting_id"], instance["id"]
-                )
-            if instance.get("default_meeting_id"):
-                self.check_meeting_in_committee(
-                    instance["default_meeting_id"], instance["id"]
-                )
-            if "manager_ids" in instance:
-                new_manager_ids = set(instance.pop("manager_ids"))
-                filter_ = FilterOperator(
-                    f"committee_${instance['id']}_management_level",
-                    "=",
-                    CommitteeManagementLevel.CAN_MANAGE,
-                )
-                old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
-                old_manager_ids = set(int(id_) for id_ in old_manager)
-                self.update_managers(
-                    instance["id"], new_manager_ids, old_manager_ids, False
-                )
-            if any(key for key in instance if key != "id"):
-                yield instance
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        if instance.get("template_meeting_id"):
+            self.check_meeting_in_committee(
+                instance["template_meeting_id"], instance["id"]
+            )
+        if instance.get("default_meeting_id"):
+            self.check_meeting_in_committee(
+                instance["default_meeting_id"], instance["id"]
+            )
+        if "manager_ids" in instance:
+            filter_ = FilterOperator(
+                f"committee_${instance['id']}_management_level",
+                "=",
+                CommitteeManagementLevel.CAN_MANAGE,
+            )
+            old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
+            old_manager_ids = set(id_ for id_ in old_manager)
+            self.update_managers(instance, old_manager_ids)
+        return instance
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
         meeting = self.datastore.get(

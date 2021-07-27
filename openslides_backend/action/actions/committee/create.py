@@ -32,7 +32,6 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         if "manager_ids" in instance:
-            manager_ids = instance.pop("manager_ids")
             self.apply_instance(instance)
-            self.update_managers(instance["id"], set(manager_ids), set(), True)
+            self.update_managers(instance, set())
         return instance

@@ -32,4 +32,6 @@ class UpdateAction(Action):
         fields = {
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
         }
+        if not fields:
+            return []
         yield self.build_write_request(EventType.Update, fqid, information, fields)

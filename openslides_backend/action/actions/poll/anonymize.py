@@ -23,7 +23,6 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-
             self.check_allowed(instance["id"])
             option_ids = self._get_option_ids(instance["id"])
             options = self._get_options(option_ids)

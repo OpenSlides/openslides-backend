@@ -10,7 +10,8 @@ from ..user.update import UserUpdate
 
 class CommitteeCommonCreateUpdateMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """Check if own committee is forwarded or received explicitly,
+        """
+        Check if own committee is forwarded or received explicitly,
         it may not be excluded by the opposite setting
         """
         instance = super().update_instance(instance)
@@ -30,38 +31,39 @@ class CommitteeCommonCreateUpdateMixin(Action):
 
     def update_managers(
         self,
-        committee_id: int,
-        new_manager_ids: Set[int],
+        instance: Dict[str, Any],
         old_manager_ids: Set[int],
-        create_case: bool,
     ) -> None:
         action_data = []
-        if new_manager_ids - old_manager_ids and create_case:
+        new_manager_ids = set(instance.pop("manager_ids"))
+        to_add = new_manager_ids - old_manager_ids
+        if to_add:
             get_many_request = GetManyRequest(
                 Collection("user"),
-                list(new_manager_ids - old_manager_ids),
+                list(to_add),
                 ["committee_ids"],
             )
             gm_result = self.datastore.get_many([get_many_request])
             managers = gm_result.get(Collection("user"), {})
-        for manager_id in new_manager_ids - old_manager_ids:
-            data = {
-                "id": manager_id,
-                "committee_$_management_level": {
-                    str(committee_id): CommitteeManagementLevel.CAN_MANAGE,
-                },
-            }
-            if create_case:
-                manager = managers.get(manager_id, {})
-                data["committee_ids"] = manager.get("committee_ids", []) + [
-                    committee_id
-                ]
-            action_data.append(data)
+        for manager_id in to_add:
+            manager = managers.get(manager_id, {})
+            committee_ids = manager.get("committee_ids", [])
+            if instance["id"] not in committee_ids:
+                committee_ids.append(instance["id"])
+            action_data.append(
+                {
+                    "id": manager_id,
+                    "committee_$_management_level": {
+                        str(instance["id"]): CommitteeManagementLevel.CAN_MANAGE,
+                    },
+                    "committee_ids": committee_ids,
+                }
+            )
         for manager_id in old_manager_ids - new_manager_ids:
             action_data.append(
                 {
                     "id": manager_id,
-                    "committee_$_management_level": {str(committee_id): None},
+                    "committee_$_management_level": {str(instance["id"]): None},
                 }
             )
         if action_data:
