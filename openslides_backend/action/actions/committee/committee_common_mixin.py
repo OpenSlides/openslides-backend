@@ -1,7 +1,10 @@
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
+from ....permissions.management_levels import CommitteeManagementLevel
 from ....shared.exceptions import ActionException
+from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
+from ..user.update import UserUpdate
 
 
 class CommitteeCommonCreateUpdateMixin(Action):
@@ -23,3 +26,36 @@ class CommitteeCommonCreateUpdateMixin(Action):
                 "Forwarding or receiving to/from own must be configured in both directions!"
             )
         return instance
+
+    def update_managers(
+        self,
+        committee_id: int,
+        new_manager_ids: Set[int],
+        old_manager_ids: Set[int],
+        create_case: bool,
+    ) -> None:
+        action_data = []
+        for manager_id in new_manager_ids - old_manager_ids:
+            data = {
+                "id": manager_id,
+                "committee_$_management_level": {
+                    str(committee_id): CommitteeManagementLevel.CAN_MANAGE,
+                },
+            }
+            if create_case:
+                manager = self.datastore.get(
+                    FullQualifiedId(Collection("user"), manager_id), ["committee_ids"]
+                )
+                data["committee_ids"] = manager.get("committee_ids", []) + [
+                    committee_id
+                ]
+            action_data.append(data)
+        for manager_id in old_manager_ids - new_manager_ids:
+            action_data.append(
+                {
+                    "id": manager_id,
+                    "committee_$_management_level": {str(committee_id): None},
+                }
+            )
+        if action_data:
+            self.execute_other_action(UserUpdate, action_data)

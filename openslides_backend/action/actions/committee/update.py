@@ -17,7 +17,6 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from ..user.update import UserUpdate
 from .committee_common_mixin import CommitteeCommonCreateUpdateMixin
 
 
@@ -62,28 +61,9 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 )
                 old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
                 old_manager_ids = set(int(id_) for id_ in old_manager)
-
-                action_data = []
-                for manager_id in new_manager_ids - old_manager_ids:
-                    action_data.append(
-                        {
-                            "id": manager_id,
-                            "committee_$_management_level": {
-                                str(
-                                    instance["id"]
-                                ): CommitteeManagementLevel.CAN_MANAGE,
-                            },
-                        }
-                    )
-                for manager_id in old_manager_ids - new_manager_ids:
-                    action_data.append(
-                        {
-                            "id": manager_id,
-                            "committee_$_management_level": {str(instance["id"]): None},
-                        }
-                    )
-                if action_data:
-                    self.execute_other_action(UserUpdate, action_data)
+                self.update_managers(
+                    instance["id"], new_manager_ids, old_manager_ids, False
+                )
             if any(key for key in instance if key != "id"):
                 yield instance
 
