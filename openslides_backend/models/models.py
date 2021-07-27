@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "1eed2e356a4b63ddadc0ff4a5e44b636"
+MODELS_YML_CHECKSUM = "590c993763842cb923fc35528539b803"
 
 
 class Organization(Model):
@@ -330,7 +330,7 @@ class Meeting(Model):
         },
         required=True,
     )
-    motions_preamble = fields.CharField(default="The assembly may decide")
+    motions_preamble = fields.CharField(default="The assembly may decide:")
     motions_default_line_numbering = fields.CharField(
         default="outside", constraints={"enum": ["outside", "inline", "none"]}
     )
