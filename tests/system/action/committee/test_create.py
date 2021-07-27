@@ -82,7 +82,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_create_manager_ids_2(self) -> None:
+    def test_create_manager_ids_with_existing_committee(self) -> None:
         self.create_model("organization/1", {"name": "test_organization1"})
         self.create_model(
             "user/13",
@@ -118,7 +118,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_create_manager_ids_3(self) -> None:
+    def test_create_manager_ids_and_user_ids(self) -> None:
         self.create_model("organization/1", {"name": "test_organization1"})
         self.create_model("user/13", {"username": "test"})
         committee_name = "test_committee1"
