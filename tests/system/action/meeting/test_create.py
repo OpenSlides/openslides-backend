@@ -163,6 +163,14 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
         )
 
+    def test_create_with_same_user_in_users_and_admins(self) -> None:
+        meeting = self.basic_test({"user_ids": [2], "admin_ids": [2]})
+        assert meeting.get("user_ids") == [2]
+        admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists(
+            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )
+
     def test_create_multiple_users(self) -> None:
         self.set_models(
             {

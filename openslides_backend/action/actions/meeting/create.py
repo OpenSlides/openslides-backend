@@ -134,6 +134,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         instance["admin_group_id"] = fqid_admin_group.id
 
         # Add user to admin group
+        admin_ids = []
         if instance.get("admin_ids"):
             admin_ids = instance.pop("admin_ids")
             committee = self.datastore.get(
@@ -170,6 +171,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "group_$_ids": {str(instance["id"]): [fqid_default_group.id]},
                 }
                 for user_id in user_ids
+                if user_id not in admin_ids
             ]
 
             self.execute_other_action(UserUpdate, action_data)
