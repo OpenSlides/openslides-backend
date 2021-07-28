@@ -7,7 +7,6 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ...util.typing import ActionData
 
 
 @register_action("group.set_permission")
@@ -25,14 +24,7 @@ class GroupSetPermissionAction(UpdateAction):
     )
     permission = Permissions.User.CAN_MANAGE
 
-    def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        for instance in action_data:
-            new_instance = self.update_one_instance(instance)
-            if new_instance.get("permissions") is None:
-                continue
-            yield new_instance
-
-    def update_one_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         set_ = instance.pop("set")
         permission = instance.pop("permission")
         group = self.datastore.get(

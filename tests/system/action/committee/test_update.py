@@ -1,3 +1,7 @@
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -518,10 +522,69 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         model = self.get_model(self.COMMITTEE_FQID)
         self.assertEqual(model.get("name"), self.COMMITTEE_NAME)
 
+    def test_update_correct_manager_ids(self) -> None:
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/20",
+            {
+                f"committee_${self.COMMITTEE_ID}_management_level": CommitteeManagementLevel.CAN_MANAGE
+            },
+        )
+
+    def test_update_manager_ids_not_in_committee(self) -> None:
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "manager_ids": [1]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                f"committee_${self.COMMITTEE_ID}_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_ids": [self.COMMITTEE_ID],
+            },
+        )
+
+    def test_update_manager_ids_rm_manager(self) -> None:
+        # prepare data
+        self.create_data()
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 200)
+        # important request.
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [21]},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/21",
+            {"committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE},
+        )
+        self.assert_model_exists(
+            "user/20",
+            {
+                "committee_$_management_level": [],
+                "committee_$1_management_level": None,
+            },
+        )
+
     def test_update_group_a_no_permission(self) -> None:
         self.create_data()
         self.set_models(
-            {"user/1": {"organization_management_level": "can_manage_users"}}
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                }
+            }
         )
         response = self.request(
             "committee.update", {"id": 1, "name": "test", "description": "blablabla"}
@@ -537,7 +600,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": "can_manage_organization",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                 },
                 "committee/1": {"organization_id": 1},
             }
@@ -552,7 +615,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "committee_$1_management_level": "can_manage",
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 },
                 "committee/1": {"organization_id": 1},
             }
@@ -567,8 +630,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": "can_manage_users",
-                    "committee_$1_management_level": "can_manage",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
                 },
                 "committee/1": {"user_ids": [1]},
             }
@@ -585,7 +648,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "organization_management_level": "can_manage_organization",
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
                 },
                 "committee/1": {"user_ids": [1]},
             }
