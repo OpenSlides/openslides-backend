@@ -244,3 +244,44 @@ class MeetingCreateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test({})
+
+    def test_create_with_admin_ids_and_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                }
+            }
+        )
+        meeting = self.basic_test({"admin_ids": [2]})
+        assert meeting.get("user_ids") == [2]
+        admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists(
+            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )
+
+    def test_create_with_admin_ids_and_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                },
+                "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
+                "group/1": {},
+                "user/2": {},
+            }
+        )
+
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "admin_ids": [2],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
+        )
