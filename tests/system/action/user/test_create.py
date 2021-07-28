@@ -801,20 +801,47 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_create_demo_user(self) -> None:
-        """demo_user only with user.update"""
+    def test_create_permission_group_F_demo_user_permission(self) -> None:
+        """demo_user only editable by Superadmin"""
         self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
 
         response = self.request(
             "user.create",
             {
+                "username": "username3",
                 "is_demo_user": True,
             },
         )
 
-        self.assert_status_code(response, 400)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "username3",
+                "is_demo_user": True,
+            },
+        )
+
+    def test_update_permission_group_F_demo_user_no_permission(self) -> None:
+        """demo_user only editable by Superadmin"""
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "username3",
+                "is_demo_user": True,
+            },
+        )
+
+        self.assert_status_code(response, 403)
         self.assertIn(
-            "data must not contain {'is_demo_user'} properties",
+            "You are not allowed to perform action user.create. Missing OrganizationManagementLevel: superadmin",
             response.json["message"],
         )
 

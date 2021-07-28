@@ -48,6 +48,7 @@ class UserCreate(
             "structure_level_$",
             "about_me_$",
             "vote_weight_$",
+            "is_demo_user",
         ],
     )
 
