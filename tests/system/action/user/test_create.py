@@ -407,6 +407,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
                 "group_$_ids": {"1": [1], "4": [4]},
+                "can_change_own_password": False,
             },
         )
         self.assert_status_code(response, 200)
@@ -427,6 +428,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "default_vote_weight": "1.234000",
                 "group_$1_ids": [1],
                 "group_$4_ids": [4],
+                "can_change_own_password": False,
             },
         )
 
@@ -539,6 +541,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "comment_$": {"1": "comment zu meeting/1"},
                 "vote_delegations_$_from_ids": {"1": [5, 6]},
                 "group_$_ids": {"1": [1]},
+                "is_present_in_meeting_ids": [1],
             },
         )
         self.assert_status_code(response, 200)
@@ -559,6 +562,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "vote_delegations_$_from_ids": ["1"],
                 "vote_delegations_$1_from_ids": [5, 6],
                 "meeting_ids": [1],
+                "is_present_in_meeting_ids": [1],
             },
         )
 
