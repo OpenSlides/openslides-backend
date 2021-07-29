@@ -581,6 +581,12 @@ class DatastoreAdapter(DatastoreService):
                 raise DatastoreException(f"{fqid} not found at all.")
         return result
 
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
+        """
+        Returns whether the given model was deleted during this request or not.
+        """
+        return isinstance(self.additional_relation_models.get(fqid), DeletedModel)
+
     def reset(self) -> None:
         self.locked_fields = {}
         self.additional_relation_models.clear()

@@ -144,6 +144,9 @@ class DatastoreService(Protocol):
     ) -> Dict[str, Any]:
         ...
 
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
+        ...
+
     def reset(self) -> None:
         ...
 

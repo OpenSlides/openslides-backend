@@ -11,6 +11,7 @@ from ...shared.patterns import (
     transform_to_fqids,
 )
 from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
+from .calculated_field_handler import CalculatedFieldHandlerCall
 from .calculated_field_handlers_map import calculated_field_handlers_map
 from .single_relation_handler import SingleRelationHandler
 from .typing import (
@@ -42,14 +43,19 @@ class RelationManager:
         self.process_template_fields(model, instance)
 
         relations: RelationUpdates = {}
+        calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
                 continue
             field = model.get_field(field_name)
 
-            # process calculated fields handlers
-            self.call_calculated_field_handlers(
-                relations, field, field_name, instance, action
+            calculated_field_handler_calls.append(
+                {
+                    "field": field,
+                    "field_name": field_name,
+                    "instance": instance,
+                    "action": action,
+                }
             )
 
             # only relations are handled here
@@ -79,13 +85,19 @@ class RelationManager:
                     "id": fqfield.id,
                     related_field_name: relations_element["value"],
                 }
-                self.call_calculated_field_handlers(
-                    relations,
-                    related_field,
-                    related_field_name,
-                    related_instance,
-                    action,
+                calculated_field_handler_calls.append(
+                    {
+                        "field": related_field,
+                        "field_name": related_field_name,
+                        "instance": related_instance,
+                        "action": action,
+                    }
                 )
+
+        self.apply_relation_updates(relations)
+
+        for call in calculated_field_handler_calls:
+            self.call_calculated_field_handlers(relations, **call)
 
         return relations
 
@@ -229,6 +241,22 @@ class RelationManager:
         relations[fqfield] = self.relation_field_updates[
             fqfield
         ] = relation_update_element
+
+    def apply_relation_updates(self, relations: RelationUpdates) -> None:
+        """
+        Applies all given relations updates to the additional models in the datastore.
+        """
+        for fqfield, relations_element in relations.items():
+            if relations_element["type"] in ("add", "remove"):
+                field_update_element = cast(FieldUpdateElement, relations_element)
+                self.datastore.update_additional_models(
+                    fqfield.fqid, {fqfield.field: field_update_element["value"]}
+                )
+            elif relations_element["type"] == "list_update":
+                # list updates are only issued by calculated field handlers and therefore must not be handled here
+                raise NotImplementedError("List updates should not occur at this point")
+            else:
+                raise NotImplementedError("Invalid relations element type")
 
     def merge_relation_elements(
         self,

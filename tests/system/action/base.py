@@ -186,6 +186,10 @@ class BaseActionTestCase(BaseSystemTestCase):
             meeting["default_group_id"] = id
         user_id = self.create_user("user_" + get_random_string(6))
         self.set_user_groups(user_id, [meeting["default_group_id"]])
+        self.update_model(
+            f"meeting/{meeting_id}",
+            {"user_ids": list(set(meeting.get("user_ids", []) + [user_id]))},
+        )
         return user_id
 
     def set_user_groups(self, user_id: int, group_ids: List[int]) -> None:
@@ -196,9 +200,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         except DatastoreException:
             user = {}
         new_group_ids = list(
-            str(meeting_id)
-            for meeting_id in set(
-                user.get("group_$_ids", []) + list(partitioned_groups.keys())
+            set(
+                user.get("group_$_ids", [])
+                + [str(meeting_id) for meeting_id in partitioned_groups.keys()]
             )
         )
         self.set_models(
