@@ -21,7 +21,7 @@ check_mediafile_id_schema = fastjsonschema.compile(
 )
 
 
-@register_presenter("check_mediafile_id")
+@register_presenter("check_mediafile_id", csrf_exempt=True)
 class CheckMediafileId(BasePresenter):
     """
     Check, if a mediafile can be accessed. Retrieve the filename, if access is granted.

@@ -10,7 +10,7 @@ from authlib import (
     InvalidCredentialsException,
 )
 
-from ...shared.exceptions import AuthenticationException as BackendAuthException
+from ...shared.exceptions import AuthenticationException
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.wsgi import Headers
 from .interface import AuthenticationService
@@ -34,16 +34,29 @@ class AuthenticationHTTPAdapter(AuthenticationService):
         Returns a new access token, too, if one is received from auth service.
         """
 
+        access_token = headers.get(HEADER_NAME, None)
+        cookie = cookies.get(COOKIE_NAME, "")
         self.logger.debug(
-            f"Start request to authentication service with the following data: {headers}"
+            f"Start request to authentication service with the following data: access_token: {headers}, cookie: {cookie}"
         )
         try:
-            access_token = headers.get(HEADER_NAME, None)
-            cookie = cookies.get(COOKIE_NAME, "")
             return self.auth_handler.authenticate(access_token, parse.unquote(cookie))
         except (AuthenticateException, InvalidCredentialsException) as e:
             self.logger.debug(f"Error in auth service: {e.message}")
-            raise BackendAuthException(e.message)
+            raise AuthenticationException(e.message)
+
+    def authenticate_without_token(self, cookies: Dict[str, str]) -> int:
+        cookie = cookies.get(COOKIE_NAME, "")
+        self.logger.debug(
+            f"Start request to authentication service with the following cookie: {cookie}"
+        )
+        try:
+            return self.auth_handler.authenticate(None, parse.unquote(cookie))[
+                0
+            ]  # TODO
+        except (AuthenticateException, InvalidCredentialsException) as e:
+            self.logger.debug(f"Error in auth service: {e.message}")
+            raise AuthenticationException(e.message)
 
     def hash(self, toHash: str) -> str:
         return self.auth_handler.hash(toHash)

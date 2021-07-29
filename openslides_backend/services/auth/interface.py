@@ -22,11 +22,10 @@ class AuthenticationService(Protocol):
         Throws an exception, if the cookie is empty or the transmitted sessionId is wrong.
         """
 
-    def authenticate_without_token(
-        self, cookies: Dict[str, str]
-    ) -> Tuple[int, Optional[str]]:
+    def authenticate_without_token(self, cookies: Dict[str, str]) -> int:
         """
         Analogous to authenticate, but works without the token.
+        Therefore returns only the user id.
         """
 
     def hash(self, toHash: str) -> str:

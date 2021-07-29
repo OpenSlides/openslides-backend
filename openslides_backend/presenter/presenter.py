@@ -110,11 +110,9 @@ class PresenterHandler(BaseHandler):
                 "You cannot call presenters with different login mechanisms"
             )
 
+        access_token: Optional[str] = None
         if presenters[0].csrf_exempt:
-            (
-                user_id,
-                access_token,
-            ) = self.services.authentication().authenticate_without_token(
+            user_id = self.services.authentication().authenticate_without_token(
                 request.cookies
             )
         else:
