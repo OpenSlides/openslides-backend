@@ -270,10 +270,12 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert submitter_1.get("meeting_id") == 222
         assert submitter_1.get("user_id") == 56
         assert submitter_1.get("motion_id") == 1
+        assert submitter_1.get("weight") == 1
         submitter_2 = self.get_model("motion_submitter/2")
         assert submitter_2.get("meeting_id") == 222
         assert submitter_2.get("user_id") == 57
         assert submitter_2.get("motion_id") == 1
+        assert submitter_2.get("weight") == 2
 
     def test_create_missing_origin_id(self) -> None:
         self.set_models(self.permission_test_model)
