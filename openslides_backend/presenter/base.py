@@ -17,6 +17,7 @@ class BasePresenter:
     datastore: DatastoreService
     logging: LoggingModule
     schema: Optional[Callable[[Any], None]] = None
+    csrf_exempt: bool
 
     def __init__(
         self,

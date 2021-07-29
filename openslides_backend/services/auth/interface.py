@@ -22,6 +22,13 @@ class AuthenticationService(Protocol):
         Throws an exception, if the cookie is empty or the transmitted sessionId is wrong.
         """
 
+    def authenticate_without_token(
+        self, cookies: Dict[str, str]
+    ) -> Tuple[int, Optional[str]]:
+        """
+        Analogous to authenticate, but works without the token.
+        """
+
     def hash(self, toHash: str) -> str:
         """
         Hashes a given value. A random salt (64bit) is generated and added to the hashed value.

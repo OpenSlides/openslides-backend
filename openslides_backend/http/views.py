@@ -1,7 +1,6 @@
 from typing import Any, Dict, Optional, Tuple
 
 from ..action.action_handler import ActionHandler
-from ..presenter import Payload as PresenterPayload
 from ..presenter.presenter import PresenterHandler
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -85,20 +84,12 @@ class PresenterView(BaseView):
         """
         self.logger.debug("Start dispatching presenter request.")
 
-        # Get user_id.
-        user_id, access_token = self.get_user_id_from_headers(
-            request.headers, request.cookies
-        )
-
-        # Setup payload.
-        payload: PresenterPayload = request.json
-
         # Handle request.
         handler = PresenterHandler(
             logging=self.logging,
             services=self.services,
         )
-        presenter_response = handler.handle_request(payload, user_id)
+        presenter_response, access_token = handler.handle_request(request)
 
         # Finish request.
         self.logger.debug("Presenter request finished successfully. Send response now.")

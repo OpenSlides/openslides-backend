@@ -1,8 +1,9 @@
-from typing import Callable, Dict, Type
+from typing import Callable, Dict, Optional, Tuple, Type
 
 import fastjsonschema
 from fastjsonschema import JsonSchemaException
 
+from ..http.request import Request
 from ..shared.exceptions import PresenterException
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.schema import schema_version
@@ -14,6 +15,7 @@ presenters_map: Dict[str, Type[BasePresenter]] = {}
 
 def register_presenter(
     name: str,
+    csrf_exempt: bool = False,
 ) -> Callable[[Type[BasePresenter]], Type[BasePresenter]]:
     """
     Decorator to be used for presenter classes. Registers the class so that it
@@ -21,6 +23,7 @@ def register_presenter(
     """
 
     def wrapper(clazz: Type[BasePresenter]) -> Type[BasePresenter]:
+        clazz.csrf_exempt = csrf_exempt
         presenters_map[name] = clazz
         return clazz
 
@@ -57,22 +60,23 @@ class PresenterHandler(BaseHandler):
     Presenter handler. It is the concret implementation of Presenter interface.
     """
 
-    def handle_request(self, payload: Payload, user_id: int) -> PresenterResponse:
+    def handle_request(
+        self, request: Request
+    ) -> Tuple[PresenterResponse, Optional[str]]:
         """
         Takes payload and user id and handles this request by validating and
         parsing the presentations.
         """
-
         # Validate payload of request
         try:
-            self.validate(payload)
+            self.validate(request.json)
         except JsonSchemaException as exception:
             raise PresenterException(exception.message)
 
         # Parse presentations and creates response
-        response = self.parse_presenters(payload, user_id)
+        response, access_token = self.parse_presenters(request)
         self.logger.debug("Request was successful. Send response now.")
-        return response
+        return response, access_token
 
     def validate(self, payload: Payload) -> None:
         """
@@ -82,33 +86,54 @@ class PresenterHandler(BaseHandler):
         self.logger.debug("Validate presenter request.")
         payload_schema(payload)
 
-    def parse_presenters(self, payload: Payload, user_id: int) -> PresenterResponse:
+    def parse_presenters(
+        self, request: Request
+    ) -> Tuple[PresenterResponse, Optional[str]]:
         """
         Parses presenter request send by client. Raises PresenterException
         if something went wrong.
         """
-        # permissions = self.permission().get_all(self.user_id)
         self.logger.debug(
             f"Presenter map contains the following presenters: {presenters_map}."
         )
-        response = []
-        for presenter_blob in payload:
-            PresenterClass = presenters_map.get(presenter_blob["presenter"])
-            if PresenterClass is not None:
-                presenter_instance = PresenterClass(
-                    presenter_blob.get("data"),
-                    self.services,
-                    self.datastore,
-                    self.logging,
-                    user_id,
-                )
-                presenter_instance.validate()
-                with self.datastore.get_database_context():
-                    result = presenter_instance.get_result()
-                response.append(result)
-            else:
+        presenters = []
+        for presenter_blob in request.json:
+            presenter = presenters_map.get(presenter_blob["presenter"])
+            if presenter is None:
                 raise PresenterException(
                     f"Presenter {presenter_blob['presenter']} does not exist."
                 )
+            presenters.append(presenter)
+
+        if len(set(presenter.csrf_exempt for presenter in presenters)) > 1:
+            raise PresenterException(
+                "You cannot call presenters with different login mechanisms"
+            )
+
+        if presenters[0].csrf_exempt:
+            (
+                user_id,
+                access_token,
+            ) = self.services.authentication().authenticate_without_token(
+                request.cookies
+            )
+        else:
+            user_id, access_token = self.services.authentication().authenticate(
+                request.headers, request.cookies
+            )
+
+        response = []
+        for PresenterClass in presenters:
+            presenter_instance = PresenterClass(
+                presenter_blob.get("data"),
+                self.services,
+                self.datastore,
+                self.logging,
+                user_id,
+            )
+            presenter_instance.validate()
+            with self.datastore.get_database_context():
+                result = presenter_instance.get_result()
+            response.append(result)
         self.logger.debug("Presenter data ready.")
-        return response
+        return response, access_token
