@@ -31,7 +31,10 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             "url_name",
             "organization_tag_ids",
         ],
-        additional_optional_fields={"user_ids": id_list_schema},
+        additional_optional_fields={
+            "user_ids": id_list_schema,
+            "admin_ids": id_list_schema,
+        },
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
@@ -131,13 +134,26 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         instance["admin_group_id"] = fqid_admin_group.id
 
         # Add user to admin group
-        action_data = [
-            {
-                "id": self.user_id,
-                "group_$_ids": {str(instance["id"]): [fqid_admin_group.id]},
-            }
-        ]
-        self.execute_other_action(UserUpdate, action_data)
+        admin_ids = []
+        if instance.get("admin_ids"):
+            admin_ids = instance.pop("admin_ids")
+            committee = self.datastore.get(
+                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                ["user_ids"],
+            )
+            if not all(
+                user_id in committee.get("user_ids", []) for user_id in admin_ids
+            ):
+                raise ActionException("Only allowed to add admins from committee.")
+            action_data = [
+                {
+                    "id": user_id,
+                    "group_$_ids": {str(instance["id"]): [fqid_admin_group.id]},
+                }
+                for user_id in admin_ids
+            ]
+            self.execute_other_action(UserUpdate, action_data)
+
         # Add users to default group
         if instance.get("user_ids"):
             user_ids = instance.pop("user_ids")
@@ -149,14 +165,13 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                 user_id in committee.get("user_ids", []) for user_id in user_ids
             ):
                 raise ActionException("Only allowed to add users from committee.")
-            # filter out request user since he was already added
             action_data = [
                 {
                     "id": user_id,
                     "group_$_ids": {str(instance["id"]): [fqid_default_group.id]},
                 }
                 for user_id in user_ids
-                if user_id != self.user_id
+                if user_id not in admin_ids
             ]
 
             self.execute_other_action(UserUpdate, action_data)

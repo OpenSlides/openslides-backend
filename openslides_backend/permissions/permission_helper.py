@@ -112,9 +112,9 @@ def has_committee_management_level(
             FullQualifiedId(Collection("user"), user_id),
             ["organization_management_level", cml_field],
         )
-        if (
-            user.get("organization_management_level")
-            == OrganizationManagementLevel.SUPERADMIN
+        if user.get("organization_management_level") in (
+            OrganizationManagementLevel.SUPERADMIN,
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
             return True
         return expected_level <= CommitteeManagementLevel(user.get(cml_field))

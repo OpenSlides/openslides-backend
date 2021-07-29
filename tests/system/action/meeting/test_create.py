@@ -59,7 +59,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists("group/2", {"name": "Default"})
-        self.assert_model_exists("group/3", {"name": "Admin", "user_ids": [1]})
+        self.assert_model_exists("group/3", {"name": "Admin"})
         self.assert_model_exists("group/4", {"name": "Delegates"})
         self.assert_model_exists("group/5", {"name": "Staff"})
         self.assert_model_exists("group/6", {"name": "Committees"})
@@ -111,13 +111,6 @@ class MeetingCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "user/1",
-            {
-                "group_$1_ids": [3],  # meeting/1 and group 3
-                "group_$_ids": ["1"],  # only meeting/1 values
-            },
-        )
-        self.assert_model_exists(
             "projector_countdown/1",
             {
                 "title": "List of speakers countdown",
@@ -156,69 +149,44 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_create_check_users(self) -> None:
         meeting = self.basic_test({"user_ids": [2]})
-        assert meeting.get("user_ids") == [1, 2]
+        assert meeting.get("user_ids") == [2]
         default_group_id = meeting.get("default_group_id")
         self.assert_model_exists(
             "user/2", {f"group_${meeting['id']}_ids": [default_group_id]}
         )
+
+    def test_create_check_admins(self) -> None:
+        meeting = self.basic_test({"admin_ids": [2]})
+        assert meeting.get("user_ids") == [2]
         admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
-            "user/1", {f"group_${meeting['id']}_ids": [admin_group_id]}
+            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
         )
 
-    def test_create_with_request_user(self) -> None:
-        self.set_models(
-            {
-                "committee/3": {"user_ids": [1, 3]},
-                "user/3": {},
-            }
-        )
-        response = self.request(
-            "meeting.create",
-            {
-                "committee_id": 3,
-                "name": "Kuchenfest des Jahres",
-                "start_time": 1623362400,
-                "end_time": 1623362400,
-                "user_ids": [1, 3],
-            },
-        )
-        self.assert_status_code(response, 200)
-        # user/1 is only added to the admin group (2), not the default group
+    def test_create_with_same_user_in_users_and_admins(self) -> None:
+        meeting = self.basic_test({"user_ids": [2], "admin_ids": [2]})
+        assert meeting.get("user_ids") == [2]
+        admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
-            "user/1",
-            {
-                "group_$1_ids": [2],
-                "group_$_ids": ["1"],
-                "meeting_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "user/3",
-            {
-                "group_$1_ids": [1],
-                "group_$_ids": ["1"],
-                "meeting_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "meeting/1",
-            {
-                "user_ids": [1, 3],
-            },
+            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
         )
 
     def test_create_multiple_users(self) -> None:
         self.set_models(
             {
-                "committee/1": {"user_ids": [2, 3]},
+                "committee/1": {"user_ids": [1, 2, 3]},
                 "user/2": {},
                 "user/3": {},
             }
         )
         response = self.request(
             "meeting.create",
-            {"name": "test_name", "committee_id": 1, "user_ids": [2, 3]},
+            {
+                "name": "test_name",
+                "committee_id": 1,
+                "user_ids": [2, 3],
+                "admin_ids": [1],
+            },
         )
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
@@ -284,3 +252,35 @@ class MeetingCreateActionTest(BaseActionTestCase):
             }
         )
         self.basic_test({})
+
+    def test_create_with_admin_ids_and_permissions_cml(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                }
+            }
+        )
+        meeting = self.basic_test({"admin_ids": [2]})
+        assert meeting.get("user_ids") == [2]
+        admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists(
+            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )
+
+    def test_create_with_admin_ids_and_permissions_oml(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                    "committee_$1_management_level": None,
+                }
+            }
+        )
+        meeting = self.basic_test({"admin_ids": [2]})
+        assert meeting.get("user_ids") == [2]
+        admin_group_id = meeting.get("admin_group_id")
+        self.assert_model_exists(
+            "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )

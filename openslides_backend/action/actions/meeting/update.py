@@ -241,12 +241,7 @@ class MeetingUpdate(UpdateAction):
                 CommitteeManagementLevel.CAN_MANAGE,
                 meeting["committee_id"],
             )
-            can_manage_organization = has_organization_management_level(
-                self.datastore,
-                self.user_id,
-                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-            )
-            if not is_manager and not can_manage_organization:
+            if not is_manager:
                 raise PermissionDenied(
                     "Missing permission: Not manager and not can_manage_organization"
                 )
