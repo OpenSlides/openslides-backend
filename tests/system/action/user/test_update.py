@@ -322,6 +322,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_number": "new default_number",
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
+                "can_change_own_password": False,
             },
         )
         self.assert_status_code(response, 200)
@@ -340,6 +341,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "default_number": "new default_number",
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
+                "can_change_own_password": False,
             },
         )
 
@@ -914,3 +916,17 @@ class UserUpdateActionTest(BaseActionTestCase):
         response = self.request("user.update", {"id": 111, "gender": "diverse"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/111", {"gender": "diverse"})
+
+    def test_update_not_in_update_is_present_in_meeting_ids(self) -> None:
+        self.create_model(
+            "user/111",
+            {"username": "username111"},
+        )
+        response = self.request(
+            "user.update", {"id": 111, "is_present_in_meting_ids": [1]}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "data must not contain {'is_present_in_meting_ids'} properties"
+            in response.json["message"]
+        )

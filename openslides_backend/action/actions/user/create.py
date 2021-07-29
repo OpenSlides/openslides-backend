@@ -30,6 +30,7 @@ class UserCreate(
             "is_active",
             "is_physical_person",
             "default_password",
+            "can_change_own_password",
             "gender",
             "email",
             "default_number",
@@ -47,6 +48,7 @@ class UserCreate(
             "structure_level_$",
             "about_me_$",
             "vote_weight_$",
+            "is_demo_user",
         ],
     )
 
