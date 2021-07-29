@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "590c993763842cb923fc35528539b803"
+MODELS_YML_CHECKSUM = "fbb1c6b8188ef0b89a10a99c396e0688"
 
 
 class Organization(Model):
@@ -1019,7 +1019,7 @@ class MotionSubmitter(Model):
     verbose_name = "motion submitter"
 
     id = fields.IntegerField()
-    weight = fields.IntegerField(default=10000)
+    weight = fields.IntegerField()
     user_id = fields.RelationField(to={Collection("user"): "submitted_motion_$_ids"})
     motion_id = fields.RelationField(
         to={Collection("motion"): "submitter_ids"}, equal_fields="meeting_id"

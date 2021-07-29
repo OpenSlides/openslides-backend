@@ -57,7 +57,7 @@ class MotionSubmitterCreateAction(
         exists = self.datastore.exists(collection=self.model.collection, filter=filter)
         if exists:
             raise ActionException("(user_id, motion_id) must be unique.")
-        if instance.get("weight", 10000) == 10000:
+        if instance.get("weight") is None:
             self.set_weight(instance)
         return instance
 
