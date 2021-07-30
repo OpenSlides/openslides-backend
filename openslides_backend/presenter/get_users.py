@@ -4,7 +4,9 @@ from typing import Any, Dict, List
 import fastjsonschema
 from datastore.shared.util import DeletedModelsBehaviour
 
-from ..shared.exceptions import PresenterException
+from ..permissions.management_levels import OrganizationManagementLevel
+from ..permissions.permission_helper import has_organization_management_level
+from ..shared.exceptions import MissingPermission, PresenterException
 from ..shared.patterns import Collection
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -60,12 +62,19 @@ class GetUsers(BasePresenter):
     schema = get_users_schema
 
     def get_result(self) -> Any:
+        self.check_permissions()
         criteria = self.get_and_check_criteria()
         users = self.get_all_users(criteria)
         users = self.filter_keyword(users)
         users = self.sort_users(users, criteria)
         users = self.paginate_users(users)
         return {"users": [user["id"] for user in users]}
+
+    def check_permissions(self) -> None:
+        if not has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
     def get_and_check_criteria(self) -> List[str]:
         default_criteria = ["last_name", "first_name", "username"]

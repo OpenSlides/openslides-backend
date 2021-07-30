@@ -1,3 +1,5 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+
 from .base import BasePresenterTestCase
 
 
@@ -177,3 +179,20 @@ class TestGetUsers(BasePresenterTestCase):
         )
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"users": [1, 5, 2, 3, 4]})
+
+    def test_get_users_no_permissions(self) -> None:
+        self.set_models({"user/1": {"organization_management_level": None}})
+        status_code, data = self.request("get_users", {"sort_criteria": ["username"]})
+        self.assertEqual(status_code, 403)
+
+    def test_get_users_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
+                }
+            }
+        )
+        status_code, data = self.request("get_users", {"sort_criteria": ["username"]})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"users": [1]})
