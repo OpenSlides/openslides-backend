@@ -3,7 +3,6 @@ from typing import Any, Dict
 from openslides_backend.services.datastore.interface import InstanceAdditionalBehaviour
 
 from ...models.fields import Field
-from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
@@ -32,19 +31,11 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         added_ids = ids_set.difference(db_ids_set)
         removed_ids = db_ids_set.difference(ids_set)
 
-        if field.own_collection == Collection("meeting"):
-            meeting_id = instance["id"]
-        elif field.own_collection == Collection("group"):
-            meeting_id = instance.get("meeting_id") or db_instance.get("meeting_id")
-            if not meeting_id:
-                new_instance = self.datastore.fetch_model(
-                    fqid, ["meeting_id"], exception=False
-                )
-                meeting_id = new_instance.get("meeting_id")
-                if not meeting_id:
-                    raise ActionException(
-                        f"No meeting_id found for group/{instance['id']}"
-                    )
+        meeting_id = instance.get("meeting_id") or db_instance.get("meeting_id")
+        if not meeting_id:
+            new_instance = self.datastore.fetch_model(fqid, ["meeting_id"])
+            meeting_id = new_instance.get("meeting_id")
+        assert isinstance(meeting_id, int)
 
         # check if removed_ids should actually be removed
         # cast to list to be able to alter it while iterating
