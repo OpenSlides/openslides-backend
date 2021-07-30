@@ -11,20 +11,24 @@ from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeetingMixin,
 )
+from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("motion_submitter.create")
-class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAction):
+class MotionSubmitterCreateAction(
+    CreateActionWithInferredMeetingMixin, SingularActionMixin, CreateAction
+):
     """
     Action to create a motion submitter.
     """
 
     model = MotionSubmitter()
     schema = DefaultSchema(MotionSubmitter()).get_create_schema(
-        ["motion_id", "user_id"],
+        required_properties=["motion_id", "user_id"],
+        optional_properties=["weight"],
     )
     permission = Permissions.Motion.CAN_MANAGE_METADATA
 
@@ -53,4 +57,14 @@ class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAc
         exists = self.datastore.exists(collection=self.model.collection, filter=filter)
         if exists:
             raise ActionException("(user_id, motion_id) must be unique.")
+        if instance.get("weight") is None:
+            self.set_weight(instance)
         return instance
+
+    def set_weight(self, instance: Dict[str, Any]) -> None:
+        motion_id = instance["motion_id"]
+        filter_ = FilterOperator("motion_id", "=", motion_id)
+        max_weight = self.datastore.max(self.model.collection, filter_, "weight", "int")
+        if max_weight is None:
+            max_weight = 0
+        instance["weight"] = max_weight + 1

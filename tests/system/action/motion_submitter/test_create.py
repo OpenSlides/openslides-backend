@@ -19,13 +19,32 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "motion_submitter.create", {"motion_id": 357, "user_id": 78}
+            "motion_submitter.create", {"motion_id": 357, "user_id": 78, "weight": 100}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("motion_submitter/1")
         assert model.get("motion_id") == 357
         assert model.get("user_id") == 78
-        assert model.get("weight") == 10000
+        assert model.get("weight") == 100
+
+    def test_create_default_weight(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {"name": "name_m123etrd"},
+                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
+                "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
+                "user/79": {"username": "username_wuumpoop", "meeting_ids": [111]},
+                "motion_submitter/1": {"user_id": 79, "motion_id": 357, "weight": 100},
+            }
+        )
+        response = self.request(
+            "motion_submitter.create", {"motion_id": 357, "user_id": 78}
+        )
+        self.assert_status_code(response, 200)
+        model = self.get_model("motion_submitter/2")
+        assert model.get("motion_id") == 357
+        assert model.get("user_id") == 78
+        assert model.get("weight") == 101
 
     def test_create_not_unique(self) -> None:
         self.set_models(
