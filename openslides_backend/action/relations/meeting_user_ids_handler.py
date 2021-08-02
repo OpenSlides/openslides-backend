@@ -3,7 +3,6 @@ from typing import Any, Dict
 from openslides_backend.services.datastore.interface import InstanceAdditionalBehaviour
 
 from ...models.fields import Field
-from ...shared.exceptions import ActionException
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
@@ -24,9 +23,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         db_instance = self.datastore.fetch_model(
             fqid,
             [field_name, "meeting_id"],
-            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST
-            if field.own_collection.collection == "meeting"
-            else InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
             exception=False,
         )
         db_ids_set = set(db_instance.get(field_name, []) or [])
@@ -34,19 +31,24 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         added_ids = ids_set.difference(db_ids_set)
         removed_ids = db_ids_set.difference(ids_set)
 
+        meeting_id = instance.get("meeting_id") or db_instance.get("meeting_id")
+        if not meeting_id:
+            new_instance = self.datastore.fetch_model(fqid, ["meeting_id"])
+            meeting_id = new_instance.get("meeting_id")
+        assert isinstance(meeting_id, int)
+
+        # check if removed_ids should actually be removed
+        # cast to list to be able to alter it while iterating
+        for id in list(removed_ids):
+            user_fqid = FullQualifiedId(Collection("user"), id)
+            if not self.datastore.is_deleted(user_fqid):
+                group_field = f"group_${meeting_id}_ids"
+                user = self.datastore.fetch_model(user_fqid, [group_field])
+                if len(user[group_field]):
+                    removed_ids.remove(id)
+
         if not added_ids and not removed_ids:
             return {}
-
-        if field.own_collection == Collection("meeting"):
-            meeting_id = instance["id"]
-        elif field.own_collection == Collection("group"):
-            meeting_id = instance.get("meeting_id")
-            if not meeting_id:
-                meeting_id = db_instance.get("meeting_id")
-                if not meeting_id:
-                    raise ActionException(
-                        f"No meeting_id found for group/{instance['id']}"
-                    )
 
         relation_el: ListUpdateElement = {
             "type": "list_update",

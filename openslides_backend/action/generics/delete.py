@@ -141,12 +141,9 @@ class DeleteAction(Action):
         """
         Returns whether the given meeting was deleted during this request or not.
         """
-        return self.is_deleted(FullQualifiedId(Collection("meeting"), meeting_id))
+        return self.datastore.is_deleted(
+            FullQualifiedId(Collection("meeting"), meeting_id)
+        )
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
-        """
-        Returns whether the given model was deleted during this request or not.
-        """
-        return isinstance(
-            self.datastore.additional_relation_models.get(fqid), DeletedModel
-        )
+        return self.datastore.is_deleted(fqid)

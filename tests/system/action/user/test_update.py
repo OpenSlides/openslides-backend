@@ -462,9 +462,10 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "vote_delegated_$1_to_id": self.user_id,
                 "vote_delegations_$_from_ids": ["4"],
                 "vote_delegations_$4_from_ids": [5, 6],
-                "meeting_ids": [1, 4],
             },
         )
+        user = self.get_model("user/111")
+        self.assertCountEqual(user["meeting_ids"], [1, 4])
 
     def test_update_permission_group_B_user_can_manage_no_permission(self) -> None:
         """Group B fields needs explicit user.can_manage permission for meeting"""
@@ -550,15 +551,11 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "user/111",
-            {
-                "group_$_ids": ["1", "4"],
-                "group_$1_ids": [2],
-                "group_$4_ids": [5],
-                "meeting_ids": [1, 4],
-            },
-        )
+        user = self.get_model("user/111")
+        self.assertCountEqual(user["group_$_ids"], ["1", "4"])
+        self.assertCountEqual(user["meeting_ids"], [1, 4])
+        self.assertEqual(user["group_$1_ids"], [2])
+        self.assertEqual(user["group_$4_ids"], [5])
 
     def test_update_permission_group_C_no_permission(self) -> None:
         """May not update group C group_$_ids"""
@@ -930,3 +927,17 @@ class UserUpdateActionTest(BaseActionTestCase):
             "data must not contain {'is_present_in_meting_ids'} properties"
             in response.json["message"]
         )
+
+    def test_update_change_group(self) -> None:
+        self.create_meeting()
+        user_id = self.create_user_for_meeting(1)
+        # assert user is already in meeting
+        self.assert_model_exists("meeting/1", {"user_ids": [user_id]})
+        self.set_user_groups(user_id, [2])
+        # change user group from 2 to 1 in meeting 1
+        response = self.request("user.update", {"id": user_id, "group_$_ids": {1: [1]}})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            f"user/{user_id}", {"group_$_ids": ["1"], "group_$1_ids": [1]}
+        )
+        self.assert_model_exists("meeting/1", {"user_ids": [user_id]})
