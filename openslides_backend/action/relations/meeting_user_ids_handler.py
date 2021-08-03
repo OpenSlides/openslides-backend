@@ -44,7 +44,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
             if not self.datastore.is_deleted(user_fqid):
                 group_field = f"group_${meeting_id}_ids"
                 user = self.datastore.fetch_model(user_fqid, [group_field])
-                if len(user[group_field]):
+                if user[group_field]:
                     removed_ids.remove(id)
 
         if not added_ids and not removed_ids:
