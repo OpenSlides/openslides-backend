@@ -53,6 +53,8 @@ class ProjectorToggle(UpdateAction):
             )
 
             for projector_id in instance["ids"]:
+                # Set scroll to 0 is needed, if unstable and no results
+                scroll_to_0 = False
                 stable = instance.get("stable", False)
                 filter_ = And(
                     FilterOperator("current_projector_id", "=", projector_id),
@@ -85,8 +87,14 @@ class ProjectorToggle(UpdateAction):
                         "options": instance.get("options"),
                         "meeting_id": meeting_id,
                     }
+                    if not stable:
+                        self.move_all_unstable_projections_to_history(
+                            projector_id, meeting_id
+                        )
+                        scroll_to_0 = True
                     self.execute_other_action(ProjectionCreate, [data])
-        return []
+                if scroll_to_0:
+                    yield {"id": projector_id, "scroll": 0}
 
     def move_projections_to_history(
         self, projector_id: int, projection_ids: List[int]
@@ -112,3 +120,15 @@ class ProjectorToggle(UpdateAction):
         if maximum is None:
             maximum = 0
         return maximum
+
+    def move_all_unstable_projections_to_history(
+        self, projector_id: int, meeting_id: int
+    ) -> None:
+        filter_ = And(
+            FilterOperator("meeting_id", "=", meeting_id),
+            FilterOperator("current_projector_id", "=", projector_id),
+            FilterOperator("stable", "=", False),
+        )
+        result = self.datastore.filter(Collection("projection"), filter_, ["id"])
+        if result:
+            self.move_projections_to_history(projector_id, [int(id_) for id_ in result])
