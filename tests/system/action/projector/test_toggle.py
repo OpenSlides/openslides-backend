@@ -91,6 +91,7 @@ class ProjectorToggle(BaseActionTestCase):
         self.set_models(
             {
                 "poll/888": {"meeting_id": 1},
+                "projector/23": {"scroll": 100},
             }
         )
         response = self.request(
