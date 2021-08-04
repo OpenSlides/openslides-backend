@@ -105,8 +105,10 @@ class ProjectorToggle(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         projector = self.get_model("projector/23")
+        assert projector.get("current_projection_ids") == [34]
         assert projector.get("history_projection_ids") == [33]
         assert projector.get("scroll") == 0
+        self.assert_model_exists("projection/34")
 
     def test_toggle_no_permissions(self) -> None:
         self.base_permission_test(
