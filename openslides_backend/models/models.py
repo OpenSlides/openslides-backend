@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "fbb1c6b8188ef0b89a10a99c396e0688"
+MODELS_YML_CHECKSUM = "47fe8e3dfbe77cf374719d614369e05c"
 
 
 class Organization(Model):
@@ -396,7 +396,7 @@ class Meeting(Model):
     users_allow_self_set_present = fields.BooleanField(default=False)
     users_pdf_welcometitle = fields.CharField(default="Welcome to OpenSlides")
     users_pdf_welcometext = fields.CharField(
-        default=["Place for your welcome and help text."]
+        default="[Place for your welcome and help text.]"
     )
     users_pdf_url = fields.CharField(default="http://example.com:8000")
     users_pdf_wlan_ssid = fields.CharField()
