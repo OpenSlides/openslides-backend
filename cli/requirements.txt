@@ -1,0 +1,7 @@
+# check_json
+fastjsonschema
+bleach
+
+# generate_*
+requests
+pyyaml

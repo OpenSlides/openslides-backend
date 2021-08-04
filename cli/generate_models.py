@@ -123,6 +123,8 @@ def main() -> None:
         dest.write(FILE_TEMPLATE)
         dest.write("\nMODELS_YML_CHECKSUM = " + repr(checksum) + "\n")
         for collection, fields in MODELS.items():
+            if collection == "_migration_index":
+                continue
             model = Model(collection, fields)
             dest.write(model.get_code())
 
@@ -191,12 +193,14 @@ class Model(Node):
         ),
     }
 
-    def __init__(self, collection: str, fields: Dict[str, Any]) -> None:
+    def __init__(self, collection: str, fields: Dict[str, Dict[str, Any]]) -> None:
         self.collection = collection
         assert collection
         self.attributes = {}
-        for field_name, value in fields.items():
-            self.attributes[field_name] = Attribute(value)
+        for field_name, field in fields.items():
+            if field.get("calculated"):
+                continue
+            self.attributes[field_name] = Attribute(field)
 
     def get_code(self) -> str:
         verbose_name = " ".join(self.collection.split("_"))
@@ -278,6 +282,7 @@ class Attribute(Node):
                         "on_delete",
                         "equal_fields",
                         "items",
+                        "restriction_mode",
                     ):
                         self.contraints[k] = v
                     elif self.type in ("string[]", "number[]") and k == "items":

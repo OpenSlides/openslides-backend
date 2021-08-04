@@ -7,6 +7,10 @@ from openslides_backend.models.checker import Checker, CheckException
 def main() -> int:
     files = sys.argv[1:]
 
+    if not files:
+        print("No files specified.")
+        return 1
+
     is_import = "--import" in files
     if is_import:
         files = [x for x in files if x != "--import"]
