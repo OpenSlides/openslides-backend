@@ -86,6 +86,30 @@ class ProjectorToggle(BaseActionTestCase):
         projector = self.get_model("projector/23")
         assert projector.get("current_projection_ids") == [1]
 
+    def test_toggle_unstable_move_into_history(self) -> None:
+        self.setup_models(False)
+        self.set_models(
+            {
+                "poll/888": {"meeting_id": 1},
+                "projector/23": {"scroll": 100},
+            }
+        )
+        response = self.request(
+            "projector.toggle",
+            {
+                "ids": [23],
+                "content_object_id": "poll/888",
+                "meeting_id": 1,
+                "stable": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        projector = self.get_model("projector/23")
+        assert projector.get("current_projection_ids") == [34]
+        assert projector.get("history_projection_ids") == [33]
+        assert projector.get("scroll") == 0
+        self.assert_model_exists("projection/34")
+
     def test_toggle_no_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
