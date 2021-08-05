@@ -201,7 +201,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
-        self.check_group_E(permstore, actual_group_fields["E"], instance)
+        self.check_group_E(permstore, actual_group_fields["E"])
         self.check_group_D(permstore, actual_group_fields["D"], instance)
         self.check_group_C(permstore, actual_group_fields["C"], instance)
         self.check_group_B(permstore, actual_group_fields["B"], instance)
@@ -344,9 +344,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                     }
                 )
 
-    def check_group_E(
-        self, permstore: PermissionVarStore, fields: List[str], instance: Dict[str, Any]
-    ) -> None:
+    def check_group_E(self, permstore: PermissionVarStore, fields: List[str]) -> None:
         """Check Group E organization_management_level: OML level necessary"""
         if fields and permstore.user_oml < OrganizationManagementLevel.CAN_MANAGE_USERS:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
@@ -369,7 +367,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                 > permstore.user_oml
             ):
                 raise PermissionDenied(
-                    f"Your organization management level is not high enough to reset a Level of {user.get('organization_management_level')}!"
+                    f"Your organization management level is not high enough to change a user with a Level of {user.get('organization_management_level')}!"
                 )
 
     def _check_OML_in_instance(

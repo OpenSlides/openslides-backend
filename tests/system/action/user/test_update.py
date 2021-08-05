@@ -942,7 +942,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/1", {"user_ids": [user_id]})
 
-    def test_update_change_superadmin_group_E(self) -> None:
+    def test_update_change_superadmin(self) -> None:
         self.permission_setup()
         self.set_organization_management_level(
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
@@ -955,11 +955,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
-                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "first_name": "Testy",
             },
         )
         self.assert_status_code(response, 403)
         assert (
-            "Your organization management level is not high enough to reset a Level of superadmin!"
+            "Your organization management level is not high enough to change a user with a Level of superadmin!"
             in response.json["message"]
         )
