@@ -22,3 +22,12 @@ class TestCheckMediafileId(BasePresenterTestCase):
         payload = {"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}
         response = self.client.post("/", json=[payload])
         self.assert_status_code(response, 400)
+
+    def test_request_without_token(self) -> None:
+        self.create_model(
+            "mediafile/1", {"filename": "the filename", "is_directory": False}
+        )
+        self.client.headers = {}
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": True, "filename": "the filename"})
