@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "47fe8e3dfbe77cf374719d614369e05c"
+MODELS_YML_CHECKSUM = "2d18624c7393580db1455dc7459de1a0"
 
 
 class Organization(Model):
@@ -347,7 +347,9 @@ class Meeting(Model):
     motions_recommendation_text_mode = fields.CharField(
         default="diff", constraints={"enum": ["original", "changed", "diff", "agreed"]}
     )
-    motions_default_sorting = fields.CharField(default="identifier")
+    motions_default_sorting = fields.CharField(
+        default="number", constraints={"enum": ["number", "weight"]}
+    )
     motions_number_type = fields.CharField(
         default="per_category",
         constraints={"enum": ["per_category", "serially_numbered", "manually"]},
@@ -358,7 +360,7 @@ class Meeting(Model):
     motions_amendments_enabled = fields.BooleanField(default=False)
     motions_amendments_in_main_list = fields.BooleanField(default=True)
     motions_amendments_of_amendments = fields.BooleanField(default=False)
-    motions_amendments_prefix = fields.CharField()
+    motions_amendments_prefix = fields.CharField(default="-")
     motions_amendments_text_mode = fields.CharField(
         default="paragraph",
         constraints={"enum": ["freestyle", "fulltext", "paragraph"]},
@@ -381,7 +383,7 @@ class Meeting(Model):
             ]
         },
     )
-    motion_poll_ballot_paper_number = fields.IntegerField()
+    motion_poll_ballot_paper_number = fields.IntegerField(default=8)
     motion_poll_default_type = fields.CharField(default="analog")
     motion_poll_default_100_percent_base = fields.CharField(default="YNA")
     motion_poll_default_group_ids = fields.RelationListField(
@@ -407,7 +409,9 @@ class Meeting(Model):
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
-    users_email_body = fields.CharField()
+    users_email_body = fields.CharField(
+        default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
+    )
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.CharField()
     assignment_poll_ballot_paper_selection = fields.CharField(
@@ -427,7 +431,7 @@ class Meeting(Model):
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="analog")
     assignment_poll_default_method = fields.CharField()
-    assignment_poll_default_100_percent_base = fields.CharField(default="YNA")
+    assignment_poll_default_100_percent_base = fields.CharField(default="valid")
     assignment_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_assignment_poll_default_id"}
     )
@@ -1467,7 +1471,7 @@ class Mediafile(Model):
     )
     filename = fields.CharField(
         constraints={
-            "descriptin": "The uploaded filename. Will be used for downloading. Only writeable on create."
+            "description": "The uploaded filename. Will be used for downloading. Only writeable on create."
         }
     )
     mimetype = fields.CharField()
