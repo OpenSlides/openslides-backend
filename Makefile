@@ -80,7 +80,7 @@ run-tests:
 # Build standalone development container (not usable inside the docker container)
 
 build-dev:
-	docker build --file=dev/Dockerfile-dev . --tag=openslides-backend-dev
+	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev
 
 rebuild-dev:
-	docker build --file=dev/Dockerfile-dev . --tag=openslides-backend-dev --no-cache
+	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache

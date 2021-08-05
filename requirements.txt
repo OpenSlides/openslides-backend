@@ -10,4 +10,4 @@ gunicorn==20.1.0
 bleach==3.3.0
 PyPDF2==1.26.0
 git+git://github.com/OpenSlides/openslides-auth-service@205a8333ed7e3922c7aebb5d566acd73c87a9526#egg=authlib&subdirectory=auth/libraries/pip-auth # authlib
-git+git://github.com/OpenSlides/openslides-datastore-service@fbe9aca1aa7b29c3ec728876eb530308ee53c165#egg=datastore # datastore
+git+git://github.com/OpenSlides/openslides-datastore-service@ddd9b10c69dd98e3acf9c4fb7d024a87cad3aff0#egg=datastore # datastore

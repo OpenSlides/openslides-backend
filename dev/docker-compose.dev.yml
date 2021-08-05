@@ -3,7 +3,7 @@ services:
     backend:
         build:
             context: ..
-            dockerfile: dev/Dockerfile-dev
+            dockerfile: dev/Dockerfile.dev
         image: openslides-backend-dev
         user: $USER_ID:$GROUP_ID
         ports:
@@ -17,7 +17,9 @@ services:
             - ../cli:/app/cli
         environment:
             - DATASTORE_READER_HOST=reader
+            - DATASTORE_READER_PORT=9010
             - DATASTORE_WRITER_HOST=writer
+            - DATASTORE_WRITER_PORT=9011
             - AUTH_HOST=auth
         depends_on:
             - writer

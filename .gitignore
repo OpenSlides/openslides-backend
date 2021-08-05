@@ -24,3 +24,6 @@ htmlcov/
 
 # coverage
 openslides_backend/htmlcov
+
+migrations/*.json
+migrations/*.sql
