@@ -112,7 +112,7 @@ class PresenterHandler(BaseHandler):
 
         access_token: Optional[str] = None
         if presenters[0].csrf_exempt:
-            user_id = self.services.authentication().authenticate_without_token(
+            user_id = self.services.authentication().authenticate_only_refresh_id(
                 request.cookies
             )
         else:

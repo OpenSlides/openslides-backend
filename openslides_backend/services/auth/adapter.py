@@ -45,15 +45,13 @@ class AuthenticationHTTPAdapter(AuthenticationService):
             self.logger.debug(f"Error in auth service: {e.message}")
             raise AuthenticationException(e.message)
 
-    def authenticate_without_token(self, cookies: Dict[str, str]) -> int:
+    def authenticate_only_refresh_id(self, cookies: Dict[str, str]) -> int:
         cookie = cookies.get(COOKIE_NAME, "")
         self.logger.debug(
             f"Start request to authentication service with the following cookie: {cookie}"
         )
         try:
-            return self.auth_handler.authenticate(None, parse.unquote(cookie))[
-                0
-            ]  # TODO
+            return self.auth_handler.authenticate_only_refresh_id(parse.unquote(cookie))
         except (AuthenticateException, InvalidCredentialsException) as e:
             self.logger.debug(f"Error in auth service: {e.message}")
             raise AuthenticationException(e.message)
