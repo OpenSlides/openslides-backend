@@ -139,3 +139,23 @@ class TestCheckMediafileId(BasePresenterTestCase):
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
+
+    def test_can_see_and_inherited_groups(self) -> None:
+        self.set_models(
+            {
+                "mediafile/1": {
+                    "filename": "the filename",
+                    "is_directory": False,
+                    "meeting_id": 1,
+                    "inherited_access_group_ids": [2],
+                },
+                "meeting/1": {"default_group_id": 2},
+                "group/2": {
+                    "user_ids": [1],
+                    "permissions": [Permissions.Mediafile.CAN_SEE],
+                },
+                "user/1": {"organization_management_level": None, "group_$1_ids": [2]},
+            }
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
