@@ -196,6 +196,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         if permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
             return
 
+        self._check_for_higher_OML(permstore, instance)
         self._check_OML_in_instance(permstore, instance)
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
 
@@ -352,6 +353,22 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         """Group F: OML SUPERADMIN necessary, which is checked before"""
         if fields:
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+
+    def _check_for_higher_OML(
+        self, permstore: PermissionVarStore, instance: Dict[str, Any]
+    ) -> None:
+        if "id" in instance:
+            user = self.datastore.get(
+                FullQualifiedId(Collection("user"), instance["id"]),
+                ["organization_management_level"],
+            )
+            if (
+                OrganizationManagementLevel(user.get("organization_management_level"))
+                > permstore.user_oml
+            ):
+                raise PermissionDenied(
+                    f"Your organization management level is not high enough to change a user with a Level of {user.get('organization_management_level')}!"
+                )
 
     def _check_OML_in_instance(
         self, permstore: PermissionVarStore, instance: Dict[str, Any]
