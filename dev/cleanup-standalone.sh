@@ -9,4 +9,4 @@ BASEPATH=$SCRIPTPATH/../
 docker run --interactive --tty \
     --volume=$BASEPATH/openslides_backend:/app/openslides_backend \
     --volume=$BASEPATH/tests:/app/tests \
-    --volume=$BASEPATH/cli:/app/cli --rm openslides-backend-dev make
+    --volume=$BASEPATH/cli:/app/cli --rm --entrypoint="" openslides-backend-dev make
