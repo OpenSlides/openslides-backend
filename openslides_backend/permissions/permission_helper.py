@@ -134,3 +134,20 @@ def filter_surplus_permissions(permission_list: List[Permission]) -> List[Permis
             continue
         reduced_permissions.append(permission)
     return reduced_permissions
+
+
+def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool:
+    if has_organization_management_level(
+        datastore, user_id, OrganizationManagementLevel.SUPERADMIN
+    ):
+        return True
+
+    meeting = datastore.get(
+        FullQualifiedId(Collection("meeting"), meeting_id),
+        ["admin_group_id"],
+    )
+    groups_field = f"group_${meeting_id}_ids"
+    user = datastore.get(FullQualifiedId(Collection("user"), user_id), [groups_field])
+    if meeting.get("admin_group_id") in user.get(groups_field, []):
+        return True
+    return False

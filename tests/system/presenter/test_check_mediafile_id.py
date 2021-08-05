@@ -6,8 +6,10 @@ from .base import BasePresenterTestCase
 class TestCheckMediafileId(BasePresenterTestCase):
     def test_simple(self) -> None:
         self.create_model(
-            "mediafile/1", {"filename": "the filename", "is_directory": False}
+            "mediafile/1",
+            {"filename": "the filename", "is_directory": False, "meeting_id": 1},
         )
+        self.create_model("meeting/1")
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"ok": True, "filename": "the filename"})
@@ -27,8 +29,10 @@ class TestCheckMediafileId(BasePresenterTestCase):
 
     def test_request_without_token(self) -> None:
         self.create_model(
-            "mediafile/1", {"filename": "the filename", "is_directory": False}
+            "mediafile/1",
+            {"filename": "the filename", "is_directory": False, "meeting_id": 1},
         )
+        self.create_model("meeting/1")
         self.client.headers = {}
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)

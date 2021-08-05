@@ -3,14 +3,11 @@ from typing import Any, Dict
 import fastjsonschema
 
 from ..models.models import Mediafile
-from ..permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from ..permissions.management_levels import CommitteeManagementLevel
 from ..permissions.permission_helper import (
     has_committee_management_level,
-    has_organization_management_level,
     has_perm,
+    is_admin,
 )
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import PermissionDenied
@@ -53,12 +50,7 @@ class CheckMediafileId(BasePresenter):
         return {"ok": True, "filename": mediafile["filename"]}
 
     def check_permissions(self) -> None:
-        # superadmin is an admin of a meeting
-        if has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
-        ):
-            return
-        # The user is an admin of the meeting
+
         mediafile = self.datastore.get(
             FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
             [
@@ -76,14 +68,12 @@ class CheckMediafileId(BasePresenter):
 
         meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), meeting_id),
-            ["admin_group_id", "enable_anonymous", "user_ids", "committee_id"],
+            ["enable_anonymous", "user_ids", "committee_id"],
         )
-        groups_field = f"group_${meeting_id}_ids"
-        user = self.datastore.get(
-            FullQualifiedId(Collection("user"), self.user_id), [groups_field]
-        )
-        if meeting.get("admin_group_id") in user.get(groups_field, []):
+        # The user is admin of the meeting.
+        if is_admin(self.datastore, self.user_id, meeting_id):
             return
+
         # The user can see the meeting and (used_as_logo_$_in_meeting_id
         #    or used_as_font_$_in_meeting_id is not empty)
         can_see_meeting = self.check_can_see_meeting(meeting)
@@ -127,10 +117,6 @@ class CheckMediafileId(BasePresenter):
 
     def check_can_see_meeting(self, meeting: Dict[str, Any]) -> bool:
         """needs meeting to include enable_anonymous, user_ids, committee_id."""
-        if has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
-        ):
-            return True
         if meeting.get("enable_anonymous"):
             return True
         if self.user_id in meeting.get("user_ids", []):
