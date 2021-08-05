@@ -12,6 +12,8 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "parent_id": None,
                     "child_ids": [8, 9],
+                    "level": 0,
+                    "weight": 100,
                 },
                 "agenda_item/8": {
                     "comment": "comment_8",
@@ -37,9 +39,13 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         agenda_item_8 = self.get_model("agenda_item/8")
         assert agenda_item_8.get("child_ids") == []
         assert agenda_item_8.get("parent_id") is None
+        assert agenda_item_8.get("level") == 0
+        assert agenda_item_8.get("weight") == 10000
         agenda_item_9 = self.get_model("agenda_item/9")
         assert agenda_item_9.get("child_ids") == []
         assert agenda_item_9.get("parent_id") is None
+        assert agenda_item_9.get("level") == 0
+        assert agenda_item_9.get("weight") == 10001
 
     def test_assign_parent_set(self) -> None:
         self.set_models(
@@ -50,6 +56,8 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "parent_id": None,
                     "child_ids": [],
+                    "level": 0,
+                    "weight": 100,
                 },
                 "agenda_item/8": {
                     "comment": "comment_8",
@@ -75,9 +83,13 @@ class AgendaItemAssignActionTest(BaseActionTestCase):
         agenda_item_8 = self.get_model("agenda_item/8")
         assert agenda_item_8.get("child_ids") == []
         assert agenda_item_8.get("parent_id") == 7
+        assert agenda_item_8.get("level") == 1
+        assert agenda_item_8.get("weight") == 101
         agenda_item_9 = self.get_model("agenda_item/9")
         assert agenda_item_9.get("child_ids") == []
         assert agenda_item_9.get("parent_id") == 7
+        assert agenda_item_9.get("level") == 1
+        assert agenda_item_9.get("weight") == 102
 
     def test_assign_multiple_action_data_items(self) -> None:
         self.set_models(

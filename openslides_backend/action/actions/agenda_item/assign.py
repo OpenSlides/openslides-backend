@@ -66,11 +66,27 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
                 grandparent = self.datastore.get(
                     FullQualifiedId(self.model.collection, gp_parent_id), ["parent_id"]
                 )
-        for id_ in ids:
+        for num, id_ in enumerate(ids):
             if id_ in ancesters:
                 raise ActionException(
                     f"Assigning item {id_} to one of its children is not possible."
                 )
             if id_ not in db_instances:
                 raise ActionException(f"Id {id_} not in db_instances.")
-            yield {"id": id_, "parent_id": parent_id}
+            if parent_id:
+                parent = self.datastore.get(
+                    FullQualifiedId(self.model.collection, parent_id),
+                    ["weight", "level"],
+                )
+                new_weight = parent.get("weight", 0) + 1 + num
+                new_level = parent.get("level", 0) + 1
+            else:
+                new_weight = 10000 + num
+                new_level = 0
+
+            yield {
+                "id": id_,
+                "parent_id": parent_id,
+                "weight": new_weight,
+                "level": new_level,
+            }
