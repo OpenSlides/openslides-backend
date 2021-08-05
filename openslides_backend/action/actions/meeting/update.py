@@ -9,6 +9,7 @@ from ....permissions.permission_helper import (
     has_committee_management_level,
     has_organization_management_level,
     has_perm,
+    is_admin,
 )
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import MissingPermission, PermissionDenied
@@ -215,19 +216,7 @@ class MeetingUpdate(UpdateAction):
                 ]
             ]
         ):
-            meeting = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
-                ["admin_group_id"],
-            )
-            user = self.datastore.get(
-                FullQualifiedId(Collection("user"), self.user_id),
-                [f"group_${instance['id']}_ids"],
-            )
-            if not has_organization_management_level(
-                self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
-            ) and meeting.get("admin_group_id") not in user.get(
-                f"group_${instance['id']}_ids", []
-            ):
+            if not is_admin(self.datastore, self.user_id, instance["id"]):
                 raise PermissionDenied("Missing permission: Not admin of this meeting")
 
         # group E check
