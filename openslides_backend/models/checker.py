@@ -26,6 +26,7 @@ from openslides_backend.models.fields import (
     RelationListField,
     TimestampField,
 )
+from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
@@ -301,6 +302,7 @@ class Checker:
         if not errors:
             self.check_types(model, collection)
             self.check_relations(model, collection)
+            self.check_calculated_fields(model, collection)
 
     def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
         model_fields = set(
@@ -582,6 +584,37 @@ class Checker:
             field_type.get_target_collection().collection,
             field_type.to.get(field_type.get_target_collection()),
         )
+
+    def check_calculated_fields(
+        self,
+        model: Dict[str, Any],
+        collection: str,
+    ) -> None:
+        if collection != "mediafile":
+            return
+        if model["is_directory"] and not model["parent_id"]:
+            return
+        access_group_ids = model["access_group_ids"]
+        parent_is_public = None
+        parent_inherited_access_group_ids = None
+        if model["parent_id"]:
+            parent = self.find_model(collection, model["parent_id"])
+            if parent:
+                parent_is_public = parent.get("is_public")
+                parent_inherited_access_group_ids = parent.get(
+                    "inherited_access_group_ids"
+                )
+            is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
+                access_group_ids, parent_is_public, parent_inherited_access_group_ids
+            )
+            if is_public != model["is_public"]:
+                self.errors.append(
+                    f"{collection}/{model['id']}: is_public is wrong. {is_public} != {model['is_public']}"
+                )
+            if inherited_access_group_ids != model["inherited_access_group_ids"]:
+                self.errors.append(
+                    f"{collection}/{model['id']}: inherited_access_group_ids is wrong"
+                )
 
     def find_model(self, collection: str, id: int) -> Optional[Dict[str, Any]]:
         collection_dict = self.data_cache.get(collection, {})
