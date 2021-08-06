@@ -7,6 +7,7 @@ from typing import Any, Dict, TypedDict
 from PyPDF2 import PdfFileReader
 from PyPDF2.utils import PdfReadError
 
+from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -18,7 +19,6 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
-from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 PDFInformation = TypedDict(
     "PDFInformation",
@@ -32,7 +32,6 @@ PDFInformation = TypedDict(
 
 @register_action("mediafile.upload")
 class MediafileUploadAction(
-    MediafileCalculatedFieldsMixin,
     CreateActionWithDependencies,
     CreateActionWithListOfSpeakersMixin,
 ):
@@ -75,7 +74,7 @@ class MediafileUploadAction(
                 (
                     instance["is_public"],
                     instance["inherited_access_group_ids"],
-                ) = self.calculate_inherited_groups(
+                ) = calculate_inherited_groups_helper(
                     instance["access_group_ids"],
                     parent_mediafile.get("is_public"),
                     parent_mediafile.get("inherited_access_group_ids"),

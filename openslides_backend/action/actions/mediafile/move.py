@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional
 
+from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -16,7 +17,7 @@ from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 @register_action("mediafile.move")
 class MediafileMoveAction(
-    UpdateAction, MediafileCalculatedFieldsMixin, SingularActionMixin
+    UpdateAction, SingularActionMixin, MediafileCalculatedFieldsMixin
 ):
     """
     Action to move mediafiles.
@@ -99,7 +100,7 @@ class MediafileMoveAction(
                 (
                     instance["is_public"],
                     instance["inherited_access_group_ids"],
-                ) = self.calculate_inherited_groups(
+                ) = calculate_inherited_groups_helper(
                     access_group_ids,
                     parent.get("is_public"),
                     parent.get("inherited_access_group_ids"),

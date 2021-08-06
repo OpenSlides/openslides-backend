@@ -1,16 +1,16 @@
 from typing import Any, Dict
 
+from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .calculate_mixins import MediafileCalculatedFieldsMixin
 
 
 @register_action("mediafile.create_directory")
-class MediafileUpdate(MediafileCalculatedFieldsMixin, CreateAction):
+class MediafileUpdate(CreateAction):
     """
     Action to create directory a mediafile.
     """
@@ -37,7 +37,7 @@ class MediafileUpdate(MediafileCalculatedFieldsMixin, CreateAction):
             (
                 instance["is_public"],
                 instance["inherited_access_group_ids"],
-            ) = self.calculate_inherited_groups(
+            ) = calculate_inherited_groups_helper(
                 instance.get("access_group_ids"),
                 parent.get("is_public"),
                 parent.get("inherited_access_group_ids"),
