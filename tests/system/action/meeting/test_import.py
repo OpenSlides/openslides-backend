@@ -846,6 +846,64 @@ class MeetingImport(BaseActionTestCase):
             "meeting/2", {"logo_$_id": ["web_header"], "logo_$web_header_id": 1}
         )
 
+    def test_is_public_error(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "mediafile": [
+                    {
+                        "id": 3,
+                        "meeting_id": 1,
+                        "used_as_logo_$_in_meeting_id": ["web_header"],
+                        "used_as_logo_$web_header_in_meeting_id": 1,
+                        "title": "A.txt",
+                        "is_directory": False,
+                        "filesize": 3,
+                        "filename": "A.txt",
+                        "mimetype": "text/plain",
+                        "pdf_information": {},
+                        "create_timestamp": 1584513771,
+                        "is_public": True,
+                        "access_group_ids": [],
+                        "inherited_access_group_ids": [],
+                        "parent_id": 2,
+                        "child_ids": [],
+                        "list_of_speakers_id": None,
+                        "projection_ids": [],
+                        "attachment_ids": [],
+                        "used_as_font_$_in_meeting_id": [],
+                        "blob": "bla",
+                    },
+                    {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "used_as_logo_$_in_meeting_id": [],
+                        "title": "A.txt",
+                        "is_directory": True,
+                        "filesize": 3,
+                        "filename": "A.txt",
+                        "mimetype": "text/plain",
+                        "pdf_information": {},
+                        "create_timestamp": 1584513771,
+                        "is_public": False,
+                        "access_group_ids": [],
+                        "inherited_access_group_ids": [],
+                        "parent_id": None,
+                        "child_ids": [3],
+                        "list_of_speakers_id": None,
+                        "projection_ids": [],
+                        "attachment_ids": [],
+                        "used_as_font_$_in_meeting_id": [],
+                    },
+                ]
+            }
+        )
+        request_data["meeting"]["meeting"][0]["logo_$_id"] = ["web_header"]
+        request_data["meeting"]["meeting"][0]["logo_$web_header_id"] = 3
+        request_data["meeting"]["meeting"][0]["mediafile_ids"] = [2, 3]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert "mediafile/3: is_public is wrong." in response.json["message"]
+
     def test_request_user_in_admin_group(self) -> None:
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)

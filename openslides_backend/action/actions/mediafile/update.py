@@ -1,3 +1,4 @@
+from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
@@ -41,7 +42,7 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
                 (
                     instance["is_public"],
                     instance["inherited_access_group_ids"],
-                ) = self.calculate_inherited_groups(
+                ) = calculate_inherited_groups_helper(
                     instance["access_group_ids"],
                     parent.get("is_public"),
                     parent.get("inherited_access_group_ids"),
