@@ -2,6 +2,7 @@ from . import (  # noqa
     check_mediafile_id,
     check_resource_id,
     get_forwarding_meetings,
+    get_history_information,
     get_users,
     server_time,
 )

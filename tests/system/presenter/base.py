@@ -11,7 +11,7 @@ class BasePresenterTestCase(BaseSystemTestCase):
 
     def request(
         self, presenter: str, data: Optional[Dict[str, Any]] = None
-    ) -> Tuple[int, Dict[str, Any]]:
+    ) -> Tuple[int, Any]:
         """
         Requests a single presenter and returns the status code and the json decoded
         response. Automatically removes array around response data.
