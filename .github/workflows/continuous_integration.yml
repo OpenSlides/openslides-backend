@@ -10,18 +10,17 @@ env:
 jobs:
   build-production-image:
     name: Build and test production docker image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
 
-    - name: Create docker production image
-      run: docker build . --tag=openslides-backend
-
     - name: Run docker production image
-      run: docker run --detach --publish 9002:9002 --publish 9003:9003 openslides-backend
+      working-directory: .github/startup_test
+      run: docker-compose up -d
 
-    - name: Sleep for some seconds
-      run: sleep 2
+    - name: Wait for action service
+      working-directory: .github/startup_test
+      run: docker-compose exec -T backend ./wait.sh backend 9002
 
     - name: Fire a test request to actions component
       run: curl -I localhost:9002/health

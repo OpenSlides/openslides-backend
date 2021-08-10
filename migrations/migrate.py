@@ -1,17 +1,16 @@
-import argparse
 import pkgutil
 import sys
+from argparse import ArgumentParser
 from importlib import import_module
 from typing import List, Type
 
 from datastore.migrations import BaseMigration, setup
 
-BASE_MIGRATION_MODULE = "migrations"
-"""In this module, all migration files have to be placed."""
 
-
-def get_parser():
-    parent_parser = argparse.ArgumentParser(description="Migration tool for allying migrations to the datastore.")
+def get_parser() -> ArgumentParser:
+    parent_parser = ArgumentParser(
+        description="Migration tool for allying migrations to the datastore."
+    )
     parent_parser.add_argument(
         "--verbose",
         "-v",
@@ -60,32 +59,37 @@ class BadMigrationModule(Exception):
 
 
 def load_migrations() -> List[Type[BaseMigration]]:
-    base_migration_module = import_module(BASE_MIGRATION_MODULE)
+    base_module = __name__.rsplit(".", 1)[0]
+    if base_module == "__main__":
+        base_migration_module_pypath = "migrations"
+    else:
+        base_migration_module_pypath = base_module + ".migrations"
+    base_migration_module = import_module(base_migration_module_pypath)
 
     module_names = {
         name
-        for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)
+        for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)  # type: ignore
         if not is_pkg
     }
 
     migration_classes: List[Type[BaseMigration]] = []
     for module_name in module_names:
-        module_path = f"{BASE_MIGRATION_MODULE}.{module_name}"
-        migration_module = import_module(module_path)
+        module_pypath = f"{base_migration_module_pypath}.{module_name}"
+        migration_module = import_module(module_pypath)
         if not hasattr(migration_module, "Migration"):
             raise BadMigrationModule(
-                f"The module {module_path} does not have a class called 'Migration'"
+                f"The module {module_pypath} does not have a class called 'Migration'"
             )
-        migration_class = migration_module.Migration
+        migration_class = migration_module.Migration  # type: ignore
         if not issubclass(migration_class, BaseMigration):
             raise BadMigrationModule(
-                f"The class 'Migration' in module {module_path} does not inherit from 'BaseMigration'"
+                f"The class 'Migration' in module {module_pypath} does not inherit from 'BaseMigration'"
             )
         migration_classes.append(migration_class)
     return migration_classes
 
 
-def main():
+def main() -> int:
     parser = get_parser()
     args = parser.parse_args()
     migrations = load_migrations()

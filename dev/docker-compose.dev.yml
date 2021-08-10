@@ -13,6 +13,7 @@ services:
         command: sleep infinity
         volumes:
             - ../openslides_backend:/app/openslides_backend
+            - ../migrations:/app/migrations
             - ../tests:/app/tests
             - ../cli:/app/cli
         environment:

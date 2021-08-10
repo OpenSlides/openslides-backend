@@ -10,7 +10,7 @@ COPY dev/requirements_development.txt dev/.
 
 RUN pip install --no-cache-dir --requirement dev/requirements_development.txt
 
-COPY dev/wait.sh dev/.
+COPY wait.sh ./
 COPY dev/run-tests.sh dev/.
 COPY dev/bashrc dev/.
 COPY dev/cleanup.sh .
@@ -18,9 +18,6 @@ COPY dev/cleanup.sh .
 COPY Makefile Makefile
 COPY setup.cfg .
 COPY dev/entrypoint.sh ./
-
-COPY migrations/migrate.py migrations/.
-COPY migrations/migrations migrations/migrations/.
 
 RUN chmod 777 -R .
 RUN chmod 777 /root
@@ -31,6 +28,7 @@ EXPOSE 9003
 EXPOSE 5678
 
 ENV OPENSLIDES_DEVELOPMENT 1
+ENV PYTHONPATH /app
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "openslides_backend"]
