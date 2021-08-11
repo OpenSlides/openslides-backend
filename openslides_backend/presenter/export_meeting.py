@@ -4,7 +4,7 @@ import fastjsonschema
 
 from ..models.base import model_registry
 from ..shared.filters import FilterOperator
-from ..shared.patterns import Collection
+from ..shared.patterns import Collection, FullQualifiedId
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -36,14 +36,22 @@ class ExportMeeting(BasePresenter):
     def get_result(self) -> Any:
         self.check_permissions()
         export = {}
+
+        # handle collections with meeting_id
         meeting_collections = self.get_collections_with_meeting_id()
         for collection in meeting_collections:
             res = self.datastore.filter(
                 Collection(collection),
                 FilterOperator("meeting_id", "=", self.data["meeting_id"]),
             )
-            res_list = self.remove_meta_fields(list(res.values()))
-            export[collection] = res_list
+            export[collection] = self.remove_meta_fields(list(res.values()))
+
+        # handle meeting
+        meeting = self.datastore.get(
+            FullQualifiedId(Collection("meeting"), self.data["meeting_id"])
+        )
+        export["meeting"] = self.remove_meta_fields([meeting])
+
         return {"export": export}
 
     def check_permissions(self) -> None:

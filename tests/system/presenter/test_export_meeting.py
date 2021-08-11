@@ -34,6 +34,7 @@ class TestExportMeeting(BasePresenterTestCase):
         assert len(export["projector_message"]) == 1
         assert len(export["projector_countdown"]) == 2
         assert len(export["chat_group"]) == 2
+        assert len(export["meeting"]) == 1
 
     def test_export_meeting_meta_field_handling(self) -> None:
         self.set_models(
@@ -47,6 +48,7 @@ class TestExportMeeting(BasePresenterTestCase):
         status_code, data = self.request("export_meeting", {"meeting_id": 10})
         self.assertEqual(status_code, 200)
         export = data["export"]
+        assert len(export["meeting"]) == 1
         assert len(export["tag"]) == 3
         for tag in export["tag"]:
             assert "meta_position" not in tag
