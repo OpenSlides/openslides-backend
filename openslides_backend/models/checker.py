@@ -37,12 +37,16 @@ SCHEMA = fastjsonschema.compile(
         "type": "object",
         "patternProperties": {
             "^[a-z_]+$": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {"id": {"type": "number"}},
-                    "required": ["id"],
+                "type": "object",
+                "patternProperties": {
+                    "^[1-9][0-9]*$": {
+                        "type": "object",
+                        "properties": {"id": {"type": "number"}},
+                        "required": ["id"],
+                        "additionalProperties": True,
+                    }
                 },
+                "additionalProperties": False,
             }
         },
         "additionalProperties": False,
@@ -138,7 +142,7 @@ checker_map: Dict[Type[Field], Callable[..., bool]] = {
 class Checker:
     def __init__(
         self,
-        data: Dict[str, List[Any]],
+        data: Dict[str, Dict[str, Any]],
         is_import: bool = False,
         is_partial: bool = False,
         is_clone: bool = False,
@@ -173,7 +177,6 @@ class Checker:
             str, Dict[str, Tuple[str, int, int]]
         ] = defaultdict(dict)
         self.generate_template_prefixes()
-        self.create_data_cache()
 
     def check_migration_index(self) -> None:
         if "_migration_index" in self.data:
@@ -247,12 +250,6 @@ class Checker:
                     len(suffix),
                 )
 
-    def create_data_cache(self) -> None:
-        self.data_cache: Dict[str, Dict[int, Any]] = defaultdict(dict)
-        for collection in self.data:
-            for entry in self.data[collection]:
-                self.data_cache[collection][int(entry["id"])] = entry
-
     def is_template_field(self, field: str) -> bool:
         return "$_" in field or field.endswith("$")
 
@@ -288,7 +285,11 @@ class Checker:
         self.check_json()
         self.check_collections()
         for collection, models in self.data.items():
-            for model in models:
+            for id_, model in models.items():
+                if model["id"] != int(id_):
+                    self.errors.append(
+                        f"{collection}/{id_}: Id must be the same as model['id']"
+                    )
                 self.check_model(collection, model)
         if self.errors:
             errors = [f"\t{error}" for error in self.errors]
@@ -456,6 +457,7 @@ class Checker:
             # check if required field is not empty
             # committee_id is a special case, because it is filled after the
             # replacement
+            # is_active_in_organization_id is also skipped, see PR #901
             skip_fields = (Meeting.committee_id, Meeting.is_active_in_organization_id)
             if (
                 field_type.required
@@ -584,6 +586,7 @@ class Checker:
                         basemsg,
                         replacement,
                     )
+
         elif collection == "motion" and field == "recommendation_extension":
             RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(
                 r"\[(?P<fqid>\w+/\d+)\]"
@@ -649,8 +652,7 @@ class Checker:
                 )
 
     def find_model(self, collection: str, id: int) -> Optional[Dict[str, Any]]:
-        collection_dict = self.data_cache.get(collection, {})
-        return collection_dict.get(id)
+        return self.data.get(collection, {}).get(str(id))
 
     def check_reverse_relation(
         self,
