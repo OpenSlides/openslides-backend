@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "2d18624c7393580db1455dc7459de1a0"
+MODELS_YML_CHECKSUM = "f336671df27e4dd71f10d4a593a17d55"
 
 
 class Organization(Model):
@@ -20,8 +20,18 @@ class Organization(Model):
     theme = fields.CharField()
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
+    limit_of_meetings = fields.IntegerField(
+        default=0,
+        constraints={
+            "description": "Maximum of active meetings for the whole organization. 0 means no limitation at all",
+            "minimum": 0,
+        },
+    )
     committee_ids = fields.RelationListField(
         to={Collection("committee"): "organization_id"}
+    )
+    active_meeting_ids = fields.RelationListField(
+        to={Collection("meeting"): "is_active_in_organization_id"}
     )
     resource_ids = fields.RelationListField(
         to={Collection("resource"): "organization_id"}
@@ -231,6 +241,10 @@ class Meeting(Model):
     welcome_title = fields.CharField(default="Welcome to OpenSlides")
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(default="OpenSlides", constraints={"maxLength": 100})
+    is_active_in_organization_id = fields.RelationField(
+        to={Collection("organization"): "active_meeting_ids"},
+        constraints={"description": "Backrelation and boolean flag at once"},
+    )
     description = fields.CharField(
         default="Presentation and assembly system", constraints={"maxLength": 100}
     )

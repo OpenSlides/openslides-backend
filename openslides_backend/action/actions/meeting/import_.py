@@ -132,6 +132,7 @@ class MeetingImport(SingularActionMixin, Action):
         # update committee_id
         json_data = instance["meeting"]
         json_data["meeting"][0]["committee_id"] = instance["committee_id"]
+        json_data["meeting"][0]["is_active_in_organization_id"] = 1
 
         # generate passwords
         for entry in json_data["user"]:
@@ -174,7 +175,10 @@ class MeetingImport(SingularActionMixin, Action):
             raise ActionException(f"{collection}/{field} is not allowed.")
         elif field == "id":
             entry["id"] = self.replace_map[collection][entry["id"]]
-        elif collection == "meeting" and field == "committee_id":
+        elif collection == "meeting" and field in (
+            "committee_id",
+            "is_active_in_organization_id",
+        ):
             pass
         elif collection == "meeting" and field == "user_ids":
             entry[field] = [self.replace_map["user"][id_] for id_ in entry[field]]
@@ -279,6 +283,7 @@ class MeetingImport(SingularActionMixin, Action):
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
+        meeting_id = json_data["meeting"][0]["id"]
         write_requests = []
         for collection in json_data:
             for entry in json_data[collection]:
@@ -287,7 +292,7 @@ class MeetingImport(SingularActionMixin, Action):
                     self.build_write_request(
                         EventType.Create,
                         fqid,
-                        f"import meeting {json_data['meeting'][0]['id']}",
+                        f"import meeting {meeting_id}",
                         entry,
                     )
                 )
@@ -296,9 +301,19 @@ class MeetingImport(SingularActionMixin, Action):
             self.build_write_request(
                 EventType.Update,
                 FullQualifiedId(Collection("committee"), instance["committee_id"]),
-                f"import meeting {json_data['meeting'][0]['id']}",
+                f"import meeting {meeting_id}",
                 None,
-                {"add": {"meeting_ids": [json_data["meeting"][0]["id"]]}, "remove": {}},
+                {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
+            )
+        )
+        # add meeting to organization/active_meeting_ids
+        write_requests.append(
+            self.build_write_request(
+                EventType.Update,
+                FullQualifiedId(Collection("organization"), 1),
+                f"import meeting {meeting_id}",
+                None,
+                {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
             )
         )
         return write_requests

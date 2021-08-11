@@ -34,11 +34,13 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.load_example_data()
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("meeting/1")
+        self.assert_model_deleted(
+            "meeting/1", {"committee_id": 1, "group_ids": []}
+        )  # should group_ids be [1,2,3,4,5]?
         self.assert_model_exists("committee/1", {"meeting_ids": []})
         # assert all related models are deleted
         for i in range(5):
-            self.assert_model_deleted(f"group/{i+1}")
+            self.assert_model_deleted(f"group/{i+1}", {"meeting_id": 1})
         self.assert_model_deleted("personal_note/1")
         for i in range(3):
             self.assert_model_deleted(f"tag/{i+1}")
