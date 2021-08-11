@@ -7,6 +7,7 @@ class TestExportMeeting(BasePresenterTestCase):
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         self.assertEqual(status_code, 200)
         export = data["export"]
+        assert len(export["group"]) == 5
         assert len(export["personal_note"]) == 1
         assert len(export["tag"]) == 3
         assert len(export["agenda_item"]) == 15
