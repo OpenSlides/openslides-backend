@@ -36,7 +36,7 @@ class ExportMeeting(BasePresenter):
     def get_result(self) -> Any:
         self.check_permissions()
         export = {}
-        meeting_collections = self.get_meeting_collections()
+        meeting_collections = self.get_collections_with_meeting_id()
         for collection in meeting_collections:
             res = self.datastore.filter(
                 Collection(collection),
@@ -49,21 +49,13 @@ class ExportMeeting(BasePresenter):
     def check_permissions(self) -> None:
         pass
 
-    def get_meeting_collections(self) -> List[str]:
-        not_meeting_collections = [
-            "organization",
-            "organization_tag",
-            "meeting",
-            "user",
-            "resource",
-            "committee",
-        ]
-        meeting_collections = [
+    def get_collections_with_meeting_id(self) -> List[str]:
+        collections = [
             c.collection
             for c in model_registry
-            if c.collection not in not_meeting_collections
+            if model_registry[c]().has_field("meeting_id")
         ]
-        return meeting_collections
+        return collections
 
     def remove_meta_fields(self, res: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         list_without_meta_fields = []
