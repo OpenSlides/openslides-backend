@@ -60,9 +60,9 @@ class ExportMeeting(BasePresenter):
     def remove_meta_fields(self, res: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         list_without_meta_fields = []
         for entry in res:
-            if "meta_position" in entry:
-                del entry["meta_position"]
-            if "meta_deleted" in entry:
-                del entry["meta_deleted"]
-            list_without_meta_fields.append(entry)
+            new_entry = {}
+            for fieldname in entry:
+                if not fieldname.startswith("meta_"):
+                    new_entry[fieldname] = entry[fieldname]
+            list_without_meta_fields.append(new_entry)
         return list_without_meta_fields
