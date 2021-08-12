@@ -1049,3 +1049,9 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert "mediafile/1: Invalid fields foobar" in response.json["message"]
+
+    def test_bad_format_invalid_id_key(self) -> None:
+        request_data = self.create_request_data({"tag": {"1": {"id": 2}}})
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert "tag/1: Id must be the same as model['id']" in response.json["message"]

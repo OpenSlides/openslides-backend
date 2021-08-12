@@ -301,7 +301,7 @@ class MeetingImport(SingularActionMixin, Action):
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
-        meeting_id = self.get_meeting_from_json(json_data)['id']
+        meeting_id = self.get_meeting_from_json(json_data)["id"]
         write_requests = []
         for collection in json_data:
             for entry in json_data[collection].values():
@@ -319,7 +319,8 @@ class MeetingImport(SingularActionMixin, Action):
             self.build_write_request(
                 EventType.Update,
                 FullQualifiedId(
-                    Collection("committee"), self.get_meeting_from_json(json_data)["committee_id"]
+                    Collection("committee"),
+                    self.get_meeting_from_json(json_data)["committee_id"],
                 ),
                 f"import meeting {meeting_id}",
                 None,
