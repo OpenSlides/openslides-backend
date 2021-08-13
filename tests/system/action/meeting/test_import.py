@@ -1089,9 +1089,6 @@ class MeetingImport(BaseActionTestCase):
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
                     "name": "Default projector",
-                    "current_projection_ids": [],
-                    "preview_projection_ids": [],
-                    "history_projection_ids": [],
                     "used_as_default_$_in_meeting_id": [],
                 },
             }
