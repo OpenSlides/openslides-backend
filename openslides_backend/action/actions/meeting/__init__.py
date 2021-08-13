@@ -1,4 +1,5 @@
 from . import (  # noqa
+    clone,
     create,
     delete,
     delete_all_speakers_of_all_lists,

@@ -156,9 +156,13 @@ class MeetingImport(SingularActionMixin, Action):
                 replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
 
-    def replace_fields(self, instance: Dict[str, Any]) -> None:
+    def replace_fields(
+        self, instance: Dict[str, Any], ignore_user: bool = False
+    ) -> None:
         json_data = instance["meeting"]
         for collection in json_data:
+            if ignore_user and collection == "user":
+                continue
             for entry in json_data[collection]:
                 for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field)
