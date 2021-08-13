@@ -48,11 +48,13 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
             Collection(collection),
             FilterOperator("meeting_id", "=", meeting_id),
         )
-        export[collection] = remove_meta_fields(list(res.values()))
+        export[collection] = add_empty_fields(
+            remove_meta_fields(list(res.values())), collection
+        )
 
     # handle meeting
     meeting = datastore.get(FullQualifiedId(Collection("meeting"), meeting_id))
-    export["meeting"] = remove_meta_fields([meeting])
+    export["meeting"] = add_empty_fields(remove_meta_fields([meeting]), "meeting")
     return export
 
 
@@ -74,3 +76,17 @@ def remove_meta_fields(res: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 new_entry[fieldname] = entry[fieldname]
         list_without_meta_fields.append(new_entry)
     return list_without_meta_fields
+
+
+def add_empty_fields(
+    res: List[Dict[str, Any]], collection: str
+) -> List[Dict[str, Any]]:
+    fields = set(
+        field.get_own_field_name()
+        for field in model_registry[Collection(collection)]().get_fields()
+    )
+    for entry in res:
+        for field in fields:
+            if field not in entry:
+                entry[field] = None
+    return res
