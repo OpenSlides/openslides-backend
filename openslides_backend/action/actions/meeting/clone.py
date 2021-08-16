@@ -107,6 +107,25 @@ class MeetingClone(MeetingImport):
                             },
                         )
                     )
+        for speaker in json_data["speaker"]:
+            if speaker.get("user_id"):
+                write_requests.append(
+                    self.build_write_request(
+                        EventType.Update,
+                        FullQualifiedId(Collection("user"), speaker["user_id"]),
+                        f"clone meeting {json_data['meeting'][0]['id']}",
+                        None,
+                        {
+                            "add": {
+                                "speaker_$_ids": [str(json_data["meeting"][0]["id"])],
+                                f"speaker_${json_data['meeting'][0]['id']}_ids": [
+                                    speaker["id"]
+                                ],
+                            },
+                            "remove": {},
+                        },
+                    )
+                )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass
