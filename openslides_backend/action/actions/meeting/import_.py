@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from ....models.base import model_registry
 from ....models.checker import Checker, CheckException
@@ -321,7 +321,13 @@ class MeetingImport(SingularActionMixin, Action):
                 {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
             )
         )
+        self.append_extra_write_requests(write_requests, json_data)
         return write_requests
+
+    def append_extra_write_requests(
+        self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
+    ) -> None:
+        """For overwritting in the clone subclass"""
 
     def create_action_result_element(
         self, instance: Dict[str, Any]

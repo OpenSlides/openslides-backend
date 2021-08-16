@@ -1,12 +1,14 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ....models.checker import Checker, CheckException
 from ....models.models import Meeting
 from ....presenter.export_meeting import export_meeting
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection
+from ....shared.interfaces.event import EventType
+from ....shared.interfaces.write_request import WriteRequest
+from ....shared.patterns import Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .import_ import MeetingImport
@@ -81,6 +83,30 @@ class MeetingClone(MeetingImport):
                 for entry, new_id in zip(json_data[collection], new_ids):
                     replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
+
+    def append_extra_write_requests(
+        self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
+    ) -> None:
+        for group in json_data["group"]:
+            if group.get("user_ids"):
+                for user_id in group.get("user_ids"):
+                    write_requests.append(
+                        self.build_write_request(
+                            EventType.Update,
+                            FullQualifiedId(Collection("user"), user_id),
+                            f"clone meeting {json_data['meeting'][0]['id']}",
+                            None,
+                            {
+                                "add": {
+                                    "group_$_ids": [str(json_data["meeting"][0]["id"])],
+                                    f"group_${json_data['meeting'][0]['id']}_ids": [
+                                        group["id"]
+                                    ],
+                                },
+                                "remove": {},
+                            },
+                        )
+                    )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass
