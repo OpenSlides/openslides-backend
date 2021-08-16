@@ -22,7 +22,7 @@ class MotionSortActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert "Actions handled successfully" in response.json["message"]
         model_22 = self.get_model("motion/22")
-        assert model_22.get("sort_weight") == 2
+        assert model_22.get("sort_weight") == 1
         assert model_22.get("sort_parent_id") is None
         assert model_22.get("sort_children_ids") == []
 
@@ -68,19 +68,12 @@ class MotionSortActionTest(BaseActionTestCase):
 
         response = self.request("motion.sort", valid_data)
         self.assert_status_code(response, 200)
-        fqids_in_preorder = [
-            "motion/1",
-            "motion/11",
-            "motion/21",
-            "motion/12",
-            "motion/22",
-            "motion/23",
-        ]
-        weight = 2
-        for fqid in fqids_in_preorder:
-            model = self.get_model(fqid)
-            assert model.get("sort_weight") == weight
-            weight += 2
+        self.assert_model_exists("motion/1", {"sort_weight": 1})
+        self.assert_model_exists("motion/11", {"sort_weight": 1})
+        self.assert_model_exists("motion/12", {"sort_weight": 2})
+        self.assert_model_exists("motion/21", {"sort_weight": 1})
+        self.assert_model_exists("motion/22", {"sort_weight": 1})
+        self.assert_model_exists("motion/23", {"sort_weight": 2})
 
     def test_sort_not_a_tree(self) -> None:
         self.set_models(
@@ -147,15 +140,15 @@ class MotionSortActionTest(BaseActionTestCase):
         response = self.request("motion.sort", small_tree_data)
         self.assert_status_code(response, 200)
         model_1 = self.get_model("motion/1")
-        assert model_1.get("sort_weight") == 2
+        assert model_1.get("sort_weight") == 1
         assert model_1.get("sort_parent_id") is None
         assert model_1.get("sort_children_ids") == [11, 12]
         model_11 = self.get_model("motion/11")
-        assert model_11.get("sort_weight") == 4
+        assert model_11.get("sort_weight") == 1
         assert model_11.get("sort_parent_id") == 1
         assert model_11.get("sort_children_ids") == []
         model_12 = self.get_model("motion/12")
-        assert model_12.get("sort_weight") == 6
+        assert model_12.get("sort_weight") == 2
         assert model_12.get("sort_parent_id") == 1
         assert model_12.get("sort_children_ids") == []
 

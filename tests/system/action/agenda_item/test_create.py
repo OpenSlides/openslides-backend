@@ -46,7 +46,7 @@ class AgendaItemSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["type"], "internal")
         self.assertEqual(agenda_item["parent_id"], 42)
         self.assertEqual(agenda_item["duration"], 360)
-        self.assertEqual(agenda_item["weight"], 10000)
+        self.assertEqual(agenda_item["weight"], 1)
         self.assertFalse(agenda_item.get("closed"))
         assert agenda_item.get("level") == 1
 
@@ -58,25 +58,26 @@ class AgendaItemSystemTest(BaseActionTestCase):
                 "agenda_item/42": {"comment": "test", "meeting_id": 1, "weight": 10},
             }
         )
-        response = self.request(
+        response = self.request_multi(
             "agenda_item.create",
-            {
-                "content_object_id": "topic/1",
-                "comment": "test_comment_oiuoitesfd",
-                "type": "internal",
-                "parent_id": 42,
-                "duration": 360,
-            },
+            [
+                {
+                    "content_object_id": "topic/1",
+                    "parent_id": 42,
+                },
+                {
+                    "content_object_id": "topic/1",
+                    "parent_id": 42,
+                },
+            ],
         )
         self.assert_status_code(response, 200)
         agenda_item = self.get_model("agenda_item/43")
-        self.assertEqual(agenda_item["comment"], "test_comment_oiuoitesfd")
-        self.assertEqual(agenda_item["type"], AgendaItem.INTERNAL_ITEM)
         self.assertEqual(agenda_item["parent_id"], 42)
-        self.assertEqual(agenda_item["duration"], 360)
-        self.assertEqual(agenda_item["weight"], 11)
-        self.assertFalse(agenda_item.get("closed"))
-        assert agenda_item.get("level") == 1
+        self.assertEqual(agenda_item["weight"], 1)
+        agenda_item = self.get_model("agenda_item/44")
+        self.assertEqual(agenda_item["parent_id"], 42)
+        self.assertEqual(agenda_item["weight"], 2)
 
     def test_create_content_object_does_not_exist(self) -> None:
         response = self.request("agenda_item.create", {"content_object_id": "topic/1"})

@@ -40,13 +40,19 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
         instance = super().update_instance(instance)
         if instance.get("parent_id") is None:
             return instance
-        parent = self.datastore.get(
+        parent = self.datastore.fetch_model(
             FullQualifiedId(Collection("agenda_item"), instance["parent_id"]),
-            ["weight"],
+            ["child_ids"],
         )
-        if parent.get("weight") is None:
-            return instance
-        instance["weight"] = parent["weight"] + 1
+        max_weight = 0
+        for child_id in parent.get("child_ids", []):
+            child = self.datastore.fetch_model(
+                FullQualifiedId(Collection("agenda_item"), child_id),
+                ["weight"],
+            )
+            if child.get("weight", 0) > max_weight:
+                max_weight = child["weight"]
+        instance["weight"] = max_weight + 1
         return instance
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:

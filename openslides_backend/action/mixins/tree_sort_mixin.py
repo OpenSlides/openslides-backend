@@ -56,13 +56,6 @@ class TreeSortMixin(BaseAction):
         ids_found: Set[int] = set()  # Set to save all found ids.
         nodes_to_update: Dict[int, Dict[str, Any]] = {}  # Result data.
 
-        # The weight values are 2, 4, 6, 8,... to "make space" between entries. This is
-        # some work around for the agenda: If one creates a content object with an item
-        # and gives the item's parent, than the weight can be set to the parent's one +1.
-        # If multiple content objects witht he same parent are created, the ordering is not
-        # guaranteed.
-        weight = 0
-
         # Now walk through the tree.
         while len(nodes_to_check) > 0:
             node = nodes_to_check.pop()
@@ -70,15 +63,14 @@ class TreeSortMixin(BaseAction):
 
             if id is not None:  # Exclude the fake_root
                 # Parse current node.
-                weight += 2
                 nodes_to_update[id] = {}
                 nodes_to_update[id]["id"] = id
                 nodes_to_update[id][children_ids_key] = []
-                nodes_to_update[id][weight_key] = weight
                 parent_id = node.get(parent_id_key)
                 nodes_to_update[id][parent_id_key] = parent_id
                 if parent_id is not None:
                     nodes_to_update[parent_id][children_ids_key].append(id)
+                nodes_to_update[id][weight_key] = node[weight_key]
 
                 # Check id.
                 if id in ids_found:
@@ -92,10 +84,13 @@ class TreeSortMixin(BaseAction):
                 node[
                     "children"
                 ].reverse()  # Use reverse() because we use pop() some lines, so this is LIFO and not FIFO.
+                weight = len(node["children"])
                 for child in node["children"]:
                     validate_sort_node(child)
                     child[parent_id_key] = id
                     nodes_to_check.append(child)
+                    child[weight_key] = weight
+                    weight -= 1
 
         # Check if all ids are used.
         if len(all_model_ids) != len(ids_found):
