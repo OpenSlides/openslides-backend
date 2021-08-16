@@ -42,7 +42,7 @@ class MeetingClone(MeetingImport):
                 )
 
         # check datavalidation
-        checker = Checker(data=meeting_json, is_import=True)
+        checker = Checker(data=meeting_json, is_import=True, is_clone=True)
         try:
             checker.run_check()
         except CheckException as ce:
@@ -69,11 +69,11 @@ class MeetingClone(MeetingImport):
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
         for collection in json_data:
-            if not json_data[collection]:
-                continue
             if collection == "user":
-                for user_id in json_data["meeting"]["user_ids"]:
+                for user_id in json_data["meeting"][0]["user_ids"] or []:
                     replace_map["user"][user_id] = user_id
+            elif not json_data[collection]:
+                continue
             else:
                 new_ids = self.datastore.reserve_ids(
                     Collection(collection), len(json_data[collection])

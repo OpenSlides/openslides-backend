@@ -141,6 +141,7 @@ class Checker:
         data: Dict[str, List[Any]],
         is_import: bool = False,
         is_partial: bool = False,
+        is_clone: bool = False,
     ) -> None:
         """
         With is_import=True all collections will be removed, that are not meeting
@@ -154,6 +155,7 @@ class Checker:
         """
         self.data = data
         self.is_partial = is_partial
+        self.is_clone = is_clone
 
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
@@ -512,25 +514,7 @@ class Checker:
 
             foreign_collection, foreign_field = self.get_to(field, collection)
 
-            self.check_reverse_relation(
-                collection,
-                model["id"],
-                model,
-                foreign_collection,
-                foreign_id,
-                foreign_field,
-                basemsg,
-                replacement,
-            )
-
-        elif isinstance(field_type, RelationListField):
-            foreign_ids = model[field]
-            if foreign_ids is None:
-                return
-
-            foreign_collection, foreign_field = self.get_to(field, collection)
-
-            for foreign_id in foreign_ids:
+            if not (self.is_clone and foreign_collection == "user"):
                 self.check_reverse_relation(
                     collection,
                     model["id"],
@@ -542,22 +526,43 @@ class Checker:
                     replacement,
                 )
 
+        elif isinstance(field_type, RelationListField):
+            foreign_ids = model[field]
+            if foreign_ids is None:
+                return
+
+            foreign_collection, foreign_field = self.get_to(field, collection)
+
+            if not (self.is_clone and foreign_collection == "user"):
+                for foreign_id in foreign_ids:
+                    self.check_reverse_relation(
+                        collection,
+                        model["id"],
+                        model,
+                        foreign_collection,
+                        foreign_id,
+                        foreign_field,
+                        basemsg,
+                        replacement,
+                    )
+
         elif isinstance(field_type, GenericRelationField) and model[field] is not None:
             foreign_collection, foreign_id = self.split_fqid(model[field])
             foreign_field = self.get_to_generic_case(
                 collection, field, foreign_collection
             )
 
-            self.check_reverse_relation(
-                collection,
-                model["id"],
-                model,
-                foreign_collection,
-                foreign_id,
-                foreign_field,
-                basemsg,
-                replacement,
-            )
+            if not (self.is_clone and foreign_collection == "user"):
+                self.check_reverse_relation(
+                    collection,
+                    model["id"],
+                    model,
+                    foreign_collection,
+                    foreign_id,
+                    foreign_field,
+                    basemsg,
+                    replacement,
+                )
 
         elif (
             isinstance(field_type, GenericRelationListField)
@@ -568,17 +573,17 @@ class Checker:
                 foreign_field = self.get_to_generic_case(
                     collection, field, foreign_collection
                 )
-
-                self.check_reverse_relation(
-                    collection,
-                    model["id"],
-                    model,
-                    foreign_collection,
-                    foreign_id,
-                    foreign_field,
-                    basemsg,
-                    replacement,
-                )
+                if not (self.is_clone and foreign_collection == "user"):
+                    self.check_reverse_relation(
+                        collection,
+                        model["id"],
+                        model,
+                        foreign_collection,
+                        foreign_id,
+                        foreign_field,
+                        basemsg,
+                        replacement,
+                    )
         elif collection == "motion" and field == "recommendation_extension":
             RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN = re.compile(
                 r"\[(?P<fqid>\w+/\d+)\]"
