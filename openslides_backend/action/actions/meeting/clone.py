@@ -107,19 +107,67 @@ class MeetingClone(MeetingImport):
                             },
                         )
                     )
-        for speaker in json_data["speaker"]:
-            if speaker.get("user_id"):
+
+        updated_field_n_1 = (
+            (
+                "speaker",
+                "user_id",
+                "speaker_$_ids",
+            ),
+            (
+                "personal_note",
+                "user_id",
+                "personal_note_$_ids",
+            ),
+            (
+                "motion_submitter",
+                "user_id",
+                "submitted_motion_$_ids",
+            ),
+            (
+                "vote",
+                "user_id",
+                "vote_$_ids",
+            ),
+            (
+                "vote",
+                "delegated_user_id",
+                "vote_delegated_vote_$_ids",
+            ),
+            (
+                "assignment_candidate",
+                "user_id",
+                "assignment_candidate_$_ids",
+            ),
+        )
+        for tuple_ in updated_field_n_1:
+            self.append_helper_list_int(write_requests, json_data, *tuple_)
+
+    def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
+        front, back = field.split("$")
+        return f"{front}${json_data['meeting'][0]['id']}{back}"
+
+    def append_helper_list_int(
+        self,
+        write_requests: List[WriteRequest],
+        json_data: Dict[str, Any],
+        collection: str,
+        field: str,
+        field_template: str,
+    ) -> None:
+        for model in json_data[collection]:
+            if model.get(field):
                 write_requests.append(
                     self.build_write_request(
                         EventType.Update,
-                        FullQualifiedId(Collection("user"), speaker["user_id"]),
+                        FullQualifiedId(Collection("user"), model[field]),
                         f"clone meeting {json_data['meeting'][0]['id']}",
                         None,
                         {
                             "add": {
-                                "speaker_$_ids": [str(json_data["meeting"][0]["id"])],
-                                f"speaker_${json_data['meeting'][0]['id']}_ids": [
-                                    speaker["id"]
+                                field_template: [str(json_data["meeting"][0]["id"])],
+                                self.field_with_meeting(field_template, json_data): [
+                                    model["id"]
                                 ],
                             },
                             "remove": {},
