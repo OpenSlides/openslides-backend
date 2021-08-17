@@ -158,6 +158,22 @@ class MeetingClone(MeetingImport):
         for tuple_ in updated_field_n_co:
             self.append_helper_list_cobj(write_requests, json_data, *tuple_)
 
+        for user_id in json_data["meeting"][0]["user_ids"]:
+            write_requests.append(
+                self.build_write_request(
+                    EventType.Update,
+                    FullQualifiedId(Collection("user"), user_id),
+                    f"clone meeting {json_data['meeting'][0]['id']}",
+                    None,
+                    {
+                        "add": {
+                            "meeting_ids": [json_data["meeting"][0]["id"]],
+                        },
+                        "remove": {},
+                    },
+                )
+            )
+
     def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
         front, back = field.split("$")
         return f"{front}${json_data['meeting'][0]['id']}{back}"
