@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from datastore.shared.util import is_reserved_field
+
 from ....models.base import model_registry
 from ....services.datastore.interface import DatastoreService
 from ....shared.filters import FilterOperator
@@ -40,7 +42,7 @@ def remove_meta_fields(res: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     for entry in res:
         new_entry = {}
         for fieldname in entry:
-            if not fieldname.startswith("meta_"):
+            if not is_reserved_field(fieldname):
                 new_entry[fieldname] = entry[fieldname]
         list_without_meta_fields.append(new_entry)
     return list_without_meta_fields
