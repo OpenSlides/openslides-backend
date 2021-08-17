@@ -15,8 +15,15 @@ from typing import (
 import simplejson as json
 from datastore.reader.core import AggregateRequest, FilterRequest, GetAllRequest
 from datastore.reader.core import GetManyRequest as FullGetManyRequest
-from datastore.reader.core import GetManyRequestPart, GetRequest, MinMaxRequest, Reader
+from datastore.reader.core import (
+    GetManyRequestPart,
+    GetRequest,
+    HistoryInformationRequest,
+    MinMaxRequest,
+    Reader,
+)
 from datastore.shared.di import injector
+from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import DeletedModelsBehaviour
 from simplejson.errors import JSONDecodeError
 
@@ -357,6 +364,15 @@ class DatastoreAdapter(DatastoreService):
                 ),
             )
         return response.get(route)
+
+    def history_information(
+        self, fqids: List[str]
+    ) -> Dict[str, List[HistoryInformation]]:
+        request = HistoryInformationRequest(fqids=fqids)
+        self.logger.debug(
+            f"Start HISTORY_INFORMATION request to datastore with the following data: {request}"
+        )
+        return self.reader.history_information(request)
 
     def apply_deleted_models_behaviour_to_filter(
         self, filter: Filter, get_deleted_models: DeletedModelsBehaviour

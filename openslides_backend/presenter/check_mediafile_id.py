@@ -50,7 +50,6 @@ class CheckMediafileId(BasePresenter):
         return {"ok": True, "filename": mediafile["filename"]}
 
     def check_permissions(self) -> None:
-
         mediafile = self.datastore.get(
             FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
             [

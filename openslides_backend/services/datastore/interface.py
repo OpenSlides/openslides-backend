@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Any, ContextManager, Dict, List, Optional, Sequence, Tuple, Union
 
+from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import DeletedModelsBehaviour
 from typing_extensions import Protocol
 
@@ -113,6 +114,11 @@ class DatastoreService(Protocol):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
+        ...
+
+    def history_information(
+        self, fqids: List[str]
+    ) -> Dict[str, List[HistoryInformation]]:
         ...
 
     def reserve_ids(self, collection: Collection, amount: int) -> Sequence[int]:
