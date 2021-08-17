@@ -94,6 +94,7 @@ class MeetingClone(BaseActionTestCase):
                 "user/1": {
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
+                    "meeting_ids": [1],
                 }
             }
         )
@@ -106,6 +107,7 @@ class MeetingClone(BaseActionTestCase):
                 "group_$_ids": ["1", "2"],
                 "group_$1_ids": [1],
                 "group_$2_ids": [2],
+                "meeting_ids": [1, 2],
             },
         )
 
