@@ -87,26 +87,26 @@ class MeetingClone(MeetingImport):
     def append_extra_write_requests(
         self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
     ) -> None:
-        for group in json_data["group"]:
-            if group.get("user_ids"):
-                for user_id in group.get("user_ids"):
-                    write_requests.append(
-                        self.build_write_request(
-                            EventType.Update,
-                            FullQualifiedId(Collection("user"), user_id),
-                            f"clone meeting {json_data['meeting'][0]['id']}",
-                            None,
-                            {
-                                "add": {
-                                    "group_$_ids": [str(json_data["meeting"][0]["id"])],
-                                    f"group_${json_data['meeting'][0]['id']}_ids": [
-                                        group["id"]
-                                    ],
-                                },
-                                "remove": {},
-                            },
-                        )
-                    )
+
+        updated_field_n_n = (
+            (
+                "group",
+                "user_ids",
+                "group_$_ids",
+            ),
+            (
+                "motion",
+                "supporter_ids",
+                "supported_motion_$_ids",
+            ),
+            (
+                "poll",
+                "voted_ids",
+                "poll_voted_$_ids",
+            ),
+        )
+        for tuple_ in updated_field_n_n:
+            self.append_helper_list_list(write_requests, json_data, *tuple_)
 
         updated_field_n_1 = (
             (
@@ -174,6 +174,37 @@ class MeetingClone(MeetingImport):
                         },
                     )
                 )
+
+    def append_helper_list_list(
+        self,
+        write_requests: List[WriteRequest],
+        json_data: Dict[str, Any],
+        collection: str,
+        field: str,
+        field_template: str,
+    ) -> None:
+        for model in json_data[collection]:
+            if model.get(field):
+                for user_id in model.get(field):
+                    write_requests.append(
+                        self.build_write_request(
+                            EventType.Update,
+                            FullQualifiedId(Collection("user"), user_id),
+                            f"clone meeting {json_data['meeting'][0]['id']}",
+                            None,
+                            {
+                                "add": {
+                                    field_template: [
+                                        str(json_data["meeting"][0]["id"])
+                                    ],
+                                    self.field_with_meeting(
+                                        field_template, json_data
+                                    ): [model["id"]],
+                                },
+                                "remove": {},
+                            },
+                        )
+                    )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass
