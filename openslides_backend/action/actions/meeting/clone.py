@@ -8,7 +8,7 @@ from ....presenter.export_meeting import export_meeting
 from ....shared.exceptions import ActionException
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .import_ import MeetingImport
@@ -143,6 +143,21 @@ class MeetingClone(MeetingImport):
         for tuple_ in updated_field_n_1:
             self.append_helper_list_int(write_requests, json_data, *tuple_)
 
+        updated_field_n_co = (
+            (
+                "option",
+                "content_object_id",
+                "option_$_ids",
+            ),
+            (
+                "projection",
+                "content_object_id",
+                "projection_$_ids",
+            ),
+        )
+        for tuple_ in updated_field_n_co:
+            self.append_helper_list_cobj(write_requests, json_data, *tuple_)
+
     def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
         front, back = field.split("$")
         return f"{front}${json_data['meeting'][0]['id']}{back}"
@@ -190,6 +205,39 @@ class MeetingClone(MeetingImport):
                         self.build_write_request(
                             EventType.Update,
                             FullQualifiedId(Collection("user"), user_id),
+                            f"clone meeting {json_data['meeting'][0]['id']}",
+                            None,
+                            {
+                                "add": {
+                                    field_template: [
+                                        str(json_data["meeting"][0]["id"])
+                                    ],
+                                    self.field_with_meeting(
+                                        field_template, json_data
+                                    ): [model["id"]],
+                                },
+                                "remove": {},
+                            },
+                        )
+                    )
+
+    def append_helper_list_cobj(
+        self,
+        write_requests: List[WriteRequest],
+        json_data: Dict[str, Any],
+        collection: str,
+        field: str,
+        field_template: str,
+    ) -> None:
+        for model in json_data[collection]:
+            if model.get(field):
+                fqid = model[field]
+                cobj_collection, cobj_id = fqid.split(KEYSEPARATOR)
+                if cobj_collection == "user":
+                    write_requests.append(
+                        self.build_write_request(
+                            EventType.Update,
+                            FullQualifiedId(Collection("user"), cobj_id),
                             f"clone meeting {json_data['meeting'][0]['id']}",
                             None,
                             {
