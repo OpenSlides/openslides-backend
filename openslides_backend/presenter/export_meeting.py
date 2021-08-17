@@ -15,7 +15,6 @@ export_meeting_schema = fastjsonschema.compile(
         "description": "export the meeting with meeting_id",
         "properties": {
             "meeting_id": {"type": "integer"},
-            "internal": {"type": "boolean"},
         },
         "required": ["meeting_id"],
         "additionalProperties": False,
