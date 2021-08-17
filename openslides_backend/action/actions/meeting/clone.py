@@ -164,8 +164,7 @@ class MeetingClone(MeetingImport):
                     EventType.Update,
                     FullQualifiedId(Collection("user"), user_id),
                     f"clone meeting {json_data['meeting'][0]['id']}",
-                    None,
-                    {
+                    list_fields={
                         "add": {
                             "meeting_ids": [json_data["meeting"][0]["id"]],
                         },
@@ -241,8 +240,7 @@ class MeetingClone(MeetingImport):
             EventType.Update,
             FullQualifiedId(Collection("user"), user_id),
             f"clone meeting {json_data['meeting'][0]['id']}",
-            None,
-            {
+            list_fields={
                 "add": {
                     field_template: [str(json_data["meeting"][0]["id"])],
                     self.field_with_meeting(field_template, json_data): [model_id],
