@@ -173,20 +173,8 @@ class MeetingClone(MeetingImport):
         for model in json_data[collection]:
             if model.get(field):
                 write_requests.append(
-                    self.build_write_request(
-                        EventType.Update,
-                        FullQualifiedId(Collection("user"), model[field]),
-                        f"clone meeting {json_data['meeting'][0]['id']}",
-                        None,
-                        {
-                            "add": {
-                                field_template: [str(json_data["meeting"][0]["id"])],
-                                self.field_with_meeting(field_template, json_data): [
-                                    model["id"]
-                                ],
-                            },
-                            "remove": {},
-                        },
+                    self.build_write_request_helper(
+                        model[field], json_data, field_template, model["id"]
                     )
                 )
 
@@ -202,22 +190,8 @@ class MeetingClone(MeetingImport):
             if model.get(field):
                 for user_id in model.get(field):
                     write_requests.append(
-                        self.build_write_request(
-                            EventType.Update,
-                            FullQualifiedId(Collection("user"), user_id),
-                            f"clone meeting {json_data['meeting'][0]['id']}",
-                            None,
-                            {
-                                "add": {
-                                    field_template: [
-                                        str(json_data["meeting"][0]["id"])
-                                    ],
-                                    self.field_with_meeting(
-                                        field_template, json_data
-                                    ): [model["id"]],
-                                },
-                                "remove": {},
-                            },
+                        self.build_write_request_helper(
+                            user_id, json_data, field_template, model["id"]
                         )
                     )
 
@@ -235,24 +209,31 @@ class MeetingClone(MeetingImport):
                 cobj_collection, cobj_id = fqid.split(KEYSEPARATOR)
                 if cobj_collection == "user":
                     write_requests.append(
-                        self.build_write_request(
-                            EventType.Update,
-                            FullQualifiedId(Collection("user"), cobj_id),
-                            f"clone meeting {json_data['meeting'][0]['id']}",
-                            None,
-                            {
-                                "add": {
-                                    field_template: [
-                                        str(json_data["meeting"][0]["id"])
-                                    ],
-                                    self.field_with_meeting(
-                                        field_template, json_data
-                                    ): [model["id"]],
-                                },
-                                "remove": {},
-                            },
+                        self.build_write_request_helper(
+                            cobj_id, json_data, field_template, model["id"]
                         )
                     )
+
+    def build_write_request_helper(
+        self,
+        user_id: int,
+        json_data: Dict[str, Any],
+        field_template: str,
+        model_id: int,
+    ) -> WriteRequest:
+        return self.build_write_request(
+            EventType.Update,
+            FullQualifiedId(Collection("user"), user_id),
+            f"clone meeting {json_data['meeting'][0]['id']}",
+            None,
+            {
+                "add": {
+                    field_template: [str(json_data["meeting"][0]["id"])],
+                    self.field_with_meeting(field_template, json_data): [model_id],
+                },
+                "remove": {},
+            },
+        )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass
