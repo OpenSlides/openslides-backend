@@ -1,4 +1,5 @@
 from datastore.shared.di import injector
+from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 
 from .migrate import load_migrations
@@ -13,6 +14,11 @@ class MisconfiguredMigrations(Exception):
 
 
 def assert_migration_index() -> None:
+    connection = injector.get(ConnectionHandler)
+    with connection.get_connection_context():
+        if connection.query_single_value("select count(*) from positions", []) == 0:
+            return  # Datastore is empty; nothing to check.
+
     migration_classes = load_migrations()
 
     backend_migration_index = 1

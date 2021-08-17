@@ -12,16 +12,21 @@ This is done within the dockersetup in this folder. Note that the datastore need
 - You can exit from it with `exit` and shut down the docker setup with `make stop-dev`
 - You can write migrations in the backend and also adjust the Datastore at the same time since both are mounted into the container.
 
-Scripts for initial data. Only the current dataset is exported, so after the export, only one position exists in the datastore. Also note that importing clears the old content
+The following scripts can be used to make snapshots and trying out new migrations
 
-- export-data-only.sh [to:export.json]
-- import-data-only.sh [from:export.json]
+#### Scripts for setting initial data
+Only the current dataset is exported, so after a (re-)import, only one position exists in the datastore. Also note that importing clears the old content
 
-Scripts for the full backup (Does a DB dump)
-- export-events.sh [to:export.sql]
-- import-events.sh [from:export.sql]
+- `export-data-only.sh` [to:export.json]
+- `import-data-only.sh` [from:export.json]
 
-These scripts can be used to make snapshots and trying out new migrations.
+#### Scripts for the full backup (Does a DB dump)
+- `export-events.sh` [to:export.sql]
+- `import-events.sh` [from:export.sql]
+
+#### Downloading example data
+- `fetch-example-data.sh` [to:example-data.json]
+
 
 ## 2) Migrations in dev mode
 

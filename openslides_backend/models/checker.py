@@ -428,10 +428,11 @@ class Checker:
             # check if required field is not empty
             # committee_id is a special case, because it is filled after the
             # replacement
+            skip_fields = (Meeting.committee_id, Meeting.is_active_in_organization_id)
             if (
                 field_type.required
                 and field_type.check_required_not_fulfilled(model, False)
-                and field_type != Meeting.committee_id
+                and field_type not in skip_fields
             ):
                 error = f"{collection}/{model['id']}/{field}: Field required but empty."
                 self.errors.append(error)

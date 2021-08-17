@@ -10,6 +10,7 @@ class MeetingImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
+                "organization/1": {"active_meeting_ids": [1]},
                 "committee/1": {},
                 "meeting/1": {},
                 "motion/1": {},
@@ -184,6 +185,7 @@ class MeetingImport(BaseActionTestCase):
                         "logo_$_id": [],
                         "font_$_id": [],
                         "committee_id": None,
+                        "is_active_in_organization_id": None,
                         "default_meeting_for_committee_id": None,
                         "organization_tag_ids": [],
                         "present_user_ids": [],
@@ -447,7 +449,6 @@ class MeetingImport(BaseActionTestCase):
         assert "Invalid collections: organization." in response.json["message"]
 
     def test_replace_ids_and_write_to_datastore(self) -> None:
-        start = round(time.time())
         request_data = self.create_request_data(
             {
                 "personal_note": [
@@ -496,7 +497,9 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"][0]["list_of_speakers_ids"] = [1]
         request_data["meeting"]["meeting"][0]["tag_ids"] = [1]
 
+        start = round(time.time())
         response = self.request("meeting.import", request_data)
+        end = round(time.time()) + 1
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/2",
@@ -505,10 +508,11 @@ class MeetingImport(BaseActionTestCase):
                 "description": "blablabla",
                 "committee_id": 1,
                 "enable_anonymous": False,
+                "is_active_in_organization_id": 1,
             },
         )
         meeting_2 = self.get_model("meeting/2")
-        assert start <= meeting_2.get("imported_at", 0) <= start + 300
+        assert start <= meeting_2.get("imported_at", 0) <= end
         self.assert_model_exists(
             "user/2", {"username": "test", "group_$2_ids": [1], "group_$_ids": ["2"]}
         )
@@ -521,6 +525,7 @@ class MeetingImport(BaseActionTestCase):
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
         )
         self.assert_model_exists("committee/1", {"meeting_ids": [2]})
+        self.assert_model_exists("organization/1", {"active_meeting_ids": [1, 2]})
 
     def test_check_usernames(self) -> None:
         self.set_models(

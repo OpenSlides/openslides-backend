@@ -11,7 +11,7 @@ export DATASTORE_DATABASE_PASSWORD=${DATASTORE_DATABASE_PASSWORD:-openslides}
 ./wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
 
 printf "\nMigrations:\n"
-python migrations/migrate.py migrate
+python migrations/migrate.py finalize
 printf "\n"
 
 exec "$@"
