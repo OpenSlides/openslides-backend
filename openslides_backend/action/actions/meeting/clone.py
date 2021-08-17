@@ -4,13 +4,13 @@ from typing import Any, Dict, List
 
 from ....models.checker import Checker, CheckException
 from ....models.models import Meeting
-from ....presenter.export_meeting import export_meeting
 from ....shared.exceptions import ActionException
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .export_helper import export_meeting
 from .import_ import MeetingImport
 
 
