@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List
 
 from ....models.checker import Checker, CheckException
 from ....models.models import Meeting
@@ -83,6 +83,11 @@ class MeetingClone(MeetingImport):
                 for entry, new_id in zip(json_data[collection], new_ids):
                     replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
+
+    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+        write_requests = list(super().create_write_requests(instance))
+        self.append_extra_write_requests(write_requests, instance["meeting"])
+        return write_requests
 
     def append_extra_write_requests(
         self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
