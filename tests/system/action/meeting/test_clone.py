@@ -1,5 +1,6 @@
 import base64
 from typing import Any, Dict
+from unittest.mock import MagicMock
 
 from tests.system.action.base import BaseActionTestCase
 
@@ -191,13 +192,10 @@ class MeetingClone(BaseActionTestCase):
             }
         )
         self.set_models(self.test_models)
-
-        def download_mediafile(id: int) -> bytes:
-            return b"testtesttest"
-
-        self.media.download_mediafile = download_mediafile
+        self.media.download_mediafile = MagicMock(return_value=b"testtesttest")
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+        self.media.download_mediafile.assert_called_with(1)
         self.media.upload_mediafile.assert_called_with(
             base64.b64encode(b"testtesttest"), 2, "text/plain"
         )
