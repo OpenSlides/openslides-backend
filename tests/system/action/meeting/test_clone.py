@@ -9,6 +9,7 @@ class MeetingClone(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
+            "organization/1": {},
             "committee/1": {},
             "meeting/1": {
                 "committee_id": 1,

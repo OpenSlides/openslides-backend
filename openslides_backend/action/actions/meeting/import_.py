@@ -305,7 +305,9 @@ class MeetingImport(SingularActionMixin, Action):
         write_requests.append(
             self.build_write_request(
                 EventType.Update,
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                FullQualifiedId(
+                    Collection("committee"), json_data["meeting"][0]["committee_id"]
+                ),
                 f"import meeting {meeting_id}",
                 None,
                 {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
