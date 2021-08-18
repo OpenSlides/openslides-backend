@@ -25,7 +25,9 @@ class MeetingClone(MeetingImport):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_json = export_meeting(self.datastore, instance["meeting_id"])
+        meeting_json = export_meeting(
+            self.datastore, self.media, instance["meeting_id"]
+        )
         instance["meeting"] = meeting_json
         meeting_json["user"] = []
         committee_id = meeting_json["meeting"][0]["committee_id"]
