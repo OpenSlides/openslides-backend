@@ -1,3 +1,4 @@
+import base64
 from typing import Any, Dict
 
 from tests.system.action.base import BaseActionTestCase
@@ -168,3 +169,33 @@ class MeetingClone(BaseActionTestCase):
                 "option_$2_ids": [2],
             },
         )
+
+    def test_clone_with_mediafile(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["meeting/1"]["mediafile_ids"] = [1]
+        self.test_models["group/1"]["user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "mediafile/1": {
+                    "meeting_id": 1,
+                    "attachment_ids": [],
+                    "used_as_font_$_in_meeting_id": [],
+                    "used_as_logo_$_in_meeting_id": [],
+                    "mimetype": "text/plain",
+                },
+            }
+        )
+        self.set_models(self.test_models)
+
+        def download_mediafile(id: int) -> bytes:
+            return b"testtesttest"
+        
+        self.media.download_mediafile = download_mediafile
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.media.upload_mediafile.assert_called_with(base64.b64encode( b"testtesttest"), 2, "text/plain")
