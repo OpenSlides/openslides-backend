@@ -15,11 +15,17 @@ def main() -> int:
     if is_import:
         files = [x for x in files if x != "--import"]
 
+    is_partial = "--partial" in files
+    if is_partial:
+        files = [x for x in files if x != "--partial"]
+
     failed = False
     for f in files:
         with open(f) as data:
             try:
-                Checker(json.load(data), is_import=is_import).run_check()
+                Checker(
+                    json.load(data), is_import=is_import, is_partial=is_partial
+                ).run_check()
             except CheckException as e:
                 print(f"Check for {f} failed:\n", e)
                 failed = True

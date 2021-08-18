@@ -136,8 +136,24 @@ checker_map: Dict[Type[Field], Callable[..., bool]] = {
 
 
 class Checker:
-    def __init__(self, data: Dict[str, List[Any]], is_import: bool = False) -> None:
+    def __init__(
+        self,
+        data: Dict[str, List[Any]],
+        is_import: bool = False,
+        is_partial: bool = False,
+    ) -> None:
+        """
+        With is_import=True all collections will be removed, that are not meeting
+        specific, user, or the meeting itself.
+
+        is_partial=True disables the check, that *all* collections have to be
+        explicitly given, so a non existing (=empty) collection will not raise
+        an error. Additionally, missing fields (=None) are ok, if they are not
+        required nor have a default (so required fields or fields with defaults
+        must be present).
+        """
         self.data = data
+        self.is_partial = is_partial
 
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
@@ -285,12 +301,12 @@ class Checker:
     def check_collections(self) -> None:
         c1 = set(self.data.keys())
         c2 = set(self.models.keys())
-        if c1 != c2:
-            err = "Collections in file do not match with models.py."
-            if c2 - c1:
-                err += f" Missing collections: {', '.join(c2-c1)}."
-            if c1 - c2:
-                err += f" Invalid collections: {', '.join(c1-c2)}."
+        err = "Collections in file do not match with models.py."
+        if not self.is_partial and c2 - c1:
+            err += f" Missing collections: {', '.join(c2-c1)}."
+            raise CheckException(err)
+        if c1 - c2:
+            err += f" Invalid collections: {', '.join(c1-c2)}."
             raise CheckException(err)
 
     def check_model(self, collection: str, model: Dict[str, Any]) -> None:
@@ -310,18 +326,28 @@ class Checker:
             for x in model.keys()
             if self.is_normal_field(x) or self.is_template_field(x)
         )
-        collection_fields = set(
+        all_collection_fields = set(
             field.get_own_field_name()
             for field in self.models[collection]().get_fields()
         )
+        required_or_default_collection_fields = set(
+            field.get_own_field_name()
+            for field in self.models[collection]().get_fields()
+            if field.required or field.default is not None
+        )
+        necessary_fields = (
+            required_or_default_collection_fields
+            if self.is_partial
+            else all_collection_fields
+        )
 
         errors = False
-        if collection_fields - model_fields:
-            error = f"{collection}/{model['id']}: Missing fields {', '.join(collection_fields - model_fields)}"
+        if diff := necessary_fields - model_fields:
+            error = f"{collection}/{model['id']}: Missing fields {', '.join(diff)}"
             self.errors.append(error)
             errors = True
-        if model_fields - collection_fields:
-            error = f"{collection}/{model['id']}: Invalid fields {', '.join(model_fields - collection_fields)}"
+        if diff := model_fields - all_collection_fields:
+            error = f"{collection}/{model['id']}: Invalid fields {', '.join(diff)}"
             self.errors.append(error)
             errors = True
         return errors
