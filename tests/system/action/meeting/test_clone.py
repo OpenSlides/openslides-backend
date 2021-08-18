@@ -194,8 +194,10 @@ class MeetingClone(BaseActionTestCase):
 
         def download_mediafile(id: int) -> bytes:
             return b"testtesttest"
-        
+
         self.media.download_mediafile = download_mediafile
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.media.upload_mediafile.assert_called_with(base64.b64encode( b"testtesttest"), 2, "text/plain")
+        self.media.upload_mediafile.assert_called_with(
+            base64.b64encode(b"testtesttest"), 2, "text/plain"
+        )
