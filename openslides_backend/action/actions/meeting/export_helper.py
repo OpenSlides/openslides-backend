@@ -37,9 +37,34 @@ def export_meeting(
 
 def get_collections_with_meeting_id() -> List[str]:
     collections = [
-        c.collection
-        for c in model_registry
-        if model_registry[c]().has_field("meeting_id")
+        "group",
+        "personal_note",
+        "tag",
+        "agenda_item",
+        "list_of_speakers",
+        "speaker",
+        "topic",
+        "motion",
+        "motion_submitter",
+        "motion_comment",
+        "motion_comment_section",
+        "motion_category",
+        "motion_block",
+        "motion_change_recommendation",
+        "motion_state",
+        "motion_workflow",
+        "motion_statute_paragraph",
+        "poll",
+        "option",
+        "vote",
+        "assignment",
+        "assignment_candidate",
+        "mediafile",
+        "projector",
+        "projection",
+        "projector_message",
+        "projector_countdown",
+        "chat_group",
     ]
     return collections
 
