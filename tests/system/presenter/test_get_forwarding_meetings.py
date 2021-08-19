@@ -31,6 +31,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "id": 3,
                     "name": "com3",
                     "meetings": [{"id": 2, "name": "meeting2"}],
+                    "default_meeting_id": None,
                 }
             ],
         )
@@ -69,6 +70,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 "committee/3": {
                     "name": "com3",
                     "meeting_ids": [2, 3],
+                    "default_meeting_id": 3,
                 },
                 "committee/4": {
                     "name": "com4",
@@ -112,6 +114,7 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "id": 3,
                     "name": "com3",
                     "meetings": [{"id": 2, "name": "meeting2"}],
+                    "default_meeting_id": 3,
                 }
             ],
         )
