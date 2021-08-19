@@ -185,7 +185,9 @@ class MeetingImport(SingularActionMixin, Action):
         ):
             pass
         elif collection == "meeting" and field == "user_ids":
-            entry[field] = [self.replace_map["user"][id_] for id_ in entry[field] or []]
+            entry[field] = [
+                self.replace_map["user"][id_] for id_ in entry.get(field) or []
+            ]
         elif collection == "user" and field == "meeting_ids":
             entry[field] = list(self.replace_map["meeting"].values())
         elif collection == "motion" and field == "recommendation_extension":
@@ -239,7 +241,7 @@ class MeetingImport(SingularActionMixin, Action):
                 target_collection = model_field.get_target_collection().collection
                 entry[field] = [
                     self.replace_map[target_collection][id_]
-                    for id_ in entry[field] or []
+                    for id_ in entry.get(field) or []
                 ]
             elif isinstance(model_field, GenericRelationField):
                 if entry[field]:
