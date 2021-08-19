@@ -156,9 +156,13 @@ class MeetingImport(SingularActionMixin, Action):
                 replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
 
-    def replace_fields(self, instance: Dict[str, Any]) -> None:
+    def replace_fields(
+        self, instance: Dict[str, Any], ignore_user: bool = False
+    ) -> None:
         json_data = instance["meeting"]
         for collection in json_data:
+            if ignore_user and collection == "user":
+                continue
             for entry in json_data[collection]:
                 for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field)
@@ -181,7 +185,9 @@ class MeetingImport(SingularActionMixin, Action):
         ):
             pass
         elif collection == "meeting" and field == "user_ids":
-            entry[field] = [self.replace_map["user"][id_] for id_ in entry[field]]
+            entry[field] = [
+                self.replace_map["user"][id_] for id_ in entry.get(field) or []
+            ]
         elif collection == "user" and field == "meeting_ids":
             entry[field] = list(self.replace_map["meeting"].values())
         elif collection == "motion" and field == "recommendation_extension":
@@ -234,7 +240,8 @@ class MeetingImport(SingularActionMixin, Action):
             elif isinstance(model_field, RelationListField):
                 target_collection = model_field.get_target_collection().collection
                 entry[field] = [
-                    self.replace_map[target_collection][id_] for id_ in entry[field]
+                    self.replace_map[target_collection][id_]
+                    for id_ in entry.get(field) or []
                 ]
             elif isinstance(model_field, GenericRelationField):
                 if entry[field]:
@@ -300,7 +307,9 @@ class MeetingImport(SingularActionMixin, Action):
         write_requests.append(
             self.build_write_request(
                 EventType.Update,
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                FullQualifiedId(
+                    Collection("committee"), json_data["meeting"][0]["committee_id"]
+                ),
                 f"import meeting {meeting_id}",
                 None,
                 {"add": {"meeting_ids": [meeting_id]}, "remove": {}},

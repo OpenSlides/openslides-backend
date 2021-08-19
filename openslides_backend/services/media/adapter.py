@@ -38,3 +38,19 @@ class MediaServiceAdapter(MediaService):
     def upload_resource(self, file: str, id: int, mimetype: str) -> None:
         subpath = "upload_resource"
         self._upload(file, id, mimetype, subpath)
+
+    def download_mediafile(self, id: int) -> bytes:
+        url = self.media_url + "/" + "get" + "/" + str(id)
+        try:
+            response = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            msg = "Connect to mediaservice failed."
+            self.logger.debug("Download of file: " + msg)
+            raise MediaServiceException(msg)
+
+        if response.status_code != 200:
+            msg = f"Mediaservice Error: {str(response.content)}"
+            self.logger.debug("Download of file: " + msg)
+            raise MediaServiceException(msg)
+        self.logger.debug("File successfully downloaded of the media service")
+        return response.content

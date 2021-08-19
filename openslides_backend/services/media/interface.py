@@ -19,3 +19,10 @@ class MediaService(Protocol):
         any Error reported from MediaService-Request
         """
         ...
+
+    def download_mediafile(self, id: int) -> bytes:
+        """
+        Throws a MediaServiceException, if there is a ConnectionError or
+        any Error reported from MediaService-Request
+        """
+        ...
