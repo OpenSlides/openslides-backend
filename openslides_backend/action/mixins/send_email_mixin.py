@@ -11,6 +11,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 from lxml import html as lxml_html  # type: ignore
 from lxml.html.clean import clean_html  # type: ignore
 
+from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
 from ...shared.interfaces.write_request import WriteRequest
 from ..util.typing import ActionResults
@@ -18,17 +19,23 @@ from ..util.typing import ActionResults
 # regular expression for validating an Email
 regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
 
-SendErrs = Dict[str, Tuple[int, bytes]]
+SendErrors = Dict[str, Tuple[int, bytes]]
 
 
-class ConSecurity:
+class ConnectionSecurity:
     """constants for email connection ssl/tls"""
 
     NONE = "NONE"
     SSLTLS = "SSL/TLS"
     STARTTLS = "STARTTLS"
 
-    LIST = ["NONE", "STARTTLS", "SSL/TLS"]
+    @classmethod
+    def list(cls) -> List[str]:
+        return [
+            value  # getattr(cls, attr)
+            for attr in dir(cls)
+            if not callable(value := getattr(cls, attr)) and not attr.startswith("_")
+        ]
 
 
 class EmailSettings:
@@ -38,16 +45,13 @@ class EmailSettings:
     password: str = os.environ.get("EMAIL_HOST_PASSWORD", "")
     connection_security: str = os.environ.get("EMAIL_CONNECTION_SECURITY", "SSL/TLS")
     timeout: int = int(os.environ.get("EMAIL_TIMEOUT", "5"))
-    accept_self_signed_certificate: bool = (
-        str(os.environ.get("EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE", "FALSE"))
-        .strip()
-        .upper()
-        == "TRUE"
+    accept_self_signed_certificate: bool = is_truthy(
+        os.environ.get("EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE", "false")
     )
 
     @classmethod
     def check_settings(cls) -> None:
-        if cls.connection_security not in ConSecurity.LIST:
+        if cls.connection_security not in ConnectionSecurity.list():
             raise ActionException(
                 'Email-configuration: Choose one of "NONE", "STARTTLS" or "SSL/TLS" for EMAIL_CONNECTION_SECURITY environment variable'
             )
@@ -84,14 +88,14 @@ class EmailMixin:
     ]:
         connection: Optional[Union[smtplib.SMTP, smtplib.SMTP_SSL]] = None
         try:
-            if EmailSettings.connection_security == ConSecurity.SSLTLS:
+            if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
                 connection = smtplib.SMTP_SSL(
                     EmailSettings.host,
                     EmailSettings.port,
                     context=EmailMixin.get_ssl_default_context(),
                     timeout=EmailSettings.timeout,
                 )
-            elif EmailSettings.connection_security == ConSecurity.STARTTLS:
+            elif EmailSettings.connection_security == ConnectionSecurity.STARTTLS:
                 connection = smtplib.SMTP(  # type: ignore
                     EmailSettings.host,
                     EmailSettings.port,
@@ -120,7 +124,7 @@ class EmailMixin:
         content: str,
         contentplain: str = "",
         html: bool = True,
-    ) -> SendErrs:
+    ) -> SendErrors:
         """
         Construct and send the email on the given connect
         Default is a html-email with 'html' set to True.

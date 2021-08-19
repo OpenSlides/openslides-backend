@@ -10,7 +10,7 @@ from aiosmtpd.controller import Controller
 from aiosmtpd.smtp import SMTP, AuthResult, Envelope, LoginPassword, Session
 
 from openslides_backend.action.mixins.send_email_mixin import (
-    ConSecurity,
+    ConnectionSecurity,
     EmailMixin,
     EmailSettings,
 )
@@ -73,15 +73,15 @@ class AiosmtpdConnectionManager:
             }
 
         if EmailSettings.connection_security in [
-            ConSecurity.STARTTLS,
-            ConSecurity.SSLTLS,
+            ConnectionSecurity.STARTTLS,
+            ConnectionSecurity.SSLTLS,
         ]:
             ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
             ssl_context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
             ssl_context.load_cert_chain("cert.pem", "key.pem")
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.VerifyMode.CERT_NONE
-            if EmailSettings.connection_security == ConSecurity.SSLTLS:
+            if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
                 # This is a hack: The aiosmtpd library does not issue AUTH in EHLO, if not starttls is used.
                 # For other methods (SSL/TLS and NONE) setting auth_require_tls allows AUTH. The intention is to
                 # allow AUTH before TLS (which is ok for NONE), but a hack for SSL/TLS since we have an
@@ -508,8 +508,3 @@ class CheckValidEmailAddress(BaseActionTestCase):
             self.assertFalse(
                 EmailMixin.check_email(email), "Email-address {} recognized as True"
             )
-
-
-"""
-- OS3 Fehler
-"""
