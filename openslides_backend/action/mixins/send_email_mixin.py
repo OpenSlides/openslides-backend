@@ -2,6 +2,7 @@ import os
 import re
 import smtplib
 import ssl
+from contextlib import contextmanager
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
@@ -13,7 +14,6 @@ from lxml.html.clean import clean_html  # type: ignore
 from ...shared.exceptions import ActionException
 from ...shared.interfaces.write_request import WriteRequest
 from ..util.typing import ActionResults
-from contextlib import contextmanager
 
 # regular expression for validating an Email
 regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
