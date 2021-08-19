@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from lxml import html as lxml_html  # type: ignore
 from lxml.html.clean import clean_html  # type: ignore
@@ -79,8 +79,10 @@ class EmailMixin:
 
     @staticmethod
     @contextmanager
-    def get_mail_connection() -> Union[smtplib.SMTP, smtplib.SMTP_SSL]:
-        connected = False
+    def get_mail_connection() -> Generator[
+        Union[smtplib.SMTP, smtplib.SMTP_SSL], None, None
+    ]:
+        connection: Optional[Union[smtplib.SMTP, smtplib.SMTP_SSL]] = None
         try:
             if EmailSettings.connection_security == ConSecurity.SSLTLS:
                 connection = smtplib.SMTP_SSL(
@@ -89,14 +91,12 @@ class EmailMixin:
                     context=EmailMixin.get_ssl_default_context(),
                     timeout=EmailSettings.timeout,
                 )
-                connected = True
             elif EmailSettings.connection_security == ConSecurity.STARTTLS:
                 connection = smtplib.SMTP(  # type: ignore
                     EmailSettings.host,
                     EmailSettings.port,
                     timeout=EmailSettings.timeout,
                 )
-                connected = True
                 connection.starttls(context=EmailMixin.get_ssl_default_context())
             else:
                 connection = smtplib.SMTP(  # type: ignore
@@ -104,12 +104,11 @@ class EmailMixin:
                     EmailSettings.port,
                     timeout=EmailSettings.timeout,
                 )
-                connected = True
             if EmailSettings.user and EmailSettings.password:
                 connection.login(EmailSettings.user, EmailSettings.password)
             yield connection
         finally:
-            if connected:
+            if connection:
                 connection.close()
 
     @staticmethod

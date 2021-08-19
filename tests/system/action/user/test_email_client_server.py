@@ -2,11 +2,12 @@ import os
 import smtplib
 import ssl
 import subprocess
-from typing import Any, Dict, List
+from types import TracebackType
+from typing import Any, Dict, List, Optional, Type, cast
 
 import pytest
 from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import AuthResult, LoginPassword
+from aiosmtpd.smtp import SMTP, AuthResult, Envelope, LoginPassword, Session
 
 from openslides_backend.action.mixins.send_email_mixin import (
     ConSecurity,
@@ -23,12 +24,47 @@ if not os.path.exists("key.pem") or not os.path.exists("cert.pem"):
     )
 
 
+class AIOHandler:
+    def __init__(self) -> None:
+        self.emails: List[Dict[str, Any]] = []
+        self.ret_status = "unset"
+
+    async def handle_RCPT(
+        self,
+        server: SMTP,
+        session: Session,
+        envelope: Envelope,
+        address: str,
+        rcpt_options: List[Any],
+    ) -> Any:
+        if not EmailMixin.check_email(address):
+            self.ret_status = "550 invalid eMail address"
+            return self.ret_status
+        envelope.rcpt_tos.append(address)
+        self.ret_status = "250 OK"
+        return self.ret_status
+
+    async def handle_DATA(
+        self, server: SMTP, session: Session, envelope: Envelope
+    ) -> Any:
+        content = cast(bytes, envelope.content)
+        self.emails.append(
+            {
+                "from": envelope.mail_from,
+                "to": envelope.rcpt_tos,
+                "data": content.decode("utf8", errors="replace"),
+            }
+        )
+        self.ret_status = "250 Message accepted for delivery"
+        return self.ret_status
+
+
 class AiosmtpdConnectionManager:
-    def __init__(self, handler, auth=False):
+    def __init__(self, handler: AIOHandler, auth: bool = False) -> None:
         self.handler = handler
         self.auth = auth
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         auth_kwargs = {}
         if self.auth:
             auth_kwargs = {
@@ -58,7 +94,7 @@ class AiosmtpdConnectionManager:
                     EmailSettings.port,
                     server_hostname="127.0.0.1",
                     ssl_context=ssl_context,
-                    **auth_kwargs,
+                    **auth_kwargs,  # type: ignore
                 )
             else:
                 self.controller = Controller(
@@ -68,53 +104,38 @@ class AiosmtpdConnectionManager:
                     server_hostname="127.0.0.1",
                     require_starttls=True,
                     tls_context=ssl_context,
-                    **auth_kwargs,
+                    **auth_kwargs,  # type: ignore
                 )
         else:
             if self.auth:
                 auth_kwargs["auth_require_tls"] = False
             self.controller = Controller(
-                self.handler, EmailSettings.host, EmailSettings.port, **auth_kwargs
+                self.handler, EmailSettings.host, EmailSettings.port, **auth_kwargs  # type: ignore
             )
 
         self.controller.start()
 
-    def __exit__(self, exc_type, exc_value, exc_traceback):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        exc_traceback: Optional[TracebackType],
+    ) -> None:
         self.controller.stop(no_assert=True)
 
 
-class AIOHandler:
-    def __init__(self):
-        self.emails: List[Dict[str, Any]] = []
-        self.ret_status = "unset"
-
-    async def handle_RCPT(
-        self, server, session, envelope, address, rcpt_options
-    ) -> Any:
-        if not EmailMixin.check_email(address):
-            self.ret_status = "550 invalid eMail address"
-            return self.ret_status
-        envelope.rcpt_tos.append(address)
-        self.ret_status = "250 OK"
-        return self.ret_status
-
-    async def handle_DATA(self, server, session, envelope) -> Any:
-        self.emails.append(
-            {
-                "from": envelope.mail_from,
-                "to": envelope.rcpt_tos,
-                "data": envelope.content.decode("utf8", errors="replace"),
-            }
-        )
-        self.ret_status = "250 Message accepted for delivery"
-        return self.ret_status
-
-
 class Authenticator:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def __call__(self, server, session, envelope, mechanism, auth_data) -> AuthResult:
+    def __call__(
+        self,
+        server: SMTP,
+        session: Session,
+        envelope: Envelope,
+        mechanism: str,
+        auth_data: LoginPassword,
+    ) -> AuthResult:
         fail_nothandled = AuthResult(success=False, handled=False)
         if mechanism not in ("LOGIN", "PLAIN"):
             return fail_nothandled
@@ -144,12 +165,14 @@ class SendMailWithSmtpServer(BaseActionTestCase):
             },
         )
         self.sender = "sender@example.com"
+        self.password = "secret"
         self.receivers = ["receiver1@example.com", "receiver2@example.com"]
         EmailSettings.host = "127.0.0.1"
         EmailSettings.timeout = 5
-        EmailSettings.user = None  # important to reset these settings
-        EmailSettings.password = None
+        EmailSettings.user = ""  # important to reset these settings
+        EmailSettings.password = ""
 
+    # send tests with different connection_securities without authorization
     def test_send_ssl_tls(self) -> None:
         EmailSettings.connection_security = "SSL/TLS"
         EmailSettings.accept_self_signed_certificate = True
@@ -158,7 +181,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         handler = AIOHandler()
         with AiosmtpdConnectionManager(handler):
             with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+                EmailMixin.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -224,17 +247,18 @@ class SendMailWithSmtpServer(BaseActionTestCase):
             "Hi\r\nThis is some plain text content!", handler.emails[0]["data"]
         )
 
+    # authentification tests with different connection_securities
     def test_authentication_ssl_tls(self) -> None:
         EmailSettings.connection_security = "SSL/TLS"
         EmailSettings.accept_self_signed_certificate = True
         EmailSettings.port = 465
         EmailSettings.user = self.sender
-        EmailSettings.password = "secret"
+        EmailSettings.password = self.password
 
         handler = AIOHandler()
         with AiosmtpdConnectionManager(handler, auth=True):
             with EmailMixin.get_mail_connection() as mail_client:
-                response = EmailMixin.send_email(
+                EmailMixin.send_email(
                     mail_client,
                     self.sender,
                     self.receivers,
@@ -250,7 +274,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         EmailSettings.accept_self_signed_certificate = True
         EmailSettings.port = 587
         EmailSettings.user = self.sender
-        EmailSettings.password = "secret"
+        EmailSettings.password = self.password
 
         handler = AIOHandler()
         with AiosmtpdConnectionManager(handler, auth=True):
@@ -271,7 +295,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         EmailSettings.connection_security = "NONE"
         EmailSettings.port = 25
         EmailSettings.user = self.sender
-        EmailSettings.password = "secret"
+        EmailSettings.password = self.password
 
         handler = AIOHandler()
         with AiosmtpdConnectionManager(handler, auth=True):
@@ -289,6 +313,24 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         self.assertEqual("250 Message accepted for delivery", handler.ret_status)
         self.assertEqual(len(handler.emails), 1)
 
+    def test_authentication_wrong_credentials(self) -> None:
+        EmailSettings.connection_security = "NONE"
+        EmailSettings.port = 25
+        EmailSettings.user = self.sender
+        EmailSettings.password = "wrong_secret"
+
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler, auth=True):
+            with pytest.raises(smtplib.SMTPAuthenticationError) as e:
+                with EmailMixin.get_mail_connection():
+                    pass
+
+        self.assertEqual(e.value.smtp_code, 535)
+        self.assertEqual(
+            e.value.smtp_error, b"5.7.8 Authentication credentials invalid"
+        )
+        self.assertEqual(len(handler.emails), 0)
+
     def test_authentication_not_authenticated(self) -> None:
         EmailSettings.connection_security = "NONE"
         EmailSettings.port = 25
@@ -297,7 +339,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         with AiosmtpdConnectionManager(handler, auth=True):
             with EmailMixin.get_mail_connection() as mail_client:
                 with pytest.raises(smtplib.SMTPSenderRefused) as e:
-                    response = EmailMixin.send_email(
+                    EmailMixin.send_email(
                         mail_client,
                         self.sender,
                         self.receivers,
@@ -311,6 +353,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
                 self.assertEqual(e.value.smtp_error, b"5.7.0 Authentication required")
         self.assertEqual(len(handler.emails), 0)
 
+    # send tests with different html/plain content variations
     def test_send_html_email(self) -> None:
         EmailSettings.connection_security = "NONE"
         EmailSettings.port = 25
@@ -362,6 +405,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
                     content="Hi\r\nThis is some plain text content!",
                     html=False,
                 )
+                self.assertEqual(len(response), 0)
         self.assertEqual("250 Message accepted for delivery", handler.ret_status)
         self.assertEqual(len(handler.emails), 1)
         self.assertEqual(handler.emails[0]["from"], self.sender)
@@ -375,6 +419,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
             handler.emails[0]["data"],
         )
 
+    # miscellanous tests
     def test_self_signed_not_accepted(self) -> None:
         EmailSettings.connection_security = "STARTTLS"
         EmailSettings.accept_self_signed_certificate = False
@@ -387,7 +432,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
             ):
                 EmailMixin.get_mail_connection().__enter__()
 
-    def test_invalid_receiver(self) -> None:
+    def test_invalid_receiver_all(self) -> None:
+        """Exception is only thrown, if ALL recipients are invalid"""
         EmailSettings.connection_security = "NONE"
         EmailSettings.port = 25
 
@@ -395,7 +441,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         with AiosmtpdConnectionManager(handler):
             with EmailMixin.get_mail_connection() as mail_client:
                 with pytest.raises(smtplib.SMTPRecipientsRefused) as e:
-                    response = EmailMixin.send_email(
+                    EmailMixin.send_email(
                         mail_client,
                         self.sender,
                         "invalidQexample1.com",
@@ -409,6 +455,33 @@ class SendMailWithSmtpServer(BaseActionTestCase):
                 )
         self.assertEqual("550 invalid eMail address", handler.ret_status)
         self.assertEqual(len(handler.emails), 0)
+
+    def test_invalid_receiver_some(self) -> None:
+        """Mail sent, invalid recipients in response"""
+        EmailSettings.connection_security = "NONE"
+        EmailSettings.port = 25
+
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            with EmailMixin.get_mail_connection() as mail_client:
+                receivers = self.receivers + ["invalidQexample1.com"]
+                response = EmailMixin.send_email(
+                    mail_client,
+                    self.sender,
+                    receivers,
+                    subject="A mail from intevation-test: plain text",
+                    content="Hi you\r\nThis is a nice content line with only plain text!",
+                    html=False,
+                )
+        self.assertEqual(
+            response.get("invalidQexample1.com", tuple()),
+            (550, b"invalid eMail address"),
+        )
+        self.assertEqual("250 Message accepted for delivery", handler.ret_status)
+        self.assertEqual(len(handler.emails), 1)
+        self.assertEqual(handler.emails[0]["from"], self.sender)
+        self.assertEqual(handler.emails[0]["to"], self.receivers)
+        self.assertNotEqual(handler.emails[0]["to"], receivers)
 
 
 class CheckValidEmailAddress(BaseActionTestCase):
@@ -433,12 +506,10 @@ class CheckValidEmailAddress(BaseActionTestCase):
 
         for email in emails:
             self.assertFalse(
-                EmailMixin.check_email(email), "Email-address {} recognized as False"
+                EmailMixin.check_email(email), "Email-address {} recognized as True"
             )
 
 
 """
-- Doch noch mal Authentifizierung checken
-- mix accepted and invalid recipients: There should be email to valid ones and an error for the invalid one
 - OS3 Fehler
 """
