@@ -5,7 +5,6 @@ from mypy_extensions import TypedDict
 Environment = TypedDict(
     "Environment",
     {
-        "permission_url": str,
         "media_url": str,
         "datastore_reader_url": str,
         "datastore_writer_url": str,
@@ -13,10 +12,6 @@ Environment = TypedDict(
 )
 
 DEFAULTS = {
-    "PERMISSION_PROTOCOL": "http",
-    "PERMISSION_HOST": "localhost",
-    "PERMISSION_PORT": "9005",
-    "PERMISSION_PATH": "/internal/permission",
     "MEDIA_PROTOCOL": "http",
     "MEDIA_HOST": "localhost",
     "MEDIA_PORT": "9006",
@@ -37,7 +32,6 @@ def get_environment() -> Environment:
     Parses environment variables and sets their defaults if they do not exist.
     """
     return Environment(
-        permission_url=get_endpoint("PERMISSION"),
         media_url=get_endpoint("MEDIA"),
         datastore_reader_url=get_endpoint("DATASTORE_READER"),
         datastore_writer_url=get_endpoint("DATASTORE_WRITER"),

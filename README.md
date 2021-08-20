@@ -79,22 +79,6 @@ The action component listens to port 9002. The presenter component listens to po
 
   Set this variable to raise HTTP 400 and 403 as exceptions instead of valid HTTP responses.
 
-* PERMISSION_PROTOCOL
-
-  Protocol of permission service. Default: http
-
-* PERMISSION_HOST
-
-  Host of permission service. Default: localhost
-
-* PERMISSION_PORT
-
-  Port of permission service. Default: 9005
-
-* PERMISSION_PATH
-
-  Path of permission service. Default is an empty string.
-
 * DATASTORE_READER_PROTOCOL
 
   Protocol of datastore reader service. Default: http
