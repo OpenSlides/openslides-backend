@@ -9,7 +9,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "user/1": {"organization_management_level": "can_manage_users"},
                 "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
                 "group/1": {},
                 "user/2": {},
@@ -18,14 +17,32 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         )
 
     def test_delete_no_permissions(self) -> None:
+        self.set_models(
+            {"user/1": {"organization_management_level": "can_manage_users"}}
+        )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 403)
         assert (
             "Missing CommitteeManagementLevel: can_manage" in response.json["message"]
         )
 
-    def test_delete_permissions(self) -> None:
-        self.set_models({"user/1": {"committee_$1_management_level": "can_manage"}})
+    def test_delete_permissions_can_manage_organization(self) -> None:
+        self.set_models(
+            {"user/1": {"organization_management_level": "can_manage_organization"}}
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting/1")
+
+    def test_delete_permissions_can_manage_committee(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "committee_$1_management_level": "can_manage",
+                    "organization_management_level": "can_manage_users",
+                }
+            }
+        )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting/1")
@@ -35,8 +52,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
-            "meeting/1", {"committee_id": 1, "group_ids": []}
-        )  # should group_ids be [1,2,3,4,5]?
+            "meeting/1", {"committee_id": 1, "group_ids": [1, 2, 3, 4, 5]}
+        )
         self.assert_model_exists("committee/1", {"meeting_ids": []})
         # assert all related models are deleted
         for i in range(5):
@@ -101,3 +118,27 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                         assert val in ([], None)
                     else:
                         assert val is None
+
+    def test_delete_with_tag_and_motion(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "meeting_ids": [1],
+                },
+                "meeting/1": {
+                    "tag_ids": [42],
+                    "motion_ids": [1],
+                    "committee_id": 1,
+                },
+                "tag/42": {"meeting_id": 1, "tagged_ids": ["motion/1"]},
+                "motion/1": {"meeting_id": 1, "tag_ids": [42]},
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/1", {"meeting_ids": []})
+        self.assert_model_deleted("meeting/1", {"committee_id": 1, "tag_ids": [42]})
+        self.assert_model_deleted(
+            "tag/42", {"meeting_id": 1, "tagged_ids": ["motion/1"]}
+        )
+        self.assert_model_deleted("motion/1", {"meeting_id": 1, "tag_ids": [42]})
