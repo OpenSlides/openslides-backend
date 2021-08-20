@@ -58,7 +58,7 @@ class GetForwardingMeetings(BasePresenter):
         for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
             forward_to_committee = self.datastore.get(
                 FullQualifiedId(Collection("committee"), forward_to_committee_id),
-                ["meeting_ids", "name"],
+                ["meeting_ids", "name", "default_meeting_id"],
             )
 
             meeting_result = []
@@ -82,6 +82,9 @@ class GetForwardingMeetings(BasePresenter):
                         "id": forward_to_committee_id,
                         "name": forward_to_committee.get("name", ""),
                         "meetings": meeting_result,
+                        "default_meeting_id": forward_to_committee.get(
+                            "default_meeting_id"
+                        ),
                     }
                 )
         return result
