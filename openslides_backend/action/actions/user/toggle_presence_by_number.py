@@ -13,7 +13,7 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import And, FilterOperator
+from ....shared.filters import And, Filter, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -60,7 +60,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         return instance
 
     def find_user_to_number(self, meeting_id: int, number: str) -> int:
-        filter_ = FilterOperator(f"number_${meeting_id}", "=", number)
+        filter_: Filter = FilterOperator(f"number_${meeting_id}", "=", number)
         result = self.datastore.filter(Collection("user"), filter_, ["id"])
         if len(result.keys()) == 1:
             return list(result.keys())[0]

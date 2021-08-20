@@ -3,6 +3,8 @@ from datastore.migrations.core.migration_handler import MigrationHandler
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 
+from ..migrate import MigrationWrapper
+
 
 @pytest.mark.skip()
 def test_with_sql_dump(write, finalize, assert_model):
@@ -12,6 +14,6 @@ def test_with_sql_dump(write, finalize, assert_model):
             cursor.execute(open("tests/dump.sql", "r").read(), [])
     migration_handler = injector.get(MigrationHandler)
     migration_handler.register_migrations(
-        *MigrationHandler.load_migrations("migrations")
+        *MigrationWrapper.load_migrations("migrations")
     )
     migration_handler.finalize()

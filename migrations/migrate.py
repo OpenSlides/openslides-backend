@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from importlib import import_module
 from typing import List, Type
 
-from datastore.migrations import BaseMigration, PrintFunction, setup, MigrationException
+from datastore.migrations import BaseMigration, MigrationException, PrintFunction, setup
 
 
 class BadMigrationModule(MigrationException):

@@ -8,7 +8,7 @@ setup-docker-compose: | build-dev
 	docker-compose exec -T backend bash -c "chown -R $$(id -u $${USER}):$$(id -g $${USER}) /app /datastore-service"
 
 run-dev-attach:
-	docker-compose exec -u $$(id -u $${USER}):$$(id -g $${USER}) backend ./entrypoint.sh bash --rcfile .bashrc
+	docker-compose exec -u $$(id -u $${USER}):$$(id -g $${USER}) backend ./entrypoint.sh bash --rcfile /util/.bashrc
 
 run-dev run-bash: | setup-docker-compose run-dev-attach
 

@@ -1,7 +1,12 @@
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from datastore.migrations.core.base_migration import BaseMigration
-from datastore.migrations.core.events import BaseEvent, CreateEvent, UpdateEvent
+from datastore.migrations.core.events import (
+    BaseEvent,
+    CreateEvent,
+    DeleteFieldsEvent,
+    UpdateEvent,
+)
 from datastore.shared.util import collection_from_fqid
 
 
@@ -15,10 +20,6 @@ class Migration(BaseMigration):
     collection: str = "organization"
     field: str = "theme"
 
-    def modify(self, obj: Dict[str, Any]) -> None:
-        if self.field in obj:
-            del obj[self.field]
-
     def migrate_event(
         self,
         event: BaseEvent,
@@ -28,6 +29,10 @@ class Migration(BaseMigration):
             return None
 
         if isinstance(event, CreateEvent) or isinstance(event, UpdateEvent):
-            self.modify(event.data)
+            if self.field in event.data:
+                del event.data[self.field]
+        elif isinstance(event, DeleteFieldsEvent):
+            if self.field in event.data:
+                event.data.remove(self.field)
 
         return [event]

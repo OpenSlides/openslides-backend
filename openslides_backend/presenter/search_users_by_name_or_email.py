@@ -14,7 +14,7 @@ from ..permissions.permission_helper import (
 )
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import MissingPermission, PresenterException
-from ..shared.filters import FilterOperator, Or
+from ..shared.filters import Filter, FilterOperator, Or
 from ..shared.patterns import Collection, FullQualifiedId
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -67,6 +67,7 @@ class SearchUsersByNameEmail(BasePresenter):
         for search in self.data["search"]:
             username = search.get("username", "")
             email = search.get("email", "")
+            filter_: Filter
             if username and email:
                 filter_ = Or(
                     FilterOperator("username", "=", username),

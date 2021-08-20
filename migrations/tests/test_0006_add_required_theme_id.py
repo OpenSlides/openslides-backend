@@ -15,6 +15,7 @@ def test_migration(write, finalize, assert_model):
     )
     write({"type": "delete", "fqid": "organization/1"})
     write({"type": "restore", "fqid": "organization/1"})
+    write({"type": "create", "fqid": "dummy/42", "fields": {"id": 42}})
 
     finalize("0006_add_required_theme_id")
 
@@ -79,4 +80,13 @@ def test_migration(write, finalize, assert_model):
             "meta_position": 4,
         },
         position=4,
+    )
+    assert_model(
+        "dummy/42",
+        {
+            "id": 42,
+            "meta_deleted": False,
+            "meta_position": 5,
+        },
+        position=5,
     )
