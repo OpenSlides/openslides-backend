@@ -6,18 +6,16 @@ from contextlib import contextmanager
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Dict, Generator, List, Optional, Tuple, Union
 
 from lxml import html as lxml_html  # type: ignore
 from lxml.html.clean import clean_html  # type: ignore
 
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
-from ...shared.interfaces.write_request import WriteRequest
-from ..util.typing import ActionResults
 
 # regular expression for validating an Email
-regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
+email_checker_regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
 
 SendErrors = Dict[str, Tuple[int, bytes]]
 
@@ -32,7 +30,7 @@ class ConnectionSecurity:
     @classmethod
     def list(cls) -> List[str]:
         return [
-            value  # getattr(cls, attr)
+            value
             for attr in dir(cls)
             if not callable(value := getattr(cls, attr)) and not attr.startswith("_")
         ]
@@ -61,18 +59,10 @@ EmailSettings.check_settings()
 
 
 class EmailMixin:
-    def perform(
-        self, *args: Any, **kwargs: Any
-    ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
-        self.index = -1
-        with self.get_mail_connection() as mail_client:
-            self.mail_client = mail_client
-            return super().perform(*args, **kwargs)  # type: ignore
-
     @staticmethod
     def check_email(email: str) -> bool:
         """returns True with valid email, else False"""
-        return bool(re.fullmatch(regex, email, flags=(re.IGNORECASE)))
+        return bool(re.fullmatch(email_checker_regex, email, flags=(re.IGNORECASE)))
 
     @staticmethod
     def get_ssl_default_context() -> ssl.SSLContext:

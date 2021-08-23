@@ -1,173 +1,21 @@
-import os
 import smtplib
 import ssl
-import subprocess
-from types import TracebackType
-from typing import Any, Dict, List, Optional, Type, cast
 
 import pytest
-from aiosmtpd.controller import Controller
-from aiosmtpd.smtp import SMTP, AuthResult, Envelope, LoginPassword, Session
 
-from openslides_backend.action.mixins.send_email_mixin import (
-    ConnectionSecurity,
-    EmailMixin,
-    EmailSettings,
-)
+from openslides_backend.action.mixins.send_email_mixin import EmailMixin, EmailSettings
 from tests.system.action.base import BaseActionTestCase
-
-# Create certificate if they don't exist
-if not os.path.exists("key.pem") or not os.path.exists("cert.pem"):
-    subprocess.call(
-        "openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj '/CN=localhost'",
-        shell=True,
-    )
-
-
-class AIOHandler:
-    def __init__(self) -> None:
-        self.emails: List[Dict[str, Any]] = []
-        self.ret_status = "unset"
-
-    async def handle_RCPT(
-        self,
-        server: SMTP,
-        session: Session,
-        envelope: Envelope,
-        address: str,
-        rcpt_options: List[Any],
-    ) -> Any:
-        if not EmailMixin.check_email(address):
-            self.ret_status = "550 invalid eMail address"
-            return self.ret_status
-        envelope.rcpt_tos.append(address)
-        self.ret_status = "250 OK"
-        return self.ret_status
-
-    async def handle_DATA(
-        self, server: SMTP, session: Session, envelope: Envelope
-    ) -> Any:
-        content = cast(bytes, envelope.content)
-        self.emails.append(
-            {
-                "from": envelope.mail_from,
-                "to": envelope.rcpt_tos,
-                "data": content.decode("utf8", errors="replace"),
-            }
-        )
-        self.ret_status = "250 Message accepted for delivery"
-        return self.ret_status
-
-
-class AiosmtpdConnectionManager:
-    def __init__(self, handler: AIOHandler, auth: bool = False) -> None:
-        self.handler = handler
-        self.auth = auth
-
-    def __enter__(self) -> None:
-        auth_kwargs = {}
-        if self.auth:
-            auth_kwargs = {
-                "auth_required": True,
-                "authenticator": Authenticator(),
-            }
-
-        if EmailSettings.connection_security in [
-            ConnectionSecurity.STARTTLS,
-            ConnectionSecurity.SSLTLS,
-        ]:
-            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            ssl_context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
-            ssl_context.load_cert_chain("cert.pem", "key.pem")
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.VerifyMode.CERT_NONE
-            if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
-                # This is a hack: The aiosmtpd library does not issue AUTH in EHLO, if not starttls is used.
-                # For other methods (SSL/TLS and NONE) setting auth_require_tls allows AUTH. The intention is to
-                # allow AUTH before TLS (which is ok for NONE), but a hack for SSL/TLS since we have an
-                # encrypted connection
-                if self.auth:
-                    auth_kwargs["auth_require_tls"] = False
-                self.controller = Controller(
-                    self.handler,
-                    EmailSettings.host,
-                    EmailSettings.port,
-                    server_hostname="127.0.0.1",
-                    ssl_context=ssl_context,
-                    **auth_kwargs,  # type: ignore
-                )
-            else:
-                self.controller = Controller(
-                    self.handler,
-                    EmailSettings.host,
-                    EmailSettings.port,
-                    server_hostname="127.0.0.1",
-                    require_starttls=True,
-                    tls_context=ssl_context,
-                    **auth_kwargs,  # type: ignore
-                )
-        else:
-            if self.auth:
-                auth_kwargs["auth_require_tls"] = False
-            self.controller = Controller(
-                self.handler, EmailSettings.host, EmailSettings.port, **auth_kwargs  # type: ignore
-            )
-
-        self.controller.start()
-
-    def __exit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        exc_traceback: Optional[TracebackType],
-    ) -> None:
-        self.controller.stop(no_assert=True)
-
-
-class Authenticator:
-    def __init__(self) -> None:
-        pass
-
-    def __call__(
-        self,
-        server: SMTP,
-        session: Session,
-        envelope: Envelope,
-        mechanism: str,
-        auth_data: LoginPassword,
-    ) -> AuthResult:
-        fail_nothandled = AuthResult(success=False, handled=False)
-        if mechanism not in ("LOGIN", "PLAIN"):
-            return fail_nothandled
-        if not isinstance(auth_data, LoginPassword):
-            return fail_nothandled
-
-        if auth_data.login == b"sender@example.com" and auth_data.password == b"secret":
-            return AuthResult(success=True)
-        else:
-            return fail_nothandled
+from tests.system.action.mail_base import AIOHandler, AiosmtpdConnectionManager
 
 
 class SendMailWithSmtpServer(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_meeting()
-        self.set_models(
-            {
-                "user/2": {
-                    "username": "Testuser 2",
-                    "first_name": "Jim",
-                    "last_name": "Beam",
-                    "email": "",
-                    "group_$1_ids": [1],
-                    "meeting_ids": [1],
-                },
-            },
-        )
         self.sender = "sender@example.com"
         self.password = "secret"
         self.receivers = ["receiver1@example.com", "receiver2@example.com"]
         EmailSettings.host = "127.0.0.1"
+        EmailSettings.port = 25
         EmailSettings.timeout = 5
         EmailSettings.user = ""  # important to reset these settings
         EmailSettings.password = ""
@@ -419,7 +267,34 @@ class SendMailWithSmtpServer(BaseActionTestCase):
             handler.emails[0]["data"],
         )
 
-    # miscellanous tests
+    # General connection Problems client -> server
+    def test_connection_wrong_port(self) -> None:
+        """Server started on 25, client tries on 26"""
+        EmailSettings.connection_security = "NONE"
+        EmailSettings.port = 25
+
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            EmailSettings.port = 26
+            with pytest.raises(ConnectionRefusedError):
+                EmailMixin.get_mail_connection().__enter__()
+
+    def test_connection_interrupted(self) -> None:
+        EmailSettings.connection_security = "NONE"
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler) as server:
+            with EmailMixin.get_mail_connection() as mail_client:
+                with pytest.raises(smtplib.SMTPServerDisconnected):
+                    server.stop()
+                    EmailMixin.send_email(
+                        mail_client,
+                        self.sender,
+                        self.receivers,
+                        subject="Test-email",
+                        content="Hi\r\nThis is some plain text content!",
+                        html=False,
+                    )
+
     def test_self_signed_not_accepted(self) -> None:
         EmailSettings.connection_security = "STARTTLS"
         EmailSettings.accept_self_signed_certificate = False
@@ -432,6 +307,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
             ):
                 EmailMixin.get_mail_connection().__enter__()
 
+    # test invalid receivers
     def test_invalid_receiver_all(self) -> None:
         """Exception is only thrown, if ALL recipients are invalid"""
         EmailSettings.connection_security = "NONE"
