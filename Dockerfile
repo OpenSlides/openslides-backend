@@ -10,7 +10,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --requirement requirements.txt
 
 RUN adduser --system --no-create-home appuser
-RUN chown appuser -R .
 USER appuser
 
 EXPOSE 9002
