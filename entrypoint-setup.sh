@@ -6,8 +6,11 @@ export DATASTORE_DATABASE_USER=${DATASTORE_DATABASE_USER:-openslides}
 export DATASTORE_DATABASE_NAME=${DATASTORE_DATABASE_NAME:-openslides}
 export DATASTORE_DATABASE_PASSWORD=${DATASTORE_DATABASE_PASSWORD:-openslides}
 
-printf "waiting for setup to finish\n"
-wait-for-it -t 0 "${BACKEND_SETUP_HOST:-backend-setup}:${BACKEND_SETUP_PORT:-9002}"
-printf "setup finished\n"
+./wait.sh $DATASTORE_WRITER_HOST $DATASTORE_WRITER_PORT
 
-exec "$@"
+printf "\nMigrations:\n"
+python migrations/migrate.py migrate
+printf "\n"
+
+printf "setup done\n"
+timeout 1d python -m http.server --directory /app/empty --bind 0.0.0.0 9002
