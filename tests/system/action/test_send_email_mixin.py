@@ -297,8 +297,8 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
     def test_self_signed_not_accepted(self) -> None:
         EmailSettings.connection_security = "STARTTLS"
-        EmailSettings.accept_self_signed_certificate = False
         EmailSettings.port = 587
+        EmailSettings.accept_self_signed_certificate = False
 
         with AiosmtpdConnectionManager(AIOHandler()):
             with pytest.raises(
@@ -371,16 +371,21 @@ class CheckValidEmailAddress(BaseActionTestCase):
 
         for email in emails:
             self.assertTrue(
-                EmailMixin.check_email(email), "Email-address {} recognized as False"
+                EmailMixin.check_email(email),
+                f"Email-address {email} recognized as False",
             )
 
     def test_check_invalid_emails(self) -> None:
         emails = (
             "anK.Mä@k.itraÖi326@gm-ail.com",
             "anK.Mä%k.itraÖi326@gm-ail.com",
+            "k[6@gm-ail.com",
+            "k]6@gm-ail.com",
+            "k\6@gm-ail.com",
         )
 
         for email in emails:
             self.assertFalse(
-                EmailMixin.check_email(email), "Email-address {} recognized as True"
+                EmailMixin.check_email(email),
+                f"Email-address {email} recognized as True",
             )
