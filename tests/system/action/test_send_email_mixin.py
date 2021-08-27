@@ -1,5 +1,6 @@
 import smtplib
 import ssl
+from email.headerregistry import Address
 
 import pytest
 
@@ -358,6 +359,37 @@ class SendMailWithSmtpServer(BaseActionTestCase):
         self.assertEqual(handler.emails[0]["from"], self.sender)
         self.assertEqual(handler.emails[0]["to"], self.receivers)
         self.assertNotEqual(handler.emails[0]["to"], receivers)
+
+    # Test sender with name
+    def test_sender_with_name(self) -> None:
+        EmailSettings.connection_security = "NONE"
+        EmailSettings.port = 25
+
+        sender = Address("Name of sender", addr_spec=self.sender)
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            with EmailMixin.get_mail_connection() as mail_client:
+                response = EmailMixin.send_email(
+                    mail_client,
+                    sender,
+                    self.receivers,
+                    subject="Test-email",
+                    content="Hi\r\nThis is some plain text content!",
+                    html=False,
+                )
+                self.assertEqual(len(response), 0)
+        self.assertEqual("250 Message accepted for delivery", handler.ret_status)
+        self.assertEqual(len(handler.emails), 1)
+        self.assertEqual(handler.emails[0]["from"], self.sender)
+        self.assertEqual(handler.emails[0]["to"], self.receivers)
+        self.assertIn(
+            f"From: Name of sender <{self.sender}>",
+            handler.emails[0]["data"],
+        )
+        self.assertNotIn(
+            'Content-Type: text/html; charset="utf-8"',
+            handler.emails[0]["data"],
+        )
 
 
 class CheckValidEmailAddress(BaseActionTestCase):

@@ -38,6 +38,7 @@ ENV EMAIL_PORT 25
 ENV EMAIL_CONNECTION_SECURITY NONE
 ENV EMAIL_TIMEOUT 5
 ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE false
+ENV DEFAULT_FROM_EMAIL noreply@example.com
 
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["python", "-m", "debugpy", "--listen", "0.0.0.0:5678", "openslides_backend"]

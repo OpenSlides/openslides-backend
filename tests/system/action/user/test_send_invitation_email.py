@@ -1,0 +1,524 @@
+from time import time
+
+from openslides_backend.action.mixins.send_email_mixin import (
+    ConnectionSecurity,
+    EmailSettings,
+)
+from tests.system.action.base import BaseActionTestCase
+from tests.system.action.mail_base import AIOHandler, AiosmtpdConnectionManager
+
+
+class SendInvitationMail(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_meeting()
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "annual general meeting",
+                    "users_email_sender": "Openslides",
+                    "users_pdf_url": "http://example.com:8000",
+                },
+                "user/2": {
+                    "username": "Testuser 2",
+                    "first_name": "Jim",
+                    "last_name": "Beam",
+                    "default_password": "secret",
+                    "email": "recipient2@example.com",
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+            },
+        )
+        # important to reset all these settings
+        EmailSettings.connection_security = ConnectionSecurity.NONE
+        EmailSettings.host = "127.0.0.1"
+        EmailSettings.port = 25
+        EmailSettings.timeout = 5
+        EmailSettings.user = ""
+        EmailSettings.password = ""
+        EmailSettings.accept_self_signed_certificate = False
+        EmailSettings.default_from_email = "noreply@example.com"
+
+    def test_send_correct(self) -> None:
+        start_time = time()
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        user2 = self.get_model("user/2")
+        self.assertGreater(user2.get("last_email_send"), start_time)
+
+    def test_send_mixed_multimail(self) -> None:
+        """
+        Test with 2 PayloadElements and some actions
+        There are correct and falsy actions, look at user name below,
+        except user/2 => mail is sent and
+               user/7, which doesn't exist
+        """
+        self.set_models(
+            {
+                "user/3": {
+                    "username": "Testuser 3 no email",
+                    "first_name": "Jim3",
+                    "email": "",
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "user/4": {
+                    "username": "Testuser 4 falsy email",
+                    "first_name": "Jim4",
+                    "email": "recipient4",
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "user/5": {
+                    "username": "Testuser 5 wrong meeting",
+                    "first_name": "Jim5",
+                    "email": "recipient5@example.com",
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "user/6": {
+                    "username": "Testuser 6 wrong schema",
+                    "first_name": "Jim6",
+                    "email": "recipient6@example.com",
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+            },
+        )
+
+        start_time = time()
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request_json(
+                [
+                    {
+                        "action": "user.send_invitation_email",
+                        "data": [
+                            {"id": 2, "meeting_id": 1},
+                            {"id": 3, "meeting_id": 1},
+                        ],
+                    },
+                    {
+                        "action": "user.send_invitation_email",
+                        "data": [
+                            {"id": 4, "meeting_id": 1},
+                            {"id": 5, "meeting_id": 2},
+                            {"id": 6, "meeting_id": "1"},
+                            {"id": 7, "meeting_id": 1},
+                        ],
+                    },
+                ]
+            )
+
+        self.assert_status_code(response, 200)
+        user2 = self.get_model("user/2")
+        self.assertGreater(user2.get("last_email_send", 0), start_time)
+        for i in range(3, 7, 1):
+            self.assert_model_exists(f"user/{i}", {"last_email_send": None})
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(
+            response.json["results"][0][0]["recipient"], "recipient2@example.com"
+        )
+        self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 2)
+
+        self.assertEqual(response.json["results"][0][1]["send"], False)
+        self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 3)
+        self.assertIn("has no email-address", response.json["results"][0][1]["message"])
+
+        self.assertEqual(response.json["results"][1][0]["send"], False)
+        self.assertEqual(response.json["results"][1][0]["recipient_user_id"], 4)
+        self.assertIn(
+            "The email-address recipient4 of User/4 is not valid",
+            response.json["results"][1][0]["message"],
+        )
+
+        self.assertEqual(response.json["results"][1][1]["send"], False)
+        self.assertEqual(response.json["results"][1][1]["recipient_user_id"], 5)
+        self.assertIn(
+            "User/5 does not belong to meeting/2",
+            response.json["results"][1][1]["message"],
+        )
+
+        self.assertEqual(response.json["results"][1][2]["send"], False)
+        self.assertEqual(response.json["results"][1][2]["recipient_user_id"], 6)
+        self.assertIn(
+            "JsonSchema: data.meeting_id must be integer",
+            response.json["results"][1][2]["message"],
+        )
+
+        self.assertEqual(response.json["results"][1][3]["send"], False)
+        self.assertEqual(response.json["results"][1][3]["recipient_user_id"], 7)
+        self.assertIn(
+            "DatastoreException:  Model 'user/7' does not exist.",
+            response.json["results"][1][3]["message"],
+        )
+
+    def test_SMTPAuthentificationError_wrong_password(self) -> None:
+        EmailSettings.password = "not secret"
+        EmailSettings.user = "sender@example.com"
+
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler, auth=True):
+            response = self.request(
+                "user.send_invitation_email",
+                {},
+            )
+        self.assert_status_code(response, 200)
+        self.assertIn(
+            "SMTPAuthenticationError: (535, b'5.7.8 Authentication credentials invalid')",
+            response.json["results"][0][0]["message"],
+        )
+
+    def test_SMTPSenderRefused_not_authenticated(self) -> None:
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler, auth=True):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertIn(
+            f"SMTPSenderRefused: (530, b'5.7.0 Authentication required', '{EmailSettings.default_from_email}')",
+            response.json["results"][0][0]["message"],
+        )
+
+    def test_ConnectionRefusedError_wrong_port(self) -> None:
+        EmailSettings.timeout = 1
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            EmailSettings.port = 26
+            response = self.request(
+                "user.send_invitation_email",
+                {},
+            )
+        self.assert_status_code(response, 200)
+        self.assertIn(
+            "ConnectionRefusedError: [Errno 111] Connection refused",
+            response.json["results"][0][0]["message"],
+        )
+
+    def test_SSLCertVerificationError_self_signed(self) -> None:
+        EmailSettings.connection_security = "STARTTLS"
+        EmailSettings.port = 587
+        EmailSettings.accept_self_signed_certificate = False
+
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {},
+            )
+        self.assert_status_code(response, 200)
+        self.assertIn(
+            "SSLCertVerificationError: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate",
+            response.json["results"][0][0]["message"],
+        )
+
+    # Tests regarding sender name
+    def test_sender_without_sender_name(self) -> None:
+        self.set_models(
+            {"meeting/1": {"users_email_sender": ""}},
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(
+            response.json["results"][0][0]["recipient"], "recipient2@example.com"
+        )
+        self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 2)
+        self.assertEqual(handler.emails[0]["from"], EmailSettings.default_from_email)
+        self.assertIn(
+            f"From: {EmailSettings.default_from_email}",
+            handler.emails[0]["data"],
+        )
+
+    def test_sender_with_sender_name(self) -> None:
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(
+            response.json["results"][0][0]["recipient"], "recipient2@example.com"
+        )
+        meeting = self.get_model("meeting/1")
+        self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 2)
+        self.assertEqual(handler.emails[0]["from"], EmailSettings.default_from_email)
+        self.assertIn(
+            f"From: {meeting.get('users_email_sender')} <{EmailSettings.default_from_email}>",
+            handler.emails[0]["data"],
+        )
+
+    def test_sender_with_wrong_sender(self) -> None:
+        EmailSettings.default_from_email = "wrong_sender@email"
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {},
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], False)
+        self.assertEqual(len(handler.emails), 0)
+        self.assertIn(
+            "email wrong_sender@email is not a valid sender email address.",
+            response.json["results"][0][0]["message"],
+        )
+
+    def test_sender_with_wrong_sender_name(self) -> None:
+        """wrong name in meeting 1, but okay in meeting 4"""
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "meeting/1": {"users_email_sender": "x]x"},
+                "meeting/4": {"users_email_sender": "Openslides"},
+                "user/3": {
+                    "username": "Testuser 3",
+                    "first_name": "Jim3",
+                    "email": "x@abc.com",
+                    "group_$1_ids": [1],
+                    "group_$4_ids": [4],
+                    "meeting_ids": [1, 4],
+                },
+            },
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request_multi(
+                "user.send_invitation_email",
+                [
+                    {"id": 3, "meeting_id": 1},
+                    {"id": 3, "meeting_id": 4},
+                ],
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(len(handler.emails), 1)
+        self.assertEqual(response.json["results"][0][0]["send"], False)
+        self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 3)
+        self.assertEqual(response.json["results"][0][0]["recipient_meeting_id"], 1)
+        self.assertIn(
+            'Invalid characters in the sender name configuration of meeting_id "1". Not allowed chars: "[", "]", "\\"',
+            response.json["results"][0][0]["message"],
+        )
+
+        self.assertEqual(response.json["results"][0][1]["send"], True)
+        self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 3)
+        self.assertEqual(response.json["results"][0][1]["recipient_meeting_id"], 4)
+
+    # Tests regarding reply_to
+    def test_reply_to_correct(self) -> None:
+        self.set_models(
+            {"meeting/1": {"users_email_replyto": "reply@example.com"}},
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertIn("Reply-To: reply@example.com", handler.emails[0]["data"])
+
+    def test_reply_to_error(self) -> None:
+        self.set_models(
+            {"meeting/1": {"users_email_replyto": "reply@example"}},
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], False)
+        self.assertIn(
+            "The given reply_to address 'reply@example' is not valid.",
+            response.json["results"][0][0]["message"],
+        )
+
+    # permission test
+    def test_permission_error(self) -> None:
+        """allowed for meeting/1, forbidden for meeting 4"""
+        self.create_meeting(4)
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                    "group_$1_ids": [2],  # admin group
+                    "group_$4_ids": [4],  # default group without rights
+                    "meeting_ids": [1, 4],
+                },
+                "user/2": {
+                    "group_$4_ids": [4],
+                    "meeting_ids": [1, 4],
+                },
+            },
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request_multi(
+                "user.send_invitation_email",
+                [
+                    {"id": 2, "meeting_id": 1},
+                    {"id": 2, "meeting_id": 4},
+                ],
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(len(handler.emails), 1)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 2)
+        self.assertEqual(response.json["results"][0][0]["recipient_meeting_id"], 1)
+
+        self.assertEqual(response.json["results"][0][1]["send"], False)
+        self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 2)
+        self.assertEqual(response.json["results"][0][1]["recipient_meeting_id"], 4)
+        self.assertIn(
+            "Missing Permission: user.can_manage",
+            response.json["results"][0][1]["message"],
+        )
+
+    # formatting body and subject test
+    def test_correct_subject_and_body_from_default(self) -> None:
+        response = self.request(
+            "meeting.create", {"committee_id": 60, "name": "Test Meeting"}
+        )
+        meeting_id = response.json["results"][0][0]["id"]
+        self.set_models(
+            {
+                "user/2": {
+                    "title": "Dr.",
+                    f"group_${meeting_id}_ids": [4],
+                    "meeting_ids": [meeting_id],
+                }
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": meeting_id,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertIn(
+            'Content-Type: text/plain; charset="utf-8"',
+            handler.emails[0]["data"],
+        )
+        self.assertNotIn(
+            'Content-Type: text/html; charset="utf-8"',
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "Subject: OpenSlides access data",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "username: Testuser 2",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "Dear Dr. Jim Beam",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "password: secret",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "http://example.com:8000",
+            handler.emails[0]["data"],
+        )
+
+    def test_correct_modified_body(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                }
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'annual general meeting'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: annual general meeting",
+            handler.emails[0]["data"],
+        )
+
+    def test_modified_body_with_unknown_keyword(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "users_email_subject": "Invitation for Openslides '{xevent_name}'",
+                    "users_email_body": "event name: {yevent_name}",
+                }
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdConnectionManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                    "meeting_id": 1,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides ''xevent_name''",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: 'yevent_name'",
+            handler.emails[0]["data"],
+        )

@@ -4,6 +4,7 @@ import smtplib
 import ssl
 from contextlib import contextmanager
 from datetime import datetime
+from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
 from typing import Dict, Generator, List, Optional, Tuple, Union
@@ -13,9 +14,6 @@ from lxml.html.clean import clean_html  # type: ignore
 
 from ...shared.env import is_truthy
 from ...shared.exceptions import ActionException
-
-# regular expression for validating an Email
-email_checker_regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
 
 SendErrors = Dict[str, Tuple[int, bytes]]
 
@@ -46,6 +44,7 @@ class EmailSettings:
     accept_self_signed_certificate: bool = is_truthy(
         os.environ.get("EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE", "false")
     )
+    default_from_email = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@example.com")
 
     @classmethod
     def check_settings(cls) -> None:
@@ -62,7 +61,8 @@ class EmailMixin:
     @staticmethod
     def check_email(email: str) -> bool:
         """returns True with valid email, else False"""
-        return bool(re.fullmatch(email_checker_regex, email, flags=(re.IGNORECASE)))
+        regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
+        return bool(re.fullmatch(regex, email, flags=(re.IGNORECASE)))
 
     @staticmethod
     def get_ssl_default_context() -> ssl.SSLContext:
@@ -108,11 +108,12 @@ class EmailMixin:
     @staticmethod
     def send_email(
         client: Union[smtplib.SMTP, smtplib.SMTP_SSL],
-        from_: str,
+        from_: Union[str, Address],
         to: Union[str, List[str]],
         subject: str,
         content: str,
         contentplain: str = "",
+        reply_to: str = "",
         html: bool = True,
     ) -> SendErrors:
         """
@@ -145,4 +146,6 @@ class EmailMixin:
         message.add_header("Subject", subject)
         message.add_header("Date", format_datetime(datetime.now()))
         message.add_header("Message-ID", make_msgid(domain=EmailSettings.host))
+        if reply_to:
+            message.add_header("Reply-To", reply_to)
         return client.send_message(message)
