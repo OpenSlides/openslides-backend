@@ -69,28 +69,27 @@ class MeetingImport(SingularActionMixin, Action):
         meeting_json = instance["meeting"]
 
         # checks if the meeting is correct
-        if not len(meeting_json.get("meeting", [])) == 1:
+        if not len(meeting_json.get("meeting", {}).values()) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
 
         self.check_usernames_and_generate_new_ones(meeting_json)
 
         # save blobs from mediafiles
         self.mediadata = []
-        json_data = instance["meeting"]
-        for entry in json_data.get("mediafile", []):
+        for entry in meeting_json.get("mediafile", {}).values():
             if "blob" in entry:
                 self.mediadata.append(
                     (entry.pop("blob"), entry["id"], entry["mimetype"])
                 )
 
         # check datavalidation
-        checker = Checker(data=json_data, is_import=True)
+        checker = Checker(data=meeting_json, is_import=True)
         try:
             checker.run_check()
         except CheckException as ce:
             raise ActionException(str(ce))
 
-        for entry in json_data.get("motion", []):
+        for entry in meeting_json.get("motion", {}).values():
             if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
                 raise ActionException(
                     "Motion all_origin_ids and all_derived_motion_ids should be empty."
@@ -107,7 +106,7 @@ class MeetingImport(SingularActionMixin, Action):
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
         used_usernames = set()
-        for entry in json_data.get("user", []):
+        for entry in json_data.get("user", {}).values():
             is_username_unique = False
             template_username = entry["username"]
             count = 1
@@ -129,20 +128,27 @@ class MeetingImport(SingularActionMixin, Action):
             used_usernames.add(entry["username"])
 
     def update_meeting_and_users(self, instance: Dict[str, Any]) -> None:
-        # update committee_id
+        # update committee_id and is_active_in_organization_id
         json_data = instance["meeting"]
-        json_data["meeting"][0]["committee_id"] = instance["committee_id"]
-        json_data["meeting"][0]["is_active_in_organization_id"] = 1
+        self.get_meeting_from_json(json_data)["committee_id"] = instance["committee_id"]
+        self.get_meeting_from_json(json_data)["is_active_in_organization_id"] = 1
 
         # generate passwords
-        for entry in json_data["user"]:
+        for entry in json_data["user"].values():
             entry["password"] = self.auth.hash(get_random_string(10))
 
         # set enable_anonymous
-        json_data["meeting"][0]["enable_anonymous"] = False
+        self.get_meeting_from_json(json_data)["enable_anonymous"] = False
 
         # set imported_at
-        json_data["meeting"][0]["imported_at"] = round(time.time())
+        self.get_meeting_from_json(json_data)["imported_at"] = round(time.time())
+
+    def get_meeting_from_json(self, json_data: Any) -> Any:
+        """
+        Small helper to retrieve the one and only meeting object from the import data.
+        """
+        key = next(iter(json_data["meeting"]))
+        return json_data["meeting"][key]
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
@@ -152,7 +158,7 @@ class MeetingImport(SingularActionMixin, Action):
             new_ids = self.datastore.reserve_ids(
                 Collection(collection), len(json_data[collection])
             )
-            for entry, new_id in zip(json_data[collection], new_ids):
+            for entry, new_id in zip(json_data[collection].values(), new_ids):
                 replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
 
@@ -160,12 +166,17 @@ class MeetingImport(SingularActionMixin, Action):
         self, instance: Dict[str, Any], ignore_user: bool = False
     ) -> None:
         json_data = instance["meeting"]
+        new_json_data = {}
         for collection in json_data:
             if ignore_user and collection == "user":
                 continue
-            for entry in json_data[collection]:
+            new_collection = {}
+            for entry in json_data[collection].values():
                 for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field)
+                new_collection[str(entry["id"])] = entry
+            new_json_data[collection] = new_collection
+        instance["meeting"] = new_json_data
 
     def replace_field_ids(
         self,
@@ -273,15 +284,15 @@ class MeetingImport(SingularActionMixin, Action):
                 entry[new_field] = tmp
 
     def update_admin_group(self, data_json: Dict[str, Any]) -> None:
-        admin_group_id = data_json["meeting"][0]["admin_group_id"]
-        for entry in data_json["group"]:
+        admin_group_id = self.get_meeting_from_json(data_json)["admin_group_id"]
+        for entry in data_json["group"].values():
             if entry["id"] == admin_group_id:
                 if entry["user_ids"]:
                     entry["user_ids"].insert(0, self.user_id)
                 else:
                     entry["user_ids"] = [self.user_id]
 
-        data_json["meeting"][0]["user_ids"].insert(0, self.user_id)
+        self.get_meeting_from_json(data_json)["user_ids"].insert(0, self.user_id)
 
     def upload_mediadata(self) -> None:
         for blob, id_, mimetype in self.mediadata:
@@ -290,10 +301,10 @@ class MeetingImport(SingularActionMixin, Action):
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
-        meeting_id = json_data["meeting"][0]["id"]
+        meeting_id = self.get_meeting_from_json(json_data)["id"]
         write_requests = []
         for collection in json_data:
-            for entry in json_data[collection]:
+            for entry in json_data[collection].values():
                 fqid = FullQualifiedId(Collection(collection), entry["id"])
                 write_requests.append(
                     self.build_write_request(
@@ -308,7 +319,8 @@ class MeetingImport(SingularActionMixin, Action):
             self.build_write_request(
                 EventType.Update,
                 FullQualifiedId(
-                    Collection("committee"), json_data["meeting"][0]["committee_id"]
+                    Collection("committee"),
+                    self.get_meeting_from_json(json_data)["committee_id"],
                 ),
                 f"import meeting {meeting_id}",
                 None,
@@ -331,7 +343,7 @@ class MeetingImport(SingularActionMixin, Action):
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         """Returns the newly created id."""
-        return {"id": instance["meeting"]["meeting"][0]["id"]}
+        return {"id": self.get_meeting_from_json(instance["meeting"])["id"]}
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if not has_committee_management_level(

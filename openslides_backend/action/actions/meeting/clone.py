@@ -25,21 +25,30 @@ class MeetingClone(MeetingImport):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_json = export_meeting(
+        meeting_json_old = export_meeting(
             self.datastore, self.media, instance["meeting_id"]
         )
+
+        # Transform data format
+        # TODO: Transform format earlier, e. g. in export_meeting function
+        meeting_json: Dict[str, Any] = {}
+        for collection, objs in meeting_json_old.items():
+            meeting_json[collection] = {}
+            for obj in objs:
+                meeting_json[collection][str(obj["id"])] = obj
+
         instance["meeting"] = meeting_json
-        meeting_json["user"] = []
-        committee_id = meeting_json["meeting"][0]["committee_id"]
-        meeting_json["meeting"][0]["committee_id"] = None
+        meeting_json["user"] = {}
+        committee_id = self.get_meeting_from_json(meeting_json)["committee_id"]
+        self.get_meeting_from_json(meeting_json)["committee_id"] = None
 
         # checks if the meeting is correct
-        if not len(meeting_json.get("meeting", [])) == 1:
+        if not len(meeting_json.get("meeting", {}).keys()) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
 
         # save blobs from mediafiles
         self.mediadata = []
-        for entry in meeting_json.get("mediafile", []):
+        for entry in meeting_json.get("mediafile", {}).values():
             if "blob" in entry:
                 self.mediadata.append(
                     (entry.pop("blob"), entry["id"], entry["mimetype"])
@@ -52,17 +61,17 @@ class MeetingClone(MeetingImport):
         except CheckException as ce:
             raise ActionException(str(ce))
 
-        for entry in meeting_json.get("motion", []):
+        for entry in meeting_json.get("motion", {}).values():
             if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
                 raise ActionException(
                     "Motion all_origin_ids and all_derived_motion_ids should be empty."
                 )
 
         # set imported_at
-        meeting_json["meeting"][0]["imported_at"] = round(time.time())
+        self.get_meeting_from_json(meeting_json)["imported_at"] = round(time.time())
 
-        # update committee_id
-        meeting_json["meeting"][0]["committee_id"] = committee_id
+        # reinsert committee_id
+        self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
@@ -74,7 +83,7 @@ class MeetingClone(MeetingImport):
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
         for collection in json_data:
             if collection == "user":
-                for user_id in json_data["meeting"][0]["user_ids"] or []:
+                for user_id in self.get_meeting_from_json(json_data)["user_ids"] or []:
                     replace_map["user"][user_id] = user_id
             elif not json_data[collection]:
                 continue
@@ -82,7 +91,7 @@ class MeetingClone(MeetingImport):
                 new_ids = self.datastore.reserve_ids(
                     Collection(collection), len(json_data[collection])
                 )
-                for entry, new_id in zip(json_data[collection], new_ids):
+                for entry, new_id in zip(json_data[collection].values(), new_ids):
                     replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
 
@@ -165,15 +174,17 @@ class MeetingClone(MeetingImport):
         for tuple_ in updated_field_n_co:
             self.append_helper_list_cobj(write_requests, json_data, *tuple_)
 
-        for user_id in json_data["meeting"][0]["user_ids"]:
+        for user_id in self.get_meeting_from_json(json_data)["user_ids"]:
             write_requests.append(
                 self.build_write_request(
                     EventType.Update,
                     FullQualifiedId(Collection("user"), user_id),
-                    f"clone meeting {json_data['meeting'][0]['id']}",
+                    f"clone meeting {self.get_meeting_from_json(json_data)['id']}",
                     list_fields={
                         "add": {
-                            "meeting_ids": [json_data["meeting"][0]["id"]],
+                            "meeting_ids": [
+                                self.get_meeting_from_json(json_data)["id"]
+                            ],
                         },
                         "remove": {},
                     },
@@ -182,7 +193,7 @@ class MeetingClone(MeetingImport):
 
     def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
         front, back = field.split("$")
-        return f"{front}${json_data['meeting'][0]['id']}{back}"
+        return f"{front}${self.get_meeting_from_json(json_data)['id']}{back}"
 
     def append_helper_list_int(
         self,
@@ -192,7 +203,7 @@ class MeetingClone(MeetingImport):
         field: str,
         field_template: str,
     ) -> None:
-        for model in json_data[collection]:
+        for model in json_data[collection].values():
             if model.get(field):
                 write_requests.append(
                     self.build_write_request_helper(
@@ -208,7 +219,7 @@ class MeetingClone(MeetingImport):
         field: str,
         field_template: str,
     ) -> None:
-        for model in json_data[collection]:
+        for model in json_data[collection].values():
             if model.get(field):
                 for user_id in model.get(field):
                     write_requests.append(
@@ -225,7 +236,7 @@ class MeetingClone(MeetingImport):
         field: str,
         field_template: str,
     ) -> None:
-        for model in json_data[collection]:
+        for model in json_data[collection].values():
             if model.get(field):
                 fqid = model[field]
                 cobj_collection, cobj_id = fqid.split(KEYSEPARATOR)
@@ -246,10 +257,10 @@ class MeetingClone(MeetingImport):
         return self.build_write_request(
             EventType.Update,
             FullQualifiedId(Collection("user"), user_id),
-            f"clone meeting {json_data['meeting'][0]['id']}",
+            f"clone meeting {self.get_meeting_from_json(json_data)['id']}",
             list_fields={
                 "add": {
-                    field_template: [str(json_data["meeting"][0]["id"])],
+                    field_template: [str(self.get_meeting_from_json(json_data)["id"])],
                     self.field_with_meeting(field_template, json_data): [model_id],
                 },
                 "remove": {},
