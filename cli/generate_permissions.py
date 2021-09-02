@@ -9,7 +9,9 @@ import yaml
 
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
-SOURCE = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/openslides4-dev/docs/permission.yml"
+SOURCE = (
+    "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/permission.yml"
+)
 
 DESTINATION = os.path.abspath(
     os.path.join(
