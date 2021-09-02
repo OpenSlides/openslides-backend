@@ -48,8 +48,6 @@ class SingleRelationHandler:
         field: BaseRelationField,
         field_name: str,
         instance: Dict[str, Any],
-        only_add: bool = False,
-        only_remove: bool = False,
     ) -> None:
         self.datastore = datastore
         self.model = model_registry[field.own_collection]
@@ -57,12 +55,6 @@ class SingleRelationHandler:
         self.field = field
         self.field_name = field_name
         self.instance = instance
-        if only_add and only_remove:
-            raise ValueError(
-                "Do not set only_add and only_remove because this is contradictory."
-            )
-        self.only_add = only_add
-        self.only_remove = only_remove
 
         self.type = self.get_field_type()
         self.chained_fields: List[Dict[str, Any]] = []
@@ -115,10 +107,6 @@ class SingleRelationHandler:
                     "You can not handle template fields here. Use them with populated replacements."
                 )
 
-        add: Set[FullQualifiedId]
-        remove: Set[FullQualifiedId]
-        rels: Dict[FullQualifiedId, PartialModel]
-
         # calculated the fqids which have to be added/remove and partition them by collection
         # since every collection might have a different related field
         add, remove = self.relation_diffs(rel_ids)
@@ -141,7 +129,7 @@ class SingleRelationHandler:
             related_field = self.get_reverse_field(collection)
 
             # acquire all related models with the related fields
-            rels = defaultdict(dict)
+            rels: Dict[FullQualifiedId, PartialModel] = defaultdict(dict)
             for fqid in changed_fqids_per_collection[collection]:
                 related_model = self.datastore.fetch_model(
                     fqid,
@@ -262,33 +250,30 @@ class SingleRelationHandler:
         """
         add: Set[FullQualifiedId]
         remove: Set[FullQualifiedId]
-        if self.only_add:
-            # Add is equal to the relation ids. Remove is empty.
-            add = set(rel_fqids)
-            remove = set()
-        elif self.only_remove:
-            raise NotImplementedError
-        else:
-            # We have to compare with the current datastore state.
+        # We have to compare with the current datastore state.
+        # Retrieve current object from datastore
+        current_obj = self.datastore.fetch_model(
+            FullQualifiedId(self.model.collection, self.id),
+            [self.field_name],
+            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
+            exception=False,
+        )
 
-            # Retrieve current object from datastore
-            current_obj = self.datastore.fetch_model(
-                FullQualifiedId(self.model.collection, self.id),
-                [self.field_name],
-                db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-                exception=False,
-            )
+        # Get current ids from relation field
+        current_value = current_obj.get(self.field_name)
+        current_fqids = set(
+            transform_to_fqids(current_value, self.field.get_target_collection())
+        )
 
-            # Get current ids from relation field
-            current_value = current_obj.get(self.field_name)
-            current_fqids = set(
-                transform_to_fqids(current_value, self.field.get_target_collection())
-            )
-
-            # Calculate add set and remove set
-            new_fqids = set(rel_fqids)
-            add = new_fqids - current_fqids
-            remove = current_fqids - new_fqids
+        # Calculate add set and remove set
+        new_fqids = set(rel_fqids)
+        add = new_fqids - current_fqids
+        # filter out deleted models, so that in case of cascade deletion no data is lost
+        remove = {
+            fqid
+            for fqid in current_fqids - new_fqids
+            if not self.datastore.is_deleted(fqid)
+        }
 
         return add, remove
 
