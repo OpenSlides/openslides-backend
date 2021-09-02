@@ -55,7 +55,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def request_json(self, payload: Payload, anonymous: bool = False) -> Response:
         client = self.client if not anonymous else self.anon_client
-        return client.post("/", json=payload)
+        return client.post("/system/handle_request", json=payload)
 
     def execute_action_internally(
         self, action_name: str, data: Dict[str, Any], user_id: int = 0

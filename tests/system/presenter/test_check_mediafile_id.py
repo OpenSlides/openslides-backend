@@ -23,9 +23,8 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self.assertEqual(data, {"ok": False})
 
     def test_non_existent(self) -> None:
-        payload = {"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}
-        response = self.client.post("/", json=[payload])
-        self.assert_status_code(response, 400)
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 400)
 
     def test_request_without_token(self) -> None:
         self.create_model(

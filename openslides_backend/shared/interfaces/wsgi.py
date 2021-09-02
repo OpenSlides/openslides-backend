@@ -22,8 +22,6 @@ class View(Protocol):  # pragma: no cover
     Interface for views of this service.
     """
 
-    method: str
-
     def __init__(self, logging: LoggingModule, services: Services) -> None:
         ...
 

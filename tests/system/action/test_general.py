@@ -7,22 +7,24 @@ class GeneralActionWSGITester(BaseActionTestCase):
     """
 
     def test_request_wrong_method(self) -> None:
-        response = self.client.get("/")
+        response = self.client.get("/system/handle_request")
         self.assert_status_code(response, 405)
 
     def test_request_wrong_media_type(self) -> None:
-        response = self.client.post("/")
+        response = self.client.post("/system/handle_request")
         self.assert_status_code(response, 400)
         self.assertIn("Wrong media type.", response.json["message"])
 
     def test_request_missing_body(self) -> None:
-        response = self.client.post("/", content_type="application/json")
+        response = self.client.post(
+            "/system/handle_request", content_type="application/json"
+        )
         self.assert_status_code(response, 400)
         self.assertIn("Failed to decode JSON object", response.json["message"])
 
     def test_request_fuzzy_body(self) -> None:
         response = self.client.post(
-            "/",
+            "/system/handle_request",
             json={"fuzzy_key_Eeng7pha3a": "fuzzy_value_eez3Ko6quu"},
         )
         self.assert_status_code(response, 400)
@@ -30,7 +32,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
 
     def test_request_fuzzy_body_2(self) -> None:
         response = self.client.post(
-            "/",
+            "/system/handle_request",
             json=[{"fuzzy_key_Voh8in7aec": "fuzzy_value_phae3iew4W"}],
         )
         self.assert_status_code(response, 400)
@@ -48,7 +50,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
 
     def test_health_route(self) -> None:
-        response = self.client.get("/health")
+        response = self.client.get("/internal/health")
         self.assert_status_code(response, 200)
         self.assertIn("healthinfo", response.json)
         actions = response.json["healthinfo"]["actions"]

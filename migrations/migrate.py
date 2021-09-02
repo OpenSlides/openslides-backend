@@ -7,6 +7,67 @@ from typing import List, Type
 from datastore.migrations import BaseMigration, setup
 
 
+class BadMigrationModule(Exception):
+    pass
+
+
+class InvalidMigrationCommand(Exception):
+    pass
+
+
+class MigrationHandler():
+    def __init__(self, verbose: bool = False) -> None:
+        migrations = MigrationHandler.load_migrations()
+        self.handler = setup(verbose=verbose)
+        self.handler.register_migrations(*migrations)
+
+    @staticmethod
+    def load_migrations(base_migration_module_pypath: str = None) -> List[Type[BaseMigration]]:
+        if not base_migration_module_pypath:
+            base_module = __name__.rsplit(".", 1)[0]
+            if base_module == "__main__":
+                base_migration_module_pypath = "migrations"
+            else:
+                base_migration_module_pypath = base_module + ".migrations"
+        base_migration_module = import_module(base_migration_module_pypath)
+
+        module_names = {
+            name
+            for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)  # type: ignore
+            if not is_pkg
+        }
+
+        migration_classes: List[Type[BaseMigration]] = []
+        for module_name in module_names:
+            module_pypath = f"{base_migration_module_pypath}.{module_name}"
+            migration_module = import_module(module_pypath)
+            if not hasattr(migration_module, "Migration"):
+                raise BadMigrationModule(
+                    f"The module {module_pypath} does not have a class called 'Migration'"
+                )
+            migration_class = migration_module.Migration  # type: ignore
+            if not issubclass(migration_class, BaseMigration):
+                raise BadMigrationModule(
+                    f"The class 'Migration' in module {module_pypath} does not inherit from 'BaseMigration'"
+                )
+            migration_classes.append(migration_class)
+        return migration_classes
+    
+    def execute_command(self, command: str) -> None:
+        if command == "migrate":
+            self.handler.migrate()
+        elif command == "finalize":
+            self.handler.finalize()
+        elif command == "reset":
+            self.handler.reset()
+        elif command == "clear-collectionfield-tables":
+            self.handler.delete_collectionfield_aux_tables()
+        elif command == "stats":
+            self.handler.print_stats()
+        else:
+            raise InvalidMigrationCommand()
+
+
 def get_parser() -> ArgumentParser:
     parent_parser = ArgumentParser(
         description="Migration tool for allying migrations to the datastore."
@@ -50,74 +111,26 @@ def get_parser() -> ArgumentParser:
         description="The stats parser",
         help="Print some stats about the current migration state.",
     )
-
     return parent_parser
-
-
-class BadMigrationModule(Exception):
-    pass
-
-
-def load_migrations(
-    base_migration_module_pypath: str = None,
-) -> List[Type[BaseMigration]]:
-    if not base_migration_module_pypath:
-        base_module = __name__.rsplit(".", 1)[0]
-        if base_module == "__main__":
-            base_migration_module_pypath = "migrations"
-        else:
-            base_migration_module_pypath = base_module + ".migrations"
-    base_migration_module = import_module(base_migration_module_pypath)
-
-    module_names = {
-        name
-        for _, name, is_pkg in pkgutil.iter_modules(base_migration_module.__path__)  # type: ignore
-        if not is_pkg
-    }
-
-    migration_classes: List[Type[BaseMigration]] = []
-    for module_name in module_names:
-        module_pypath = f"{base_migration_module_pypath}.{module_name}"
-        migration_module = import_module(module_pypath)
-        if not hasattr(migration_module, "Migration"):
-            raise BadMigrationModule(
-                f"The module {module_pypath} does not have a class called 'Migration'"
-            )
-        migration_class = migration_module.Migration  # type: ignore
-        if not issubclass(migration_class, BaseMigration):
-            raise BadMigrationModule(
-                f"The class 'Migration' in module {module_pypath} does not inherit from 'BaseMigration'"
-            )
-        migration_classes.append(migration_class)
-    return migration_classes
 
 
 def main() -> int:
     parser = get_parser()
     args = parser.parse_args()
-    migrations = load_migrations()
 
-    handler = setup(verbose=args.verbose)
-    handler.register_migrations(*migrations)
+    handler = MigrationHandler(args.verbose)
 
-    if args.command == "migrate":
-        handler.migrate()
-    elif args.command == "finalize":
-        handler.finalize()
-    elif args.command == "reset":
-        handler.reset()
-    elif args.command == "clear-collectionfield-tables":
-        handler.delete_collectionfield_aux_tables()
-    elif args.command == "stats":
-        handler.print_stats()
-    elif not args.command:
+    if not args.command:
         print("No command provided.\n")
         parser.print_help()
         return 1
     else:
-        print(f"Unknown command {args.command}\n")
-        parser.print_help()
-        return 1
+        try:
+            handler.execute_command(args.command)
+        except InvalidMigrationCommand:
+            print(f"Unknown command {args.command}\n")
+            parser.print_help()
+            return 1
 
     return 0
 

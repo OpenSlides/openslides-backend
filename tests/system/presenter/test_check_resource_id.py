@@ -11,6 +11,5 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self.assertEqual(data, {"ok": True, "filename": "the filename.txt"})
 
     def test_non_existent(self) -> None:
-        payload = {"presenter": "check_resource_id", "data": {"resource_id": 1}}
-        response = self.client.post("/", json=[payload])
-        self.assert_status_code(response, 400)
+        status_code, data = self.request("check_resource_id", {"resource_id": 1})
+        self.assertEqual(status_code, 400)

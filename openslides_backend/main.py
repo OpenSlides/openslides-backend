@@ -9,8 +9,6 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
-from migrations import assert_migration_index as assert_migration_index
-
 from .shared.env import is_dev_mode
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
@@ -44,8 +42,6 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
                 f"View name has to be ActionView or PresenterView, not {self.view_name}."
             )
         logger.debug(f"Create gunicorn application for {self.view_name}.")
-
-        assert_migration_index()
 
         super().__init__(*args, **kwargs)
 

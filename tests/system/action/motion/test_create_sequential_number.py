@@ -221,7 +221,7 @@ def thread_method(
         pytest_thread_local.sync_event = sync_event
     pytest_thread_local.name = name
     response = test_instance.client.post(
-        "/",
+        "/system/handle_request",
         json=[
             {
                 "action": "motion.create",
