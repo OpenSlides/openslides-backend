@@ -7,6 +7,7 @@ from . import (  # noqa
     set_password,
     set_password_self,
     set_present,
+    toggle_presence_by_number,
     update,
     update_self,
 )
