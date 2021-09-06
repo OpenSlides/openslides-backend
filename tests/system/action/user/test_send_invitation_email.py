@@ -5,7 +5,7 @@ from openslides_backend.action.mixins.send_email_mixin import (
     EmailSettings,
 )
 from tests.system.action.base import BaseActionTestCase
-from tests.system.action.mail_base import AIOHandler, AiosmtpdConnectionManager
+from tests.system.action.mail_base import AIOHandler, AiosmtpdServerManager
 
 
 class SendInvitationMail(BaseActionTestCase):
@@ -43,7 +43,7 @@ class SendInvitationMail(BaseActionTestCase):
     def test_send_correct(self) -> None:
         start_time = time()
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -60,7 +60,7 @@ class SendInvitationMail(BaseActionTestCase):
         Test with 2 PayloadElements and some actions
         There are correct and falsy actions, look at user name below,
         except user/2 => mail is sent and
-               user/7, which doesn't exist
+               user/8, which doesn't exist
         """
         self.set_models(
             {
@@ -92,12 +92,19 @@ class SendInvitationMail(BaseActionTestCase):
                     "group_$1_ids": [1],
                     "meeting_ids": [1],
                 },
+                "user/7": {
+                    "username": "Testuser 7 special email for server detection",
+                    "first_name": "Jim7",
+                    "email": "recipient7_create_error551@example.com",
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
             },
         )
 
         start_time = time()
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request_json(
                 [
                     {
@@ -114,6 +121,7 @@ class SendInvitationMail(BaseActionTestCase):
                             {"id": 5, "meeting_id": 2},
                             {"id": 6, "meeting_id": "1"},
                             {"id": 7, "meeting_id": 1},
+                            {"id": 8, "meeting_id": 1},
                         ],
                     },
                 ]
@@ -122,44 +130,52 @@ class SendInvitationMail(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user2 = self.get_model("user/2")
         self.assertGreater(user2.get("last_email_send", 0), start_time)
-        for i in range(3, 7, 1):
+        for i in range(3, 8, 1):
             self.assert_model_exists(f"user/{i}", {"last_email_send": None})
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertEqual(
             response.json["results"][0][0]["recipient"], "recipient2@example.com"
         )
         self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 2)
 
-        self.assertEqual(response.json["results"][0][1]["send"], False)
+        self.assertEqual(response.json["results"][0][1]["sent"], False)
         self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 3)
         self.assertIn("has no email-address", response.json["results"][0][1]["message"])
 
-        self.assertEqual(response.json["results"][1][0]["send"], False)
+        self.assertEqual(response.json["results"][1][0]["sent"], False)
         self.assertEqual(response.json["results"][1][0]["recipient_user_id"], 4)
         self.assertIn(
             "The email-address recipient4 of User/4 is not valid",
             response.json["results"][1][0]["message"],
         )
 
-        self.assertEqual(response.json["results"][1][1]["send"], False)
+        self.assertEqual(response.json["results"][1][1]["sent"], False)
         self.assertEqual(response.json["results"][1][1]["recipient_user_id"], 5)
         self.assertIn(
             "User/5 does not belong to meeting/2",
             response.json["results"][1][1]["message"],
         )
 
-        self.assertEqual(response.json["results"][1][2]["send"], False)
+        self.assertEqual(response.json["results"][1][2]["sent"], False)
         self.assertEqual(response.json["results"][1][2]["recipient_user_id"], 6)
         self.assertIn(
             "JsonSchema: data.meeting_id must be integer",
             response.json["results"][1][2]["message"],
         )
 
-        self.assertEqual(response.json["results"][1][3]["send"], False)
+        self.assertEqual(response.json["results"][1][3]["sent"], False)
         self.assertEqual(response.json["results"][1][3]["recipient_user_id"], 7)
         self.assertIn(
-            "DatastoreException:  Model 'user/7' does not exist.",
+            "SMTPRecipientsRefused: {'recipient7_create_error551@example.com': (551, b'invalid eMail address from server')}",
             response.json["results"][1][3]["message"],
+        )
+
+        self.assert_model_not_exists("user/8")
+        self.assertEqual(response.json["results"][1][4]["sent"], False)
+        self.assertEqual(response.json["results"][1][4]["recipient_user_id"], 8)
+        self.assertIn(
+            "DatastoreException:  Model 'user/8' does not exist.",
+            response.json["results"][1][4]["message"],
         )
 
     def test_SMTPAuthentificationError_wrong_password(self) -> None:
@@ -167,7 +183,7 @@ class SendInvitationMail(BaseActionTestCase):
         EmailSettings.user = "sender@example.com"
 
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler, auth=True):
+        with AiosmtpdServerManager(handler, auth=True):
             response = self.request(
                 "user.send_invitation_email",
                 {},
@@ -180,7 +196,7 @@ class SendInvitationMail(BaseActionTestCase):
 
     def test_SMTPSenderRefused_not_authenticated(self) -> None:
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler, auth=True):
+        with AiosmtpdServerManager(handler, auth=True):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -197,7 +213,7 @@ class SendInvitationMail(BaseActionTestCase):
     def test_ConnectionRefusedError_wrong_port(self) -> None:
         EmailSettings.timeout = 1
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             EmailSettings.port = 26
             response = self.request(
                 "user.send_invitation_email",
@@ -215,7 +231,7 @@ class SendInvitationMail(BaseActionTestCase):
         EmailSettings.accept_self_signed_certificate = False
 
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {},
@@ -232,7 +248,7 @@ class SendInvitationMail(BaseActionTestCase):
             {"meeting/1": {"users_email_sender": ""}},
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -241,7 +257,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertEqual(
             response.json["results"][0][0]["recipient"], "recipient2@example.com"
         )
@@ -254,7 +270,7 @@ class SendInvitationMail(BaseActionTestCase):
 
     def test_sender_with_sender_name(self) -> None:
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -263,7 +279,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertEqual(
             response.json["results"][0][0]["recipient"], "recipient2@example.com"
         )
@@ -278,13 +294,13 @@ class SendInvitationMail(BaseActionTestCase):
     def test_sender_with_wrong_sender(self) -> None:
         EmailSettings.default_from_email = "wrong_sender@email"
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {},
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], False)
+        self.assertEqual(response.json["results"][0][0]["sent"], False)
         self.assertEqual(len(handler.emails), 0)
         self.assertIn(
             "email wrong_sender@email is not a valid sender email address.",
@@ -309,7 +325,7 @@ class SendInvitationMail(BaseActionTestCase):
             },
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request_multi(
                 "user.send_invitation_email",
                 [
@@ -319,7 +335,7 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         self.assertEqual(len(handler.emails), 1)
-        self.assertEqual(response.json["results"][0][0]["send"], False)
+        self.assertEqual(response.json["results"][0][0]["sent"], False)
         self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 3)
         self.assertEqual(response.json["results"][0][0]["recipient_meeting_id"], 1)
         self.assertIn(
@@ -327,7 +343,7 @@ class SendInvitationMail(BaseActionTestCase):
             response.json["results"][0][0]["message"],
         )
 
-        self.assertEqual(response.json["results"][0][1]["send"], True)
+        self.assertEqual(response.json["results"][0][1]["sent"], True)
         self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 3)
         self.assertEqual(response.json["results"][0][1]["recipient_meeting_id"], 4)
 
@@ -337,7 +353,7 @@ class SendInvitationMail(BaseActionTestCase):
             {"meeting/1": {"users_email_replyto": "reply@example.com"}},
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -346,7 +362,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertIn("Reply-To: reply@example.com", handler.emails[0]["data"])
 
     def test_reply_to_error(self) -> None:
@@ -354,7 +370,7 @@ class SendInvitationMail(BaseActionTestCase):
             {"meeting/1": {"users_email_replyto": "reply@example"}},
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -363,7 +379,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], False)
+        self.assertEqual(response.json["results"][0][0]["sent"], False)
         self.assertIn(
             "The given reply_to address 'reply@example' is not valid.",
             response.json["results"][0][0]["message"],
@@ -388,7 +404,7 @@ class SendInvitationMail(BaseActionTestCase):
             },
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request_multi(
                 "user.send_invitation_email",
                 [
@@ -398,11 +414,11 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         self.assertEqual(len(handler.emails), 1)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertEqual(response.json["results"][0][0]["recipient_user_id"], 2)
         self.assertEqual(response.json["results"][0][0]["recipient_meeting_id"], 1)
 
-        self.assertEqual(response.json["results"][0][1]["send"], False)
+        self.assertEqual(response.json["results"][0][1]["sent"], False)
         self.assertEqual(response.json["results"][0][1]["recipient_user_id"], 2)
         self.assertEqual(response.json["results"][0][1]["recipient_meeting_id"], 4)
         self.assertIn(
@@ -426,7 +442,7 @@ class SendInvitationMail(BaseActionTestCase):
             }
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -435,7 +451,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertIn(
             'Content-Type: text/plain; charset="utf-8"',
             handler.emails[0]["data"],
@@ -475,7 +491,7 @@ class SendInvitationMail(BaseActionTestCase):
             }
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -484,7 +500,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertIn(
             "Subject: Invitation for Openslides 'annual general meeting'",
             handler.emails[0]["data"],
@@ -504,7 +520,7 @@ class SendInvitationMail(BaseActionTestCase):
             }
         )
         handler = AIOHandler()
-        with AiosmtpdConnectionManager(handler):
+        with AiosmtpdServerManager(handler):
             response = self.request(
                 "user.send_invitation_email",
                 {
@@ -513,7 +529,7 @@ class SendInvitationMail(BaseActionTestCase):
                 },
             )
         self.assert_status_code(response, 200)
-        self.assertEqual(response.json["results"][0][0]["send"], True)
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
         self.assertIn(
             "Subject: Invitation for Openslides ''xevent_name''",
             handler.emails[0]["data"],

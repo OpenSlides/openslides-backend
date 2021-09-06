@@ -37,6 +37,9 @@ class AIOHandler:
         if not EmailMixin.check_email(address):
             self.ret_status = "550 invalid eMail address"
             return self.ret_status
+        if "create_error551" in address:
+            self.ret_status = "551 invalid eMail address from server"
+            return self.ret_status
         envelope.rcpt_tos.append(address)
         self.ret_status = "250 OK"
         return self.ret_status
@@ -56,7 +59,7 @@ class AIOHandler:
         return self.ret_status
 
 
-class AiosmtpdConnectionManager:
+class AiosmtpdServerManager:
     def __init__(self, handler: AIOHandler, auth: bool = False) -> None:
         self.handler = handler
         self.auth = auth

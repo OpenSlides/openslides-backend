@@ -35,7 +35,6 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
-        required_properties=["id"],
         additional_required_fields={"meeting_id": required_id_schema},
     )
     permission = Permissions.User.CAN_MANAGE
@@ -47,7 +46,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         self.index = 0
         if not EmailMixin.check_email(EmailSettings.default_from_email):
             result = {
-                "send": False,
+                "sent": False,
                 "message": f"email {EmailSettings.default_from_email} is not a valid sender email address.",
             }
             self.results.append(result)
@@ -80,25 +79,25 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                     except SMTPDataError as e:
                         result["message"] = f"SMTPDataError: {str(e)}"
 
-                    if result["send"]:
+                    if result["sent"]:
                         write_request = self.create_write_requests(instance)
                         self.write_requests.extend(write_request)
 
                     self.results.append(result)
         except SMTPAuthenticationError as e:
-            result = {"send": False, "message": f"SMTPAuthenticationError: {str(e)}"}
+            result = {"sent": False, "message": f"SMTPAuthenticationError: {str(e)}"}
             self.results.append(result)
         except SMTPSenderRefused as e:
             result = {
-                "send": False,
+                "sent": False,
                 "message": f"SMTPSenderRefused: {str(e)}",
             }
             self.results.append(result)
         except ConnectionRefusedError as e:
-            result = {"send": False, "message": f"ConnectionRefusedError: {str(e)}"}
+            result = {"sent": False, "message": f"ConnectionRefusedError: {str(e)}"}
             self.results.append(result)
         except SSLCertVerificationError as e:
-            result = {"send": False, "message": f"SSLCertVerificationError: {str(e)}"}
+            result = {"sent": False, "message": f"SSLCertVerificationError: {str(e)}"}
             self.results.append(result)
 
         final_write_request = self.process_write_requests()
@@ -195,7 +194,6 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             },
         )
 
-        result["send"] = True
         self.send_email(
             self.mail_client,
             from_email,
@@ -205,6 +203,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             reply_to=reply_to,
             html=False,
         )
+        result["sent"] = True
         instance["last_email_send"] = time()
         return super().update_instance(instance)
 
@@ -213,7 +212,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
     def get_initial_result_false(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         return {
-            "send": False,
+            "sent": False,
             "recipient_user_id": instance.get("id"),
             "recipient_meeting_id": instance.get("meeting_id"),
         }

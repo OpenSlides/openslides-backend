@@ -61,8 +61,8 @@ class EmailMixin:
     @staticmethod
     def check_email(email: str) -> bool:
         """returns True with valid email, else False"""
-        regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
-        return bool(re.fullmatch(regex, email, flags=(re.IGNORECASE)))
+        email_regex = r"[A-Z0-9._+\-ÄÖÜ]+@[A-Z0-9.\-ÄÖÜ]+\.[A-ZÄÖÜ]{2,}"
+        return bool(re.fullmatch(email_regex, email, flags=(re.IGNORECASE)))
 
     @staticmethod
     def get_ssl_default_context() -> ssl.SSLContext:
@@ -126,6 +126,15 @@ class EmailMixin:
         a None, the client will send a html-only mail.
 
         With 'html' set to False, 'content' will be used as plaintext.
+
+        Return value: The method only returns, if the mail was sent to
+            minimum 1 recipient. Otherwise the method throws an exception.
+            The return value is a dict of errors, where the key is a
+            recipients email address and the value a tuple of SMTP-error-code
+            and error message.
+            You only have to check the methods return code, if there
+            could be more than one recipient in the to-address of an email,
+            see smtplib's method sendmail.
         """
         message = EmailMessage()
         if html:
