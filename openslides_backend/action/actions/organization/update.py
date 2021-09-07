@@ -3,7 +3,8 @@ from typing import Any, Dict
 from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....shared.exceptions import MissingPermission
+from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -26,6 +27,7 @@ class OrganizationUpdate(UpdateAction):
             "theme",
             "enable_electronic_voting",
             "reset_password_verbose_errors",
+            "limit_of_meetings",
         ]
     )
 
@@ -57,6 +59,7 @@ class OrganizationUpdate(UpdateAction):
                 for field in [
                     "enable_electronic_voting",
                     "reset_password_verbose_errors",
+                    "limit_of_meetings",
                 ]
             ]
         ) and not has_organization_management_level(
@@ -65,3 +68,20 @@ class OrganizationUpdate(UpdateAction):
             OrganizationManagementLevel.SUPERADMIN,
         ):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        organization_id = instance.get("id", 0)
+        if limit_of_meetings := instance.get("limit_of_meetings"):
+            organization = self.datastore.get(
+                FullQualifiedId(Collection("organization"), organization_id),
+                ["active_meeting_ids"],
+            )
+
+            if (
+                count_active_meetings := len(organization.get("active_meeting_ids", []))
+            ) > limit_of_meetings:
+                raise ActionException(
+                    f"Organization {organization_id} has {count_active_meetings} active meetings. You cannot set the limit lower."
+                )
+        return instance
