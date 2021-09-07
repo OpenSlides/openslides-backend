@@ -12,10 +12,19 @@ from tests.system.action.base import BaseActionTestCase
 
 class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
-        self.create_model("committee/1", {"name": "test_committee", "user_ids": [2]})
-        self.create_model("group/1")
-        self.create_model("user/2")
-        self.create_model("organization_tag/3")
+        self.set_models(
+            {
+                "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
+                "group/1": {},
+                "user/2": {},
+                "organization_tag/3": {},
+            }
+        )
 
         response = self.request(
             "meeting.create",
@@ -52,12 +61,14 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "poll_countdown_id": 2,
                 "projector_countdown_warning_time": 0,
                 "organization_tag_ids": [3],
+                "is_active_in_organization_id": 1,
                 **{
                     f"default_projector_${name}_id": 1
                     for name in meeting_projector_default_replacements
                 },
             },
         )
+        self.assert_model_exists("organization/1", {"active_meeting_ids": [1]})
         self.assert_model_exists("group/2", {"name": "Default"})
         self.assert_model_exists("group/3", {"name": "Admin"})
         self.assert_model_exists("group/4", {"name": "Delegates"})
@@ -174,7 +185,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_multiple_users(self) -> None:
         self.set_models(
             {
-                "committee/1": {"user_ids": [1, 2, 3]},
+                "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
+                "committee/1": {"user_ids": [1, 2, 3], "organization_id": 1},
                 "user/2": {},
                 "user/3": {},
             }
@@ -200,7 +212,12 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_users_not_committee_user(self) -> None:
         self.set_models(
             {
-                "committee/1": {"name": "test_committee", "user_ids": [2]},
+                "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [2],
+                    "organization_id": 1,
+                },
                 "group/1": {},
                 "user/2": {},
                 "user/3": {},
@@ -283,4 +300,24 @@ class MeetingCreateActionTest(BaseActionTestCase):
         admin_group_id = meeting.get("admin_group_id")
         self.assert_model_exists(
             "user/2", {f"group_${meeting['id']}_ids": [admin_group_id]}
+        )
+
+    def test_create_limit_of_meetings_reached(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_meetings": 1, "active_meeting_ids": [1]},
+                "committee/1": {"organization_id": 1},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "name": "test_name",
+                "committee_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You cannot create a new meeting, because you reached your limit of 1 active meetings.",
+            response.json["message"],
         )
