@@ -215,3 +215,46 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+
+    def test_clone_no_permissions(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "username": "admin",
+                    "organization_management_level": None,
+                },
+            }
+        )
+        self.set_models(self.test_models)
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 403)
+        assert "You are not allowed to clone a meeting." in response.json["message"]
+
+    def test_clone_oml_can_manage_users(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "username": "admin",
+                    "organization_management_level": "can_manage_users",
+                },
+            }
+        )
+        self.set_models(self.test_models)
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
+    def test_clone_cml_can_manage(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "username": "admin",
+                    "organization_management_level": None,
+                    "committee_$1_management_level": "can_manage",
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
