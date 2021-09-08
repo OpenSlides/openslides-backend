@@ -229,14 +229,17 @@ class MeetingClone(BaseActionTestCase):
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 403)
-        assert "You are not allowed to clone a meeting." in response.json["message"]
+        assert (
+            "You are not allowed to perform action meeting.clone. Missing CommitteeManagementLevel: can_manage"
+            in response.json["message"]
+        )
 
-    def test_clone_oml_can_manage_users(self) -> None:
+    def test_clone_oml_can_manage_organization(self) -> None:
         self.set_models(
             {
                 "user/1": {
                     "username": "admin",
-                    "organization_management_level": "can_manage_users",
+                    "organization_management_level": "can_manage_organization",
                 },
             }
         )

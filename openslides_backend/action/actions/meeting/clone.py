@@ -4,15 +4,9 @@ from typing import Any, Dict, Iterable, List
 
 from ....models.checker import Checker, CheckException
 from ....models.models import Meeting
-from ....permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
-from ....permissions.permission_helper import (
-    has_committee_management_level,
-    has_organization_management_level,
-)
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....permissions.management_levels import CommitteeManagementLevel
+from ....permissions.permission_helper import has_committee_management_level
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -281,20 +275,14 @@ class MeetingClone(MeetingImport):
         )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            return
         meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
             ["committee_id"],
         )
-
-        if has_committee_management_level(
+        if not has_committee_management_level(
             self.datastore,
             self.user_id,
             CommitteeManagementLevel.CAN_MANAGE,
             meeting["committee_id"],
         ):
-            return
-        raise PermissionDenied("You are not allowed to clone a meeting.")
+            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
