@@ -54,6 +54,11 @@ class MeetingClone(MeetingImport):
                     (entry.pop("blob"), entry["id"], entry["mimetype"])
                 )
 
+        # modify to ensure it is empty. Cannot handle it, because orga_tags
+        # are outside the meeting.
+        for key in meeting_json["meeting"]:
+            meeting_json["meeting"][key]["organization_tag_ids"] = []
+
         # check datavalidation
         checker = Checker(data=meeting_json, is_import=True, is_clone=True)
         try:
