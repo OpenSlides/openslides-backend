@@ -75,7 +75,9 @@ class UserTogglePresenceByNumber(UpdateAction):
         result = self.datastore.filter(Collection("user"), filter_, ["id"])
         if len(result.keys()) == 1:
             return list(result.keys())[0]
-        raise ActionException("Could not find only one user with the number.")
+        elif len(result.keys()) > 1:
+            raise ActionException("Found more than one user with the default number.")
+        raise ActionException("No user with this number found.")
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if has_organization_management_level(
