@@ -1,4 +1,5 @@
 from . import (  # noqa
+    archive,
     clone,
     create,
     delete,
@@ -7,6 +8,7 @@ from . import (  # noqa
     replace_projector_id,
     set_font,
     set_logo,
+    unarchive,
     unset_font,
     unset_logo,
     update,
