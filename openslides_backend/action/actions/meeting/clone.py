@@ -6,7 +6,7 @@ from ....models.checker import Checker, CheckException
 from ....models.models import Meeting
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
-from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -23,7 +23,8 @@ class MeetingClone(MeetingImport):
     """
 
     schema = DefaultSchema(Meeting()).get_default_schema(
-        additional_required_fields={"meeting_id": {"type": "integer"}}
+        optional_properties=["committee_id"],
+        additional_required_fields={"meeting_id": {"type": "integer"}},
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -40,13 +41,15 @@ class MeetingClone(MeetingImport):
                 meeting_json[collection][str(obj["id"])] = obj
 
         instance["meeting"] = meeting_json
-        meeting_json["user"] = {}
-        committee_id = self.get_meeting_from_json(meeting_json)["committee_id"]
-        self.get_meeting_from_json(meeting_json)["committee_id"] = None
 
         # checks if the meeting is correct
         if not len(meeting_json.get("meeting", {}).keys()) == 1:
             raise ActionException("Need exact one meeting in meeting collection.")
+
+        if (
+            committee_id := instance.get("committee_id")
+        ) and committee_id != self.get_meeting_from_json(meeting_json)["committee_id"]:
+            self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
 
         # save blobs from mediafiles
         self.mediadata = []
@@ -62,11 +65,12 @@ class MeetingClone(MeetingImport):
             meeting_json["meeting"][key]["organization_tag_ids"] = []
 
         # check datavalidation
-        checker = Checker(data=meeting_json, is_import=True, is_clone=True)
+        checker = Checker(data=meeting_json, is_external_import=False)
         try:
             checker.run_check()
         except CheckException as ce:
             raise ActionException(str(ce))
+        self.allowed_collections = checker.allowed_collections
 
         for entry in meeting_json.get("motion", {}).values():
             if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
@@ -74,32 +78,30 @@ class MeetingClone(MeetingImport):
                     "Motion all_origin_ids and all_derived_motion_ids should be empty."
                 )
 
+        if self.get_meeting_from_json(meeting_json).get("is_active_in_organization_id"):
+            self.check_limit_of_meetings(
+                self.get_meeting_from_json(meeting_json)["committee_id"], text="clone"
+            )
+
         # set imported_at
         self.get_meeting_from_json(meeting_json)["imported_at"] = round(time.time())
 
-        # reinsert committee_id
-        self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
-
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
-        self.replace_fields(instance, ignore_user=True)
+        self.replace_fields(instance)
         self.upload_mediadata()
         return instance
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
         for collection in json_data:
-            if collection == "user":
-                for user_id in self.get_meeting_from_json(json_data)["user_ids"] or []:
-                    replace_map["user"][user_id] = user_id
-            elif not json_data[collection]:
+            if not json_data[collection]:
                 continue
-            else:
-                new_ids = self.datastore.reserve_ids(
-                    Collection(collection), len(json_data[collection])
-                )
-                for entry, new_id in zip(json_data[collection].values(), new_ids):
-                    replace_map[collection][entry["id"]] = new_id
+            new_ids = self.datastore.reserve_ids(
+                Collection(collection), len(json_data[collection])
+            )
+            for entry, new_id in zip(json_data[collection].values(), new_ids):
+                replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
@@ -181,7 +183,7 @@ class MeetingClone(MeetingImport):
         for tuple_ in updated_field_n_co:
             self.append_helper_list_cobj(write_requests, json_data, *tuple_)
 
-        for user_id in self.get_meeting_from_json(json_data)["user_ids"]:
+        for user_id in self.get_meeting_from_json(json_data).get("user_ids") or []:
             write_requests.append(
                 self.build_write_request(
                     EventType.Update,
@@ -275,14 +277,29 @@ class MeetingClone(MeetingImport):
         )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        meeting = self.datastore.get(
+        meeting = self.datastore.fetch_model(
             FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
             ["committee_id"],
         )
+        committee_id = meeting["committee_id"]
         if not has_committee_management_level(
             self.datastore,
             self.user_id,
             CommitteeManagementLevel.CAN_MANAGE,
-            meeting["committee_id"],
+            committee_id,
         ):
-            raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
+            raise PermissionDenied(
+                f"Missing {CommitteeManagementLevel.CAN_MANAGE.get_verbose_type()}: {CommitteeManagementLevel.CAN_MANAGE} for committee {committee_id}"
+            )
+        if (
+            payload_committee_id := instance.get("committee_id")
+        ) and payload_committee_id != committee_id:
+            if not has_committee_management_level(
+                self.datastore,
+                self.user_id,
+                CommitteeManagementLevel.CAN_MANAGE,
+                payload_committee_id,
+            ):
+                raise PermissionDenied(
+                    f"Missing {CommitteeManagementLevel.CAN_MANAGE.get_verbose_type()}: {CommitteeManagementLevel.CAN_MANAGE} for committee {payload_committee_id}"
+                )
