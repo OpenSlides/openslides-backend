@@ -717,7 +717,6 @@ class MeetingImport(BaseActionTestCase):
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
         # User/1 is in user_ids, because calling user is added
-        self.set_models({"user/2": ""})
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})

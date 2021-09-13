@@ -85,7 +85,7 @@ class MeetingImport(SingularActionMixin, Action):
                 )
 
         # check datavalidation
-        checker = Checker(data=meeting_json, is_external_import=True)
+        checker = Checker(data=meeting_json, mode="external")
         try:
             checker.run_check()
         except CheckException as ce:

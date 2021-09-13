@@ -65,7 +65,7 @@ class MeetingClone(MeetingImport):
             meeting_json["meeting"][key]["organization_tag_ids"] = []
 
         # check datavalidation
-        checker = Checker(data=meeting_json, is_external_import=False)
+        checker = Checker(data=meeting_json, mode="internal")
         try:
             checker.run_check()
         except CheckException as ce:

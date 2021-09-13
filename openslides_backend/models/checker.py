@@ -140,10 +140,12 @@ checker_map: Dict[Type[Field], Callable[..., bool]] = {
 
 
 class Checker:
+    modes = ("internal", "external", "all")
+
     def __init__(
         self,
         data: Dict[str, Dict[str, Any]],
-        is_external_import: bool = True,
+        mode: str = "all",
         is_partial: bool = False,
     ) -> None:
         """
@@ -151,15 +153,19 @@ class Checker:
         It differentiates between import data from the same organization instance,
         typically using the meeting.clone action, or from another organization,
         typically the meeting.import action with data from OS3.
+        To check all included collections, use 'all'. Typical usage is he check of
+        the example-data.json.
 
-        is_external_import=True checks that there are no relations to collections
+        Mode:
+        external: checks that there are no relations to collections
             outside the meeting, except users. The users must be included in data
             and will be imported as new users
-        is_external_import=False assumes that all relations to collections outside
+        internal: assumes that all relations to collections outside
             the meeting are valid, because the original instance is the same.
             The integrity of this kind of relations is not checked, because there
             is no database involved in command line version. Users are not included
             in data, because they exist in same database.
+        all: All collections are valid and has to be in the data
 
         is_partial=True disables the check, that *all* collections have to be
         explicitly given, so a non existing (=empty) collection will not raise
@@ -169,47 +175,52 @@ class Checker:
         """
         self.data = data
         self.is_partial = is_partial
-        self.is_external_import = is_external_import
+        self.mode = mode
 
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
             for collection in model_registry
         }
 
-        self.allowed_collections = [
-            "meeting",
-            "group",
-            "personal_note",
-            "tag",
-            "agenda_item",
-            "list_of_speakers",
-            "speaker",
-            "topic",
-            "motion",
-            "motion_submitter",
-            "motion_comment",
-            "motion_comment_section",
-            "motion_category",
-            "motion_block",
-            "motion_change_recommendation",
-            "motion_state",
-            "motion_workflow",
-            "motion_statute_paragraph",
-            "poll",
-            "option",
-            "vote",
-            "assignment",
-            "assignment_candidate",
-            "mediafile",
-            "projector",
-            "projection",
-            "projector_message",
-            "projector_countdown",
-            "chat_group",
-        ]
-        # TODO: mediafile blob handling.
-        if self.is_external_import:
-            self.allowed_collections.append("user")
+        if self.mode == "all":
+            self.allowed_collections = [
+                collection.collection for collection in model_registry
+            ]
+        else:
+            self.allowed_collections = [
+                "meeting",
+                "group",
+                "personal_note",
+                "tag",
+                "agenda_item",
+                "list_of_speakers",
+                "speaker",
+                "topic",
+                "motion",
+                "motion_submitter",
+                "motion_comment",
+                "motion_comment_section",
+                "motion_category",
+                "motion_block",
+                "motion_change_recommendation",
+                "motion_state",
+                "motion_workflow",
+                "motion_statute_paragraph",
+                "poll",
+                "option",
+                "vote",
+                "assignment",
+                "assignment_candidate",
+                "mediafile",
+                "projector",
+                "projection",
+                "projector_message",
+                "projector_countdown",
+                "chat_group",
+            ]
+            # TODO: mediafile blob handling.
+            if self.mode == "external":
+                self.allowed_collections.append("user")
 
         self.errors: List[str] = []
 
@@ -531,7 +542,7 @@ class Checker:
                     basemsg,
                     replacement,
                 )
-            elif self.is_external_import:
+            elif self.mode == "external":
                 self.errors.append(
                     f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
                 )
@@ -554,7 +565,7 @@ class Checker:
                         basemsg,
                         replacement,
                     )
-            elif self.is_external_import:
+            elif self.mode == "external":
                 self.errors.append(
                     f"{basemsg} points to {foreign_collection}/foreign_id, which is not allowed in an external import."
                 )
@@ -576,7 +587,7 @@ class Checker:
                     basemsg,
                     replacement,
                 )
-            elif self.is_external_import:
+            elif self.mode == "external":
                 self.errors.append(
                     f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
                 )
@@ -601,7 +612,7 @@ class Checker:
                         basemsg,
                         replacement,
                     )
-                elif self.is_external_import:
+                elif self.mode == "external":
                     self.errors.append(
                         f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
                     )
@@ -739,7 +750,7 @@ class Checker:
         try:
             collection, _id = fqid.split("/")
             id = int(_id)
-            if self.is_external_import and collection not in self.allowed_collections:
+            if self.mode == "external" and collection not in self.allowed_collections:
                 raise CheckException(f"Fqid {fqid} has an invalid collection")
             return collection, id
         except (ValueError, AttributeError):
