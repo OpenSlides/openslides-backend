@@ -1,5 +1,8 @@
+from typing import Any, Dict
+
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.exceptions import ActionException, ProtectedModelsException
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -14,3 +17,20 @@ class CommitteeDeleteAction(DeleteAction):
     model = Committee()
     schema = DefaultSchema(Committee()).get_delete_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+
+    def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            return super().base_update_instance(instance)
+        except ProtectedModelsException as e:
+            meeting_ids = [fqid.id for fqid in e.fqids]
+            count = len(meeting_ids)
+            meetings_verbose = ", ".join(str(id_) for id_ in meeting_ids[:3])
+            if count > 3:
+                meetings_verbose += ", .."
+
+            if count == 1:
+                msg = f"This committee has still a meeting {meetings_verbose}."
+            else:
+                msg = f"This committee has still meetings {meetings_verbose}."
+            msg += " Please remove all meetings before deletion."
+            raise ActionException(msg)
