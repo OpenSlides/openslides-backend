@@ -4,7 +4,7 @@ import fastjsonschema
 
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permissions
-from ..shared.exceptions import PermissionDenied
+from ..shared.exceptions import PermissionDenied, PresenterException
 from ..shared.patterns import Collection, FullQualifiedId
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
@@ -26,7 +26,7 @@ get_forwarding_meetings_schema = fastjsonschema.compile(
 @register_presenter("get_forwarding_meetings")
 class GetForwardingMeetings(BasePresenter):
     """
-    Get forwared meetings.
+    Get forwarded meetings.
     """
 
     schema = get_forwarding_meetings_schema
@@ -45,10 +45,17 @@ class GetForwardingMeetings(BasePresenter):
 
         meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), self.data["meeting_id"]),
-            ["committee_id"],
+            ["committee_id", "is_active_in_organization_id", "name"],
         )
         if not meeting.get("committee_id"):
-            return []
+            raise PresenterException(
+                f"There is no committee given for meeting/{self.data['meeting_id']} {meeting.get('name', 'nameless')}."
+            )
+        if not meeting.get("is_active_in_organization_id"):
+            raise PresenterException(
+                "Your sender meeting is an archived meeting, which can not forward motions."
+            )
+
         committee = self.datastore.get(
             FullQualifiedId(Collection("committee"), meeting["committee_id"]),
             ["forward_to_committee_ids"],
@@ -71,11 +78,13 @@ class GetForwardingMeetings(BasePresenter):
                 ):
                     continue
                 meeting2 = self.datastore.get(
-                    FullQualifiedId(Collection("meeting"), meeting_id2), ["name"]
+                    FullQualifiedId(Collection("meeting"), meeting_id2),
+                    ["name", "is_active_in_organization_id"],
                 )
-                meeting_result.append(
-                    {"id": meeting_id2, "name": meeting2.get("name", "")}
-                )
+                if meeting2.get("is_active_in_organization_id"):
+                    meeting_result.append(
+                        {"id": meeting_id2, "name": meeting2.get("name", "")}
+                    )
             if meeting_result:
                 result.append(
                     {

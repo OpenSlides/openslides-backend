@@ -9,8 +9,16 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
     def test_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1", "committee_id": 2},
-                "meeting/2": {"name": "meeting2", "committee_id": 3},
+                "meeting/1": {
+                    "name": "meeting1",
+                    "committee_id": 2,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "meeting2",
+                    "committee_id": 3,
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/2": {
                     "name": "com2",
                     "forward_to_committee_ids": [3],
@@ -58,10 +66,30 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
     def test_complex(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "meeting1", "committee_id": 2, "group_ids": [2]},
-                "meeting/2": {"name": "meeting2", "committee_id": 3, "group_ids": [3]},
-                "meeting/3": {"name": "meeting3", "committee_id": 3, "group_ids": [4]},
-                "meeting/4": {"name": "meeting4", "committee_id": 4, "group_ids": [5]},
+                "meeting/1": {
+                    "name": "meeting1",
+                    "committee_id": 2,
+                    "group_ids": [2],
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "meeting2",
+                    "committee_id": 3,
+                    "group_ids": [3],
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/3": {
+                    "name": "meeting3",
+                    "committee_id": 3,
+                    "group_ids": [4],
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/4": {
+                    "name": "meeting4",
+                    "committee_id": 4,
+                    "group_ids": [5],
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/2": {
                     "name": "com2",
                     "forward_to_committee_ids": [3, 4],
@@ -117,4 +145,90 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "default_meeting_id": 3,
                 }
             ],
+        )
+
+    def test_archived_forwarded_to_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "meeting1",
+                    "committee_id": 2,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "meeting2",
+                    "committee_id": 3,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/3": {
+                    "name": "meeting3",
+                    "committee_id": 3,
+                    "is_active_in_organization_id": None,
+                },
+                "committee/2": {
+                    "name": "com2",
+                    "forward_to_committee_ids": [3],
+                    "meeting_ids": [1],
+                },
+                "committee/3": {
+                    "name": "com3",
+                    "meeting_ids": [2, 3],
+                },
+            }
+        )
+        status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(
+            data,
+            [
+                {
+                    "id": 3,
+                    "name": "com3",
+                    "meetings": [{"id": 2, "name": "meeting2"}],
+                    "default_meeting_id": None,
+                }
+            ],
+        )
+
+    def test_archived_sender_meeting(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "meeting1",
+                    "committee_id": 2,
+                    "is_active_in_organization_id": None,
+                },
+                "committee/2": {
+                    "name": "com2",
+                    "forward_to_committee_ids": [3],
+                    "meeting_ids": [1],
+                },
+            }
+        )
+        status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 1})
+        self.assertEqual(status_code, 400)
+        self.assertEqual(
+            data,
+            {
+                "success": False,
+                "message": "Your sender meeting is an archived meeting, which can not forward motions.",
+            },
+        )
+
+    def test_sender_meeting_without_committee(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "meeting1",
+                },
+            }
+        )
+        status_code, data = self.request("get_forwarding_meetings", {"meeting_id": 1})
+        self.assertEqual(status_code, 400)
+        self.assertEqual(
+            data,
+            {
+                "success": False,
+                "message": "There is no committee given for meeting/1 meeting1.",
+            },
         )
