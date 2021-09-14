@@ -2,6 +2,7 @@ import base64
 from typing import Any, Dict
 from unittest.mock import MagicMock
 
+from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -9,8 +10,8 @@ class MeetingClone(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "organization/1": {},
-            "committee/1": {},
+            "organization/1": {"active_meeting_ids": [1]},
+            "committee/1": {"organization_id": 1},
             "meeting/1": {
                 "committee_id": 1,
                 "name": "Test",
@@ -29,6 +30,7 @@ class MeetingClone(BaseActionTestCase):
                 "logo_$_id": [],
                 "font_$_id": [],
                 "default_projector_$_id": [],
+                "is_active_in_organization_id": 1,
             },
             "group/1": {
                 "meeting_id": 1,
@@ -113,6 +115,8 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_ids": [1, 2],
             },
         )
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
 
     def test_clone_with_personal_note(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
@@ -216,48 +220,110 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
-    def test_clone_no_permissions(self) -> None:
+    def test_limit_of_meetings_error(self) -> None:
+        self.test_models["organization/1"]["limit_of_meetings"] = 1
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You cannot clone an active meeting, because you reached your limit of 1 active meetings.",
+            response.json["message"],
+        )
+
+    def test_limit_of_meetings_archived_meeting(self) -> None:
+        self.test_models["organization/1"]["limit_of_meetings"] = 1
+        self.test_models["organization/1"]["active_meeting_ids"] = [3]
+        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
+        self.set_models(self.test_models)
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"is_active_in_organization_id": None})
+        self.assert_model_exists("organization/1", {"active_meeting_ids": [3]})
+
+    def test_limit_of_meetings_ok(self) -> None:
+        self.test_models["organization/1"]["limit_of_meetings"] = 2
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        organization = self.get_model("organization/1")
+        self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
+
+    def test_permissions_both_okay(self) -> None:
+        self.set_models(self.test_models)
         self.set_models(
             {
+                "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "username": "admin",
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$2_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_ids": [1, 2],
                     "organization_management_level": None,
                 },
             }
         )
-        self.set_models(self.test_models)
-
-        response = self.request("meeting.clone", {"meeting_id": 1})
-        self.assert_status_code(response, 403)
-        assert (
-            "You are not allowed to perform action meeting.clone. Missing CommitteeManagementLevel: can_manage"
-            in response.json["message"]
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+        self.assert_model_exists(
+            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
         )
 
-    def test_clone_oml_can_manage_organization(self) -> None:
+    def test_permissions_oml_can_manage(self) -> None:
+        self.set_models(self.test_models)
         self.set_models(
             {
+                "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "username": "admin",
                     "organization_management_level": "can_manage_organization",
                 },
             }
         )
-        self.set_models(self.test_models)
-
-        response = self.request("meeting.clone", {"meeting_id": 1})
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
         self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/1", {"is_active_in_organization_id": 1, "committee_id": 1}
+        )
+        self.assert_model_exists(
+            "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
+        )
 
-    def test_clone_cml_can_manage(self) -> None:
+    def test_permissions_missing_meeting_committee_permission(self) -> None:
+        self.set_models(self.test_models)
         self.set_models(
             {
+                "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "username": "admin",
+                    "committee_$2_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_ids": [2],
                     "organization_management_level": None,
-                    "committee_$1_management_level": "can_manage",
                 },
             }
         )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Missing CommitteeManagementLevel: can_manage for committee 1",
+            response.json["message"],
+        )
+
+    def test_permissions_missing_payload_committee_permission(self) -> None:
         self.set_models(self.test_models)
-        response = self.request("meeting.clone", {"meeting_id": 1})
-        self.assert_status_code(response, 200)
+        self.set_models(
+            {
+                "committee/2": {"organization_id": 1},
+                "user/1": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_ids": [1],
+                    "organization_management_level": None,
+                },
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
+        self.assert_status_code(response, 403)
+        self.assertIn(
+            "Missing CommitteeManagementLevel: can_manage for committee 2",
+            response.json["message"],
+        )

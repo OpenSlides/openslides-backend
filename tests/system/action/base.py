@@ -80,8 +80,12 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "meeting_id": base,
                 },
                 f"committee/{committee_id}": {
+                    "organization_id": 1,
                     "name": f"Commitee{committee_id}",
                     "meeting_ids": [base],
+                },
+                "organization/1": {
+                    "limit_of_meetings": 0,
                 },
             }
         )

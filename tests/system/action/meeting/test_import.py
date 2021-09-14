@@ -11,7 +11,7 @@ class MeetingImport(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"active_meeting_ids": [1]},
-                "committee/1": {},
+                "committee/1": {"organization_id": 1},
                 "meeting/1": {},
                 "motion/1": {},
             }
@@ -716,6 +716,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
+        # User/1 is in user_ids, because calling user is added
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
@@ -1055,3 +1056,17 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
         assert "tag/1: Id must be the same as model['id']" in response.json["message"]
+
+    def test_limit_of_meetings_error(self) -> None:
+        self.update_model("organization/1", {"limit_of_meetings": 1})
+        response = self.request("meeting.import", self.create_request_data({}))
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You cannot import an active meeting, because you reached your limit of 1 active meetings.",
+            response.json["message"],
+        )
+
+    def test_limit_of_meetings_ok(self) -> None:
+        self.update_model("organization/1", {"limit_of_meetings": 2})
+        response = self.request("meeting.import", self.create_request_data({}))
+        self.assert_status_code(response, 200)

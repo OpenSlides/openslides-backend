@@ -43,6 +43,22 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+        committee = self.datastore.get(
+            FullQualifiedId(Collection("committee"), instance["committee_id"]),
+            ["user_ids", "organization_id"],
+        )
+        organization = self.datastore.get(
+            FullQualifiedId(Collection("organization"), committee["organization_id"]),
+            ["limit_of_meetings", "active_meeting_ids"],
+        )
+        if (
+            limit_of_meetings := organization.get("limit_of_meetings", 0)
+        ) and limit_of_meetings == len(organization.get("active_meeting_ids", [])):
+            raise ActionException(
+                f"You cannot create a new meeting, because you reached your limit of {limit_of_meetings} active meetings."
+            )
+
+        instance["is_active_in_organization_id"] = committee["organization_id"]
 
         action_data = [
             {
@@ -137,10 +153,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         admin_ids = []
         if instance.get("admin_ids"):
             admin_ids = instance.pop("admin_ids")
-            committee = self.datastore.get(
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
-                ["user_ids"],
-            )
             if not all(
                 user_id in committee.get("user_ids", []) for user_id in admin_ids
             ):
@@ -157,10 +169,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         # Add users to default group
         if instance.get("user_ids"):
             user_ids = instance.pop("user_ids")
-            committee = self.datastore.get(
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
-                ["user_ids"],
-            )
             if not all(
                 user_id in committee.get("user_ids", []) for user_id in user_ids
             ):

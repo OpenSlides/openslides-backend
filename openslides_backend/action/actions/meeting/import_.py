@@ -5,6 +5,8 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 from ....models.base import model_registry
 from ....models.checker import Checker, CheckException
 from ....models.fields import (
+    BaseGenericRelationField,
+    BaseRelationField,
     BaseTemplateField,
     GenericRelationField,
     GenericRelationListField,
@@ -83,11 +85,12 @@ class MeetingImport(SingularActionMixin, Action):
                 )
 
         # check datavalidation
-        checker = Checker(data=meeting_json, is_import=True)
+        checker = Checker(data=meeting_json, mode="external")
         try:
             checker.run_check()
         except CheckException as ce:
             raise ActionException(str(ce))
+        self.allowed_collections = checker.allowed_collections
 
         for entry in meeting_json.get("motion", {}).values():
             if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
@@ -95,7 +98,8 @@ class MeetingImport(SingularActionMixin, Action):
                     "Motion all_origin_ids and all_derived_motion_ids should be empty."
                 )
 
-        self.update_meeting_and_users(instance)
+        organization_id = self.check_limit_of_meetings(instance["committee_id"])
+        self.update_meeting_and_users(instance, organization_id)
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
@@ -127,11 +131,32 @@ class MeetingImport(SingularActionMixin, Action):
                 is_username_unique = True
             used_usernames.add(entry["username"])
 
-    def update_meeting_and_users(self, instance: Dict[str, Any]) -> None:
+    def check_limit_of_meetings(self, committee_id: int, text: str = "import") -> int:
+        committee = self.datastore.get(
+            FullQualifiedId(Collection("committee"), committee_id), ["organization_id"]
+        )
+        organization_id = committee.get("organization_id", 0)
+        organization = self.datastore.get(
+            FullQualifiedId(Collection("organization"), organization_id),
+            ["active_meeting_ids", "limit_of_meetings"],
+        )
+        if (
+            limit_of_meetings := organization.get("limit_of_meetings", 0)
+        ) and limit_of_meetings == len(organization.get("active_meeting_ids", [])):
+            raise ActionException(
+                f"You cannot {text} an active meeting, because you reached your limit of {limit_of_meetings} active meetings."
+            )
+        return organization_id
+
+    def update_meeting_and_users(
+        self, instance: Dict[str, Any], organization_id: int
+    ) -> None:
         # update committee_id and is_active_in_organization_id
         json_data = instance["meeting"]
         self.get_meeting_from_json(json_data)["committee_id"] = instance["committee_id"]
-        self.get_meeting_from_json(json_data)["is_active_in_organization_id"] = 1
+        self.get_meeting_from_json(json_data)[
+            "is_active_in_organization_id"
+        ] = organization_id
 
         # generate passwords
         for entry in json_data["user"].values():
@@ -162,14 +187,10 @@ class MeetingImport(SingularActionMixin, Action):
                 replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
 
-    def replace_fields(
-        self, instance: Dict[str, Any], ignore_user: bool = False
-    ) -> None:
+    def replace_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting"]
         new_json_data = {}
         for collection in json_data:
-            if ignore_user and collection == "user":
-                continue
             new_collection = {}
             for entry in json_data[collection].values():
                 for field in list(entry.keys()):
@@ -188,14 +209,27 @@ class MeetingImport(SingularActionMixin, Action):
         model_field = model_registry[Collection(collection)]().try_get_field(field)
         if model_field is None:
             raise ActionException(f"{collection}/{field} is not allowed.")
-        elif field == "id":
+        if isinstance(model_field, BaseRelationField):
+            if isinstance(model_field, BaseGenericRelationField):
+                content_list = (
+                    content
+                    if isinstance(content := entry.get(field), list)
+                    else [content]
+                )
+                target_collections = [
+                    item.split(KEYSEPARATOR)[0] for item in content_list if item
+                ]
+            else:
+                target_collections = [k.collection for k in model_field.to.keys()]
+            if all(c not in self.allowed_collections for c in target_collections):
+                return
+        if field == "id":
             entry["id"] = self.replace_map[collection][entry["id"]]
-        elif collection == "meeting" and field in (
-            "committee_id",
-            "is_active_in_organization_id",
+        elif (
+            collection == "meeting"
+            and field == "user_ids"
+            and "user" in self.allowed_collections
         ):
-            pass
-        elif collection == "meeting" and field == "user_ids":
             entry[field] = [
                 self.replace_map["user"][id_] for id_ in entry.get(field) or []
             ]
@@ -327,16 +361,17 @@ class MeetingImport(SingularActionMixin, Action):
                 {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
             )
         )
-        # add meeting to organization/active_meeting_ids
-        write_requests.append(
-            self.build_write_request(
-                EventType.Update,
-                FullQualifiedId(Collection("organization"), 1),
-                f"import meeting {meeting_id}",
-                None,
-                {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
+        # add meeting to organization/active_meeting_ids if not archived
+        if self.get_meeting_from_json(json_data).get("is_active_in_organization_id"):
+            write_requests.append(
+                self.build_write_request(
+                    EventType.Update,
+                    FullQualifiedId(Collection("organization"), 1),
+                    f"import meeting {meeting_id}",
+                    None,
+                    {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
+                )
             )
-        )
         return write_requests
 
     def create_action_result_element(

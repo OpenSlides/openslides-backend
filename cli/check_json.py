@@ -11,20 +11,28 @@ def main() -> int:
         print("No files specified.")
         return 1
 
-    is_import = "--import" in files
-    if is_import:
-        files = [x for x in files if x != "--import"]
+    possible_modes = tuple(f"--{mode}" for mode in Checker.modes)
+    modes = tuple(mode[2:] for mode in possible_modes if mode in files)
+    if len(modes) == 0:
+        mode = "all"
+    elif len(modes) > 1:
+        print(f"You can only choose one mode of {', '.join(possible_modes)}.")
+        exit(1)
+    else:
+        mode = modes[0]
 
     is_partial = "--partial" in files
-    if is_partial:
-        files = [x for x in files if x != "--partial"]
+    if len(modes) or is_partial:
+        files = [x for x in files if x not in possible_modes + ("--partial",)]
 
     failed = False
     for f in files:
         with open(f) as data:
             try:
                 Checker(
-                    json.load(data), is_import=is_import, is_partial=is_partial
+                    json.load(data),
+                    mode=mode,
+                    is_partial=is_partial,
                 ).run_check()
             except CheckException as e:
                 print(f"Check for {f} failed:\n", e)

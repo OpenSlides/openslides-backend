@@ -140,16 +140,32 @@ checker_map: Dict[Type[Field], Callable[..., bool]] = {
 
 
 class Checker:
+    modes = ("internal", "external", "all")
+
     def __init__(
         self,
         data: Dict[str, Dict[str, Any]],
-        is_import: bool = False,
+        mode: str = "all",
         is_partial: bool = False,
-        is_clone: bool = False,
     ) -> None:
         """
-        With is_import=True all collections will be removed, that are not meeting
-        specific, user, or the meeting itself.
+        The checker checks the data without access to datastore.
+        It differentiates between import data from the same organization instance,
+        typically using the meeting.clone action, or from another organization,
+        typically the meeting.import action with data from OS3.
+        To check all included collections, use 'all'. Typical usage is he check of
+        the example-data.json.
+
+        Mode:
+        external: checks that there are no relations to collections
+            outside the meeting, except users. The users must be included in data
+            and will be imported as new users
+        internal: assumes that all relations to collections outside
+            the meeting are valid, because the original instance is the same.
+            The integrity of this kind of relations is not checked, because there
+            is no database involved in command line version. Users are not included
+            in data, because they exist in same database.
+        all: All collections are valid and has to be in the data
 
         is_partial=True disables the check, that *all* collections have to be
         explicitly given, so a non existing (=empty) collection will not raise
@@ -159,15 +175,52 @@ class Checker:
         """
         self.data = data
         self.is_partial = is_partial
-        self.is_clone = is_clone
+        self.mode = mode
 
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
             for collection in model_registry
         }
 
-        if is_import:
-            self.modify_models_for_import()
+        if self.mode == "all":
+            self.allowed_collections = [
+                collection.collection for collection in model_registry
+            ]
+        else:
+            self.allowed_collections = [
+                "meeting",
+                "group",
+                "personal_note",
+                "tag",
+                "agenda_item",
+                "list_of_speakers",
+                "speaker",
+                "topic",
+                "motion",
+                "motion_submitter",
+                "motion_comment",
+                "motion_comment_section",
+                "motion_category",
+                "motion_block",
+                "motion_change_recommendation",
+                "motion_state",
+                "motion_workflow",
+                "motion_statute_paragraph",
+                "poll",
+                "option",
+                "vote",
+                "assignment",
+                "assignment_candidate",
+                "mediafile",
+                "projector",
+                "projection",
+                "projector_message",
+                "projector_countdown",
+                "chat_group",
+            ]
+            # TODO: mediafile blob handling.
+            if self.mode == "external":
+                self.allowed_collections.append("user")
 
         self.errors: List[str] = []
 
@@ -193,46 +246,8 @@ class Checker:
     def get_fields(self, collection: str) -> Iterable[Field]:
         return self.models[collection]().get_fields()
 
-    def modify_models_for_import(self) -> None:
-        collection_allowlist = (
-            "user",
-            "meeting",
-            "group",
-            "personal_note",
-            "tag",
-            "agenda_item",
-            "list_of_speakers",
-            "speaker",
-            "topic",
-            "motion",
-            "motion_submitter",
-            "motion_comment",
-            "motion_comment_section",
-            "motion_category",
-            "motion_block",
-            "motion_change_recommendation",
-            "motion_state",
-            "motion_workflow",
-            "motion_statute_paragraph",
-            "poll",
-            "option",
-            "vote",
-            "assignment",
-            "assignment_candidate",
-            "mediafile",
-            "projector",
-            "projection",
-            "projector_message",
-            "projector_countdown",
-            "chat_group",
-        )
-        for collection in list(self.models.keys()):
-            if collection not in collection_allowlist:
-                del self.models[collection]
-        # TODO: mediafile blob handling.
-
     def generate_template_prefixes(self) -> None:
-        for collection in self.models.keys():
+        for collection in self.allowed_collections:
             for field in self.get_fields(collection):
                 if not isinstance(field, BaseTemplateField):
                     continue
@@ -303,7 +318,7 @@ class Checker:
 
     def check_collections(self) -> None:
         c1 = set(self.data.keys())
-        c2 = set(self.models.keys())
+        c2 = set(self.allowed_collections)
         err = "Collections in file do not match with models.py."
         if not self.is_partial and c2 - c1:
             err += f" Missing collections: {', '.join(c2-c1)}."
@@ -511,12 +526,12 @@ class Checker:
 
         if isinstance(field_type, RelationField):
             foreign_id = model[field]
-            if foreign_id is None:
+            if not foreign_id:
                 return
 
             foreign_collection, foreign_field = self.get_to(field, collection)
 
-            if not (self.is_clone and foreign_collection == "user"):
+            if foreign_collection in self.allowed_collections:
                 self.check_reverse_relation(
                     collection,
                     model["id"],
@@ -527,15 +542,18 @@ class Checker:
                     basemsg,
                     replacement,
                 )
-
+            elif self.mode == "external":
+                self.errors.append(
+                    f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
+                )
         elif isinstance(field_type, RelationListField):
             foreign_ids = model[field]
-            if foreign_ids is None:
+            if not foreign_ids:
                 return
 
             foreign_collection, foreign_field = self.get_to(field, collection)
 
-            if not (self.is_clone and foreign_collection == "user"):
+            if foreign_collection in self.allowed_collections:
                 for foreign_id in foreign_ids:
                     self.check_reverse_relation(
                         collection,
@@ -547,6 +565,10 @@ class Checker:
                         basemsg,
                         replacement,
                     )
+            elif self.mode == "external":
+                self.errors.append(
+                    f"{basemsg} points to {foreign_collection}/foreign_id, which is not allowed in an external import."
+                )
 
         elif isinstance(field_type, GenericRelationField) and model[field] is not None:
             foreign_collection, foreign_id = self.split_fqid(model[field])
@@ -554,7 +576,7 @@ class Checker:
                 collection, field, foreign_collection
             )
 
-            if not (self.is_clone and foreign_collection == "user"):
+            if foreign_collection in self.allowed_collections:
                 self.check_reverse_relation(
                     collection,
                     model["id"],
@@ -564,6 +586,10 @@ class Checker:
                     foreign_field,
                     basemsg,
                     replacement,
+                )
+            elif self.mode == "external":
+                self.errors.append(
+                    f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
                 )
 
         elif (
@@ -575,7 +601,7 @@ class Checker:
                 foreign_field = self.get_to_generic_case(
                     collection, field, foreign_collection
                 )
-                if not (self.is_clone and foreign_collection == "user"):
+                if foreign_collection in self.allowed_collections:
                     self.check_reverse_relation(
                         collection,
                         model["id"],
@@ -585,6 +611,10 @@ class Checker:
                         foreign_field,
                         basemsg,
                         replacement,
+                    )
+                elif self.mode == "external":
+                    self.errors.append(
+                        f"{basemsg} points to {foreign_collection}/{foreign_id}, which is not allowed in an external import."
                     )
 
         elif collection == "motion" and field == "recommendation_extension":
@@ -720,7 +750,7 @@ class Checker:
         try:
             collection, _id = fqid.split("/")
             id = int(_id)
-            if collection not in self.models.keys():
+            if self.mode == "external" and collection not in self.allowed_collections:
                 raise CheckException(f"Fqid {fqid} has an invalid collection")
             return collection, id
         except (ValueError, AttributeError):
@@ -728,7 +758,7 @@ class Checker:
 
     def split_collectionfield(self, collectionfield: str) -> Tuple[str, str]:
         collection, field = collectionfield.split("/")
-        if collection not in self.models.keys():
+        if collection not in self.allowed_collections:
             raise CheckException(
                 f"Collectionfield {collectionfield} has an invalid collection"
             )
