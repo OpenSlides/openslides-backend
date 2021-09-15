@@ -76,6 +76,7 @@ class UserScopePermissionCheckMixin(Action):
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
         """
         meetings: List[int] = []
+        meetingsd: Dict[int, int]
         committees: List[int] = []
 
         if instance:
@@ -88,17 +89,27 @@ class UserScopePermissionCheckMixin(Action):
             )
             meetings = user.get("meeting_ids", [])
             committees = user.get("committee_ids", [])
-        if len(meetings) == 1 and len(committees) == 0:
-            return UserScope.Meeting, meetings[0]
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    Collection("meeting"),
+                    meetings,
+                    ["committee_id", "is_active_in_organization_id"],
+                )
+            ]
+        ).get(Collection("meeting"), {})
+        meetingsd = {
+            meeting_id: odict.get("committee_id")
+            for meeting_id, odict in result.items()
+            if odict.get("is_active_in_organization_id")
+        }
+
+        if len(meetingsd) == 1 and len(committees) == 0:
+            return UserScope.Meeting, next(iter(meetingsd))
         elif len(committees) == 1:
             # make sure that all meetings belong to this committee
-            if meetings:
-                result = self.datastore.get_many(
-                    [GetManyRequest(Collection("meeting"), meetings, ["committee_id"])]
-                )
-                db_meetings = result.get(Collection("meeting"), {}).values()
-            if not meetings or all(
-                meeting["committee_id"] == committees[0] for meeting in db_meetings
+            if not meetingsd or all(
+                committee == committees[0] for committee in meetingsd.values()
             ):
                 return UserScope.Committee, committees[0]
         return UserScope.Organization, 1
