@@ -219,6 +219,7 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"organization_tag_ids": [1]})
 
     def test_limit_of_meetings_error(self) -> None:
         self.test_models["organization/1"]["limit_of_meetings"] = 1
