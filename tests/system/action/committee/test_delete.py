@@ -45,11 +45,11 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
 
         self.assert_status_code(response, 400)
-        self.assert_model_exists(self.COMMITTEE_FQID, {"meeting_ids": [22]})
-        self.assertIn(
-            "meeting/22",
-            response.json["message"],
+        assert (
+            "This committee has still a meeting 22. Please remove all meetings before deletion."
+            in response.json["message"]
         )
+        self.assert_model_exists(self.COMMITTEE_FQID, {"meeting_ids": [22]})
 
     def test_delete_no_permission(self) -> None:
         self.create_data()
