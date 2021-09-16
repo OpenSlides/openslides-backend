@@ -27,9 +27,9 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [1],
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
-                "logo_$_id": [],
+                "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": [],
+                "default_projector_$_id": None,
                 "is_active_in_organization_id": 1,
             },
             "group/1": {
@@ -85,9 +85,9 @@ class MeetingClone(BaseActionTestCase):
                 "group_ids": [2],
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
-                "logo_$_id": [],
+                "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": [],
+                "default_projector_$_id": None,
             },
         )
 

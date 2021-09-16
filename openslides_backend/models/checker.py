@@ -383,6 +383,9 @@ class Checker:
             field_error = False
             replacements = model.get(template_field.get_template_field_name())
 
+            if replacements is None:
+                replacements = []
+
             if not isinstance(replacements, list):
                 self.errors.append(
                     f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Replacements for the template field must be a list"
