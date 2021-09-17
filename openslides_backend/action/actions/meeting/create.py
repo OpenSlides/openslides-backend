@@ -10,7 +10,10 @@ from ...mixins.create_action_with_dependencies import CreateActionWithDependenci
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..group.create import GroupCreate
-from ..motion_workflow.create import MotionWorkflowCreateSimpleWorkflowAction
+from ..motion_workflow.create import (
+    MotionWorkflowCreateComplexWorkflowAction,
+    MotionWorkflowCreateSimpleWorkflowAction,
+)
 from ..projector.create import ProjectorCreateAction
 from ..projector_countdown.create import ProjectorCountdownCreate
 from ..user.update import UserUpdate
@@ -38,6 +41,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
     )
     dependencies = [
         MotionWorkflowCreateSimpleWorkflowAction,
+        MotionWorkflowCreateComplexWorkflowAction,
         ProjectorCreateAction,
     ]
 
@@ -214,6 +218,13 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "default_workflow_meeting_id": instance["id"],
                     "default_amendment_workflow_meeting_id": instance["id"],
                     "default_statute_amendment_workflow_meeting_id": instance["id"],
+                    "meeting_id": instance["id"],
+                }
+            ]
+        elif CreateActionClass == MotionWorkflowCreateComplexWorkflowAction:
+            return [
+                {
+                    "name": "Complex Workflow",
                     "meeting_id": instance["id"],
                 }
             ]
