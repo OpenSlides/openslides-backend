@@ -40,7 +40,9 @@ class MediaServiceAdapter(MediaService):
         self._upload(file, id, mimetype, subpath)
 
     def download_mediafile(self, id: int) -> bytes:
-        url = self.media_url + "/" + "get" + "/" + str(id)
+        # TODO The media service path differ between /internal/media/
+        # and /system/media/, this is a hotfix. We need two config paths here.
+        url = self.media_url.replace("internal", "system") + "get" + "/" + str(id)
         try:
             response = requests.get(url)
         except requests.exceptions.ConnectionError:
