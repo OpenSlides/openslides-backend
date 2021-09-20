@@ -87,6 +87,7 @@ class MotionStateActionSet(ActionSet):
             "allow_support",
             "allow_create_poll",
             "allow_submitter_edit",
+            "dont_set_identifier",
             "set_number",
             "show_state_extension_field",
             "merge_amendment_into_final",

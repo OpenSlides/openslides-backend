@@ -120,7 +120,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
             {
                 "name": "in_progress",
                 "allow_submitter_edit": True,
-                # "dont_set_identifier": True,
+                "dont_set_identifier": True,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
             },
@@ -128,7 +128,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
                 "name": "submitted",
                 "allow_support": True,
                 "workflow_id": instance["id"],
-                # "dont_set_identifier": True,
+                "dont_set_identifier": True,
             },
             {
                 "name": "permitted",
