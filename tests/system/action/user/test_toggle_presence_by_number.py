@@ -23,6 +23,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
             "user.toggle_presence_by_number", {"meeting_id": 1, "number": "1"}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["id"] == 111
         model = self.get_model("user/111")
         assert model.get("is_present_in_meeting_ids") == [1]
         meeting = self.get_model("meeting/1")
@@ -45,6 +46,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
             "user.toggle_presence_by_number", {"meeting_id": 1, "number": "1"}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["id"] == 111
         model = self.get_model("user/111")
         assert model.get("is_present_in_meeting_ids") == []
         meeting = self.get_model("meeting/1")
