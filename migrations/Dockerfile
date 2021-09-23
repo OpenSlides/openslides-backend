@@ -12,6 +12,7 @@ RUN pip install --no-cache-dir --requirement requirements.txt
 COPY .bashrc ./
 COPY entrypoint.sh ./
 
+EXPOSE 5678
 ENV OPENSLIDES_DEVELOPMENT 1
 
 ENTRYPOINT ["./entrypoint.sh"]
