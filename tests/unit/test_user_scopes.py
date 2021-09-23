@@ -22,7 +22,10 @@ class UserScopeTest(TestCase):
 
     def set_meeting_committees(self, ids: List[int]) -> None:
         return_val = {
-            Collection("meeting"): {i: {"committee_id": id} for i, id in enumerate(ids)}
+            Collection("meeting"): {
+                i + 1: {"committee_id": id, "is_active_in_organization_id": 1}
+                for i, id in enumerate(ids)
+            }
         }
         self.mock_datastore.get_many = MagicMock(return_value=return_val)
 
@@ -35,6 +38,7 @@ class UserScopeTest(TestCase):
 
     def test_single_meeting(self) -> None:
         self.set_user_data({"meeting_ids": [1]})
+        self.set_meeting_committees([1])
         assert self.get_scope() == UserScope.Meeting
 
     def test_multiple_meetings(self) -> None:

@@ -99,7 +99,7 @@ class UserScopePermissionCheckMixin(Action):
             ]
         ).get(Collection("meeting"), {})
         meetingsd = {
-            meeting_id: odict.get("committee_id")
+            meeting_id: odict.get("committee_id")  # type: ignore
             for meeting_id, odict in result.items()
             if odict.get("is_active_in_organization_id")
         }
