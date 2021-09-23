@@ -67,7 +67,7 @@ class MotionCreateForwarded(MotionCreateBase):
                 )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        perm = Permissions.Motion.CAN_CREATE
+        perm = Permissions.Motion.CAN_FORWARD_TO_THIS
         if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
             msg = f"You are not allowed to perform action {self.name}."
             msg += f" Missing permission: {perm}"

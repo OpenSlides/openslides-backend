@@ -46,6 +46,7 @@ class _Meeting(Permission, Enum):
 class _Motion(Permission, Enum):
     CAN_CREATE = "motion.can_create"
     CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
+    CAN_FORWARD_TO_THIS = "motion.can_forward_to_this"
     CAN_MANAGE = "motion.can_manage"
     CAN_MANAGE_METADATA = "motion.can_manage_metadata"
     CAN_MANAGE_POLLS = "motion.can_manage_polls"
@@ -125,6 +126,7 @@ permission_parents: Dict[Permission, List[Permission]] = {
     _Motion.CAN_MANAGE_METADATA: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE_POLLS: [_Motion.CAN_MANAGE],
     _Motion.CAN_SEE_INTERNAL: [_Motion.CAN_MANAGE],
+    _Motion.CAN_FORWARD_TO_THIS: [_Motion.CAN_CREATE],
     _Motion.CAN_CREATE: [_Motion.CAN_MANAGE],
     _Motion.CAN_CREATE_AMENDMENTS: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE: [],

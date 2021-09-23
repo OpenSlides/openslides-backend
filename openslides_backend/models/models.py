@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "2dd6d24ebc7eef1352f9feb4ae4260b4"
+MODELS_YML_CHECKSUM = "c4e5ba53e84aa21a7d97a439e83b4495"
 
 
 class Organization(Model):
@@ -648,6 +648,7 @@ class Group(Model):
                 "meeting.can_see_livestream",
                 "motion.can_create",
                 "motion.can_create_amendments",
+                "motion.can_forward_to_this",
                 "motion.can_manage",
                 "motion.can_manage_metadata",
                 "motion.can_manage_polls",
