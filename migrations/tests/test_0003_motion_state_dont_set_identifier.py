@@ -4,7 +4,7 @@ def test_migration(write, finalize, assert_model):
     write({"type": "delete", "fqid": "motion_state/1"})
     write({"type": "restore", "fqid": "motion_state/1"})
 
-    finalize("0003_motion_state_dont_set_indentifier")
+    finalize("0003_motion_state_dont_set_identifier")
 
     assert_model(
         "motion_state/1",

@@ -3,6 +3,8 @@ services:
     backend:
         build: .
         image: openslides-backend-migrations-dev
+        ports:
+            - "5678:5678"
         volumes:
             - .:/app/
             - ../../openslides-datastore-service/:/datastore-service
