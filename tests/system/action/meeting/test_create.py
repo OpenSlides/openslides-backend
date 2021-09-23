@@ -38,7 +38,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         return self.get_model("meeting/1")
 
-    def test_create_simple(self) -> None:
+    def test_create_simple_and_complex_workflow(self) -> None:
         meeting = self.basic_test(dict())
         self.assertCountEqual(
             cast(Iterable[Any], meeting.get("default_projector_$_id")),
@@ -52,11 +52,11 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "group_ids": [2, 3, 4, 5, 6],
                 "default_group_id": 2,
                 "admin_group_id": 3,
-                "motion_workflow_ids": [1],
+                "motion_workflow_ids": [1, 2],
                 "motions_default_workflow_id": 1,
                 "motions_default_amendment_workflow_id": 1,
                 "motions_default_statute_amendment_workflow_id": 1,
-                "motion_state_ids": [1, 2, 3, 4],
+                "motion_state_ids": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
                 "list_of_speakers_countdown_id": 1,
                 "poll_countdown_id": 2,
                 "projector_countdown_warning_time": 0,
@@ -103,6 +103,50 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/4", {"name": "not_decided", "previous_state_ids": [1]}
+        )
+        self.assert_model_exists(
+            "motion_workflow/2",
+            {
+                "name": "Complex Workflow",
+                "meeting_id": 1,
+                "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+                "first_state_id": 5,
+            },
+        )
+        self.assert_model_exists(
+            "motion_state/5", {"name": "in_progress", "next_state_ids": [6, 10]}
+        )
+        self.assert_model_exists(
+            "motion_state/6", {"name": "submitted", "previous_state_ids": [5]}
+        )
+        self.assert_model_exists(
+            "motion_state/7", {"name": "permitted", "previous_state_ids": [6]}
+        )
+        self.assert_model_exists(
+            "motion_state/8", {"name": "accepted", "previous_state_ids": [7]}
+        )
+        self.assert_model_exists(
+            "motion_state/9", {"name": "rejected", "previous_state_ids": [7]}
+        )
+        self.assert_model_exists(
+            "motion_state/10", {"name": "withdrawed", "previous_state_ids": [5, 6, 7]}
+        )
+        self.assert_model_exists(
+            "motion_state/11", {"name": "adjourned", "previous_state_ids": [7]}
+        )
+        self.assert_model_exists(
+            "motion_state/12", {"name": "not concerned", "previous_state_ids": [7]}
+        )
+        self.assert_model_exists(
+            "motion_state/13",
+            {"name": "refered to committee", "previous_state_ids": [7]},
+        )
+        self.assert_model_exists(
+            "motion_state/14", {"name": "needs review", "previous_state_ids": [7]}
+        )
+        self.assert_model_exists(
+            "motion_state/15",
+            {"name": "rejected (not authorized)", "previous_state_ids": [6]},
         )
         projector1 = self.get_model("projector/1")
         self.assertCountEqual(
