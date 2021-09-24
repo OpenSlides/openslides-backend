@@ -88,17 +88,27 @@ class UserScopePermissionCheckMixin(Action):
             )
             meetings = user.get("meeting_ids", [])
             committees = user.get("committee_ids", [])
-        if len(meetings) == 1 and len(committees) == 0:
-            return UserScope.Meeting, meetings[0]
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    Collection("meeting"),
+                    meetings,
+                    ["committee_id", "is_active_in_organization_id"],
+                )
+            ]
+        ).get(Collection("meeting"), {})
+        meetings_committee = {
+            meeting_id: meeting_data.get("committee_id")  # type: ignore
+            for meeting_id, meeting_data in result.items()
+            if meeting_data.get("is_active_in_organization_id")
+        }
+
+        if len(meetings_committee) == 1 and len(committees) == 0:
+            return UserScope.Meeting, next(iter(meetings_committee))
         elif len(committees) == 1:
             # make sure that all meetings belong to this committee
-            if meetings:
-                result = self.datastore.get_many(
-                    [GetManyRequest(Collection("meeting"), meetings, ["committee_id"])]
-                )
-                db_meetings = result.get(Collection("meeting"), {}).values()
-            if not meetings or all(
-                meeting["committee_id"] == committees[0] for meeting in db_meetings
+            if not meetings_committee or all(
+                committee == committees[0] for committee in meetings_committee.values()
             ):
                 return UserScope.Committee, committees[0]
         return UserScope.Organization, 1

@@ -131,7 +131,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/2")
         assert meeting.get("user_ids") == [223]
 
-    def test_update_committee_manager_without_committee_ids(self) -> None:
+    def test_committee_manager_without_committee_ids(self) -> None:
         """Giving committee management level requires committee_ids"""
         self.set_models(
             {
@@ -159,7 +159,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_group_switch_change_meeting_ids(self) -> None:
+    def test_group_switch_change_meeting_ids(self) -> None:
         """Set a group and a meeting_ids to a user. Then change the group."""
         self.create_meeting()
         self.create_meeting(base=4)
@@ -175,7 +175,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/222", {"meeting_ids": [4]})
 
-    def test_update_remove_group_from_user(self) -> None:
+    def test_remove_group_from_user(self) -> None:
         """May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee"""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
@@ -197,7 +197,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_wrong_id(self) -> None:
+    def test_wrong_id(self) -> None:
         self.create_model(
             "user/111",
             {"username": "username_srtgb123"},
@@ -221,12 +221,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             "A user with the username admin already exists.", response.json["message"]
         )
 
-    def test_update_same_username(self) -> None:
+    def test_same_username(self) -> None:
         response = self.request("user.update", {"id": 1, "username": "admin"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"username": "admin"})
 
-    def test_update_permission_nothing(self) -> None:
+    def test_perm_nothing(self) -> None:
         self.permission_setup()
         response = self.request(
             "user.update",
@@ -243,7 +243,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_auth_error(self) -> None:
+    def test_perm_auth_error(self) -> None:
         self.permission_setup()
         response = self.request(
             "user.update",
@@ -261,7 +261,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_superadmin(self) -> None:
+    def test_perm_superadmin(self) -> None:
         """
         SUPERADMIN may set fields of all groups and may set an other user as SUPERADMIN, too.
         The SUPERADMIN don't need to belong to a meeting in any way to change data!
@@ -297,7 +297,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_A_oml_manage_user(self) -> None:
+    def test_perm_group_A_oml_manage_user(self) -> None:
         """May update group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -345,7 +345,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_A_cml_manage_user(self) -> None:
+    def test_perm_group_A_cml_manage_user(self) -> None:
         """May update group A fields on committee scope. User belongs to 1 meeting in 1 committee"""
         self.permission_setup()
         self.set_committee_management_level([60], self.user_id)
@@ -369,7 +369,43 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_A_meeting_manage_user(self) -> None:
+    def test_perm_group_A_cml_manage_user_archived_meeting_in_other_committee(
+        self,
+    ) -> None:
+        """
+        May update group A fields on committee scope. User belongs to 1 meeting in 1 committee
+        User is member of an archived meeting in an other committee, but this doesn't may affect the result.
+        """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_committee_management_level([60], self.user_id)
+        self.set_user_groups(111, [1, 4])
+        self.set_models(
+            {
+                "user/111": {"committee_ids": [60]},
+                "meeting/4": {"is_active_in_organization_id": None},
+            }
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new username",
+                "committee_ids": [60],
+            },
+        )
+        user111 = self.get_model("user/111")
+        self.assertCountEqual(user111["meeting_ids"], [1, 4])
+
+    def test_perm_group_A_meeting_manage_user(self) -> None:
         """May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee"""
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
@@ -392,7 +428,35 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_A_no_permission(self) -> None:
+    def test_perm_group_A_meeting_manage_user_archived_meeting(self) -> None:
+        """
+        May update group A fields on meeting scope. User belongs to 1 meeting without being part of a committee
+        User is member of an archived meeting in an other committee, but this doesn't may affect the result.
+        """
+        self.permission_setup()
+        self.create_meeting(base=4)
+        self.set_user_groups(self.user_id, [2])
+        self.set_user_groups(111, [1, 4])
+        self.set_models({"meeting/4": {"is_active_in_organization_id": None}})
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "username": "new username",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {
+                "username": "new username",
+                "committee_ids": None,
+            },
+        )
+        user111 = self.get_model("user/111")
+        self.assertCountEqual(user111["meeting_ids"], [1, 4])
+
+    def test_perm_group_A_no_permission(self) -> None:
         """May not update group A fields on organsisation scope, although having both committee permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -412,7 +476,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_B_user_can_manage(self) -> None:
+    def test_perm_group_B_user_can_manage(self) -> None:
         """update group B fields for 2 meetings with simple user.can_manage permissions"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -467,7 +531,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         user = self.get_model("user/111")
         self.assertCountEqual(user["meeting_ids"], [1, 4])
 
-    def test_update_permission_group_B_user_can_manage_no_permission(self) -> None:
+    def test_perm_group_B_user_can_manage_no_permission(self) -> None:
         """Group B fields needs explicit user.can_manage permission for meeting"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -491,7 +555,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_C_oml_manager(self) -> None:
+    def test_perm_group_C_oml_manager(self) -> None:
         """May update group C group_$_ids by OML permission"""
         self.permission_setup()
         self.set_organization_management_level(
@@ -511,7 +575,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"group_$_ids": ["1"], "group_$1_ids": [1]},
         )
 
-    def test_update_permission_group_C_committee_manager(self) -> None:
+    def test_perm_group_C_committee_manager(self) -> None:
         """May update group C group_$_ids by committee permission"""
         self.permission_setup()
         self.set_committee_management_level([60], self.user_id)
@@ -529,7 +593,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"group_$_ids": ["1"], "group_$1_ids": [1]},
         )
 
-    def test_update_permission_group_C_user_can_manage(self) -> None:
+    def test_perm_group_C_user_can_manage(self) -> None:
         """May update group C group_$_ids by user.can_manage permission with admin group of all related meetings"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -557,7 +621,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertEqual(user["group_$1_ids"], [2])
         self.assertEqual(user["group_$4_ids"], [5])
 
-    def test_update_permission_group_C_no_permission(self) -> None:
+    def test_perm_group_C_no_permission(self) -> None:
         """May not update group C group_$_ids"""
         self.permission_setup()
 
@@ -574,7 +638,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_C_special_1(self) -> None:
+    def test_perm_group_C_special_1(self) -> None:
         """group C group_$_ids adding meeting in same committee with committee permission"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -599,7 +663,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"group_$_ids": ["1", "4"], "group_$1_ids": [2], "group_$4_ids": [5]},
         )
 
-    def test_update_permission_group_C_special_2_no_permission(self) -> None:
+    def test_perm_group_C_special_2_no_permission(self) -> None:
         """group C group_$_ids adding meeting in other committee
         with committee permission for both. Error 403, because touching
         2 committees requires OML permission
@@ -626,7 +690,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_C_special_3_no_permission(self) -> None:
+    def test_perm_group_C_special_3_no_permission(self) -> None:
         """group C group_$_ids adding meeting in same committee
         with meeting permission for both. Error 403, because touching
         2 meetings requires Committee permission
@@ -654,7 +718,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_D_permission_with_OML(self) -> None:
+    def test_perm_group_D_permission_with_OML(self) -> None:
         """May update Group D committee fields with OML level permission"""
         self.permission_setup()
         self.set_organization_management_level(
@@ -680,7 +744,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_D_permission_with_CML(self) -> None:
+    def test_perm_group_D_permission_with_CML(self) -> None:
         """May update Group D committee fields with CML permission for all committees"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -709,7 +773,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             self.get_model("user/111").get("committee_ids", []), [60, 63]
         )
 
-    def test_update_permission_group_D_no_permission(self) -> None:
+    def test_perm_group_D_no_permission(self) -> None:
         """May not update Group D committee fields, because of missing CML permission for one committee"""
         self.permission_setup()
         self.create_meeting(base=4)
@@ -731,7 +795,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_D_permission_with_CML_and_untouched_committee(
+    def test_perm_group_D_permission_with_CML_and_untouched_committee(
         self,
     ) -> None:
         """
@@ -766,7 +830,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             [60, 63], self.get_model("user/111").get("committee_ids", [])
         )
 
-    def test_update_permission_group_D_permission_with_CML_missing_permission(
+    def test_perm_group_D_permission_with_CML_missing_permission(
         self,
     ) -> None:
         """
@@ -793,7 +857,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_E_OML_high_enough(self) -> None:
+    def test_perm_group_E_OML_high_enough(self) -> None:
         """OML level to set is sufficient"""
         self.permission_setup()
         self.set_organization_management_level(
@@ -815,7 +879,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_E_OML_not_high_enough(self) -> None:
+    def test_perm_group_E_OML_not_high_enough(self) -> None:
         """OML level to set is higher than level of request user"""
         self.permission_setup()
         self.set_organization_management_level(
@@ -835,7 +899,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_permission_group_F_demo_user_permission(self) -> None:
+    def test_perm_group_F_demo_user_permission(self) -> None:
         """demo_user only editable by Superadmin"""
         self.permission_setup()
         self.set_organization_management_level(
@@ -858,7 +922,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_permission_group_F_demo_user_no_permission(self) -> None:
+    def test_perm_group_F_demo_user_no_permission(self) -> None:
         """demo_user only editable by Superadmin"""
         self.permission_setup()
         self.set_organization_management_level(

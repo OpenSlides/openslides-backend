@@ -443,9 +443,7 @@ class UserCreateActionTest(BaseActionTestCase):
                     "committee_$_management_level": ["60"],
                     "committee_ids": [60],
                 },
-                "meeting/4": {
-                    "committee_id": 60,
-                },
+                "meeting/4": {"committee_id": 60, "is_active_in_organization_id": 1},
                 "committee/60": {"meeting_ids": [1, 4]},
             }
         )

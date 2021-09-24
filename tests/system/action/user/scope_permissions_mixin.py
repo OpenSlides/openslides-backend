@@ -43,18 +43,21 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         if scope == UserScope.Organization:
             self.set_models(
                 {
-                    "meeting/1": {"committee_id": 1},
+                    "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                     "user/111": {"meeting_ids": [1], "committee_ids": [2]},
                 }
             )
         elif scope == UserScope.Committee:
             self.set_models(
                 {
-                    "meeting/1": {"committee_id": 1},
+                    "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                     "user/111": {"meeting_ids": [1], "committee_ids": [1]},
                 }
             )
         elif scope == UserScope.Meeting:
             self.set_models(
-                {"meeting/1": {"committee_id": 1}, "user/111": {"meeting_ids": [1]}}
+                {
+                    "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                    "user/111": {"meeting_ids": [1]},
+                }
             )

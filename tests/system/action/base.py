@@ -67,6 +67,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "default_group_id": base,
                     "admin_group_id": base + 1,
                     "committee_id": committee_id,
+                    "is_active_in_organization_id": 1,
                 },
                 f"group/{base}": {
                     "meeting_id": base,
@@ -86,6 +87,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 },
                 "organization/1": {
                     "limit_of_meetings": 0,
+                    "active_meeting_ids": [base],
                 },
             }
         )
