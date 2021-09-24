@@ -73,7 +73,7 @@ class GetForwardingMeetings(BasePresenter):
                 if not has_perm(
                     self.datastore,
                     self.user_id,
-                    Permissions.Motion.CAN_CREATE,
+                    Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING,
                     meeting_id2,
                 ):
                     continue
