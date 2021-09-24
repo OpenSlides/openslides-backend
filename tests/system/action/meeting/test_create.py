@@ -279,6 +279,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Only allowed to add users from committee." in response.json["message"]
 
+    def test_create_with_admins_empty_array(self) -> None:
+        meeting = self.basic_test({"admin_ids": []})
+        assert "admin_ids" not in meeting
+
     def test_create_no_permissions(self) -> None:
         self.set_models(
             {

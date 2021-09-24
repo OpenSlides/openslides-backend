@@ -365,7 +365,7 @@ class Checker:
             self.errors.append(error)
             errors = True
         if diff := model_fields - all_collection_fields:
-            error = f"{collection}/{model['id']}: Invalid fields {', '.join(diff)}"
+            error = f"{collection}/{model['id']}: Invalid fields {', '.join(f'{field} (value: {model[field]})' for field in diff)}"
             self.errors.append(error)
             errors = True
         return errors
