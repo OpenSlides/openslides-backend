@@ -198,7 +198,10 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert "Missing permission: motion.can_create" in response.json["message"]
+        assert (
+            "Missing permission: motion.can_forward_into_this_meeting"
+            in response.json["message"]
+        )
 
     def test_permissions(self) -> None:
         self.create_meeting()
@@ -208,7 +211,9 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3, 4])
         self.set_models(self.test_model)
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
-        self.set_group_permissions(4, [Permissions.Motion.CAN_CREATE])
+        self.set_group_permissions(
+            4, [Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING]
+        )
         response = self.request(
             "motion.create_forwarded",
             {
@@ -228,7 +233,9 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3, 4])
         self.set_models(self.test_model)
         self.set_group_permissions(3, [])
-        self.set_group_permissions(4, [Permissions.Motion.CAN_CREATE])
+        self.set_group_permissions(
+            4, [Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING]
+        )
         response = self.request(
             "motion.create_forwarded",
             {
