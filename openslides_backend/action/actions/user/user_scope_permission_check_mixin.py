@@ -76,7 +76,6 @@ class UserScopePermissionCheckMixin(Action):
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
         """
         meetings: List[int] = []
-        meetingsd: Dict[int, int]
         committees: List[int] = []
 
         if instance:
@@ -98,18 +97,18 @@ class UserScopePermissionCheckMixin(Action):
                 )
             ]
         ).get(Collection("meeting"), {})
-        meetingsd = {
-            meeting_id: odict.get("committee_id")  # type: ignore
-            for meeting_id, odict in result.items()
-            if odict.get("is_active_in_organization_id")
+        meetings_committee = {
+            meeting_id: meeting_data.get("committee_id")  # type: ignore
+            for meeting_id, meeting_data in result.items()
+            if meeting_data.get("is_active_in_organization_id")
         }
 
-        if len(meetingsd) == 1 and len(committees) == 0:
-            return UserScope.Meeting, next(iter(meetingsd))
+        if len(meetings_committee) == 1 and len(committees) == 0:
+            return UserScope.Meeting, next(iter(meetings_committee))
         elif len(committees) == 1:
             # make sure that all meetings belong to this committee
-            if not meetingsd or all(
-                committee == committees[0] for committee in meetingsd.values()
+            if not meetings_committee or all(
+                committee == committees[0] for committee in meetings_committee.values()
             ):
                 return UserScope.Committee, committees[0]
         return UserScope.Organization, 1
