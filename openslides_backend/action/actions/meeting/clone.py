@@ -51,14 +51,6 @@ class MeetingClone(MeetingImport):
         ) and committee_id != self.get_meeting_from_json(meeting_json)["committee_id"]:
             self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
 
-        # save blobs from mediafiles
-        self.mediadata = []
-        for entry in meeting_json.get("mediafile", {}).values():
-            if "blob" in entry:
-                self.mediadata.append(
-                    (entry.pop("blob"), entry["id"], entry["mimetype"])
-                )
-
         # check datavalidation
         checker = Checker(data=meeting_json, mode="internal")
         try:
@@ -83,8 +75,8 @@ class MeetingClone(MeetingImport):
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
+        self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
-        self.upload_mediadata()
         return instance
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
@@ -98,6 +90,14 @@ class MeetingClone(MeetingImport):
             for entry, new_id in zip(json_data[collection].values(), new_ids):
                 replace_map[collection][entry["id"]] = new_id
         self.replace_map = replace_map
+
+    def duplicate_mediafiles(self, json_data: Dict[str, Any]) -> None:
+        for mediafile_id in json_data["mediafile"]:
+            mediafile = json_data["mediafile"][mediafile_id]
+            if not mediafile.get("is_directory"):
+                self.media.duplicate_mediafile(
+                    mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
+                )
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))

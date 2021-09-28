@@ -39,18 +39,18 @@ class MediaServiceAdapter(MediaService):
         subpath = "upload_resource"
         self._upload(file, id, mimetype, subpath)
 
-    def download_mediafile(self, id: int) -> bytes:
-        url = self.media_url + "/" + "get" + "/" + str(id)
+    def duplicate_mediafile(self, source_id: int, target_id: int) -> None:
+        url = self.media_url + "duplicate_mediafile/"
+        payload = {"source_id": source_id, "target_id": target_id}
         try:
-            response = requests.get(url)
+            response = requests.post(url, json=payload)
         except requests.exceptions.ConnectionError:
             msg = "Connect to mediaservice failed."
-            self.logger.debug("Download of file: " + msg)
+            self.logger.debug("Duplicate of mediafile: " + msg)
             raise MediaServiceException(msg)
 
         if response.status_code != 200:
             msg = f"Mediaservice Error: {str(response.content)}"
-            self.logger.debug("Download of file: " + msg)
+            self.logger.debug("Duplicate of mediafile: " + msg)
             raise MediaServiceException(msg)
-        self.logger.debug("File successfully downloaded of the media service")
-        return response.content
+        self.logger.debug("File successfully duplicated on the media service")
