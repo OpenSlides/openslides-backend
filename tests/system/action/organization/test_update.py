@@ -20,6 +20,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         self.create_model(
             "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
         )
+        self.create_model("theme/1", {"name": "default"})
         response = self.request(
             "organization.update",
             {
@@ -29,7 +30,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "legal_notice": "GYjDABmD",
                 "privacy_policy": "test1",
                 "login_text": "test2",
-                "theme": "test3",
+                "default_theme_id": 1,
                 "reset_password_verbose_errors": False,
             },
         )
@@ -40,7 +41,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("legal_notice") == "GYjDABmD"
         assert model.get("privacy_policy") == "test1"
         assert model.get("login_text") == "test2"
-        assert model.get("theme") == "test3"
+        assert model.get("default_theme_id") == 1
         assert model.get("reset_password_verbose_errors") is False
 
     def test_update_wrong_field(self) -> None:

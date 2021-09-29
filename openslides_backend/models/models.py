@@ -17,7 +17,6 @@ class Organization(Model):
     legal_notice = fields.CharField()
     privacy_policy = fields.CharField()
     login_text = fields.CharField()
-    theme = fields.CharField()
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -38,6 +37,9 @@ class Organization(Model):
     )
     organization_tag_ids = fields.RelationListField(
         to={Collection("organization_tag"): "organization_id"}
+    )
+    default_theme_id = fields.RelationField(
+        to={Collection("theme"): "organization_ids"}
     )
 
 
@@ -163,6 +165,7 @@ class User(Model):
         replacement_collection=Collection("meeting"),
         to={Collection("user"): "vote_delegated_$_to_id"},
     )
+    theme_id = fields.RelationField(to={Collection("theme"): "user_ids"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -200,6 +203,60 @@ class OrganizationTag(Model):
     organization_id = fields.OrganizationField(
         to={Collection("organization"): "organization_tag_ids"}
     )
+
+
+class Theme(Model):
+    collection = Collection("theme")
+    verbose_name = "theme"
+
+    id = fields.IntegerField(required=True)
+    name = fields.CharField(required=True)
+    accent_100 = fields.ColorField()
+    accent_200 = fields.ColorField()
+    accent_300 = fields.ColorField()
+    accent_400 = fields.ColorField()
+    accent_50 = fields.ColorField()
+    accent_500 = fields.ColorField(required=True)
+    accent_600 = fields.ColorField()
+    accent_700 = fields.ColorField()
+    accent_800 = fields.ColorField()
+    accent_900 = fields.ColorField()
+    accent_A100 = fields.ColorField()
+    accent_A200 = fields.ColorField()
+    accent_A400 = fields.ColorField()
+    accent_A700 = fields.ColorField()
+    primary_100 = fields.ColorField()
+    primary_200 = fields.ColorField()
+    primary_300 = fields.ColorField()
+    primary_400 = fields.ColorField()
+    primary_50 = fields.ColorField()
+    primary_500 = fields.ColorField(required=True)
+    primary_600 = fields.ColorField()
+    primary_700 = fields.ColorField()
+    primary_800 = fields.ColorField()
+    primary_900 = fields.ColorField()
+    primary_A100 = fields.ColorField()
+    primary_A200 = fields.ColorField()
+    primary_A400 = fields.ColorField()
+    primary_A700 = fields.ColorField()
+    warn_100 = fields.ColorField()
+    warn_200 = fields.ColorField()
+    warn_300 = fields.ColorField()
+    warn_400 = fields.ColorField()
+    warn_50 = fields.ColorField()
+    warn_500 = fields.ColorField(required=True)
+    warn_600 = fields.ColorField()
+    warn_700 = fields.ColorField()
+    warn_800 = fields.ColorField()
+    warn_900 = fields.ColorField()
+    warn_A100 = fields.ColorField()
+    warn_A200 = fields.ColorField()
+    warn_A400 = fields.ColorField()
+    warn_A700 = fields.ColorField()
+    organization_ids = fields.RelationListField(
+        to={Collection("organization"): "default_theme_id"}
+    )
+    user_ids = fields.RelationListField(to={Collection("user"): "theme_id"})
 
 
 class Committee(Model):
