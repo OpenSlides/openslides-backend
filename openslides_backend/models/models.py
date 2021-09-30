@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "923b70a57b243041a00ff74a1f8a0dad"
+MODELS_YML_CHECKSUM = "fd53765503552b0562bd71ef2ff437d3"
 
 
 class Organization(Model):
@@ -165,7 +165,6 @@ class User(Model):
         replacement_collection=Collection("meeting"),
         to={Collection("user"): "vote_delegated_$_to_id"},
     )
-    theme_id = fields.RelationField(to={Collection("theme"): "user_ids"})
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
@@ -256,7 +255,6 @@ class Theme(Model):
     organization_ids = fields.RelationListField(
         to={Collection("organization"): "default_theme_id"}
     )
-    user_ids = fields.RelationListField(to={Collection("user"): "theme_id"})
 
 
 class Committee(Model):
