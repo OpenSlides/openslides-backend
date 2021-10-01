@@ -1,27 +1,18 @@
 # Tests for the openslides media service
 import base64
 
-import psycopg2
 import pytest
 import requests
+
+from tests.base import reset_db
 
 UPLOAD_URL = "http://media:9006/internal/media/upload_mediafile/"
 GET_URL = "http://media:9006/system/media/get/"
 
 
 @pytest.fixture(autouse=True)
-def reset_db():
-    """ Deletes all mediafiles except for id=2 and id=3 (example data) """
-    conn = psycopg2.connect(
-        host="media-postgresql",
-        port=5432,
-        database="openslides",
-        user="openslides",
-        password="openslides",
-    )
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM mediafile_data WHERE id NOT IN (2, 3)")
+def reset_db_in_upload_mediafile():
+    reset_db()
 
 
 def test_good():
