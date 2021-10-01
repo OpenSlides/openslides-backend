@@ -51,6 +51,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("is_pseudoanonymized") is False
         assert poll.get("min_votes_amount") == 5
         assert poll.get("max_votes_amount") == 10
+        assert "options" not in poll
         option = self.get_model("option/1")
         assert option.get("text") == "test2"
         assert option.get("poll_id") == 1
