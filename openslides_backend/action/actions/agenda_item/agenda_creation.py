@@ -55,7 +55,7 @@ class CreateActionWithAgendaItemMixin(Action):
             ["agenda_item_creation"],
         )
         agenda_item_creation = meeting.get("agenda_item_creation")
-        agenda_create = instance.get("agenda_create")
+        agenda_create = instance.pop("agenda_create", None)
         if agenda_item_creation == "always":
             return True
         elif agenda_item_creation == "never":
