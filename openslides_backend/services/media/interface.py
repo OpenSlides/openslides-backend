@@ -20,7 +20,7 @@ class MediaService(Protocol):
         """
         ...
 
-    def download_mediafile(self, id: int) -> bytes:
+    def duplicate_mediafile(self, source_id: int, target_id: int) -> None:
         """
         Throws a MediaServiceException, if there is a ConnectionError or
         any Error reported from MediaService-Request

@@ -1,4 +1,3 @@
-import base64
 from typing import Any, Dict, List
 
 from datastore.shared.util import is_reserved_field
@@ -25,9 +24,6 @@ def export_meeting(
         export[collection] = add_empty_fields(
             remove_meta_fields(list(res.values())), collection
         )
-
-    # handle mediafile blobs
-    add_blob_file(media, export)
 
     # handle meeting
     meeting = datastore.get(FullQualifiedId(Collection("meeting"), meeting_id))
@@ -92,11 +88,3 @@ def add_empty_fields(
             if field not in entry:
                 entry[field] = None
     return res
-
-
-def add_blob_file(media: MediaService, export: Dict[str, Any]) -> None:
-    for mediafile in export["mediafile"]:
-        mediafile_id = mediafile["id"]
-        dl_bytes = media.download_mediafile(mediafile_id)
-        blob_data = base64.b64encode(dl_bytes)
-        mediafile["blob"] = blob_data
