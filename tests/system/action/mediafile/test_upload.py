@@ -10,7 +10,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
-        start_time = int(time())
+        start_time = round(time())
         response = self.request(
             "mediafile.upload",
             {
