@@ -1,6 +1,5 @@
 import base64
 from time import time
-from typing import cast
 
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -11,7 +10,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.create_model("meeting/110", {"name": "name_DsJFXoot"})
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
-        start_time = time()
+        start_time = int(time())
         response = self.request(
             "mediafile.upload",
             {
@@ -30,7 +29,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         assert mediafile.get("mimetype") == "text/plain"
         assert mediafile.get("filesize") == 12
         assert mediafile.get("list_of_speakers_id") == 1
-        assert cast(int, mediafile.get("create_timestamp")) > start_time
+        assert mediafile.get("create_timestamp") >= start_time
         assert not mediafile.get("is_directory")
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
