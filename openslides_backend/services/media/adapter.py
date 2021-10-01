@@ -1,5 +1,6 @@
-import requests
 from typing import Any, Dict
+
+import requests
 
 from ...shared.exceptions import MediaServiceException
 from ...shared.interfaces.logging import LoggingModule
