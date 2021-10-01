@@ -37,7 +37,9 @@ class MediaServiceAdapter(MediaService):
         self._handle_upload(url, payload, description="Duplicate of mediafile: ")
         self.logger.debug("File successfully duplicated on the media service")
 
-    def _handle_upload(self, url: str, payload: Dict[str, Any], description: str) -> None:
+    def _handle_upload(
+        self, url: str, payload: Dict[str, Any], description: str
+    ) -> None:
         try:
             response = requests.post(url, json=payload)
         except requests.exceptions.ConnectionError:
