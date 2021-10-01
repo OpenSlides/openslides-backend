@@ -1,4 +1,5 @@
 import requests
+from typing import Any, Dict
 
 from ...shared.exceptions import MediaServiceException
 from ...shared.interfaces.logging import LoggingModule
@@ -18,17 +19,7 @@ class MediaServiceAdapter(MediaService):
         url = self.media_url + subpath + "/"
         payload = {"file": file, "id": id, "mimetype": mimetype}
         self.logger.debug("Starting upload of file")
-        try:
-            response = requests.post(url, json=payload)
-        except requests.exceptions.ConnectionError:
-            msg = "Connect to mediaservice failed."
-            self.logger.debug("Upload of file: " + msg)
-            raise MediaServiceException(msg)
-
-        if response.status_code != 200:
-            msg = f"Mediaservice Error: {str(response.content)}"
-            self.logger.debug("Upload of file: " + msg)
-            raise MediaServiceException(msg)
+        self._handle_upload(url, payload, description="Upload of file: ")
         self.logger.debug("File successfully uploaded to the media service")
 
     def upload_mediafile(self, file: str, id: int, mimetype: str) -> None:
@@ -42,15 +33,18 @@ class MediaServiceAdapter(MediaService):
     def duplicate_mediafile(self, source_id: int, target_id: int) -> None:
         url = self.media_url + "duplicate_mediafile/"
         payload = {"source_id": source_id, "target_id": target_id}
+        self._handle_upload(url, payload, description="Duplicate of mediafile: ")
+        self.logger.debug("File successfully duplicated on the media service")
+
+    def _handle_upload(self, url: str, payload: Dict[str, Any], description: str) -> None:
         try:
             response = requests.post(url, json=payload)
         except requests.exceptions.ConnectionError:
             msg = "Connect to mediaservice failed."
-            self.logger.debug("Duplicate of mediafile: " + msg)
+            self.logger.debug(description + msg)
             raise MediaServiceException(msg)
 
         if response.status_code != 200:
             msg = f"Mediaservice Error: {str(response.content)}"
-            self.logger.debug("Duplicate of mediafile: " + msg)
+            self.logger.debug(description + msg)
             raise MediaServiceException(msg)
-        self.logger.debug("File successfully duplicated on the media service")
