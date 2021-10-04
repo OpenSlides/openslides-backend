@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "170036ba958edb364fafd5f40146adbb"
+MODELS_YML_CHECKSUM = "97ba49302a5071974812d6caecf53fa7"
 
 
 class Organization(Model):
@@ -221,10 +221,10 @@ class Theme(Model):
     accent_700 = fields.ColorField()
     accent_800 = fields.ColorField()
     accent_900 = fields.ColorField()
-    accent_A100 = fields.ColorField()
-    accent_A200 = fields.ColorField()
-    accent_A400 = fields.ColorField()
-    accent_A700 = fields.ColorField()
+    accent_a100 = fields.ColorField()
+    accent_a200 = fields.ColorField()
+    accent_a400 = fields.ColorField()
+    accent_a700 = fields.ColorField()
     primary_100 = fields.ColorField()
     primary_200 = fields.ColorField()
     primary_300 = fields.ColorField()
@@ -235,10 +235,10 @@ class Theme(Model):
     primary_700 = fields.ColorField()
     primary_800 = fields.ColorField()
     primary_900 = fields.ColorField()
-    primary_A100 = fields.ColorField()
-    primary_A200 = fields.ColorField()
-    primary_A400 = fields.ColorField()
-    primary_A700 = fields.ColorField()
+    primary_a100 = fields.ColorField()
+    primary_a200 = fields.ColorField()
+    primary_a400 = fields.ColorField()
+    primary_a700 = fields.ColorField()
     warn_100 = fields.ColorField()
     warn_200 = fields.ColorField()
     warn_300 = fields.ColorField()
@@ -249,10 +249,10 @@ class Theme(Model):
     warn_700 = fields.ColorField()
     warn_800 = fields.ColorField()
     warn_900 = fields.ColorField()
-    warn_A100 = fields.ColorField()
-    warn_A200 = fields.ColorField()
-    warn_A400 = fields.ColorField()
-    warn_A700 = fields.ColorField()
+    warn_a100 = fields.ColorField()
+    warn_a200 = fields.ColorField()
+    warn_a400 = fields.ColorField()
+    warn_a700 = fields.ColorField()
     organization_ids = fields.RelationListField(
         to={Collection("organization"): "default_theme_id"}
     )
