@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "fd53765503552b0562bd71ef2ff437d3"
+MODELS_YML_CHECKSUM = "170036ba958edb364fafd5f40146adbb"
 
 
 class Organization(Model):
@@ -41,6 +41,7 @@ class Organization(Model):
     default_theme_id = fields.RelationField(
         to={Collection("theme"): "organization_ids"}
     )
+    theme_ids = fields.RelationListField(to={Collection("theme"): "organization_id"})
 
 
 class User(Model):
@@ -254,6 +255,9 @@ class Theme(Model):
     warn_A700 = fields.ColorField()
     organization_ids = fields.RelationListField(
         to={Collection("organization"): "default_theme_id"}
+    )
+    organization_id = fields.OrganizationField(
+        to={Collection("organization"): "theme_ids"}
     )
 
 

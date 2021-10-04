@@ -1,8 +1,12 @@
+from typing import Any, Dict
+
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+
+ONE_ORGANIZATION_ID = 1
 
 
 @register_action("theme.create")
@@ -57,3 +61,7 @@ class ThemeCreate(CreateAction):
         ],
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance["organization_id"] = ONE_ORGANIZATION_ID
+        return instance

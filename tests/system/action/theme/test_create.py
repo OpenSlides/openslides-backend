@@ -4,6 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class ThemeCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
+        self.create_model("organization/1")
         response = self.request(
             "theme.create",
             {
@@ -21,6 +22,7 @@ class ThemeCreateActionTest(BaseActionTestCase):
                 "primary_500": "#111222",
                 "accent_500": "#111222",
                 "warn_500": "#222333",
+                "organization_id": 1,
             },
         )
 
