@@ -63,7 +63,7 @@ def serve_files(file_id, file_type):
         for i in range(0, len(source), size):
             yield bytes(source[i : i + size])
 
-    block_size = app.config["BLOCK_SIZE"]
+    block_size = app.config["MEDIA_BLOCK_SIZE"]
     response = Response(chunked(block_size, data), mimetype=mimetype)
     response.headers["Content-Disposition"] = f'inline; filename="{filename}"'
     if auth_header:
