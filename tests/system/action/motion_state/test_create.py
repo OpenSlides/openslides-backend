@@ -144,6 +144,56 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("restrictions") == ["is_submitter"]
         assert model.get("merge_amendment_into_final") == "do_not_merge"
 
+    def test_create_auto_weight(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "motion_workflow/42": {
+                    "name": "test_name_fjwnq8d8tje8",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion_state.create",
+            {
+                "name": "test_Xcdfgee",
+                "workflow_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_state/1", {"weight": 1})
+        response = self.request(
+            "motion_state.create",
+            {
+                "name": "test_Xcdfgee",
+                "workflow_id": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_state/2", {"weight": 2})
+
+    def test_create_manual_weight(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "motion_workflow/42": {
+                    "name": "test_name_fjwnq8d8tje8",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "motion_state.create",
+            {
+                "name": "test_Xcdfgee",
+                "workflow_id": 42,
+                "weight": 42,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion_state/1", {"weight": 42})
+
     def test_create_empty_data(self) -> None:
         response = self.request("motion_state.create", {})
         self.assert_status_code(response, 400)

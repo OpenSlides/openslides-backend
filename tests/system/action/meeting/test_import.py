@@ -244,6 +244,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "workflow_id": 1,
                         "name": "test",
+                        "weight": 1,
                         "recommendation_label": None,
                         "restrictions": [],
                         "allow_support": True,

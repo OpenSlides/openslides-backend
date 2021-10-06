@@ -7,7 +7,8 @@ from ....shared.exceptions import ActionException
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..motion_state.create_update_delete import MotionStateActionSet
+from ..motion_state.create import MotionStateCreateAction
+from ..motion_state.update import MotionStateUpdateAction
 
 
 @register_action("motion_workflow.import")
@@ -76,7 +77,7 @@ class MotionWorkflowImport(CreateAction):
             action_data.append(state_data)
             first = False
         action_results = self.execute_other_action(
-            MotionStateActionSet.get_action("create"),
+            MotionStateCreateAction,
             action_data,
         )
 
@@ -101,7 +102,7 @@ class MotionWorkflowImport(CreateAction):
             ]
             action_data.append(data)
         self.execute_other_action(
-            MotionStateActionSet.get_action("update"),
+            MotionStateUpdateAction,
             action_data,
         )
 

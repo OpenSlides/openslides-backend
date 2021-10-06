@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "83dd0d1d74658e869a797bfebfd0fcc6"
+MODELS_YML_CHECKSUM = "923b70a57b243041a00ff74a1f8a0dad"
 
 
 class Organization(Model):
@@ -1178,6 +1178,7 @@ class MotionState(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
+    weight = fields.IntegerField(required=True)
     recommendation_label = fields.CharField()
     css_class = fields.CharField(
         required=True,
