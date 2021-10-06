@@ -246,6 +246,33 @@ class MeetingClone(BaseActionTestCase):
         organization = self.get_model("organization/1")
         self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
 
+    def test_create_clone(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {},
+                "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
+                "user/2": {"committee_ids": [1]},
+                "user/3": {"committee_ids": [1]},
+            }
+        )
+        response = self.request(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": [],
+                "organization_tag_ids": [],
+            },
+        )
+        self.assert_status_code(response, 200)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
     def test_permissions_both_okay(self) -> None:
         self.set_models(self.test_models)
         self.set_models(

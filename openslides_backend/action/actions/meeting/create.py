@@ -154,9 +154,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         instance["admin_group_id"] = fqid_admin_group.id
 
         # Add user to admin group
-        admin_ids = []
-        if instance.get("admin_ids"):
-            admin_ids = instance.pop("admin_ids")
+        if admin_ids := instance.pop("admin_ids", []):
             if not all(
                 user_id in committee.get("user_ids", []) for user_id in admin_ids
             ):
@@ -171,8 +169,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             self.execute_other_action(UserUpdate, action_data)
 
         # Add users to default group
-        if instance.get("user_ids"):
-            user_ids = instance.pop("user_ids")
+        if user_ids := instance.pop("user_ids", []):
             if not all(
                 user_id in committee.get("user_ids", []) for user_id in user_ids
             ):
