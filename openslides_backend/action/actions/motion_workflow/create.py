@@ -7,7 +7,8 @@ from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..motion_state.create_update_delete import MotionStateActionSet
+from ..motion_state.create import MotionStateCreateAction
+from ..motion_state.update import MotionStateUpdateAction
 
 MOTION_STATE_DEFAULT_NAME = "default"
 
@@ -21,7 +22,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
     model = MotionWorkflow()
     schema = DefaultSchema(MotionWorkflow()).get_create_schema(["name", "meeting_id"])
     permission = Permissions.Motion.CAN_MANAGE
-    dependencies = [MotionStateActionSet.get_action("create")]
+    dependencies = [MotionStateCreateAction]
 
     def get_dependent_action_data(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
@@ -29,6 +30,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
         return [
             {
                 "name": MOTION_STATE_DEFAULT_NAME,
+                "weight": 1,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
             }
@@ -84,15 +86,19 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
             },
         ]
 
+        # set weights according to order
+        for i, data in enumerate(action_data):
+            data["weight"] = i + 1
+
         action_results = self.execute_other_action(
-            MotionStateActionSet.get_action("create"),
+            MotionStateCreateAction,
             action_data,
         )
         first_state_id = action_results[0]["id"]  # type: ignore
         next_state_ids = [ar["id"] for ar in action_results[-3:]]  # type: ignore
         action_data = [{"id": first_state_id, "next_state_ids": next_state_ids}]
         self.execute_other_action(
-            MotionStateActionSet.get_action("update"),
+            MotionStateUpdateAction,
             action_data,
         )
         return instance
@@ -151,7 +157,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
                 "workflow_id": instance["id"],
             },
             {
-                "name": "withdrawed",
+                "name": "withdrawn",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
@@ -171,7 +177,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
                 "workflow_id": instance["id"],
             },
             {
-                "name": "refered to committee",
+                "name": "referred to committee",
                 "recommendation_label": "Referral to committee",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
@@ -192,8 +198,12 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
             },
         ]
 
+        # set weights according to order
+        for i, data in enumerate(action_data):
+            data["weight"] = i + 1
+
         action_results = self.execute_other_action(
-            MotionStateActionSet.get_action("create"),
+            MotionStateCreateAction,
             action_data,
         )
         from_to: Tuple[Tuple[int, Tuple[int]]] = (  # type: ignore
@@ -209,7 +219,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
             for id, next_state_ids in from_to
         ]
         self.execute_other_action(
-            MotionStateActionSet.get_action("update"),
+            MotionStateUpdateAction,
             action_data,
         )
         return instance

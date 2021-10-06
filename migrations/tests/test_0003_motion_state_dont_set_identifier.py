@@ -8,21 +8,41 @@ def test_migration(write, finalize, assert_model):
 
     assert_model(
         "motion_state/1",
-        {"dont_set_identifier": False, "f": 1, "meta_deleted": False, "meta_position": 1},
+        {
+            "dont_set_identifier": False,
+            "f": 1,
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
         position=1,
     )
     assert_model(
         "motion_state/1",
-        {"dont_set_identifier": False, "f": 2, "meta_deleted": False, "meta_position": 2},
+        {
+            "dont_set_identifier": False,
+            "f": 2,
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
         position=2,
     )
     assert_model(
         "motion_state/1",
-        {"dont_set_identifier": False, "f": 2, "meta_deleted": True, "meta_position": 3},
+        {
+            "dont_set_identifier": False,
+            "f": 2,
+            "meta_deleted": True,
+            "meta_position": 3,
+        },
         position=3,
     )
     assert_model(
         "motion_state/1",
-        {"dont_set_identifier": False, "f": 2, "meta_deleted": False, "meta_position": 4},
+        {
+            "dont_set_identifier": False,
+            "f": 2,
+            "meta_deleted": False,
+            "meta_position": 4,
+        },
         position=4,
     )

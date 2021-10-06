@@ -51,6 +51,7 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "workflow_id": 1,
                 "name": "test",
+                "weight": 1,
                 "workflow_id": 1,
                 "first_state_of_workflow_id": 1,
             },

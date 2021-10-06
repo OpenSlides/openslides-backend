@@ -129,7 +129,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "motion_state/9", {"name": "rejected", "previous_state_ids": [7]}
         )
         self.assert_model_exists(
-            "motion_state/10", {"name": "withdrawed", "previous_state_ids": [5, 6, 7]}
+            "motion_state/10", {"name": "withdrawn", "previous_state_ids": [5, 6, 7]}
         )
         self.assert_model_exists(
             "motion_state/11", {"name": "adjourned", "previous_state_ids": [7]}
@@ -139,7 +139,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/13",
-            {"name": "refered to committee", "previous_state_ids": [7]},
+            {"name": "referred to committee", "previous_state_ids": [7]},
         )
         self.assert_model_exists(
             "motion_state/14", {"name": "needs review", "previous_state_ids": [7]}
