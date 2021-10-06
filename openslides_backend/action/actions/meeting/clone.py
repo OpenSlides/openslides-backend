@@ -7,6 +7,7 @@ from ....models.models import Meeting
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -77,6 +78,8 @@ class MeetingClone(MeetingImport):
         self.create_replace_map(meeting_json)
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
+
+        self.add_meeting_title_suffix(instance)
         return instance
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
@@ -98,6 +101,13 @@ class MeetingClone(MeetingImport):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
                 )
+
+    def add_meeting_title_suffix(self, instance: Dict[str, Any]) -> None:
+        meeting = self.get_meeting_from_json(instance["meeting"])
+        filter_ = FilterOperator("committee_id", "=", meeting["committee_id"])
+        counts = self.datastore.count(Collection("meeting"), filter_)
+        new_name = (meeting.get("name") or "") + f" ({counts + 1})"
+        meeting["name"] = new_name[:100]
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))

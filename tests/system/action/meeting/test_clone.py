@@ -72,7 +72,7 @@ class MeetingClone(BaseActionTestCase):
             "meeting/2",
             {
                 "committee_id": 1,
-                "name": "Test",
+                "name": "Test (2)",
                 "admin_group_id": 2,
                 "default_group_id": 2,
                 "motions_default_amendment_workflow_id": 2,
