@@ -14,7 +14,7 @@ def test_positiv():
 
 def test_not_found():
     req = requests.get(GET_URL + "1")
-    assert req.status_code == 500
+    assert req.status_code == 404
     assert "message" in req.json()
 
 
