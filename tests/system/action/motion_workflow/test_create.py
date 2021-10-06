@@ -45,22 +45,26 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
             "motion_workflow/1", {"name": "test_Xcdfgee", "first_state_id": 1}
         )
         self.assert_model_exists(
-            "motion_state/1", {"name": "submitted", "next_state_ids": [2, 3, 4]}
+            "motion_state/1",
+            {"name": "submitted", "weight": 1, "next_state_ids": [2, 3, 4]},
         )
         self.assert_model_exists(
             "motion_state/2",
             {
                 "name": "accepted",
+                "weight": 2,
                 "previous_state_ids": [1],
                 "meeting_id": 42,
                 "workflow_id": 1,
             },
         )
         self.assert_model_exists(
-            "motion_state/3", {"name": "rejected", "previous_state_ids": [1]}
+            "motion_state/3",
+            {"name": "rejected", "weight": 3, "previous_state_ids": [1]},
         )
         self.assert_model_exists(
-            "motion_state/4", {"name": "not_decided", "previous_state_ids": [1]}
+            "motion_state/4",
+            {"name": "not_decided", "weight": 4, "previous_state_ids": [1]},
         )
 
     def test_create_no_permissions(self) -> None:

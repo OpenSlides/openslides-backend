@@ -30,6 +30,7 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
         return [
             {
                 "name": MOTION_STATE_DEFAULT_NAME,
+                "weight": 1,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
             }
@@ -84,6 +85,10 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
                 "workflow_id": instance["id"],
             },
         ]
+
+        # set weights according to order
+        for i, data in enumerate(action_data):
+            data["weight"] = i + 1
 
         action_results = self.execute_other_action(
             MotionStateCreateAction,
@@ -152,7 +157,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
                 "workflow_id": instance["id"],
             },
             {
-                "name": "withdrawed",
+                "name": "withdrawn",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
@@ -172,7 +177,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
                 "workflow_id": instance["id"],
             },
             {
-                "name": "refered to committee",
+                "name": "referred to committee",
                 "recommendation_label": "Referral to committee",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
@@ -192,6 +197,10 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
                 "workflow_id": instance["id"],
             },
         ]
+
+        # set weights according to order
+        for i, data in enumerate(action_data):
+            data["weight"] = i + 1
 
         action_results = self.execute_other_action(
             MotionStateCreateAction,

@@ -177,7 +177,11 @@ class BaseSystemTestCase(TestCase):
         self.assertFalse(model.get("meta_deleted"))
         if fields is not None:
             for field_name, value in fields.items():
-                self.assertEqual(model.get(field_name), value)
+                self.assertEqual(
+                    model.get(field_name),
+                    value,
+                    f"Models differ in field {field_name}!",
+                )
 
     def assert_model_not_exists(self, fqid: str) -> None:
         with self.assertRaises(DatastoreException):
