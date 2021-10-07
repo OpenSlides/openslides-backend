@@ -103,8 +103,7 @@ class MeetingClone(MeetingImport):
 
     def add_meeting_title_suffix(self, instance: Dict[str, Any]) -> None:
         meeting = self.get_meeting_from_json(instance["meeting"])
-        new_name = (meeting.get("name") or "") + " - Copy"
-        meeting["name"] = new_name[:100]
+        meeting["name"] = (meeting.get("name") or "") + " - Copy"
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))

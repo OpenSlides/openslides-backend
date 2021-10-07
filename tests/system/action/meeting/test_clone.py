@@ -280,7 +280,7 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"name": long_name})
+        self.assert_model_exists("meeting/2", {"name": long_name + " - Copy"})
 
     def test_permissions_both_okay(self) -> None:
         self.set_models(self.test_models)
