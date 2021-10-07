@@ -41,7 +41,7 @@ def test_broken_source():
         "target_id": 5,
     }
     response = requests.post(DUPLICATE_URL, json=payload)
-    check_response(response, 500)
+    check_response(response, 404)
 
 
 def test_broken_target():

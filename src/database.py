@@ -1,7 +1,7 @@
 import psycopg2
 
 from .cache import LRUCache
-from .exceptions import ServerError
+from .exceptions import NotFoundError, ServerError
 
 
 class Database:
@@ -45,7 +45,7 @@ class Database:
             cur.execute(fetch_query, [file_id])
             row = cur.fetchone()
             if not row:
-                raise ServerError(
+                raise NotFoundError(
                     f"The {file_type} with id {file_id} could not be found."
                 )
             return (row[0], row[1])
