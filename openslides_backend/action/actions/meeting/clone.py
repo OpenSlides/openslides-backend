@@ -7,7 +7,6 @@ from ....models.models import Meeting
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -104,9 +103,7 @@ class MeetingClone(MeetingImport):
 
     def add_meeting_title_suffix(self, instance: Dict[str, Any]) -> None:
         meeting = self.get_meeting_from_json(instance["meeting"])
-        filter_ = FilterOperator("committee_id", "=", meeting["committee_id"])
-        counts = self.datastore.count(Collection("meeting"), filter_)
-        new_name = (meeting.get("name") or "") + f" ({counts + 1})"
+        new_name = (meeting.get("name") or "") + " - Copy"
         meeting["name"] = new_name[:100]
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:

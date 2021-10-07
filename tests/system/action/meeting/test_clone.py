@@ -72,7 +72,7 @@ class MeetingClone(BaseActionTestCase):
             "meeting/2",
             {
                 "committee_id": 1,
-                "name": "Test (2)",
+                "name": "Test - Copy",
                 "admin_group_id": 2,
                 "default_group_id": 2,
                 "motions_default_amendment_workflow_id": 2,
@@ -273,6 +273,14 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+
+    def test_meeting_name_too_long(self) -> None:
+        long_name = "0123456789" * 10
+        self.test_models["meeting/1"]["name"] = long_name
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"name": long_name})
 
     def test_permissions_both_okay(self) -> None:
         self.set_models(self.test_models)
