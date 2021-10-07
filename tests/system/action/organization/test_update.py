@@ -30,7 +30,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "legal_notice": "GYjDABmD",
                 "privacy_policy": "test1",
                 "login_text": "test2",
-                "default_theme_id": 1,
+                "theme_id": 1,
                 "reset_password_verbose_errors": False,
             },
         )
@@ -41,7 +41,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("legal_notice") == "GYjDABmD"
         assert model.get("privacy_policy") == "test1"
         assert model.get("login_text") == "test2"
-        assert model.get("default_theme_id") == 1
+        assert model.get("theme_id") == 1
         assert model.get("reset_password_verbose_errors") is False
 
     def test_update_wrong_field(self) -> None:
