@@ -11,16 +11,14 @@ from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeetingMixin,
 )
-from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 
 
 @register_action("motion_submitter.create")
-class MotionSubmitterCreateAction(
-    CreateActionWithInferredMeetingMixin, SingularActionMixin, CreateAction
-):
+class MotionSubmitterCreateAction(CreateActionWithInferredMeetingMixin, CreateAction):
     """
     Action to create a motion submitter.
     """
@@ -33,6 +31,11 @@ class MotionSubmitterCreateAction(
     permission = Permissions.Motion.CAN_MANAGE_METADATA
 
     relation_field_for_meeting = "motion_id"
+    weight_map: Dict[int, int] = {}
+
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        self.weight_map = {}
+        return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -63,8 +66,13 @@ class MotionSubmitterCreateAction(
 
     def set_weight(self, instance: Dict[str, Any]) -> None:
         motion_id = instance["motion_id"]
-        filter_ = FilterOperator("motion_id", "=", motion_id)
-        max_weight = self.datastore.max(self.model.collection, filter_, "weight", "int")
-        if max_weight is None:
-            max_weight = 0
+        if motion_id in self.weight_map:
+            max_weight = self.weight_map[motion_id]
+            self.weight_map[motion_id] += 1
+        else:
+            filter_ = FilterOperator("motion_id", "=", motion_id)
+            max_weight = (
+                self.datastore.max(self.model.collection, filter_, "weight", "int") or 0
+            )
+            self.weight_map[motion_id] = max_weight + 1
         instance["weight"] = max_weight + 1
