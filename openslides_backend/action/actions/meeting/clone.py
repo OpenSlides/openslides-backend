@@ -77,6 +77,8 @@ class MeetingClone(MeetingImport):
         self.create_replace_map(meeting_json)
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
+
+        self.add_meeting_title_suffix(instance)
         return instance
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
@@ -98,6 +100,10 @@ class MeetingClone(MeetingImport):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
                 )
+
+    def add_meeting_title_suffix(self, instance: Dict[str, Any]) -> None:
+        meeting = self.get_meeting_from_json(instance["meeting"])
+        meeting["name"] = meeting.get("name", "") + " - Copy"
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))
