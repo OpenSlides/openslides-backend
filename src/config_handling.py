@@ -3,13 +3,17 @@ import sys
 
 
 def get_type_for(config_value):
-    if config_value in ("MEDIA_DATABASE_PORT", "BLOCK_SIZE", "PRESENTER_PORT"):
+    if config_value in (
+        "MEDIA_DATABASE_PORT",
+        "MEDIA_BLOCK_SIZE",
+        "MEDIA_PRESENTER_PORT",
+    ):
         return int
     return str
 
 
 def get_default_for(config_value):
-    if config_value == "BLOCK_SIZE":
+    if config_value == "MEDIA_BLOCK_SIZE":
         return 4096
 
 
@@ -20,9 +24,9 @@ def init_config(app):
         "MEDIA_DATABASE_NAME",
         "MEDIA_DATABASE_USER",
         "MEDIA_DATABASE_PASSWORD",
-        "BLOCK_SIZE",
-        "PRESENTER_HOST",
-        "PRESENTER_PORT",
+        "MEDIA_BLOCK_SIZE",
+        "MEDIA_PRESENTER_HOST",
+        "MEDIA_PRESENTER_PORT",
     )
 
     for config in all_configs:
