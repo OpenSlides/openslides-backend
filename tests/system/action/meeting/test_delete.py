@@ -1,5 +1,3 @@
-import pytest
-
 from openslides_backend.models.fields import BaseRelationField, BaseTemplateField
 from openslides_backend.models.models import User
 from openslides_backend.shared.patterns import Collection
@@ -49,7 +47,6 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_deleted("meeting/1")
 
-    @pytest.mark.skip()
     def test_delete_full_meeting(self) -> None:
         self.load_example_data()
         response = self.request("meeting.delete", {"id": 1})
