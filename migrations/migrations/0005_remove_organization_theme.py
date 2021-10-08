@@ -10,7 +10,7 @@ class Migration(BaseMigration):
     This migration removes `organization/theme`.
     """
 
-    target_migration_index = 5
+    target_migration_index = 6
 
     collection: str = "organization"
     field: str = "theme"
