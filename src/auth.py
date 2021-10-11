@@ -56,6 +56,6 @@ def check_file_id(file_id, file_type, app, presenter_headers):
 
 
 def get_presenter_url(app):
-    presenter_host = app.config["MEDIA_PRESENTER_HOST"]
-    presenter_port = app.config["MEDIA_PRESENTER_PORT"]
+    presenter_host = app.config["PRESENTER_HOST"]
+    presenter_port = app.config["PRESENTER_PORT"]
     return f"http://{presenter_host}:{presenter_port}/system/presenter"
