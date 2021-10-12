@@ -52,19 +52,24 @@ class UserUpdate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """Check, if user is in committee, where he wants to gain cml-permissions"""
         if instance.get("committee_$_management_level"):
-            if diff := set(
-                instance.get("committee_$_management_level", {}).keys()
-            ) - set(map(str, instance.get("committee_ids", []))):
+            # get all committee_ids, where the cml-permission should be set
+            committee_ids = {
+                pair[0]
+                for pair in instance.get("committee_$_management_level", {}).items()
+                if pair[1]
+            }
+            if diff := committee_ids - set(instance.get("committee_ids", [])):
                 user = self.datastore.get(
                     FullQualifiedId(Collection("user"), instance["id"]),
                     [
                         "committee_ids",
                     ],
                 )
-                if diff := diff - set(map(str, user.get("committee_ids", []))):
+                if diff := diff - set(user.get("committee_ids", [])):
                     raise ActionException(
-                        f"You must add the user to the committee(s) '{', '.join(diff)}', because you want to give him committee management level permissions."
+                        f"You must add the user to the committee(s) '{', '.join(tuple(map(str, diff)))}', because you want to give him committee management level permissions."
                     )
 
         return super().update_instance(instance)
