@@ -6,7 +6,7 @@ def get_type_for(config_value):
     if config_value in (
         "MEDIA_DATABASE_PORT",
         "MEDIA_BLOCK_SIZE",
-        "MEDIA_PRESENTER_PORT",
+        "PRESENTER_PORT",
     ):
         return int
     return str
@@ -25,8 +25,8 @@ def init_config(app):
         "MEDIA_DATABASE_USER",
         "MEDIA_DATABASE_PASSWORD",
         "MEDIA_BLOCK_SIZE",
-        "MEDIA_PRESENTER_HOST",
-        "MEDIA_PRESENTER_PORT",
+        "PRESENTER_HOST",
+        "PRESENTER_PORT",
     )
 
     for config in all_configs:
