@@ -55,6 +55,9 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
             "votescast",
             "entitled_group_ids",
         ],
+        additional_optional_fields={
+            "publish_immediately": {"type": "boolean"},
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
