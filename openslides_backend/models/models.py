@@ -1587,7 +1587,6 @@ class Mediafile(Model):
     list_of_speakers_id = fields.RelationField(
         to={Collection("list_of_speakers"): "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
-        required=True,
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
