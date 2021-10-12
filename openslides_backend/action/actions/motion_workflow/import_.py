@@ -48,6 +48,7 @@ class MotionWorkflowImport(CreateAction):
                             "type": "array",
                             "items": {"type": "string"},
                         },
+                        "weight": {"type": "integer"},
                     },
                     "additionalProperties": False,
                 },

@@ -5,7 +5,11 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionWorkflowImport(BaseActionTestCase):
     def get_state(
-        self, name: str, next_state_names: List[str], previous_state_names: List[str]
+        self,
+        name: str,
+        next_state_names: List[str],
+        previous_state_names: List[str],
+        weight: int = 1,
     ) -> Dict[str, Any]:
         return {
             "name": name,
@@ -21,6 +25,7 @@ class MotionWorkflowImport(BaseActionTestCase):
             "merge_amendment_into_final": None,
             "next_state_names": next_state_names,
             "previous_state_names": previous_state_names,
+            "weight": weight,
         }
 
     def test_import_simple_case(self) -> None:
@@ -44,7 +49,12 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/1",
-            {"workflow_id": 1, "name": "begin", "first_state_of_workflow_id": 1},
+            {
+                "workflow_id": 1,
+                "name": "begin",
+                "first_state_of_workflow_id": 1,
+                "weight": 1,
+            },
         )
 
     def test_import_one_state_no_first_state_name(self) -> None:
@@ -131,10 +141,10 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "meeting_id": 42,
                 "first_state_name": "",
                 "states": [
-                    self.get_state("begin", ["edit", "read"], []),
-                    self.get_state("edit", ["end"], ["begin"]),
-                    self.get_state("read", [], ["begin"]),
-                    self.get_state("end", [], ["edit"]),
+                    self.get_state("begin", ["edit", "read"], [], 10),
+                    self.get_state("edit", ["end"], ["begin"], 11),
+                    self.get_state("read", [], ["begin"], 12),
+                    self.get_state("end", [], ["edit"], 13),
                 ],
             },
         )
@@ -153,6 +163,7 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "begin",
                 "first_state_of_workflow_id": 1,
                 "next_state_ids": [2, 3],
+                "weight": 10,
             },
         )
         self.assert_model_exists(
@@ -162,6 +173,7 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "edit",
                 "next_state_ids": [4],
                 "previous_state_ids": [1],
+                "weight": 11,
             },
         )
         self.assert_model_exists(
@@ -171,6 +183,7 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "read",
                 "next_state_ids": [],
                 "previous_state_ids": [1],
+                "weight": 12,
             },
         )
         self.assert_model_exists(
@@ -180,5 +193,6 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "name": "end",
                 "next_state_ids": [],
                 "previous_state_ids": [2],
+                "weight": 13,
             },
         )
