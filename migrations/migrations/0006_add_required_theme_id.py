@@ -30,6 +30,8 @@ class Migration(BaseMigration):
                         "primary_500": "#317796",
                         "accent_500": "#2196f3",
                         "warn_500": "#f06400",
+                        "organization_id": 1,
+                        "theme_for_organization_id": 1,
                     },
                 ),
             ]
@@ -37,5 +39,5 @@ class Migration(BaseMigration):
 
     def get_additional_events(self) -> Optional[List[BaseEvent]]:
         if self.update_theme_id:
-            return [UpdateEvent("organization/1", {"theme_id": 1})]
+            return [UpdateEvent("organization/1", {"theme_id": 1, "theme_ids": [1]})]
         return None

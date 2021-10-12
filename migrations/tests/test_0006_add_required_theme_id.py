@@ -20,7 +20,13 @@ def test_migration(write, finalize, assert_model):
 
     assert_model(
         "organization/1",
-        {"id": 42, "theme_id": 1, "meta_deleted": False, "meta_position": 1},
+        {
+            "id": 42,
+            "theme_id": 1,
+            "theme_ids": [1],
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
         position=1,
     )
     assert_model(
@@ -33,21 +39,44 @@ def test_migration(write, finalize, assert_model):
             "warn_500": "#f06400",
             "meta_deleted": False,
             "meta_position": 1,
+            "organization_id": 1,
+            "theme_for_organization_id": 1,
         },
         position=1,
     )
     assert_model(
         "organization/1",
-        {"id": 42, "f": 2, "theme_id": 1, "meta_deleted": False, "meta_position": 2},
+        {
+            "id": 42,
+            "f": 2,
+            "theme_id": 1,
+            "theme_ids": [1],
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
         position=2,
     )
     assert_model(
         "organization/1",
-        {"id": 42, "f": 2, "theme_id": 1, "meta_deleted": True, "meta_position": 3},
+        {
+            "id": 42,
+            "f": 2,
+            "theme_id": 1,
+            "theme_ids": [1],
+            "meta_deleted": True,
+            "meta_position": 3,
+        },
         position=3,
     )
     assert_model(
         "organization/1",
-        {"id": 42, "f": 2, "theme_id": 1, "meta_deleted": False, "meta_position": 4},
+        {
+            "id": 42,
+            "f": 2,
+            "theme_id": 1,
+            "theme_ids": [1],
+            "meta_deleted": False,
+            "meta_position": 4,
+        },
         position=4,
     )
