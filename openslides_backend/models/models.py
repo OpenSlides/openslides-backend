@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "2d6288dcc109cf8815eb84133fb460bf"
+MODELS_YML_CHECKSUM = "89cca9fda52dbacee35b05dca80748bb"
 
 
 class Organization(Model):
@@ -183,7 +183,7 @@ class Resource(Model):
     filesize = fields.IntegerField()
     mimetype = fields.CharField()
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "resource_ids"}
+        to={Collection("organization"): "resource_ids"}, required=True
     )
 
 
@@ -201,7 +201,7 @@ class OrganizationTag(Model):
         }
     )
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "organization_tag_ids"}
+        to={Collection("organization"): "organization_tag_ids"}, required=True
     )
 
 
@@ -778,7 +778,9 @@ class PersonalNote(Model):
     id = fields.IntegerField()
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
-    user_id = fields.RelationField(to={Collection("user"): "personal_note_$_ids"})
+    user_id = fields.RelationField(
+        to={Collection("user"): "personal_note_$_ids"}, required=True
+    )
     content_object_id = fields.GenericRelationField(
         to={Collection("motion"): "personal_note_ids"}, equal_fields="meeting_id"
     )
@@ -1098,9 +1100,13 @@ class MotionSubmitter(Model):
 
     id = fields.IntegerField()
     weight = fields.IntegerField()
-    user_id = fields.RelationField(to={Collection("user"): "submitted_motion_$_ids"})
+    user_id = fields.RelationField(
+        to={Collection("user"): "submitted_motion_$_ids"}, required=True
+    )
     motion_id = fields.RelationField(
-        to={Collection("motion"): "submitter_ids"}, equal_fields="meeting_id"
+        to={Collection("motion"): "submitter_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "motion_submitter_ids"}, required=True
@@ -1401,7 +1407,9 @@ class Poll(Model):
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(to={Collection("meeting"): "poll_ids"})
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "poll_ids"}, required=True
+    )
 
     STATE_CREATED = "created"
     STATE_STARTED = "started"
@@ -1522,10 +1530,12 @@ class AssignmentCandidate(Model):
     id = fields.IntegerField()
     weight = fields.IntegerField(default=10000)
     assignment_id = fields.RelationField(
-        to={Collection("assignment"): "candidate_ids"}, equal_fields="meeting_id"
+        to={Collection("assignment"): "candidate_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     user_id = fields.RelationField(
-        to={Collection("user"): "assignment_candidate_$_ids"}
+        to={Collection("user"): "assignment_candidate_$_ids"}, required=True
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "assignment_candidate_ids"}, required=True
@@ -1577,6 +1587,7 @@ class Mediafile(Model):
     list_of_speakers_id = fields.RelationField(
         to={Collection("list_of_speakers"): "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
+        required=True,
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
@@ -1645,7 +1656,9 @@ class Projector(Model):
         index=16,
         to={Collection("meeting"): "default_projector_$_id"},
     )
-    meeting_id = fields.RelationField(to={Collection("meeting"): "projector_ids"})
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "projector_ids"}, required=True
+    )
 
 
 class Projection(Model):
@@ -1701,7 +1714,7 @@ class ProjectorMessage(Model):
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_message_ids"}
+        to={Collection("meeting"): "projector_message_ids"}, required=True
     )
 
 
@@ -1725,7 +1738,7 @@ class ProjectorCountdown(Model):
         to={Collection("meeting"): "poll_countdown_id"}
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_countdown_ids"}
+        to={Collection("meeting"): "projector_countdown_ids"}, required=True
     )
 
 
