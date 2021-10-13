@@ -3,10 +3,46 @@ from tests.system.action.base import BaseActionTestCase
 
 class ThemeDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
-        self.set_models({"theme/1": {"name": "test", "primary_500": "#000000"}})
+        self.set_models(
+            {
+                "organization/1": {
+                    "theme_id": 2,
+                    "theme_ids": [1, 2],
+                },
+                "theme/1": {
+                    "name": "test",
+                    "primary_500": "#000000",
+                    "organization_id": 1,
+                    "theme_for_organization_id": None,
+                },
+                "theme/2": {
+                    "name": "OpenSlides Test",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
+                },
+            },
+        )
         response = self.request("theme.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("theme/1")
+
+    def test_delete_fail_to_delete_theme_from_orga(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"theme_ids": [1], "theme_id": 1},
+                "theme/1": {
+                    "name": "test",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
+                },
+            }
+        )
+        response = self.request("theme.delete", {"id": 1})
+        self.assert_status_code(response, 400)
+        assert (
+            "Update of organization/1: You try to set following required fields to an empty value: ['theme_id']"
+            in response.json["message"]
+        )
 
     def test_no_permission(self) -> None:
         self.set_models(
