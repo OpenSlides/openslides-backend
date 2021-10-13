@@ -329,7 +329,7 @@ class MeetingClone(BaseActionTestCase):
         self.update_model("meeting/1", settings)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        settings["name"] += " - Copy"
+        settings["name"] += " - Copy"  # type: ignore
         self.assert_model_exists("meeting/2", settings)
 
     def test_limit_of_meetings_error(self) -> None:
