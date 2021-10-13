@@ -56,7 +56,7 @@ class UserUpdate(
         if instance.get("committee_$_management_level"):
             # get all committee_ids, where the cml-permission should be set
             committee_ids = {
-                pair[0]
+                int(pair[0])
                 for pair in instance.get("committee_$_management_level", {}).items()
                 if pair[1]
             }
