@@ -7,6 +7,7 @@ from ..permissions.management_levels import (
     OrganizationManagementLevel,
 )
 from ..permissions.permission_helper import has_organization_management_level
+from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import And, FilterOperator
 from ..shared.patterns import Collection, FullQualifiedId
@@ -93,17 +94,23 @@ class GetUserRelatedModels(BasePresenter):
         return []
 
     def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
-        meetings = []
+        meetings_data = []
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), user_id), ["meeting_ids"]
         )
-        for meeting_id in user.get("meeting_ids", ""):
-            meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), meeting_id),
-                ["name", "is_active_in_organization_id"],
-            )
+        if not user.get("meeting_ids"):
+            return []
+        gmr = GetManyRequest(
+            Collection("meeting"),
+            user["meeting_ids"],
+            ["id", "name", "is_active_in_organization_id"],
+        )
+        meetings = (
+            self.datastore.get_many([gmr]).get(Collection("meeting"), {}).values()
+        )
+        for meeting in meetings:
             filter_ = And(
-                FilterOperator("meeting_id", "=", meeting_id),
+                FilterOperator("meeting_id", "=", meeting["id"]),
                 FilterOperator("user_id", "=", user_id),
             )
             submitter_ids = self.datastore.filter(
@@ -114,9 +121,9 @@ class GetUserRelatedModels(BasePresenter):
             )
             speaker_ids = self.datastore.filter(Collection("speaker"), filter_)
             if submitter_ids or candidate_ids or speaker_ids:
-                meetings.append(
+                meetings_data.append(
                     {
-                        "id": meeting_id,
+                        "id": meeting["id"],
                         "name": meeting.get("name"),
                         "is_active_in_organization_id": meeting.get(
                             "is_active_in_organization_id"
@@ -126,4 +133,4 @@ class GetUserRelatedModels(BasePresenter):
                         "speaker_ids": list(speaker_ids),
                     }
                 )
-        return meetings
+        return meetings_data
