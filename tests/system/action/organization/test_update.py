@@ -18,7 +18,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
 
     def test_update_some_more_fields(self) -> None:
         self.create_model(
-            "organization/3",
+            "organization/1",
             {
                 "name": "aBuwxoYU",
                 "description": "XrHbAWiF",
@@ -32,12 +32,16 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.create_model(
             "theme/2",
-            {"name": "default2", "organization_id": 1, "theme_for_organization_id": None},
+            {
+                "name": "default2",
+                "organization_id": 1,
+                "theme_for_organization_id": None,
+            },
         )
         response = self.request(
             "organization.update",
             {
-                "id": 3,
+                "id": 1,
                 "name": "testtest",
                 "description": "blablabla",
                 "legal_notice": "GYjDABmD",
@@ -48,7 +52,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("organization/3")
+        model = self.get_model("organization/1")
         assert model.get("name") == "testtest"
         assert model.get("description") == "blablabla"
         assert model.get("legal_notice") == "GYjDABmD"
