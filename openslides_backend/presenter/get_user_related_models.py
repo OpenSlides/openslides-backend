@@ -61,12 +61,21 @@ class GetUserRelatedModels(BasePresenter):
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
-        committees = []
+        committees_data = []
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), user_id), ["committee_ids"]
         )
         return_committees = False
-        for committee_id in user.get("committee_ids", []):
+        if not user.get("committee_ids"):
+            return []
+        gmr = GetManyRequest(
+            Collection("committee"), user["committee_ids"], ["id", "name"]
+        )
+        committees = (
+            self.datastore.get_many([gmr]).get(Collection("committee"), {}).values()
+        )
+        for committee in committees:
+            committee_id = committee["id"]
             user2 = self.datastore.get(
                 FullQualifiedId(Collection("user"), user_id),
                 [f"committee_${committee_id}_management_level"],
@@ -79,10 +88,7 @@ class GetUserRelatedModels(BasePresenter):
             ):
                 return_committees = True
 
-            committee = self.datastore.get(
-                FullQualifiedId(Collection("committee"), committee_id), ["name"]
-            )
-            committees.append(
+            committees_data.append(
                 {
                     "id": committee_id,
                     "name": committee.get("name", ""),
@@ -90,7 +96,7 @@ class GetUserRelatedModels(BasePresenter):
                 }
             )
         if return_committees:
-            return committees
+            return committees_data
         return []
 
     def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
