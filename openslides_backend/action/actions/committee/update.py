@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import (
@@ -50,15 +50,14 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             self.check_meeting_in_committee(
                 instance["default_meeting_id"], instance["id"]
             )
-        if "manager_ids" in instance:
-            filter_ = FilterOperator(
-                f"committee_${instance['id']}_management_level",
-                "=",
-                CommitteeManagementLevel.CAN_MANAGE,
-            )
-            old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
-            old_manager_ids = set(id_ for id_ in old_manager)
-            self.update_managers(instance, old_manager_ids)
+
+        if "manager_ids" in instance or "user_ids" in instance:
+            old_manager_ids = self._get_old_manager_ids(instance["id"])
+            if "user_ids" in instance:
+                old_user_ids = self._get_old_user_ids(instance["id"])
+            else:
+                old_user_ids = set()
+            self.update_managers(instance, old_manager_ids, old_user_ids)
         return instance
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
@@ -105,3 +104,19 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 CommitteeManagementLevel.CAN_MANAGE: instance["id"],
             }
         )
+
+    def _get_old_manager_ids(self, committee_id: int) -> Set[int]:
+        filter_ = FilterOperator(
+            f"committee_${committee_id}_management_level",
+            "=",
+            CommitteeManagementLevel.CAN_MANAGE,
+        )
+        old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
+        return set(id_ for id_ in old_manager)
+
+    def _get_old_user_ids(self, committee_id: int) -> Set[int]:
+        committee = self.datastore.get(
+            FullQualifiedId(Collection("committee"), committee_id),
+            mapped_fields=["user_ids"],
+        )
+        return set(committee.get("user_ids", ()))
