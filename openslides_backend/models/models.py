@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "923b70a57b243041a00ff74a1f8a0dad"
+MODELS_YML_CHECKSUM = "89cca9fda52dbacee35b05dca80748bb"
 
 
 class Organization(Model):
@@ -17,7 +17,6 @@ class Organization(Model):
     legal_notice = fields.CharField()
     privacy_policy = fields.CharField()
     login_text = fields.CharField()
-    theme = fields.CharField()
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
@@ -39,6 +38,10 @@ class Organization(Model):
     organization_tag_ids = fields.RelationListField(
         to={Collection("organization_tag"): "organization_id"}
     )
+    theme_id = fields.RelationField(
+        to={Collection("theme"): "theme_for_organization_id"}, required=True
+    )
+    theme_ids = fields.RelationListField(to={Collection("theme"): "organization_id"})
 
 
 class User(Model):
@@ -180,7 +183,7 @@ class Resource(Model):
     filesize = fields.IntegerField()
     mimetype = fields.CharField()
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "resource_ids"}
+        to={Collection("organization"): "resource_ids"}, required=True
     )
 
 
@@ -198,7 +201,63 @@ class OrganizationTag(Model):
         }
     )
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "organization_tag_ids"}
+        to={Collection("organization"): "organization_tag_ids"}, required=True
+    )
+
+
+class Theme(Model):
+    collection = Collection("theme")
+    verbose_name = "theme"
+
+    id = fields.IntegerField(required=True)
+    name = fields.CharField(required=True)
+    accent_100 = fields.ColorField()
+    accent_200 = fields.ColorField()
+    accent_300 = fields.ColorField()
+    accent_400 = fields.ColorField()
+    accent_50 = fields.ColorField()
+    accent_500 = fields.ColorField(required=True)
+    accent_600 = fields.ColorField()
+    accent_700 = fields.ColorField()
+    accent_800 = fields.ColorField()
+    accent_900 = fields.ColorField()
+    accent_a100 = fields.ColorField()
+    accent_a200 = fields.ColorField()
+    accent_a400 = fields.ColorField()
+    accent_a700 = fields.ColorField()
+    primary_100 = fields.ColorField()
+    primary_200 = fields.ColorField()
+    primary_300 = fields.ColorField()
+    primary_400 = fields.ColorField()
+    primary_50 = fields.ColorField()
+    primary_500 = fields.ColorField(required=True)
+    primary_600 = fields.ColorField()
+    primary_700 = fields.ColorField()
+    primary_800 = fields.ColorField()
+    primary_900 = fields.ColorField()
+    primary_a100 = fields.ColorField()
+    primary_a200 = fields.ColorField()
+    primary_a400 = fields.ColorField()
+    primary_a700 = fields.ColorField()
+    warn_100 = fields.ColorField()
+    warn_200 = fields.ColorField()
+    warn_300 = fields.ColorField()
+    warn_400 = fields.ColorField()
+    warn_50 = fields.ColorField()
+    warn_500 = fields.ColorField(required=True)
+    warn_600 = fields.ColorField()
+    warn_700 = fields.ColorField()
+    warn_800 = fields.ColorField()
+    warn_900 = fields.ColorField()
+    warn_a100 = fields.ColorField()
+    warn_a200 = fields.ColorField()
+    warn_a400 = fields.ColorField()
+    warn_a700 = fields.ColorField()
+    theme_for_organization_id = fields.RelationField(
+        to={Collection("organization"): "theme_id"}
+    )
+    organization_id = fields.OrganizationField(
+        to={Collection("organization"): "theme_ids"}, required=True
     )
 
 
@@ -719,7 +778,9 @@ class PersonalNote(Model):
     id = fields.IntegerField()
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
-    user_id = fields.RelationField(to={Collection("user"): "personal_note_$_ids"})
+    user_id = fields.RelationField(
+        to={Collection("user"): "personal_note_$_ids"}, required=True
+    )
     content_object_id = fields.GenericRelationField(
         to={Collection("motion"): "personal_note_ids"}, equal_fields="meeting_id"
     )
@@ -1039,9 +1100,13 @@ class MotionSubmitter(Model):
 
     id = fields.IntegerField()
     weight = fields.IntegerField()
-    user_id = fields.RelationField(to={Collection("user"): "submitted_motion_$_ids"})
+    user_id = fields.RelationField(
+        to={Collection("user"): "submitted_motion_$_ids"}, required=True
+    )
     motion_id = fields.RelationField(
-        to={Collection("motion"): "submitter_ids"}, equal_fields="meeting_id"
+        to={Collection("motion"): "submitter_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "motion_submitter_ids"}, required=True
@@ -1342,7 +1407,9 @@ class Poll(Model):
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(to={Collection("meeting"): "poll_ids"})
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "poll_ids"}, required=True
+    )
 
     STATE_CREATED = "created"
     STATE_STARTED = "started"
@@ -1463,10 +1530,12 @@ class AssignmentCandidate(Model):
     id = fields.IntegerField()
     weight = fields.IntegerField(default=10000)
     assignment_id = fields.RelationField(
-        to={Collection("assignment"): "candidate_ids"}, equal_fields="meeting_id"
+        to={Collection("assignment"): "candidate_ids"},
+        required=True,
+        equal_fields="meeting_id",
     )
     user_id = fields.RelationField(
-        to={Collection("user"): "assignment_candidate_$_ids"}
+        to={Collection("user"): "assignment_candidate_$_ids"}, required=True
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "assignment_candidate_ids"}, required=True
@@ -1586,7 +1655,9 @@ class Projector(Model):
         index=16,
         to={Collection("meeting"): "default_projector_$_id"},
     )
-    meeting_id = fields.RelationField(to={Collection("meeting"): "projector_ids"})
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "projector_ids"}, required=True
+    )
 
 
 class Projection(Model):
@@ -1642,7 +1713,7 @@ class ProjectorMessage(Model):
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_message_ids"}
+        to={Collection("meeting"): "projector_message_ids"}, required=True
     )
 
 
@@ -1666,7 +1737,7 @@ class ProjectorCountdown(Model):
         to={Collection("meeting"): "poll_countdown_id"}
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_countdown_ids"}
+        to={Collection("meeting"): "projector_countdown_ids"}, required=True
     )
 
 

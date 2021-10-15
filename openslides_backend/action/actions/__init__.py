@@ -37,6 +37,7 @@ def prepare_actions_map() -> None:
         resource,
         speaker,
         tag,
+        theme,
         topic,
         user,
         vote,

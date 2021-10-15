@@ -18,30 +18,55 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
 
     def test_update_some_more_fields(self) -> None:
         self.create_model(
-            "organization/3", {"name": "aBuwxoYU", "description": "XrHbAWiF"}
+            "organization/1",
+            {
+                "name": "aBuwxoYU",
+                "description": "XrHbAWiF",
+                "theme_id": 1,
+                "theme_ids": [1, 2],
+            },
+        )
+        self.create_model(
+            "theme/1",
+            {"name": "default", "organization_id": 1, "theme_for_organization_id": 1},
+        )
+        self.create_model(
+            "theme/2",
+            {
+                "name": "default2",
+                "organization_id": 1,
+                "theme_for_organization_id": None,
+            },
         )
         response = self.request(
             "organization.update",
             {
-                "id": 3,
+                "id": 1,
                 "name": "testtest",
                 "description": "blablabla",
                 "legal_notice": "GYjDABmD",
                 "privacy_policy": "test1",
                 "login_text": "test2",
-                "theme": "test3",
+                "theme_id": 2,
                 "reset_password_verbose_errors": False,
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("organization/3")
+        model = self.get_model("organization/1")
         assert model.get("name") == "testtest"
         assert model.get("description") == "blablabla"
         assert model.get("legal_notice") == "GYjDABmD"
         assert model.get("privacy_policy") == "test1"
         assert model.get("login_text") == "test2"
-        assert model.get("theme") == "test3"
+        assert model.get("theme_id") == 2
+        assert model.get("theme_ids") == [1, 2]
         assert model.get("reset_password_verbose_errors") is False
+        self.assert_model_exists(
+            "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
+        )
+        self.assert_model_exists(
+            "theme/2", {"organization_id": 1, "theme_for_organization_id": 1}
+        )
 
     def test_update_wrong_field(self) -> None:
         self.create_model(

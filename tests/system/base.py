@@ -39,7 +39,7 @@ class BaseSystemTestCase(TestCase):
     client: Client
     anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
-    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/d6c5b16a8a533dd538f5f4bfc2ca44be47532d9b/docs/example-data.json"
+    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/d97e97186b3ac0f92f8ef342d852d896fcb374fb/docs/example-data.json"
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -69,8 +69,10 @@ class BaseSystemTestCase(TestCase):
         example_data = json.loads(requests.get(self.EXAMPLE_DATA).content)
         data = {}
         for collection, models in example_data.items():
-            for model in models:
-                data[f"{collection}/{model['id']}"] = model
+            if collection == "_migration_index":
+                continue
+            for model_id in models:
+                data[f"{collection}/{model_id}"] = models[model_id]
         self.set_models(data)
 
     def create_client(self, username: str = None, password: str = None) -> Client:

@@ -24,7 +24,7 @@ class OrganizationUpdate(UpdateAction):
             "legal_notice",
             "privacy_policy",
             "login_text",
-            "theme",
+            "theme_id",
             "enable_electronic_voting",
             "reset_password_verbose_errors",
             "limit_of_meetings",
@@ -42,7 +42,7 @@ class OrganizationUpdate(UpdateAction):
                     "legal_notice",
                     "privacy_policy",
                     "login_text",
-                    "theme",
+                    "theme_id",
                 ]
             ]
         ) and not has_organization_management_level(
