@@ -272,12 +272,13 @@ class UserCreateActionTest(BaseActionTestCase):
             "user/2", {"username": "testname", "vote_delegations_$_from_ids": []}
         )
 
-    def test_create_committe_manager_without_committee_ids(self) -> None:
-        """Giving committee management level requires committee_ids"""
-        self.permission_setup()
-        self.create_meeting(base=4)
-        self.set_organization_management_level(
-            OrganizationManagementLevel.CAN_MANAGE_USERS, self.user_id
+    def test_create_committee_manager_without_committee_ids(self) -> None:
+        """ create has to add a missing committee to the user, because cml permission is demanded"""
+        self.set_models(
+            {
+                "committee/60": {"name": "c60"},
+                "committee/63": {"name": "c63"},
+            }
         )
 
         response = self.request(
@@ -291,11 +292,12 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_ids": [63],
             },
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "You must add the user to the committee(s) '60', because you want to give him committee management level permissions.",
-            response.json["message"],
-        )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/2")
+        self.assertCountEqual((60, 63), user["committee_ids"])
+        self.assertCountEqual(('60', '63'), user["committee_$_management_level"])
+        assert CommitteeManagementLevel(user["committee_$60_management_level"]) == CommitteeManagementLevel.CAN_MANAGE
+        assert CommitteeManagementLevel(user["committee_$63_management_level"]) == CommitteeManagementLevel.CAN_MANAGE
 
     def test_create_empty_username(self) -> None:
         response = self.request("user.create", {"username": ""})

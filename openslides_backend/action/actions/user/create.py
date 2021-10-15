@@ -62,11 +62,9 @@ class UserCreate(
 
         if instance.get("committee_$_management_level"):
             if diff := set(
-                instance.get("committee_$_management_level", {}).keys()
-            ) - set(map(str, instance.get("committee_ids", []))):
-                raise ActionException(
-                    f"You must add the user to the committee(s) '{', '.join(diff)}', because you want to give him committee management level permissions."
-                )
+                map(int, instance.get("committee_$_management_level", {}).keys())
+            ) - set(instance.get("committee_ids", [])):
+                instance["committee_ids"] = instance.get("committee_ids", []) + list(diff)
 
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)
