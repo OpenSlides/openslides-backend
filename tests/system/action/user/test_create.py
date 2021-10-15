@@ -273,7 +273,7 @@ class UserCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_committee_manager_without_committee_ids(self) -> None:
-        """ create has to add a missing committee to the user, because cml permission is demanded"""
+        """create has to add a missing committee to the user, because cml permission is demanded"""
         self.set_models(
             {
                 "committee/60": {"name": "c60"},
@@ -295,9 +295,15 @@ class UserCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/2")
         self.assertCountEqual((60, 63), user["committee_ids"])
-        self.assertCountEqual(('60', '63'), user["committee_$_management_level"])
-        assert CommitteeManagementLevel(user["committee_$60_management_level"]) == CommitteeManagementLevel.CAN_MANAGE
-        assert CommitteeManagementLevel(user["committee_$63_management_level"]) == CommitteeManagementLevel.CAN_MANAGE
+        self.assertCountEqual(("60", "63"), user["committee_$_management_level"])
+        assert (
+            CommitteeManagementLevel(user["committee_$60_management_level"])
+            == CommitteeManagementLevel.CAN_MANAGE
+        )
+        assert (
+            CommitteeManagementLevel(user["committee_$63_management_level"])
+            == CommitteeManagementLevel.CAN_MANAGE
+        )
 
     def test_create_empty_username(self) -> None:
         response = self.request("user.create", {"username": ""})

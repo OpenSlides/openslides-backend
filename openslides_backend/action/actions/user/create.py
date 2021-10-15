@@ -64,7 +64,9 @@ class UserCreate(
             if diff := set(
                 map(int, instance.get("committee_$_management_level", {}).keys())
             ) - set(instance.get("committee_ids", [])):
-                instance["committee_ids"] = instance.get("committee_ids", []) + list(diff)
+                instance["committee_ids"] = instance.get("committee_ids", []) + list(
+                    diff
+                )
 
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)

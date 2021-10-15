@@ -1,7 +1,6 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -52,24 +51,36 @@ class UserUpdate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        """Check, if user is in committee, where he wants to gain cml-permissions"""
-        if instance.get("committee_$_management_level"):
-            # get all committee_ids, where the cml-permission should be set
-            committee_ids = {
-                int(pair[0])
-                for pair in instance.get("committee_$_management_level", {}).items()
-                if pair[1]
+        if (
+            "committee_$_management_level" not in instance
+            and "committee_ids" not in instance
+        ):
+            return super().update_instance(instance)
+
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), instance["id"]),
+            mapped_fields=["committee_ids", "committee_$_management_level"],
+        )
+        old_committee_ids = set(user.get("committee_ids", ()))
+        old_manager_ids = set(map(int, user.get("committee_$_management_level", ())))
+        inst_new_manager_ids = {
+            int(pair[0])
+            for pair in instance.get("committee_$_management_level", {}).items()
+            if pair[1]
+        }
+        if "committee_ids" in instance:
+            inst_committee_ids = set(instance.get("committee_ids", ()))
+            instance["committee_ids"] = list(inst_committee_ids | inst_new_manager_ids)
+        else:
+            instance["committee_ids"] = list(old_committee_ids | inst_new_manager_ids)
+        if cml_to_remove := (
+            old_committee_ids - set(instance["committee_ids"]) & old_manager_ids
+        ):
+            cml_to_remove_dict = {
+                str(committee_id): None for committee_id in cml_to_remove
             }
-            if diff := committee_ids - set(instance.get("committee_ids", [])):
-                user = self.datastore.get(
-                    FullQualifiedId(Collection("user"), instance["id"]),
-                    [
-                        "committee_ids",
-                    ],
-                )
-                if diff := diff - set(user.get("committee_ids", [])):
-                    raise ActionException(
-                        f"You must add the user to the committee(s) '{', '.join(tuple(map(str, diff)))}', because you want to give him committee management level permissions."
-                    )
+            instance.setdefault("committee_$_management_level", {}).update(
+                cml_to_remove_dict
+            )
 
         return super().update_instance(instance)
