@@ -196,3 +196,41 @@ class MotionWorkflowImport(BaseActionTestCase):
                 "weight": 13,
             },
         )
+
+    def test_import_wrong_prev_state(self) -> None:
+        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        response = self.request(
+            "motion_workflow.import",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 42,
+                "first_state_name": "",
+                "states": [
+                    self.get_state("begin", ["edit", "read"], [], 10),
+                    self.get_state("edit", ["end"], [], 11),
+                    self.get_state("read", [], ["begin"], 12),
+                    self.get_state("end", [], ["edit"], 13),
+                ],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "State begin is not in previous of edit." in response.json["message"]
+
+    def test_import_wrong_next_state(self) -> None:
+        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        response = self.request(
+            "motion_workflow.import",
+            {
+                "name": "test_Xcdfgee",
+                "meeting_id": 42,
+                "first_state_name": "",
+                "states": [
+                    self.get_state("begin", ["read"], [], 10),
+                    self.get_state("edit", ["end"], ["begin"], 11),
+                    self.get_state("read", [], ["begin"], 12),
+                    self.get_state("end", [], ["edit"], 13),
+                ],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "State edit is not in next of begin." in response.json["message"]
