@@ -71,9 +71,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {"name": committee_name, "organization_id": 1, "manager_ids": [13]},
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("committee/1")
-        assert model.get("name") == committee_name
-        assert model.get("user_ids") == [13]
+        self.assert_model_exists(
+            "committee/1",
+            {"name": committee_name, "user_ids": [13]},
+        )
         self.assert_model_exists(
             "user/13",
             {
@@ -105,9 +106,10 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("committee/4")
-        assert model.get("name") == committee_name
-        assert model.get("user_ids") == [13]
+        self.assert_model_exists(
+            "committee/4",
+            {"name": committee_name, "user_ids": [13]},
+        )
         self.assert_model_exists(
             "user/13",
             {
@@ -120,7 +122,9 @@ class CommitteeCreateActionTest(BaseActionTestCase):
 
     def test_create_manager_ids_and_user_ids(self) -> None:
         self.create_model("organization/1", {"name": "test_organization1"})
-        self.create_model("user/13", {"username": "test"})
+        self.create_model("user/13", {"username": "test13"})
+        self.create_model("user/14", {"username": "test14"})
+        self.create_model("user/15", {"username": "test15"})
         committee_name = "test_committee1"
 
         response = self.request(
@@ -128,18 +132,31 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "organization_id": 1,
-                "manager_ids": [13],
-                "user_ids": [13],
+                "manager_ids": [13, 14],
+                "user_ids": [13, 15],
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("committee/1")
-        assert model.get("name") == committee_name
-        assert model.get("user_ids") == [13]
+        committee = self.get_model("committee/1")
+        self.assertCountEqual((13, 14, 15), committee["user_ids"])
         self.assert_model_exists(
             "user/13",
             {
                 "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/14",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/15",
+            {
+                "committee_$1_management_level": None,
                 "committee_ids": [1],
             },
         )

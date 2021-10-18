@@ -536,7 +536,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_manager_ids_not_in_committee(self) -> None:
+    def test_update_manager_ids_in_committee(self) -> None:
         self.create_data()
         response = self.request(
             "committee.update",
@@ -550,6 +550,8 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                 "committee_ids": [self.COMMITTEE_ID],
             },
         )
+        committee = self.get_model("committee/1")
+        self.assertCountEqual((1, 20, 21), committee["user_ids"])
 
     def test_update_manager_ids_rm_manager(self) -> None:
         # prepare data
@@ -559,12 +561,16 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [20]},
         )
         self.assert_status_code(response, 200)
+        committee = self.get_model(f"committee/{self.COMMITTEE_ID}")
+        self.assertCountEqual((20, 21), committee["user_ids"])
         # important request.
         response = self.request(
             "committee.update",
             {"id": self.COMMITTEE_ID, "name": "test", "manager_ids": [21]},
         )
         self.assert_status_code(response, 200)
+        committee = self.get_model(f"committee/{self.COMMITTEE_ID}")
+        self.assertCountEqual((20, 21), committee["user_ids"])
         self.assert_model_exists(
             "user/21",
             {"committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE},
@@ -655,3 +661,199 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         )
         response = self.request("committee.update", {"id": 1, "user_ids": [1, 20]})
         self.assert_status_code(response, 200)
+
+    def test_add_manager_ids_to_user_ids(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test_organization1",
+                    "committee_ids": [self.COMMITTEE_ID],
+                },
+                "committee/1": {
+                    "name": self.COMMITTEE_NAME,
+                    "organization_id": 1,
+                    "description": "<p>Test description</p>",
+                },
+                "user/20": {"username": "test_user20"},
+                "user/21": {"username": "test_user21"},
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": 1, "user_ids": [1, 20], "manager_ids": [1, 21]}
+        )
+        self.assert_status_code(response, 200)
+        committee = self.get_model("committee/1")
+        self.assertCountEqual((1, 20, 21), committee["user_ids"])
+
+    def test_remove_manager_from_user_ids(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/20": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+                "user/21": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": self.COMMITTEE_ID, "user_ids": [20]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/1", {"user_ids": [20]})
+        self.assert_model_exists(
+            "user/20",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["1"],
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/21",
+            {
+                "committee_$1_management_level": None,
+                "committee_$_management_level": [],
+                "committee_ids": [],
+            },
+        )
+
+    def test_remove_cml_manager_from_user21_v1(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/20": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+                "user/21": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update", {"id": self.COMMITTEE_ID, "manager_ids": [20]}
+        )
+        self.assert_status_code(response, 200)
+        committee = self.get_model("committee/1")
+        self.assertCountEqual([20, 21], committee["user_ids"])
+        self.assert_model_exists(
+            "user/20",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["1"],
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/21",
+            {
+                "committee_$1_management_level": None,
+                "committee_$_management_level": [],
+                "committee_ids": [1],
+            },
+        )
+
+    def test_remove_cml_manager_from_user21_v2(self) -> None:
+        self.create_data()
+        self.set_models(
+            {
+                "user/20": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+                "user/21": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {"id": self.COMMITTEE_ID, "user_ids": [21], "manager_ids": [20]},
+        )
+        self.assert_status_code(response, 200)
+        committee = self.get_model("committee/1")
+        self.assertCountEqual([20, 21], committee["user_ids"])
+        self.assert_model_exists(
+            "user/20",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["1"],
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/21",
+            {
+                "committee_$1_management_level": None,
+                "committee_$_management_level": [],
+                "committee_ids": [1],
+            },
+        )
+
+    def test_several_additions_and_removements(self) -> None:
+        """
+        20 remove completely
+        21 remove only manager permission
+        22 add manager permission to existing member(and implicitly stay as user, not necessary)
+        23 add as manager (and explicitly as user)
+        24 add as user only
+        """
+        self.create_data()
+        self.set_models(
+            {
+                "user/20": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+                "user/21": {
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": ["1"],
+                },
+                "user/22": {"username": "test22", "committee_ids": [1]},
+                "user/23": {"username": "test23"},
+                "user/24": {"username": "test24"},
+                "committee/1": {"user_ids": [20, 21, 22]},
+            }
+        )
+        response = self.request(
+            "committee.update",
+            {
+                "id": self.COMMITTEE_ID,
+                "user_ids": [21, 23, 24],
+                "manager_ids": [22, 23],
+            },
+        )
+        self.assert_status_code(response, 200)
+        committee = self.get_model("committee/1")
+        self.assertCountEqual([21, 22, 23, 24], committee["user_ids"])
+        self.assert_model_exists(
+            "user/20", {"committee_$1_management_level": None, "committee_ids": []}
+        )
+        self.assert_model_exists(
+            "user/21", {"committee_$1_management_level": None, "committee_ids": [1]}
+        )
+        self.assert_model_exists(
+            "user/22",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["1"],
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/23",
+            {
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": ["1"],
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "user/24", {"committee_$1_management_level": None, "committee_ids": [1]}
+        )

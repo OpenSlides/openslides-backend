@@ -33,5 +33,5 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
         instance = super().update_instance(instance)
         if "manager_ids" in instance:
             self.apply_instance(instance)
-            self.update_managers(instance, set())
+            self.update_managers(instance)
         return instance
