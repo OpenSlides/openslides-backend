@@ -99,6 +99,9 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         except SSLCertVerificationError as e:
             result = {"sent": False, "message": f"SSLCertVerificationError: {str(e)}"}
             self.results.append(result)
+        except Exception as e:
+            result = {"sent": False, "message": f"Unspecified mail connection exception on sending invitation email to server {EmailSettings.host}, port {EmailSettings.port}: {str(e)}"}
+            self.results.append(result)
 
         final_write_request = self.process_write_requests()
         return (final_write_request, self.results)
