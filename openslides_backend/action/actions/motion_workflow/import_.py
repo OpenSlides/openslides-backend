@@ -123,3 +123,17 @@ class MotionWorkflowImport(CreateAction):
             raise ActionException(
                 "Some state names in first_state_name or next_state_names or previous_state_names are not found in the state list."
             )
+        states_dict = {}
+        for state in states:
+            states_dict[state["name"]] = state
+        for state in states:
+            for name in state["next_state_names"]:
+                if state["name"] not in states_dict[name]["previous_state_names"]:
+                    raise ActionException(
+                        f"State {state['name']} is not in previous of {name}."
+                    )
+            for name in state["previous_state_names"]:
+                if state["name"] not in states_dict[name]["next_state_names"]:
+                    raise ActionException(
+                        f"State {state['name']} is not in next of {name}."
+                    )
