@@ -32,9 +32,13 @@ class CommitteeCommonCreateUpdateMixin(Action):
     def update_managers(
         self,
         instance: Dict[str, Any],
-        old_manager_ids: Set[int] = set(),
-        old_user_ids: Set[int] = set(),
+        old_manager_ids: Set[int] = None,
+        old_user_ids: Set[int] = None,
     ) -> None:
+        if old_manager_ids is None:
+            old_manager_ids = set()
+        if old_user_ids is None:
+            old_user_ids = set()
         action_data = []
         remove_manager_ids = set()
         if "manager_ids" in instance:
