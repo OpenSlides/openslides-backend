@@ -117,8 +117,9 @@ class SpeakerSpeakTester(BaseActionTestCase):
             }
         )
         response = self.request("speaker.speak", {"id": 890})
-        self.assert_status_code(response, 400)
-        self.assertTrue("The list of speakers is closed." in response.json["message"])
+        self.assert_status_code(response, 200)
+        speaker = self.get_model("speaker/890")
+        self.assertIsNotNone(speaker["begin_time"])
 
     def test_speak_update_countdown(self) -> None:
         self.set_models(

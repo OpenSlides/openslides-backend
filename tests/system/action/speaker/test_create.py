@@ -37,6 +37,23 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         assert user.get("speaker_$1_ids") == [1]
         assert user.get("speaker_$_ids") == ["1"]
 
+    def test_create_in_closed_los(self) -> None:
+        self.test_models["list_of_speakers/23"]["closed"] = True
+        self.set_models(self.test_models)
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+        speaker = self.get_model("speaker/1")
+        assert speaker.get("user_id") == 7
+        assert speaker.get("list_of_speakers_id") == 23
+        assert speaker.get("weight") == 1
+        list_of_speakers = self.get_model("list_of_speakers/23")
+        assert list_of_speakers.get("speaker_ids") == [1]
+        user = self.get_model("user/7")
+        assert user.get("speaker_$1_ids") == [1]
+        assert user.get("speaker_$_ids") == ["1"]
+
     def test_create_empty_data(self) -> None:
         response = self.request("speaker.create", {})
         self.assert_status_code(response, 400)

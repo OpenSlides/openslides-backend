@@ -76,6 +76,38 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         model = self.get_model("user/43")
         self.assertEqual(model.get("speaker_$222_ids"), [223])
 
+    def test_correct_in_closed_list(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"name": "name_xQyvfmsS"},
+                "user/42": {"username": "test_username42", "speaker_$222_ids": [222]},
+                "user/43": {"username": "test_username43", "speaker_$222_ids": [223]},
+                "list_of_speakers/111": {
+                    "closed": True,
+                    "meeting_id": 222,
+                    "speaker_ids": [222, 223],
+                },
+                "speaker/222": {
+                    "list_of_speakers_id": 111,
+                    "user_id": 42,
+                    "begin_time": 1000,
+                    "end_time": 2000,
+                },
+                "speaker/223": {
+                    "list_of_speakers_id": 111,
+                    "user_id": 43,
+                    "begin_time": 3000,
+                    "end_time": 4000,
+                },
+            }
+        )
+        response = self.request("list_of_speakers.re_add_last", {"id": 111})
+        self.assert_status_code(response, 200)
+        model = self.get_model("list_of_speakers/111")
+        self.assertCountEqual(model.get("speaker_ids"), [222, 223])
+        model = self.assert_model_exists("speaker/223", {"begin_time": None, "end_time": None, "user_id":43, "weight":-1})
+        model = self.assert_model_exists("speaker/222", {"begin_time": 1000, "end_time": 2000, "user_id":42})
+
     def test_no_speakers(self) -> None:
         self.set_models(
             {
