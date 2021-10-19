@@ -1,1 +1,1 @@
-from . import update  # noqa
+from . import initial_import, update  # noqa
