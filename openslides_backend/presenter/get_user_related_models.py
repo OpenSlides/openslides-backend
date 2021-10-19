@@ -6,7 +6,8 @@ from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ..permissions.permission_helper import has_organization_management_level
+from ..permissions.permission_helper import has_organization_management_level, has_perm
+from ..permissions.permissions import Permissions
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import And, FilterOperator
@@ -42,7 +43,6 @@ class GetUserRelatedModels(BasePresenter):
     schema = get_user_related_models_schema
 
     def get_result(self) -> Any:
-        self.check_permissions()
         result: Dict[str, Any] = {}
         for user_id in self.data["user_ids"]:
             result[str(user_id)] = {}
@@ -52,13 +52,30 @@ class GetUserRelatedModels(BasePresenter):
                 result[str(user_id)]["committees"] = committees_data
             if meetings_data:
                 result[str(user_id)]["meetings"] = meetings_data
+        self.check_permissions(result)
         return result
 
-    def check_permissions(self) -> None:
-        if not has_organization_management_level(
+    def check_permissions(self, result: Any) -> None:
+        """It first collects the meetings which are included and checks them."""
+        if has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+            return
+        for user_id in result:
+            meeting_ids = []
+            for meeting in result[user_id].get("meetings", []):
+                meeting_ids.append(meeting["id"])
+            if all(
+                has_perm(
+                    self.datastore,
+                    self.user_id,
+                    Permissions.User.CAN_MANAGE,
+                    meeting_id,
+                )
+                for meeting_id in meeting_ids
+            ):
+                return
+        raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []

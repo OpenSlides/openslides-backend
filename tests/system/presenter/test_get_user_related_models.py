@@ -1,4 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.permissions import Permissions
 
 from .base import BasePresenterTestCase
 
@@ -155,9 +156,46 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         assert "data must contain ['user_ids'] properties" in data["message"]
 
     def test_get_user_related_models_no_permissions(self) -> None:
-        self.set_models({"user/1": {"organization_management_level": None}})
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None, "meeting_ids": [1]},
+                "meeting/1": {"name": "test"},
+                "motion_submitter/2": {"user_id": 1, "meeting_id": 1},
+            }
+        )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 403)
+
+    def test_get_user_related_models_permission_because_no_meeting_included(
+        self,
+    ) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None, "meeting_ids": [1]},
+                "meeting/1": {"name": "test"},
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        self.assertEqual(status_code, 200)
+
+    def test_get_user_related_models_permissions_user_can_manage(self) -> None:
+        self.set_models(
+            {
+                "user/1": {
+                    "organization_management_level": None,
+                    "meeting_ids": [1],
+                    "group_$1_ids": [3],
+                },
+                "meeting/1": {"name": "test", "default_group_id": 3, "group_ids": [3]},
+                "group/3": {
+                    "meeting_id": 1,
+                    "default_group_for_meeting_id": 1,
+                    "permissions": [Permissions.User.CAN_MANAGE],
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        self.assertEqual(status_code, 200)
 
     def test_get_user_related_models_permissions(self) -> None:
         self.set_models(
