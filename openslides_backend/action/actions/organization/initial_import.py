@@ -1,8 +1,11 @@
 from typing import Any, Dict, Iterable, Optional, Tuple
 
+from datastore.shared.util import DeletedModelsBehaviour
+
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import Collection, FullQualifiedId
@@ -53,6 +56,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance["data"]
 
+        self.check_empty_datastore()
+
         # check datavalidation
         checker = Checker(data=data, mode="all")
         try:
@@ -61,6 +66,18 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             raise ActionException(str(ce))
 
         return instance
+
+    def check_empty_datastore(self) -> None:
+        filter_ = FilterOperator("id", ">=", 1)
+        check_collections = ["user", "organization", "committee", "meeting"]
+        for collection in check_collections:
+            if self.datastore.exists(
+                Collection(collection),
+                filter_,
+                DeletedModelsBehaviour.ALL_MODELS,
+                False,
+            ):
+                raise ActionException("Datastore is not empty.")
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["data"]

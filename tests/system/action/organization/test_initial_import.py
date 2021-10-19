@@ -523,3 +523,9 @@ class OrganizationInitialImport(BaseActionTestCase):
                 "theme_ids": [1],
             },
         )
+
+    def test_initial_import_filled_datastore(self) -> None:
+        request_data = self.create_request_data({})
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        assert "Datastore is not empty." in response.json["message"]
