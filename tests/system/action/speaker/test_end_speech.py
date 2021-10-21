@@ -164,7 +164,11 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {
                 "meeting/1": {},
                 "user/7": {"username": "test_username1"},
-                "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1, "closed": True},
+                "list_of_speakers/23": {
+                    "speaker_ids": [890],
+                    "meeting_id": 1,
+                    "closed": True,
+                },
                 "speaker/890": {
                     "user_id": 7,
                     "list_of_speakers_id": 23,
