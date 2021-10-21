@@ -71,6 +71,7 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
                 "votesvalid",
                 "votesinvalid",
                 "votescast",
+                "publish_immediately",
             ):
                 if key in instance:
                     not_allowed.append(key)
