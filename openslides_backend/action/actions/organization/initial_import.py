@@ -69,15 +69,13 @@ class OrganizationInitialImport(SingularActionMixin, Action):
 
     def check_empty_datastore(self) -> None:
         filter_ = FilterOperator("id", ">=", 1)
-        check_collections = ["user", "organization", "committee", "meeting"]
-        for collection in check_collections:
-            if self.datastore.exists(
-                Collection(collection),
-                filter_,
-                DeletedModelsBehaviour.ALL_MODELS,
-                False,
-            ):
-                raise ActionException("Datastore is not empty.")
+        if self.datastore.exists(
+            Collection("organization"),
+            filter_,
+            DeletedModelsBehaviour.ALL_MODELS,
+            False,
+        ):
+            raise ActionException("Datastore is not empty.")
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["data"]
