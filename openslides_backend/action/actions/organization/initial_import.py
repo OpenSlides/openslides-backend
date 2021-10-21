@@ -16,7 +16,7 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 
 
-@register_action("organization.initial_import")
+@register_action("organization.initial_import", internal=True)
 class OrganizationInitialImport(SingularActionMixin, Action):
     """
     Action to import an initial-data.json in an empty datastore.
