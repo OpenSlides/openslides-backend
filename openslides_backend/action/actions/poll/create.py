@@ -87,6 +87,10 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
             )
         self.check_100_percent_base(instance)
 
+        # check non-analog and publish_immediately
+        if instance["type"] != Poll.TYPE_ANALOG and "publish_immediately" in instance:
+            raise ActionException("publish_immediately only allowed for analog polls.")
+
         # handle non-global options
         weight = 1
         unique_set = set()

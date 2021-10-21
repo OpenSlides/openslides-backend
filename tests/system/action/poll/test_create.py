@@ -164,6 +164,24 @@ class CreatePoll(BaseActionTestCase):
         )
         self.assertEqual(poll.get("onehundred_percent_base"), "YN")
 
+    def test_create_wrong_publish_immediately(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_ahThai4pae1pi4xoogoo",
+                "pollmethod": "YN",
+                "type": "pseudoanonymous",
+                "meeting_id": 1,
+                "options": [{"text": "test"}],
+                "publish_immediately": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "publish_immediately only allowed for analog polls."
+            in response.json["message"]
+        )
+
     def test_no_options(self) -> None:
         response = self.request(
             "poll.create",

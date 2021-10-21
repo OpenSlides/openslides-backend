@@ -94,12 +94,13 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "votesvalid": "10.000000",
                 "votesinvalid": "11.000000",
                 "votescast": "3.000000",
+                "publish_immediately": True,
             },
         )
         self.assert_status_code(response, 400)
         assert (
             "Following options are not allowed in this state and type: "
-            "votesvalid, votesinvalid, votescast"
+            "votesvalid, votesinvalid, votescast, publish_immediately"
         ) in response.json["message"]
 
     def test_update_title(self) -> None:
