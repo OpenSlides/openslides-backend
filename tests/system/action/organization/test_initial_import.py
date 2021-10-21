@@ -463,26 +463,11 @@ class OrganizationInitialImport(BaseActionTestCase):
         request_data = self.create_request_data()
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "organization/1",
-            {
-                "id": 1,
-                "name": "[Your organization]",
-                "description": "",
-                "legal_notice": '<a href="http://www.openslides.org">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly. The event organizer is resposible for the content.',
-                "privacy_policy": "",
-                "login_text": "Welcome to OpenSlides. Please login.",
-                "reset_password_verbose_errors": False,
-                "enable_electronic_voting": False,
-                "limit_of_meetings": 0,
-                "committee_ids": [1],
-                "active_meeting_ids": [1],
-                "resource_ids": [],
-                "organization_tag_ids": [],
-                "theme_id": 1,
-                "theme_ids": [1],
-            },
-        )
+        for collection in request_data["data"]:
+            for id_ in request_data["data"][collection]:
+                self.assert_model_exists(
+                    f"{collection}/{id_}", request_data["data"][collection][id_]
+                )
 
     def test_initial_import_filled_datastore(self) -> None:
         self.set_models({"organization/1": {}})
