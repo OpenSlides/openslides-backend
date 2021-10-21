@@ -96,7 +96,8 @@ class GetUserRelatedModels(BasePresenter):
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []
         user = self.datastore.get(
-            FullQualifiedId(Collection("user"), user_id), ["committee_ids"]
+            FullQualifiedId(Collection("user"), user_id),
+            ["committee_ids", "committee_$_management_level"],
         )
         if not user.get("committee_ids"):
             return []
@@ -106,18 +107,21 @@ class GetUserRelatedModels(BasePresenter):
         committees = (
             self.datastore.get_many([gmr]).get(Collection("committee"), {}).values()
         )
+        user2 = self.datastore.get(
+            FullQualifiedId(Collection("user"), user_id),
+            [
+                "committee_${}_management_level".format(committee_id)
+                for committee_id in user.get("committee_$_management_level", [])
+            ],
+        )
         for committee in committees:
-            committee_id = committee["id"]
-            user2 = self.datastore.get(
-                FullQualifiedId(Collection("user"), user_id),
-                [f"committee_${committee_id}_management_level"],
-            )
-
             committees_data.append(
                 {
-                    "id": committee_id,
+                    "id": committee["id"],
                     "name": committee.get("name", ""),
-                    "cml": user2.get(f"committee_${committee_id}_management_level", ""),
+                    "cml": user2.get(
+                        f"committee_${committee['id']}_management_level", ""
+                    ),
                 }
             )
         return committees_data
