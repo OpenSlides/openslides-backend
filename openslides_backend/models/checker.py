@@ -180,16 +180,11 @@ class Checker:
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
             for collection in model_registry
-            if not collection.collection.startswith("fake_model")
-            and not collection.collection.startswith("dummy_model")
         }
 
         if self.mode == "all":
             self.allowed_collections = [
-                collection.collection
-                for collection in model_registry
-                if not collection.collection.startswith("fake_model")
-                and not collection.collection.startswith("dummy_model")
+                collection.collection for collection in model_registry
             ]
         else:
             self.allowed_collections = [

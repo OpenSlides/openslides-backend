@@ -1,10 +1,19 @@
 from typing import Any, Dict
 
+from openslides_backend.models.base import model_registry
 from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationInitialImport(BaseActionTestCase):
-    def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+    def setUp(self) -> None:
+        super().setUp()
+        for collection in list(model_registry.keys()):
+            if collection.collection.startswith(
+                "fake_model"
+            ) or collection.collection.startswith("dummy_model"):
+                del model_registry[collection]
+
+    def create_request_data(self) -> Dict[str, Any]:
         data: Dict[str, Any] = {
             "data": {
                 "organization": {
@@ -361,7 +370,6 @@ class OrganizationInitialImport(BaseActionTestCase):
                         "used_as_default_$_in_meeting_id": [],
                     }
                 },
-                **datapart,
             },
         }
         needed_collections = (
@@ -450,57 +458,9 @@ class OrganizationInitialImport(BaseActionTestCase):
             **data,
         }
 
-    def get_motion_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
-        return {
-            "id": obj_id,
-            "meeting_id": 1,
-            "list_of_speakers_id": 1,
-            "state_id": 1,
-            "title": "bla",
-            "number": "1 - 1",
-            "number_value": 1,
-            "sequential_number": 2,
-            "text": "<p>l&ouml;mk</p>",
-            "amendment_paragraph_$": [],
-            "modified_final_version": "",
-            "reason": "",
-            "category_weight": 10000,
-            "state_extension": "<p>regeer</p>",
-            "recommendation_extension": None,
-            "sort_weight": 10000,
-            "created": 1584512346,
-            "last_modified": 1584512346,
-            "lead_motion_id": None,
-            "amendment_ids": [],
-            "sort_parent_id": None,
-            "sort_child_ids": [],
-            "origin_id": None,
-            "derived_motion_ids": [],
-            "all_origin_ids": [],
-            "all_derived_motion_ids": [],
-            "recommendation_id": None,
-            "recommendation_extension_reference_ids": [],
-            "referenced_in_motion_recommendation_extension_ids": [],
-            "category_id": None,
-            "block_id": None,
-            "submitter_ids": [],
-            "supporter_ids": [],
-            "poll_ids": [],
-            "option_ids": [],
-            "change_recommendation_ids": [],
-            "statute_paragraph_id": None,
-            "comment_ids": [],
-            "agenda_item_id": None,
-            "tag_ids": [],
-            "attachment_ids": [],
-            "projection_ids": [],
-            "personal_note_ids": [],
-            **data,
-        }
-
     def test_initial_import_simple(self) -> None:
         self.datastore.truncate_db()
-        request_data = self.create_request_data({})
+        request_data = self.create_request_data()
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
@@ -526,7 +486,7 @@ class OrganizationInitialImport(BaseActionTestCase):
 
     def test_initial_import_filled_datastore(self) -> None:
         self.set_models({"organization/1": {}})
-        request_data = self.create_request_data({})
+        request_data = self.create_request_data()
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         assert "Datastore is not empty." in response.json["message"]
