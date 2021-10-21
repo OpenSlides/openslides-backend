@@ -2,8 +2,15 @@ from typing import Any, Dict, List
 
 import fastjsonschema
 
-from ..permissions.management_levels import OrganizationManagementLevel
-from ..permissions.permission_helper import has_organization_management_level, has_perm
+from ..permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
+from ..permissions.permission_helper import (
+    has_committee_management_level,
+    has_organization_management_level,
+    has_perm,
+)
 from ..permissions.permissions import Permissions
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
@@ -62,7 +69,7 @@ class GetUserRelatedModels(BasePresenter):
             meeting_ids = []
             for meeting in result[user_id].get("meetings", []):
                 meeting_ids.append(meeting["id"])
-            if all(
+            if not all(
                 has_perm(
                     self.datastore,
                     self.user_id,
@@ -71,8 +78,20 @@ class GetUserRelatedModels(BasePresenter):
                 )
                 for meeting_id in meeting_ids
             ):
-                return
-        raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+                raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+            committee_ids = []
+            for committee in result[user_id].get("committees", []):
+                committee_ids.append(committee["id"])
+            if not all(
+                has_committee_management_level(
+                    self.datastore,
+                    self.user_id,
+                    CommitteeManagementLevel.CAN_MANAGE,
+                    committee_id,
+                )
+                for committee_id in committee_ids
+            ):
+                raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []
