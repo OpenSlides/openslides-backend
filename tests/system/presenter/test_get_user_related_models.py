@@ -211,3 +211,18 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         )
         status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
         self.assertEqual(status_code, 200)
+
+    def test_get_user_related_models_no_committee_permissions(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {"name": "test"},
+                "user/1": {
+                    "organization_management_level": None,
+                    "committee_ids": [1],
+                    "committee_$_management_level": ["1"],
+                    "committee_$1_management_level": "",
+                },
+            }
+        )
+        status_code, data = self.request("get_user_related_models", {"user_ids": [1]})
+        self.assertEqual(status_code, 403)
