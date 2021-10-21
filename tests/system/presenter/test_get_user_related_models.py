@@ -50,7 +50,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
         assert data == {
             "1": {"committees": [{"id": 1, "name": "test", "cml": "can_manage"}]},
             "2": {"committees": [{"id": 1, "name": "test", "cml": "can_manage"}]},
-            "3": {},
+            "3": {"committees": [{"id": 1, "name": "test", "cml": ""}]},
         }
 
     def test_get_user_related_models_committee_more_committees(self) -> None:

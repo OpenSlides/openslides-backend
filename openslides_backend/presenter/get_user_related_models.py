@@ -2,10 +2,7 @@ from typing import Any, Dict, List
 
 import fastjsonschema
 
-from ..permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permissions
 from ..services.datastore.commands import GetManyRequest
@@ -82,7 +79,6 @@ class GetUserRelatedModels(BasePresenter):
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), user_id), ["committee_ids"]
         )
-        return_committees = False
         if not user.get("committee_ids"):
             return []
         gmr = GetManyRequest(
@@ -97,13 +93,6 @@ class GetUserRelatedModels(BasePresenter):
                 FullQualifiedId(Collection("user"), user_id),
                 [f"committee_${committee_id}_management_level"],
             )
-            if (
-                CommitteeManagementLevel(
-                    user2.get(f"committee_${committee_id}_management_level")
-                )
-                >= CommitteeManagementLevel.CAN_MANAGE
-            ):
-                return_committees = True
 
             committees_data.append(
                 {
@@ -112,9 +101,7 @@ class GetUserRelatedModels(BasePresenter):
                     "cml": user2.get(f"committee_${committee_id}_management_level", ""),
                 }
             )
-        if return_committees:
-            return committees_data
-        return []
+        return committees_data
 
     def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
         meetings_data = []
