@@ -4,11 +4,21 @@ from openslides_backend.models import fields
 from tests.util import get_fqfield
 
 from ..action.base import BaseActionTestCase
-from .setup import FakeModelB, FakeModelC, SingleRelationHandlerWithContext
+from .setup import (
+    FakeModelB,
+    FakeModelC,
+    SingleRelationHandlerWithContext,
+    assure_model_in_registry,
+)
 
 
 class StructuredRelationTester(BaseActionTestCase):
     maxDiff = None
+
+    def setUp(self) -> None:
+        super().setUp()
+        assure_model_in_registry(FakeModelB)
+        assure_model_in_registry(FakeModelC)
 
     def test_simple_structured_relation(self) -> None:
         meeting_id = 222

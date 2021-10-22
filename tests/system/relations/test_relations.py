@@ -1,10 +1,20 @@
 from tests.util import get_fqfield
 
 from ..action.base import BaseActionTestCase
-from .setup import FakeModelA, SingleRelationHandlerWithContext
+from .setup import (
+    FakeModelA,
+    FakeModelB,
+    SingleRelationHandlerWithContext,
+    assure_model_in_registry,
+)
 
 
 class RelationHandlerTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        assure_model_in_registry(FakeModelA)
+        assure_model_in_registry(FakeModelB)
+
     def test_O2O_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandlerWithContext(

@@ -1,3 +1,5 @@
+from typing import Any
+
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.relations.single_relation_handler import (
@@ -6,7 +8,7 @@ from openslides_backend.action.relations.single_relation_handler import (
 from openslides_backend.action.relations.typing import RelationFieldUpdates
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model
+from openslides_backend.models.base import Model, model_registry
 from openslides_backend.shared.patterns import Collection
 
 
@@ -134,3 +136,9 @@ class SingleRelationHandlerWithContext(SingleRelationHandler):
     def perform(self) -> RelationFieldUpdates:
         with self.datastore.get_database_context():
             return super().perform()
+
+
+def assure_model_in_registry(model: Any) -> None:
+    collection = model.collection
+    if collection not in model_registry:
+        model_registry[collection] = model
