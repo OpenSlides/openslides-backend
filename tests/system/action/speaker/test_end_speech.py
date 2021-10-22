@@ -180,4 +180,4 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
         response = self.request("speaker.end_speech", {"id": 890})
         self.assert_status_code(response, 200)
         model = self.get_model("speaker/890")
-        self.assertTrue(model.get("end_time") is not None)
+        self.assertIsNotNone(model.get("end_time"))
