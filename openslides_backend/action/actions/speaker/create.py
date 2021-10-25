@@ -130,6 +130,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         waiting speaker (with begin_time == None), but allows one additional with point_of_order speaker per user
         - that points_of_order are used in this meeting
         - that user has to be present to be added to the list of speakers
+        - that request-user cannot create a speaker without being point_of_order, a not closed los is closed and no list_of_speakers.can_manage permission
         """
         if instance.get("point_of_order") and instance.get("user_id") != self.user_id:
             raise ActionException(
@@ -138,7 +139,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         los_fqid = FullQualifiedId(
             Collection("list_of_speakers"), instance["list_of_speakers_id"]
         )
-        los = self.datastore.get(los_fqid, ["meeting_id"])
+        los = self.datastore.get(los_fqid, ["meeting_id", "closed"])
         meeting_id = los["meeting_id"]
         meeting_fqid = FullQualifiedId(Collection("meeting"), meeting_id)
         meeting = self.datastore.get(
@@ -154,6 +155,19 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             raise ActionException(
                 "Point of order speakers are not enabled for this meeting."
             )
+
+        if (
+            not instance.get("point_of_order")
+            and los.get("closed")
+            and instance.get("user_id") == self.user_id
+            and not has_perm(
+                self.datastore,
+                self.user_id,
+                Permissions.ListOfSpeakers.CAN_MANAGE,
+                meeting_id,
+            )
+        ):
+            raise ActionException("The list of speakers is closed.")
         if meeting.get("list_of_speakers_present_users_only"):
             user_fqid = FullQualifiedId(Collection("user"), instance["user_id"])
             user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])

@@ -158,3 +158,26 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,
         )
+
+    def test_correct_on_closed_los(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {},
+                "user/7": {"username": "test_username1"},
+                "list_of_speakers/23": {
+                    "speaker_ids": [890],
+                    "meeting_id": 1,
+                    "closed": True,
+                },
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "begin_time": 10000,
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("speaker.end_speech", {"id": 890})
+        self.assert_status_code(response, 200)
+        model = self.get_model("speaker/890")
+        self.assertIsNotNone(model.get("end_time"))

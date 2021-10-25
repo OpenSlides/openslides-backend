@@ -27,15 +27,77 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 200)
-        speaker = self.get_model("speaker/1")
-        assert speaker.get("user_id") == 7
-        assert speaker.get("list_of_speakers_id") == 23
-        assert speaker.get("weight") == 1
-        list_of_speakers = self.get_model("list_of_speakers/23")
-        assert list_of_speakers.get("speaker_ids") == [1]
-        user = self.get_model("user/7")
-        assert user.get("speaker_$1_ids") == [1]
-        assert user.get("speaker_$_ids") == ["1"]
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "user_id": 7,
+                "list_of_speakers_id": 23,
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1]})
+        self.assert_model_exists(
+            "user/7", {"speaker_$1_ids": [1], "speaker_$_ids": ["1"]}
+        )
+
+    def test_create_in_closed_los(self) -> None:
+        self.test_models["list_of_speakers/23"]["closed"] = True
+        self.set_models(self.test_models)
+
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "speaker/1",
+            {
+                "user_id": 7,
+                "list_of_speakers_id": 23,
+                "weight": 1,
+            },
+        )
+        self.assert_model_exists("list_of_speakers/23", {"speaker_ids": [1]})
+        self.assert_model_exists(
+            "user/7", {"speaker_$1_ids": [1], "speaker_$_ids": ["1"]}
+        )
+
+    def test_create_oneself_in_closed_los(self) -> None:
+        self.test_models["list_of_speakers/23"]["closed"] = True
+        self.test_models["group/1"] = {
+            "meeting_id": 1,
+            "name": "g1",
+            "permissions": [
+                Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+            ],
+        }
+        self.set_models(self.test_models)
+        self.set_user_groups(7, [1])
+        self.user_id = 7
+        self.login(self.user_id)
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("The list of speakers is closed.", response.json["message"])
+
+    def test_create_oneself_in_closed_los_with_los_CAN_MANAGE(self) -> None:
+        self.test_models["list_of_speakers/23"]["closed"] = True
+        self.test_models["group/1"] = {
+            "meeting_id": 1,
+            "name": "g1",
+            "permissions": [
+                Permissions.ListOfSpeakers.CAN_MANAGE,
+                Permissions.ListOfSpeakers.CAN_BE_SPEAKER,
+            ],
+        }
+        self.set_models(self.test_models)
+        self.set_user_groups(7, [1])
+        self.user_id = 7
+        self.login(self.user_id)
+        response = self.request(
+            "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
+        )
+        self.assert_status_code(response, 200)
 
     def test_create_empty_data(self) -> None:
         response = self.request("speaker.create", {})

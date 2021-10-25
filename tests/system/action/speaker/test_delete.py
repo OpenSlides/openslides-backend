@@ -93,3 +93,24 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         response = self.request("speaker.delete", {"id": 890})
         self.assert_status_code(response, 200)
+
+    def test_delete_correct_on_closed_los(self) -> None:
+        self.set_models(
+            {
+                "meeting/111": {"speaker_ids": [890]},
+                "user/7": {
+                    "username": "test_username1",
+                    "speaker_$111_ids": [890],
+                    "speaker_$_ids": ["111"],
+                },
+                "list_of_speakers/23": {"speaker_ids": [890], "closed": True},
+                "speaker/890": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request("speaker.delete", {"id": 890})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("speaker/890")
