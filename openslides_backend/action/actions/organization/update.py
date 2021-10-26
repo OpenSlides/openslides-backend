@@ -4,6 +4,7 @@ from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -28,6 +29,7 @@ class OrganizationUpdate(UpdateAction):
             "enable_electronic_voting",
             "reset_password_verbose_errors",
             "limit_of_meetings",
+            "limit_of_users",
         ]
     )
 
@@ -60,6 +62,7 @@ class OrganizationUpdate(UpdateAction):
                     "enable_electronic_voting",
                     "reset_password_verbose_errors",
                     "limit_of_meetings",
+                    "limit_of_users",
                 ]
             ]
         ) and not has_organization_management_level(
@@ -83,5 +86,13 @@ class OrganizationUpdate(UpdateAction):
             ) > limit_of_meetings:
                 raise ActionException(
                     f"Organization {organization_id} has {count_active_meetings} active meetings. You cannot set the limit lower."
+                )
+
+        if limit_of_users := instance.get("limit_of_users"):
+            filter_ = FilterOperator("is_active", "=", True)
+            count_active_users = self.datastore.count(Collection("user"), filter_)
+            if count_active_users > limit_of_users:
+                raise ActionException(
+                    f"Active users {count_active_users}. You cannot set the limit lower."
                 )
         return instance
