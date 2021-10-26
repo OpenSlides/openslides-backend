@@ -9,12 +9,16 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordCreateMixin
-from .user_mixin import UserMixin
+from .user_mixin import LimitOfUserMixin, UserMixin
 
 
 @register_action("user.create")
 class UserCreate(
-    CreateAction, UserMixin, CreateUpdatePermissionsMixin, PasswordCreateMixin
+    CreateAction,
+    UserMixin,
+    CreateUpdatePermissionsMixin,
+    PasswordCreateMixin,
+    LimitOfUserMixin,
 ):
     """
     Action to create a user.
@@ -53,6 +57,8 @@ class UserCreate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if instance.get("is_active"):
+            self.check_limit_of_user(1)
         if not (
             instance.get("username")
             or instance.get("first_name")

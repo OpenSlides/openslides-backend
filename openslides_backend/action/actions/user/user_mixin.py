@@ -9,6 +9,23 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 
+ONE_ORGANIZATION = 1
+
+
+class LimitOfUserMixin(Action):
+    def check_limit_of_user(self, number: int) -> None:
+        organization = self.datastore.get(
+            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+            ["limit_of_users"],
+        )
+        if limit_of_users := organization.get("limit_of_users"):
+            filter_ = FilterOperator("is_active", "=", True)
+            count_of_active_users = self.datastore.count(Collection("user"), filter_)
+            if number + count_of_active_users > limit_of_users:
+                raise ActionException(
+                    "The number of active users cannot exceed the limit of users."
+                )
+
 
 class UserMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

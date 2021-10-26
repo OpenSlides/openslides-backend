@@ -875,3 +875,24 @@ class UserCreateActionTest(BaseActionTestCase):
             "data.gender must be one of ['male', 'female', 'diverse', None]"
             in response.json["message"]
         )
+
+    def test_exceed_limit_of_users(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_users": 3},
+                "user/2": {"is_active": True},
+                "user/3": {"is_active": True},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "is_active": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "The number of active users cannot exceed the limit of users."
+            == response.json["message"]
+        )
