@@ -5,6 +5,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
+from ..relations.setup import assure_model_in_registry, assure_model_rm_from_registry
 from .base import BaseActionTestCase
 
 
@@ -80,6 +81,16 @@ class FakeModelEFBUpdateAction(UpdateAction):
 
 
 class TestEqualFieldsCheck(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        for model in (FakeModelEFA, FakeModelEFB, FakeModelEFC):
+            assure_model_in_registry(model)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        for model in (FakeModelEFA, FakeModelEFB, FakeModelEFC):
+            assure_model_rm_from_registry(model)
+
     def test_simple_pass(self) -> None:
         self.set_models(
             {

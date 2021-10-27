@@ -1,16 +1,7 @@
-from openslides_backend.models.base import model_registry
 from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationInitialImport(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        for collection in list(model_registry.keys()):
-            if collection.collection.startswith(
-                "fake_model"
-            ) or collection.collection.startswith("dummy_model"):
-                del model_registry[collection]
-
     def test_initial_import_filled_datastore(self) -> None:
         self.set_models({"organization/1": {}})
         request_data = {"data": self.get_initial_data()}

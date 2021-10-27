@@ -5,10 +5,12 @@ from tests.util import get_fqfield
 
 from ..action.base import BaseActionTestCase
 from .setup import (
+    FakeModelA,
     FakeModelB,
     FakeModelC,
     SingleRelationHandlerWithContext,
     assure_model_in_registry,
+    assure_model_rm_from_registry,
 )
 
 
@@ -17,8 +19,13 @@ class StructuredRelationTester(BaseActionTestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        assure_model_in_registry(FakeModelB)
-        assure_model_in_registry(FakeModelC)
+        for model in (FakeModelA, FakeModelB, FakeModelC):
+            assure_model_in_registry(model)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        for model in (FakeModelA, FakeModelB, FakeModelC):
+            assure_model_rm_from_registry(model)
 
     def test_simple_structured_relation(self) -> None:
         meeting_id = 222

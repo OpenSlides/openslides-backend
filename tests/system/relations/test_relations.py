@@ -6,6 +6,7 @@ from .setup import (
     FakeModelB,
     SingleRelationHandlerWithContext,
     assure_model_in_registry,
+    assure_model_rm_from_registry,
 )
 
 
@@ -14,6 +15,11 @@ class RelationHandlerTest(BaseActionTestCase):
         super().setUp()
         assure_model_in_registry(FakeModelA)
         assure_model_in_registry(FakeModelB)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        assure_model_rm_from_registry(FakeModelA)
+        assure_model_rm_from_registry(FakeModelB)
 
     def test_O2O_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})

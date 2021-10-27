@@ -1,9 +1,25 @@
 from tests.system.action.base import BaseActionTestCase
 
-from .setup import FakeModelA, FakeModelB, FakeModelC  # noqa
+from .setup import (
+    FakeModelA,
+    FakeModelB,
+    FakeModelC,
+    assure_model_in_registry,
+    assure_model_rm_from_registry,
+)
 
 
 class CreateActionWithTemplateFieldTester(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        for model in (FakeModelA, FakeModelB, FakeModelC):
+            assure_model_in_registry(model)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        for model in (FakeModelA, FakeModelB, FakeModelC):
+            assure_model_rm_from_registry(model)
+
     def test_simple_create(self) -> None:
         self.create_model("meeting/42")
         self.create_model("fake_model_b/123", {"meeting_id": 42})

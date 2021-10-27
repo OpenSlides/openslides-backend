@@ -142,3 +142,14 @@ def assure_model_in_registry(model: Any) -> None:
     collection = model.collection
     if collection not in model_registry:
         model_registry[collection] = model
+
+
+def assure_model_rm_from_registry(model: Any) -> None:
+    collection = model.collection
+    if collection in model_registry:
+        del model_registry[collection]
+
+
+assure_model_rm_from_registry(FakeModelA)
+assure_model_rm_from_registry(FakeModelB)
+assure_model_rm_from_registry(FakeModelC)
