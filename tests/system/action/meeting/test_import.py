@@ -1080,7 +1080,6 @@ class MeetingImport(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"limit_of_users": 2},
-                "user/1": {"username": "admin"},
             }
         )
         request_data = self.create_request_data({})
@@ -1092,7 +1091,6 @@ class MeetingImport(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"limit_of_users": 2},
-                "user/1": {"username": "admin"},
                 "user/2": {"username": "test2", "is_active": True},
             }
         )
