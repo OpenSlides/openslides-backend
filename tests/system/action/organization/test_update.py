@@ -196,6 +196,6 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Active users 3. You cannot set the limit lower."
+            "Active users: 3. You cannot set the limit lower."
             == response.json["message"]
         )

@@ -93,6 +93,6 @@ class OrganizationUpdate(UpdateAction):
             count_active_users = self.datastore.count(Collection("user"), filter_)
             if count_active_users > limit_of_users:
                 raise ActionException(
-                    f"Active users {count_active_users}. You cannot set the limit lower."
+                    f"Active users: {count_active_users}. You cannot set the limit lower."
                 )
         return instance
