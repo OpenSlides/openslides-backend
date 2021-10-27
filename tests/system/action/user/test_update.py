@@ -1095,3 +1095,44 @@ class UserUpdateActionTest(BaseActionTestCase):
             "Your organization management level is not high enough to change a user with a Level of superadmin!"
             in response.json["message"]
         )
+
+    def test_update_hit_user_limit(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_users": 3},
+                "user/2": {"is_active": True},
+                "user/3": {"is_active": True},
+                "user/4": {"is_active": False},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 4,
+                "is_active": True,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "The number of active users cannot exceed the limit of users."
+            == response.json["message"]
+        )
+
+    def test_update_user_limit_okay(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_users": 4},
+                "user/2": {"is_active": True},
+                "user/3": {"is_active": True},
+                "user/4": {"is_active": False},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 4,
+                "is_active": True,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/4", {"is_active": True})

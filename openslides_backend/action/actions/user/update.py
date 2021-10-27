@@ -6,7 +6,7 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
-from .user_mixin import UserMixin
+from .user_mixin import LimitOfUserMixin, UserMixin
 
 
 @register_action("user.update")
@@ -14,6 +14,7 @@ class UserUpdate(
     UserMixin,
     CreateUpdatePermissionsMixin,
     UpdateAction,
+    LimitOfUserMixin,
 ):
     """
     Action to update a user.
@@ -51,16 +52,24 @@ class UserUpdate(
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        user = self.datastore.get(
+            FullQualifiedId(Collection("user"), instance["id"]),
+            mapped_fields=[
+                "committee_ids",
+                "committee_$_management_level",
+                "is_active",
+            ],
+        )
+
+        if instance.get("is_active") and not user.get("is_active"):
+            self.check_limit_of_user(1)
+
         if (
             "committee_$_management_level" not in instance
             and "committee_ids" not in instance
         ):
             return super().update_instance(instance)
 
-        user = self.datastore.get(
-            FullQualifiedId(Collection("user"), instance["id"]),
-            mapped_fields=["committee_ids", "committee_$_management_level"],
-        )
         old_committee_ids = set(user.get("committee_ids", ()))
         old_manager_ids = set(map(int, user.get("committee_$_management_level", ())))
         inst_new_manager_ids = {
