@@ -28,10 +28,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
+from ..user.user_mixin import LimitOfUserMixin
 
 
 @register_action("meeting.import")
-class MeetingImport(SingularActionMixin, Action):
+class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
     """
     Action to import a meeting.
     """
@@ -75,6 +76,14 @@ class MeetingImport(SingularActionMixin, Action):
             raise ActionException("Need exact one meeting in meeting collection.")
 
         self.check_usernames_and_generate_new_ones(meeting_json)
+        active_user_in_json = len(
+            [
+                key
+                for key in meeting_json.get("user", [])
+                if meeting_json["user"][key]["is_active"]
+            ]
+        )
+        self.check_limit_of_user(active_user_in_json)
 
         # save blobs from mediafiles
         self.mediadata = []
