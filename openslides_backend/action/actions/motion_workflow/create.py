@@ -124,7 +124,7 @@ class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
         self.apply_instance(instance)
         action_data = [
             {
-                "name": "in_progress",
+                "name": "in progress",
                 "allow_submitter_edit": True,
                 "dont_set_identifier": True,
                 "workflow_id": instance["id"],
