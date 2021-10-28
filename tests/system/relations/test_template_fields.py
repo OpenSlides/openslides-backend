@@ -1,7 +1,5 @@
 from tests.system.action.base import BaseActionTestCase
 
-from .setup import FakeModelA, FakeModelB, FakeModelC  # noqa
-
 
 class CreateActionWithTemplateFieldTester(BaseActionTestCase):
     def test_simple_create(self) -> None:

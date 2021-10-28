@@ -182,42 +182,48 @@ class Checker:
             for collection in model_registry
         }
 
+        meeting_collections = [
+            "meeting",
+            "group",
+            "personal_note",
+            "tag",
+            "agenda_item",
+            "list_of_speakers",
+            "speaker",
+            "topic",
+            "motion",
+            "motion_submitter",
+            "motion_comment",
+            "motion_comment_section",
+            "motion_category",
+            "motion_block",
+            "motion_change_recommendation",
+            "motion_state",
+            "motion_workflow",
+            "motion_statute_paragraph",
+            "poll",
+            "option",
+            "vote",
+            "assignment",
+            "assignment_candidate",
+            "mediafile",
+            "projector",
+            "projection",
+            "projector_message",
+            "projector_countdown",
+            "chat_group",
+        ]
         if self.mode == "all":
             self.allowed_collections = [
-                collection.collection for collection in model_registry
-            ]
+                "organization",
+                "user",
+                "resource",
+                "organization_tag",
+                "theme",
+                "committee",
+            ] + meeting_collections
         else:
-            self.allowed_collections = [
-                "meeting",
-                "group",
-                "personal_note",
-                "tag",
-                "agenda_item",
-                "list_of_speakers",
-                "speaker",
-                "topic",
-                "motion",
-                "motion_submitter",
-                "motion_comment",
-                "motion_comment_section",
-                "motion_category",
-                "motion_block",
-                "motion_change_recommendation",
-                "motion_state",
-                "motion_workflow",
-                "motion_statute_paragraph",
-                "poll",
-                "option",
-                "vote",
-                "assignment",
-                "assignment_candidate",
-                "mediafile",
-                "projector",
-                "projection",
-                "projector_message",
-                "projector_countdown",
-                "chat_group",
-            ]
+            self.allowed_collections = meeting_collections
             # TODO: mediafile blob handling.
             if self.mode == "external":
                 self.allowed_collections.append("user")
