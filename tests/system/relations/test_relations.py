@@ -1,13 +1,11 @@
 from tests.util import get_fqfield
-
-from ..action.base import BaseActionTestCase
-from .setup import (
-    FakeModelA,
-    FakeModelB,
-    SingleRelationHandlerWithContext,
+from tests.util_model_registry import (
     assure_model_in_registry,
     assure_model_rm_from_registry,
 )
+
+from ..action.base import BaseActionTestCase
+from .setup import FakeModelA, FakeModelB, SingleRelationHandlerWithContext
 
 
 class RelationHandlerTest(BaseActionTestCase):

@@ -2,16 +2,13 @@ from typing import cast
 
 from openslides_backend.models import fields
 from tests.util import get_fqfield
-
-from ..action.base import BaseActionTestCase
-from .setup import (
-    FakeModelA,
-    FakeModelB,
-    FakeModelC,
-    SingleRelationHandlerWithContext,
+from tests.util_model_registry import (
     assure_model_in_registry,
     assure_model_rm_from_registry,
 )
+
+from ..action.base import BaseActionTestCase
+from .setup import FakeModelA, FakeModelB, FakeModelC, SingleRelationHandlerWithContext
 
 
 class StructuredRelationTester(BaseActionTestCase):

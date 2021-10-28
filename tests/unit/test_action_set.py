@@ -7,8 +7,12 @@ from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.delete import DeleteAction
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.util.register import register_action_set
-from openslides_backend.models.base import Model, model_registry
+from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
+from tests.util_model_registry import (
+    assure_model_in_registry,
+    assure_model_rm_from_registry,
+)
 
 dummy_schema: Dict = {}
 
@@ -17,7 +21,7 @@ class DummyModelVcioluoffl(Model):
     collection = Collection("dummy_model_vcioluoffl")
 
 
-del model_registry[DummyModelVcioluoffl.collection]
+assure_model_rm_from_registry(DummyModelVcioluoffl)
 
 
 @register_action_set("dummy_model_vcioluoffl")
@@ -31,13 +35,11 @@ class DummyActionSet_phooth3I(ActionSet):
 class ActionSetTester(TestCase):
     def setUp(self) -> None:
         super().setUp()
-        if Collection("dummy_model_vcioluoffl") not in model_registry:
-            model_registry[Collection("dummy_model_vcioluoffl")] = DummyModelVcioluoffl
+        assure_model_in_registry(DummyModelVcioluoffl)
 
     def tearDown(self) -> None:
         super().tearDown()
-        if Collection("dummy_model_vcioluoffl") in model_registry:
-            del model_registry[Collection("dummy_model_vcioluoffl")]
+        assure_model_rm_from_registry(DummyModelVcioluoffl)
 
     def test_dummy_action_set_routes(self) -> None:
         for route, action in DummyActionSet_phooth3I.get_actions().items():

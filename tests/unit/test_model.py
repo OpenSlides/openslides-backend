@@ -5,9 +5,13 @@ from fastjsonschema import validate
 
 from openslides_backend.action.util.default_schema import DefaultSchema
 from openslides_backend.models import fields
-from openslides_backend.models.base import Model, model_registry
+from openslides_backend.models.base import Model
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.patterns import Collection
+from tests.util_model_registry import (
+    assure_model_in_registry,
+    assure_model_rm_from_registry,
+)
 
 
 class FakeModel(Model):
@@ -32,7 +36,7 @@ class FakeModel(Model):
     )
 
 
-del model_registry[FakeModel.collection]
+assure_model_rm_from_registry(FakeModel)
 
 
 class FakeModel2(Model):
@@ -52,7 +56,7 @@ class FakeModel2(Model):
     )
 
 
-del model_registry[FakeModel2.collection]
+assure_model_rm_from_registry(FakeModel2)
 
 
 class ModelBaseTester(TestCase):
@@ -62,17 +66,13 @@ class ModelBaseTester(TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        if Collection("fake_model") not in model_registry:
-            model_registry[Collection("fake_model")] = FakeModel
-        if Collection("fake_model_2") not in model_registry:
-            model_registry[Collection("fake_model_2")] = FakeModel2
+        for model in (FakeModel, FakeModel2):
+            assure_model_in_registry(model)
 
     def tearDown(self) -> None:
         super().tearDown()
-        if Collection("fake_model") in model_registry:
-            del model_registry[Collection("fake_model")]
-        if Collection("fake_model_2") in model_registry:
-            del model_registry[Collection("fake_model_2")]
+        for model in (FakeModel, FakeModel2):
+            assure_model_rm_from_registry(model)
 
     def test_get_properties(self) -> None:
         expected = {

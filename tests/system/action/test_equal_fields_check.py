@@ -4,8 +4,11 @@ from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
+from tests.util_model_registry import (
+    assure_model_in_registry,
+    assure_model_rm_from_registry,
+)
 
-from ..relations.setup import assure_model_in_registry, assure_model_rm_from_registry
 from .base import BaseActionTestCase
 
 

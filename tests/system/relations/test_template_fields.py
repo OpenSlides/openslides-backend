@@ -1,12 +1,10 @@
 from tests.system.action.base import BaseActionTestCase
-
-from .setup import (
-    FakeModelA,
-    FakeModelB,
-    FakeModelC,
+from tests.util_model_registry import (
     assure_model_in_registry,
     assure_model_rm_from_registry,
 )
+
+from .setup import FakeModelA, FakeModelB, FakeModelC
 
 
 class CreateActionWithTemplateFieldTester(BaseActionTestCase):
