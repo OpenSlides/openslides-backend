@@ -2,6 +2,7 @@ from collections import defaultdict
 from functools import reduce
 from typing import Any, Dict, List
 
+from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
