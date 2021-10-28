@@ -3,10 +3,6 @@ from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
-from tests.util_model_registry import (
-    assure_model_in_registry,
-    assure_model_rm_from_registry,
-)
 
 from .base import BaseActionTestCase
 
@@ -44,16 +40,6 @@ class FakeModelURAUpdateAction(UpdateAction):
 
 
 class TestUpdateRelation(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        assure_model_in_registry(FakeModelURA)
-        assure_model_in_registry(FakeModelURB)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        assure_model_rm_from_registry(FakeModelURA)
-        assure_model_rm_from_registry(FakeModelURB)
-
     def test_set_to_null(self) -> None:
         self.set_models(
             {

@@ -1,24 +1,10 @@
 from tests.util import get_fqfield, get_fqid
-from tests.util_model_registry import (
-    assure_model_in_registry,
-    assure_model_rm_from_registry,
-)
 
 from ..action.base import BaseActionTestCase
-from .setup import FakeModelA, FakeModelB, SingleRelationHandlerWithContext
+from .setup import FakeModelA, SingleRelationHandlerWithContext
 
 
 class GenericRelationsTest(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        assure_model_in_registry(FakeModelA)
-        assure_model_in_registry(FakeModelB)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        assure_model_rm_from_registry(FakeModelA)
-        assure_model_rm_from_registry(FakeModelB)
-
     def test_generic_O2O_empty(self) -> None:
         self.set_models({"fake_model_a/1": {}, "fake_model_b/2": {}})
         handler = SingleRelationHandlerWithContext(

@@ -2,27 +2,13 @@ from typing import cast
 
 from openslides_backend.models import fields
 from tests.util import get_fqfield
-from tests.util_model_registry import (
-    assure_model_in_registry,
-    assure_model_rm_from_registry,
-)
 
 from ..action.base import BaseActionTestCase
-from .setup import FakeModelA, FakeModelB, FakeModelC, SingleRelationHandlerWithContext
+from .setup import FakeModelB, FakeModelC, SingleRelationHandlerWithContext
 
 
 class StructuredRelationTester(BaseActionTestCase):
     maxDiff = None
-
-    def setUp(self) -> None:
-        super().setUp()
-        for model in (FakeModelA, FakeModelB, FakeModelC):
-            assure_model_in_registry(model)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        for model in (FakeModelA, FakeModelB, FakeModelC):
-            assure_model_rm_from_registry(model)
 
     def test_simple_structured_relation(self) -> None:
         meeting_id = 222

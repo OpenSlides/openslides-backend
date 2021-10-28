@@ -8,10 +8,6 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.exceptions import ActionException
 from openslides_backend.shared.patterns import Collection
-from tests.util_model_registry import (
-    assure_model_in_registry,
-    assure_model_rm_from_registry,
-)
 
 
 class FakeModel(Model):
@@ -36,9 +32,6 @@ class FakeModel(Model):
     )
 
 
-assure_model_rm_from_registry(FakeModel)
-
-
 class FakeModel2(Model):
     """
     Fake model for testing purposes. With relation field.
@@ -56,23 +49,10 @@ class FakeModel2(Model):
     )
 
 
-assure_model_rm_from_registry(FakeModel2)
-
-
 class ModelBaseTester(TestCase):
     """
     Tests methods of base Action class and also some helper functions.
     """
-
-    def setUp(self) -> None:
-        super().setUp()
-        for model in (FakeModel, FakeModel2):
-            assure_model_in_registry(model)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        for model in (FakeModel, FakeModel2):
-            assure_model_rm_from_registry(model)
 
     def test_get_properties(self) -> None:
         expected = {

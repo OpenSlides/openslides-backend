@@ -5,10 +5,6 @@ from openslides_backend.models.base import Model
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.patterns import Collection
-from tests.util_model_registry import (
-    assure_model_in_registry,
-    assure_model_rm_from_registry,
-)
 
 from .base import BaseActionTestCase
 
@@ -32,12 +28,6 @@ class TestPermissions(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
-
-        assure_model_in_registry(FakeModelP)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        assure_model_rm_from_registry(FakeModelP)
 
     def test_anonymous_disabled(self) -> None:
         self.set_anonymous(False)

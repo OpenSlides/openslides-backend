@@ -8,7 +8,6 @@ from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
-from tests.util_model_registry import assure_model_rm_from_registry
 
 
 class FakeModelA(Model):
@@ -135,7 +134,3 @@ class SingleRelationHandlerWithContext(SingleRelationHandler):
     def perform(self) -> RelationFieldUpdates:
         with self.datastore.get_database_context():
             return super().perform()
-
-
-for model in (FakeModelA, FakeModelB, FakeModelC):
-    assure_model_rm_from_registry(model)

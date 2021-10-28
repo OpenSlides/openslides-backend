@@ -11,10 +11,6 @@ from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
-from tests.util_model_registry import (
-    assure_model_in_registry,
-    assure_model_rm_from_registry,
-)
 
 from .base import BaseActionTestCase
 
@@ -101,16 +97,6 @@ class FakeModelCRDCreateAction(CreateAction):
 
 
 class TestCreateRelation(BaseActionTestCase):
-    def setUp(self) -> None:
-        super().setUp()
-        for model in (FakeModelCRA, FakeModelCRB, FakeModelCRC, FakeModelCRD):
-            assure_model_in_registry(model)
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        for model in (FakeModelCRA, FakeModelCRB, FakeModelCRC, FakeModelCRD):
-            assure_model_rm_from_registry(model)
-
     def test_simple_create(self) -> None:
         response = self.request(
             "fake_model_cr_a.create", {"req_field": 1, "not_req_field": 2}
