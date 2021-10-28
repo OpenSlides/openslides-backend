@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "3dbcc3d0dc819729168f4d56356e6d9b"
+MODELS_YML_CHECKSUM = "0c3505977f0db3b6db0965dcfd3a21d2"
 
 
 class Organization(Model):
@@ -23,6 +23,13 @@ class Organization(Model):
         default=0,
         constraints={
             "description": "Maximum of active meetings for the whole organization. 0 means no limitation at all",
+            "minimum": 0,
+        },
+    )
+    limit_of_users = fields.IntegerField(
+        default=0,
+        constraints={
+            "description": "Maximum of active users for the whole organization. 0 means no limitation at all",
             "minimum": 0,
         },
     )

@@ -1075,3 +1075,29 @@ class MeetingImport(BaseActionTestCase):
         self.update_model("organization/1", {"limit_of_meetings": 2})
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
+
+    def test_check_limit_of_users_okay(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_users": 2},
+            }
+        )
+        request_data = self.create_request_data({})
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/2")
+
+    def test_check_hit_limit_of_users(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_users": 2},
+                "user/2": {"username": "test2", "is_active": True},
+            }
+        )
+        request_data = self.create_request_data({})
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        assert (
+            "The number of active users cannot exceed the limit of users."
+            == response.json["message"]
+        )
