@@ -36,7 +36,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/42": {"username": "test_username42", "speaker_$222_ids": [222]},
                 "user/43": {"username": "test_username43", "speaker_$222_ids": [223]},
                 "user/44": {"username": "test_username43", "speaker_$222_ids": [224]},
@@ -79,7 +82,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_correct_in_closed_list(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/42": {"username": "test_username42", "speaker_$222_ids": [222]},
                 "user/43": {"username": "test_username43", "speaker_$222_ids": [223]},
                 "list_of_speakers/111": {
@@ -116,7 +122,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_no_speakers(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "list_of_speakers/111": {
                     "closed": False,
                     "meeting_id": 222,
@@ -133,7 +142,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_no_last_speaker(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/42": {"username": "test_username42", "speaker_$222_ids": [223]},
                 "list_of_speakers/111": {
                     "closed": False,
@@ -156,7 +168,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_last_speaker_poos(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/42": {
                     "username": "test_username42",
                     "speaker_$222_ids": [223],
@@ -185,7 +200,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_last_speaker_also_in_waiting_list(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/42": {
                     "username": "test_username42",
                     "speaker_$222_ids": [223, 224],
@@ -213,7 +231,10 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def test_last_speaker_also_in_waiting_list_but_poos(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/42": {
                     "username": "test_username42",
                     "speaker_$222_ids": [223, 224],

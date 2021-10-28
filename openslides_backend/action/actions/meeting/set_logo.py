@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from ...util.register import register_action
 from .base_set_mediafile_action import BaseMeetingSetMediafileAction
 
@@ -10,3 +12,6 @@ class MeetingSetLogoAction(BaseMeetingSetMediafileAction):
 
     field = "logo_$_id"
     allowed_mimetypes = ["image/png", "image/jpeg", "image/gif"]
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return instance["id"]

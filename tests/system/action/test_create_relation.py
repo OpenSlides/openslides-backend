@@ -64,18 +64,21 @@ class FakeModelCRD(Model):
 class FakeModelCRACreateAction(CreateAction):
     model = FakeModelCRA()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 @register_action("fake_model_cr_c.create", internal=True)
 class FakeModelCRCCreateAction(CreateAction):
     model = FakeModelCRC()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 @register_action("fake_model_cr_b.create", internal=True)
 class FakeModelCRBCreateAction(CreateActionWithDependencies):
     model = FakeModelCRB()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
     dependencies = [FakeModelCRCCreateAction]
 
@@ -94,6 +97,7 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
 class FakeModelCRDCreateAction(CreateAction):
     model = FakeModelCRD()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 class TestCreateRelation(BaseActionTestCase):

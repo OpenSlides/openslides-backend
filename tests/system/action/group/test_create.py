@@ -4,7 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class GroupCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        self.create_model(
+            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "group.create", {"name": "test_Xcdfgee", "meeting_id": 22}
         )
@@ -15,7 +17,9 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("permissions") == []
 
     def test_create_permissions(self) -> None:
-        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        self.create_model(
+            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "group.create",
             {
@@ -31,7 +35,9 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("permissions") == ["agenda_item.can_see"]
 
     def test_create_redundant_permissions(self) -> None:
-        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        self.create_model(
+            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "group.create",
             {
@@ -47,7 +53,9 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("permissions") == ["agenda_item.can_manage"]
 
     def test_create_redundant_permissions_2(self) -> None:
-        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        self.create_model(
+            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "group.create",
             {
@@ -68,7 +76,9 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("permissions") == ["assignment.can_manage"]
 
     def test_create_empty_data(self) -> None:
-        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        self.create_model(
+            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+        )
         response = self.request("group.create", {"meeting_id": 22})
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -77,7 +87,9 @@ class GroupCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/22", {"name": "name_vJxebUwo"})
+        self.create_model(
+            "meeting/22", {"name": "name_vJxebUwo", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "group.create",
             {

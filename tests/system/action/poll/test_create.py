@@ -13,7 +13,7 @@ class CreatePoll(BaseActionTestCase):
                     "open_posts": 1,
                     "meeting_id": 1,
                 },
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "organization/1": {"enable_electronic_voting": True},
                 "user/3": {"username": "User3"},
             },
@@ -582,7 +582,7 @@ class CreatePoll(BaseActionTestCase):
     def test_create_user_option_valid(self) -> None:
         self.set_models(
             {
-                "meeting/42": {},
+                "meeting/42": {"is_active_in_organization_id": 1},
                 "group/5": {"meeting_id": 42, "user_ids": [1]},
                 "user/1": {
                     "group_$42_ids": [5],
@@ -620,7 +620,7 @@ class CreatePoll(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/42": {},
-                "meeting/7": {},
+                "meeting/7": {"is_active_in_organization_id": 1},
                 "group/5": {"meeting_id": 42, "user_ids": [1]},
                 "user/1": {
                     "group_$42_ids": [5],

@@ -12,12 +12,18 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
                 "name": "name_srtgb123",
                 "list_of_speakers_ids": [11],
                 "speaker_ids": [1],
+                "is_active_in_organization_id": 1,
             },
         }
 
     def test_no_los(self) -> None:
         self.create_model(
-            "meeting/110", {"name": "name_srtgb123", "list_of_speakers_ids": []}
+            "meeting/110",
+            {
+                "name": "name_srtgb123",
+                "list_of_speakers_ids": [],
+                "is_active_in_organization_id": 1,
+            },
         )
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 110})
         self.assert_status_code(response, 200)
@@ -26,7 +32,11 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "list_of_speakers/11": {"meeting_id": 110, "speaker_ids": []},
-                "meeting/110": {"name": "name_srtgb123", "list_of_speakers_ids": [11]},
+                "meeting/110": {
+                    "name": "name_srtgb123",
+                    "list_of_speakers_ids": [11],
+                    "is_active_in_organization_id": 1,
+                },
             }
         )
         response = self.request("meeting.delete_all_speakers_of_all_lists", {"id": 110})
@@ -41,6 +51,7 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
                     "name": "name_srtgb123",
                     "list_of_speakers_ids": [11],
                     "speaker_ids": [1],
+                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -58,6 +69,7 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
                     "name": "name_srtgb123",
                     "list_of_speakers_ids": [11],
                     "speaker_ids": [1, 2],
+                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -79,6 +91,7 @@ class MeetingDeleteAllSpeakersOfAllListsActionTest(BaseActionTestCase):
                     "name": "name_srtgb123",
                     "list_of_speakers_ids": [11, 12, 13],
                     "speaker_ids": [1, 2, 3],
+                    "is_active_in_organization_id": 1,
                 },
             }
         )

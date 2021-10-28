@@ -6,7 +6,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_singe_node_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/22": {"meeting_id": 222, "comment": "test1"},
             }
         )
@@ -24,7 +27,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_not_all_sorted(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/22": {"meeting_id": 222, "comment": "test1"},
                 "agenda_item/23": {"meeting_id": 222, "comment": "test"},
             }
@@ -38,7 +44,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_complex_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
                 "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
                 "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
@@ -73,7 +82,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_not_a_tree(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
                 "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
                 "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
@@ -96,7 +108,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_sort_circle_fail(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
                 "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
                 "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},
@@ -121,7 +136,10 @@ class AgendaItemSortActionTest(BaseActionTestCase):
     def test_small_tree_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {"meeting_id": 222, "comment": "test_root"},
                 "agenda_item/11": {"meeting_id": 222, "comment": "test_1_1"},
                 "agenda_item/12": {"meeting_id": 222, "comment": "test_1_2"},

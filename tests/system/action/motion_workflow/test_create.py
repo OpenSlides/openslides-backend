@@ -4,7 +4,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionWorkflowSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.create", {"name": "test_Xcdfgee", "meeting_id": 42}
         )
@@ -35,7 +38,9 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
 
     def test_create_simple_workflow(self) -> None:
-        self.create_model("meeting/42", {"name": "test_meeting1"})
+        self.create_model(
+            "meeting/42", {"name": "test_meeting1", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion_workflow.create_simple_workflow",
             {"name": "test_Xcdfgee", "meeting_id": 42},

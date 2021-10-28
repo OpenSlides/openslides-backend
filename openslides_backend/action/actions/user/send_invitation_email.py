@@ -61,6 +61,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                     result = self.get_initial_result_false(instance)
                     try:
                         self.validate_instance(instance)
+                        self.check_for_archived_meeting(instance)
                         self.check_permissions(instance)
                         instance = self.update_instance(instance)
                         result = instance.pop("result")

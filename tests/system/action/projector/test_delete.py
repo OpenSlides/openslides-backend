@@ -23,6 +23,7 @@ class ProjectorDelete(BaseActionTestCase):
                     "default_projector_$_id": ["motion"],
                     "default_projector_$motion_id": 111,
                     "projector_ids": [111, 113],
+                    "is_active_in_organization_id": 1,
                 },
             }
         )

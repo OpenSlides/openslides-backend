@@ -59,8 +59,8 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "committee/1": {"name": "C1", "meeting_ids": [1]},
                 "committee/2": {"name": "C2", "meeting_ids": [2]},
-                "meeting/1": {"committee_id": 1},
-                "meeting/2": {"committee_id": 2},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/222": {"meeting_ids": [1]},
                 "user/223": {
                     "committee_ids": [1],

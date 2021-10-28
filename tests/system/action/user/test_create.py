@@ -94,8 +94,8 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "committee/1": {"name": "C1", "meeting_ids": [1]},
                 "committee/2": {"name": "C2", "meeting_ids": [2]},
-                "meeting/1": {"committee_id": 1},
-                "meeting/2": {"committee_id": 2},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
+                "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
                 "user/222": {"meeting_ids": [1]},
                 "group/11": {"meeting_id": 1},
                 "group/22": {"meeting_id": 2},
@@ -462,6 +462,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "usersname",
                 "group_$_ids": {"1": [1], "4": [4]},
                 "committee_ids": [60],
+                "is_present_in_meeting_ids": [1],
             },
         )
         self.assert_status_code(response, 200)

@@ -13,7 +13,7 @@ class PollPublishActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "poll/1": {"state": "finished", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.publish", {"id": 1})
@@ -25,7 +25,7 @@ class PollPublishActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "poll/1": {"state": "created", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.publish", {"id": 1})
@@ -41,7 +41,7 @@ class PollPublishActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "poll/1": {"state": "started", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.publish", {"id": 1})

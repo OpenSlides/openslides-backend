@@ -7,7 +7,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class MediafileUploadActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
         start_time = round(time())
@@ -34,7 +36,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_create_cannot_guess_mimetype(self) -> None:
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",
@@ -55,7 +59,10 @@ class MediafileUploadActionTest(BaseActionTestCase):
     def test_create_access_group(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "name_DsJFXoot"},
+                "meeting/110": {
+                    "name": "name_DsJFXoot",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/10": {
                     "title": "title_CgKPfByo",
                     "is_directory": True,
@@ -88,7 +95,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 11, "text/plain")
 
     def test_upload_pdf(self) -> None:
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
         filename = "test.pdf"
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
@@ -109,7 +118,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
 
     def test_error_in_resource_upload(self) -> None:
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
         filename = "raises_upload_error.swf"
         used_mimetype = "application/x-shockwave-flash"
         raw_content = b"raising upload error in mock"
@@ -129,7 +140,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 1, used_mimetype)
 
     def test_without_filename(self) -> None:
-        self.create_model("meeting/110", {"name": "name_DsJFXoot"})
+        self.create_model(
+            "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
+        )
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",
@@ -171,7 +184,9 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
 
     def test_create_added_mimetype_ttf(self) -> None:
-        self.create_model("meeting/110", {"name": "name"})
+        self.create_model(
+            "meeting/110", {"name": "name", "is_active_in_organization_id": 1}
+        )
         file_content = base64.b64encode(b"testtesttest").decode()
         response = self.request(
             "mediafile.upload",

@@ -2,6 +2,7 @@ import base64
 import mimetypes
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Resource
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
@@ -15,7 +16,9 @@ from .mixins import PermissionMixin
 
 
 @register_action("resource.upload")
-class MediafileUploadAction(PermissionMixin, CreateAction):
+class MediafileUploadAction(
+    PermissionMixin, CreateAction, CheckForArchivedMeetingMixin
+):
     """
     Action to upload a resourcefile.
     The token-field acts as unique key

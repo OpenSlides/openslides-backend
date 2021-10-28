@@ -7,7 +7,10 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/111": {"personal_note_ids": [1]},
+            "meeting/111": {
+                "personal_note_ids": [1],
+                "is_active_in_organization_id": 1,
+            },
             "user/1": {
                 "personal_note_$111_ids": [1],
                 "personal_note_$_ids": ["111"],
@@ -34,7 +37,10 @@ class PersonalNoteDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_user_id(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"personal_note_ids": [1]},
+                "meeting/111": {
+                    "personal_note_ids": [1],
+                    "is_active_in_organization_id": 1,
+                },
                 "user/2": {
                     "personal_note_$111_ids": [1],
                     "personal_note_$_ids": ["111"],

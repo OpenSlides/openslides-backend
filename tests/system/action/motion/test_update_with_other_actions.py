@@ -6,7 +6,7 @@ class MotionUpdateWithOtherActionsTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },

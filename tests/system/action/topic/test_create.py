@@ -5,7 +5,12 @@ from tests.system.action.base import BaseActionTestCase
 
 class TopicCreateSystemTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.set_models({"topic/41": {}, "meeting/1": {"name": "test"}})
+        self.set_models(
+            {
+                "topic/41": {},
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
+            }
+        )
         response = self.request("topic.create", {"meeting_id": 1, "title": "test"})
         self.assert_status_code(response, 200)
         self.assert_model_exists("topic/42")
@@ -27,7 +32,9 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assertEqual(response.json["results"], [[{"id": 42}]])
 
     def test_create_multiple_requests(self) -> None:
-        self.create_model("meeting/1", {"name": "test"})
+        self.create_model(
+            "meeting/1", {"name": "test", "is_active_in_organization_id": 1}
+        )
         response = self.request_json(
             [
                 {
@@ -57,7 +64,9 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assert_model_not_exists("topic/4")
 
     def test_create_more_fields(self) -> None:
-        self.create_model("meeting/1", {"name": "test"})
+        self.create_model(
+            "meeting/1", {"name": "test", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "topic.create",
             {
@@ -81,7 +90,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item["weight"], 10000)
 
     def test_create_multiple_in_one_request(self) -> None:
-        self.create_model("meeting/1")
+        self.create_model("meeting/1", {"is_active_in_organization_id": 1})
         response = self.request_multi(
             "topic.create",
             [

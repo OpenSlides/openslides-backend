@@ -7,7 +7,7 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/11": {},
+                "meeting/11": {"is_active_in_organization_id": 1},
                 "topic/102": {"meeting_id": 11},
                 "agenda_item/111": {
                     "item_number": "101",
@@ -24,7 +24,7 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_all_fields(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test"},
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "topic/1": {"agenda_item_id": 1, "meeting_id": 1},
                 "tag/1": {"meeting_id": 1},
                 "agenda_item/1": {"meeting_id": 1, "content_object_id": "topic/1"},
@@ -56,7 +56,7 @@ class AgendaItemActionTest(BaseActionTestCase):
     def test_update_type_change_with_children(self) -> None:
         self.set_models(
             {
-                "meeting/11": {},
+                "meeting/11": {"is_active_in_organization_id": 1},
                 "agenda_item/111": {
                     "item_number": "101",
                     "duration": 600,

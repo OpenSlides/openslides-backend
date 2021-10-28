@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from ....models.models import Meeting
 from ....permissions.management_levels import (
@@ -253,3 +253,6 @@ class MeetingUpdate(UpdateAction):
             )
             if not is_superadmin:
                 raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return cast(int, instance.get("id"))

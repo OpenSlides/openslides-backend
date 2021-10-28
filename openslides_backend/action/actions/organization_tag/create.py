@@ -1,3 +1,4 @@
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import OrganizationTag
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.create import CreateAction
@@ -6,7 +7,7 @@ from ...util.register import register_action
 
 
 @register_action("organization_tag.create")
-class OrganizationTagCreate(CreateAction):
+class OrganizationTagCreate(CreateAction, CheckForArchivedMeetingMixin):
     """
     Action to create an organization tag.
     """

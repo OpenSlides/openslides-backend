@@ -17,7 +17,10 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_correct_all_fields(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/89": {"meeting_id": 222},
                 "motion_category/111": {
                     "name": "name_srtgb123",
@@ -46,7 +49,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_delete_prefix(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",
@@ -68,7 +71,10 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_category/111": {
                     "name": "name_srtgb123",
                     "prefix": "prefix_JmDHFgvH",

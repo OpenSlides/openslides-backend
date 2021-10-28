@@ -6,7 +6,12 @@ from tests.system.action.base import BaseActionTestCase
 class MotionBlockActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.create_model(
-            "meeting/42", {"name": "test", "agenda_item_creation": "always"}
+            "meeting/42",
+            {
+                "name": "test",
+                "agenda_item_creation": "always",
+                "is_active_in_organization_id": 1,
+            },
         )
         response = self.request(
             "motion_block.create", {"title": "test_Xcdfgee", "meeting_id": 42}
@@ -52,14 +57,26 @@ class MotionBlockActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/1": {"name": "test", "agenda_item_creation": "always"}},
+            {
+                "meeting/1": {
+                    "name": "test",
+                    "agenda_item_creation": "always",
+                    "is_active_in_organization_id": 1,
+                }
+            },
             "motion_block.create",
             {"title": "test_Xcdfgee", "meeting_id": 1},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/1": {"name": "test", "agenda_item_creation": "always"}},
+            {
+                "meeting/1": {
+                    "name": "test",
+                    "agenda_item_creation": "always",
+                    "is_active_in_organization_id": 1,
+                }
+            },
             "motion_block.create",
             {"title": "test_Xcdfgee", "meeting_id": 1},
             Permissions.Motion.CAN_MANAGE,

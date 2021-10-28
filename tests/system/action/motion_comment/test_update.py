@@ -18,7 +18,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"group_$1_ids": [2]},
-                "meeting/1": {"admin_group_id": 2},
+                "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
                 "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
                 "motion_comment/111": {
                     "comment": "comment_srtgb123",
@@ -38,7 +38,7 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_comment/111": {
                     "comment": "comment_srtgb123",
                     "meeting_id": 1,

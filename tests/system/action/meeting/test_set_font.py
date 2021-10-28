@@ -6,7 +6,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
-            "meeting/1": {"name": "name_meeting1"},
+            "meeting/1": {"name": "name_meeting1", "is_active_in_organization_id": 1},
             "mediafile/17": {
                 "is_directory": False,
                 "mimetype": "font/woff",
@@ -17,7 +17,10 @@ class MeetingSetFontActionTest(BaseActionTestCase):
     def test_set_font_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_meeting222"},
+                "meeting/222": {
+                    "name": "name_meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "font/woff",
@@ -35,7 +38,10 @@ class MeetingSetFontActionTest(BaseActionTestCase):
     def test_set_font_wrong_directory(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_meeting222"},
+                "meeting/222": {
+                    "name": "name_meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/17": {
                     "is_directory": True,
                     "mimetype": "font/ttf",
@@ -52,7 +58,10 @@ class MeetingSetFontActionTest(BaseActionTestCase):
     def test_set_font_wrong_no_image(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_meeting222"},
+                "meeting/222": {
+                    "name": "name_meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "text/plain",

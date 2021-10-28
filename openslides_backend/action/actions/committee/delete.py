@@ -17,6 +17,7 @@ class CommitteeDeleteAction(DeleteAction):
     model = Committee()
     schema = DefaultSchema(Committee()).get_delete_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         try:

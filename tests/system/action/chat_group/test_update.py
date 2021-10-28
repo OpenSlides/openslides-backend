@@ -8,7 +8,7 @@ class ChatGroupUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"enable_chat": True},
+            "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
             "chat_group/1": {
                 "meeting_id": 1,
                 "name": "redekreis1",
@@ -47,8 +47,8 @@ class ChatGroupUpdate(BaseActionTestCase):
     def test_update_group_from_different_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"enable_chat": True},
-                "meeting/2": {},
+                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "chat_group/1": {
                     "meeting_id": 1,
                     "name": "redekreis1",

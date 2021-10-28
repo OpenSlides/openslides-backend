@@ -13,3 +13,4 @@ class ResourceDelete(PermissionMixin, DeleteAction):
 
     model = Resource()
     schema = DefaultSchema(Resource()).get_delete_schema()
+    skip_archived_meeting_check = True

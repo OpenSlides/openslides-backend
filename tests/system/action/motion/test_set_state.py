@@ -44,7 +44,10 @@ class MotionSetStateActionTest(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/76": {
                     "meeting_id": 222,
                     "name": "test0",
@@ -78,7 +81,10 @@ class MotionSetStateActionTest(BaseActionTestCase):
     def test_set_state_correct_next_state(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/76": {
                     "meeting_id": 222,
                     "name": "test0",
@@ -111,7 +117,10 @@ class MotionSetStateActionTest(BaseActionTestCase):
     def test_set_state_wrong_not_in_next_or_previous(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/76": {
                     "meeting_id": 222,
                     "name": "test0",

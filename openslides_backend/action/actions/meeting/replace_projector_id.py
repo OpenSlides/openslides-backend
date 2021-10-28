@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from ....models.models import Meeting
 from ....shared.patterns import FullQualifiedId
 from ....shared.schema import required_id_schema
@@ -37,3 +39,6 @@ class MeetingReplaceProjectorId(UpdateAction):
                     changed = True
             if changed:
                 yield instance
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return instance["id"]

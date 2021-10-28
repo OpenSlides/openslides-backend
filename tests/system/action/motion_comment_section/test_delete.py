@@ -15,7 +15,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/22": {},
+                "meeting/22": {"is_active_in_organization_id": 1},
                 "motion_comment_section/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 22,
@@ -29,7 +29,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/22": {},
+                "meeting/22": {"is_active_in_organization_id": 1},
                 "motion_comment_section/112": {
                     "name": "name_srtgb123",
                     "meeting_id": 22,
@@ -43,7 +43,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_delete_existing_comments(self) -> None:
         self.set_models(
             {
-                "meeting/22": {},
+                "meeting/22": {"is_active_in_organization_id": 1},
                 "motion_comment/79": {"motion_id": 17, "meeting_id": 22},
                 "motion_comment_section/1141": {"comment_ids": [79], "meeting_id": 22},
             }

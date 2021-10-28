@@ -71,12 +71,14 @@ class FakeModelEFC(Model):
 class FakeModelEFBCreateAction(CreateAction):
     model = FakeModelEFB()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 @register_action("fake_model_ef_b.update", internal=True)
 class FakeModelEFBUpdateAction(UpdateAction):
     model = FakeModelEFB()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 class TestEqualFieldsCheck(BaseActionTestCase):

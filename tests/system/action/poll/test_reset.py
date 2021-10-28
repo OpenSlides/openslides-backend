@@ -26,7 +26,7 @@ class PollResetActionTest(BaseActionTestCase):
     def test_reset_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "poll/1": {
                     "state": "started",
                     "option_ids": [1],
@@ -99,7 +99,7 @@ class PollResetActionTest(BaseActionTestCase):
     def test_reset_not_allowed_to_vote_again(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {"user_ids": [1]},
                 "user/1": {"group_$1_ids": [1], "is_present_in_meeting_ids": [1]},
                 "poll/1": {

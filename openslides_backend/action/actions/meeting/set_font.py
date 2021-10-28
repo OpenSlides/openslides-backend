@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from ...util.register import register_action
 from .base_set_mediafile_action import BaseMeetingSetMediafileAction
 
@@ -16,3 +18,6 @@ class MeetingSetFontAction(BaseMeetingSetMediafileAction):
         "application/font-woff",
         "application/font-sfnt",
     ]
+
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return instance["id"]

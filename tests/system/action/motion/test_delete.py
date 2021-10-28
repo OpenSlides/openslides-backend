@@ -8,7 +8,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"motion_ids": [111]},
+            "meeting/1": {"motion_ids": [111], "is_active_in_organization_id": 1},
             "motion/111": {
                 "title": "title_srtgb123",
                 "meeting_id": 1,
@@ -30,7 +30,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/98": {"motion_ids": [111]},
+                "meeting/98": {"motion_ids": [111], "is_active_in_organization_id": 1},
                 "motion/111": {"title": "title_srtgb123", "meeting_id": 98},
             }
         )
@@ -47,7 +47,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
             {
-                "meeting/98": {"motion_ids": [111]},
+                "meeting/98": {"motion_ids": [111], "is_active_in_organization_id": 1},
                 "motion/111": {
                     "title": "title_srtgb123",
                     "list_of_speakers_id": 222,
@@ -57,10 +57,12 @@ class MotionDeleteActionTest(BaseActionTestCase):
                 "list_of_speakers/222": {
                     "closed": False,
                     "content_object_id": "motion/111",
+                    "meeting_id": 98,
                 },
                 "agenda_item/333": {
                     "comment": "test_comment_ewoirzewoirioewr",
                     "content_object_id": "motion/111",
+                    "meeting_id": 98,
                 },
             }
         )

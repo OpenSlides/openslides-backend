@@ -6,7 +6,7 @@ class GroupUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -18,7 +18,7 @@ class GroupUpdateActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )

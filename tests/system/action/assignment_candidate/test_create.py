@@ -26,7 +26,10 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                "meeting/1333": {"name": "name_JhlFOAfK"},
+                "meeting/1333": {
+                    "name": "name_JhlFOAfK",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/110": {"username": "test_Xcdfgee"},
                 "assignment/111": {"title": "title_xTcEkItp", "meeting_id": 1333},
             }
@@ -72,7 +75,10 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
     def test_create_finished(self) -> None:
         self.set_models(
             {
-                "meeting/1333": {"name": "name_JhlFOAfK"},
+                "meeting/1333": {
+                    "name": "name_JhlFOAfK",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/110": {"username": "test_Xcdfgee"},
                 "assignment/111": {
                     "title": "title_xTcEkItp",

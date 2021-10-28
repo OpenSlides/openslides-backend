@@ -5,7 +5,10 @@ class PollSetState(BaseActionTestCase):
     def test_set_state(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "meeting_110"},
+                "meeting/110": {
+                    "name": "meeting_110",
+                    "is_active_in_organization_id": 1,
+                },
                 "poll/65": {
                     "type": "analog",
                     "state": "created",

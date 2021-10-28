@@ -7,7 +7,10 @@ class ProjectorMessageUpdate(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/2": {"projector_message_ids": [2]},
+                "meeting/2": {
+                    "projector_message_ids": [2],
+                    "is_active_in_organization_id": 1,
+                },
                 "projector_message/2": {"meeting_id": 2, "message": "test1"},
             }
         )

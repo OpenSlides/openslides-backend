@@ -4,12 +4,13 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class ProjectorCreateActionTest(BaseActionTestCase):
-    def test_create_correct_and_defaults(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"name": "name_SNLGsvIV"},
-            }
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
         )
+
+    def test_create_correct_and_defaults(self) -> None:
         response = self.request(
             "projector.create",
             {
@@ -25,11 +26,6 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         self.assert_defaults(Projector, model)
 
     def test_create_all_fields(self) -> None:
-        self.set_models(
-            {
-                "meeting/222": {"name": "name_SNLGsvIV"},
-            }
-        )
         data = {
             "name": "Test",
             "meeting_id": 222,
@@ -53,7 +49,6 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         self.assert_model_exists("projector/1", data)
 
     def test_create_wrong_color(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         response = self.request(
             "projector.create",
             {
@@ -69,7 +64,6 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_width(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         response = self.request(
             "projector.create",
             {
@@ -85,7 +79,6 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_set_used_as_default__in_meeting_id(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         response = self.request(
             "projector.create",
             {
@@ -108,7 +101,6 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_set_wrong_used_as_default__in_meeting_id(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
         response = self.request(
             "projector.create",
             {

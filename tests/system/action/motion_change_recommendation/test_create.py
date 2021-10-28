@@ -7,7 +7,10 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.set_models(
-            {"meeting/1": {"motion_ids": [233]}, "motion/233": {"meeting_id": 1}}
+            {
+                "meeting/1": {"motion_ids": [233], "is_active_in_organization_id": 1},
+                "motion/233": {"meeting_id": 1},
+            }
         )
 
     def test_create_good_required_fields(self) -> None:
@@ -113,7 +116,10 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         super().setUp()
         self.crid = 0
         self.set_models(
-            {"meeting/1": {"motion_ids": [233]}, "motion/233": {"meeting_id": 1}}
+            {
+                "meeting/1": {"motion_ids": [233], "is_active_in_organization_id": 1},
+                "motion/233": {"meeting_id": 1},
+            }
         )
 
     def create_change_recommendation(

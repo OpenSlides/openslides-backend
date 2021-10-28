@@ -13,7 +13,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_parent_none(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/7": {
                     "title": "title_7",
                     "meeting_id": 222,
@@ -62,7 +65,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_parent_set(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/7": {
                     "title": "title_7",
                     "meeting_id": 222,
@@ -107,7 +113,10 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_non_directory_parent_set(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/7": {
                     "title": "title_7",
                     "meeting_id": 222,
@@ -138,7 +147,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_multiple_action_data_items(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "mediafile/7": {"meeting_id": 222, "is_directory": True},
                 "mediafile/8": {"meeting_id": 222, "is_directory": True},
             }
@@ -159,7 +168,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
     def test_move_circle(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "mediafile/7": {
                     "meeting_id": 222,
                     "is_directory": True,

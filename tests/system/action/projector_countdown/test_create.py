@@ -7,7 +7,10 @@ class ProjectorCountdown(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {"projector_countdown_default_time": 11},
+                "meeting/1": {
+                    "projector_countdown_default_time": 11,
+                    "is_active_in_organization_id": 1,
+                },
                 "projector_countdown/1": {"title": "blablabla", "meeting_id": 1},
             }
         )

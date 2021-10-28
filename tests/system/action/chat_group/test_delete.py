@@ -8,7 +8,7 @@ class ChatGroupDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"enable_chat": True},
+            "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
             "chat_group/1": {"meeting_id": 1, "name": "redekreis1"},
         }
 

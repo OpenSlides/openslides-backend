@@ -12,6 +12,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                 "name": "meeting_1",
                 "motion_category_ids": [111],
                 "motion_ids": [69],
+                "is_active_in_organization_id": 1,
             },
             "motion_category/111": {
                 "name": "name_MKKAcYQu",
@@ -49,6 +50,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "motions_number_min_digits": 3,
                     "motion_ids": [78, 85],
                     "motion_category_ids": [111, 78, 114],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion/78": {
                     "title": "title_NAZOknoM",
@@ -99,6 +101,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "name": "meeting_1",
                     "motion_ids": [78, 85, 666],
                     "motion_category_ids": [111, 78, 114],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion/78": {"title": "title_NAZOknoM", "meeting_id": 1},
                 "motion/85": {
@@ -147,6 +150,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "motions_amendments_prefix": "X",
                     "motion_category_ids": [1, 2, 3],
                     "motion_ids": [1, 2, 3, 4, 5],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "name_category_1",
@@ -221,6 +225,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "name": "meeting_1",
                     "motion_category_ids": [111],
                     "motion_ids": [69, 70],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/111": {
                     "name": "name_MKKAcYQu",
@@ -259,6 +264,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_category_ids": [1, 2, 3, 4],
                     "motion_ids": [1, 2, 3],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",
@@ -321,6 +327,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_category_ids": [1],
                     "motion_ids": [1, 2, 3],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",
@@ -367,6 +374,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_category_ids": [1, 2],
                     "motion_ids": [1],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",
@@ -408,6 +416,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_category_ids": [1, 2],
                     "motion_ids": [1],
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_category/1": {
                     "name": "category_1",

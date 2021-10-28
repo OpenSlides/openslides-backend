@@ -62,7 +62,7 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/2": {"meeting_ids": [1]},
-                "meeting/2": {},
+                "meeting/2": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(

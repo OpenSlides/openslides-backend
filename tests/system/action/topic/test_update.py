@@ -6,14 +6,14 @@ class TopicUpdateTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
-            "meeting/1": {"name": "test"},
+            "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
             "topic/1": {"title": "test", "meeting_id": 1},
         }
 
     def test_update_simple(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test"},
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "topic/1": {"title": "test", "meeting_id": 1},
             }
         )
@@ -28,7 +28,7 @@ class TopicUpdateTest(BaseActionTestCase):
     def test_update_tag_ids_add(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test"},
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "topic/1": {"title": "test", "meeting_id": 1},
                 "tag/1": {"name": "tag", "meeting_id": 1},
             }
@@ -48,7 +48,7 @@ class TopicUpdateTest(BaseActionTestCase):
     def test_update_multiple_with_tag(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "test"},
+                "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
                 "tag/1": {
                     "name": "tag",
                     "meeting_id": 1,

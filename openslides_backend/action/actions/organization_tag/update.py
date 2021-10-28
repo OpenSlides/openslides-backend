@@ -1,3 +1,4 @@
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import OrganizationTag
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.update import UpdateAction
@@ -6,7 +7,7 @@ from ...util.register import register_action
 
 
 @register_action("organization_tag.update")
-class OrganizationTagUpdate(UpdateAction):
+class OrganizationTagUpdate(UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to update an organization tag.
     """

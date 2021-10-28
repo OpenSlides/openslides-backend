@@ -19,7 +19,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(
@@ -39,7 +39,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "meeting_id": 1,
                 },
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(

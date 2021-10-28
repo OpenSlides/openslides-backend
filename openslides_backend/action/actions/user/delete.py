@@ -15,6 +15,7 @@ class UserDelete(UserScopePermissionCheckMixin, DeleteAction):
 
     model = User()
     schema = DefaultSchema(User()).get_delete_schema()
+    skip_archived_meeting_check = True
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         self.check_permissions_for_scope(instance)

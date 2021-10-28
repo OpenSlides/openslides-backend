@@ -24,7 +24,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},
@@ -53,7 +53,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},
@@ -74,7 +74,7 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def test_sort_another_section_db(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
                 "user/233": {"username": "username_233"},
                 "user/234": {"username": "username_234"},

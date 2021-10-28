@@ -3,7 +3,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class TagActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/577", {"name": "name_YBEqrXqz"})
+        self.create_model(
+            "meeting/577", {"name": "name_YBEqrXqz", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "tag.create", {"name": "test_Xcdfgee", "meeting_id": 577}
         )
@@ -21,7 +23,9 @@ class TagActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/577", {"name": "name_YBEqrXqz"})
+        self.create_model(
+            "meeting/577", {"name": "name_YBEqrXqz", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "tag.create",
             {
@@ -38,7 +42,9 @@ class TagActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.set_organization_management_level(None)
-        self.create_model("meeting/577", {"name": "name_YBEqrXqz"})
+        self.create_model(
+            "meeting/577", {"name": "name_YBEqrXqz", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "tag.create", {"name": "test_Xcdfgee", "meeting_id": 577}
         )

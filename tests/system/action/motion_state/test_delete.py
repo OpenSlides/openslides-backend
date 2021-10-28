@@ -13,7 +13,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/111": {"name": "name_srtgb123", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("motion_state.delete", {"id": 111})
@@ -24,7 +24,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/112": {"name": "name_srtgb123", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("motion_state.delete", {"id": 111})
@@ -34,7 +34,11 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_delete_first_state(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "name_meeting110", "motion_state_ids": [111]},
+                "meeting/110": {
+                    "name": "name_meeting110",
+                    "is_active_in_organization_id": 1,
+                    "motion_state_ids": [111],
+                },
                 "motion_workflow/1112": {
                     "name": "name_XZwyPWxb",
                     "first_state_id": 111,

@@ -7,8 +7,8 @@ class ProjectorProject(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {},
-                "meeting/2": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "group/1": {"meeting_id": 1},
                 "projector/23": {
                     "meeting_id": 1,

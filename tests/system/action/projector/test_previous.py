@@ -7,7 +7,7 @@ class ProjectorPrevious(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/2": {"meeting_id": 1},
                 "projector/3": {
                     "current_projection_ids": [1, 2],

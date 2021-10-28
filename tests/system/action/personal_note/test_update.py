@@ -7,7 +7,7 @@ class PersonalNoteUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {},
+            "meeting/1": {"is_active_in_organization_id": 1},
             "personal_note/1": {
                 "star": True,
                 "note": "blablabla",

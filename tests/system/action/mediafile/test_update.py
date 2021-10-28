@@ -13,7 +13,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
             }
@@ -32,7 +32,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_children(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_ekxORNiV",
@@ -62,7 +62,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
@@ -90,7 +90,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_inherited_list(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "group/8": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
@@ -121,7 +121,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case1(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -150,7 +150,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case2(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/2": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "group/4": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
@@ -181,7 +181,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case3(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/3": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "group/6": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
@@ -216,7 +216,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case4(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 1},
@@ -252,7 +252,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_case5(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "group/2": {"name": "group_sdfafd", "user_ids": [], "meeting_id": 1},
                 "group/3": {"name": "group_ghjeei", "user_ids": [], "meeting_id": 1},
@@ -284,7 +284,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_inherited_true(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
@@ -325,7 +325,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
@@ -364,7 +364,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children_2(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
@@ -413,7 +413,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_parent_and_children_3(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
@@ -463,7 +463,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_filename_error(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "filename": "testfile.txt",

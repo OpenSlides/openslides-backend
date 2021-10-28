@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...util.default_schema import DefaultSchema
@@ -9,7 +10,7 @@ from .set_password import UserSetPasswordMixin
 from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
-class UserGenerateNewPasswordMixin(UserSetPasswordMixin):
+class UserGenerateNewPasswordMixin(UserSetPasswordMixin, CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Generates new password and call the super code.

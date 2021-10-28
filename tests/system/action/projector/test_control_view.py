@@ -7,7 +7,7 @@ class ProjectorControlView(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/1": {"scale": 11, "scroll": 13, "meeting_id": 1},
             }
         )

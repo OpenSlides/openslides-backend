@@ -10,7 +10,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_add_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "number_$1": "1",
@@ -32,7 +32,11 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_del_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"present_user_ids": [111], "committee_id": 1},
+                "meeting/1": {
+                    "present_user_ids": [111],
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/111": {
                     "username": "username_srtgb123",
                     "is_present_in_meeting_ids": [1],
@@ -55,7 +59,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_too_many_numbers(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "number_$1": "1",
@@ -78,7 +82,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_no_number(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "committee/1": {},
             }
         )
@@ -91,7 +95,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_too_many_default_numbers(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "number_$1": "",
@@ -119,7 +123,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_other_user_default_number(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "number_$1": "1",
@@ -150,7 +154,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     ) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/111": {
                     "username": "username_srtgb123",
                     "number_$1": "1",
@@ -169,7 +173,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_no_permissions(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/1": {"organization_management_level": None},
                 "committee/1": {},
             }
@@ -182,7 +186,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_orga_can_manage_permission(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
                     "default_number": "test",
@@ -199,7 +203,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
     def test_toggle_presence_by_number_committee_can_manage_permission(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "committee/1": {"user_ids": [1]},
                 "user/1": {
                     "organization_management_level": None,
@@ -221,6 +225,7 @@ class UserTogglePresenceByNumberActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "group_ids": [1],
                     "committee_id": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "group/1": {
                     "user_ids": [1],

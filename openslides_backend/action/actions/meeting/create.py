@@ -44,6 +44,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         MotionWorkflowCreateComplexWorkflowAction,
         ProjectorCreateAction,
     ]
+    skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
@@ -63,7 +64,9 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             )
 
         instance["is_active_in_organization_id"] = committee["organization_id"]
-
+        self.datastore.update_additional_models(
+            FullQualifiedId(Collection("meeting"), instance["id"]), instance
+        )
         action_data = [
             {
                 "name": "Default",

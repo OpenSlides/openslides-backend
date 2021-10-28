@@ -6,7 +6,11 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
-            "meeting/1": {"logo_$place_id": 222, "logo_$_id": ["place"]},
+            "meeting/1": {
+                "logo_$place_id": 222,
+                "logo_$_id": ["place"],
+                "is_active_in_organization_id": 1,
+            },
             "mediafile/222": {
                 "used_as_logo_$place_in_meeting_id": 111,
                 "used_as_logo_$_in_meeting_id": ["place"],
@@ -17,7 +21,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/34": {},
+                "meeting/34": {"is_active_in_organization_id": 1},
                 "mediafile/111": {"title": "title_srtgb123", "meeting_id": 34},
             }
         )
@@ -30,7 +34,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/34": {},
+                "meeting/34": {"is_active_in_organization_id": 1},
                 "mediafile/112": {"title": "title_srtgb123", "meeting_id": 34},
             }
         )
@@ -42,7 +46,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_directory(self) -> None:
         self.set_models(
             {
-                "meeting/34": {},
+                "meeting/34": {"is_active_in_organization_id": 1},
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
@@ -65,7 +69,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_directory_list_of_children(self) -> None:
         self.set_models(
             {
-                "meeting/34": {},
+                "meeting/34": {"is_active_in_organization_id": 1},
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
@@ -97,7 +101,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_directory_two_children(self) -> None:
         self.set_models(
             {
-                "meeting/34": {},
+                "meeting/34": {"is_active_in_organization_id": 1},
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "is_directory": True,
@@ -129,7 +133,11 @@ class MediafileDeleteActionTest(BaseActionTestCase):
     def test_delete_check_relations(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"logo_$place_id": 222, "logo_$_id": ["place"]},
+                "meeting/111": {
+                    "logo_$place_id": 222,
+                    "logo_$_id": ["place"],
+                    "is_active_in_organization_id": 1,
+                },
                 "mediafile/222": {
                     "used_as_logo_$place_in_meeting_id": 111,
                     "used_as_logo_$_in_meeting_id": ["place"],

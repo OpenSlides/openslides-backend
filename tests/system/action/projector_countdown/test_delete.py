@@ -7,7 +7,10 @@ class ProjectorCountdownDelete(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {"projector_countdown_ids": [1, 2, 3]},
+                "meeting/1": {
+                    "projector_countdown_ids": [1, 2, 3],
+                    "is_active_in_organization_id": 1,
+                },
                 "projector_countdown/1": {"meeting_id": 1, "title": "test1"},
                 "projector_countdown/2": {
                     "meeting_id": 1,

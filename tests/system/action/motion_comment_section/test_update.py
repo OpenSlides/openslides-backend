@@ -16,7 +16,10 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_update_correct_all_fields(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_comment_section/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 222,
@@ -43,7 +46,10 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_xQyvfmsS"},
+                "meeting/222": {
+                    "name": "name_xQyvfmsS",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/23": {"meeting_id": 222, "name": "name_asdfetza"},
                 "group/24": {"meeting_id": 222, "name": "name_faofetza"},
                 "motion_comment_section/111": {

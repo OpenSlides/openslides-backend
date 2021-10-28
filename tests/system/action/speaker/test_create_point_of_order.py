@@ -8,6 +8,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [7844]},
                 "user/7": {"username": "talking", "meeting_ids": [7844]},
@@ -43,6 +44,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "talking with poo", "meeting_ids": [7844]},
                 "user/8": {"username": "waiting with poo", "meeting_ids": [7844]},
@@ -120,6 +122,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "waiting with poo1", "meeting_ids": [7844]},
                 "user/8": {"username": "waiting with poo2", "meeting_ids": [7844]},
@@ -222,6 +225,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "waiting with poo", "meeting_ids": [7844]},
                 "user/1": {
@@ -264,6 +268,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {
                     "username": "test_username1",
@@ -297,7 +302,10 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
     def test_create_poo_not_activated_in_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/7844": {"name": "name_asdewqasd"},
+                "meeting/7844": {
+                    "name": "name_asdewqasd",
+                    "is_active_in_organization_id": 1,
+                },
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 7844},
             }
         )
@@ -323,6 +331,7 @@ class SpeakerCreatePointOfOrderActionTest(BaseActionTestCase):
                     "name": "name_asdewqasd",
                     "list_of_speakers_enable_point_of_order_speakers": True,
                     "list_of_speakers_present_users_only": False,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/7": {"username": "talking", "meeting_ids": [7844]},
                 "user/8": {"username": "waiting", "meeting_ids": [7844]},

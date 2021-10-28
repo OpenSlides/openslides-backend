@@ -1,3 +1,4 @@
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.update import UpdateAction
@@ -7,7 +8,7 @@ from .create import THEME_OPT_FIELDS, THEME_REQ_FIELDS
 
 
 @register_action("theme.update")
-class ThemeUpdate(UpdateAction):
+class ThemeUpdate(UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to update an theme.
     """

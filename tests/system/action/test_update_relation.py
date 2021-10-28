@@ -37,6 +37,7 @@ class FakeModelURB(Model):
 class FakeModelURAUpdateAction(UpdateAction):
     model = FakeModelURA()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 class TestUpdateRelation(BaseActionTestCase):

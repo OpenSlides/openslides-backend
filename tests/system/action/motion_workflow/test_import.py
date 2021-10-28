@@ -29,7 +29,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         }
 
     def test_import_simple_case(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -58,7 +61,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
 
     def test_import_one_state_no_first_state_name(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -82,7 +88,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
 
     def test_import_missing_state(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -99,7 +108,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
 
     def test_import_missing_state_next(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -116,7 +128,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
 
     def test_import_missing_state_previous(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -133,7 +148,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
 
     def test_import_next_previous_states(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -198,7 +216,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         )
 
     def test_import_wrong_prev_state(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {
@@ -217,7 +238,10 @@ class MotionWorkflowImport(BaseActionTestCase):
         assert "State begin is not in previous of edit." in response.json["message"]
 
     def test_import_wrong_next_state(self) -> None:
-        self.create_model("meeting/42", {"name": "test_name_fsdksjdfhdsfssdf"})
+        self.create_model(
+            "meeting/42",
+            {"name": "test_name_fsdksjdfhdsfssdf", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion_workflow.import",
             {

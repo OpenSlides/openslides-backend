@@ -4,7 +4,9 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_create_good_case_required_fields(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion_comment_section.create", {"name": "test_Xcdfgee", "meeting_id": 222}
         )
@@ -17,7 +19,10 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
     def test_create_good_case_all_fields(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/23": {"name": "name_IIwngcUT", "meeting_id": 222},
             }
         )
@@ -47,7 +52,9 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion_comment_section.create",
             {

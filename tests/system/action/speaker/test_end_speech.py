@@ -9,11 +9,13 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
             "meeting/1": {
                 "list_of_speakers_couple_countdown": True,
                 "list_of_speakers_countdown_id": 11,
+                "is_active_in_organization_id": 1,
             },
             "projector_countdown/11": {
                 "running": True,
                 "default_time": 60,
                 "countdown_time": 31.0,
+                "meeting_id": 1,
             },
             "user/7": {"username": "test_username1"},
             "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
@@ -31,11 +33,13 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                 "meeting/1": {
                     "list_of_speakers_couple_countdown": True,
                     "list_of_speakers_countdown_id": 11,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector_countdown/11": {
                     "running": True,
                     "default_time": 60,
                     "countdown_time": 31.0,
+                    "meeting_id": 1,
                 },
                 "user/7": {"username": "test_username1"},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
@@ -75,7 +79,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_existing_speaker(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
@@ -99,7 +103,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_existing_speaker_2(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
                 "speaker/890": {
@@ -124,11 +128,13 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
                 "meeting/1": {
                     "list_of_speakers_couple_countdown": True,
                     "list_of_speakers_countdown_id": 11,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector_countdown/11": {
                     "running": True,
                     "default_time": 60,
                     "countdown_time": 31.0,
+                    "meeting_id": 1,
                 },
                 "user/7": {"username": "test_username1"},
                 "list_of_speakers/23": {"speaker_ids": [890], "meeting_id": 1},
@@ -162,7 +168,7 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
     def test_correct_on_closed_los(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "user/7": {"username": "test_username1"},
                 "list_of_speakers/23": {
                     "speaker_ids": [890],

@@ -8,11 +8,16 @@ class MotionCreateForwarded(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_model: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"name": "name_XDAddEAW", "committee_id": 53},
+            "meeting/1": {
+                "name": "name_XDAddEAW",
+                "committee_id": 53,
+                "is_active_in_organization_id": 1,
+            },
             "meeting/2": {
                 "name": "name_SNLGsvIV",
                 "motions_default_workflow_id": 12,
                 "committee_id": 52,
+                "is_active_in_organization_id": 1,
             },
             "user/1": {"meeting_ids": [1, 2]},
             "motion_workflow/12": {
@@ -75,7 +80,14 @@ class MotionCreateForwarded(BaseActionTestCase):
         assert "Committee id 52 not in []" in response.json["message"]
 
     def test_missing_origin(self) -> None:
-        self.set_models({"meeting/1": {"name": "meeting_1"}})
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "meeting_222",
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
         response = self.request(
             "motion.create_forwarded",
             {
@@ -91,11 +103,16 @@ class MotionCreateForwarded(BaseActionTestCase):
     def test_all_origin_ids_complex(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "name_XDAddEAW", "committee_id": 53},
+                "meeting/1": {
+                    "name": "name_XDAddEAW",
+                    "committee_id": 53,
+                    "is_active_in_organization_id": 1,
+                },
                 "meeting/2": {
                     "name": "name_SNLGsvIV",
                     "motions_default_workflow_id": 12,
                     "committee_id": 52,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [1, 2]},
                 "motion_workflow/12": {

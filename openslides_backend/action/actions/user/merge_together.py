@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.exceptions import ActionException
@@ -10,7 +11,7 @@ from ...util.register import register_action
 
 
 @register_action("user.merge_together")
-class UserMergeTogether(CreateAction):
+class UserMergeTogether(CreateAction, CheckForArchivedMeetingMixin):
     """
     Action to merge users together.
     """

@@ -28,7 +28,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
@@ -56,7 +56,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_set_recommendation_missing_recommendation_label(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
@@ -80,7 +80,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
     def test_set_recommendation_not_matching_workflow_ids(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/34": {
                     "meeting_id": 222,
                 },
