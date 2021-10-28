@@ -896,3 +896,25 @@ class UserCreateActionTest(BaseActionTestCase):
             "The number of active users cannot exceed the limit of users."
             == response.json["message"]
         )
+
+    def test_create_inactive_user(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"limit_of_users": 1},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "is_active": False,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "test_Xcdfgee",
+                "is_active": False,
+            },
+        )
