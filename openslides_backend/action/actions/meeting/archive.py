@@ -14,10 +14,11 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import GetMeetingIdFromIdMixin
 
 
 @register_action("meeting.archive")
-class MeetingArchive(UpdateAction):
+class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema()
 
@@ -43,6 +44,3 @@ class MeetingArchive(UpdateAction):
             raise PermissionDenied(
                 "Missing permissions: Not Committee can_manage and not can_manage_organization"
             )
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return instance["id"]

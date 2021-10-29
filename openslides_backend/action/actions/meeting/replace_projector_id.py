@@ -1,4 +1,3 @@
-from typing import Any, Dict
 
 from ....models.models import Meeting
 from ....shared.patterns import FullQualifiedId
@@ -7,11 +6,12 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .mixins import GetMeetingIdFromIdMixin
 from .shared_meeting import meeting_projector_default_replacements
 
 
 @register_action("meeting.replace_projector_id", internal=True)
-class MeetingReplaceProjectorId(UpdateAction):
+class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
     """
     Internal action to replace default projector id with reference id.
     """
@@ -39,6 +39,3 @@ class MeetingReplaceProjectorId(UpdateAction):
                     changed = True
             if changed:
                 yield instance
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return instance["id"]

@@ -5,10 +5,11 @@ from ....permissions.permissions import Permissions
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import GetMeetingIdFromIdMixin
 
 
 @register_action("meeting.unset_logo")
-class MeetingUnsetLogoAction(UpdateAction):
+class MeetingUnsetLogoAction(UpdateAction, GetMeetingIdFromIdMixin):
     """
     Action to unset a logo form a meeting.
     """
@@ -25,6 +26,3 @@ class MeetingUnsetLogoAction(UpdateAction):
         place = instance.pop("place")
         instance["logo_$_id"] = {place: None}
         return instance
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return instance["id"]

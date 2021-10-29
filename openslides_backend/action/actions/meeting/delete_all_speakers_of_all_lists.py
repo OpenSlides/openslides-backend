@@ -1,4 +1,3 @@
-from typing import Any, Dict
 
 from ....models.models import Meeting, Speaker
 from ....permissions.permissions import Permissions
@@ -8,10 +7,11 @@ from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .mixins import GetMeetingIdFromIdMixin
 
 
 @register_action("meeting.delete_all_speakers_of_all_lists")
-class DeleteAllSpeakersOfAllListsAction(DeleteAction):
+class DeleteAllSpeakersOfAllListsAction(DeleteAction, GetMeetingIdFromIdMixin):
     """
     Action to delete all speakers of all lists of a meeting.
     """
@@ -45,6 +45,3 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction):
             for speaker in los.get("speaker_ids", []):
                 new_action_data.append({"id": speaker})
         return new_action_data
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return instance["id"]

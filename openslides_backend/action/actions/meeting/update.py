@@ -1,4 +1,4 @@
-from typing import Any, Dict, cast
+from typing import Any, Dict
 
 from ....models.models import Meeting
 from ....permissions.management_levels import (
@@ -19,6 +19,7 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting.shared_meeting import used_as_default_for_schema_required
+from .mixins import GetMeetingIdFromIdMixin
 
 meeting_settings_keys = [
     "welcome_title",
@@ -134,7 +135,7 @@ meeting_settings_keys = [
 
 
 @register_action("meeting.update")
-class MeetingUpdate(UpdateAction):
+class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
@@ -253,6 +254,3 @@ class MeetingUpdate(UpdateAction):
             )
             if not is_superadmin:
                 raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return cast(int, instance.get("id"))

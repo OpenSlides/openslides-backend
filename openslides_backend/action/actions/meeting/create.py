@@ -64,9 +64,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             )
 
         instance["is_active_in_organization_id"] = committee["organization_id"]
-        self.datastore.update_additional_models(
-            FullQualifiedId(Collection("meeting"), instance["id"]), instance
-        )
+        self.apply_instance(instance)
         action_data = [
             {
                 "name": "Default",
