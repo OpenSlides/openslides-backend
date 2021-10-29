@@ -1,4 +1,3 @@
-
 from ....models.models import Meeting, Speaker
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest

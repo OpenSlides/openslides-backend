@@ -1,4 +1,3 @@
-
 from ....models.models import Meeting
 from ....shared.patterns import FullQualifiedId
 from ....shared.schema import required_id_schema

@@ -1,4 +1,3 @@
-
 from ...util.register import register_action
 from .base_set_mediafile_action import BaseMeetingSetMediafileAction
 

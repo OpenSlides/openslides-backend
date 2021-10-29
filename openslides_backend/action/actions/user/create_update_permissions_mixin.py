@@ -218,7 +218,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         ):
             return
 
-        if instance.get("id"):
+        if uid := instance.get("id"):
             self.apply_instance(instance)
 
         scope, scope_id = self.get_user_scope(uid, None if uid else instance)
