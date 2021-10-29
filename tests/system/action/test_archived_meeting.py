@@ -156,9 +156,7 @@ class MeetingActions(BaseActionTestCase):
                 "structure_level_$2": "Member M2",
             },
         )
-        self.assert_model_deleted(
-            "group/1", {"user_ids": [2], "meeting_id": 1}
-        )
+        self.assert_model_deleted("group/1", {"user_ids": [2], "meeting_id": 1})
         self.assert_model_deleted(
             "list_of_speakers/11",
             {"speaker_ids": [1, 2], "meeting_id": 1},
@@ -195,17 +193,19 @@ class OutMeetingActions(BaseActionTestCase):
         )
 
     def test_change_user_group(self) -> None:
-        self.set_models({
-            "meeting/1": {"group_ids": [1, 2]},
-            "group/1": {"user_ids": [2], "meeting_id": 1},
-            "group/2": {"meeting_id": 1},
-            "user/2": {
-                "username": "user2",
-                "is_active": True,
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-            },
-        })
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1, 2]},
+                "group/1": {"user_ids": [2], "meeting_id": 1},
+                "group/2": {"meeting_id": 1},
+                "user/2": {
+                    "username": "user2",
+                    "is_active": True,
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                },
+            }
+        )
         response = self.request(
             "user.update",
             {
@@ -218,20 +218,22 @@ class OutMeetingActions(BaseActionTestCase):
             "Meetings 1 cannot be changed, because they are archived.",
             response.json["message"],
         )
- 
+
     def test_delete_user(self) -> None:
-        self.set_models({
-            "meeting/1": {"group_ids": [1], "user_ids": [1, 2]},
-            "group/1": {"user_ids": [2], "meeting_id": 1},
-            "user/2": {
-                "username": "user2",
-                "is_active": True,
-                "structure_level_$": ["1"],
-                "structure_level_$1": "Member M1",
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-            },
-        })
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [1], "user_ids": [1, 2]},
+                "group/1": {"user_ids": [2], "meeting_id": 1},
+                "user/2": {
+                    "username": "user2",
+                    "is_active": True,
+                    "structure_level_$": ["1"],
+                    "structure_level_$1": "Member M1",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                },
+            }
+        )
 
         response = self.request(
             "user.delete",
@@ -240,17 +242,27 @@ class OutMeetingActions(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/2", {"group_$1_ids": [1], "structure_level_$1": "Member M1"})
-        self.assert_model_exists("group/1", {'user_ids': []})
+        self.assert_model_deleted(
+            "user/2", {"group_$1_ids": [1], "structure_level_$1": "Member M1"}
+        )
+        self.assert_model_exists("group/1", {"user_ids": []})
         self.assert_model_exists("meeting/1", {"group_ids": [1], "user_ids": [1]})
 
     def test_delete_organization_tag(self) -> None:
-        self.set_models({
-            "committee/1": {"organization_tag_ids": [1, 2]},
-            "meeting/1": {"organization_tag_ids": [1, 2]},
-            "organization_tag/1": {"name": "tag1", "tagged_ids": ["meeting/1", "committee/1"]},
-            "organization_tag/2": {"name": "tag2", "tagged_ids": ["meeting/1", "committee/1"]},
-        })
+        self.set_models(
+            {
+                "committee/1": {"organization_tag_ids": [1, 2]},
+                "meeting/1": {"organization_tag_ids": [1, 2]},
+                "organization_tag/1": {
+                    "name": "tag1",
+                    "tagged_ids": ["meeting/1", "committee/1"],
+                },
+                "organization_tag/2": {
+                    "name": "tag2",
+                    "tagged_ids": ["meeting/1", "committee/1"],
+                },
+            }
+        )
         response = self.request(
             "organization_tag.delete",
             {
@@ -258,6 +270,8 @@ class OutMeetingActions(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("organization_tag/1", {"tagged_ids": ["meeting/1", "committee/1"]}),
+        self.assert_model_deleted(
+            "organization_tag/1", {"tagged_ids": ["meeting/1", "committee/1"]}
+        )
         self.assert_model_exists("committee/1", {"organization_tag_ids": [2]})
         self.assert_model_exists("meeting/1", {"organization_tag_ids": [2]})
