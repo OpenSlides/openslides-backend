@@ -40,7 +40,10 @@ class MotionResetStateActionTest(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_workflow/1": {
                     "meeting_id": 222,
                     "name": "test1",
@@ -79,7 +82,10 @@ class MotionResetStateActionTest(BaseActionTestCase):
     def test_reset_state_correct_number_value(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_workflow/1": {
                     "name": "test1",
                     "state_ids": [76, 77],
@@ -117,7 +123,10 @@ class MotionResetStateActionTest(BaseActionTestCase):
     def test_reset_state_missing_first_state(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_workflow/1": {
                     "meeting_id": 222,
                     "name": "test1",

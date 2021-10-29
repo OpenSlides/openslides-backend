@@ -19,7 +19,9 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         return handler
 
     def test_parse_actions_create_2_actions(self) -> None:
-        self.create_model("meeting/1", {})
+        self.create_model(
+            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
+        )
         payload: Payload = [
             {
                 "action": "group.create",
@@ -45,16 +47,32 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 2)
         self.assertEqual(len(write_requests[0].events), 2)
-        self.assertEqual(write_requests[0].locked_fields, {"meeting/1/group_ids": 2})
+        self.assertEqual(
+            write_requests[0].locked_fields,
+            {
+                "meeting/1/group_ids": 2,
+                "meeting/1/is_active_in_organization_id": 2,
+                "meeting/1/name": 2,
+            },
+        )
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "update")
         self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
         self.assertEqual(str(write_requests[0].events[1]["fqid"]), "meeting/1")
         self.assertEqual(len(write_requests[1].events), 2)
-        self.assertEqual(write_requests[1].locked_fields, {"meeting/1/group_ids": 2})
+        self.assertEqual(
+            write_requests[1].locked_fields,
+            {
+                "meeting/1/group_ids": 2,
+                "meeting/1/is_active_in_organization_id": 2,
+                "meeting/1/name": 2,
+            },
+        )
 
     def test_parse_actions_create_1_2_events(self) -> None:
-        self.create_model("meeting/1", {})
+        self.create_model(
+            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
+        )
         payload: Payload = [
             {
                 "action": "group.create",
@@ -75,7 +93,14 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 1)
         self.assertEqual(len(write_requests[0].events), 4)
-        self.assertEqual(write_requests[0].locked_fields, {"meeting/1/group_ids": 2})
+        self.assertEqual(
+            write_requests[0].locked_fields,
+            {
+                "meeting/1/group_ids": 2,
+                "meeting/1/is_active_in_organization_id": 2,
+                "meeting/1/name": 2,
+            },
+        )
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "create")
         self.assertEqual(write_requests[0].events[2]["type"], "update")
@@ -86,7 +111,9 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertEqual(str(write_requests[0].events[3]["fqid"]), "meeting/1")
 
     def test_create_2_actions(self) -> None:
-        self.create_model("meeting/1", {})
+        self.create_model(
+            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
+        )
         response = self.request_json(
             [
                 {
@@ -119,7 +146,9 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"group_ids": None})
 
     def test_create_1_2_events(self) -> None:
-        self.create_model("meeting/1", {})
+        self.create_model(
+            "meeting/1", {"name": "meeting1", "is_active_in_organization_id": 1}
+        )
         response = self.request_multi(
             "group.create",
             [
@@ -140,8 +169,18 @@ class GeneralActionCommandFormat(BaseActionTestCase):
     def test_update_2_actions(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
-                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "meeting/1": {
+                    "name": "name1",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "name2",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/1": {"name": "test_committee"},
             }
         )
@@ -176,8 +215,18 @@ class GeneralActionCommandFormat(BaseActionTestCase):
     def test_update_1_2_events(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
-                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "meeting/1": {
+                    "name": "name1",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "name2",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/1": {"name": "test_committee"},
             }
         )
@@ -203,8 +252,18 @@ class GeneralActionCommandFormat(BaseActionTestCase):
     def test_delete_2_actions(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
-                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "meeting/1": {
+                    "name": "name1",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "name2",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/1": {"name": "test_committee", "meeting_ids": [1, 2]},
             }
         )
@@ -240,8 +299,18 @@ class GeneralActionCommandFormat(BaseActionTestCase):
     def test_delete_1_2_events(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "name1", "committee_id": 1, "welcome_title": "t"},
-                "meeting/2": {"name": "name2", "committee_id": 1, "welcome_title": "t"},
+                "meeting/1": {
+                    "name": "name1",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "name2",
+                    "committee_id": 1,
+                    "welcome_title": "t",
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/1": {"name": "test_committee", "meeting_ids": [1, 2]},
             }
         )

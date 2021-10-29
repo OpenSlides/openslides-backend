@@ -4,7 +4,7 @@ from tests.system.action.base import BaseActionTestCase
 
 class MotionStatuteParagraphActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/42")
+        self.create_model("meeting/42", {"is_active_in_organization_id": 1})
         response = self.request(
             "motion_statute_paragraph.create",
             {"meeting_id": 42, "title": "test_Xcdfgee", "text": "blablabla"},
@@ -25,7 +25,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/42")
+        self.create_model("meeting/42", {"is_active_in_organization_id": 1})
         response = self.request(
             "motion_statute_paragraph.create", {"wrong_field": "text_AefohteiF8"}
         )

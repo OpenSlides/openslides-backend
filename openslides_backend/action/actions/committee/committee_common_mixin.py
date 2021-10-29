@@ -1,14 +1,14 @@
 from typing import Any, Dict, Set
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection
-from ...action import Action
 from ..user.update import UserUpdate
 
 
-class CommitteeCommonCreateUpdateMixin(Action):
+class CommitteeCommonCreateUpdateMixin(CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Check if own committee is forwarded or received explicitly,

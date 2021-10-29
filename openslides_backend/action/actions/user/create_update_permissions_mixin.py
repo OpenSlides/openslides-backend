@@ -219,9 +219,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             return
 
         if uid := instance.get("id"):
-            self.datastore.update_additional_models(
-                FullQualifiedId(Collection("user"), uid), instance
-            )
+            self.apply_instance(instance)
 
         scope, scope_id = self.get_user_scope(uid, None if uid else instance)
         if scope == UserScope.Organization:

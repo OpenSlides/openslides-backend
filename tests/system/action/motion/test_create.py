@@ -17,7 +17,10 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_good_case_required_fields(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_workflow/12": {
                     "name": "name_workflow1",
                     "first_state_id": 34,
@@ -115,7 +118,9 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion.create",
             {
@@ -133,7 +138,10 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_workflow_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_workflow/12": {
                     "name": "name_workflow1",
                     "first_state_id": 34,
@@ -162,6 +170,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "motions_default_workflow_id": 13,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/35": {"name": "name_PXiCjXaK", "meeting_id": 222},
                 "motion_workflow/13": {
@@ -179,7 +188,9 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert motion.get("state_id") == 35
 
     def test_create_missing_state(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion.create",
             {"title": "test_Xcdfgee", "meeting_id": 222, "text": "text"},
@@ -190,7 +201,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_missing_text(self) -> None:
-        self.create_model("meeting/222")
+        self.create_model("meeting/222", {"is_active_in_organization_id": 1})
         response = self.request(
             "motion.create", {"title": "test_Xcdfgee", "meeting_id": 222}
         )
@@ -198,7 +209,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert "Text is required" in response.json["message"]
 
     def test_create_with_amendment_paragraphs(self) -> None:
-        self.create_model("meeting/222")
+        self.create_model("meeting/222", {"is_active_in_organization_id": 1})
         response = self.request(
             "motion.create",
             {
@@ -212,7 +223,10 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert "give amendment_paragraph_$ in this context" in response.json["message"]
 
     def test_create_reason_missing(self) -> None:
-        self.create_model("meeting/222", {"motions_reason_required": True})
+        self.create_model(
+            "meeting/222",
+            {"motions_reason_required": True, "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "motion.create",
             {"title": "test_Xcdfgee", "meeting_id": 222, "text": "text"},
@@ -222,7 +236,10 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def test_create_lead_motion_and_statute_paragraph_id_given(self) -> None:
         self.set_models(
-            {"meeting/222": {}, "motion_statute_paragraph/1": {"meeting_id": 222}}
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "motion_statute_paragraph/1": {"meeting_id": 222},
+            }
         )
         response = self.request(
             "motion.create",
@@ -242,7 +259,7 @@ class MotionCreateActionTest(BaseActionTestCase):
     def test_create_with_submitters(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_workflow/12": {
                     "name": "name_workflow1",
                     "first_state_id": 34,
@@ -300,7 +317,10 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_models(self.permission_test_model)
         self.set_models(
             {
-                "meeting/1": {"name": "meeting_1 _test"},
+                "meeting/1": {
+                    "name": "meeting_1 _test",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/3": {"meeting_id": 1, "category_id": 114, "block_id": 123},
                 "motion_category/12": {"meeting_id": 1},
                 "motion_block/13": {"meeting_id": 1},

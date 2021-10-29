@@ -21,7 +21,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111],
@@ -45,7 +45,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_correct_plus_next_previous(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112, 113],
@@ -84,7 +84,7 @@ class MotionStateActionTest(BaseActionTestCase):
     def test_update_wrong_workflow_mismatch(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion_workflow/110": {
                     "name": "name_Ycefgee",
                     "state_ids": [111, 112],
@@ -129,7 +129,7 @@ class MotionStateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "motion_state/111": {"name": "name_srtgb123", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(

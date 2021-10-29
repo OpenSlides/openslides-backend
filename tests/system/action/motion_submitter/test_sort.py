@@ -14,7 +14,7 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
-                "meeting/13": {},
+                "meeting/13": {"is_active_in_organization_id": 1},
                 "motion/222": {"meeting_id": 13},
                 "motion_submitter/31": {"motion_id": 222, "meeting_id": 13},
                 "motion_submitter/32": {"motion_id": 222, "meeting_id": 13},
@@ -33,7 +33,7 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
-                "meeting/13": {},
+                "meeting/13": {"is_active_in_organization_id": 1},
                 "motion/222": {"meeting_id": 13},
                 "motion_submitter/31": {"motion_id": 222, "meeting_id": 13},
             }
@@ -48,7 +48,7 @@ class MotionSubmitterSortActionTest(BaseActionTestCase):
     def test_sort_another_section_db(self) -> None:
         self.set_models(
             {
-                "meeting/13": {},
+                "meeting/13": {"is_active_in_organization_id": 1},
                 "motion/222": {"meeting_id": 13},
                 "motion_submitter/31": {"motion_id": 222, "meeting_id": 13},
                 "motion_submitter/32": {"motion_id": 222, "meeting_id": 13},

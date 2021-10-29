@@ -7,11 +7,16 @@ class PollStopActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_model = {
             "poll/1": {"state": "started", "meeting_id": 1},
-            "meeting/1": {"poll_couple_countdown": True, "poll_countdown_id": 1},
+            "meeting/1": {
+                "poll_couple_countdown": True,
+                "poll_countdown_id": 1,
+                "is_active_in_organization_id": 1,
+            },
             "projector_countdown/1": {
                 "running": True,
                 "default_time": 60,
                 "countdown_time": 30.0,
+                "meeting_id": 1,
             },
         }
 
@@ -23,11 +28,13 @@ class PollStopActionTest(BaseActionTestCase):
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 1,
                     "users_enable_vote_weight": False,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector_countdown/1": {
                     "running": True,
                     "default_time": 60,
                     "countdown_time": 30.0,
+                    "meeting_id": 1,
                 },
             }
         )
@@ -50,6 +57,7 @@ class PollStopActionTest(BaseActionTestCase):
                 "user/3": {"vote_weight_$1": "3.000000"},
                 "meeting/1": {
                     "users_enable_vote_weight": True,
+                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -80,6 +88,7 @@ class PollStopActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "users_enable_vote_weight": True,
                     "group_ids": [3],
+                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -109,6 +118,7 @@ class PollStopActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "users_enable_vote_weight": True,
                     "group_ids": [3, 4],
+                    "is_active_in_organization_id": 1,
                 },
             }
         )
@@ -123,7 +133,7 @@ class PollStopActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "poll/1": {"state": "published", "meeting_id": 1},
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.stop", {"id": 1})

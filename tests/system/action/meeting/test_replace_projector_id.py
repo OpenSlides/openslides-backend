@@ -10,6 +10,7 @@ class MeetingReplaceProjectorIdTest(BaseActionTestCase):
                     "default_projector_$_id": ["motion"],
                     "default_projector_$motion_id": 11,
                     "reference_projector_id": 20,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector/11": {
                     "used_as_default_$motion_in_meeting_id": 1,

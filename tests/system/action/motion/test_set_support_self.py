@@ -16,6 +16,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                 "name": "name_meeting_1",
                 "motion_ids": [1],
                 "motions_supporters_min_amount": 1,
+                "is_active_in_organization_id": 1,
             },
             "motion_state/1": {
                 "name": "state_1",
@@ -37,6 +38,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 0,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -66,6 +68,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -94,6 +97,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -130,6 +134,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",
@@ -162,6 +167,7 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
                     "name": "name_meeting_1",
                     "motion_ids": [1],
                     "motions_supporters_min_amount": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/1": {
                     "name": "state_1",

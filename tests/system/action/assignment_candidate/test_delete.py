@@ -13,6 +13,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
             "meeting/1": {
                 "name": "name_JhlFOAfK",
                 "assignment_candidate_ids": [111],
+                "is_active_in_organization_id": 1,
             },
             "user/110": {
                 "assignment_candidate_$1_ids": [111],
@@ -41,6 +42,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "meeting/1333": {
                     "name": "name_JhlFOAfK",
                     "assignment_candidate_ids": [111],
+                    "is_active_in_organization_id": 1,
                 },
                 "user/110": {
                     "assignment_candidate_$1333_ids": [111],
@@ -69,6 +71,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "meeting/1333": {
                     "name": "name_JhlFOAfK",
                     "assignment_candidate_ids": [112],
+                    "is_active_in_organization_id": 1,
                 },
                 "user/110": {
                     "assignment_candidate_$1333_ids": [112],
@@ -102,6 +105,7 @@ class AssignmentCandidateDeleteActionTest(BaseActionTestCase):
                 "meeting/1333": {
                     "name": "name_JhlFOAfK",
                     "assignment_candidate_ids": [111],
+                    "is_active_in_organization_id": 1,
                 },
                 "user/110": {
                     "assignment_candidate_$1333_ids": [111],

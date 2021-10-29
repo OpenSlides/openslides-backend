@@ -5,11 +5,12 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .mixins import GetMeetingIdFromIdMixin
 from .shared_meeting import meeting_projector_default_replacements
 
 
 @register_action("meeting.replace_projector_id", internal=True)
-class MeetingReplaceProjectorId(UpdateAction):
+class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
     """
     Internal action to replace default projector id with reference id.
     """

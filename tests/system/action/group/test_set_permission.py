@@ -6,7 +6,7 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
     def test_set_permission_set_true(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/11": {
                     "name": "group_11",
                     "permissions": ["agenda_item.can_manage", "motion.can_create"],
@@ -29,7 +29,7 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
     def test_set_permission_reset(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/11": {
                     "name": "group_11",
                     "permissions": ["agenda_item.can_manage", "motion.can_create"],
@@ -51,7 +51,7 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
     def test_set_permission_set_false(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/11": {
                     "name": "group_11",
                     "permissions": ["agenda_item.can_manage", "motion.can_create"],
@@ -70,7 +70,7 @@ class GroupSetPermissionActionTest(BaseActionTestCase):
     def test_set_permission_reunset(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/11": {
                     "name": "group_11",
                     "permissions": ["agenda_item.can_manage"],

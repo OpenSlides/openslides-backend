@@ -5,8 +5,14 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
     def setup_base(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [1, 2, 3, 4]},
                 "group/100": {"meeting_id": 223, "user_ids": [5]},
                 "user/4": {
@@ -66,7 +72,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 2, "vote_delegated_$_to_id": {222: 1}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [1, 2]},
                 "user/1": {
                     "group_$_ids": ["222"],
@@ -102,7 +111,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 2, "vote_delegated_$_to_id": {222: 2}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [2]},
             },
         )
@@ -119,7 +131,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 2, "vote_delegated_$_to_id": {222: 42}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [2]},
             },
         )
@@ -143,7 +158,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 2, "vote_delegations_$_from_ids": {222: [2]}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [2]},
             },
         )
@@ -160,7 +178,10 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 2, "vote_delegations_$_from_ids": {222: [1234]}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [2]},
                 "user/2": {
                     "group_$_ids": ["222"],
@@ -540,9 +561,15 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 1, "vote_delegated_$_to_id": {222: 2}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [1]},
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223, "user_ids": [2]},
                 "user/2": {
                     "group_$_ids": ["223"],
@@ -562,9 +589,15 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         """user/1 delegates to user/2"""
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [1]},
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223, "user_ids": [2]},
                 "user/1": {
                     "group_$_ids": ["222"],
@@ -602,9 +635,15 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         request_data = {"id": 1, "vote_delegations_$_from_ids": {222: [2]}}
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [1]},
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223, "user_ids": [2]},
                 "user/2": {
                     "group_$_ids": ["223"],
@@ -624,9 +663,15 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         """user/1 receive vote from user/2"""
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [1]},
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223, "user_ids": [2]},
                 "user/1": {
                     "group_$_ids": ["222"],

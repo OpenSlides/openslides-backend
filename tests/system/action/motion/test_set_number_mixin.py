@@ -8,6 +8,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "motions_number_type": "manually",
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_workflow/12": {
                     "name": "name_workflow1",
@@ -44,6 +45,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "motions_number_type": "manually",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -81,7 +83,10 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
     def test_create_set_number_good(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
                     "name": "name_workflow1",
@@ -117,6 +122,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "motions_number_min_digits": 3,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -156,6 +162,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                     "motions_number_min_digits": 3,
                     "motions_number_with_blank": True,
                     "motions_amendments_prefix": "B",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -202,6 +209,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                     "motions_number_min_digits": 3,
                     "motions_number_with_blank": True,
                     "motions_amendments_prefix": "B",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -256,6 +264,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                     "name": "name_SNLGsvIV",
                     "motions_number_min_digits": 3,
                     "motions_number_type": "per_category",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -305,6 +314,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                     "name": "name_SNLGsvIV",
                     "motions_number_min_digits": 3,
                     "motions_number_type": "per_category",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -361,6 +371,7 @@ class MotionSetNumberMixinTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "motions_number_min_digits": 3,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -396,7 +407,10 @@ class SetNumberMixinSetStateTest(BaseActionTestCase):
     def test_set_state_correct_next_state(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [222]},
                 "motion_state/76": {
                     "name": "test0",
@@ -431,6 +445,7 @@ class SetNumberMixinManuallyTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "motions_number_type": "manually",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -530,6 +545,7 @@ class SetNumberMixinSerialTest(BaseActionTestCase):
                     "motions_number_type": "serially_numbered",
                     "motions_number_min_digits": 3,
                     "motions_number_with_blank": True,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -687,6 +703,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                     "motions_number_type": "per_category",
                     "motions_number_min_digits": 3,
                     "motions_number_with_blank": False,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -824,6 +841,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "motions_number_type": "per_category",
                 "motions_number_min_digits": 1,
                 "motions_number_with_blank": False,
+                "is_active_in_organization_id": 1,
             },
         )
 
@@ -850,6 +868,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                     "motions_number_min_digits": 3,
                     "motions_number_with_blank": True,
                     "motions_amendments_prefix": "X-",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/1": {"meeting_ids": [222]},
                 "motion_workflow/12": {
@@ -925,6 +944,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "motions_number_min_digits": 1,
                 "motions_number_with_blank": False,
                 "motions_amendments_prefix": "X-",
+                "is_active_in_organization_id": 1,
             },
         )
 
@@ -1001,6 +1021,7 @@ class SetNumberMixinComplexExamplesPerCategoryTest(BaseActionTestCase):
                 "motions_number_min_digits": 1,
                 "motions_number_with_blank": False,
                 "motions_amendments_prefix": "X-",
+                "is_active_in_organization_id": 1,
             },
         )
         response = self.request(
@@ -1103,7 +1124,10 @@ class SetNumberMixinFollowRecommandationTest(BaseActionTestCase):
     def test_set_number(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [222]},
                 "motion_category/7": {"name": "A", "prefix": "A", "meeting_id": 222},
                 "motion_state/76": {

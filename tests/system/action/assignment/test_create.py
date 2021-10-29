@@ -10,6 +10,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
                 "name": "name_zvfbAjpZ",
                 "agenda_item_creation": "always",
                 "list_of_speakers_initially_closed": True,
+                "is_active_in_organization_id": 1,
             },
         )
         response = self.request(
@@ -31,7 +32,11 @@ class AssignmentCreateActionTest(BaseActionTestCase):
     def test_create_other_agenda_item_check(self) -> None:
         self.create_model(
             "meeting/110",
-            {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_yes"},
+            {
+                "name": "name_zvfbAjpZ",
+                "agenda_item_creation": "default_yes",
+                "is_active_in_organization_id": 1,
+            },
         )
         response = self.request(
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
@@ -47,7 +52,11 @@ class AssignmentCreateActionTest(BaseActionTestCase):
     def test_create_other_agenda_item_check_2(self) -> None:
         self.create_model(
             "meeting/110",
-            {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_no"},
+            {
+                "name": "name_zvfbAjpZ",
+                "agenda_item_creation": "default_no",
+                "is_active_in_organization_id": 1,
+            },
         )
         response = self.request(
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
@@ -60,7 +69,12 @@ class AssignmentCreateActionTest(BaseActionTestCase):
 
     def test_create_other_agenda_item_check_3(self) -> None:
         self.create_model(
-            "meeting/110", {"name": "name_zvfbAjpZ", "agenda_item_creation": "never"}
+            "meeting/110",
+            {
+                "name": "name_zvfbAjpZ",
+                "agenda_item_creation": "never",
+                "is_active_in_organization_id": 1,
+            },
         )
         response = self.request(
             "assignment.create",
@@ -77,7 +91,10 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("agenda_item/1")
 
     def test_create_agenda_item_no_default(self) -> None:
-        self.create_model("meeting/110", {"agenda_item_creation": "default_no"})
+        self.create_model(
+            "meeting/110",
+            {"agenda_item_creation": "default_no", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "assignment.create",
             {
@@ -96,7 +113,11 @@ class AssignmentCreateActionTest(BaseActionTestCase):
     def test_create_full_fields(self) -> None:
         self.create_model(
             "meeting/110",
-            {"name": "name_zvfbAjpZ", "agenda_item_creation": "default_yes"},
+            {
+                "name": "name_zvfbAjpZ",
+                "agenda_item_creation": "default_yes",
+                "is_active_in_organization_id": 1,
+            },
         )
         response = self.request(
             "assignment.create",
@@ -132,7 +153,9 @@ class AssignmentCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/110", {"name": "name_zvfbAjpZ"})
+        self.create_model(
+            "meeting/110", {"name": "name_zvfbAjpZ", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "assignment.create",
             {

@@ -16,6 +16,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "committee/1": {"name": "test_committee"},
             "meeting/1": {
                 "name": "test_name",
+                "is_active_in_organization_id": 1,
                 "committee_id": 1,
                 "default_group_id": 1,
                 "admin_group_id": 1,
@@ -48,6 +49,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "group/1": {},
                 "meeting/1": {
                     "name": "test_name",
+                    "is_active_in_organization_id": 1,
                     "committee_id": 1,
                     "default_group_id": 1,
                     "projector_ids": [1],
@@ -398,6 +400,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             {
                 "committee/1": {"meeting_ids": [3]},
                 "meeting/3": {
+                    "is_active_in_organization_id": 1,
                     "committee_id": 1,
                     "group_ids": [11],
                     "admin_group_id": 11,

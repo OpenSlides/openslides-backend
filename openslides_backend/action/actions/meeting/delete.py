@@ -17,6 +17,7 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
 
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_delete_schema()
+    skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting = self.datastore.get(

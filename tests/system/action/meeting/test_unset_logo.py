@@ -11,6 +11,7 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
                 "logo_$place_id": 17,
                 "logo_$other_id": 17,
                 "logo_$_id": ["place", "other"],
+                "is_active_in_organization_id": 1,
             },
             "mediafile/17": {
                 "is_directory": False,
@@ -30,6 +31,7 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
                     "logo_$place_id": 17,
                     "logo_$other_id": 17,
                     "logo_$_id": ["place", "other"],
+                    "is_active_in_organization_id": 1,
                 },
                 "mediafile/17": {
                     "is_directory": False,
@@ -59,6 +61,7 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
                     "name": "name_meeting222",
                     "logo_$web_header_id": 17,
                     "logo_$_id": ["web_header"],
+                    "is_active_in_organization_id": 1,
                 },
                 "mediafile/17": {
                     "is_directory": False,

@@ -24,7 +24,10 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/77": {
                     "meeting_id": 222,
                     "name": "test1",
@@ -46,7 +49,10 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
     def test_reset_recommendation_correct_empty_recommendation(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/77": {
                     "meeting_id": 222,
                     "name": "test1",

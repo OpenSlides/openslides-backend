@@ -7,7 +7,10 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/110": {"name": "name_meeting_110"},
+            "meeting/110": {
+                "name": "name_meeting_110",
+                "is_active_in_organization_id": 1,
+            },
             "motion/23": {"meeting_id": 110},
             "user/1": {"meeting_ids": [110]},
         }

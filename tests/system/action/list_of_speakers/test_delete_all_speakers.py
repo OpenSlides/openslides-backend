@@ -6,9 +6,7 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
-            "meeting/1": {
-                "speaker_ids": [1],
-            },
+            "meeting/1": {"speaker_ids": [1], "is_active_in_organization_id": 1},
             "list_of_speakers/111": {
                 "closed": False,
                 "meeting_id": 1,
@@ -23,6 +21,7 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_xQyvfmsS",
                     "speaker_ids": list(range(1, 11)),
+                    "is_active_in_organization_id": 1,
                 },
                 "list_of_speakers/111": {
                     "closed": False,

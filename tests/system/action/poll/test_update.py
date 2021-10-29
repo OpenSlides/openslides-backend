@@ -13,7 +13,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "title": "test_assignment_ohneivoh9caiB8Yiungo",
                     "open_posts": 1,
                 },
-                "meeting/1": {"name": "my meeting"},
+                "meeting/1": {"name": "my meeting", "is_active_in_organization_id": 1},
                 "organization/1": {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1], "poll_ids": [1]},
                 "poll/1": {

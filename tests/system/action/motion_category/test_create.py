@@ -6,7 +6,10 @@ class MotionCategorySystemTest(BaseActionTestCase):
     def test_create_good_case_full_fields(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_category/123": {"name": "name_bWdKLQxL", "meeting_id": 222},
             }
         )
@@ -30,7 +33,9 @@ class MotionCategorySystemTest(BaseActionTestCase):
         assert meeting.get("motion_category_ids") == [124]
 
     def test_create_good_case_only_required_fields(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion_category.create",
             {
@@ -52,7 +57,9 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("meeting/222", {"name": "name_SNLGsvIV"})
+        self.create_model(
+            "meeting/222", {"name": "name_SNLGsvIV", "is_active_in_organization_id": 1}
+        )
         response = self.request(
             "motion_category.create",
             {
@@ -82,7 +89,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
         )
 
     def test_create_prefix_none(self) -> None:
-        self.create_model("meeting/222")
+        self.create_model("meeting/222", {"is_active_in_organization_id": 1})
         response = self.request(
             "motion_category.create",
             {

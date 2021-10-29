@@ -5,7 +5,10 @@ class VoteCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"name": "meeting_Xcdfgee"},
+                "meeting/111": {
+                    "name": "meeting_Xcdfgee",
+                    "is_active_in_organization_id": 1,
+                },
                 "option/12": {"text": "blabalbal", "meeting_id": 111},
             }
         )

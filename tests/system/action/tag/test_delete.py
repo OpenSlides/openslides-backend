@@ -5,7 +5,7 @@ class TagDeleteTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [111]},
+                "meeting/1": {"tag_ids": [111], "is_active_in_organization_id": 1},
                 "tag/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -16,7 +16,7 @@ class TagDeleteTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [112]},
+                "meeting/1": {"tag_ids": [112], "is_active_in_organization_id": 1},
                 "tag/112": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -27,7 +27,7 @@ class TagDeleteTest(BaseActionTestCase):
     def test_delete_correct_2(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [111]},
+                "meeting/1": {"tag_ids": [111], "is_active_in_organization_id": 1},
                 "tag/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 1,

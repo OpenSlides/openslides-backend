@@ -14,7 +14,7 @@ class SpeakerSortActionTest(BaseActionTestCase):
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "list_of_speakers/222": {"meeting_id": 1},
                 "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
                 "speaker/32": {"list_of_speakers_id": 222, "meeting_id": 1},
@@ -32,7 +32,7 @@ class SpeakerSortActionTest(BaseActionTestCase):
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "list_of_speakers/222": {"meeting_id": 1},
                 "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
             }
@@ -46,7 +46,7 @@ class SpeakerSortActionTest(BaseActionTestCase):
     def test_sort_another_section_db(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "list_of_speakers/222": {"meeting_id": 1},
                 "speaker/31": {"list_of_speakers_id": 222, "meeting_id": 1},
                 "speaker/32": {"list_of_speakers_id": 222, "meeting_id": 1},

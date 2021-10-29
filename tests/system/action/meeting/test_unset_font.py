@@ -11,6 +11,7 @@ class MediafileUnsetFontActionTest(BaseActionTestCase):
                 "font_$header_id": 17,
                 "font_$other_id": 17,
                 "font_$_id": ["header", "other"],
+                "is_active_in_organization_id": 1,
             },
             "mediafile/17": {
                 "is_directory": False,
@@ -30,6 +31,7 @@ class MediafileUnsetFontActionTest(BaseActionTestCase):
                     "font_$header_id": 17,
                     "font_$other_id": 17,
                     "font_$_id": ["header", "other"],
+                    "is_active_in_organization_id": 1,
                 },
                 "mediafile/17": {
                     "is_directory": False,

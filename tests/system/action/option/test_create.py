@@ -3,7 +3,10 @@ from tests.system.action.base import BaseActionTestCase
 
 class OptionCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
+        self.create_model(
+            "meeting/111",
+            {"name": "meeting_Xcdfgee", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "option.create", {"text": "testtesttest", "meeting_id": 111, "weight": 10}
         )
@@ -14,7 +17,10 @@ class OptionCreateActionTest(BaseActionTestCase):
         assert model.get("weight") == 10
 
     def test_create_without_text_and_content_object_id(self) -> None:
-        self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
+        self.create_model(
+            "meeting/111",
+            {"name": "meeting_Xcdfgee", "is_active_in_organization_id": 1},
+        )
         response = self.request("option.create", {"meeting_id": 111, "weight": 10})
         self.assert_status_code(response, 400)
         assert "Need text xor content_object_id." in response.json["message"]
@@ -22,7 +28,10 @@ class OptionCreateActionTest(BaseActionTestCase):
     def test_create_with_both_text_and_content_object_id(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"name": "meeting_Xcdfgee"},
+                "meeting/111": {
+                    "name": "meeting_Xcdfgee",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/112": {"meeting_id": 111},
             }
         )
@@ -39,7 +48,10 @@ class OptionCreateActionTest(BaseActionTestCase):
         assert "Need text xor content_object_id." in response.json["message"]
 
     def test_create_yna_votes(self) -> None:
-        self.create_model("meeting/111", {"name": "meeting_Xcdfgee"})
+        self.create_model(
+            "meeting/111",
+            {"name": "meeting_Xcdfgee", "is_active_in_organization_id": 1},
+        )
         response = self.request(
             "option.create",
             {

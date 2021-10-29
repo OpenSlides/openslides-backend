@@ -5,7 +5,7 @@ class TagActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [111]},
+                "meeting/1": {"tag_ids": [111], "is_active_in_organization_id": 1},
                 "tag/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -17,7 +17,7 @@ class TagActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"tag_ids": [111]},
+                "meeting/1": {"tag_ids": [111], "is_active_in_organization_id": 1},
                 "tag/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )

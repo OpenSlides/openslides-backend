@@ -14,7 +14,11 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {"group_$111_ids": [3]},
-                "meeting/111": {"name": "name_m123etrd", "admin_group_id": 3},
+                "meeting/111": {
+                    "name": "name_m123etrd",
+                    "admin_group_id": 3,
+                    "is_active_in_organization_id": 1,
+                },
                 "group/3": {},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                 "motion_comment_section/78": {"meeting_id": 111},
@@ -41,7 +45,10 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
     def test_create_wrong_field(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"name": "name_m123etrd"},
+                "meeting/111": {
+                    "name": "name_m123etrd",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                 "motion_comment_section/78": {},
             }

@@ -38,7 +38,10 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
         check_time = round(time.time())
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/76": {
                     "meeting_id": 222,
                     "name": "test0",
@@ -75,7 +78,10 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
     def test_follow_recommendation_not_neighbour(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/76": {
                     "meeting_id": 222,
                     "name": "test0",
@@ -112,7 +118,10 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
     def test_follow_recommendation_missing_recommendation_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_state/76": {
                     "meeting_id": 222,
                     "name": "test0",
@@ -139,7 +148,7 @@ class MotionFollowRecommendationActionText(BaseActionTestCase):
     def test_follow_recommendation_without_extension(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "motion_state/76": {
                     "meeting_id": 222,
                     "next_state_ids": [77],

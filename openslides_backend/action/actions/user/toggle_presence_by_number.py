@@ -1,5 +1,6 @@
 from typing import Any, Dict, Optional
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -22,7 +23,7 @@ from ...util.typing import ActionResultElement
 
 
 @register_action("user.toggle_presence_by_number")
-class UserTogglePresenceByNumber(UpdateAction):
+class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to toggle the presence by number
     """

@@ -7,7 +7,7 @@ class ProjectorCountdownUpdate(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector_countdown/2": {
                     "meeting_id": 1,
                     "title": "test",

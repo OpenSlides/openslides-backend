@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
@@ -12,7 +13,7 @@ from ...util.register import register_action
 
 
 @register_action("organization.update")
-class OrganizationUpdate(UpdateAction):
+class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to update a organization.
     """

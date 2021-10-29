@@ -14,3 +14,4 @@ class OrganizationTagDelete(DeleteAction):
     model = OrganizationTag()
     schema = DefaultSchema(OrganizationTag()).get_delete_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True

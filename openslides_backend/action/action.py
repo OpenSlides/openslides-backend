@@ -36,7 +36,7 @@ from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
-from ..shared.patterns import FullQualifiedId, transform_to_fqids
+from ..shared.patterns import Collection, FullQualifiedId, transform_to_fqids
 from .relations.relation_manager import RelationManager
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -98,6 +98,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         datastore: DatastoreService,
         relation_manager: RelationManager,
         logging: LoggingModule,
+        skip_archived_meeting_check: bool = False,
     ) -> None:
         self.services = services
         self.auth = services.authentication()
@@ -106,6 +107,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.relation_manager = relation_manager
         self.logging = logging
         self.logger = logging.getLogger(__name__)
+        if hasattr(self.__class__, "skip_archived_meeting_check"):
+            self.skip_archived_meeting_check: bool = (
+                self.__class__.skip_archived_meeting_check
+            )
+        else:
+            self.skip_archived_meeting_check = skip_archived_meeting_check
         self.write_requests = []
         self.results = []
 
@@ -119,6 +126,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.index = 0
         for instance in action_data:
             self.validate_instance(instance)
+            self.check_for_archived_meeting(instance)
             # perform permission check not for internal actions
             if not internal and not self.internal:
                 try:
@@ -127,7 +135,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     msg = f"You are not allowed to perform action {self.name}."
                     e.message = msg + " " + e.message
                     raise e
-
             self.index += 1
         self.index = -1
 
@@ -194,6 +201,27 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
         msg = f"You are not allowed to perform action {self.name}."
         raise PermissionDenied(msg)
+
+    def check_for_archived_meeting(self, instance: Dict[str, Any]) -> None:
+        """Do not allow changing any data in an archived meeting"""
+        if self.skip_archived_meeting_check:
+            return
+        try:
+            meeting_id = self.get_meeting_id(instance)
+        except AttributeError:
+            raise ActionException(
+                f"get meeting failed Action: {self.name}. Perhaps you want to use skip_archived_meeting_checks = True attribute"
+            )
+
+        fqid = FullQualifiedId(Collection("meeting"), meeting_id)
+        meeting = self.datastore.fetch_model(
+            fqid,
+            ["is_active_in_organization_id", "name"],
+        )
+        if not meeting.get("is_active_in_organization_id"):
+            raise ActionException(
+                f'Meeting {meeting.get("name", "")}/{meeting_id} cannot be changed, because it is archived.'
+            )
 
     def assert_not_anonymous(self) -> None:
         """
@@ -488,6 +516,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self,
         ActionClass: Type["Action"],
         action_data: ActionData,
+        skip_archived_meeting_check: bool = False,
     ) -> Optional[ActionResults]:
         """
         Executes the given action class as a dependent action with the given action
@@ -495,12 +524,19 @@ class Action(BaseAction, metaclass=SchemaProvider):
         relation models into it.
         The action is fully executed and created WriteRequests are appended to
         this action.
+        The attribute skip_archived_meeting_check" from the calling class is inherited
+        to the called class if set. Usually this is needed for cascading deletes from
+        outside of meeting.
         """
+        if hasattr(self.__class__, "skip_archived_meeting_check"):
+            skip_archived_meeting_check = self.__class__.skip_archived_meeting_check
+
         action = ActionClass(
             self.services,
             self.datastore,
             self.relation_manager,
             self.logging,
+            skip_archived_meeting_check,
         )
         write_request, action_results = action.perform(
             action_data, self.user_id, internal=True

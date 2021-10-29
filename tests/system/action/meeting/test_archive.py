@@ -82,7 +82,10 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.update_model("meeting/1", {"is_active_in_organization_id": None})
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
-        self.assertIn("Meeting 1 is not active.", response.json["message"])
+        self.assertIn(
+            "Meeting /1 cannot be changed, because it is archived",
+            response.json["message"],
+        )
 
     def test_archive_wrong_meeting(self) -> None:
         response = self.request("meeting.archive", {"id": 2})

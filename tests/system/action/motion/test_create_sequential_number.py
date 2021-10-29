@@ -28,7 +28,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
     def test_create_sequential_numbers(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -64,8 +64,14 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
     def test_create_sequential_numbers_2meetings(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "meeting222"},
-                "meeting/223": {"name": "meeting223"},
+                "meeting/222": {
+                    "name": "meeting222",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/223": {
+                    "name": "meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -101,7 +107,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
     def test_create_sequential_numbers_deleted_motion(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -151,7 +157,7 @@ class MotionCreateActionTestSequentialNumber(BaseActionTestCase):
         pytest_thread_local.name = "MainThread_RC"
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "user/1": {"meeting_ids": [222]},
             }
         )

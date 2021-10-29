@@ -5,7 +5,7 @@ class ProjectionUpdate(BaseActionTestCase):
     def test_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/23": {"meeting_id": 1, "current_projection_ids": [33]},
                 "projection/33": {"meeting_id": 1, "current_projector_id": 23},
             }

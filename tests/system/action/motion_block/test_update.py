@@ -6,7 +6,7 @@ class MotionBlockActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/11": {},
+                "meeting/11": {"is_active_in_organization_id": 1},
                 "motion_block/111": {"title": "title_srtgb123", "meeting_id": 11},
             }
         )
@@ -21,7 +21,7 @@ class MotionBlockActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/11": {},
+                "meeting/11": {"is_active_in_organization_id": 1},
                 "motion_block/111": {"title": "title_srtgb123", "meeting_id": 11},
             }
         )

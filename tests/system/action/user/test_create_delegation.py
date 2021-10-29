@@ -9,7 +9,10 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/222": {"name": "Meeting222"},
+                "meeting/222": {
+                    "name": "Meeting222",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/1": {"meeting_id": 222, "user_ids": [2, 3]},
                 "user/1": {"meeting_ids": [222]},
                 "user/2": {
@@ -58,7 +61,10 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
     def test_create_delegated_to_error_meeting_1_standard_user(self) -> None:
         self.set_models(
             {
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223},
             }
         )
@@ -75,7 +81,10 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
     def test_create_delegated_to_error_meeting_2_standard_user(self) -> None:
         self.set_models(
             {
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223, "user_ids": [1]},
                 "user/1": {
                     "group_$_ids": ["223"],
@@ -115,7 +124,10 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
     def test_create_delegations_from_error_meeting_1_standard_user(self) -> None:
         self.set_models(
             {
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223},
             }
         )
@@ -132,7 +144,10 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
     def test_create_delegations_from_error_meeting_2_standard_user(self) -> None:
         self.set_models(
             {
-                "meeting/223": {"name": "Meeting223"},
+                "meeting/223": {
+                    "name": "Meeting223",
+                    "is_active_in_organization_id": 1,
+                },
                 "group/2": {"meeting_id": 223, "user_ids": [1]},
                 "user/1": {
                     "group_$_ids": ["223"],

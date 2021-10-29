@@ -10,7 +10,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_add_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"committee_id": 1},
+                "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
                 "user/111": {"username": "username_srtgb123"},
                 "committee/1": {},
             }
@@ -27,7 +27,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_del_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"present_user_ids": [111], "committee_id": 1},
+                "meeting/1": {
+                    "present_user_ids": [111],
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/111": {
                     "username": "username_srtgb123",
                     "is_present_in_meeting_ids": [1],
@@ -47,7 +51,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_null_action(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"present_user_ids": [], "committee_id": 1},
+                "meeting/1": {
+                    "present_user_ids": [],
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/111": {
                     "username": "username_srtgb123",
                     "is_present_in_meeting_ids": [],
@@ -67,7 +75,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_add_self_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"users_allow_self_set_present": True, "committee_id": 1},
+                "meeting/1": {
+                    "users_allow_self_set_present": True,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/1": {},
             }
         )
@@ -83,7 +95,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_no_permissions(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"organization_management_level": None},
                 "committee/1": {},
             }
@@ -96,7 +112,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_orga_can_manage_permission(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS
                 },
@@ -111,7 +131,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_committee_can_manage_permission(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"users_allow_self_set_present": False, "committee_id": 1},
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "committee/1": {"user_ids": [1]},
                 "user/1": {
                     "organization_management_level": None,
@@ -132,6 +156,7 @@ class UserSetPresentActionTest(BaseActionTestCase):
                     "users_allow_self_set_present": False,
                     "group_ids": [1],
                     "committee_id": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "group/1": {
                     "user_ids": [1],
@@ -152,7 +177,11 @@ class UserSetPresentActionTest(BaseActionTestCase):
     def test_set_present_self_permission(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"users_allow_self_set_present": True, "committee_id": 1},
+                "meeting/1": {
+                    "users_allow_self_set_present": True,
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"organization_management_level": None},
                 "committee/1": {},
             }

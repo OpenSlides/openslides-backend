@@ -8,7 +8,7 @@ class PollAnonymize(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "poll/1": {
                     "description": "test",
                     "option_ids": [1],

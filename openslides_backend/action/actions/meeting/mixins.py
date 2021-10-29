@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from ....permissions.management_levels import CommitteeManagementLevel
 from ....permissions.permission_helper import has_committee_management_level
@@ -19,3 +19,8 @@ class MeetingPermissionMixin(Action):
 
     def get_committee_id(self, instance: Dict[str, Any]) -> int:
         return instance["committee_id"]
+
+
+class GetMeetingIdFromIdMixin(Action):
+    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
+        return cast(int, instance.get("id"))

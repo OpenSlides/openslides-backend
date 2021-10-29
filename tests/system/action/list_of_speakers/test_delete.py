@@ -5,7 +5,11 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/78": {"name": "name_RWtyEUGy", "list_of_speakers_ids": [111]},
+                "meeting/78": {
+                    "name": "name_RWtyEUGy",
+                    "list_of_speakers_ids": [111],
+                    "is_active_in_organization_id": 1,
+                },
                 "list_of_speakers/111": {"closed": True, "meeting_id": 78},
             }
         )
@@ -17,7 +21,11 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/78": {"name": "name_RWtyEUGy", "list_of_speakers_ids": [112]},
+                "meeting/78": {
+                    "name": "name_RWtyEUGy",
+                    "list_of_speakers_ids": [112],
+                    "is_active_in_organization_id": 1,
+                },
                 "list_of_speakers/112": {"closed": True, "meeting_id": 78},
             }
         )

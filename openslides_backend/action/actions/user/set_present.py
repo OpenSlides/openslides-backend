@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -21,7 +22,7 @@ from ...util.typing import ActionData
 
 
 @register_action("user.set_present")
-class UserSetPresentAction(UpdateAction):
+class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to set present.
     """

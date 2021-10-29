@@ -31,7 +31,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/111": {
                     "meeting_id": 1,
                     "title": "title_srtgb123",
@@ -69,7 +69,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/111": {
                     "meeting_id": 1,
                     "title": "title_srtgb123",
@@ -88,7 +88,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_text_without_previous(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/111": {
                     "meeting_id": 1,
                     "title": "title_srtgb123",
@@ -116,7 +116,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_amendment_paragraphs_without_previous(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "motion/111": {
                     "meeting_id": 1,
                     "title": "title_srtgb123",
@@ -146,6 +146,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "meeting/77": {
                     "name": "name_TZRIHsSD",
                     "motions_reason_required": True,
+                    "is_active_in_organization_id": 1,
                 },
                 "motion/111": {
                     "title": "title_srtgb123",
@@ -171,7 +172,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_correct_2(self) -> None:
         self.set_models(
             {
-                "meeting/2538": {"name": "name_jkPIYjFz"},
+                "meeting/2538": {
+                    "name": "name_jkPIYjFz",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/111": {
                     "meeting_id": 2538,
                 },
@@ -218,7 +222,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_workflow_id(self) -> None:
         self.set_models(
             {
-                "meeting/2538": {"name": "name_jkPIYjFz"},
+                "meeting/2538": {
+                    "name": "name_jkPIYjFz",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/111": {
                     "meeting_id": 2538,
                     "state_id": 88,
@@ -253,7 +260,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_workflow_id_no_change(self) -> None:
         self.set_models(
             {
-                "meeting/2538": {"name": "name_jkPIYjFz"},
+                "meeting/2538": {
+                    "name": "name_jkPIYjFz",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/111": {
                     "meeting_id": 2538,
                     "state_id": 88,
@@ -287,7 +297,10 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_update_metadata_missing_motion(self) -> None:
         self.set_models(
             {
-                "meeting/2538": {"name": "name_jkPIYjFz"},
+                "meeting/2538": {
+                    "name": "name_jkPIYjFz",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/111": {"meeting_id": 2538},
                 "motion_category/4": {"name": "name_GdPzDztT", "meeting_id": 2538},
                 "motion_block/51": {"title": "title_ddyvpXch", "meeting_id": 2538},
@@ -314,8 +327,14 @@ class MotionUpdateActionTest(BaseActionTestCase):
     def test_meeting_missmatch(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"name": "name_GDZvcjPK"},
-                "meeting/2": {"name": "name_Rwvrqaqj"},
+                "meeting/1": {
+                    "name": "name_GDZvcjPK",
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/2": {
+                    "name": "name_Rwvrqaqj",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/1": {"meeting_id": 1},
                 "motion/2": {"meeting_id": 2},
             }
@@ -335,7 +354,13 @@ class MotionUpdateActionTest(BaseActionTestCase):
 
     def test_only_motion_allowed(self) -> None:
         self.set_models(
-            {"meeting/1": {"name": "name_uZXBoHMp"}, "motion/1": {"meeting_id": 1}}
+            {
+                "meeting/1": {
+                    "name": "name_uZXBoHMp",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {"meeting_id": 1},
+            }
         )
         response = self.request(
             "motion.update",

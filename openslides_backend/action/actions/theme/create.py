@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
 from ...generics.create import CreateAction
@@ -54,7 +55,7 @@ THEME_OPT_FIELDS = [
 
 
 @register_action("theme.create")
-class ThemeCreate(CreateAction):
+class ThemeCreate(CreateAction, CheckForArchivedMeetingMixin):
     """
     Action to create an theme.
     """

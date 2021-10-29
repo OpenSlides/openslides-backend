@@ -6,7 +6,10 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model = {
-            "meeting/1": {"motion_submitter_ids": [111]},
+            "meeting/1": {
+                "motion_submitter_ids": [111],
+                "is_active_in_organization_id": 1,
+            },
             "motion/12": {
                 "meeting_id": 1,
                 "title": "test2",
@@ -22,7 +25,10 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/98": {"motion_submitter_ids": [111]},
+                "meeting/98": {
+                    "motion_submitter_ids": [111],
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/12": {
                     "meeting_id": 98,
                     "title": "test2",

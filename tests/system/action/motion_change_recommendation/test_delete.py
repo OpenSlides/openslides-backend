@@ -11,7 +11,10 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_delete_correct(self) -> None:
         self.set_models(
-            {"motion_change_recommendation/111": {"meeting_id": 1}, "meeting/1": {}}
+            {
+                "motion_change_recommendation/111": {"meeting_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
+            }
         )
         response = self.request("motion_change_recommendation.delete", {"id": 111})
         self.assert_status_code(response, 200)
@@ -19,7 +22,10 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(
-            {"motion_change_recommendation/112": {"meeting_id": 1}, "meeting/1": {}}
+            {
+                "motion_change_recommendation/112": {"meeting_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
+            }
         )
         response = self.request("motion_change_recommendation.delete", {"id": 111})
         self.assert_status_code(response, 400)

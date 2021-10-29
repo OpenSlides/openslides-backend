@@ -19,7 +19,10 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
     def test_sort_correct_1(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_comment_section/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",
@@ -43,7 +46,10 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_comment_section/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",
@@ -60,7 +66,10 @@ class MotionCommentSectionSortActionTest(BaseActionTestCase):
     def test_sort_another_section_db(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion_comment_section/31": {
                     "meeting_id": 222,
                     "name": "name_loisueb",

@@ -23,7 +23,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_statute_amendment(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -47,7 +47,10 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_statute_amendment_default_workflow(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"motions_default_statute_amendment_workflow_id": 12},
+                "meeting/222": {
+                    "motions_default_statute_amendment_workflow_id": 12,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -71,7 +74,7 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_with_amendment_paragraphs(self) -> None:
         self.set_models(
             {
-                "meeting/222": {},
+                "meeting/222": {"is_active_in_organization_id": 1},
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -91,7 +94,10 @@ class MotionCreateAmendmentActionTest(BaseActionTestCase):
     def test_create_reason_missing(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"motions_reason_required": True},
+                "meeting/222": {
+                    "motions_reason_required": True,
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [222]},
             }
         )

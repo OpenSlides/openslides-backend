@@ -11,7 +11,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"agenda_item_ids": [1, 2, 3]},
+                "meeting/1": {
+                    "agenda_item_ids": [1, 2, 3],
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
@@ -46,6 +49,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 "meeting/1": {
                     "agenda_item_ids": [1, 2, 3],
                     "agenda_number_prefix": "P-",
+                    "is_active_in_organization_id": 1,
                 },
                 "agenda_item/1": {
                     "meeting_id": 1,
@@ -81,6 +85,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 "meeting/1": {
                     "agenda_item_ids": [1, 2, 3],
                     "agenda_numeral_system": "roman",
+                    "is_active_in_organization_id": 1,
                 },
                 "agenda_item/1": {
                     "meeting_id": 1,
@@ -113,7 +118,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_without_parents(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "meeting/1": {
+                    "agenda_item_ids": [1, 2],
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
@@ -136,7 +144,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_with_non_public_items(self) -> None:
         self.set_models(
             {
-                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "meeting/1": {
+                    "agenda_item_ids": [1, 2],
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
@@ -159,7 +170,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_no_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "meeting/1": {
+                    "agenda_item_ids": [1, 2],
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,
@@ -178,7 +192,10 @@ class AgendaItemNumberingTester(BaseActionTestCase):
     def test_numbering_permissions(self) -> None:
         self.base_permission_test(
             {
-                "meeting/1": {"agenda_item_ids": [1, 2]},
+                "meeting/1": {
+                    "agenda_item_ids": [1, 2],
+                    "is_active_in_organization_id": 1,
+                },
                 "agenda_item/1": {
                     "meeting_id": 1,
                     "weight": 10,

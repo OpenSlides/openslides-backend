@@ -18,6 +18,7 @@ class SendInvitationMail(BaseActionTestCase):
                     "name": "annual general meeting",
                     "users_email_sender": "Openslides",
                     "users_pdf_url": "http://example.com:8000",
+                    "is_active_in_organization_id": 1,
                 },
                 "user/2": {
                     "username": "Testuser 2",
@@ -64,6 +65,9 @@ class SendInvitationMail(BaseActionTestCase):
         """
         self.set_models(
             {
+                "meeting/2": {
+                    "is_active_in_organization_id": 1,
+                },
                 "user/3": {
                     "username": "Testuser 3 no email",
                     "first_name": "Jim3",

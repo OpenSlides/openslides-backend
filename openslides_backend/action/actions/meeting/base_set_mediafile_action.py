@@ -7,9 +7,10 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
+from .mixins import GetMeetingIdFromIdMixin
 
 
-class BaseMeetingSetMediafileAction(UpdateAction):
+class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
     """
     Base action to set a speacial mediafile in a meeting.
     Subclass has to set `field` and `allowed_mimetypes`
@@ -51,6 +52,3 @@ class BaseMeetingSetMediafileAction(UpdateAction):
 
         instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
         return instance
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        return instance["id"]

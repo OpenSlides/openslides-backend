@@ -10,7 +10,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"name": "name_asdewqasd"},
+            "meeting/1": {"name": "name_asdewqasd", "is_active_in_organization_id": 1},
             "user/7": {
                 "username": "test_username1",
                 "meeting_ids": [1],
@@ -133,7 +133,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_add_2_speakers_in_1_action(self) -> None:
         self.set_models(
             {
-                "list_of_speakers/23": {"meeting_id": 7844},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "list_of_speakers/23": {"meeting_id": 1},
             }
         )
         response = self.request_multi(
@@ -152,7 +153,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_add_2_speakers_in_2_actions(self) -> None:
         self.set_models(
             {
-                "meeting/7844": {"name": "name_asdewqasd"},
+                "meeting/7844": {
+                    "name": "name_asdewqasd",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/7": {"username": "test_username6", "meeting_ids": [7844]},
                 "user/8": {"username": "test_username7", "meeting_ids": [7844]},
                 "user/9": {"username": "test_username8", "meeting_ids": [7844]},
@@ -188,6 +192,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_present_users_only": True,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/9": {
                     "username": "user9",
@@ -215,6 +220,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 "meeting/7844": {
                     "name": "name_asdewqasd",
                     "list_of_speakers_present_users_only": True,
+                    "is_active_in_organization_id": 1,
                 },
                 "user/9": {
                     "username": "user9",
@@ -242,7 +248,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_standard_speaker_in_only_talker_list(self) -> None:
         self.set_models(
             {
-                "meeting/7844": {"name": "name_asdewqasd"},
+                "meeting/7844": {
+                    "name": "name_asdewqasd",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/1": {"meeting_ids": [7844]},
                 "user/7": {"username": "talking", "meeting_ids": [7844]},
                 "speaker/1": {
@@ -268,7 +277,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_standard_speaker_at_the_end_of_filled_list(self) -> None:
         self.set_models(
             {
-                "meeting/7844": {"name": "name_asdewqasd"},
+                "meeting/7844": {
+                    "name": "name_asdewqasd",
+                    "is_active_in_organization_id": 1,
+                },
                 "user/7": {"username": "talking", "meeting_ids": [7844]},
                 "user/8": {"username": "waiting", "meeting_ids": [7844]},
                 "user/1": {
@@ -316,8 +328,8 @@ class SpeakerCreateActionTest(BaseActionTestCase):
     def test_create_not_in_meeting(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
-                "meeting/2": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "user/7": {"meeting_ids": [1]},
                 "list_of_speakers/23": {"speaker_ids": [], "meeting_id": 2},
             }

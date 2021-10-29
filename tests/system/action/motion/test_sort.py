@@ -12,7 +12,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_sort_singe_node_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/22": {"meeting_id": 222, "title": "test1"},
             }
         )
@@ -29,7 +32,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_sort_not_all_sorted(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/22": {"meeting_id": 222, "title": "test1"},
                 "motion/23": {"meeting_id": 222, "title": "test"},
             }
@@ -43,7 +49,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_sort_complex_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/1": {"meeting_id": 222, "title": "test_root"},
                 "motion/11": {"meeting_id": 222, "title": "test_1_1"},
                 "motion/12": {"meeting_id": 222, "title": "test_1_2"},
@@ -78,7 +87,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_sort_not_a_tree(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/1": {"meeting_id": 222, "title": "test_root"},
                 "motion/11": {"meeting_id": 222, "title": "test_1_1"},
                 "motion/12": {"meeting_id": 222, "title": "test_1_2"},
@@ -101,7 +113,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_sort_circle_fail(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/1": {"meeting_id": 222, "title": "test_root"},
                 "motion/11": {"meeting_id": 222, "title": "test_1_1"},
                 "motion/12": {"meeting_id": 222, "title": "test_1_2"},
@@ -126,7 +141,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_small_tree_correct(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/1": {"meeting_id": 222, "title": "test_root"},
                 "motion/11": {"meeting_id": 222, "title": "test_1_1"},
                 "motion/12": {"meeting_id": 222, "title": "test_1_2"},
@@ -155,7 +173,10 @@ class MotionSortActionTest(BaseActionTestCase):
     def test_extra_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV"},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
                 "motion/1": {"meeting_id": 222, "title": "test_root"},
                 "motion/11": {"meeting_id": 222, "title": "test_1_1"},
                 "motion/12": {"meeting_id": 222, "title": "test_1_2"},

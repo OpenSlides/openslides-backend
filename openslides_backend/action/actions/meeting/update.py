@@ -19,6 +19,7 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting.shared_meeting import used_as_default_for_schema_required
+from .mixins import GetMeetingIdFromIdMixin
 
 meeting_settings_keys = [
     "welcome_title",
@@ -134,7 +135,7 @@ meeting_settings_keys = [
 
 
 @register_action("meeting.update")
-class MeetingUpdate(UpdateAction):
+class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[

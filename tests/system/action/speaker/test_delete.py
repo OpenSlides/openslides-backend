@@ -10,7 +10,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model: Dict[str, Dict[str, Any]] = {
-            "meeting/1": {"speaker_ids": [890]},
+            "meeting/1": {"speaker_ids": [890], "is_active_in_organization_id": 1},
             "user/7": {
                 "username": "test_username1",
                 "speaker_$1_ids": [890],
@@ -30,7 +30,10 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"speaker_ids": [890]},
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                },
                 "user/7": {
                     "username": "test_username1",
                     "speaker_$111_ids": [890],
@@ -54,7 +57,10 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"speaker_ids": [890]},
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                },
                 "user/7": {
                     "username": "test_username1",
                     "speaker_$111_ids": [890],
@@ -97,7 +103,10 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
     def test_delete_correct_on_closed_los(self) -> None:
         self.set_models(
             {
-                "meeting/111": {"speaker_ids": [890]},
+                "meeting/111": {
+                    "speaker_ids": [890],
+                    "is_active_in_organization_id": 1,
+                },
                 "user/7": {
                     "username": "test_username1",
                     "speaker_$111_ids": [890],

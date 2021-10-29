@@ -6,7 +6,11 @@ class GroupDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/22": {"name": "name_meeting_22", "group_ids": [111]},
+                "meeting/22": {
+                    "name": "name_meeting_22",
+                    "group_ids": [111],
+                    "is_active_in_organization_id": 1,
+                },
                 "group/111": {"name": "name_srtgb123", "meeting_id": 22},
             }
         )
@@ -65,6 +69,7 @@ class GroupDeleteActionTest(BaseActionTestCase):
                     "name": "name_meeting_22",
                     "group_ids": [111],
                     "user_ids": [42],
+                    "is_active_in_organization_id": 1,
                 },
                 "group/111": {
                     "name": "name_srtgb123",

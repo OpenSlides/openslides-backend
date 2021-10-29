@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....shared.patterns import FullQualifiedId
@@ -9,7 +10,7 @@ from ...util.register import register_action
 from .user_scope_permission_check_mixin import UserScopePermissionCheckMixin
 
 
-class UserResetPasswordToDefaultMixin(UpdateAction):
+class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Gets the default_password and reset password.

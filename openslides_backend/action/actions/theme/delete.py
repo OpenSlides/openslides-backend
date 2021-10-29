@@ -14,3 +14,4 @@ class ThemeDelete(DeleteAction):
     model = Theme()
     schema = DefaultSchema(Theme()).get_delete_schema()
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+    skip_archived_meeting_check = True

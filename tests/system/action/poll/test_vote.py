@@ -5,6 +5,13 @@ from tests.system.action.base import BaseActionTestCase
 
 
 class PollVoteTest(BaseActionTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.create_model(
+            "meeting/113",
+            {"name": "my meeting", "is_active_in_organization_id": 1},
+        )
+
     def test_vote_correct_pollmethod_Y(self) -> None:
         self.set_models(
             {
@@ -33,7 +40,6 @@ class PollVoteTest(BaseActionTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
                 },
-                "meeting/113": {"name": "my meeting"},
             }
         )
         response = self.request(
@@ -89,7 +95,6 @@ class PollVoteTest(BaseActionTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -128,7 +133,6 @@ class PollVoteTest(BaseActionTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -191,7 +195,6 @@ class PollVoteTest(BaseActionTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -232,7 +235,6 @@ class PollVoteTest(BaseActionTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -269,7 +271,6 @@ class PollVoteTest(BaseActionTestCase):
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -306,7 +307,6 @@ class PollVoteTest(BaseActionTestCase):
                     "min_votes_amount": 2,
                     "max_votes_amount": 2,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -357,7 +357,6 @@ class PollVoteTest(BaseActionTestCase):
                     "state": Poll.STATE_STARTED,
                     "pollmethod": "YNA",
                 },
-                "meeting/113": {"name": "my meeting"},
             }
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
@@ -398,7 +397,6 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "YNA",
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -420,8 +418,8 @@ class PollVoteTest(BaseActionTestCase):
                     "type": "analog",
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "meeting_id": 113,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$_ids": ["113"],
@@ -445,7 +443,6 @@ class PollVoteTest(BaseActionTestCase):
                     "meeting_id": 113,
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$113_ids": [1],
@@ -492,7 +489,6 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "YN",
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
             }
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
@@ -529,7 +525,6 @@ class PollVoteTest(BaseActionTestCase):
                     "entitled_group_ids": [],
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
             }
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
@@ -553,7 +548,6 @@ class PollVoteTest(BaseActionTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
             }
         )
         response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": "N"})
@@ -573,7 +567,6 @@ class PollVoteTest(BaseActionTestCase):
                     "pollmethod": "Y",
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
                     "group_$_ids": ["113"],
@@ -605,7 +598,6 @@ class PollVoteTest(BaseActionTestCase):
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
                 },
-                "meeting/113": {"name": "my meeting"},
             }
         )
         response = self.request(
@@ -631,17 +623,19 @@ class PollVoteTest(BaseActionTestCase):
 class VotePollBaseTestClass(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.create_model(
-            "assignment/1",
+        self.set_models(
             {
-                "title": "test_assignment_tcLT59bmXrXif424Qw7K",
-                "open_posts": 1,
-            },
+                "assignment/1": {
+                    "title": "test_assignment_tcLT59bmXrXif424Qw7K",
+                    "open_posts": 1,
+                    "meeting_id": 113,
+                },
+                "meeting/113": {"is_active_in_organization_id": 1},
+            }
         )
         self.create_poll()
         self.set_models(
             {
-                "meeting/113": {"name": "my meeting"},
                 "group/1": {"user_ids": [1]},
                 "option/1": {
                     "meeting_id": 113,

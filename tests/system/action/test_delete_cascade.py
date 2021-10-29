@@ -75,18 +75,21 @@ class FakeModelCDC(Model):
 class FakeModelCDADeleteAction(DeleteAction):
     model = FakeModelCDA()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 @register_action("fake_model_cd_b.delete", internal=True)
 class FakeModelCDBDeleteAction(DeleteAction):
     model = FakeModelCDB()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 @register_action("fake_model_cd_c.delete", internal=True)
 class FakeModelCDCDeleteAction(DeleteAction):
     model = FakeModelCDC()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 class TestDeleteCascade(BaseActionTestCase):

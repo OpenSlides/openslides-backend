@@ -2,11 +2,12 @@ from collections import defaultdict
 from functools import reduce
 from typing import Any, Dict, List
 
+from ....action.action import Action
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
-from ...action import Action
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 
 ONE_ORGANIZATION = 1
@@ -27,7 +28,7 @@ class LimitOfUserMixin(Action):
                 )
 
 
-class UserMixin(Action):
+class UserMixin(CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         user_fqid = FullQualifiedId(Collection("user"), instance["id"])

@@ -44,8 +44,14 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def create_meetings(self) -> None:
         self.set_models(
             {
-                "meeting/200": {"committee_id": self.COMMITTEE_ID},
-                "meeting/201": {"committee_id": self.COMMITTEE_ID},
+                "meeting/200": {
+                    "committee_id": self.COMMITTEE_ID,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/201": {
+                    "committee_id": self.COMMITTEE_ID,
+                    "is_active_in_organization_id": 1,
+                },
             }
         )
 
@@ -464,7 +470,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
     def test_update_template_meeting_wrong_committee(self) -> None:
         self.create_data()
-        self.set_models({"meeting/299": {"committee_id": 2}})
+        self.set_models(
+            {"meeting/299": {"committee_id": 2, "is_active_in_organization_id": 1}}
+        )
         response = self.request(
             "committee.update",
             {
@@ -499,7 +507,9 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
     def test_update_default_meeting_wrong_committee(self) -> None:
         self.create_data()
-        self.set_models({"meeting/299": {"committee_id": 2}})
+        self.set_models(
+            {"meeting/299": {"committee_id": 2, "is_active_in_organization_id": 1}}
+        )
         response = self.request(
             "committee.update",
             {

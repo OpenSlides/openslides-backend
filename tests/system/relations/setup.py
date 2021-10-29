@@ -118,12 +118,14 @@ class FakeModelC(Model):
 class FakeModelACreateAction(CreateAction):
     model = FakeModelA()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 @register_action("fake_model_a.update", internal=True)
 class FakeModelAUpdateAction(UpdateAction):
     model = FakeModelA()
     schema = {}  # type: ignore
+    skip_archived_meeting_check = True
 
 
 class SingleRelationHandlerWithContext(SingleRelationHandler):

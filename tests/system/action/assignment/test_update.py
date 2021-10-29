@@ -6,7 +6,10 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "name_sdurqw12"},
+                "meeting/110": {
+                    "name": "name_sdurqw12",
+                    "is_active_in_organization_id": 1,
+                },
                 "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
             }
         )
@@ -20,7 +23,10 @@ class AssignmentUpdateActionTest(BaseActionTestCase):
     def test_update_correct_full_fields(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "name_sdurqw12"},
+                "meeting/110": {
+                    "name": "name_sdurqw12",
+                    "is_active_in_organization_id": 1,
+                },
                 "assignment/111": {"title": "title_srtgb123", "meeting_id": 110},
             }
         )

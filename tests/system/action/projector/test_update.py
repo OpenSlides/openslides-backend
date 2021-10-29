@@ -12,7 +12,7 @@ class ProjectorUpdate(BaseActionTestCase):
     def test_update_correct(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
             }
         )
@@ -65,7 +65,7 @@ class ProjectorUpdate(BaseActionTestCase):
     def test_update_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
         )
@@ -77,7 +77,7 @@ class ProjectorUpdate(BaseActionTestCase):
     def test_update_wrong_color(self) -> None:
         self.set_models(
             {
-                "meeting/1": {},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
             },
         )
@@ -90,7 +90,11 @@ class ProjectorUpdate(BaseActionTestCase):
     def test_update_set_used_as_default__in_meeting_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV", "projector_ids": [1]},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "projector_ids": [1],
+                    "is_active_in_organization_id": 1,
+                },
                 "projector/1": {"name": "Projector1", "meeting_id": 222},
             }
         )
@@ -122,6 +126,7 @@ class ProjectorUpdate(BaseActionTestCase):
                     "projector_ids": [1],
                     "default_projector_$_id": ["topics"],
                     "default_projector_$topics_id": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
                     "name": "Projector1",
@@ -171,6 +176,7 @@ class ProjectorUpdate(BaseActionTestCase):
                     "projector_ids": [1],
                     "default_projector_$_id": ["topics"],
                     "default_projector_$topics_id": 1,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
                     "name": "Projector1",
@@ -231,7 +237,11 @@ class ProjectorUpdate(BaseActionTestCase):
     def test_update_set_wrong_used_as_default__in_meeting_id(self) -> None:
         self.set_models(
             {
-                "meeting/222": {"name": "name_SNLGsvIV", "projector_ids": [1]},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "projector_ids": [1],
+                    "is_active_in_organization_id": 1,
+                },
                 "projector/1": {"name": "Projector1", "meeting_id": 222},
             }
         )

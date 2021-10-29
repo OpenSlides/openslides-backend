@@ -32,7 +32,10 @@ class OptionUpdateActionTest(BaseActionTestCase):
     def test_update(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "meeting_110"},
+                "meeting/110": {
+                    "name": "meeting_110",
+                    "is_active_in_organization_id": 1,
+                },
                 "poll/65": {
                     "type": "analog",
                     "state": "created",
@@ -83,7 +86,10 @@ class OptionUpdateActionTest(BaseActionTestCase):
     def test_update_Y(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "meeting_110"},
+                "meeting/110": {
+                    "name": "meeting_110",
+                    "is_active_in_organization_id": 1,
+                },
                 "poll/65": {
                     "type": "analog",
                     "pollmethod": "Y",
@@ -121,7 +127,10 @@ class OptionUpdateActionTest(BaseActionTestCase):
     def test_update_global_option(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"name": "meeting_110"},
+                "meeting/110": {
+                    "name": "meeting_110",
+                    "is_active_in_organization_id": 1,
+                },
                 "poll/65": {
                     "type": "analog",
                     "pollmethod": "Y",
@@ -169,7 +178,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
     def test_update_together_with_poll(self) -> None:
         self.set_models(
             {
-                "meeting/110": {},
+                "meeting/110": {"is_active_in_organization_id": 1},
                 "poll/6": {
                     "type": "analog",
                     "state": "created",
@@ -220,7 +229,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
     def test_update_together_with_poll_2(self) -> None:
         self.set_models(
             {
-                "meeting/110": {},
+                "meeting/110": {"is_active_in_organization_id": 1},
                 "poll/13": {
                     "type": "analog",
                     "state": "created",

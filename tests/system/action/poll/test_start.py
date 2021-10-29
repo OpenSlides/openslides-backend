@@ -13,6 +13,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
             {
                 "title": "test_assignment_tcLT59bmXrXif424Qw7K",
                 "open_posts": 1,
+                "meeting_id": 1,
             },
         )
         self.create_poll()
@@ -22,11 +23,13 @@ class VotePollBaseTestClass(BaseActionTestCase):
                     "name": "my meeting",
                     "poll_couple_countdown": True,
                     "poll_countdown_id": 11,
+                    "is_active_in_organization_id": 1,
                 },
                 "projector_countdown/11": {
                     "default_time": 60,
                     "running": False,
                     "countdown_time": 60,
+                    "meeting_id": 1,
                 },
                 "group/1": {"user_ids": [1]},
                 "option/1": {"meeting_id": 1, "poll_id": 1},

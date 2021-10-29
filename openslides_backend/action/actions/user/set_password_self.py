@@ -1,5 +1,6 @@
 from typing import Any, Dict
 
+from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import FullQualifiedId
@@ -9,7 +10,7 @@ from ...util.register import register_action
 
 
 @register_action("user.set_password_self")
-class UserSetPasswordSelf(UpdateAction):
+class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin):
     """
     Action to update the own password.
     """

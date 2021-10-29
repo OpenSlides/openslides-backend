@@ -6,7 +6,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "meeting/110": {},
+                "meeting/110": {"is_active_in_organization_id": 1},
                 "assignment/111": {"meeting_id": 110, "title": "title_srtgb123"},
             }
         )
@@ -17,7 +17,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
             {
-                "meeting/110": {},
+                "meeting/110": {"is_active_in_organization_id": 1},
                 "assignment/111": {
                     "list_of_speakers_id": 222,
                     "agenda_item_id": 333,
@@ -44,7 +44,7 @@ class AssignmentDeleteActionTest(BaseActionTestCase):
     def test_delete_wrong_id(self) -> None:
         self.set_models(
             {
-                "meeting/110": {},
+                "meeting/110": {"is_active_in_organization_id": 1},
                 "assignment/112": {"title": "title_srtgb123", "meeting_id": 110},
             }
         )
