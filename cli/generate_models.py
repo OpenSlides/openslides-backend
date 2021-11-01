@@ -13,7 +13,7 @@ from openslides_backend.models.fields import OnDelete
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
 SOURCE = (
-    "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/models.yml"
+    "./docs/models.yml"
 )
 
 DESTINATION = os.path.abspath(
@@ -113,6 +113,7 @@ def main() -> None:
         from openslides_backend.models.models import MODELS_YML_CHECKSUM
 
         assert checksum == MODELS_YML_CHECKSUM
+        print("models.py is up to date (checksum-comparison)")
         sys.exit(0)
 
     # Fix broken keys

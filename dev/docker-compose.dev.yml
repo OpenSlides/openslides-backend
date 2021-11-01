@@ -16,6 +16,7 @@ services:
             - ../migrations:/app/migrations
             - ../tests:/app/tests
             - ../cli:/app/cli
+            - ../docs:/app/docs
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_READER_PORT=9010

@@ -121,3 +121,32 @@ jobs:
 
     - name: Check mypy
       run: mypy openslides_backend/ tests/ cli/
+
+  check-models-all:
+    name: Check from models.yml up to permissions and jsons
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install requirements
+      run: pip install --requirement dev/requirements_development.txt
+
+    - name: Validate models.yml
+      run: PYTHONPATH=. python cli/modelsvalidator/validate.py
+
+    - name: Check for up tp date models.py
+      run: PYTHONPATH=. python cli/generate_models.py check
+
+    - name: Check initial-data.json
+      run: PYTHONPATH=. python cli/check_json.py docs/initial-data.json
+
+    - name: Check example-data.json
+      run: PYTHONPATH=. python cli/check_json.py docs/example-data.json
+
+    - name: Check for up to date permissions.py
+      run: PYTHONPATH=. python3 cli/generate_permissions.py check

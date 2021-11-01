@@ -5,6 +5,8 @@ from typing import Dict, List
 
 from .base_classes import Permission
 
+MODELS_YML_CHECKSUM = "9b403e59bc97087cb8aa3463b76e7b42"
+
 
 class _AgendaItem(Permission, Enum):
     CAN_MANAGE = "agenda_item.can_manage"
