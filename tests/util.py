@@ -2,7 +2,7 @@ from typing import Any, Dict, cast
 from unittest.mock import MagicMock
 
 import requests
-from authlib import COOKIE_NAME, HEADER_NAME
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse

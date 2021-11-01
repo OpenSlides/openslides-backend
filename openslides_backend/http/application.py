@@ -4,7 +4,7 @@ from typing import Any, Iterable, Union
 import simplejson as json
 from werkzeug.wrappers import Response
 
-from ..services.auth.adapter import HEADER_NAME
+from ..services.auth.adapter import AUTHENTICATION_HEADER
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
@@ -58,7 +58,7 @@ class OpenSlidesBackendWSGIApplication:
         )
         response = Response(json.dumps(response_body), content_type="application/json")
         if access_token is not None:
-            response.headers[HEADER_NAME] = access_token
+            response.headers[AUTHENTICATION_HEADER] = access_token
         return response
 
     def wsgi_application(
