@@ -66,17 +66,15 @@ def main() -> None:
     if len(sys.argv) > 1 and sys.argv[1] == "check":
         from openslides_backend.permissions.permissions import MODELS_YML_CHECKSUM
 
-        if checksum == MODELS_YML_CHECKSUM:
-            print("permissions.py is up to date (checksum-comparison)")
-        else:
-            print("Error: permissions.py is NOT up to date (checksum-comparison)")
+        assert checksum == MODELS_YML_CHECKSUM
+        print("permissions.py is up to date (checksum-comparison)")
         sys.exit(0)
 
 
     # Load and parse permissions.yml
     permissions = yaml.safe_load(permissions_yml)
     with open(DESTINATION, "w") as dest:
-        dest.write(FILE_TEMPLATE.format(checksum))
+        dest.write(FILE_TEMPLATE.format(repr(checksum)))
         all_parents: Dict[str, List[str]] = {}
         all_permissions: Dict[str, Set[str]] = defaultdict(set)
         for collection, children in permissions.items():
