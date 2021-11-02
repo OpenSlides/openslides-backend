@@ -1,8 +1,7 @@
 import json
 import re
 import sys
-from collections import defaultdict
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import yaml
 
@@ -21,7 +20,7 @@ collectionfield_regex = re.compile(
 collection_regex = re.compile(f"^{_collection_regex}$")
 field_regex = re.compile(f"^{_field_regex}$")
 
-decimal_regex = re.compile("^\d+\.\d{6}$")
+decimal_regex = re.compile("^\d+\.\d{6}$")  # NOQA
 color_regex = re.compile("^#[0-9a-f]{6}$")
 
 RELATION_TYPES = (
@@ -124,9 +123,10 @@ class Checker:
     ) -> None:
         collectionfield = f"{collection}{KEYSEPARATOR}{field_name}"
 
+        if isinstance(field, str):
+            field = cast(Dict[str, Any], {"type": field})
+
         if nested:
-            if isinstance(field, str):
-                field = {"type": field}
             field[
                 "restriction_mode"
             ] = "A"  # add restriction_mode to satisfy the checker below.
@@ -172,7 +172,7 @@ class Checker:
         if type == "JSON" and "default" in field:
             try:
                 json.loads(json.dumps(field["default"]))
-            except:
+            except:  # NOQA
                 self.errors.append(
                     f"Default value for {collectionfield}' is not valid json."
                 )
@@ -360,14 +360,13 @@ def main() -> int:
 
     failed = False
     for f in files:
-        with open(f) as data:
-            try:
-                Checker(f).run_check()
-            except CheckException as e:
-                print(f"Check for {f} failed:\n", e)
-                failed = True
-            else:
-                print(f"Check for {f} successful.")
+        try:
+            Checker(f).run_check()
+        except CheckException as e:
+            print(f"Check for {f} failed:\n", e)
+            failed = True
+        else:
+            print(f"Check for {f} successful.")
     return 1 if failed else 0
 
 

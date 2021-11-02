@@ -29,14 +29,14 @@ test-unit-integration:
 check-all: validate-models.yml check-models check-initial-data.json check-example-data.json check-permissions
 
 validate-models.yml:
-	PYTHONPATH=. python cli/modelsvalidator/validate.py
+	PYTHONPATH=. python3 cli/modelsvalidator/validate.py
 
 generate-models:
 	PYTHONPATH=. python3 cli/generate_models.py $(MODELS_PATH)
 	black openslides_backend/models/models.py
 
 check-models:
-	PYTHONPATH=. python cli/generate_models.py check
+	PYTHONPATH=. python3 cli/generate_models.py check
 
 generate-permissions:
 	PYTHONPATH=. python3 cli/generate_permissions.py $(MODELS_PATH)
@@ -46,10 +46,10 @@ check-permissions:
 	PYTHONPATH=. python3 cli/generate_permissions.py check
 
 check-initial-data.json:
-	PYTHONPATH=. python cli/check_json.py docs/initial-data.json
+	PYTHONPATH=. python3 cli/check_json.py docs/initial-data.json
 
 check-example-data.json:
-	PYTHONPATH=. python cli/check_json.py docs/example-data.json
+	PYTHONPATH=. python3 cli/check_json.py docs/example-data.json
 
 run-debug:
 	OPENSLIDES_DEVELOPMENT=1 python -m openslides_backend

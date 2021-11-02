@@ -12,9 +12,7 @@ import yaml
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
-SOURCE = (
-    "./docs/models.yml"
-)
+SOURCE = "./docs/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(

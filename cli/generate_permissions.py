@@ -10,9 +10,7 @@ import yaml
 
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
-SOURCE = (
-    "./docs/permission.yml"
-)
+SOURCE = "./docs/permission.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -69,7 +67,6 @@ def main() -> None:
         assert checksum == MODELS_YML_CHECKSUM
         print("permissions.py is up to date (checksum-comparison)")
         sys.exit(0)
-
 
     # Load and parse permissions.yml
     permissions = yaml.safe_load(permissions_yml)
