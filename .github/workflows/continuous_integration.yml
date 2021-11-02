@@ -122,23 +122,19 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Validate models.yml
-      id: models_yml
-      if: ${{ steps.python.outcome == 'success' && steps.requirements.outcome == 'success' }}
       run: PYTHONPATH=. python cli/modelsvalidator/validate.py
 
     - name: Check for up tp date models.py
       id: models_py
-      if: ${{ steps.models_yml.outcome == 'success' }}
       run: PYTHONPATH=. python cli/generate_models.py check
 
     - name: Check initial-data.json
-      if: ${{ steps.models_py.outcome == 'success' }}
       run: PYTHONPATH=. python cli/check_json.py docs/initial-data.json
 
     - name: Check example-data.json
-      if: ${{ steps.models_py.outcome == 'success' }}
+      if: ${{ always() && steps.models_py.outcome == 'success' }}
       run: PYTHONPATH=. python cli/check_json.py docs/example-data.json
 
     - name: Check for up to date permissions.py
-      if: ${{ steps.python.outcome == 'success' && steps.requirements.outcome == 'success' }}
+      if: ${{ always() && steps.python.outcome == 'success' && steps.requirements.outcome == 'success' }}
       run: PYTHONPATH=. python3 cli/generate_permissions.py check
