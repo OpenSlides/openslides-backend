@@ -2,6 +2,7 @@ from . import (  # noqa
     create,
     delete,
     forget_password,
+    forget_password_confirm,
     generate_new_password,
     merge_together,
     reset_password_to_default,
