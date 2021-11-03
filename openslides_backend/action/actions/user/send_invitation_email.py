@@ -211,7 +211,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             html=False,
         )
         result["sent"] = True
-        instance["last_email_send"] = time()
+        instance["last_email_send"] = round(time())
         return super().update_instance(instance)
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
