@@ -10,7 +10,7 @@ import yaml
 
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
-SOURCE = "./docs/permission.yml"
+SOURCE = "./global/meta/permission.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -31,7 +31,7 @@ FILE_TEMPLATE = dedent(
 
     from .base_classes import Permission
 
-    MODELS_YML_CHECKSUM = "{}"
+    PERMISSION_YML_CHECKSUM = "{}"
     """
 )
 
@@ -58,20 +58,19 @@ def main() -> None:
     else:
         permissions_yml = requests.get(file).content
 
-    # calc checksum to assert the models.py is up-to-date
+    # calc checksum to assert the permissions.py is up-to-date
     checksum = hashlib.md5(permissions_yml).hexdigest()
 
     if len(sys.argv) > 1 and sys.argv[1] == "check":
-        from openslides_backend.permissions.permissions import MODELS_YML_CHECKSUM
-
-        assert checksum == MODELS_YML_CHECKSUM
+        from openslides_backend.permissions.permissions import PERMISSION_YML_CHECKSUM
+        assert checksum == PERMISSION_YML_CHECKSUM
         print("permissions.py is up to date (checksum-comparison)")
         sys.exit(0)
 
     # Load and parse permissions.yml
     permissions = yaml.safe_load(permissions_yml)
     with open(DESTINATION, "w") as dest:
-        dest.write(FILE_TEMPLATE.format(repr(checksum)))
+        dest.write(FILE_TEMPLATE.format(checksum))
         all_parents: Dict[str, List[str]] = {}
         all_permissions: Dict[str, Set[str]] = defaultdict(set)
         for collection, children in permissions.items():

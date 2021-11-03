@@ -4,21 +4,16 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import yaml
+from datastore.shared.util.key_strings import KEYSEPARATOR
+from datastore.shared.util.key_types import (
+    collection_regex,
+    collectionfield_regex,
+    field_regex,
+)
 
 DEFAULT_FILES = [
-    "./docs/models.yml",
+    "./global/meta/models.yml",
 ]
-
-
-KEYSEPARATOR = "/"
-_collection_regex = r"[a-z]([a-z_]+[a-z]+)?"
-_field_regex = r"[a-z][a-z0-9_]*\$?[a-z0-9_]*"
-
-collectionfield_regex = re.compile(
-    f"^({_collection_regex}){KEYSEPARATOR}({_field_regex})$"
-)
-collection_regex = re.compile(f"^{_collection_regex}$")
-field_regex = re.compile(f"^{_field_regex}$")
 
 decimal_regex = re.compile("^\d+\.\d{6}$")  # NOQA
 color_regex = re.compile("^#[0-9a-f]{6}$")
