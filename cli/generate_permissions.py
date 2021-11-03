@@ -63,6 +63,7 @@ def main() -> None:
 
     if len(sys.argv) > 1 and sys.argv[1] == "check":
         from openslides_backend.permissions.permissions import PERMISSION_YML_CHECKSUM
+
         assert checksum == PERMISSION_YML_CHECKSUM
         print("permissions.py is up to date (checksum-comparison)")
         sys.exit(0)
