@@ -19,7 +19,7 @@ class UserForgetPasswordConfirm(UpdateAction):
         additional_required_fields={
             "new_password": {"type": "string"},
             "user_id": {"type": "integer"},
-            "token": {"type": "string"},
+            "authorization_token": {"type": "string"},
         },
     )
     skip_archived_meeting_check = True
@@ -27,15 +27,11 @@ class UserForgetPasswordConfirm(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         user_id = instance.pop("user_id")
         new_password = instance.pop("new_password")
-        token = self.get_token(instance)
+        token = instance.pop("authorization_token")
         self.check_token(user_id, token)
         instance["id"] = user_id
         instance["password"] = self.auth.hash(new_password)
         return instance
-
-    def get_token(self, instance: Dict[str, Any]) -> str:
-        # TODO Perhaps get the token from the header.
-        return instance.pop("token")
 
     def check_token(self, user_id: int, token: str) -> None:
         if not self.auth.verify_authorization_token(user_id, "bearer " + token):

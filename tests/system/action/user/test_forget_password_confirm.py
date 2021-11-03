@@ -11,7 +11,7 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         token = self.auth.create_authorization_token(self.USERID, self.EMAIL)[7:]
         response = self.request(
             "user.forget_password_confirm",
-            {"user_id": 1, "token": token, "new_password": self.PW},
+            {"user_id": 1, "authorization_token": token, "new_password": self.PW},
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
@@ -22,7 +22,7 @@ class UserForgetPasswordConfirm(BaseActionTestCase):
         token = self.auth.create_authorization_token(self.USERID, self.EMAIL)[7:]
         response = self.request(
             "user.forget_password_confirm",
-            {"user_id": 2, "token": token, "new_password": self.PW},
+            {"user_id": 2, "authorization_token": token, "new_password": self.PW},
         )
         self.assert_status_code(response, 400)
         assert "Failed to verify token." == response.json["message"]
