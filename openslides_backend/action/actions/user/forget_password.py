@@ -95,7 +95,6 @@ class UserForgetPassword(EmailMixin, UpdateAction):
         return quote(self.auth.create_authorization_token(user_id, email))
 
     def get_email_body(self, user_id: int, token: str, username: str) -> str:
-
         body_format = format_dict(
             None,
             {
