@@ -9,6 +9,7 @@ from smtplib import (
 from ssl import SSLCertVerificationError
 from time import time
 from typing import Any, Dict
+from urllib.parse import quote
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
@@ -91,8 +92,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                 )
 
     def get_token(self, user_id: int, email: str) -> str:
-        # get token without 'bearer '
-        return self.auth.create_authorization_token(user_id, email)[7:]
+        return quote(self.auth.create_authorization_token(user_id, email))
 
     def get_email_body(self, user_id: int, token: str, username: str) -> str:
 
