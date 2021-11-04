@@ -51,7 +51,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
         for instance in action_data:
             email = instance.pop("email")
 
-            # check emailif valid email adress
+            # check if email adress is valid
             if not self.check_email(EmailSettings.default_from_email):
                 raise ActionException(
                     f"email '{EmailSettings.default_from_email}' is not a valid sender email address."
@@ -72,7 +72,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                         if self.sendmail(
                             mail_client,
                             email,
-                            self.get_email_subjext(),
+                            PW_FORGET_EMAIL_SUBJECT,
                             self.get_email_body(
                                 user["id"],
                                 self.get_token(user["id"], email),
@@ -105,9 +105,6 @@ class UserForgetPassword(EmailMixin, UpdateAction):
             },
         )
         return PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
-
-    def get_email_subjext(self) -> str:
-        return PW_FORGET_EMAIL_SUBJECT
 
     def sendmail(
         self, mail_client: Any, email: str, email_subject: str, email_body: str

@@ -3,7 +3,6 @@ from urllib.parse import quote
 from tests.system.action.base import BaseActionTestCase
 
 
-
 class UserForgetPasswordConfirm(BaseActionTestCase):
     PW = "password"
     USERID = 1
