@@ -63,7 +63,7 @@ class UserForgetPassword(BaseActionTestCase):
         response = self.request("user.forget_password", {"email": "test@ntvtn.de"})
         self.assert_status_code(response, 400)
         assert (
-            "email 'grüllegrütz' is not a valid sender email address."
+            "The server was configured improperly. Please contact your administrator."
             == response.json["message"]
         )
 

@@ -54,7 +54,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
             # check if email adress is valid
             if not self.check_email(EmailSettings.default_from_email):
                 raise ActionException(
-                    f"email '{EmailSettings.default_from_email}' is not a valid sender email address."
+                    "The server was configured improperly. Please contact your administrator."
                 )
             if not self.check_email(email):
                 raise ActionException(f"'{email}' is not a valid email adress.")
