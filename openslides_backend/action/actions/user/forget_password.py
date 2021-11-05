@@ -20,7 +20,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 
-PW_FORGET_EMAIL_TEMPLATE = """You are receiving this email, because you have requested a new password for your OpenSlides-account.
+PW_FORGET_EMAIL_TEMPLATE = """You are receiving this email because you have requested a new password for your OpenSlides-account.
 
 Please open the following link and choose a new password:
 /login/forget-password-confirm?user_id={user_id}&token={token}
