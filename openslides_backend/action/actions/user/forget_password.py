@@ -1,12 +1,4 @@
 from collections import defaultdict
-from smtplib import (
-    SMTPAuthenticationError,
-    SMTPDataError,
-    SMTPRecipientsRefused,
-    SMTPSenderRefused,
-    SMTPServerDisconnected,
-)
-from ssl import SSLCertVerificationError
 from time import time
 from typing import Any, Dict
 from urllib.parse import quote
@@ -65,12 +57,14 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                 self.model.collection, filter_, ["id", "username"]
             )
 
-            # try to send the mail.
+            # try to send the mails.
             try:
                 with EmailMixin.get_mail_connection() as mail_client:
                     for user in results.values():
-                        if self.sendmail(
+                        ok, _ = self.send_email_safe(
                             mail_client,
+                            self.logger,
+                            EmailSettings.default_from_email,
                             email,
                             PW_FORGET_EMAIL_SUBJECT,
                             self.get_email_body(
@@ -78,17 +72,14 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                                 self.get_token(user["id"], email),
                                 user["username"],
                             ),
-                        ):
+                            html=False,
+                        )
+                        if ok:
                             yield {"id": user["id"], "last_email_send": round(time())}
-            except SMTPAuthenticationError as e:
-                raise ActionException(f"SMTPAuthenticationError: {str(e)}")
-            except SMTPSenderRefused as e:
-                raise ActionException(f"SMTPSenderRefused: {str(e)}")
-            except SSLCertVerificationError as e:
-                raise ActionException(f"SSLCertVerificationError: {str(e)}")
             except Exception as e:
+                self.logger.error(f"General send mail exception: {str(e)}")
                 raise ActionException(
-                    f"Unspecified mail connection exception on sending invitation email to server {EmailSettings.host}, port {EmailSettings.port}: {str(e)}"
+                    "The server was configured improperly. Please contact your administrator."
                 )
 
     def get_token(self, user_id: int, email: str) -> str:
@@ -104,29 +95,6 @@ class UserForgetPassword(EmailMixin, UpdateAction):
             },
         )
         return PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
-
-    def sendmail(
-        self, mail_client: Any, email: str, email_subject: str, email_body: str
-    ) -> bool:
-        try:
-            self.send_email(
-                mail_client,
-                EmailSettings.default_from_email,
-                email,
-                email_subject,
-                email_body,
-                html=False,
-            )
-        except SMTPRecipientsRefused as e:
-            self.logger.error(f"SMTPRecipientsRefused: {str(e)}")
-            return False
-        except SMTPServerDisconnected as e:
-            self.logger.error(f"SMTPServerDisconnected: {str(e)}")
-            return False
-        except SMTPDataError as e:
-            self.logger.error(f"SMTPDataError: {str(e)}")
-            return False
-        return True
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass

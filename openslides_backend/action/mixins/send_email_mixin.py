@@ -7,7 +7,7 @@ from datetime import datetime
 from email.headerregistry import Address
 from email.message import EmailMessage
 from email.utils import format_datetime, make_msgid
-from typing import Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from lxml import html as lxml_html  # type: ignore
 from lxml.html.clean import clean_html  # type: ignore
@@ -158,3 +158,30 @@ class EmailMixin:
         if reply_to:
             message.add_header("Reply-To", reply_to)
         return client.send_message(message)
+
+    @staticmethod
+    def send_email_safe(
+        client: Union[smtplib.SMTP, smtplib.SMTP_SSL],
+        logger: Any,
+        from_: Union[str, Address],
+        to: Union[str, List[str]],
+        subject: str,
+        content: str,
+        contentplain: str = "",
+        reply_to: str = "",
+        html: bool = True,
+    ) -> Tuple[bool, SendErrors]:
+        try:
+            return True, EmailMixin.send_email(
+                client, from_, to, subject, content, contentplain, reply_to, html
+            )
+        except smtplib.SMTPRecipientsRefused as e:
+            logger.error(f"SMTPRecipientsRefused: {str(e)}")
+            return False, {}
+        except smtplib.SMTPServerDisconnected as e:
+            logger.error(f"SMTPServerDisconnected: {str(e)}")
+            return False, {}
+        except smtplib.SMTPDataError as e:
+            logger.error(f"SMTPDataError: {str(e)}")
+            return False, {}
+        return True, {}
