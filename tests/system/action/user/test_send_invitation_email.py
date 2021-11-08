@@ -1,11 +1,12 @@
 from time import time
 
-from openslides_backend.action.mixins.send_email_mixin import (
-    ConnectionSecurity,
-    EmailSettings,
-)
+from openslides_backend.action.mixins.send_email_mixin import EmailSettings
 from tests.system.action.base import BaseActionTestCase
-from tests.system.action.mail_base import AIOHandler, AiosmtpdServerManager
+from tests.system.action.mail_base import (
+    AIOHandler,
+    AiosmtpdServerManager,
+    set_test_email_settings,
+)
 
 
 class SendInvitationMail(BaseActionTestCase):
@@ -32,14 +33,7 @@ class SendInvitationMail(BaseActionTestCase):
             },
         )
         # important to reset all these settings
-        EmailSettings.connection_security = ConnectionSecurity.NONE
-        EmailSettings.host = "127.0.0.1"
-        EmailSettings.port = 25
-        EmailSettings.timeout = 5
-        EmailSettings.user = ""
-        EmailSettings.password = ""
-        EmailSettings.accept_self_signed_certificate = False
-        EmailSettings.default_from_email = "noreply@example.com"
+        set_test_email_settings()
 
     def test_send_correct(self) -> None:
         start_time = int(time())
