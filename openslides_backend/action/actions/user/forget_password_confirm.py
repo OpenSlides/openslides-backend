@@ -1,6 +1,8 @@
 from typing import Any, Dict
 from urllib.parse import unquote
 
+from authlib.exceptions import InvalidCredentialsException
+
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ...generics.update import UpdateAction
@@ -35,7 +37,10 @@ class UserForgetPasswordConfirm(UpdateAction):
         return instance
 
     def check_token(self, user_id: int, token: str) -> None:
-        if not self.auth.verify_authorization_token(user_id, unquote(token)):
+        try:
+            if not self.auth.verify_authorization_token(user_id, unquote(token)):
+                raise ActionException("Failed to verify token.")
+        except InvalidCredentialsException:
             raise ActionException("Failed to verify token.")
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

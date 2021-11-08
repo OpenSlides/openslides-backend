@@ -58,6 +58,12 @@ class UserForgetPassword(BaseActionTestCase):
         assert handler.emails[1]["to"][0] == "test@ntvtn.de"
         assert "For completeness your username: test2" in handler.emails[1]["data"]
 
+    def test_forget_password_no_user_found(self) -> None:
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request("user.forget_password", {"email": "info@ntvtn.de"})
+        self.assert_status_code(response, 200)
+
     def test_forget_password_invalid_default_from_email(self) -> None:
         EmailSettings.default_from_email = "grüllegrütz"
         response = self.request("user.forget_password", {"email": "test@ntvtn.de"})
