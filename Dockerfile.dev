@@ -19,5 +19,9 @@ EXPOSE 9006
 ENV FLASK_APP ./src/mediaserver.py
 ENV FLASK_ENV development
 
+RUN mkdir -p /run/secrets
+RUN echo -n openslides >/run/secrets/media_database_user
+RUN echo -n openslides >/run/secrets/media_database_password
+
 ENTRYPOINT ["./entrypoint.dev.sh"]
 CMD ["flask", "run", "--host", "0.0.0.0", "--port", "9006"]

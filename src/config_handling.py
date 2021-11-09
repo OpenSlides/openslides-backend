@@ -18,6 +18,11 @@ def get_default_for(config_value):
 
 
 def init_config(app):
+    file_configs = (
+        "MEDIA_DATABASE_USER",
+        "MEDIA_DATABASE_PASSWORD",
+    )
+
     all_configs = (
         "MEDIA_DATABASE_HOST",
         "MEDIA_DATABASE_PORT",
@@ -30,7 +35,10 @@ def init_config(app):
     )
 
     for config in all_configs:
-        value = os.environ.get(config, get_default_for(config))
+        if config in file_configs:
+            value = get_config_from(app, config + "_FILE")
+        else:
+            value = os.environ.get(config, get_default_for(config))
         if not value:
             continue
         try:
@@ -47,3 +55,16 @@ def init_config(app):
         if app.config.get(config) is None:
             app.logger.critical(f"Did not find an environment variable for '{config}'")
             sys.exit(1)
+
+
+def get_config_from(app, config):
+    path = os.environ.get(config)
+    if not path:
+        app.logger.critical(f"Did not find environment variable for '{config}'")
+        sys.exit(1)
+    try:
+        with open(path) as file_:
+            return file_.read()
+    except Exception:  # noqa
+        app.logger.critical(f"Reading path '{path}' from config '{config}' went wrong.")
+        sys.exit(1)

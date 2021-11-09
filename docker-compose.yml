@@ -12,8 +12,8 @@ services:
             - MEDIA_DATABASE_HOST=media-postgresql
             - MEDIA_DATABASE_PORT=5432
             - MEDIA_DATABASE_NAME=openslides
-            - MEDIA_DATABASE_USER=openslides
-            - MEDIA_DATABASE_PASSWORD=openslides
+            - MEDIA_DATABASE_USER_FILE=/run/secrets/media_database_user
+            - MEDIA_DATABASE_PASSWORD_FILE=/run/secrets/media_database_password
         volumes:
             - ./src:/app/src
         ports:
