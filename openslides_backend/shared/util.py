@@ -1,6 +1,7 @@
-from typing import List
+from typing import Any, List
 
 import bleach
+import simplejson as json
 
 ALLOWED_HTML_TAGS_STRICT = [
     "a",
@@ -60,6 +61,9 @@ ALLOWED_STYLES = [
     "word-wrap",
 ]
 
+INITIAL_DATA_FILE = "global/data/initial-data.json"
+EXAMPLE_DATA_FILE = "global/data/example-data.json"
+
 
 def validate_html(
     html: str,
@@ -76,3 +80,8 @@ def validate_html(
         attributes=allow_all,
         styles=allowed_styles,
     )
+
+
+def get_initial_data_file(file: str) -> Any:
+    with open(file) as fileh:
+        return json.load(fileh)

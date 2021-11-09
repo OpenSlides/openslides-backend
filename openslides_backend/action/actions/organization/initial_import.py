@@ -9,6 +9,7 @@ from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from ...action import Action
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
@@ -49,6 +50,10 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         data = instance["data"]
 
         self.check_empty_datastore()
+
+        if not data:
+            data = get_initial_data_file(INITIAL_DATA_FILE)
+            instance["data"] = data
 
         # check datavalidation
         checker = Checker(data=data, mode="all")

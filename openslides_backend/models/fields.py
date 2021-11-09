@@ -434,7 +434,9 @@ class TemplateDecimalField(BaseTemplateField, DecimalField):
         if (min := self.constraints.get("minimum")) is not None:
             if type(value) == dict:
                 assert all(
-                    (Decimal(v) >= Decimal(min)) for v in value.values() if v is not None
+                    (Decimal(v) >= Decimal(min))
+                    for v in value.values()
+                    if v is not None
                 ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
             elif type(value) == list:
                 assert all(

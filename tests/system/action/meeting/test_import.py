@@ -594,7 +594,10 @@ class MeetingImport(BaseActionTestCase):
 
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 400)
-        self.assertIn("default_vote_weight must be bigger than or equal to 0.", response.json["message"])
+        self.assertIn(
+            "default_vote_weight must be bigger than or equal to 0.",
+            response.json["message"],
+        )
 
     def test_double_import(self) -> None:
         start = round(time.time())
