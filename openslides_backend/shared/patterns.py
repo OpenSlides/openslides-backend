@@ -2,6 +2,8 @@ import re
 from typing import List, Optional, Sequence, Union, cast
 
 KEYSEPARATOR = "/"
+DECIMAL_PATTERN = r"^-?(\d|[1-9]\d+)\.\d{6}$"
+COLOR_PATTERN = r"^#[0-9a-f]{6}$"
 
 ID_REGEX_PART = r"[1-9]\d*"
 ID_REGEX = rf"^{ID_REGEX_PART}$"

@@ -66,3 +66,41 @@ class OrganizationInitialImport(BaseActionTestCase):
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         assert "organization/1: Missing fields theme_id" in response.json["message"]
+
+    def test_initial_import_negative_default_vote_weight(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": self.get_initial_data()}
+        request_data["data"]["user"]["1"]["default_vote_weight"] = "-2.000000"
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "default_vote_weight must be bigger than or equal to 0.",
+            response.json["message"],
+        )
+
+    def test_initial_import_negative_vote_weight(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": self.get_initial_data()}
+        request_data["data"]["user"]["1"]["vote_weight_$"] = ["1"]
+        request_data["data"]["user"]["1"]["vote_weight_$1"] = "-2.000000"
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "vote_weight_$ must be bigger than or equal to 0.", response.json["message"]
+        )
+
+    def test_initial_import_negative_vote_weight_fields(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": self.get_initial_data()}
+        request_data["data"]["user"]["1"]["default_vote_weight"] = "-2.000000"
+        request_data["data"]["user"]["1"]["vote_weight_$"] = ["1"]
+        request_data["data"]["user"]["1"]["vote_weight_$1"] = "-2.000000"
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "default_vote_weight must be bigger than or equal to 0.",
+            response.json["message"],
+        )
+        self.assertIn(
+            "vote_weight_$ must be bigger than or equal to 0.", response.json["message"]
+        )

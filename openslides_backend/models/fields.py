@@ -1,8 +1,9 @@
 import re
+from decimal import Decimal
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
-from ..shared.patterns import ID_REGEX, Collection, string_to_fqid
+from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, string_to_fqid
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
@@ -66,7 +67,7 @@ class Field:
         schema.update(kwargs)
         return schema
 
-    def validate(self, value: Any) -> Any:
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         """
         Overwrite in subclass to validate/sanitize the input.
         """
@@ -136,7 +137,9 @@ class HTMLStrictField(TextField):
     Field for restricted HTML.
     """
 
-    def validate(self, html: Optional[str]) -> Optional[str]:
+    def validate(
+        self, html: Optional[str], payload: Dict[str, Any] = {}
+    ) -> Optional[str]:
         if html is not None:
             return validate_html(html, self.get_allowed_tags())
         return None
@@ -181,6 +184,16 @@ class DecimalField(Field):
             schema["type"] = ["string", "null"]
         return schema
 
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+        if (min := self.constraints.get("minimum")) is not None:
+            if type(value) == str:
+                assert Decimal(value) >= Decimal(
+                    min
+                ), f"{self.own_field_name} must be bigger than or equal to {min}."
+            else:
+                raise NotImplementedError
+        return value
+
 
 class TimestampField(IntegerField):
     """
@@ -190,7 +203,7 @@ class TimestampField(IntegerField):
 
 class ColorField(TextField):
     def get_schema(self) -> Schema:
-        return self.extend_schema(super().get_schema(), pattern=r"^#[0-9a-f]{6}$")
+        return self.extend_schema(super().get_schema(), pattern=COLOR_PATTERN)
 
 
 class ArrayField(Field):
@@ -291,9 +304,12 @@ class GenericRelationField(BaseGenericRelationField):
             schema = optional_fqid_schema
         return self.extend_schema(super().get_schema(), **schema)
 
-    def validate(self, value: Any) -> Any:
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         assert not isinstance(value, list)
-        return string_to_fqid(value)
+        if value:
+            return string_to_fqid(value)
+        else:
+            return value
 
 
 class GenericRelationListField(BaseGenericRelationField):
@@ -302,7 +318,7 @@ class GenericRelationListField(BaseGenericRelationField):
     def get_schema(self) -> Schema:
         return self.extend_schema(super().get_schema(), **fqid_list_schema)
 
-    def validate(self, value: Any) -> Any:
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         assert isinstance(value, list)
         return [string_to_fqid(fqid) for fqid in value]
 
@@ -414,10 +430,38 @@ class TemplateCharField(BaseTemplateField, CharField):
 
 
 class TemplateDecimalField(BaseTemplateField, DecimalField):
-    pass
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+        if (min := self.constraints.get("minimum")) is not None:
+            if type(value) == dict:
+                assert all(
+                    (Decimal(v) >= Decimal(min)) for v in value.values() if v is not None
+                ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
+            elif type(value) == list:
+                assert all(
+                    (
+                        Decimal(
+                            cast(
+                                Union[Decimal, float, str],
+                                payload.get(
+                                    self.get_structured_field_name(replacement)
+                                ),
+                            )
+                        )
+                        >= Decimal(min)
+                    )
+                    for replacement in value
+                ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
+            else:
+                raise NotImplementedError
+        return value
 
 
 class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
-    def validate(self, value: Any) -> Any:
-        sup: Any = super()
-        return {key: sup.validate(struc) for key, struc in value.items()}
+    def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
+        if type(value) == dict:
+            sup: Any = super()
+            return {key: sup.validate(struc) for key, struc in value.items()}
+        elif type(value) == list:
+            return value
+        else:
+            raise NotImplementedError

@@ -220,7 +220,7 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                     "organization_management_level": None,
                     "committee_ids": [1],
                     "committee_$_management_level": ["1"],
-                    "committee_$1_management_level": "",
+                    "committee_$1_management_level": None,
                 },
             }
         )

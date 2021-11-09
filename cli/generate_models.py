@@ -345,6 +345,8 @@ class Attribute(Node):
             properties += f"on_delete=fields.OnDelete.{self.fields.on_delete},"
         if self.contraints:
             properties += f"constraints={repr(self.contraints)},"
+        if self.fields.contraints:
+            properties += f"constraints={repr(self.fields.contraints)},"
         return self.FIELD_TEMPLATE.substitute(
             dict(field_name=field_name, field_class=field_class, properties=properties)
         )

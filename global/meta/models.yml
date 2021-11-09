@@ -186,6 +186,7 @@ user:
   default_vote_weight:
     type: decimal(6)
     default: "1.000000"
+    minimum: 0
     restriction_mode: A
   last_email_send:
     type: timestamp
@@ -247,7 +248,9 @@ user:
   vote_weight_$:
     type: template
     replacement_collection: meeting
-    fields: decimal(6)
+    fields:
+      type: decimal(6)
+      minimum: 0
     restriction_mode: A
 
   # All foreign keys are meeting-specific:

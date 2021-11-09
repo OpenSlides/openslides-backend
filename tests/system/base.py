@@ -42,8 +42,8 @@ class BaseSystemTestCase(TestCase):
     client: Client
     anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
-    INITIAL_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/4430f0560a1d22b3534e420580698baf05b310bf/docker/initial-data.json"
-    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/d97e97186b3ac0f92f8ef342d852d896fcb374fb/docs/example-data.json"
+    INITIAL_DATA_FILE = "global/data/initial-data.json"
+    EXAMPLE_DATA_FILE = "global/data/example-data.json"
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -84,7 +84,8 @@ class BaseSystemTestCase(TestCase):
         self.set_models(data)
 
     def get_initial_data(self) -> Any:
-        return json.loads(requests.get(self.INITIAL_DATA).content)
+        with open(self.INITIAL_DATA_FILE) as fileh:
+            return json.load(fileh)
 
     def create_client(self, username: str = None, password: str = None) -> Client:
         return Client(self.app, username, password)

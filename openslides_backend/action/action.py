@@ -428,10 +428,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Validates all model fields according to the model definition.
         """
-        for field_name in instance:
-            if self.model.has_field(field_name):
-                field = self.model.get_field(field_name)
-                instance[field_name] = field.validate(instance[field_name])
+        try:
+            for field_name in instance:
+                if self.model.has_field(field_name):
+                    field = self.model.get_field(field_name)
+                    instance[field_name] = field.validate(instance[field_name])
+        except AssertionError as e:
+            raise ActionException(str(e))
         return instance
 
     def validate_relation_fields(self, instance: Dict[str, Any]) -> None:

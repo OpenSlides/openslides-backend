@@ -581,6 +581,21 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("user/2", {"username": "admin 1"})
         self.assert_model_exists("user/3", {"username": "admin 1 1"})
 
+    def test_check_negative_default_vote_weight(self) -> None:
+        request_data = self.create_request_data({})
+        request_data["meeting"]["user"]["1"] = self.get_user_data(
+            1,
+            {
+                "default_vote_weight": "-1.123456",
+                "group_$_ids": ["1"],
+                "group_$1_ids": [1],
+            },
+        )
+
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn("default_vote_weight must be bigger than or equal to 0.", response.json["message"])
+
     def test_double_import(self) -> None:
         start = round(time.time())
         self.set_models(

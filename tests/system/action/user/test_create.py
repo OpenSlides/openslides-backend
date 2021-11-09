@@ -919,3 +919,37 @@ class UserCreateActionTest(BaseActionTestCase):
                 "is_active": False,
             },
         )
+
+    def test_create_negative_default_vote_weight(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "default_vote_weight": "-1.500000",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "default_vote_weight must be bigger than or equal to 0.",
+            response.json["message"],
+        )
+
+    def test_create_negative_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
+            }
+        )
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "vote_weight_$": {1: "-1.000000", 2: "-2.333333"},
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "vote_weight_$ must be bigger than or equal to 0.",
+            response.json["message"],
+        )

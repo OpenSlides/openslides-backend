@@ -4,19 +4,24 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import yaml
-from datastore.shared.util.key_strings import KEYSEPARATOR
 from datastore.shared.util.key_types import (
     collection_regex,
     collectionfield_regex,
     field_regex,
 )
 
+from openslides_backend.shared.patterns import (
+    COLOR_PATTERN,
+    DECIMAL_PATTERN,
+    KEYSEPARATOR,
+)
+
 DEFAULT_FILES = [
     "./global/meta/models.yml",
 ]
 
-decimal_regex = re.compile("^\d+\.\d{6}$")  # NOQA
-color_regex = re.compile("^#[0-9a-f]{6}$")
+decimal_regex = re.compile(DECIMAL_PATTERN)  # N O Q A
+color_regex = re.compile(COLOR_PATTERN)
 
 RELATION_TYPES = (
     "relation",
@@ -175,6 +180,8 @@ class Checker:
             valid_attributes.append("minimum")
             if not isinstance(field.get("minimum", 0), int):
                 self.errors.append(f"'minimum' for {collectionfield} is not a number.")
+        if type == "decimal(6)":
+            valid_attributes.append("minimum")
         if type == "string":
             valid_attributes.append("maxLength")
             if not isinstance(field.get("maxLength", 0), int):
@@ -209,6 +216,11 @@ class Checker:
                     f"The template field {collectionfield} is missing a $"
                 )
             valid_attributes.append("replacement_collection")
+            if (
+                isinstance(fields := field.get("fields"), dict)
+                and fields.get("type") == "decimal(6)"
+            ):
+                valid_attributes.append("minimum")
         elif "$" in field_name and not nested:
             print(field_name, field)
             self.errors.append(f"The non-template field {collectionfield} contains a $")
