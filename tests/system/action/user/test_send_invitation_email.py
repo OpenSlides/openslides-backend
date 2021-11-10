@@ -42,7 +42,7 @@ class SendInvitationMail(BaseActionTestCase):
         EmailSettings.default_from_email = "noreply@example.com"
 
     def test_send_correct(self) -> None:
-        start_time = time()
+        start_time = int(time())
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request(
@@ -107,7 +107,7 @@ class SendInvitationMail(BaseActionTestCase):
             },
         )
 
-        start_time = time()
+        start_time = int(time())
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request_json(
@@ -134,7 +134,7 @@ class SendInvitationMail(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         user2 = self.get_model("user/2")
-        self.assertGreater(user2.get("last_email_send", 0), start_time)
+        self.assertGreaterEqual(user2.get("last_email_send", 0), start_time)
         for i in range(3, 8, 1):
             self.assert_model_exists(f"user/{i}", {"last_email_send": None})
         self.assertEqual(response.json["results"][0][0]["sent"], True)

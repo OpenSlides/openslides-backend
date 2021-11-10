@@ -57,13 +57,12 @@ class BaseActionTestCase(BaseSystemTestCase):
         client = self.client if not anonymous else self.anon_client
         return client.post("/", json=payload)
 
-    def execute_action(
+    def execute_action_internally(
         self, action_name: str, data: Dict[str, Any], user_id: int = 0
     ) -> None:
         """
-        Shorthand to execute an action where all permissions etc. are ignored.
-        Useful when an action is just execute for the end result and not for
-        testing it.
+        Shorthand to execute an action internally where all permissions etc. are ignored.
+        Useful when an action is just execute for the end result and not for testing it.
         """
         ActionClass = actions_map[action_name]
         action = ActionClass(

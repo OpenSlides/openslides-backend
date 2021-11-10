@@ -23,7 +23,7 @@ class BaseVoteTestCase(BaseActionTestCase):
                 self.vote_service.start(data["id"])
             response = self.vote_service.vote(data)
             if stop_poll_after_vote:
-                self.execute_action("poll.stop", {"id": data["id"]})
+                self.execute_action_internally("poll.stop", {"id": data["id"]})
             return response
         else:
             return super().request(action, data, anonymous)
