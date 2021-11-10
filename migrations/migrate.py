@@ -58,12 +58,15 @@ class BadMigrationModule(Exception):
     pass
 
 
-def load_migrations() -> List[Type[BaseMigration]]:
-    base_module = __name__.rsplit(".", 1)[0]
-    if base_module == "__main__":
-        base_migration_module_pypath = "migrations"
-    else:
-        base_migration_module_pypath = base_module + ".migrations"
+def load_migrations(
+    base_migration_module_pypath: str = None,
+) -> List[Type[BaseMigration]]:
+    if not base_migration_module_pypath:
+        base_module = __name__.rsplit(".", 1)[0]
+        if base_module == "__main__":
+            base_migration_module_pypath = "migrations"
+        else:
+            base_migration_module_pypath = base_module + ".migrations"
     base_migration_module = import_module(base_migration_module_pypath)
 
     module_names = {
