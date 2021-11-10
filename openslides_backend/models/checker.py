@@ -378,7 +378,6 @@ class Checker:
         for field in self.models[collection]().get_fields():
             if (fieldname := field.get_own_field_name()) in model_fields:
                 try:
-
                     field.validate(model[fieldname], model)
                 except AssertionError as e:
                     error = f"{collection}/{model['id']}: {str(e)}"
