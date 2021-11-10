@@ -198,6 +198,6 @@ class TestGetUsers(BasePresenterTestCase):
         self.assertEqual(data, {"users": [1]})
 
     def test_request_without_token(self) -> None:
-        self.client.headers = {}
+        self.client.headers.clear()
         status_code, data = self.request("get_users", {})
         self.assertEqual(status_code, 403)

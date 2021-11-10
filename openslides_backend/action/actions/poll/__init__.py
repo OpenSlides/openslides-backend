@@ -8,5 +8,4 @@ from . import (  # noqa
     start,
     stop,
     update,
-    vote,
 )

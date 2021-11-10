@@ -44,6 +44,7 @@ class PollPublishActionTest(BaseActionTestCase):
                 "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
+        self.vote_service.start(1)
         response = self.request("poll.publish", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists(

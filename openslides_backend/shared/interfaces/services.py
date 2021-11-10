@@ -3,6 +3,7 @@ from typing import Protocol
 from ...services.auth.interface import AuthenticationService
 from ...services.datastore.interface import DatastoreService
 from ...services.media.interface import MediaService
+from ...services.vote.interface import VoteService
 
 
 class Services(Protocol):  # pragma: no cover
@@ -17,4 +18,7 @@ class Services(Protocol):  # pragma: no cover
         pass
 
     def media(self) -> MediaService:
+        pass
+
+    def vote(self) -> VoteService:
         pass

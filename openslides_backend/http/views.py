@@ -54,6 +54,8 @@ class ActionView(BaseView):
         user_id, access_token = self.get_user_id_from_headers(
             request.headers, request.cookies
         )
+        # Set Headers and Cookies in services.
+        self.services.vote().set_authentication(request.headers, request.cookies)
 
         # Handle request.
         handler = ActionHandler(logging=self.logging, services=self.services)

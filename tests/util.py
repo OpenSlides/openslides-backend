@@ -8,7 +8,7 @@ from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
 
 from openslides_backend.shared.exceptions import AuthenticationException
-from openslides_backend.shared.interfaces.wsgi import WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import Headers, WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     Collection,
@@ -34,6 +34,16 @@ class Response(ResponseWrapper, TestResponse):
     """
 
 
+def convert_to_test_response(response: requests.models.Response) -> Response:
+    """Helper function to convert a requests Response to a TestResponse."""
+    return Response(
+        response.iter_content(),
+        str(response.status_code),
+        Headers({**dict(response.headers), "Content-Type": "application/json"}),
+        MagicMock(),
+    )
+
+
 class Client(WerkzeugClient):
     application: WSGIApplication
 
@@ -42,7 +52,8 @@ class Client(WerkzeugClient):
     ):
         super().__init__(application, ResponseWrapper)
         self.application = application
-        self.headers: Dict[str, str] = {}
+        self.headers = Headers()
+        self.cookies: Dict[str, str] = {}
         if username and password is not None:
             self.login(username, password)
 
@@ -62,7 +73,8 @@ class Client(WerkzeugClient):
         assert response.status_code == 200
         # save access token and refresh id for subsequent requests
         self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
-        self.headers = {HEADER_NAME: response.headers[HEADER_NAME]}
+        self.cookies = {COOKIE_NAME: response.cookies.get(COOKIE_NAME)}
+        self.headers[HEADER_NAME] = response.headers[HEADER_NAME]
 
     def get(self, *args: Any, **kwargs: Any) -> Response:
         """

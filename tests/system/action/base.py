@@ -1,6 +1,10 @@
 from collections import defaultdict
+from copy import deepcopy
 from typing import Any, Dict, List, Optional, Union, cast
+from unittest.mock import MagicMock
 
+from openslides_backend.action.relations.relation_manager import RelationManager
+from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import Payload
 from openslides_backend.permissions.management_levels import (
@@ -52,6 +56,24 @@ class BaseActionTestCase(BaseSystemTestCase):
     def request_json(self, payload: Payload, anonymous: bool = False) -> Response:
         client = self.client if not anonymous else self.anon_client
         return client.post("/", json=payload)
+
+    def execute_action_internally(
+        self, action_name: str, data: Dict[str, Any], user_id: int = 0
+    ) -> None:
+        """
+        Shorthand to execute an action internally where all permissions etc. are ignored.
+        Useful when an action is just execute for the end result and not for testing it.
+        """
+        ActionClass = actions_map[action_name]
+        action = ActionClass(
+            self.services, self.datastore, RelationManager(self.datastore), MagicMock()
+        )
+        action_data = deepcopy(data)
+        with self.datastore.get_database_context():
+            write_request, _ = action.perform([action_data], user_id, internal=True)
+        if write_request:
+            self.datastore.write(write_request)
+        self.datastore.reset()
 
     def create_meeting(self, base: int = 1) -> None:
         """
@@ -243,6 +265,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         user = self.get_model(f"user/{user_id}")
         assert user.get("default_password")
         self.client.login(user["username"], user["default_password"])
+        self.vote_service.set_authentication(self.client.headers, self.client.cookies)
 
     @with_database_context
     def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:

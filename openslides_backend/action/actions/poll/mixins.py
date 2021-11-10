@@ -1,3 +1,4 @@
+from collections import defaultdict
 from decimal import Decimal
 from typing import Any, Dict, List
 
@@ -5,10 +6,13 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
-from ....shared.exceptions import MissingPermission
+from ....shared.exceptions import MissingPermission, VoteServiceException
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
+from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
+from ..vote.create import VoteCreate
+from ..vote.user_token_helper import get_user_token
 
 
 class PollPermissionMixin(Action):
@@ -35,7 +39,6 @@ def check_poll_or_option_perms(
     user_id: int,
     meeting_id: int,
 ) -> None:
-
     if content_object_id.startswith("motion" + KEYSEPARATOR):
         perm: Permission = Permissions.Motion.CAN_MANAGE_POLLS
     elif content_object_id.startswith("assignment" + KEYSEPARATOR):
@@ -50,7 +53,7 @@ class StopControl(CountdownControl, Action):
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
-            ["state", "meeting_id", "voted_ids"],
+            ["state", "meeting_id", "pollmethod", "global_option_id"],
         )
         # reset countdown given by meeting
         meeting = self.datastore.get(
@@ -64,27 +67,84 @@ class StopControl(CountdownControl, Action):
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], "reset")
 
-        # calculate votescast, votesvalid, votesinvalid
-        voted_ids = poll.get("voted_ids", [])
-        instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
-        if not meeting.get("users_enable_vote_weight") or not voted_ids:
-            instance["votesvalid"] = instance["votescast"]
-        else:
-            gmr = GetManyRequest(
-                Collection("user"), voted_ids, [f"vote_weight_${poll['meeting_id']}"]
-            )
-            gm_result = self.datastore.get_many([gmr])
-            users = gm_result.get(Collection("user"), {}).values()
-            instance["votesvalid"] = str(
-                sum(
-                    Decimal(entry.get(f"vote_weight_${poll['meeting_id']}", "1.000000"))
-                    for entry in users
+        # stop poll in vote service and create vote objects
+        results = self.vote_service.stop(instance["id"])
+        action_data = []
+        votesvalid = Decimal("0.000000")
+        option_results: Dict[int, Dict[str, Decimal]] = defaultdict(
+            lambda: defaultdict(lambda: Decimal("0.000000"))
+        )  # maps options to their respective YNA sums
+        for ballot in results["votes"]:
+            user_token = get_user_token()
+            vote_weight = Decimal(ballot["weight"])
+            votesvalid += vote_weight
+            vote_template = {"user_token": user_token}
+            if "vote_user_id" in ballot:
+                vote_template["user_id"] = ballot["vote_user_id"]
+            if "request_user_id" in ballot:
+                vote_template["delegated_user_id"] = ballot["request_user_id"]
+
+            if isinstance(ballot["value"], dict):
+                for option_id_str, value in ballot["value"].items():
+                    option_id = int(option_id_str)
+
+                    vote_value = value
+                    if poll["pollmethod"] in ("Y", "N"):
+                        if value == 0:
+                            continue
+                        vote_value = poll["pollmethod"]
+                        vote_weight *= value
+
+                    option_results[option_id][vote_value] += vote_weight
+                    action_data.append(
+                        {
+                            "value": vote_value,
+                            "option_id": option_id,
+                            "weight": str(vote_weight),
+                            **vote_template,
+                        }
+                    )
+            elif isinstance(ballot["value"], str):
+                vote_value = ballot["value"]
+                option_id = poll["global_option_id"]
+                option_results[option_id][vote_value] += vote_weight
+                action_data.append(
+                    {
+                        "value": vote_value,
+                        "option_id": option_id,
+                        "weight": str(vote_weight),
+                        **vote_template,
+                    }
                 )
-            )
+            else:
+                raise VoteServiceException("Invalid response from vote service")
+        self.execute_other_action(VoteCreate, action_data)
+        # update results into option
+        self.execute_other_action(
+            OptionSetAutoFields,
+            [
+                {
+                    "id": _id,
+                    "yes": str(option["Y"]),
+                    "no": str(option["N"]),
+                    "abstain": str(option["A"]),
+                }
+                for _id, option in option_results.items()
+            ],
+        )
+        # set voted ids
+        voted_ids = results["user_ids"]
+        instance["voted_ids"] = voted_ids
+
+        # set votescast, votesvalid, votesinvalid
+        instance["votesvalid"] = str(votesvalid)
+        instance["votescast"] = str(Decimal("0.000000") + Decimal(len(voted_ids)))
         instance["votesinvalid"] = "0.000000"
 
         # set entitled users at stop.
-        instance["entitled_users_at_stop"] = self.get_entitled_users(poll)
+        instance["entitled_users_at_stop"] = self.get_entitled_users(
+            {**poll, **instance}
+        )
 
     def get_entitled_users(self, poll: Dict[str, Any]) -> List[Dict[str, Any]]:
         entitled_users = []

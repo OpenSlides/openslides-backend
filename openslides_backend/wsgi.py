@@ -9,6 +9,7 @@ from .services.auth.adapter import AuthenticationHTTPAdapter
 from .services.datastore.adapter import DatastoreAdapter
 from .services.datastore.http_engine import HTTPEngine
 from .services.media.adapter import MediaServiceAdapter
+from .services.vote.adapter import VoteAdapter
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import View, WSGIApplication
 
@@ -26,6 +27,7 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
         HTTPEngine, config.datastore_reader_url, config.datastore_writer_url, logging
     )
     datastore = providers.Factory(DatastoreAdapter, engine, logging)
+    vote = providers.Singleton(VoteAdapter, config.vote_url, logging)
 
 
 class OpenSlidesBackendWSGI(containers.DeclarativeContainer):
@@ -70,11 +72,7 @@ def create_wsgi_application(logging: LoggingModule, view_name: str) -> WSGIAppli
 
     # Setup services
     services = OpenSlidesBackendServices(
-        config={
-            "media_url": environment["media_url"],
-            "datastore_reader_url": environment["datastore_reader_url"],
-            "datastore_writer_url": environment["datastore_writer_url"],
-        },
+        config=environment,
         logging=logging,
     )
 

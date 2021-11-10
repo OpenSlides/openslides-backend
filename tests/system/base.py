@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, cast
 from unittest import TestCase
 
 import requests
@@ -28,6 +28,8 @@ from tests.util import (
     get_id_from_fqid,
 )
 
+from .util import TestVoteService
+
 ADMIN_USERNAME = "admin"
 ADMIN_PASSWORD = "admin"
 
@@ -36,6 +38,7 @@ class BaseSystemTestCase(TestCase):
     app: WSGIApplication
     auth: AuthenticationService
     datastore: DatastoreService
+    vote_service: TestVoteService
     client: Client
     anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
@@ -47,6 +50,7 @@ class BaseSystemTestCase(TestCase):
         self.services = self.app.services
         self.auth = self.services.authentication()
         self.media = self.services.media()
+        self.vote_service = cast(TestVoteService, self.services.vote())
         self.datastore = self.services.datastore()
         self.datastore.truncate_db()
 
@@ -55,11 +59,14 @@ class BaseSystemTestCase(TestCase):
             {
                 "username": ADMIN_USERNAME,
                 "password": self.auth.hash(ADMIN_PASSWORD),
+                "default_password": ADMIN_PASSWORD,
                 "is_active": True,
                 "organization_management_level": "superadmin",
             },
         )
         self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
+        self.vote_service.set_authentication(self.client.headers, self.client.cookies)
+        self.vote_service.clear_all()
         self.anon_client = self.create_client()
 
     def load_example_data(self) -> None:
@@ -86,7 +93,11 @@ class BaseSystemTestCase(TestCase):
         raise NotImplementedError()
 
     def assert_status_code(self, response: Response, code: int) -> None:
-        if response.status_code != code and response.json["message"]:
+        if (
+            response.status_code != code
+            and response.json
+            and response.json.get("message")
+        ):
             print(response.json)
         self.assertEqual(response.status_code, code)
 

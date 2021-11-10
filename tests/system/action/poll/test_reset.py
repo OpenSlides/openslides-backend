@@ -121,12 +121,12 @@ class PollResetActionTest(BaseActionTestCase):
                 "vote/3": {"option_id": 2, "meeting_id": 1},
             }
         )
-
-        response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": {"1": 1}})
+        self.vote_service.start(1)
+        response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)
         response = self.request("poll.reset", {"id": 1})
         self.assert_status_code(response, 200)
         response = self.request("poll.start", {"id": 1})
         self.assert_status_code(response, 200)
-        response = self.request("poll.vote", {"id": 1, "user_id": 1, "value": {"1": 1}})
+        response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)

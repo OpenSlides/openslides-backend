@@ -8,6 +8,7 @@ Environment = TypedDict(
         "media_url": str,
         "datastore_reader_url": str,
         "datastore_writer_url": str,
+        "vote_url": str,
     },
 )
 
@@ -24,6 +25,10 @@ DEFAULTS = {
     "DATASTORE_WRITER_HOST": "localhost",
     "DATASTORE_WRITER_PORT": "9011",
     "DATASTORE_WRITER_PATH": "/internal/datastore/writer",
+    "VOTE_PROTOCOL": "http",
+    "VOTE_HOST": "vote",
+    "VOTE_PORT": "9013",
+    "VOTE_PATH": "/internal/vote",
 }
 
 
@@ -35,6 +40,7 @@ def get_environment() -> Environment:
         media_url=get_endpoint("MEDIA"),
         datastore_reader_url=get_endpoint("DATASTORE_READER"),
         datastore_writer_url=get_endpoint("DATASTORE_WRITER"),
+        vote_url=get_endpoint("VOTE"),
     )
 
 

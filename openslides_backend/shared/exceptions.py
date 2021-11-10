@@ -94,6 +94,10 @@ class MediaServiceException(ServiceException):
     pass
 
 
+class VoteServiceException(ServiceException):
+    pass
+
+
 class PermissionDenied(ViewException):
     status_code = 403
 

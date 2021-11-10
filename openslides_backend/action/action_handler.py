@@ -10,6 +10,8 @@ from ..shared.exceptions import (
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
+from ..shared.interfaces.logging import LoggingModule
+from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.schema import schema_version
 from . import actions  # noqa
@@ -63,6 +65,12 @@ class ActionHandler(BaseHandler):
 
     MAX_RETRY = 3
 
+    on_success: List[Callable[[], None]]
+
+    def __init__(self, services: Services, logging: LoggingModule) -> None:
+        super().__init__(services, logging)
+        self.on_success = []
+
     @classmethod
     def get_health_info(cls) -> Iterable[Tuple[str, Dict[str, Any]]]:
         """
@@ -113,6 +121,10 @@ class ActionHandler(BaseHandler):
                     error = cast(ActionError, exception.get_json())
                     results.append(error)
                 self.datastore.reset()
+
+        # execute cleanup methods
+        for on_success in self.on_success:
+            on_success()
 
         # Return action result
         self.logger.debug("Request was successful. Send response now.")
@@ -209,6 +221,10 @@ class ActionHandler(BaseHandler):
                 # reset locked fields, but not addtional relation models - these might be needed
                 # by another action
                 self.datastore.locked_fields = {}
+
+            # add on_success routine
+            if on_success := action.get_on_success(action_data):
+                self.on_success.append(on_success)
 
             return (write_request, results)
         except ActionException as exception:

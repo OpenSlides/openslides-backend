@@ -57,7 +57,6 @@ class OptionUpdateAction(UpdateAction):
                             "option_id": instance["id"],
                             "value": vote_name,
                             "weight": instance[field_name],
-                            "meeting_id": option["meeting_id"],
                             "user_token": user_token,
                         }
                     )

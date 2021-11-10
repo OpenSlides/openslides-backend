@@ -1,11 +1,13 @@
 from ....models.models import Vote
-from ...generics.create import CreateAction
+from ...mixins.create_action_with_inferred_meeting import (
+    CreateActionWithInferredMeeting,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("vote.create", internal=True)
-class VoteCreate(CreateAction):
+class VoteCreate(CreateActionWithInferredMeeting):
     """
     Internal action to create a vote.
     """
@@ -17,7 +19,8 @@ class VoteCreate(CreateAction):
             "value",
             "option_id",
             "user_token",
-            "meeting_id",
         ],
         optional_properties=["delegated_user_id", "user_id"],
     )
+
+    relation_field_for_meeting = "option_id"

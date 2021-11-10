@@ -25,6 +25,7 @@ from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
+from ..services.vote.interface import VoteService
 from ..shared.exceptions import (
     ActionException,
     AnonymousNotAllowed,
@@ -69,6 +70,7 @@ class BaseAction:  # pragma: no cover
     datastore: DatastoreService
     auth: AuthenticationService
     media: MediaService
+    vote: VoteService
 
     name: str
     model: Model
@@ -103,6 +105,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.services = services
         self.auth = services.authentication()
         self.media = services.media()
+        self.vote_service = services.vote()
         self.datastore = datastore
         self.relation_manager = relation_manager
         self.logging = logging
@@ -544,6 +547,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if write_request:
             self.write_requests.append(write_request)
         return action_results
+
+    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
+        """
+        Can be overridden by actions to return a cleanup method to execute
+        after the result was successfully written to the DS.
+        """
 
 
 def merge_write_requests(

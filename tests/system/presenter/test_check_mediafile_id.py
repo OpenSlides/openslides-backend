@@ -33,7 +33,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
             {"filename": "the filename", "is_directory": False, "meeting_id": 1},
         )
         self.create_model("meeting/1")
-        self.client.headers = {}
+        self.client.headers.clear()
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"ok": True, "filename": "the filename"})
