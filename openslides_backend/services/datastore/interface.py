@@ -1,19 +1,9 @@
-from enum import Enum
-from typing import (
-    Any,
-    ContextManager,
-    Dict,
-    List,
-    Optional,
-    Protocol,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, ContextManager, Dict, List, Optional, Protocol, Sequence, Tuple, Union
 
 from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import DeletedModelsBehaviour
 
+from ...shared.enum import Enum
 from ...shared.filters import Filter
 from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.write_request import WriteRequest
@@ -34,14 +24,13 @@ class InstanceAdditionalBehaviour(int, Enum):
     ONLY_ADDITIONAL = 4
 
 
-class DatastoreService(Protocol):
+class BaseDatastoreService(Protocol):
     """
     Datastore defines the interface to the datastore.
     """
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
     locked_fields: Dict[str, CollectionFieldLock]
-    additional_relation_models: ModelMap
 
     def get_database_context(self) -> ContextManager[None]:
         ...
@@ -49,7 +38,7 @@ class DatastoreService(Protocol):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: List[str] = None,
+        mapped_fields: Optional[List[str]] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
@@ -108,7 +97,6 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
@@ -119,7 +107,6 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
@@ -142,27 +129,69 @@ class DatastoreService(Protocol):
     def truncate_db(self) -> None:
         ...
 
-    def update_additional_models(
-        self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False
-    ) -> None:
-        ...
-
-    def fetch_model(
-        self,
-        fqid: FullQualifiedId,
-        mapped_fields: List[str],
-        position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: LockResult = True,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
-        exception: bool = True,
-    ) -> Dict[str, Any]:
-        ...
-
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         ...
 
     def reset(self) -> None:
+        ...
+
+
+class DatastoreService(BaseDatastoreService):
+    additional_relation_models: ModelMap
+
+    def get(
+        self,
+        fqid: FullQualifiedId,
+        mapped_fields: Optional[List[str]] = None,
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: LockResult = True,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+        raise_exception: bool = True,
+    ) -> PartialModel:
+        ...
+
+    def filter(
+        self,
+        collection: Collection,
+        filter: Filter,
+        mapped_fields: List[str] = [],
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+    ) -> Dict[int, PartialModel]:
+        ...
+
+    def min(
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+    ) -> Optional[int]:
+        ...
+
+    def max(
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+    ) -> Optional[int]:
+        ...
+
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
+        """
+        Returns whether the given model was deleted during this request or not.
+        """
+
+    def update_additional_models(
+        self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
+    ) -> None:
         ...
 
 

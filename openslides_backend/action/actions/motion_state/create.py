@@ -48,7 +48,7 @@ class MotionStateCreateAction(CreateActionWithInferredMeeting):
             raise ActionException(
                 f"This state of workflow {instance['workflow_id']} cannot be the first state of workflow {first_state_of_workflow_id}."
             )
-        workflow = self.datastore.fetch_model(
+        workflow = self.datastore.get(
             FullQualifiedId(Collection("motion_workflow"), instance["workflow_id"]),
             ["id", "first_state_id", "meeting_id"],
         )

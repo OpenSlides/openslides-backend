@@ -27,7 +27,7 @@ class SpeakerEndSpeach(CountdownControl, UpdateAction):
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
-            speaker = self.datastore.fetch_model(
+            speaker = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),
                 mapped_fields=["begin_time", "end_time", "meeting_id"],
             )

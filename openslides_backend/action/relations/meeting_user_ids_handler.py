@@ -20,11 +20,11 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
     ) -> RelationUpdates:
         # Try to fetch db instance to compare if any new ids were added
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        db_instance = self.datastore.fetch_model(
+        db_instance = self.datastore.get(
             fqid,
             [field_name, "meeting_id"],
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-            exception=False,
+            raise_exception=False,
         )
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])
@@ -33,7 +33,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
 
         meeting_id = instance.get("meeting_id") or db_instance.get("meeting_id")
         if not meeting_id:
-            new_instance = self.datastore.fetch_model(fqid, ["meeting_id"])
+            new_instance = self.datastore.get(fqid, ["meeting_id"])
             meeting_id = new_instance.get("meeting_id")
         assert isinstance(meeting_id, int)
 
@@ -43,7 +43,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
             user_fqid = FullQualifiedId(Collection("user"), id)
             if not self.datastore.is_deleted(user_fqid):
                 group_field = f"group_${meeting_id}_ids"
-                user = self.datastore.fetch_model(user_fqid, [group_field])
+                user = self.datastore.get(user_fqid, [group_field])
                 if user.get(group_field):
                     removed_ids.remove(id)
 

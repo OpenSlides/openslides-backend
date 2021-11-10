@@ -62,9 +62,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         ]
         if not mapped_fields:
             return
-        user_self = self.datastore.fetch_model(
-            user_fqid, mapped_fields, exception=False
-        )
+        user_self = self.datastore.get(user_fqid, mapped_fields, raise_exception=False)
         if "vote_delegations_$_from_ids" in instance:
             update_dict = {
                 f"vote_delegations_${meeting_id}_from_ids": delegated_from
@@ -83,7 +81,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
                     f"User {user_fqid.id} cannot delegate his vote, because there are votes delegated to him."
                 )
             mapped_field = f"vote_delegated_${meeting_id}_to_id"
-            user_delegated_to = self.datastore.fetch_model(
+            user_delegated_to = self.datastore.get(
                 FullQualifiedId(Collection("user"), delegated_to_id),
                 [mapped_field],
             )
@@ -104,9 +102,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         ]
         if not mapped_fields:
             return
-        user_self = self.datastore.fetch_model(
-            user_fqid, mapped_fields, exception=False
-        )
+        user_self = self.datastore.get(user_fqid, mapped_fields, raise_exception=False)
         if "vote_delegated_$_to_id" in instance:
             update_dict = {
                 f"vote_delegated_${meeting_id}_to_id": delegated_to
@@ -129,7 +125,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
             mapped_field = f"vote_delegations_${meeting_id}_from_ids"
             error_user_ids: List[int] = []
             for user_id in delegated_from_ids:
-                user = self.datastore.fetch_model(
+                user = self.datastore.get(
                     FullQualifiedId(Collection("user"), user_id),
                     [mapped_field],
                 )

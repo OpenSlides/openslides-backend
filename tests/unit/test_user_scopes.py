@@ -19,7 +19,7 @@ class UserScopeTest(TestCase):
         self.mixin.model = MagicMock()
 
     def set_user_data(self, data: Dict[str, Any]) -> None:
-        self.mock_datastore.fetch_model = MagicMock(return_value=data)
+        self.mock_datastore.get = MagicMock(return_value=data)
 
     def set_meeting_committees(self, ids: List[int]) -> None:
         return_val = {

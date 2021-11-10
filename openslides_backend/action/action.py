@@ -219,7 +219,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
 
         fqid = FullQualifiedId(Collection("meeting"), meeting_id)
-        meeting = self.datastore.fetch_model(
+        meeting = self.datastore.get(
             fqid,
             ["is_active_in_organization_id", "name"],
         )
@@ -249,10 +249,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
             identifier = "id"
             if self.permission_id:
                 identifier = self.permission_id
-            db_instance = self.datastore.fetch_model(
+            db_instance = self.datastore.get(
                 FullQualifiedId(model.collection, instance[identifier]),
                 ["meeting_id"],
-                exception=True,
             )
             return db_instance["meeting_id"]
 
@@ -479,7 +478,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = FullQualifiedId(self.model.collection, instance["id"])
-                    db_instance = self.datastore.fetch_model(
+                    db_instance = self.datastore.get(
                         fqid,
                         [equal_field],
                     )
@@ -497,7 +496,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                         )
                     else:
                         for fqid in fqids:
-                            related_instance = self.datastore.fetch_model(
+                            related_instance = self.datastore.get(
                                 fqid,
                                 [equal_field],
                             )

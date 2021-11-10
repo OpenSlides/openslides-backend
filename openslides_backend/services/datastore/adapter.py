@@ -32,10 +32,10 @@ from ...shared.patterns import (
 )
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
-from .interface import DatastoreService, Engine, LockResult, PartialModel
+from .interface import BaseDatastoreService, Engine, LockResult, PartialModel
 
 
-class DatastoreAdapter(DatastoreService):
+class DatastoreAdapter(BaseDatastoreService):
     """
     Adapter to connect to readable and writeable datastore.
     """
@@ -80,7 +80,7 @@ class DatastoreAdapter(DatastoreService):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: List[str] = None,
+        mapped_fields: Optional[List[str]] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
@@ -217,19 +217,11 @@ class DatastoreAdapter(DatastoreService):
             f"Start FILTER request to datastore with the following data: {request}"
         )
         response = self.reader.filter(request)
-        pos = response["position"]
-        data = response["data"]
         if lock_result:
-            fields = []
-            filter_visitor(filter, lambda fo: fields.append(fo.field))
-            if "meeting_id" not in fields:
-                self.logger.warning(
-                    "Logging a collection field with a filter which does not contain meeting_id!"
-                )
-            for field in fields:
-                cf = CollectionField(collection, field)
-                self.update_locked_fields(cf, {"position": pos, "filter": full_filter})
-        return data
+            self.lock_collection_fields_from_filter(
+                collection, filter, response.get("position")
+            )
+        return response["data"]
 
     def exists(
         self,
@@ -271,13 +263,8 @@ class DatastoreAdapter(DatastoreService):
         )
         response = getattr(self.reader, route)(request)
         if lock_result:
-            if (pos := response.get("position")) is None:
-                raise DatastoreException("Invalid response from datastore.")
-            filter_visitor(
-                filter,
-                lambda fo: self.update_locked_fields(
-                    CollectionField(collection, fo.field), pos
-                ),
+            self.lock_collection_fields_from_filter(
+                collection, filter, response.get("position")
             )
         return response[route]
 
@@ -286,12 +273,11 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
         return self._minmax(
-            "min", collection, filter, field, type, get_deleted_models, lock_result
+            "min", collection, filter, field, get_deleted_models, lock_result
         )
 
     def max(
@@ -299,12 +285,11 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
         return self._minmax(
-            "max", collection, filter, field, type, get_deleted_models, lock_result
+            "max", collection, filter, field, get_deleted_models, lock_result
         )
 
     @handle_datastore_errors
@@ -314,7 +299,6 @@ class DatastoreAdapter(DatastoreService):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str,
         get_deleted_models: DeletedModelsBehaviour,
         lock_result: bool,
     ) -> Optional[int]:
@@ -322,23 +306,17 @@ class DatastoreAdapter(DatastoreService):
             filter, get_deleted_models
         )
         request = MinMaxRequest(
-            collection=str(collection), filter=full_filter, field=field, type=type
+            collection=str(collection), filter=full_filter, field=field
         )
         self.logger.debug(
             f"Start {route.upper()} request to datastore with the following data: {request}"
         )
         response = getattr(self.reader, route)(request)
         if lock_result:
-            if (pos := response.get("position")) is None:
-                raise DatastoreException("Invalid response from datastore.")
-            self.update_locked_fields(CollectionField(collection, field), pos)
-            filter_visitor(
-                filter,
-                lambda fo: self.update_locked_fields(
-                    CollectionField(collection, fo.field), pos
-                ),
+            self.lock_collection_fields_from_filter(
+                collection, filter, response.get("position"), field
             )
-        return response.get(route)
+        return response[route]
 
     def history_information(
         self, fqids: List[str]
@@ -348,6 +326,27 @@ class DatastoreAdapter(DatastoreService):
             f"Start HISTORY_INFORMATION request to datastore with the following data: {request}"
         )
         return self.reader.history_information(request)
+
+    def lock_collection_fields_from_filter(
+        self,
+        collection: Collection,
+        filter: Filter,
+        position: Optional[int],
+        additional_field: Optional[str] = None,
+    ) -> None:
+        if position is None:
+            raise DatastoreException("Invalid response from datastore.")
+        fields = []
+        filter_visitor(filter, lambda fo: fields.append(fo.field))
+        if "meeting_id" not in fields:
+            self.logger.warning(
+                "Locking a collection field with a filter which does not contain meeting_id!"
+            )
+        if additional_field:
+            fields.append(additional_field)
+        for field in fields:
+            cf = CollectionField(collection, field)
+            self.update_locked_fields(cf, {"position": position, "filter": filter})
 
     def apply_deleted_models_behaviour_to_filter(
         self, filter: Filter, get_deleted_models: DeletedModelsBehaviour

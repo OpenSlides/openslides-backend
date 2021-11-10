@@ -104,7 +104,7 @@ class OptionUpdateAction(UpdateAction):
             raise ActionException("Dont find poll for option")
         return (
             poll_id_option,
-            self.datastore.fetch_model(
+            self.datastore.get(
                 FullQualifiedId(Collection("poll"), poll_id),
                 [
                     "id",

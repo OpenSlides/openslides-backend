@@ -127,6 +127,10 @@ class SpeakerCreateActionTest(BaseActionTestCase):
             "speaker.create", {"user_id": 7, "list_of_speakers_id": 23}
         )
         self.assert_status_code(response, 400)
+        self.assertIn(
+            "User 7 is already on the list of speakers.",
+            response.json["message"],
+        )
         list_of_speakers = self.get_model("list_of_speakers/23")
         assert list_of_speakers.get("speaker_ids") == [42]
 
@@ -154,12 +158,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/7844": {
-                    "name": "name_asdewqasd",
                     "is_active_in_organization_id": 1,
                 },
-                "user/7": {"username": "test_username6", "meeting_ids": [7844]},
-                "user/8": {"username": "test_username7", "meeting_ids": [7844]},
-                "user/9": {"username": "test_username8", "meeting_ids": [7844]},
+                "user/7": {"meeting_ids": [7844]},
+                "user/8": {"meeting_ids": [7844]},
+                "user/9": {"meeting_ids": [7844]},
                 "speaker/1": {"user_id": 7, "list_of_speakers_id": 23, "weight": 10000},
                 "list_of_speakers/23": {"speaker_ids": [1], "meeting_id": 7844},
             }
@@ -175,14 +178,14 @@ class SpeakerCreateActionTest(BaseActionTestCase):
                 {
                     "action": "speaker.create",
                     "data": [
-                        {"user_id": 8, "list_of_speakers_id": 23},
+                        {"user_id": 9, "list_of_speakers_id": 23},
                     ],
                 },
             ],
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/23/speaker_ids', 'meeting/7844/speaker_ids', 'speaker/list_of_speakers_id', 'speaker/weight', 'user/8/speaker_$7844_ids', 'user/8/speaker_$_ids'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/23/speaker_ids', 'meeting/7844/speaker_ids', 'speaker/list_of_speakers_id', 'speaker/weight'",
             response.json["message"],
         )
 

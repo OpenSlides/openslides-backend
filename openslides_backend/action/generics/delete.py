@@ -32,7 +32,7 @@ class DeleteAction(Action):
             for field in self.model.get_relation_fields()
             if field.on_delete != OnDelete.SET_NULL
         ] + ["meta_deleted"]
-        db_instance = self.datastore.fetch_model(
+        db_instance = self.datastore.get(
             fqid=this_fqid,
             mapped_fields=relevant_fields,
         )
@@ -50,7 +50,7 @@ class DeleteAction(Action):
                     structured_fields = list(
                         self.get_all_structured_fields(field, instance["id"])
                     )
-                    db_instance_structured_fields = self.datastore.fetch_model(
+                    db_instance_structured_fields = self.datastore.get(
                         this_fqid, structured_fields
                     )
                     for structured_field_name in structured_fields:
@@ -117,7 +117,7 @@ class DeleteAction(Action):
         self, field: BaseTemplateRelationField, id: int
     ) -> Iterable[str]:
         template_field_name = field.get_template_field_name()
-        template_db_instance = self.datastore.fetch_model(
+        template_db_instance = self.datastore.get(
             fqid=FullQualifiedId(self.model.collection, id),
             mapped_fields=[template_field_name],
         )

@@ -131,11 +131,11 @@ class SingleRelationHandler:
             # acquire all related models with the related fields
             rels: Dict[FullQualifiedId, PartialModel] = defaultdict(dict)
             for fqid in changed_fqids_per_collection[collection]:
-                related_model = self.datastore.fetch_model(
+                related_model = self.datastore.get(
                     fqid,
                     [related_name],
                     get_deleted_models=DeletedModelsBehaviour.NO_DELETED,
-                    exception=False,
+                    raise_exception=False,
                 )
                 # again, we transform everything to lists of fqids
                 rels[fqid][related_name] = transform_to_fqids(
@@ -191,7 +191,7 @@ class SingleRelationHandler:
         collection = chained_field["fqid"].collection
         field_name = self.get_related_name(collection)
         field = self.get_reverse_field(collection)
-        instance = self.datastore.fetch_model(chained_field["fqid"], ["id", field_name])
+        instance = self.datastore.get(chained_field["fqid"], ["id", field_name])
         instance[field_name] = None
         return SingleRelationHandler(
             self.datastore,
@@ -231,6 +231,7 @@ class SingleRelationHandler:
                     db_instance = self.datastore.get(
                         fqid=FullQualifiedId(self.model.collection, self.id),
                         mapped_fields=[replacement_field],
+                        db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
                     )
                     replacement = db_instance.get(replacement_field)
                     assert replacement
@@ -252,11 +253,11 @@ class SingleRelationHandler:
         remove: Set[FullQualifiedId]
         # We have to compare with the current datastore state.
         # Retrieve current object from datastore
-        current_obj = self.datastore.fetch_model(
+        current_obj = self.datastore.get(
             FullQualifiedId(self.model.collection, self.id),
             [self.field_name],
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-            exception=False,
+            raise_exception=False,
         )
 
         # Get current ids from relation field

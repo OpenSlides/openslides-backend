@@ -1,4 +1,4 @@
-from enum import Enum
+from ..shared.enum import Enum
 
 
 class VerbosePermission:

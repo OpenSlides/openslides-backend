@@ -33,11 +33,11 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             return {}
         user_id = instance["id"]
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        db_user = self.datastore.fetch_model(
+        db_user = self.datastore.get(
             fqid,
             ["committee_ids", "group_$_ids", *cml_fields],
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-            exception=False,
+            raise_exception=False,
         )
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
         if any(cml_field in instance for cml_field in cml_fields):

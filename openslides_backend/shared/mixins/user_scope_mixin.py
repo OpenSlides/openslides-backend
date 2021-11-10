@@ -37,7 +37,7 @@ class UserScopeMixin:
                 get_set_from_dict_from_dict(instance, "committee_$_management_level")
             )
         if id:
-            user = self.datastore.fetch_model(
+            user = self.datastore.get(
                 FullQualifiedId(Collection("user"), id),
                 ["meeting_ids", *cml_fields],
             )

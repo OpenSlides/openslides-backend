@@ -19,18 +19,18 @@ def assert_belongs_to_meeting(
             if fqid.id != meeting_id:
                 errors.add(str(fqid))
         elif fqid.collection.collection == "user":
-            instance = datastore.fetch_model(
+            instance = datastore.get(
                 fqid,
                 ["meeting_ids"],
-                exception=False,
+                raise_exception=False,
             )
             if meeting_id not in instance.get("meeting_ids", []):
                 errors.add(str(fqid))
         else:
-            instance = datastore.fetch_model(
+            instance = datastore.get(
                 fqid,
                 ["meeting_id"],
-                exception=False,
+                raise_exception=False,
             )
             if instance.get("meeting_id") != meeting_id:
                 errors.add(str(fqid))

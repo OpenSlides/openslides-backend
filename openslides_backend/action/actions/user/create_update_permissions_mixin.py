@@ -231,7 +231,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             scope_id not in permstore.user_committees_meetings
             and scope_id not in permstore.user_meetings
         ):
-            meeting = self.datastore.fetch_model(
+            meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), scope_id), ["committee_id"]
             )
             raise MissingPermission(

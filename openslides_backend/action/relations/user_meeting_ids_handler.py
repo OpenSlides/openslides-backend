@@ -20,11 +20,11 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             return {}
 
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        db_instance = self.datastore.fetch_model(
+        db_instance = self.datastore.get(
             fqid,
             [field_name],
             db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-            exception=False,
+            raise_exception=False,
         )
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])

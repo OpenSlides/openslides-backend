@@ -2,7 +2,10 @@ from typing import Any, Dict, List, cast
 
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
-from ...services.datastore.interface import DatastoreService
+from ...services.datastore.interface import (
+    DatastoreService,
+    InstanceAdditionalBehaviour,
+)
 from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import (
     Collection,
@@ -127,6 +130,7 @@ class RelationManager:
                 return self.datastore.get(
                     fqid=FullQualifiedId(model.collection, instance["id"]),
                     mapped_fields=[template_field_name],
+                    db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
                 ).get(template_field_name, [])
             except DatastoreException:
                 return []
@@ -150,12 +154,11 @@ class RelationManager:
                 if replacement not in template_field:
                     if field.replacement_collection:
                         # check if the model the replacement is referring to exists
-                        self.datastore.fetch_model(
+                        self.datastore.get(
                             fqid=FullQualifiedId(
                                 field.replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
-                            exception=True,
                         )
                     elif field.replacement_enum:
                         if replacement not in field.replacement_enum:
