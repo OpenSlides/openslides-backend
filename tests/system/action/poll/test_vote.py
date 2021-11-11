@@ -5,7 +5,8 @@ import requests
 
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase
-from tests.util import Response, convert_to_test_response
+from tests.system.util import convert_to_test_response
+from tests.util import Response
 
 
 class BaseVoteTestCase(BaseActionTestCase):

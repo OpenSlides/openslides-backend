@@ -7,6 +7,7 @@ from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
 from openslides_backend.action.util.typing import Payload
+from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -20,10 +21,11 @@ from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import Collection
 from tests.system.base import BaseSystemTestCase
-from tests.system.util import create_action_test_application
+from tests.system.util import create_action_test_application, get_route_path
 from tests.util import Response
 
 DEFAULT_PASSWORD = "password"
+ACTION_URL = get_route_path(ActionView.action_route)
 
 
 class BaseActionTestCase(BaseSystemTestCase):
@@ -55,7 +57,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def request_json(self, payload: Payload, anonymous: bool = False) -> Response:
         client = self.client if not anonymous else self.anon_client
-        return client.post("/system/handle_request", json=payload)
+        return client.post(ACTION_URL, json=payload)
 
     def execute_action_internally(
         self, action_name: str, data: Dict[str, Any], user_id: int = 0

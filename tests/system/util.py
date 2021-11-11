@@ -3,16 +3,28 @@ from typing import Any, Dict, Type
 from unittest.mock import MagicMock, Mock
 
 from dependency_injector import providers
+from requests.models import Response as RequestsResponse
 
 from openslides_backend.environment import get_environment
 from openslides_backend.http.views import ActionView, PresenterView
+from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
 from openslides_backend.shared.exceptions import MediaServiceException
-from openslides_backend.shared.interfaces.wsgi import View, WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
-from tests.util import Response, convert_to_test_response
+from tests.util import Response
+
+
+def convert_to_test_response(response: RequestsResponse) -> Response:
+    """Helper function to convert a requests Response to a TestResponse."""
+    return Response(
+        response.iter_content(),
+        str(response.status_code),
+        Headers({**dict(response.headers), "Content-Type": "application/json"}),
+        MagicMock(),
+    )
 
 
 class TestVoteService(VoteService):
@@ -71,3 +83,7 @@ def side_effect_for_upload_method(
 ) -> None:
     if mimetype == "application/x-shockwave-flash":
         raise MediaServiceException("Mocked error on media service upload")
+
+
+def get_route_path(route_function: RouteFunction) -> str:
+    return getattr(route_function, ROUTE_OPTIONS_ATTR)["raw_path"]

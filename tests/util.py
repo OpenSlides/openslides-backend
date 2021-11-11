@@ -34,16 +34,6 @@ class Response(ResponseWrapper, TestResponse):
     """
 
 
-def convert_to_test_response(response: requests.models.Response) -> Response:
-    """Helper function to convert a requests Response to a TestResponse."""
-    return Response(
-        response.iter_content(),
-        str(response.status_code),
-        Headers({**dict(response.headers), "Content-Type": "application/json"}),
-        MagicMock(),
-    )
-
-
 class Client(WerkzeugClient):
     application: WSGIApplication
 
