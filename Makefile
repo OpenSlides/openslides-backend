@@ -62,6 +62,9 @@ run-prod: | build-prod
 start-dev:
 	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build --detach
 
+start-dev-attach:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
+
 stop-dev:
 	docker-compose -f dev/docker-compose.dev.yml down --volumes
 

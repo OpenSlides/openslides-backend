@@ -1,19 +1,15 @@
 import os
-import re
 from typing import Any, Iterable, Union
 
 import simplejson as json
-from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 from werkzeug.wrappers import Response
 
 from ..services.auth.adapter import HEADER_NAME
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
-from .http_exceptions import BadRequest, Forbidden, HTTPException, MethodNotAllowed
+from .http_exceptions import BadRequest, Forbidden, HTTPException
 from .request import Request
-
-health_route = re.compile("^/health$")
 
 
 class OpenSlidesBackendWSGIApplication:
@@ -36,32 +32,6 @@ class OpenSlidesBackendWSGIApplication:
         object or a HTTPException (or a subclass of it). Both are WSGI
         applications themselves.
         """
-        if health_route.match(request.environ["RAW_URI"]):
-            return self.health_info(request)
-        return self.default_route(request)
-
-    def default_route(self, request: Request) -> Union[Response, HTTPException]:
-        """
-        Default route that calls the injected view.
-        """
-        # Check request method
-        if request.method != self.view.method:
-            return MethodNotAllowed(valid_methods=[self.view.method])
-        self.logger.debug(f"Request method is {request.method}.")
-
-        # Check mimetype and parse JSON body. The result is cached in request.json.
-        if not request.is_json:
-            return BadRequest(
-                ViewException(
-                    "Wrong media type. Use 'Content-Type: application/json' instead."
-                )
-            )
-        try:
-            request_body = request.get_json()
-        except WerkzeugBadRequest as exception:
-            return BadRequest(ViewException(exception.description))
-        self.logger.debug(f"Request contains JSON: {request_body}.")
-
         # Dispatch view and return response.
         view_instance = self.view(self.logging, self.services)
         try:
@@ -81,6 +51,8 @@ class OpenSlidesBackendWSGIApplication:
                 )
                 self.logger.error(text)
                 raise
+        except HTTPException as exception:
+            return exception
         self.logger.debug(
             f"All done. Application sends HTTP 200 with body {response_body}."
         )
@@ -88,17 +60,6 @@ class OpenSlidesBackendWSGIApplication:
         if access_token is not None:
             response.headers[HEADER_NAME] = access_token
         return response
-
-    def health_info(self, request: Request) -> Union[Response, HTTPException]:
-        """
-        Route to provide health data of this service. Retrieves status information
-        from respective view.
-        """
-        health_info = self.view(self.logging, self.services).get_health_info()
-        return Response(
-            json.dumps({"healthinfo": health_info}),
-            content_type="application/json",
-        )
 
     def wsgi_application(
         self, environ: WSGIEnvironment, start_response: StartResponse

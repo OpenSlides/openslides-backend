@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from ..patterns import FullQualifiedId
 from .collection_field_lock import CollectionFieldLock
@@ -18,3 +18,4 @@ class WriteRequest:
     information: Information
     user_id: int
     locked_fields: Dict[str, CollectionFieldLock]
+    migration_index: Optional[int] = None

@@ -42,7 +42,9 @@ StringifiedWriteRequest = TypedDict(
         "information": Dict[str, List[str]],
         "user_id": int,
         "locked_fields": Dict[str, CollectionFieldLock],
+        "migration_index": Optional[int],
     },
+    total=False,
 )
 
 
@@ -104,14 +106,17 @@ class Write(Command):
             information = {}
             for fqid, value in write_request.information.items():
                 information[str(fqid)] = value
-            stringified_write_requests.append(
-                {
-                    "events": write_request.events,
-                    "information": information,
-                    "user_id": write_request.user_id,
-                    "locked_fields": write_request.locked_fields,
-                }
-            )
+            stringified_write_request: StringifiedWriteRequest = {
+                "events": write_request.events,
+                "information": information,
+                "user_id": write_request.user_id,
+                "locked_fields": write_request.locked_fields,
+            }
+            if write_request.migration_index:
+                stringified_write_request[
+                    "migration_index"
+                ] = write_request.migration_index
+            stringified_write_requests.append(stringified_write_request)
 
         class WriteRequestJSONEncoder(json.JSONEncoder):
             def default(self, o):  # type: ignore

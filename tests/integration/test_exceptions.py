@@ -2,6 +2,7 @@ from typing import Type
 from unittest import TestCase
 from unittest.mock import MagicMock
 
+from openslides_backend.http.http_exceptions import MethodNotAllowed
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.wsgi import View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendWSGI
@@ -21,7 +22,6 @@ class TestHttpExceptions(TestCase):
     def setUp(self) -> None:
         self.view = MagicMock()
         self.view_type = MagicMock(return_value=self.view)
-        self.view_type.method = "POST"
         self.application = create_test_application(self.view_type)
         self.client = Client(self.application)
 
@@ -42,5 +42,6 @@ class TestHttpExceptions(TestCase):
         self.assertEqual(data.get("message"), "test")
 
     def test_method_not_allowed(self) -> None:
+        self.view.dispatch.side_effect = MethodNotAllowed()
         response = self.client.get("/", json=[{"action": "agenda_item.create"}])
         self.assertEqual(response.status_code, 405)
