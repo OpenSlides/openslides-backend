@@ -1,6 +1,6 @@
 import threading
 
-from tests.system.action.base import BaseActionTestCase
+from tests.system.action.base import ACTION_URL, BaseActionTestCase
 from tests.system.action.lock import (
     monkeypatch_datastore_adapter_write,
     pytest_thread_local,
@@ -221,7 +221,7 @@ def thread_method(
         pytest_thread_local.sync_event = sync_event
     pytest_thread_local.name = name
     response = test_instance.client.post(
-        "/system/handle_request",
+        ACTION_URL,
         json=[
             {
                 "action": "motion.create",

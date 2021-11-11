@@ -12,25 +12,34 @@ from ...shared.interfaces.wsgi import Headers, ResponseBody, View
 from ..http_exceptions import MethodNotAllowed
 from ..request import Request
 
+ROUTE_OPTIONS_ATTR = "__route_options"
+
 RouteFunction = Callable[[Any, Request], Tuple[ResponseBody, Optional[str]]]
 
 
 def route(
     name: str, internal: bool = False, method: str = "POST", json: bool = True
 ) -> Callable[[RouteFunction], RouteFunction]:
+    # extract the callers name to deduce the path's prefix
+    frame = inspect.currentframe()
+    assert frame and frame.f_back
+    caller = inspect.getframeinfo(frame.f_back)[2]
+    prefix = caller.replace("View", "").lower()
+
     def wrapper(func: RouteFunction) -> RouteFunction:
-        path = name.strip("/")
+        path = prefix + "/" + name.strip("/")
         if internal:
             path = "/internal/" + path
         else:
             path = "/system/" + path
         regex = re.compile("^" + path + "/?$")
         route_options = {
+            "raw_path": path,
             "path": regex,
             "method": method,
             "json": json,
         }
-        setattr(func, "__route_options", route_options)
+        setattr(func, ROUTE_OPTIONS_ATTR, route_options)
         return func
 
     return wrapper
@@ -67,10 +76,10 @@ class BaseView(View):
         functions = inspect.getmembers(
             self,
             predicate=lambda attr: inspect.ismethod(attr)
-            and hasattr(attr, "__route_options"),
+            and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
         for _, func in functions:
-            route_options = getattr(func, "__route_options")
+            route_options = getattr(func, ROUTE_OPTIONS_ATTR)
             if route_options["path"].match(request.environ["RAW_URI"]):
                 # Check request method
                 if request.method != route_options["method"]:
