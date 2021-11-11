@@ -36,26 +36,9 @@ jobs:
 
     - name: Run tests
       run: dev/run-tests.sh
-  
-  check-models-checksum:
-    name: Check the checksum of the models.yml
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install requirements
-      run: pip install --requirement dev/requirements_development.txt
-
-    - name: Check checksum
-      run: make check-models
-
-  check-coding-style-black:
-    name: Check coding style with black
+  check-coding-style:
+    name: Check coding style
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -69,55 +52,51 @@ jobs:
       run: pip install --requirement dev/requirements_development.txt
 
     - name: Check black
+      if: always()
       run: black --check --diff openslides_backend/ tests/ cli/
 
-  check-coding-style-isort:
-    name: Check coding style with isort
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install requirements
-      run: pip install --requirement dev/requirements_development.txt
-
     - name: Check isort
+      if: always()
       run: isort --check-only --diff openslides_backend/ tests/ cli/
 
-  check-coding-style-flake8:
-    name: Check coding style with flake8
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install requirements
-      run: pip install --requirement dev/requirements_development.txt
-
     - name: Check flake8
+      if: always()
       run: flake8 openslides_backend/ tests/ cli/
 
-  check-coding-style-mypy:
-    name: Check coding style with mypy
+    - name: Check mypy
+      if: always()
+      run: mypy openslides_backend/ tests/ cli/
+
+  check-models-all:
+    name: Check from models.yml up to permissions and jsons
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
 
     - name: Set up Python
+      id: python
       uses: actions/setup-python@v2
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
+      id: requirements
       run: pip install --requirement dev/requirements_development.txt
 
-    - name: Check mypy
-      run: mypy openslides_backend/ tests/ cli/
+    - name: Validate models.yml
+      run: PYTHONPATH=. python cli/modelsvalidator/validate.py
+
+    - name: Check for up tp date models.py
+      id: models_py
+      run: PYTHONPATH=. python cli/generate_models.py check
+
+    - name: Check initial-data.json
+      run: PYTHONPATH=. python cli/check_json.py global/data/initial-data.json
+
+    - name: Check example-data.json
+      if: ${{ always() && steps.models_py.outcome == 'success' }}
+      run: PYTHONPATH=. python cli/check_json.py global/data/example-data.json
+
+    - name: Check for up to date permissions.py
+      if: ${{ always() && steps.python.outcome == 'success' && steps.requirements.outcome == 'success' }}
+      run: PYTHONPATH=. python3 cli/generate_permissions.py check

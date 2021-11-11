@@ -12,9 +12,7 @@ import yaml
 from openslides_backend.models.fields import OnDelete
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
 
-SOURCE = (
-    "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/models.yml"
-)
+SOURCE = "./global/meta/models.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -113,6 +111,7 @@ def main() -> None:
         from openslides_backend.models.models import MODELS_YML_CHECKSUM
 
         assert checksum == MODELS_YML_CHECKSUM
+        print("models.py is up to date (checksum-comparison)")
         sys.exit(0)
 
     # Fix broken keys
@@ -346,6 +345,8 @@ class Attribute(Node):
             properties += f"on_delete=fields.OnDelete.{self.fields.on_delete},"
         if self.contraints:
             properties += f"constraints={repr(self.contraints)},"
+        if self.fields.contraints:
+            properties += f"constraints={repr(self.fields.contraints)},"
         return self.FIELD_TEMPLATE.substitute(
             dict(field_name=field_name, field_class=field_class, properties=properties)
         )

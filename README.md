@@ -32,17 +32,18 @@ Inside this terminal you may use some commands you find in the [Makefile](Makefi
 
     $ make run-debug
     $ make test
-    $ make  # Coding style tools, typechecker and tests all together
+    $ make all # Coding style tools, typechecker and tests all together
+    $ make check-all # Checks for consistence of models.yml and *.py, initial-data and permissions
 
 ### Generate models file
 
-To generate a new models.py file (updated in [OpenSlides Main Repository](https://github.com/OpenSlides/OpenSlides)) run (inside the docker container)
+To generate a new models.py file run (inside the docker container)
 
     $ make generate-models
 
-If you do not want to generate from the current master, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the master:
+The original models.yml is now included in this repository at global/meta/. If you do not want to generate from the current backend, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the master:
 
-    $ MODEL_PATH="https://raw.githubusercontent.com/OpenSlides/OpenSlides/0e56d1360e45f1ca3ef3dc004b87a8e23829c45b/docs/models.yml" make generate-models
+    $ MODEL_PATH="local path or GitHub link" make generate-models
 
 Note that you need to provide the raw file if you want to use a GitHub link.
 

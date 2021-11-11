@@ -1,8 +1,6 @@
 from typing import Any, Dict, List, Type, cast
 from unittest import TestCase
 
-import requests
-import simplejson as json
 from datastore.shared.util import DeletedModelsBehaviour
 from fastjsonschema import validate
 from fastjsonschema.exceptions import JsonSchemaException
@@ -20,6 +18,7 @@ from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
+from openslides_backend.shared.util import EXAMPLE_DATA_FILE, get_initial_data_file
 from tests.util import (
     Client,
     Response,
@@ -42,8 +41,6 @@ class BaseSystemTestCase(TestCase):
     client: Client
     anon_client: Client
     media: Any  # Any is needed because it is mocked and has magic methods
-    INITIAL_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/4430f0560a1d22b3534e420580698baf05b310bf/docker/initial-data.json"
-    EXAMPLE_DATA = "https://raw.githubusercontent.com/OpenSlides/OpenSlides/d97e97186b3ac0f92f8ef342d852d896fcb374fb/docs/example-data.json"
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -74,7 +71,7 @@ class BaseSystemTestCase(TestCase):
         Useful for debug purposes when an action fails with the example data.
         Do NOT use in final tests since it takes a long time.
         """
-        example_data = json.loads(requests.get(self.EXAMPLE_DATA).content)
+        example_data = get_initial_data_file(EXAMPLE_DATA_FILE)
         data = {}
         for collection, models in example_data.items():
             if collection == "_migration_index":
@@ -82,9 +79,6 @@ class BaseSystemTestCase(TestCase):
             for model_id in models:
                 data[f"{collection}/{model_id}"] = models[model_id]
         self.set_models(data)
-
-    def get_initial_data(self) -> Any:
-        return json.loads(requests.get(self.INITIAL_DATA).content)
 
     def create_client(self, username: str = None, password: str = None) -> Client:
         return Client(self.app, username, password)

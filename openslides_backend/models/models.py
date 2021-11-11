@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0c3505977f0db3b6db0965dcfd3a21d2"
+MODELS_YML_CHECKSUM = "a4d98010a398caff1bd09c5aee0e6fbf"
 
 
 class Organization(Model):
@@ -69,7 +69,9 @@ class User(Model):
     email = fields.CharField()
     default_number = fields.CharField()
     default_structure_level = fields.CharField()
-    default_vote_weight = fields.DecimalField(default="1.000000")
+    default_vote_weight = fields.DecimalField(
+        default="1.000000", constraints={"minimum": 0}
+    )
     last_email_send = fields.TimestampField()
     is_demo_user = fields.BooleanField()
     organization_management_level = fields.CharField(
@@ -85,6 +87,7 @@ class User(Model):
     committee__management_level = fields.TemplateCharField(
         index=10,
         replacement_collection=Collection("committee"),
+        constraints={"enum": ["can_manage"]},
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
@@ -105,6 +108,7 @@ class User(Model):
     vote_weight_ = fields.TemplateDecimalField(
         index=12,
         replacement_collection=Collection("meeting"),
+        constraints={"minimum": 0},
     )
     group__ids = fields.TemplateRelationListField(
         index=6,

@@ -1,3 +1,4 @@
+import hashlib
 import os
 import sys
 from collections import defaultdict
@@ -9,9 +10,7 @@ import yaml
 
 from openslides_backend.permissions.get_permission_parts import get_permission_parts
 
-SOURCE = (
-    "https://raw.githubusercontent.com/OpenSlides/OpenSlides/master/docs/permission.yml"
-)
+SOURCE = "./global/meta/permission.yml"
 
 DESTINATION = os.path.abspath(
     os.path.join(
@@ -31,6 +30,8 @@ FILE_TEMPLATE = dedent(
     from typing import Dict, List
 
     from .base_classes import Permission
+
+    PERMISSION_YML_CHECKSUM = "{}"
     """
 )
 
@@ -46,7 +47,7 @@ def main() -> None:
     Main entry point for this script to generate the permissions.py from permission.yml.
     """
     # Retrieve models.yml from call-parameter for testing purposes, local file or GitHub
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and sys.argv[1] != "check":
         file = sys.argv[1]
     else:
         file = SOURCE
@@ -57,10 +58,20 @@ def main() -> None:
     else:
         permissions_yml = requests.get(file).content
 
+    # calc checksum to assert the permissions.py is up-to-date
+    checksum = hashlib.md5(permissions_yml).hexdigest()
+
+    if len(sys.argv) > 1 and sys.argv[1] == "check":
+        from openslides_backend.permissions.permissions import PERMISSION_YML_CHECKSUM
+
+        assert checksum == PERMISSION_YML_CHECKSUM
+        print("permissions.py is up to date (checksum-comparison)")
+        sys.exit(0)
+
     # Load and parse permissions.yml
     permissions = yaml.safe_load(permissions_yml)
     with open(DESTINATION, "w") as dest:
-        dest.write(FILE_TEMPLATE)
+        dest.write(FILE_TEMPLATE.format(checksum))
         all_parents: Dict[str, List[str]] = {}
         all_permissions: Dict[str, Set[str]] = defaultdict(set)
         for collection, children in permissions.items():

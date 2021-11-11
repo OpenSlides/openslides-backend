@@ -374,6 +374,16 @@ class Checker:
             error = f"{collection}/{model['id']}: Invalid fields {', '.join(f'{field} (value: {model[field]})' for field in diff)}"
             self.errors.append(error)
             errors = True
+
+        for field in self.models[collection]().get_fields():
+            if (fieldname := field.get_own_field_name()) in model_fields:
+                try:
+                    field.validate(model[fieldname], model)
+                except AssertionError as e:
+                    error = f"{collection}/{model['id']}: {str(e)}"
+                    self.errors.append(error)
+                    errors = True
+
         return errors
 
     def check_template_fields(self, model: Dict[str, Any], collection: str) -> bool:

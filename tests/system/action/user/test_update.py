@@ -1136,3 +1136,34 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/4", {"is_active": True})
+
+    def test_update_negative_default_vote_weight(self) -> None:
+        self.create_model("user/111", {"username": "user111"})
+        response = self.request(
+            "user.update", {"id": 111, "default_vote_weight": "-1.123000"}
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "default_vote_weight must be bigger than or equal to 0.",
+            response.json["message"],
+        )
+
+    def test_update_negative_vote_weight(self) -> None:
+        self.set_models(
+            {
+                "user/111": {"username": "user111"},
+                "meeting/110": {"is_active_in_organization_id": 1},
+            }
+        )
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "vote_weight_$": {"110": "-6.000000"},
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "vote_weight_$ must be bigger than or equal to 0.",
+            response.json["message"],
+        )
