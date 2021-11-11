@@ -57,6 +57,7 @@ class UserForgetPassword(BaseActionTestCase):
         with AiosmtpdServerManager(handler):
             response = self.request("user.forget_password", {"email": "info@ntvtn.de"})
         self.assert_status_code(response, 200)
+        assert not handler.emails
 
     def test_forget_password_invalid_default_from_email(self) -> None:
         EmailSettings.default_from_email = "grüllegrütz"
