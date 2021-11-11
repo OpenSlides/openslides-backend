@@ -1,20 +1,9 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-from datastore.migrations import setup
-
-from migrations import assert_migration_index
-from migrations.migrate import load_migrations
+from migrations import assert_migration_index, get_backend_migration_index
+from migrations.migrate import MigrationHandler
 from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
-
-
-def get_backend_migration_index(migrations: List) -> int:
-    backend_migration_index = 1
-    for migration_class in migrations:
-        backend_migration_index = max(
-            backend_migration_index, migration_class().target_migration_index
-        )
-    return backend_migration_index
 
 
 class OrganizationInitialImport(BaseActionTestCase):
@@ -148,14 +137,12 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         data_migration_index = request_data["data"]["_migration_index"]
-        migrations = load_migrations()
-        backend_migration_index = get_backend_migration_index(migrations)
+        backend_migration_index = get_backend_migration_index()
         assert data_migration_index == backend_migration_index
 
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
 
-        handler = setup(verbose=True)
-        handler.register_migrations(*migrations)
-        handler.finalize()
+        handler = MigrationHandler(verbose=True)
+        handler.execute_command("finalize")
         assert_migration_index()
