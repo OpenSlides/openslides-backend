@@ -11,4 +11,4 @@ bleach==3.3.0
 PyPDF2==1.26.0
 lxml==4.6.3
 git+git://github.com/OpenSlides/openslides-auth-service@e19a3ea652244fc8b06cdba206cbc2173c54cc6c#egg=authlib&subdirectory=auth/libraries/pip-auth # authlib
-git+git://github.com/OpenSlides/openslides-datastore-service@188b6bf4794a50ccf1f304b34a6a8cc583e687fc#egg=datastore # datastore
+git+git://github.com/OpenSlides/openslides-datastore-service@ba874ee191ada0d0287437a038f390fbf22a5d80#egg=datastore # datastore
