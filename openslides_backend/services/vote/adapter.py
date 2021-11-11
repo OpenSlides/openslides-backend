@@ -2,7 +2,7 @@ import json
 from typing import Any, Dict, Optional
 
 import requests
-from authlib import COOKIE_NAME, HEADER_NAME
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
@@ -42,7 +42,7 @@ class VoteAdapter(VoteService):
                 data=payload_json,
                 headers={
                     "Content-Type": "application/json",
-                    HEADER_NAME: self.access_token,
+                    AUTHENTICATION_HEADER: self.access_token,
                 },
                 cookies={COOKIE_NAME: self.cookie},
             )
@@ -53,7 +53,7 @@ class VoteAdapter(VoteService):
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
 
     def set_authentication(self, headers: Headers, cookies: Dict) -> None:
-        self.access_token = headers.get(HEADER_NAME, None)
+        self.access_token = headers.get(AUTHENTICATION_HEADER, None)
         self.cookie = cookies.get(COOKIE_NAME, "")
 
     def start(self, id: int) -> None:

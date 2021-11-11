@@ -74,7 +74,7 @@ class Client(WerkzeugClient):
         # save access token and refresh id for subsequent requests
         self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
         self.cookies = {COOKIE_NAME: response.cookies.get(COOKIE_NAME)}
-        self.headers[HEADER_NAME] = response.headers[HEADER_NAME]
+        self.headers[AUTHENTICATION_HEADER] = response.headers[AUTHENTICATION_HEADER]
 
     def get(self, *args: Any, **kwargs: Any) -> Response:
         """
