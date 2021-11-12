@@ -149,3 +149,14 @@ def authenticator(
         return AuthResult(success=True)
     else:
         return fail_nothandled
+
+
+def set_test_email_settings() -> None:
+    EmailSettings.connection_security = ConnectionSecurity.NONE
+    EmailSettings.host = "127.0.0.1"
+    EmailSettings.port = 25
+    EmailSettings.timeout = 5
+    EmailSettings.user = ""
+    EmailSettings.password = ""
+    EmailSettings.accept_self_signed_certificate = False
+    EmailSettings.default_from_email = "noreply@example.com"

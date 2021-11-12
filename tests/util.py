@@ -2,7 +2,7 @@ from typing import Any, Dict, cast
 from unittest.mock import MagicMock
 
 import requests
-from authlib import COOKIE_NAME, HEADER_NAME
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
@@ -64,7 +64,7 @@ class Client(WerkzeugClient):
         # save access token and refresh id for subsequent requests
         self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
         self.cookies = {COOKIE_NAME: response.cookies.get(COOKIE_NAME)}
-        self.headers[HEADER_NAME] = response.headers[HEADER_NAME]
+        self.headers[AUTHENTICATION_HEADER] = response.headers[AUTHENTICATION_HEADER]
 
     def get(self, *args: Any, **kwargs: Any) -> Response:
         """

@@ -46,3 +46,13 @@ class AuthenticationService(Protocol):
         """
         Checks if the given user is anonymous or not.
         """
+
+    def create_authorization_token(self, user_id: int, email: str) -> str:
+        """
+        Creates a jsonwebtoken with user_id and email and returns it.
+        """
+
+    def verify_authorization_token(self, user_id: int, token: str) -> bool:
+        """
+        Checks the user_id with the token, returns true if okay else false.
+        """
