@@ -72,3 +72,17 @@ class UserForgetPassword(BaseActionTestCase):
         response = self.request("user.forget_password", {"email": "grüllegrütz"})
         self.assert_status_code(response, 400)
         assert "'grüllegrütz' is not a valid email adress." == response.json["message"]
+
+    def test_forget_password_wrong_email_password(self) -> None:
+        EmailSettings.password = "not secret"
+        EmailSettings.user = "sender@example.com"
+
+        self.set_models({"user/1": {"email": "test@ntvtn.de"}})
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request("user.forget_password", {"email": "test@ntvtn.de"})
+        self.assert_status_code(response, 400)
+        assert (
+            "The server was configured improperly. Please contact your administrator."
+            in response.json["message"]
+        )
