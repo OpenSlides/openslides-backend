@@ -47,10 +47,17 @@ class UserForgetPassword(BaseActionTestCase):
         assert user3.get("last_email_send", 0) == 0
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert handler.emails[0]["to"][0] == "test@ntvtn.de"
-        assert "For completeness your username: admin" in handler.emails[0]["data"]
+        assert (
+            "For completeness your username: admin" in handler.emails[0]["data"]
+            or "For completeness your username: test2" in handler.emails[0]["data"]
+        )
+
         assert handler.emails[1]["from"] == EmailSettings.default_from_email
         assert handler.emails[1]["to"][0] == "test@ntvtn.de"
-        assert "For completeness your username: test2" in handler.emails[1]["data"]
+        assert (
+            "For completeness your username: test2" in handler.emails[1]["data"]
+            or "For completeness your username: admin" in handler.emails[1]["data"]
+        )
 
     def test_forget_password_no_user_found(self) -> None:
         handler = AIOHandler()
