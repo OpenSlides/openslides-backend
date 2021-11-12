@@ -295,6 +295,7 @@ user:
     fields:
       type: relation-list
       to: motion_submitter/user_id
+      on_delete: CASCADE
     restriction_mode: A
   poll_voted_$_ids:
     type: template
@@ -330,6 +331,7 @@ user:
     fields:
       type: relation-list
       to: assignment_candidate/user_id
+      on_delete: CASCADE
     restriction_mode: A
   projection_$_ids:
     type: template

@@ -136,6 +136,7 @@ class User(Model):
         index=17,
         replacement_collection=Collection("meeting"),
         to={Collection("motion_submitter"): "user_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     poll_voted__ids = fields.TemplateRelationListField(
         index=11,
@@ -161,6 +162,7 @@ class User(Model):
         index=21,
         replacement_collection=Collection("meeting"),
         to={Collection("assignment_candidate"): "user_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     projection__ids = fields.TemplateRelationListField(
         index=11,
