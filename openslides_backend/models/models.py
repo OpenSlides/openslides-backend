@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a4d98010a398caff1bd09c5aee0e6fbf"
+MODELS_YML_CHECKSUM = "040786ec5990128497bb829e5fe06df1"
 
 
 class Organization(Model):
@@ -514,7 +514,7 @@ class Meeting(Model):
     )
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="analog")
-    assignment_poll_default_method = fields.CharField()
+    assignment_poll_default_method = fields.CharField(default="Y")
     assignment_poll_default_100_percent_base = fields.CharField(default="valid")
     assignment_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_assignment_poll_default_id"}

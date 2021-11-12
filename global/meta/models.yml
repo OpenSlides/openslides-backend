@@ -1183,6 +1183,7 @@ meeting:
     restriction_mode: B
   assignment_poll_default_method:
     type: string
+    default: Y
     restriction_mode: B
   assignment_poll_default_100_percent_base:
     type: string

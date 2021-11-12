@@ -143,6 +143,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             Collection("group"), action_results[0]["id"]  # type: ignore
         )
         fqid_admin_group = FullQualifiedId(Collection("group"), action_results[1]["id"])  # type: ignore
+        fqid_delegates_group = FullQualifiedId(Collection("group"), action_results[2]["id"])  # type: ignore
         assert (
             self.datastore.additional_relation_models[fqid_default_group]["name"]
             == "Default"
@@ -151,8 +152,15 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             self.datastore.additional_relation_models[fqid_admin_group]["name"]
             == "Admin"
         )
+        assert (
+            self.datastore.additional_relation_models[fqid_delegates_group]["name"]
+            == "Delegates"
+        )
+
         instance["default_group_id"] = fqid_default_group.id
         instance["admin_group_id"] = fqid_admin_group.id
+        instance["assignment_poll_default_group_ids"] = [fqid_delegates_group.id]
+        instance["motion_poll_default_group_ids"] = [fqid_delegates_group.id]
 
         # Add user to admin group
         if admin_ids := instance.pop("admin_ids", []):
