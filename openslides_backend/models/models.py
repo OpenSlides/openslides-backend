@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "040786ec5990128497bb829e5fe06df1"
+MODELS_YML_CHECKSUM = "93cd280b3b6d6c35e62d547817a8f737"
 
 
 class Organization(Model):
@@ -136,6 +136,7 @@ class User(Model):
         index=17,
         replacement_collection=Collection("meeting"),
         to={Collection("motion_submitter"): "user_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     poll_voted__ids = fields.TemplateRelationListField(
         index=11,
@@ -161,6 +162,7 @@ class User(Model):
         index=21,
         replacement_collection=Collection("meeting"),
         to={Collection("assignment_candidate"): "user_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     projection__ids = fields.TemplateRelationListField(
         index=11,

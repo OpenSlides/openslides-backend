@@ -58,6 +58,64 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_deleted("user/111")
         self.assert_model_deleted("speaker/15")
 
+    def test_delete_with_candidate(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "assignment_candidate_$_ids": ["1"],
+                    "assignment_candidate_$1_ids": [34],
+                },
+                "meeting/1": {},
+                "assignment_candidate/34": {
+                    "user_id": 111,
+                    "meeting_id": 1,
+                    "assignment_id": 123,
+                },
+                "assignment/123": {
+                    "title": "test_assignment",
+                    "candidate_ids": [34],
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("user.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "user/111",
+            {"assignment_candidate_$1_ids": [34], "assignment_candidate_$_ids": ["1"]},
+        )
+        self.assert_model_deleted(
+            "assignment_candidate/34", {"assignment_id": 123, "user_id": 111}
+        )
+        self.assert_model_exists("assignment/123", {"candidate_ids": []})
+
+    def test_delete_with_submitter(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "username_srtgb123",
+                    "submitted_motion_$_ids": ["1"],
+                    "submitted_motion_$1_ids": [34],
+                },
+                "meeting/1": {},
+                "motion_submitter/34": {"user_id": 111, "motion_id": 50},
+                "motion/50": {"submitter_ids": [34]},
+            }
+        )
+        response = self.request("user.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "user/111",
+            {"submitted_motion_$1_ids": [34], "submitted_motion_$_ids": ["1"]},
+        )
+        self.assert_model_deleted(
+            "motion_submitter/34", {"user_id": 111, "motion_id": 50}
+        )
+        self.assert_model_exists("motion/50", {"submitter_ids": []})
+
     def test_delete_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Meeting)
