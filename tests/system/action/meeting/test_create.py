@@ -62,6 +62,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "projector_countdown_warning_time": 0,
                 "organization_tag_ids": [3],
                 "is_active_in_organization_id": 1,
+                "assignment_poll_default_group_ids": [4],
+                "motion_poll_default_group_ids": [4],
                 **{
                     f"default_projector_${name}_id": 1
                     for name in meeting_projector_default_replacements
@@ -201,6 +203,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("start_time") == 1608120653
         assert meeting.get("end_time") == 1608121653
         assert meeting.get("url_name") == "JWdYZqDX"
+
+        # check two defaults:
+        assert meeting.get("assignment_poll_default_type") == "analog"
+        assert meeting.get("assignment_poll_default_method") == "Y"
 
     def test_create_check_users(self) -> None:
         meeting = self.basic_test({"user_ids": [2]})
