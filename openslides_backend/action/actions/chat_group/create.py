@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection
 from ...generics.create import CreateAction
@@ -25,6 +26,7 @@ class ChatGroupCreate(ChatEnabledMixin, CreateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+        self.check_name_unique(instance)
         instance["weight"] = self.get_weight(instance["meeting_id"])
         return instance
 
@@ -34,3 +36,12 @@ class ChatGroupCreate(ChatEnabledMixin, CreateAction):
         if maximum is None:
             return 1
         return maximum + 1
+
+    def check_name_unique(self, instance: Dict[str, Any]) -> None:
+        name_exists = self.datastore.exists(
+            self.model.collection,
+            FilterOperator("name", "=", instance["name"]),
+            lock_result=False,
+        )
+        if name_exists:
+            raise ActionException("The name of a chat group must be unique.")
