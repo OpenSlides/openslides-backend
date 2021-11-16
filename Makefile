@@ -9,10 +9,10 @@ build-dummy-presenter:
 
 start-test-setup: | build-dev build-tests build-dummy-presenter
 	docker-compose -f docker-compose.test.yml up -d
-	docker-compose -f docker-compose.test.yml exec tests wait-for-it "media:9006"
+	docker-compose -f docker-compose.test.yml exec -T tests wait-for-it "media:9006"
 
 run-tests: | start-test-setup
-	docker-compose -f docker-compose.test.yml exec tests pytest
+	docker-compose -f docker-compose.test.yml exec -T tests pytest
 	docker-compose -f docker-compose.test.yml down
 
 run-tests-interactive: | start-test-setup
