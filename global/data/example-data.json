@@ -3368,6 +3368,7 @@
                 2,
                 5
             ],
+            "chat_message_ids": [],
             "meeting_id": 1
         },
         "2": {
@@ -3382,6 +3383,7 @@
                 2,
                 5
             ],
+            "chat_message_ids": [],
             "meeting_id": 1
         }
     },
