@@ -355,6 +355,14 @@ user:
       type: relation-list
       to: user/vote_delegated_$_to_id
     restriction_mode: C
+  chat_message_$_ids:
+    type: template
+    replacement_collection: meeting
+    restriction_mode: A
+    fields:
+      type: relation-list
+      to: chat_message/user_id
+
   meeting_ids:
     type: number[]
     description: Calculated. All ids from group_$_ids as integers.
@@ -1369,6 +1377,11 @@ meeting:
   chat_group_ids:
     type: relation-list
     to: chat_group/meeting_id
+    on_delete: CASCADE
+    restriction_mode: B
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/meeting_id
     on_delete: CASCADE
     restriction_mode: B
 
@@ -3187,7 +3200,12 @@ chat_group:
     type: number
     default: 10000
     restriction_mode: A
-
+  
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/chat_group_id
+    equal_fields: meeting_id
+    restriction_mode: A
   read_group_ids:
     type: relation-list
     to: group/read_chat_group_ids
@@ -3201,5 +3219,32 @@ chat_group:
   meeting_id:
     type: relation
     to: meeting/chat_group_ids
+    required: true
+    restriction_mode: A
+
+chat_message:
+  id:
+    type: number
+    restriction_mode: A
+  content:
+    type: HTMLStrict 
+    required: true
+    restriction_mode: A
+  created:
+    type: timestamp
+    required: true
+  user_id:
+    type: relation
+    to: user/chat_message_$_ids
+    restriction_mode: A
+    required: true
+  chat_group_id:
+    type: relation
+    to: chat_group/chat_message_ids
+    restriction_mode: A
+    required: true
+  meeting_id:
+    type: relation
+    to: meeting/chat_message_ids
     required: true
     restriction_mode: A
