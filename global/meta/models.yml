@@ -3233,6 +3233,7 @@ chat_message:
   created:
     type: timestamp
     required: true
+    restriction_mode: A
   user_id:
     type: relation
     to: user/chat_message_$_ids
