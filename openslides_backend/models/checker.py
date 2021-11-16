@@ -212,6 +212,7 @@ class Checker:
             "projector_message",
             "projector_countdown",
             "chat_group",
+            "chat_message",
         ]
         if self.mode == "all":
             self.allowed_collections = [

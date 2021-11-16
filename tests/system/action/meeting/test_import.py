@@ -182,6 +182,7 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_candidate_ids": [],
                         "personal_note_ids": [],
                         "chat_group_ids": [],
+                        "chat_message_ids": [],
                         "logo_$_id": [],
                         "font_$_id": [],
                         "committee_id": None,
@@ -325,6 +326,7 @@ class MeetingImport(BaseActionTestCase):
             "projector_message",
             "projector_countdown",
             "chat_group",
+            "chat_message",
         )
         for collection in needed_collections:
             if collection not in data["meeting"].keys():
@@ -373,6 +375,7 @@ class MeetingImport(BaseActionTestCase):
             "vote_delegated_vote_$_ids": [],
             "vote_delegated_$_to_id": [],
             "vote_delegations_$_from_ids": [],
+            "chat_message_$_ids": [],
             "meeting_ids": [1],
             **data,
         }

@@ -143,6 +143,7 @@
             ],
             "vote_delegated_$_to_id": [],
             "vote_delegations_$_from_ids": [],
+            "chat_message_$_ids": [],
             "meeting_ids": [
                 1
             ]
@@ -231,6 +232,7 @@
             "vote_delegated_vote_$_ids": [],
             "vote_delegated_$_to_id": [],
             "vote_delegations_$_from_ids": [],
+            "chat_message_$_ids": [],
             "meeting_ids": [
                 1
             ]
@@ -319,6 +321,7 @@
             "vote_delegated_vote_$_ids": [],
             "vote_delegated_$_to_id": [],
             "vote_delegations_$_from_ids": [],
+            "chat_message_$_ids": [],
             "meeting_ids": [
                 1
             ]
@@ -849,6 +852,7 @@
                 1,
                 2
             ],
+            "chat_message_ids": [],
             "logo_$_id": [
                 "web_header"
             ],
@@ -3380,5 +3384,6 @@
             ],
             "meeting_id": 1
         }
-    }
+    },
+    "chat_message": {}
 }
