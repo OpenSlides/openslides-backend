@@ -20,7 +20,6 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
         required_properties=["organization_id", "name"],
         optional_properties=[
             "description",
-            "user_ids",
             "organization_tag_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",

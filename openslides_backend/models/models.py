@@ -83,7 +83,11 @@ class User(Model):
     is_present_in_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "present_user_ids"}
     )
-    committee_ids = fields.RelationListField(to={Collection("committee"): "user_ids"})
+    committee_ids = fields.RelationListField(
+        to={Collection("committee"): "user_ids"},
+        read_only=True,
+        constraints={"description": "Calculated field."},
+    )
     committee__management_level = fields.TemplateCharField(
         index=10,
         replacement_collection=Collection("committee"),
@@ -295,7 +299,11 @@ class Committee(Model):
     default_meeting_id = fields.RelationField(
         to={Collection("meeting"): "default_meeting_for_committee_id"}
     )
-    user_ids = fields.RelationListField(to={Collection("user"): "committee_ids"})
+    user_ids = fields.RelationListField(
+        to={Collection("user"): "committee_ids"},
+        read_only=True,
+        constraints={"description": "Calculated field."},
+    )
     forward_to_committee_ids = fields.RelationListField(
         to={Collection("committee"): "receive_forwardings_from_committee_ids"}
     )

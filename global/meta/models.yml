@@ -212,6 +212,8 @@ user:
     type: relation-list
     to: committee/user_ids
     restriction_mode: E
+    read_only: true
+    description: "Calculated field."
 
   # committee specific permissions
   committee_$_management_level:
@@ -600,6 +602,8 @@ committee:
     type: relation-list
     to: user/committee_ids
     restriction_mode: A
+    read_only: true
+    description: "Calculated field."
   forward_to_committee_ids:
     type: relation-list
     to: committee/receive_forwardings_from_committee_ids
