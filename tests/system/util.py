@@ -85,5 +85,9 @@ def side_effect_for_upload_method(
         raise MediaServiceException("Mocked error on media service upload")
 
 
-def get_route_path(route_function: RouteFunction) -> str:
-    return getattr(route_function, ROUTE_OPTIONS_ATTR)["raw_path"]
+def get_route_path(route_function: RouteFunction, name: str = "") -> str:
+    route_options_list = getattr(route_function, ROUTE_OPTIONS_ATTR)
+    for route_options in route_options_list:
+        if route_options["raw_path"].endswith(name):
+            return route_options["raw_path"]
+    raise ValueError(f"Route {name} does not exist")

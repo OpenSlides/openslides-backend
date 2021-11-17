@@ -19,8 +19,7 @@ class ActionView(BaseView):
     ActionHandler after retrieving request user id.
     """
 
-    @route("handle_request")
-    @route("handle_separately")
+    @route(["handle_request", "handle_separately"])
     def action_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         self.logger.debug("Start dispatching action request.")
 
@@ -41,9 +40,9 @@ class ActionView(BaseView):
         self.logger.debug("Action request finished successfully.")
         return response, access_token
 
-    @route("migrate", internal=True)
-    def migrate_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
-        self.logger.debug("Start executing migrate request.")
+    @route("migrations", internal=True)
+    def migrations_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+        self.logger.debug("Start executing migrations request.")
 
         if not (command := request.json.get("cmd")):
             raise View400Exception("No command provided")
@@ -58,7 +57,7 @@ class ActionView(BaseView):
             raise View400Exception(str(e))
         output = f.getvalue()
 
-        self.logger.debug("Migrate request finished successfully.")
+        self.logger.debug("Migrations request finished successfully.")
         return {
             "success": True,
             "output": output,

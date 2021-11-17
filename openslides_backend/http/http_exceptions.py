@@ -5,6 +5,7 @@ from werkzeug.exceptions import BadRequest as BaseBadRequest
 from werkzeug.exceptions import Forbidden as BaseForbidden
 from werkzeug.exceptions import HTTPException as BaseHTTPException
 from werkzeug.exceptions import MethodNotAllowed as BaseMethodNotAllowed
+from werkzeug.exceptions import NotFound as BaseNotFound
 
 from openslides_backend.shared.exceptions import ViewException
 
@@ -46,4 +47,8 @@ class Forbidden(HTTPException, BaseForbidden):
 
 
 class MethodNotAllowed(HTTPException, BaseMethodNotAllowed):
+    pass
+
+
+class NotFound(HTTPException, BaseNotFound):
     pass

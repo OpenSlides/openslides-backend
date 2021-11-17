@@ -3,13 +3,14 @@ from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 
 from .migrate import MigrationHandler
+from openslides_backend.shared.exceptions import View400Exception
 
 
-class MissingMigrations(Exception):
+class MissingMigrations(View400Exception):
     pass
 
 
-class MisconfiguredMigrations(Exception):
+class MisconfiguredMigrations(View400Exception):
     pass
 
 
