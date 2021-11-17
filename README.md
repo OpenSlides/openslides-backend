@@ -124,11 +124,29 @@ The action component listens to port 9002. The presenter component listens to po
 
 You may run curl against this service like this:
 
-    $ curl localhost:9002/health
-    $ curl localhost:9002 -X POST -H "Content-Type: application/json" -d '[{"action": "topic.create", "data": [{"meeting_id": 1, "title": "foo"}]}]'
-    $ curl localhost:9002 -X POST -H "Content-Type: application/json" -d '[{"action": "topic.update", "data": [{"id": 1, "title": "bar"}]}]'
+    $ curl localhost:9002/internal/health
+    $ curl localhost:9002/system/action/handle_request -X POST -H "Content-Type: application/json" -d '[{"action": "topic.create", "data": [{"meeting_id": 1, "title": "foo"}]}]'
+    $ curl localhost:9002/system/action/handle_request -X POST -H "Content-Type: application/json" -d '[{"action": "topic.update", "data": [{"id": 1, "title": "bar"}]}]'
 
-    $ curl localhost:9003/health
-    $ curl localhost:9003 -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]'
+    $ curl localhost:9003/internal/health
+    $ curl localhost:9003/system/presenter/handle_request -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]'
 
 The action health path returns a list of all possible actions with its JSON schema.
+
+## Available routes
+
+General schema for public routes: `/system/<service>/<route>`
+General schema for internal routes: `/internal/<route>`
+
+### Action Service
+
+* `/system/action/handle_request`: Main route of the service, is used to execute actions.
+* `/system/action/handle_separately`: Same function as `handle_request`, but the request is not executed atomically,
+  meaning each action is executed and the result sent to the datastore separately.
+* `/internal/health`: Returns a list of all possible actions with their respective JSON schema.
+* `/internal/migrations`: Provides remote access to the migration tool.
+
+### Presenter Service
+
+* `/system/presenter/handle_request`: Main route of the service, is used to fetch presenter results.
+* `/internal/health`: Currently not implemented.
