@@ -14,7 +14,7 @@ from .mixins import ChatEnabledMixin
 @register_action("chat_group.update")
 class ChatGroupUpdate(ChatEnabledMixin, UpdateAction):
     """
-    Action to update a projector message.
+    Action to update a chat group.
     """
 
     model = ChatGroup()
