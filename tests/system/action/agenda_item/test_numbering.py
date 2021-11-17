@@ -129,7 +129,7 @@ class AgendaItemNumberingTester(BaseActionTestCase):
                 },
                 "agenda_item/2": {
                     "meeting_id": 1,
-                    "weight": 10,
+                    "weight": 11,
                     "type": AgendaItem.AGENDA_ITEM,
                 },
             }
