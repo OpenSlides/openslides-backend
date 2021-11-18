@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0d43d5035dd150efbffd3c106fef7ca0"
+MODELS_YML_CHECKSUM = "091789a766ba18c02b0aabf48755e281"
 
 
 class Organization(Model):
@@ -1770,7 +1770,9 @@ class ChatGroup(Model):
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
     chat_message_ids = fields.RelationListField(
-        to={Collection("chat_message"): "chat_group_id"}, equal_fields="meeting_id"
+        to={Collection("chat_message"): "chat_group_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     read_group_ids = fields.RelationListField(
         to={Collection("group"): "read_chat_group_ids"}, equal_fields="meeting_id"

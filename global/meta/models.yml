@@ -3206,6 +3206,7 @@ chat_group:
     to: chat_message/chat_group_id
     equal_fields: meeting_id
     restriction_mode: A
+    on_delete: CASCADE
   read_group_ids:
     type: relation-list
     to: group/read_chat_group_ids
