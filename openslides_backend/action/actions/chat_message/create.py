@@ -4,13 +4,15 @@ from typing import Any, Dict
 from ....models.models import ChatMessage
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
-from ...generics.create import CreateAction
+from ...mixins.create_action_with_inferred_meeting import (
+    CreateActionWithInferredMeeting,
+)
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("chat_message.create")
-class ChatMessageCreate(CreateAction):
+class ChatMessageCreate(CreateActionWithInferredMeeting):
     """
     Action to create a chat message.
     """
@@ -19,10 +21,11 @@ class ChatMessageCreate(CreateAction):
     schema = DefaultSchema(ChatMessage()).get_create_schema(
         required_properties=["chat_group_id", "content"],
     )
+    relation_field_for_meeting = "chat_group_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         instance["user_id"] = self.user_id
-        instance["meeting_id"] = self.get_meeting_id(instance)
         instance["created"] = round(time())
         return instance
 
@@ -40,10 +43,3 @@ class ChatMessageCreate(CreateAction):
         user_group_set = set(user.get(f"group_${meeting_id}_ids", []))
         if not (write_group_set & user_group_set):
             raise PermissionDenied("You are not allowed to write in this chat group.")
-
-    def get_meeting_id(self, instance: Dict[str, Any]) -> int:
-        chat_group = self.datastore.get(
-            FullQualifiedId(Collection("chat_group"), instance["chat_group_id"]),
-            ["meeting_id"],
-        )
-        return chat_group["meeting_id"]
