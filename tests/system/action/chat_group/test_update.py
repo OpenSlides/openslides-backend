@@ -78,3 +78,24 @@ class ChatGroupUpdate(BaseActionTestCase):
             {"id": 1, "name": "test"},
             Permissions.Chat.CAN_MANAGE,
         )
+
+    def test_update_not_unique_name(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "chat_group/1": {
+                    "meeting_id": 1,
+                    "name": "redekreis1",
+                },
+                "chat_group/2": {
+                    "meeting_id": 1,
+                    "name": "test",
+                },
+            }
+        )
+        response = self.request(
+            "chat_group.update",
+            {"id": 1, "name": "test"},
+        )
+        self.assert_status_code(response, 400)
+        assert "The name of a chat group must be unique." == response.json["message"]

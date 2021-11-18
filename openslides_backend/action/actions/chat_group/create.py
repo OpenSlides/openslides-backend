@@ -7,11 +7,11 @@ from ....shared.patterns import Collection
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import ChatEnabledMixin
+from .mixins import ChatEnabledMixin, CheckUniqueNameMixin
 
 
 @register_action("chat_group.create")
-class ChatGroupCreate(ChatEnabledMixin, CreateAction):
+class ChatGroupCreate(ChatEnabledMixin, CheckUniqueNameMixin, CreateAction):
     """
     Action to create a chat group.
     """
@@ -25,6 +25,7 @@ class ChatGroupCreate(ChatEnabledMixin, CreateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+        self.check_name_unique(instance)
         instance["weight"] = self.get_weight(instance["meeting_id"])
         return instance
 

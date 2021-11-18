@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "93cd280b3b6d6c35e62d547817a8f737"
+MODELS_YML_CHECKSUM = "091789a766ba18c02b0aabf48755e281"
 
 
 class Organization(Model):
@@ -178,6 +178,11 @@ class User(Model):
         index=17,
         replacement_collection=Collection("meeting"),
         to={Collection("user"): "vote_delegated_$_to_id"},
+    )
+    chat_message__ids = fields.TemplateRelationListField(
+        index=13,
+        replacement_collection=Collection("meeting"),
+        to={Collection("chat_message"): "user_id"},
     )
     meeting_ids = fields.NumberArrayField(
         read_only=True,
@@ -634,6 +639,9 @@ class Meeting(Model):
     )
     chat_group_ids = fields.RelationListField(
         to={Collection("chat_group"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    chat_message_ids = fields.RelationListField(
+        to={Collection("chat_message"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     logo__id = fields.TemplateRelationField(
         index=5,
@@ -1761,6 +1769,11 @@ class ChatGroup(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
+    chat_message_ids = fields.RelationListField(
+        to={Collection("chat_message"): "chat_group_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
+    )
     read_group_ids = fields.RelationListField(
         to={Collection("group"): "read_chat_group_ids"}, equal_fields="meeting_id"
     )
@@ -1769,4 +1782,22 @@ class ChatGroup(Model):
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "chat_group_ids"}, required=True
+    )
+
+
+class ChatMessage(Model):
+    collection = Collection("chat_message")
+    verbose_name = "chat message"
+
+    id = fields.IntegerField()
+    content = fields.HTMLStrictField(required=True)
+    created = fields.TimestampField(required=True)
+    user_id = fields.RelationField(
+        to={Collection("user"): "chat_message_$_ids"}, required=True
+    )
+    chat_group_id = fields.RelationField(
+        to={Collection("chat_group"): "chat_message_ids"}, required=True
+    )
+    meeting_id = fields.RelationField(
+        to={Collection("meeting"): "chat_message_ids"}, required=True
     )

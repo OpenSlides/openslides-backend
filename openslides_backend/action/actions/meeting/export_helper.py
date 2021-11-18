@@ -61,6 +61,7 @@ def get_collections_with_meeting_id() -> List[str]:
         "projector_message",
         "projector_countdown",
         "chat_group",
+        "chat_message",
     ]
     return collections
 

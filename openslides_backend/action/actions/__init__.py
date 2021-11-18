@@ -10,6 +10,7 @@ def prepare_actions_map() -> None:
         assignment,
         assignment_candidate,
         chat_group,
+        chat_message,
         committee,
         group,
         list_of_speakers,
