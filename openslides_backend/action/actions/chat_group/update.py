@@ -2,17 +2,15 @@ from typing import Any, Dict
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import ChatEnabledMixin
+from .mixins import ChatEnabledMixin, CheckUniqueNameMixin
 
 
 @register_action("chat_group.update")
-class ChatGroupUpdate(ChatEnabledMixin, UpdateAction):
+class ChatGroupUpdate(ChatEnabledMixin, CheckUniqueNameMixin, UpdateAction):
     """
     Action to update a chat group.
     """
@@ -30,11 +28,5 @@ class ChatGroupUpdate(ChatEnabledMixin, UpdateAction):
                 FullQualifiedId(self.model.collection, instance["id"]), ["name"]
             )
             if instance["name"] != chat_group.get("name"):
-                name_exists = self.datastore.exists(
-                    self.model.collection,
-                    FilterOperator("name", "=", instance["name"]),
-                    lock_result=False,
-                )
-                if name_exists:
-                    raise ActionException("The name of the chat group must be unique.")
+                self.check_name_unique(instance)
         return instance

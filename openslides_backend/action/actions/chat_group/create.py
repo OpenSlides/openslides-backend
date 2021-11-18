@@ -2,17 +2,16 @@ from typing import Any, Dict
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import ChatEnabledMixin
+from .mixins import ChatEnabledMixin, CheckUniqueNameMixin
 
 
 @register_action("chat_group.create")
-class ChatGroupCreate(ChatEnabledMixin, CreateAction):
+class ChatGroupCreate(ChatEnabledMixin, CheckUniqueNameMixin, CreateAction):
     """
     Action to create a chat group.
     """
@@ -36,12 +35,3 @@ class ChatGroupCreate(ChatEnabledMixin, CreateAction):
         if maximum is None:
             return 1
         return maximum + 1
-
-    def check_name_unique(self, instance: Dict[str, Any]) -> None:
-        name_exists = self.datastore.exists(
-            self.model.collection,
-            FilterOperator("name", "=", instance["name"]),
-            lock_result=False,
-        )
-        if name_exists:
-            raise ActionException("The name of a chat group must be unique.")

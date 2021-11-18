@@ -98,4 +98,4 @@ class ChatGroupUpdate(BaseActionTestCase):
             {"id": 1, "name": "test"},
         )
         self.assert_status_code(response, 400)
-        assert "The name of the chat group must be unique." == response.json["message"]
+        assert "The name of a chat group must be unique." == response.json["message"]
