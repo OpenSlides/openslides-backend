@@ -16,6 +16,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         logger = Mock()
         handler = ActionHandler(self.services, logger)
         handler.user_id = 1
+        handler.internal = False
         return handler
 
     def test_parse_actions_create_2_actions(self) -> None:
