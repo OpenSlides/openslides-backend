@@ -1,4 +1,4 @@
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import (
