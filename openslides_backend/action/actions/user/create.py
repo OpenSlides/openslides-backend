@@ -65,14 +65,6 @@ class UserCreate(
         ):
             raise ActionException("Need username or first_name or last_name")
 
-        if instance.get("committee_$_management_level"):
-            if diff := set(
-                map(int, instance.get("committee_$_management_level", {}).keys())
-            ) - set(instance.get("committee_ids", [])):
-                instance["committee_ids"] = instance.get("committee_ids", []) + list(
-                    diff
-                )
-
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)
         if not instance.get("default_password"):

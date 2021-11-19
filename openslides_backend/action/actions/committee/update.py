@@ -1,4 +1,4 @@
-from typing import Any, Dict, Set, Tuple
+from typing import Any, Dict, Set
 
 from ....models.models import Committee
 from ....permissions.management_levels import (
@@ -76,7 +76,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             [
                 field in instance
                 for field in [
-                    "user_ids",
                     "forward_to_committee_ids",
                     "receive_forwardings_from_committee_ids",
                     "manager_ids",

@@ -27,7 +27,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                 "name": committee_name,
                 "organization_id": 1,
                 "description": description,
-                "user_ids": [20, 21],
                 "organization_tag_ids": [12],
                 "forward_to_committee_ids": [1],
                 "receive_forwardings_from_committee_ids": [1],
@@ -38,7 +37,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("name") == committee_name
         assert model.get("description") == description
         assert model.get("meeting_ids") is None
-        assert model.get("user_ids") == [20, 21]
         assert model.get("organization_tag_ids") == [12]
         assert model.get("forward_to_committee_ids") == [1]
         assert model.get("receive_forwardings_from_committee_ids") == [1]
@@ -120,47 +118,6 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_create_manager_ids_and_user_ids(self) -> None:
-        self.create_model("organization/1", {"name": "test_organization1"})
-        self.create_model("user/13", {"username": "test13"})
-        self.create_model("user/14", {"username": "test14"})
-        self.create_model("user/15", {"username": "test15"})
-        committee_name = "test_committee1"
-
-        response = self.request(
-            "committee.create",
-            {
-                "name": committee_name,
-                "organization_id": 1,
-                "manager_ids": [13, 14],
-                "user_ids": [13, 15],
-            },
-        )
-        self.assert_status_code(response, 200)
-        committee = self.get_model("committee/1")
-        self.assertCountEqual((13, 14, 15), committee["user_ids"])
-        self.assert_model_exists(
-            "user/13",
-            {
-                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "user/14",
-            {
-                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
-                "committee_ids": [1],
-            },
-        )
-        self.assert_model_exists(
-            "user/15",
-            {
-                "committee_$1_management_level": None,
-                "committee_ids": [1],
-            },
-        )
-
     def test_create_wrong_field(self) -> None:
         self.create_model("organization/1", {"name": "test_organization1"})
 
@@ -214,7 +171,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": committee_name,
                 "organization_id": 1,
-                "user_ids": [20, 21],
+                "manager_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 400)
@@ -329,7 +286,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee",
                 "organization_id": 1,
-                "user_ids": [20, 21],
+                "manager_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 403)
@@ -349,7 +306,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             {
                 "name": "test_committee",
                 "organization_id": 1,
-                "user_ids": [20, 21],
+                "manager_ids": [20, 21],
             },
         )
         self.assert_status_code(response, 200)

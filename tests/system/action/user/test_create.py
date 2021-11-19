@@ -62,10 +62,20 @@ class UserCreateActionTest(BaseActionTestCase):
         """
         self.set_models(
             {
-                "meeting/110": {"name": "name_DsJFXoot"},
-                "meeting/111": {"name": "name_xXRGTLAJ"},
-                "committee/78": {"name": "name_TSXpBGdt"},
-                "committee/79": {"name": "name_hOldWvVF"},
+                "meeting/110": {
+                    "name": "name_DsJFXoot",
+                    "committee_id": 78,
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/111": {
+                    "name": "name_xXRGTLAJ",
+                    "committee_id": 79,
+                    "group_ids": [111],
+                    "is_active_in_organization_id": 1,
+                },
+                "group/111": {"meeting_id": 111},
+                "committee/78": {"name": "name_TSXpBGdt", "meeting_ids": [110]},
+                "committee/79": {"name": "name_hOldWvVF", "meeting_ids": [111]},
             }
         )
         response = self.request(
@@ -74,19 +84,35 @@ class UserCreateActionTest(BaseActionTestCase):
                 "username": "test_Xcdfgee",
                 "default_vote_weight": "1.500000",
                 "organization_management_level": "can_manage_users",
-                "committee_ids": [78, 79],
                 "default_password": "password",
+                "committee_$_management_level": {
+                    78: CommitteeManagementLevel.CAN_MANAGE,
+                },
+                "group_$_ids": {111: [111]},
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("user/2")
-        assert model.get("username") == "test_Xcdfgee"
-        assert model.get("default_vote_weight") == "1.500000"
-        assert model.get("committee_ids") == [78, 79]
-        assert model.get("organization_management_level") == "can_manage_users"
-        assert model.get("default_password") == "password"
+        user2 = self.assert_model_exists(
+            "user/2",
+            {
+                "username": "test_Xcdfgee",
+                "default_vote_weight": "1.500000",
+                "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
+                "default_password": "password",
+                "group_$_ids": ["111"],
+                "group_$111_ids": [111],
+                "committee_$78_management_level": CommitteeManagementLevel.CAN_MANAGE,
+            },
+        )
+        self.assertCountEqual(user2.get("committee_ids", []), [78, 79])
         assert self.auth.is_equals(
-            model.get("default_password", ""), model.get("password", "")
+            user2.get("default_password", ""), user2.get("password", "")
+        )
+        self.assert_model_exists(
+            "committee/78", {"meeting_ids": [110], "user_ids": [2]}
+        )
+        self.assert_model_exists(
+            "committee/79", {"meeting_ids": [111], "user_ids": [2]}
         )
 
     def test_create_template_fields(self) -> None:
@@ -116,7 +142,6 @@ class UserCreateActionTest(BaseActionTestCase):
                     1: CommitteeManagementLevel.CAN_MANAGE,
                     2: None,
                 },
-                "committee_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 200)
@@ -176,7 +201,6 @@ class UserCreateActionTest(BaseActionTestCase):
                     1: None,
                     2: CommitteeManagementLevel.CAN_MANAGE,
                 },
-                "committee_ids": [1, 2],
             },
         )
         self.assert_status_code(response, 400)
@@ -289,7 +313,6 @@ class UserCreateActionTest(BaseActionTestCase):
                     "60": CommitteeManagementLevel.CAN_MANAGE,
                     "63": CommitteeManagementLevel.CAN_MANAGE,
                 },
-                "committee_ids": [63],
             },
         )
         self.assert_status_code(response, 200)
@@ -461,7 +484,6 @@ class UserCreateActionTest(BaseActionTestCase):
             {
                 "username": "usersname",
                 "group_$_ids": {"1": [1], "4": [4]},
-                "committee_ids": [60],
                 "is_present_in_meeting_ids": [1],
             },
         )
@@ -514,7 +536,9 @@ class UserCreateActionTest(BaseActionTestCase):
             "user.create",
             {
                 "username": "new username",
-                "committee_ids": [60],
+                "committee_$_management_level": {
+                    "60": CommitteeManagementLevel.CAN_MANAGE
+                },
                 "group_$_ids": {"4": [4]},
             },
         )
@@ -690,7 +714,7 @@ class UserCreateActionTest(BaseActionTestCase):
                     "60": CommitteeManagementLevel.CAN_MANAGE,
                     "63": CommitteeManagementLevel.CAN_MANAGE,
                 },
-                "committee_ids": [60, 63],
+                # "committee_ids": [60, 63],
                 "organization_management_level": None,
             },
         )
@@ -730,7 +754,7 @@ class UserCreateActionTest(BaseActionTestCase):
                 "committee_$_management_level": {
                     "60": CommitteeManagementLevel.CAN_MANAGE,
                 },
-                "committee_ids": [60],
+                # "committee_ids": [60],
             },
         )
         self.assert_status_code(response, 200)

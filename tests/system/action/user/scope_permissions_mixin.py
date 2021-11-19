@@ -43,21 +43,62 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
         if scope == UserScope.Organization:
             self.set_models(
                 {
-                    "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                    "user/111": {"meeting_ids": [1], "committee_ids": [2]},
+                    "committee/1": {"meeting_ids": [1]},
+                    "committee/2": {"meeting_ids": [2]},
+                    "meeting/1": {
+                        "user_ids": [111],
+                        "committee_id": 1,
+                        "group_ids": [11],
+                        "is_active_in_organization_id": 1,
+                    },
+                    "meeting/2": {
+                        "user_ids": [111],
+                        "committee_id": 2,
+                        "group_ids": [22],
+                        "is_active_in_organization_id": 1,
+                    },
+                    "user/111": {
+                        "meeting_ids": [1, 2],
+                        "committee_ids": [1, 2],
+                        "group_$_ids": ["1", "2"],
+                        "group_$1_ids": [11],
+                        "group_$2_ids": [22],
+                    },
+                    "group/11": {"meeting_id": 1, "user_ids": [111]},
+                    "group/22": {"meeting_id": 2, "user_ids": [111]},
                 }
             )
         elif scope == UserScope.Committee:
             self.set_models(
                 {
-                    "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                    "user/111": {"meeting_ids": [1], "committee_ids": [1]},
+                    "committee/1": {"meeting_ids": [1, 2]},
+                    "meeting/1": {
+                        "user_ids": [111],
+                        "committee_id": 1,
+                        "group_ids": [11],
+                        "is_active_in_organization_id": 1,
+                    },
+                    "meeting/2": {
+                        "user_ids": [111],
+                        "committee_id": 1,
+                        "group_ids": [11],
+                        "is_active_in_organization_id": 1,
+                    },
+                    "user/111": {
+                        "meeting_ids": [1, 2],
+                        "committee_ids": [1],
+                        "group_$_ids": ["1", "2"],
+                        "group_$1_ids": [11],
+                        "group_$2_ids": [22],
+                    },
+                    "group/11": {"meeting_id": 1, "user_ids": [111]},
+                    "group/22": {"meeting_id": 2, "user_ids": [111]},
                 }
             )
         elif scope == UserScope.Meeting:
             self.set_models(
                 {
                     "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-                    "user/111": {"meeting_ids": [1]},
+                    "user/111": {"meeting_ids": [1], "committee_ids": [1]},
                 }
             )

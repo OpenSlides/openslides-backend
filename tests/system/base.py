@@ -183,7 +183,9 @@ class BaseSystemTestCase(TestCase):
         self.assertEqual(model.get("id"), get_id_from_fqid(fqid))
         return model
 
-    def assert_model_exists(self, fqid: str, fields: Dict[str, Any] = None) -> None:
+    def assert_model_exists(
+        self, fqid: str, fields: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         model = self.get_model(fqid)
         self.assertFalse(model.get("meta_deleted"))
         if fields is not None:
@@ -193,6 +195,7 @@ class BaseSystemTestCase(TestCase):
                     value,
                     f"Models differ in field {field_name}!",
                 )
+        return model
 
     def assert_model_not_exists(self, fqid: str) -> None:
         with self.assertRaises(DatastoreException):

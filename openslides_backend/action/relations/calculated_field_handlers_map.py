@@ -5,6 +5,7 @@ from ...models.fields import Field
 from ...models.models import Group, User
 from .calculated_field_handler import CalculatedFieldHandler
 from .meeting_user_ids_handler import MeetingUserIdsHandler
+from .user_committee_calculate_handler import UserCommitteeCalculateHandler
 from .user_meeting_ids_handler import UserMeetingIdsHandler
 
 # This maps all CalculatedFieldsHandlers to the fields for which they need to get the
@@ -12,6 +13,7 @@ from .user_meeting_ids_handler import UserMeetingIdsHandler
 handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {
     MeetingUserIdsHandler: [Group.user_ids],
     UserMeetingIdsHandler: [User.group__ids],
+    UserCommitteeCalculateHandler: [User.group__ids, User.committee__management_level],
 }
 calculated_field_handlers_map: Dict[
     Field, List[Type[CalculatedFieldHandler]]

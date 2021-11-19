@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
@@ -79,14 +79,18 @@ class UserScopePermissionCheckMixin(Action):
 
         if instance:
             meetings = list(map(int, instance.get("group_$_ids", {}).keys()))
-            committees_manager = set(map(int, instance.get("committee_$_management_level", {}).keys()))
+            committees_manager = set(
+                map(int, instance.get("committee_$_management_level", {}).keys())
+            )
         elif id:
             user = self.datastore.fetch_model(
                 FullQualifiedId(self.model.collection, id),
                 ["meeting_ids", "committee_$_management_level"],
             )
             meetings = user.get("meeting_ids", [])
-            committees_manager = set(map(int, user.get("committee_$_management_level", [])))
+            committees_manager = set(
+                map(int, user.get("committee_$_management_level", []))
+            )
         result = self.datastore.get_many(
             [
                 GetManyRequest(
@@ -111,5 +115,5 @@ class UserScopePermissionCheckMixin(Action):
         if len(meetings_committee) == 1 and len(committees) == 1:
             return UserScope.Meeting, next(iter(meetings_committee))
         elif len(committees) == 1:
-            return UserScope.Committee, committees[0]
+            return UserScope.Committee, cast(int, committees[0])
         return UserScope.Organization, 1
