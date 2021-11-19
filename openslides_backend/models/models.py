@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "091789a766ba18c02b0aabf48755e281"
+MODELS_YML_CHECKSUM = "287f75287602418aa8f7725ec182ece1"
 
 
 class Organization(Model):

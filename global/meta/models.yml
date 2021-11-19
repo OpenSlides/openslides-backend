@@ -2603,7 +2603,11 @@ poll:
   entitled_users_at_stop:
     type: JSON
     restriction_mode: A
-
+  vote_count:
+    type: number
+    calculated: true
+    description: get it from vote-service, anyway not handled by backend
+    restriction_mode: C
   content_object_id: # Note: must not be set - it is allowed to have standalone polls
     type: generic-relation
     to:
