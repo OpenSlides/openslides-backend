@@ -40,7 +40,8 @@ def init_config(app):
         else:
             value = os.environ.get(config, get_default_for(config))
         if not value:
-            continue
+            app.logger.critical(f"Did not find an environment variable for '{config}'")
+            sys.exit(1)
         try:
             value = get_type_for(config)(value)
         except Exception:  # noqa
@@ -50,11 +51,6 @@ def init_config(app):
             )
             sys.exit(1)
         app.config[config] = value
-
-    for config in all_configs:
-        if app.config.get(config) is None:
-            app.logger.critical(f"Did not find an environment variable for '{config}'")
-            sys.exit(1)
 
 
 def get_config_from(app, config):
