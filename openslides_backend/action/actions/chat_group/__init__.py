@@ -1,1 +1,1 @@
-from . import create, delete, sort, update  # noqa
+from . import clear, create, delete, sort, update  # noqa
