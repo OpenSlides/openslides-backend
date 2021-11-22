@@ -1,4 +1,4 @@
-version: "3"
+version: "3.4"
 services:
     media-postgresql:
         image: postgres:11
@@ -20,6 +20,9 @@ services:
             - ./src:/app/src
         ports:
             - 9006:9006
+        secrets:
+            - media_database_user
+            - media_database_password
     dummy_presenter:
         image: openslides-media-dummy-presenter
         volumes:
@@ -32,3 +35,8 @@ services:
             - dummy_presenter
         volumes:
             - ./tests:/app/tests
+secrets:
+    media_database_user:
+        file: ./secrets/media_database_user
+    media_database_password:
+        file: ./secrets/media_database_password
