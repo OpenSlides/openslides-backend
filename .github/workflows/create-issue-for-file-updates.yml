@@ -1,0 +1,54 @@
+---
+name: Create issues if global files change
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'global/meta/models.yml'
+      - 'global/meta/permission.yml'
+      - 'global/data/initial-data.json'
+
+jobs:
+  announce-update:
+    name: 'Announce updates'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v11.7
+
+      - name: Create Issue if models.yml was changed
+        if: contains(steps.changed-files.outputs.modified_files, 'global/meta/models.yml')
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OS_ISSUE_TITLE: The `models.yml` got updated
+          OS_FILE_NAME: models.yml
+        with:
+          filename: .github/workflows/announce-file-changes-template.md
+
+      - name: Create Issue if permission.yml was changed
+        if: contains(steps.changed-files.outputs.modified_files, 'global/meta/permission.yml')
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OS_ISSUE_TITLE: The `permission.yml` got updated
+          OS_FILE_NAME: permission.yml
+        with:
+          filename: .github/workflows/announce-file-changes-template.md
+
+      - name: Create Issue if initial-data.json was changed
+        if: contains(steps.changed-files.outputs.modified_files, 'global/data/initial-data.json')
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OS_ISSUE_TITLE: The `initial-data.json` got updated
+          OS_FILE_NAME: initial-data.json
+        with:
+          filename: .github/workflows/announce-file-changes-template.md
