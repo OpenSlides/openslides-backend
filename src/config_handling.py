@@ -69,5 +69,5 @@ def get_config_from(app, config):
         with open(path) as file_:
             value = file_.read()
     else:
-        value = os.environ.get(config, None)
+        value = os.environ.get(config, get_default_for(config))
     return value
