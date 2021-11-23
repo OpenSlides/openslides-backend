@@ -16,13 +16,11 @@ services:
             - MEDIA_DATABASE_PASSWORD_FILE=/run/secrets/media_database_password
             - PRESENTER_HOST=dummy_presenter
             - PRESENTER_PORT=9003
+            - MEDIA_ENABLE_DEV_ENVIRONMENT=1
         volumes:
             - ./src:/app/src
         ports:
             - 9006:9006
-        secrets:
-            - media_database_user
-            - media_database_password
     dummy_presenter:
         image: openslides-media-dummy-presenter
         volumes:
@@ -35,8 +33,3 @@ services:
             - dummy_presenter
         volumes:
             - ./tests:/app/tests
-secrets:
-    media_database_user:
-        file: ./secrets/media_database_user
-    media_database_password:
-        file: ./secrets/media_database_password

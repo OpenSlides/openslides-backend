@@ -1,6 +1,9 @@
 import os
 import sys
 
+MEDIA_DEV_MODE_ENVIRONMENT_VAR = "MEDIA_ENABLE_DEV_ENVIRONMENT"
+DEV_SECRET = "openslides"
+
 
 def get_type_for(config_value):
     if config_value in (
@@ -36,7 +39,7 @@ def init_config(app):
 
     for config in all_configs:
         if config in file_configs:
-            value = get_config_from(app, config + "_FILE")
+            value = get_config_from(app, config)
         else:
             value = os.environ.get(config, get_default_for(config))
         if not value:
@@ -53,14 +56,18 @@ def init_config(app):
         app.config[config] = value
 
 
+def is_dev_mode() -> bool:
+    value = os.environ.get(MEDIA_DEV_MODE_ENVIRONMENT_VAR, None)
+    return value is not None and value.lower() in ("1", "on", "yes", "true")
+
+
 def get_config_from(app, config):
-    path = os.environ.get(config)
-    if not path:
-        app.logger.critical(f"Did not find environment variable for '{config}'")
-        sys.exit(1)
-    try:
+    path = os.environ.get(config + "_FILE", None)
+    if is_dev_mode():
+        value = DEV_SECRET
+    elif path is not None:
         with open(path) as file_:
-            return file_.read()
-    except Exception:  # noqa
-        app.logger.critical(f"Reading path '{path}' from config '{config}' went wrong.")
-        sys.exit(1)
+            value = file_.read()
+    else:
+        value = os.environ.get(config, None)
+    return value
