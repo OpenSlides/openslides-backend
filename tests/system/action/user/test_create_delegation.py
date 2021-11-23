@@ -9,9 +9,11 @@ class UserCreateDelegationActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
+                "committee/1": {"meeting_ids": [222]},
                 "meeting/222": {
                     "name": "Meeting222",
                     "is_active_in_organization_id": 1,
+                    "committee_id": 1,
                 },
                 "group/1": {"meeting_id": 222, "user_ids": [2, 3]},
                 "user/1": {"meeting_ids": [222]},

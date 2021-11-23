@@ -32,7 +32,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "description",
             "template_meeting_id",
             "default_meeting_id",
-            "user_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
             "organization_tag_ids",
@@ -51,13 +50,9 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 instance["default_meeting_id"], instance["id"]
             )
 
-        if "manager_ids" in instance or "user_ids" in instance:
+        if "manager_ids" in instance:
             old_manager_ids = self._get_old_manager_ids(instance["id"])
-            if "user_ids" in instance:
-                old_user_ids = self._get_old_user_ids(instance["id"])
-            else:
-                old_user_ids = set()
-            self.update_managers(instance, old_manager_ids, old_user_ids)
+            self.update_managers(instance, old_manager_ids)
         return instance
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
@@ -81,7 +76,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             [
                 field in instance
                 for field in [
-                    "user_ids",
                     "forward_to_committee_ids",
                     "receive_forwardings_from_committee_ids",
                     "manager_ids",
@@ -113,10 +107,3 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         )
         old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
         return set(id_ for id_ in old_manager)
-
-    def _get_old_user_ids(self, committee_id: int) -> Set[int]:
-        committee = self.datastore.get(
-            FullQualifiedId(Collection("committee"), committee_id),
-            mapped_fields=["user_ids"],
-        )
-        return set(committee.get("user_ids", ()))

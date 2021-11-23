@@ -42,7 +42,6 @@ class UserCreate(
             "default_vote_weight",
             "organization_management_level",
             "is_present_in_meeting_ids",
-            "committee_ids",
             "committee_$_management_level",
             "group_$_ids",
             "vote_delegations_$_from_ids",
@@ -65,14 +64,6 @@ class UserCreate(
             or instance.get("last_name")
         ):
             raise ActionException("Need username or first_name or last_name")
-
-        if instance.get("committee_$_management_level"):
-            if diff := set(
-                map(int, instance.get("committee_$_management_level", {}).keys())
-            ) - set(instance.get("committee_ids", [])):
-                instance["committee_ids"] = instance.get("committee_ids", []) + list(
-                    diff
-                )
 
         if not instance.get("username"):
             instance["username"] = self.generate_username(instance)

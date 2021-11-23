@@ -677,12 +677,12 @@ class Checker:
     ) -> None:
         if collection != "mediafile":
             return
-        if model["is_directory"] and not model["parent_id"]:
+        if model["is_directory"] and not model.get("parent_id"):
             return
         access_group_ids = model["access_group_ids"]
         parent_is_public = None
         parent_inherited_access_group_ids = None
-        if model["parent_id"]:
+        if model.get("parent_id"):
             parent = self.find_model(collection, model["parent_id"])
             if parent:
                 parent_is_public = parent.get("is_public")

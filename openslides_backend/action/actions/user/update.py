@@ -37,7 +37,6 @@ class UserUpdate(
             "default_structure_level",
             "default_vote_weight",
             "organization_management_level",
-            "committee_ids",
             "committee_$_management_level",
             "number_$",
             "structure_level_$",
@@ -55,41 +54,10 @@ class UserUpdate(
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), instance["id"]),
             mapped_fields=[
-                "committee_ids",
-                "committee_$_management_level",
                 "is_active",
             ],
         )
 
         if instance.get("is_active") and not user.get("is_active"):
             self.check_limit_of_user(1)
-
-        if (
-            "committee_$_management_level" not in instance
-            and "committee_ids" not in instance
-        ):
-            return super().update_instance(instance)
-
-        old_committee_ids = set(user.get("committee_ids", ()))
-        old_manager_ids = set(map(int, user.get("committee_$_management_level", ())))
-        inst_new_manager_ids = {
-            int(pair[0])
-            for pair in instance.get("committee_$_management_level", {}).items()
-            if pair[1]
-        }
-        if "committee_ids" in instance:
-            inst_committee_ids = set(instance.get("committee_ids", ()))
-            instance["committee_ids"] = list(inst_committee_ids | inst_new_manager_ids)
-        else:
-            instance["committee_ids"] = list(old_committee_ids | inst_new_manager_ids)
-        if cml_to_remove := (
-            old_committee_ids - set(instance["committee_ids"]) & old_manager_ids
-        ):
-            cml_to_remove_dict = {
-                str(committee_id): None for committee_id in cml_to_remove
-            }
-            instance.setdefault("committee_$_management_level", {}).update(
-                cml_to_remove_dict
-            )
-
         return super().update_instance(instance)
