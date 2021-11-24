@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a85f103f16741a68e416f64cbfb8e1a2"
+MODELS_YML_CHECKSUM = "ac781a8b77a7009b27e474ccdd859188"
 
 
 class Organization(Model):
@@ -1293,7 +1293,6 @@ class MotionState(Model):
     allow_support = fields.BooleanField(default=False)
     allow_create_poll = fields.BooleanField(default=False)
     allow_submitter_edit = fields.BooleanField(default=False)
-    dont_set_identifier = fields.BooleanField(default=False)
     set_number = fields.BooleanField(default=True)
     show_state_extension_field = fields.BooleanField(default=False)
     merge_amendment_into_final = fields.CharField(
