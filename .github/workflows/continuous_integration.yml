@@ -33,10 +33,10 @@ jobs:
       run: docker-compose exec -T backend ./wait.sh backend 9002
 
     - name: Fire a test request to actions component
-      run: curl localhost:9002/internal/action/health
+      run: curl localhost:9002/internal/health
 
     - name: Fire a test request to presenter component
-      run: curl localhost:9003/internal/action/health
+      run: curl localhost:9003/internal/health
 
   build-and-test-dev-image:
     name: Build and test development docker image with Docker Compose
