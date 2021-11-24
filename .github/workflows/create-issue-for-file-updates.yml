@@ -13,6 +13,7 @@ jobs:
   announce-update:
     name: 'Announce updates'
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'OpenSlides'
     steps:
       - name: Check out code
         uses: actions/checkout@v2
