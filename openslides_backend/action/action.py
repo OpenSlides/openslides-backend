@@ -125,7 +125,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Entrypoint to perform the action.
         """
-        # breakpoint()
         self.user_id = user_id
         self.index = 0
         for instance in action_data:
