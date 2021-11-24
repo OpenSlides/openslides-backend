@@ -25,6 +25,9 @@ services:
             - "9010:9010"
         depends_on:
             - postgresql
+        secrets:
+            - datastore_postgres_user
+            - datastore_postgres_password
     writer:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git"
@@ -37,6 +40,9 @@ services:
         depends_on:
             - postgresql
             - redis
+        secrets:
+            - datastore_postgres_user
+            - datastore_postgres_password
     postgresql:
         image: postgres:11
         environment:
@@ -45,3 +51,8 @@ services:
             - POSTGRES_DB=openslides
     redis:
         image: redis:alpine
+secrets:    
+    datastore_postgres_user:
+        file: ./secrets/datastore_postgres_user
+    datastore_postgres_password:
+        file: ./secrets/datastore_postgres_password

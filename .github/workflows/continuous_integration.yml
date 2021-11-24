@@ -11,15 +11,23 @@ jobs:
   build-production-image:
     name: Build and test production docker image
     runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: .github/startup_test
+
     steps:
     - uses: actions/checkout@v2
 
+    - name: Create secrets for datastore
+      run: |
+        mkdir secrets
+        echo "openslides" >> secrets/datastore_postgres_user
+        echo "openslides" >> secrets/datastore_postgres_password
+
     - name: Run docker production image
-      working-directory: .github/startup_test
       run: docker-compose up -d
 
     - name: Wait for action service
-      working-directory: .github/startup_test
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
       run: docker-compose exec -T backend ./wait.sh backend 9002
