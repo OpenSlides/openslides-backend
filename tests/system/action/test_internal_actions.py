@@ -43,3 +43,10 @@ class TestInternalActions(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
         assert self.auth.is_equals("new_password", model["password"])
+
+    def test_internal_organization_initial_import(self) -> None:
+        self.datastore.truncate_db()
+        response = self.internal_request("organization.initial_import", {})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("organization/1")
+        self.assert_model_exists("user/1", {"username": "superadmin"})
