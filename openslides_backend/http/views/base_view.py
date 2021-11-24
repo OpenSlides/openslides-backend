@@ -1,15 +1,14 @@
 import inspect
 import re
-from typing import Any, Callable, Dict, Optional, Pattern, Tuple
+from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
-from werkzeug.exceptions import NotFound
 
 from ...shared.exceptions import View400Exception
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
 from ...shared.interfaces.wsgi import Headers, ResponseBody, View
-from ..http_exceptions import MethodNotAllowed
+from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
 
 ROUTE_OPTIONS_ATTR = "__route_options"
@@ -18,20 +17,27 @@ RouteFunction = Callable[[Any, Request], Tuple[ResponseBody, Optional[str]]]
 
 
 def route(
-    name: str, internal: bool = False, method: str = "POST", json: bool = True
+    name: Union[str, List[str]],
+    internal: bool = False,
+    method: str = "POST",
+    json: bool = True,
 ) -> Callable[[RouteFunction], RouteFunction]:
-    # extract the callers name to deduce the path's prefix
-    frame = inspect.currentframe()
-    assert frame and frame.f_back
-    caller = inspect.getframeinfo(frame.f_back)[2]
-    prefix = caller.replace("View", "").lower()
-
-    def wrapper(func: RouteFunction) -> RouteFunction:
-        path = prefix + "/" + name.strip("/")
+    route_options_list = []
+    if isinstance(name, str):
+        name = [name]
+    for _name in name:
+        route_parts: List[str] = [""]
         if internal:
-            path = "/internal/" + path
+            route_parts.append("internal")
         else:
-            path = "/system/" + path
+            # extract the callers name to deduce the path's prefix
+            frame = inspect.currentframe()
+            assert frame and frame.f_back
+            caller = inspect.getframeinfo(frame.f_back)[2]
+            prefix = caller.replace("View", "").lower()
+            route_parts.extend(["system", prefix])
+        route_parts.append(_name.strip("/"))
+        path = "/".join(route_parts)
         regex = re.compile("^" + path + "/?$")
         route_options = {
             "raw_path": path,
@@ -39,7 +45,10 @@ def route(
             "method": method,
             "json": json,
         }
-        setattr(func, ROUTE_OPTIONS_ATTR, route_options)
+        route_options_list.append(route_options)
+
+    def wrapper(func: RouteFunction) -> RouteFunction:
+        setattr(func, ROUTE_OPTIONS_ATTR, route_options_list)
         return func
 
     return wrapper
@@ -79,24 +88,25 @@ class BaseView(View):
             and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
         for _, func in functions:
-            route_options = getattr(func, ROUTE_OPTIONS_ATTR)
-            if route_options["path"].match(request.environ["RAW_URI"]):
-                # Check request method
-                if request.method != route_options["method"]:
-                    raise MethodNotAllowed(valid_methods=[route_options["method"]])
-                self.logger.debug(f"Request method is {request.method}.")
+            route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
+            for route_options in route_options_list:
+                if route_options["path"].match(request.environ["RAW_URI"]):
+                    # Check request method
+                    if request.method != route_options["method"]:
+                        raise MethodNotAllowed(valid_methods=[route_options["method"]])
+                    self.logger.debug(f"Request method is {request.method}.")
 
-                if route_options["json"]:
-                    # Check mimetype and parse JSON body. The result is cached in request.json
-                    if not request.is_json:
-                        raise View400Exception(
-                            "Wrong media type. Use 'Content-Type: application/json' instead."
-                        )
-                    try:
-                        request_body = request.get_json()
-                    except WerkzeugBadRequest as exception:
-                        raise View400Exception(exception.description)
-                    self.logger.debug(f"Request contains JSON: {request_body}.")
+                    if route_options["json"]:
+                        # Check mimetype and parse JSON body. The result is cached in request.json
+                        if not request.is_json:
+                            raise View400Exception(
+                                "Wrong media type. Use 'Content-Type: application/json' instead."
+                            )
+                        try:
+                            request_body = request.get_json()
+                        except WerkzeugBadRequest as exception:
+                            raise View400Exception(exception.description)
+                        self.logger.debug(f"Request contains JSON: {request_body}.")
 
-                return func(request)
+                    return func(request)
         raise NotFound()
