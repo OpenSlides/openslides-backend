@@ -769,6 +769,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.set_committee_management_level([60], self.user_id)
         self.set_models(
             {
+                "committee/60": {"meeting_ids": [1, 4]},
                 "meeting/4": {"committee_id": 60},
                 "user/111": {"group_$_ids": ["1"], "group_$1_ids": [1]},
             }
@@ -810,22 +811,26 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         self.assertIn(
-            "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!",
+            "The user needs OrganizationManagementLevel.can_manage_users or CommitteeManagementLevel.can_manage for committees of following meetings or Permission user.can_manage for meetings {4}",
             response.json["message"],
         )
 
-    def test_perm_group_C_special_3_no_permission(self) -> None:
+    def test_perm_group_C_special_3_both_permissions(self) -> None:
         """group C group_$_ids adding meeting in same committee
-        with meeting permission for both. Error 403, because touching
-        2 meetings requires Committee permission
+        with meeting permission for both, which is allowed.
         """
         self.permission_setup()
         self.create_meeting(base=4)
         self.set_user_groups(self.user_id, [2, 5])  # Admin groups meeting/1 and 4
         self.set_models(
             {
+                "committee/60": {"meeting_ids": [1, 4]},
                 "meeting/4": {"committee_id": 60},
-                "user/111": {"group_$_ids": ["1"], "group_$1_ids": [1]},
+                "user/111": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
             }
         )
 
@@ -836,11 +841,13 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "group_$_ids": {1: [2], 4: [5]},
             },
         )
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "You need CommitteeManagementLevel.can_manage permission for committee 60, because you try to add or remove meetings in Committee-scope!",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        user = self.assert_model_exists(
+            "user/111",
+            {"group_$1_ids": [2], "group_$4_ids": [5]},
         )
+        self.assertCountEqual(user["group_$_ids"], ["1", "4"])
+        self.assertCountEqual(user["meeting_ids"], [1, 4])
 
     def test_perm_group_D_permission_with_OML(self) -> None:
         """May update Group D committee fields with OML level permission"""

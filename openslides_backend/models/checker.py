@@ -683,7 +683,7 @@ class Checker:
         parent_is_public = None
         parent_inherited_access_group_ids = None
         if model.get("parent_id"):
-            parent = self.find_model(collection, model["parent_id"])
+            parent = self.find_model(collection, model.get("parent_id", 0))
             if parent:
                 parent_is_public = parent.get("is_public")
                 parent_inherited_access_group_ids = parent.get(

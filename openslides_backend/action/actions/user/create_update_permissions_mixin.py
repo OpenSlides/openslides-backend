@@ -268,59 +268,6 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             touch_meeting_ids: Set[int] = set(
                 map(int, instance.get("group_$_ids", dict()).keys())
             )
-            remove_meeting_ids: Set[int] = set(
-                map(
-                    lambda item: int(item[0]),
-                    filter(
-                        lambda item: not item[1],
-                        instance.get("group_$_ids", dict()).items(),
-                    ),
-                )
-            )
-            old_meeting_ids: Set[int] = set()
-            if instance_user_id := instance.get("id"):
-                old_meeting_ids = set(
-                    map(
-                        int,
-                        self.datastore.get(
-                            FullQualifiedId(Collection("user"), instance_user_id),
-                            ["group_$_ids"],
-                        ).get("group_$_ids", []),
-                    )
-                )
-
-            # Check scope on removing/adding meetings
-            if remove_meeting_ids or touch_meeting_ids - old_meeting_ids:
-                all_meeting_ids = touch_meeting_ids | old_meeting_ids
-                if len(all_meeting_ids) > 1:
-                    committee_ids = list(
-                        set(
-                            map(
-                                lambda x: x.get("committee_id"),
-                                self.datastore.get_many(
-                                    [
-                                        GetManyRequest(
-                                            Collection("meeting"),
-                                            list(all_meeting_ids),
-                                            ["committee_id"],
-                                        )
-                                    ]
-                                )
-                                .get(Collection("meeting"), {})
-                                .values(),
-                            )
-                        )
-                    )
-                    if len(committee_ids) > 1:
-                        raise PermissionDenied(
-                            "You need OrganizationManagementLevel.can_manage_users, because you try to add or remove meetings in Organization-scope!"
-                        )
-                    if committee_ids[0] not in permstore.user_committees:
-                        raise PermissionDenied(
-                            f"You need CommitteeManagementLevel.can_manage permission for committee {committee_ids[0]}, because you try to add or remove meetings in Committee-scope!"
-                        )
-                    return
-
             # Check permission for each change operation/meeting
             if diff := touch_meeting_ids - permstore.user_committees_meetings:
                 if diff := diff - permstore.user_meetings:
