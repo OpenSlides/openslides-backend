@@ -2,6 +2,8 @@ from time import time
 from typing import Any, Dict
 
 from ....models.models import ChatMessage
+from ....permissions.permission_helper import has_perm
+from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
 from ...mixins.create_action_with_inferred_meeting import (
@@ -41,5 +43,10 @@ class ChatMessageCreate(CreateActionWithInferredMeeting):
             [f"group_${meeting_id}_ids"],
         )
         user_group_set = set(user.get(f"group_${meeting_id}_ids", []))
-        if not (write_group_set & user_group_set):
+        if not (
+            (write_group_set & user_group_set)
+            or has_perm(
+                self.datastore, self.user_id, Permissions.Chat.CAN_MANAGE, meeting_id
+            )
+        ):
             raise PermissionDenied("You are not allowed to write in this chat group.")
