@@ -1293,7 +1293,6 @@ class MotionState(Model):
     allow_support = fields.BooleanField(default=False)
     allow_create_poll = fields.BooleanField(default=False)
     allow_submitter_edit = fields.BooleanField(default=False)
-    dont_set_identifier = fields.BooleanField(default=False)
     set_number = fields.BooleanField(default=True)
     show_state_extension_field = fields.BooleanField(default=False)
     merge_amendment_into_final = fields.CharField(

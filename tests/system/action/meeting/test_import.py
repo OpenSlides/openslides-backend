@@ -251,7 +251,6 @@ class MeetingImport(BaseActionTestCase):
                         "allow_support": True,
                         "allow_create_poll": True,
                         "allow_submitter_edit": True,
-                        "dont_set_identifier": False,
                         "set_number": True,
                         "show_state_extension_field": False,
                         "merge_amendment_into_final": "undefined",
