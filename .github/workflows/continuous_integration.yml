@@ -20,13 +20,15 @@ jobs:
 
     - name: Wait for action service
       working-directory: .github/startup_test
+      # we have to execute this inside the container since the port to the outside is opened directly after the
+      # container started, while the code itself is not ready yet
       run: docker-compose exec -T backend ./wait.sh backend 9002
 
     - name: Fire a test request to actions component
-      run: curl -I localhost:9002/health
+      run: curl localhost:9002/internal/action/health
 
     - name: Fire a test request to presenter component
-      run: curl -I localhost:9003/health
+      run: curl localhost:9003/internal/action/health
 
   build-and-test-dev-image:
     name: Build and test development docker image with Docker Compose
