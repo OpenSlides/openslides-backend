@@ -40,6 +40,17 @@ class ActionView(BaseView):
         self.logger.debug("Action request finished successfully.")
         return response, access_token
 
+    @route("handle_request", internal=True)
+    def internal_action_route(
+        self, request: Request
+    ) -> Tuple[ResponseBody, Optional[str]]:
+        self.logger.debug("Start dispatching internal action request.")
+        assert_migration_index()
+        handler = ActionHandler(logging=self.logging, services=self.services)
+        response = handler.handle_request(request.json, -1, internal=True)
+        self.logger.debug("Internal action request finished successfully.")
+        return response, None
+
     @route("migrations", internal=True)
     def migrations_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         self.logger.debug("Start executing migrations request.")

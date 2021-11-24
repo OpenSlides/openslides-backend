@@ -88,13 +88,18 @@ class ActionHandler(BaseHandler):
             yield name, info
 
     def handle_request(
-        self, payload: Payload, user_id: int, atomic: bool = True
+        self,
+        payload: Payload,
+        user_id: int,
+        atomic: bool = True,
+        internal: bool = False,
     ) -> ActionsResponse:
         """
         Takes payload and user id and handles this request by validating and
         parsing all actions. In the end it sends everything to the event store.
         """
         self.user_id = user_id
+        self.internal = internal
 
         try:
             payload_schema(payload)
@@ -212,7 +217,9 @@ class ActionHandler(BaseHandler):
 
         try:
             with self.datastore.get_database_context():
-                write_request, results = action.perform(action_data, self.user_id)
+                write_request, results = action.perform(
+                    action_data, self.user_id, internal=self.internal
+                )
             if write_request:
                 action.validate_required_fields(write_request)
 

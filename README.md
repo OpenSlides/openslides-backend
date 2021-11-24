@@ -143,6 +143,8 @@ General schema for internal routes: `/internal/<route>`
 * `/system/action/handle_request`: Main route of the service, is used to execute actions.
 * `/system/action/handle_separately`: Same function as `handle_request`, but the request is not executed atomically,
   meaning each action is executed and the result sent to the datastore separately.
+* `/internal/handle_request`: Same as the first route, but only for internal usage: All permission checks are skipped
+  and created write requests will have id -1.
 * `/internal/health`: Returns a list of all possible actions with their respective JSON schema.
 * `/internal/migrations`: Provides remote access to the migration tool.
 
