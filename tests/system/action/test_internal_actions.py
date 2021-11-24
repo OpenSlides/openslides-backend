@@ -46,7 +46,7 @@ class TestInternalActions(BaseActionTestCase):
 
     def test_internal_organization_initial_import(self) -> None:
         self.datastore.truncate_db()
-        response = self.internal_request("organization.initial_import", {})
+        response = self.internal_request("organization.initial_import", {"data": {}})
         self.assert_status_code(response, 200)
         self.assert_model_exists("organization/1")
         self.assert_model_exists("user/1", {"username": "superadmin"})
