@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Union
 
 import fastjsonschema
 
@@ -13,7 +13,7 @@ from ..permissions.permission_helper import (
     has_perm,
 )
 from ..permissions.permissions import Permissions
-from ..shared.exceptions import MissingPermission, PresenterException
+from ..shared.exceptions import MissingPermission
 from ..shared.filters import FilterOperator, Or
 from ..shared.patterns import Collection, FullQualifiedId
 from ..shared.schema import schema_version
@@ -27,30 +27,26 @@ search_users_by_name_email_schema = fastjsonschema.compile(
         "title": "search_users_by_name_email",
         "description": "get lists of id, first-, last-name and email for tuples of exact (username, emails)-tuples.",
         "properties": {
-            "permission_scope": {
-                "type": "array",
-                "prefixItems": [
-                    {
-                        "enum": [1, 2, 3]
-                    },  # Permission scopes Meeting, Committee, Organization
-                    {"type": "number"},  # Id of object, 1 for organization
-                ],
+            "permission_type": {
+                "type": "integer",
+                "enum": [1, 2, 3],
+            },  # 1=meeting, 2=committee, 3=organization
+            "permission_id": {
+                "type": "integer",
             },
             "search": {
                 "type": "array",
                 "minItems": 1,
                 "items": {
-                    "type": "array",
-                    "minItems": 2,
-                    "maxItems": 2,
-                    "prefixItems": [
-                        {"type": "string"},  # username
-                        {"type": "string"},  # email-adress
-                    ],
+                    "type": "object",
+                    "properties": {
+                        "username": {"type": "string"},
+                        "email": {"type": "string"},
+                    },
                 },
             },
         },
-        "required": ["permission_scope"],
+        "required": ["permission_type", "permission_id", "search"],
         "additionalProperties": False,
     }
 )
@@ -65,72 +61,60 @@ class SearchUsersByNameEmail(BasePresenter):
     schema = search_users_by_name_email_schema
 
     def get_result(self) -> Any:
-        self.check_permissions(self.data["permission_scope"])
-        result: Dict[str, List[Tuple[int, str, str, str]]] = {}
+        self.check_permissions(self.data["permission_type"], self.data["permission_id"])
+        result: Dict[str, List[Dict[str, Union[str, int]]]] = {}
         for search in self.data["search"]:
-            if search[0] and search[1]:
+            username = search.get("username", "")
+            email = search.get("email", "")
+            if username and email:
                 filter_ = Or(
-                    FilterOperator("username", "=", search[0]),
-                    FilterOperator("email", "=", search[1]),
+                    FilterOperator("username", "=", username),
+                    FilterOperator("email", "=", email),
                 )
-            elif search[0]:
-                filter_ = FilterOperator("username", "=", search[0])
-            elif search[1]:
-                filter_ = FilterOperator("email", "=", search[1])
+            elif username:
+                filter_ = FilterOperator("username", "=", username)
+            elif email:
+                filter_ = FilterOperator("email", "=", email)
             else:
                 continue
             instances = self.datastore.filter(
                 Collection("user"), filter_, ["id", "first_name", "last_name", "email"]
             )
 
-            result[f"{search[0]}/{search[1]}"] = [
-                (
-                    instance["id"],
-                    instance.get("first_name", ""),
-                    instance.get("last_name", ""),
-                    instance.get("email", ""),
-                )
-                for instance in instances.values()
+            result[f"{username}/{email}"] = [
+                instance for instance in instances.values()
             ]
         return result
 
-    def check_permissions(self, permission_scope: Tuple[int, int]) -> None:
-        if (
-            permission_scope[0] < UserScope.Meeting.value
-            or permission_scope[0] > UserScope.Organization.value
-            or permission_scope[1] < 1
-        ):
-            raise PresenterException(
-                f"There is no valid PermissionScope given with {permission_scope[0]}/{permission_scope[1]}"
-            )
+    def check_permissions(self, permission_type: int, permission_id: int) -> None:
         if has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
-        if permission_scope[0] == UserScope.Organization.value:
+        if permission_type == UserScope.Organization.value:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
-        if permission_scope[0] == UserScope.Committee.value:
+        if permission_type == UserScope.Committee.value:
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
                 CommitteeManagementLevel.CAN_MANAGE,
-                permission_scope[1],
+                permission_id,
             ):
                 return
             else:
                 raise MissingPermission(
-                    {CommitteeManagementLevel.CAN_MANAGE: permission_scope[1]}
+                    {CommitteeManagementLevel.CAN_MANAGE: permission_id}
                 )
         if has_perm(
             self.datastore,
             self.user_id,
             Permissions.User.CAN_MANAGE,
-            permission_scope[1],
+            permission_id,
         ):
             return
         else:
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), permission_scope[1]),
+                FullQualifiedId(Collection("meeting"), permission_id),
                 ["committee_id"],
             )
             if has_committee_management_level(
@@ -140,4 +124,4 @@ class SearchUsersByNameEmail(BasePresenter):
                 meeting.get("committee_id", 0),
             ):
                 return
-            raise MissingPermission({Permissions.User.CAN_MANAGE: permission_scope[1]})
+            raise MissingPermission({Permissions.User.CAN_MANAGE: permission_id})

@@ -40,29 +40,72 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, data = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [1, 1],
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
-                    ["", "userX@test.de"],
-                    ["user2", "userX@test.de"],
+                    {
+                        "username": "user2",
+                    },
+                    {
+                        "email": "userX@test.de",
+                    },
+                    {
+                        "username": "user2",
+                        "email": "userX@test.de",
+                    },
                 ],
             },
         )
         self.assertEqual(status_code, 200)
-        self.assertCountEqual(data["user2/"], [[2, "first2", "last2", "user2@test.de"]])
+        self.assertCountEqual(
+            data["user2/"],
+            [
+                {
+                    "id": 2,
+                    "first_name": "first2",
+                    "last_name": "last2",
+                    "email": "user2@test.de",
+                }
+            ],
+        )
         self.assertCountEqual(
             data["/userX@test.de"],
             [
-                [3, "first3", "last3", "userX@test.de"],
-                [4, "first4", "last4", "userX@test.de"],
+                {
+                    "id": 3,
+                    "first_name": "first3",
+                    "last_name": "last3",
+                    "email": "userX@test.de",
+                },
+                {
+                    "id": 4,
+                    "first_name": "first4",
+                    "last_name": "last4",
+                    "email": "userX@test.de",
+                },
             ],
         )
         self.assertCountEqual(
             data["user2/userX@test.de"],
             [
-                [2, "first2", "last2", "user2@test.de"],
-                [3, "first3", "last3", "userX@test.de"],
-                [4, "first4", "last4", "userX@test.de"],
+                {
+                    "id": 2,
+                    "first_name": "first2",
+                    "last_name": "last2",
+                    "email": "user2@test.de",
+                },
+                {
+                    "id": 3,
+                    "first_name": "first3",
+                    "last_name": "last3",
+                    "email": "userX@test.de",
+                },
+                {
+                    "id": 4,
+                    "first_name": "first4",
+                    "last_name": "last4",
+                    "email": "userX@test.de",
+                },
             ],
         )
 
@@ -70,16 +113,15 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, data = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [4, 1],
+                "permission_type": 4,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
         self.assertEqual(status_code, 400)
-        self.assertIn(
-            "There is no valid PermissionScope given with 4/1", data["message"]
-        )
+        self.assertIn("data.permission_type must be one of [1, 2, 3]", data["message"])
 
     def test_permission_organization_ok(self) -> None:
         self.update_model(
@@ -91,9 +133,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, _ = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Organization.value, 1],
+                "permission_type": UserScope.Organization.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
@@ -104,9 +147,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, data = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Organization.value, 1],
+                "permission_type": UserScope.Organization.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
@@ -126,9 +170,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, _ = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Committee.value, 1],
+                "permission_type": UserScope.Committee.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
@@ -139,9 +184,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, data = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Committee.value, 1],
+                "permission_type": UserScope.Committee.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
@@ -173,9 +219,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, _ = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Meeting.value, 1],
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
@@ -191,9 +238,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, data = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Meeting.value, 1],
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
@@ -219,9 +267,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         status_code, _ = self.request(
             "search_users_by_name_email",
             {
-                "permission_scope": [UserScope.Meeting.value, 1],
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
                 "search": [
-                    ["user2", ""],
+                    {"username": "user2"},
                 ],
             },
         )
