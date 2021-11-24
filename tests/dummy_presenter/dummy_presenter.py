@@ -6,7 +6,7 @@ app.logger.info("Started Dummy-Presenter")
 
 
 # for testing
-@app.route("/system/presenter", methods=["POST"])
+@app.route("/system/presenter/handle_request", methods=["POST"])
 def dummy_presenter():
     app.logger.debug(f"dummy_presenter gets: {request.json}")
     if request.json[0]["presenter"] == "check_mediafile_id":
