@@ -35,7 +35,7 @@ class ChatGroupClear(BaseActionTestCase):
         self.base_permission_test(
             self.test_models,
             "chat_group.clear",
-            {"chat_group_id": 11},
+            {"id": 11},
             Permissions.Chat.CAN_MANAGE,
         )
         self.assert_model_deleted("chat_message/111")
@@ -44,6 +44,4 @@ class ChatGroupClear(BaseActionTestCase):
         self.assert_model_exists("chat_group/11", {"chat_message_ids": []})
 
     def test_clear_no_permission(self) -> None:
-        self.base_permission_test(
-            self.test_models, "chat_group.clear", {"chat_group_id": 11}
-        )
+        self.base_permission_test(self.test_models, "chat_group.clear", {"id": 11})
