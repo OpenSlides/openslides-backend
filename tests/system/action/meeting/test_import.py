@@ -764,7 +764,6 @@ class MeetingImport(BaseActionTestCase):
                     "1": self.get_mediafile_data(
                         1,
                         {
-                            "is_public": False,
                             "access_group_ids": None,
                             "inherited_access_group_ids": None,
                         },
