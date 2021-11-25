@@ -236,7 +236,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
-                "committee/1": {"user_ids": [1, 2, 3], "organization_id": 1},
+                "committee/1": {"organization_id": 1},
                 "user/2": {},
                 "user/3": {},
             }
@@ -253,37 +253,19 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         default_group_id = meeting.get("default_group_id")
-        self.assert_model_exists("user/2", {"group_$1_ids": [default_group_id]})
-        self.assert_model_exists("user/3", {"group_$1_ids": [default_group_id]})
+        self.assert_model_exists(
+            "user/2", {"group_$1_ids": [default_group_id], "committee_ids": [1]}
+        )
+        self.assert_model_exists(
+            "user/3", {"group_$1_ids": [default_group_id], "committee_ids": [1]}
+        )
         admin_group_id = meeting.get("admin_group_id")
-        self.assert_model_exists("user/1", {"group_$1_ids": [admin_group_id]})
-        assert meeting.get("user_ids") == [1, 2, 3]
-
-    def test_create_users_not_committee_user(self) -> None:
-        self.set_models(
-            {
-                "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
-                "committee/1": {
-                    "name": "test_committee",
-                    "user_ids": [2],
-                    "organization_id": 1,
-                },
-                "group/1": {},
-                "user/2": {},
-                "user/3": {},
-            }
+        self.assert_model_exists(
+            "user/1", {"group_$1_ids": [admin_group_id], "committee_ids": [1]}
         )
-
-        response = self.request(
-            "meeting.create",
-            {
-                "name": "test_name",
-                "committee_id": 1,
-                "user_ids": [3],
-            },
-        )
-        self.assert_status_code(response, 400)
-        assert "Only allowed to add users from committee." in response.json["message"]
+        self.assertCountEqual(meeting.get("user_ids"), [1, 2, 3])
+        committee = self.get_model("committee/1")
+        self.assertCountEqual(committee.get("user_ids"), [1, 2, 3])
 
     def test_create_with_admins_empty_array(self) -> None:
         meeting = self.basic_test({"admin_ids": []})

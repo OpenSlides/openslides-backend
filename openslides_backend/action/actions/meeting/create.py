@@ -164,10 +164,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
         # Add user to admin group
         if admin_ids := instance.pop("admin_ids", []):
-            if not all(
-                user_id in committee.get("user_ids", []) for user_id in admin_ids
-            ):
-                raise ActionException("Only allowed to add admins from committee.")
             action_data = [
                 {
                     "id": user_id,
@@ -179,10 +175,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
         # Add users to default group
         if user_ids := instance.pop("user_ids", []):
-            if not all(
-                user_id in committee.get("user_ids", []) for user_id in user_ids
-            ):
-                raise ActionException("Only allowed to add users from committee.")
             action_data = [
                 {
                     "id": user_id,
