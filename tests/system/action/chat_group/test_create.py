@@ -5,7 +5,10 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupCreate(BaseActionTestCase):
     def test_create(self) -> None:
         self.set_models(
-            {"meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1}}
+            {
+                "organization/1": {"enable_chat": True},
+                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+            }
         )
         response = self.request(
             "chat_group.create", {"name": "redekreis1", "meeting_id": 1}
@@ -16,7 +19,12 @@ class ChatGroupCreate(BaseActionTestCase):
         )
 
     def test_create_chat_not_enabled(self) -> None:
-        self.set_models({"meeting/1": {"is_active_in_organization_id": 1}})
+        self.set_models(
+            {
+                "organization/1": {"enable_chat": True},
+                "meeting/1": {"is_active_in_organization_id": 1},
+            }
+        )
         response = self.request(
             "chat_group.create", {"name": "redekreis2", "meeting_id": 1}
         )
@@ -26,6 +34,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_optional_fields(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
                 "group/1": {"meeting_id": 1},
                 "group/2": {"meeting_id": 1},
@@ -54,6 +63,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_weight(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/1": {
                     "enable_chat": True,
                     "chat_group_ids": [1],
@@ -75,6 +85,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_group_from_different_meeting(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
                 "meeting/2": {},
                 "group/1": {"meeting_id": 1},
@@ -98,14 +109,20 @@ class ChatGroupCreate(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/1": {"enable_chat": True}},
+            {
+                "organization/1": {"enable_chat": True},
+                "meeting/1": {"enable_chat": True},
+            },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            {"meeting/1": {"enable_chat": True}},
+            {
+                "organization/1": {"enable_chat": True},
+                "meeting/1": {"enable_chat": True},
+            },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
             Permissions.Chat.CAN_MANAGE,
@@ -114,6 +131,7 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_not_unique_name(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
                 "chat_group/21": {"meeting_id": 1, "name": "test"},
             }

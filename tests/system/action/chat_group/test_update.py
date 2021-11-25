@@ -8,6 +8,7 @@ class ChatGroupUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
+            "organization/1": {"enable_chat": True},
             "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
             "chat_group/1": {
                 "meeting_id": 1,
@@ -44,9 +45,17 @@ class ChatGroupUpdate(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Chat is not enabled." in response.json["message"]
 
+    def test_update_not_enabled_in_organization(self) -> None:
+        self.test_models["organization/1"]["enable_chat"] = False
+        self.set_models(self.test_models)
+        response = self.request("chat_group.update", {"id": 1, "name": "test"})
+        self.assert_status_code(response, 400)
+        assert "Chat is not enabled." in response.json["message"]
+
     def test_update_group_from_different_meeting(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
                 "meeting/2": {"is_active_in_organization_id": 1},
                 "chat_group/1": {
@@ -82,6 +91,7 @@ class ChatGroupUpdate(BaseActionTestCase):
     def test_update_not_unique_name(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
                 "chat_group/1": {
                     "meeting_id": 1,

@@ -6,6 +6,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models = {
+            "organization/1": {"enable_chat": True},
             "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
             "chat_group/31": {
                 "meeting_id": 1,
@@ -20,6 +21,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_correct(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "enable_chat": True,
@@ -48,6 +50,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_not_enabled(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "enable_chat": False,
@@ -73,6 +76,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "enable_chat": True,
@@ -94,6 +98,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_additional_chat_groups_in_meeting(self) -> None:
         self.set_models(
             {
+                "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "enable_chat": True,
