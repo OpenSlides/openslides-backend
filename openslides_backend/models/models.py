@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "54f428d85f4a27e303749e2a19d7aa82"
+MODELS_YML_CHECKSUM = "ca46f1500822efbbed3ce26ddb201588"
 
 
 class Organization(Model):
@@ -19,6 +19,7 @@ class Organization(Model):
     login_text = fields.CharField()
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
+    enable_chat = fields.BooleanField()
     limit_of_meetings = fields.IntegerField(
         default=0,
         constraints={

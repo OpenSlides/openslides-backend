@@ -10,6 +10,7 @@
             "login_text": "Welcome to OpenSlides. Please login.",
             "reset_password_verbose_errors": false,
             "enable_electronic_voting": false,
+            "enable_chat": false,
             "limit_of_meetings": 0,
             "limit_of_users": 0,
             "committee_ids": [
