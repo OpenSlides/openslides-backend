@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ....permissions.management_levels import (
@@ -17,10 +17,10 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 
 
-class UserScope(Enum):
-    Meeting = auto()
-    Committee = auto()
-    Organization = auto()
+class UserScope(int, Enum):
+    Meeting = 1
+    Committee = 2
+    Organization = 3
 
 
 class UserScopePermissionCheckMixin(Action):
