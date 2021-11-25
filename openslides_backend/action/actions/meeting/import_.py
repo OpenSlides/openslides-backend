@@ -88,10 +88,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         # save blobs from mediafiles
         self.mediadata = []
         for entry in meeting_json.get("mediafile", {}).values():
-            if "blob" in entry:
-                self.mediadata.append(
-                    (entry.pop("blob"), entry["id"], entry["mimetype"])
-                )
+            # mediafiles have "blob": None
+            if blob := entry.pop("blob", None):
+                self.mediadata.append((blob, entry["id"], entry["mimetype"]))
 
         # check datavalidation
         checker = Checker(data=meeting_json, mode="external")

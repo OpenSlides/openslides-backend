@@ -19,7 +19,7 @@ class MediaServiceAdapter(MediaService):
     def _upload(self, file: str, id: int, mimetype: str, subpath: str) -> None:
         url = self.media_url + subpath + "/"
         payload = {"file": file, "id": id, "mimetype": mimetype}
-        self.logger.debug("Starting upload of file")
+        self.logger.debug(f"Starting upload of mediafile/{id} (mimetype: {mimetype})")
         self._handle_upload(url, payload, description="Upload of file: ")
         self.logger.debug("File successfully uploaded to the media service")
 
@@ -42,8 +42,8 @@ class MediaServiceAdapter(MediaService):
     ) -> None:
         try:
             response = requests.post(url, json=payload)
-        except requests.exceptions.ConnectionError:
-            msg = "Connect to mediaservice failed."
+        except requests.exceptions.ConnectionError as e:
+            msg = f"Connect to mediaservice failed. {e}"
             self.logger.debug(description + msg)
             raise MediaServiceException(msg)
 

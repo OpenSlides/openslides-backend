@@ -206,25 +206,14 @@ class MeetingImport(BaseActionTestCase):
                     ),
                 },
                 "group": {
-                    "1": {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "name": "testgroup",
-                        "user_ids": [1],
-                        "admin_group_for_meeting_id": 1,
-                        "default_group_for_meeting_id": 1,
-                        "permissions": [],
-                        "mediafile_access_group_ids": [],
-                        "mediafile_inherited_access_group_ids": [],
-                        "read_comment_section_ids": [],
-                        "write_comment_section_ids": [],
-                        "read_chat_group_ids": [],
-                        "write_chat_group_ids": [],
-                        "poll_ids": [],
-                        "used_as_motion_poll_default_id": None,
-                        "used_as_assignment_poll_default_id": None,
-                        "used_as_poll_default_id": None,
-                    }
+                    "1": self.get_group_data(
+                        1,
+                        {
+                            "user_ids": [1],
+                            "admin_group_for_meeting_id": 1,
+                            "default_group_for_meeting_id": 1,
+                        },
+                    )
                 },
                 "motion_workflow": {
                     "1": {
@@ -291,9 +280,14 @@ class MeetingImport(BaseActionTestCase):
                         "used_as_default_$_in_meeting_id": [],
                     }
                 },
-                **datapart,
             },
         }
+        for collection, models in datapart.items():
+            if collection not in data["meeting"]:
+                data["meeting"][collection] = models
+            else:
+                data["meeting"][collection].update(models)
+
         needed_collections = (
             "user",
             "meeting",
@@ -379,6 +373,28 @@ class MeetingImport(BaseActionTestCase):
             **data,
         }
 
+    def get_group_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
+        return {
+            "id": obj_id,
+            "meeting_id": 1,
+            "name": "testgroup",
+            "user_ids": [],
+            "admin_group_for_meeting_id": None,
+            "default_group_for_meeting_id": None,
+            "permissions": [],
+            "mediafile_access_group_ids": [],
+            "mediafile_inherited_access_group_ids": [],
+            "read_comment_section_ids": [],
+            "write_comment_section_ids": [],
+            "read_chat_group_ids": [],
+            "write_chat_group_ids": [],
+            "poll_ids": [],
+            "used_as_motion_poll_default_id": None,
+            "used_as_assignment_poll_default_id": None,
+            "used_as_poll_default_id": None,
+            **data,
+        }
+
     def get_motion_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
         return {
             "id": obj_id,
@@ -424,6 +440,34 @@ class MeetingImport(BaseActionTestCase):
             "attachment_ids": [],
             "projection_ids": [],
             "personal_note_ids": [],
+            **data,
+        }
+
+    def get_mediafile_data(
+        self, obj_id: int, data: Dict[str, Any] = {}
+    ) -> Dict[str, Any]:
+        file_content = base64.b64encode(b"testtesttest").decode()
+        return {
+            "id": obj_id,
+            "meeting_id": 1,
+            "blob": file_content,
+            "title": "A.txt",
+            "is_directory": False,
+            "filesize": 3,
+            "filename": "A.txt",
+            "mimetype": "text/plain",
+            "pdf_information": {},
+            "create_timestamp": 1584513771,
+            "is_public": True,
+            "access_group_ids": [],
+            "inherited_access_group_ids": [],
+            "parent_id": None,
+            "child_ids": [],
+            "list_of_speakers_id": None,
+            "projection_ids": [],
+            "attachment_ids": [],
+            "used_as_logo_$_in_meeting_id": [],
+            "used_as_font_$_in_meeting_id": [],
             **data,
         }
 
@@ -703,30 +747,7 @@ class MeetingImport(BaseActionTestCase):
         file_content = base64.b64encode(b"testtesttest").decode()
         request_data = self.create_request_data(
             {
-                "mediafile": {
-                    "1": {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "blob": file_content,
-                        "title": "A.txt",
-                        "is_directory": False,
-                        "filesize": 3,
-                        "filename": "A.txt",
-                        "mimetype": "text/plain",
-                        "pdf_information": {},
-                        "create_timestamp": 1584513771,
-                        "is_public": True,
-                        "access_group_ids": [],
-                        "inherited_access_group_ids": [],
-                        "parent_id": None,
-                        "child_ids": [],
-                        "list_of_speakers_id": None,
-                        "projection_ids": [],
-                        "attachment_ids": [],
-                        "used_as_logo_$_in_meeting_id": [],
-                        "used_as_font_$_in_meeting_id": [],
-                    }
-                },
+                "mediafile": {"1": self.get_mediafile_data(1)},
             }
         )
         request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [1]
@@ -735,6 +756,69 @@ class MeetingImport(BaseActionTestCase):
         mediafile = self.get_model("mediafile/1")
         assert mediafile.get("blob") is None
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
+
+    def test_inherited_access_group_ids_none(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "mediafile": {
+                    "1": self.get_mediafile_data(
+                        1,
+                        {
+                            "is_public": False,
+                            "access_group_ids": None,
+                            "inherited_access_group_ids": None,
+                        },
+                    ),
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+
+    def test_inherited_access_group_ids_wrong_order(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "group": {
+                    "1": self.get_group_data(
+                        1,
+                        {
+                            "user_ids": [1],
+                            "admin_group_for_meeting_id": 1,
+                            "default_group_for_meeting_id": 1,
+                            "mediafile_access_group_ids": [1],
+                            "mediafile_inherited_access_group_ids": [1],
+                        },
+                    ),
+                    "2": self.get_group_data(
+                        2,
+                        {
+                            "mediafile_access_group_ids": [1],
+                            "mediafile_inherited_access_group_ids": [1],
+                        },
+                    ),
+                },
+                "mediafile": {
+                    "1": self.get_mediafile_data(
+                        1,
+                        {
+                            "is_public": False,
+                            "access_group_ids": [1, 2],
+                            "inherited_access_group_ids": [1, 2],
+                        },
+                    ),
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["mediafile_ids"] = [1]
+        request_data["meeting"]["meeting"]["1"]["group_ids"] = [1, 2]
+        # try both orders, both should work
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        # other order
+        request_data["meeting"]["mediafile"]["1"]["inherited_access_group_ids"] = [2, 1]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
 
     def test_meeting_user_ids(self) -> None:
         # Calculated field.
@@ -845,29 +929,13 @@ class MeetingImport(BaseActionTestCase):
         request_data = self.create_request_data(
             {
                 "mediafile": {
-                    "3": {
-                        "id": 3,
-                        "meeting_id": 1,
-                        "used_as_logo_$_in_meeting_id": ["web_header"],
-                        "used_as_logo_$web_header_in_meeting_id": 1,
-                        "title": "A.txt",
-                        "is_directory": False,
-                        "filesize": 3,
-                        "filename": "A.txt",
-                        "mimetype": "text/plain",
-                        "pdf_information": {},
-                        "create_timestamp": 1584513771,
-                        "is_public": True,
-                        "access_group_ids": [],
-                        "inherited_access_group_ids": [],
-                        "parent_id": None,
-                        "child_ids": [],
-                        "list_of_speakers_id": None,
-                        "projection_ids": [],
-                        "attachment_ids": [],
-                        "used_as_font_$_in_meeting_id": [],
-                        "blob": "bla",
-                    }
+                    "3": self.get_mediafile_data(
+                        3,
+                        {
+                            "used_as_logo_$_in_meeting_id": ["web_header"],
+                            "used_as_logo_$web_header_in_meeting_id": 1,
+                        },
+                    )
                 }
             }
         )
@@ -885,50 +953,26 @@ class MeetingImport(BaseActionTestCase):
         request_data = self.create_request_data(
             {
                 "mediafile": {
-                    "1": {
-                        "id": 3,
-                        "meeting_id": 1,
-                        "used_as_logo_$_in_meeting_id": ["web_header"],
-                        "used_as_logo_$web_header_in_meeting_id": 1,
-                        "title": "A.txt",
-                        "is_directory": False,
-                        "filesize": 3,
-                        "filename": "A.txt",
-                        "mimetype": "text/plain",
-                        "pdf_information": {},
-                        "create_timestamp": 1584513771,
-                        "is_public": True,
-                        "access_group_ids": [],
-                        "inherited_access_group_ids": [],
-                        "parent_id": 2,
-                        "child_ids": [],
-                        "list_of_speakers_id": None,
-                        "projection_ids": [],
-                        "attachment_ids": [],
-                        "used_as_font_$_in_meeting_id": [],
-                        "blob": "bla",
-                    },
-                    "2": {
-                        "id": 2,
-                        "meeting_id": 1,
-                        "used_as_logo_$_in_meeting_id": [],
-                        "title": "A.txt",
-                        "is_directory": True,
-                        "filesize": 3,
-                        "filename": "A.txt",
-                        "mimetype": "text/plain",
-                        "pdf_information": {},
-                        "create_timestamp": 1584513771,
-                        "is_public": False,
-                        "access_group_ids": [],
-                        "inherited_access_group_ids": [],
-                        "parent_id": None,
-                        "child_ids": [3],
-                        "list_of_speakers_id": None,
-                        "projection_ids": [],
-                        "attachment_ids": [],
-                        "used_as_font_$_in_meeting_id": [],
-                    },
+                    "3": self.get_mediafile_data(
+                        3,
+                        {
+                            "used_as_logo_$_in_meeting_id": ["web_header"],
+                            "used_as_logo_$web_header_in_meeting_id": 1,
+                            "parent_id": 2,
+                        },
+                    ),
+                    "2": self.get_mediafile_data(
+                        2,
+                        {
+                            "title": "dir",
+                            "is_directory": True,
+                            "filesize": 0,
+                            "filename": None,
+                            "mimetype": None,
+                            "is_public": False,
+                            "child_ids": [3],
+                        },
+                    ),
                 }
             }
         )
@@ -1043,29 +1087,12 @@ class MeetingImport(BaseActionTestCase):
         request_data = self.create_request_data(
             {
                 "mediafile": {
-                    "1": {
-                        "id": 1,
-                        "foobar": "test this",
-                        "meeting_id": 1,
-                        "title": "A.txt",
-                        "is_directory": False,
-                        "filesize": 3,
-                        "filename": "A.txt",
-                        "mimetype": "text/plain",
-                        "pdf_information": {},
-                        "create_timestamp": 1584513771,
-                        "is_public": True,
-                        "access_group_ids": [],
-                        "inherited_access_group_ids": [],
-                        "parent_id": None,
-                        "child_ids": [],
-                        "list_of_speakers_id": None,
-                        "projection_ids": [],
-                        "attachment_ids": [],
-                        "used_as_logo_$_in_meeting_id": [],
-                        "used_as_font_$_in_meeting_id": [],
-                        "blob": "bla",
-                    }
+                    "1": self.get_mediafile_data(
+                        1,
+                        {
+                            "foobar": "test this",
+                        },
+                    )
                 }
             }
         )
