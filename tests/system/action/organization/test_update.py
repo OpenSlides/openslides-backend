@@ -24,6 +24,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "description": "XrHbAWiF",
                 "theme_id": 1,
                 "theme_ids": [1, 2],
+                "enable_chat": False,
             },
         )
         self.create_model(
@@ -49,6 +50,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "login_text": "test2",
                 "theme_id": 2,
                 "reset_password_verbose_errors": False,
+                "enable_chat": True,
             },
         )
         self.assert_status_code(response, 200)
@@ -61,6 +63,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("theme_id") == 2
         assert model.get("theme_ids") == [1, 2]
         assert model.get("reset_password_verbose_errors") is False
+        assert model.get("enable_chat") is True
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
         )
