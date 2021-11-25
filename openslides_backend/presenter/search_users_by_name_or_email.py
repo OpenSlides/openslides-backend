@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union, cast
+from typing import Any, Dict, List, Union
 
 import fastjsonschema
 
@@ -32,7 +32,8 @@ search_users_by_name_or_email_schema = fastjsonschema.compile(
                 "enum": [1, 2, 3],
             },  # 1=meeting, 2=committee, 3=organization
             "permission_id": {
-                "type": "integer", "minimum": 1,
+                "type": "integer",
+                "minimum": 1,
             },
             "search": {
                 "type": "array",

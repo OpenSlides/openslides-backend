@@ -135,7 +135,9 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             },
         )
         self.assertEqual(status_code, 400)
-        self.assertIn("data.permission_id must be bigger than or equal to 1", data["message"])
+        self.assertIn(
+            "data.permission_id must be bigger than or equal to 1", data["message"]
+        )
 
     def test_permission_organization_ok(self) -> None:
         self.update_model(
