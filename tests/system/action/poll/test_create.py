@@ -35,6 +35,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "backend": "long",
             },
         )
         self.assert_status_code(response, 200)
@@ -51,6 +52,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("is_pseudoanonymized") is False
         assert poll.get("min_votes_amount") == 5
         assert poll.get("max_votes_amount") == 10
+        assert poll.get("backend") == "long"
         assert "options" not in poll
         option = self.get_model("option/1")
         assert option.get("text") == "test2"

@@ -54,6 +54,7 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
             "votesinvalid",
             "votescast",
             "entitled_group_ids",
+            "backend",
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
