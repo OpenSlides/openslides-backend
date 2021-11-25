@@ -135,6 +135,26 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assertEqual(poll.get("pollmethod"), "YNA")
         self.assertEqual(poll.get("onehundred_percent_base"), "Y")
 
+    def test_update_backend(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"backend": "long", "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("poll/1", {"backend": "long"})
+
+    def test_update_backend_not_allowed(self) -> None:
+        self.set_models({"poll/1": {"state": Poll.STATE_FINISHED}})
+        response = self.request(
+            "poll.update",
+            {"backend": "long", "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Following options are not allowed in this state and type: backend"
+            in response.json["message"]
+        )
+
     def test_update_invalid_pollmethod(self) -> None:
         response = self.request(
             "poll.update",

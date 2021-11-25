@@ -617,6 +617,7 @@
                 2,
                 3
             ],
+            "motion_poll_default_backend": "fast",
             "users_sort_by": "first_name",
             "users_enable_presence_view": true,
             "users_enable_vote_weight": true,
@@ -644,6 +645,7 @@
                 3,
                 5
             ],
+            "assignment_poll_default_backend": "fast",
             "poll_ballot_paper_selection": "CUSTOM_NUMBER",
             "poll_ballot_paper_number": 8,
             "poll_sort_poll_result_by_votes": true,
@@ -653,6 +655,7 @@
             "poll_default_group_ids": [
                 3
             ],
+            "poll_default_backend": "fast",
             "poll_couple_countdown": true,
             "projector_ids": [
                 1,
@@ -2564,7 +2567,7 @@
             "title": "1",
             "description": "",
             "type": "analog",
-            "backend": "long",
+            "backend": "fast",
             "is_pseudoanonymized": false,
             "pollmethod": "YNA",
             "state": "finished",
@@ -2593,7 +2596,7 @@
             "title": "2",
             "description": "",
             "type": "analog",
-            "backend": "long",
+            "backend": "fast",
             "is_pseudoanonymized": false,
             "pollmethod": "YNA",
             "state": "created",
@@ -2622,7 +2625,7 @@
             "title": "1",
             "description": "",
             "type": "analog",
-            "backend": "long",
+            "backend": "fast",
             "is_pseudoanonymized": false,
             "pollmethod": "YNA",
             "state": "created",
@@ -2651,7 +2654,7 @@
             "title": "2",
             "description": "",
             "type": "analog",
-            "backend": "long",
+            "backend": "fast",
             "is_pseudoanonymized": false,
             "pollmethod": "Y",
             "state": "finished",
@@ -2682,7 +2685,7 @@
             "title": "Wahlgang",
             "description": "",
             "type": "named",
-            "backend": "long",
+            "backend": "fast",
             "is_pseudoanonymized": false,
             "pollmethod": "Y",
             "state": "finished",

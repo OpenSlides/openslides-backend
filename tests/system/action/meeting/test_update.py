@@ -268,6 +268,23 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_update_poll_default_backend_fields(self) -> None:
+        self.basic_test(
+            {
+                "motion_poll_default_backend": "long",
+                "assignment_poll_default_backend": "long",
+                "poll_default_backend": "long",
+            }
+        )
+        self.assert_model_exists(
+            "meeting/1",
+            {
+                "motion_poll_default_backend": "long",
+                "assignment_poll_default_backend": "long",
+                "poll_default_backend": "long",
+            },
+        )
+
     def test_update_group_a_no_permissions(self) -> None:
         self.base_permission_test(
             self.test_models, "meeting.update", {"id": 1, "welcome_title": "Hallo"}

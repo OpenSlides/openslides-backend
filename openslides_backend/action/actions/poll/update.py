@@ -32,6 +32,7 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
             "votesvalid",
             "votesinvalid",
             "votescast",
+            "backend",
         ],
         additional_optional_fields={
             "publish_immediately": {"type": "boolean"},
@@ -57,6 +58,7 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
                 "global_yes",
                 "global_no",
                 "global_abstain",
+                "backend",
             ):
                 if key in instance:
                     not_allowed.append(key)
