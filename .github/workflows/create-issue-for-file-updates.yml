@@ -7,7 +7,6 @@ on:
     paths:
       - 'global/meta/models.yml'
       - 'global/meta/permission.yml'
-      - 'global/data/initial-data.json'
 
 jobs:
   announce-update:
@@ -41,15 +40,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OS_ISSUE_TITLE: The `permission.yml` got updated
           OS_FILE_NAME: permission.yml
-        with:
-          filename: .github/workflows/announce-file-changes-template.md
-
-      - name: Create Issue if initial-data.json was changed
-        if: contains(steps.changed-files.outputs.modified_files, 'global/data/initial-data.json')
-        uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OS_ISSUE_TITLE: The `initial-data.json` got updated
-          OS_FILE_NAME: initial-data.json
         with:
           filename: .github/workflows/announce-file-changes-template.md
