@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "ac781a8b77a7009b27e474ccdd859188"
+MODELS_YML_CHECKSUM = "54f428d85f4a27e303749e2a19d7aa82"
 
 
 class Organization(Model):
@@ -488,6 +488,9 @@ class Meeting(Model):
     motion_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_motion_poll_default_id"}
     )
+    motion_poll_default_backend = fields.CharField(
+        default="fast", constraints={"enum": ["long", "fast"]}
+    )
     users_sort_by = fields.CharField(
         default="first_name",
         constraints={"enum": ["first_name", "last_name", "number"]},
@@ -534,6 +537,9 @@ class Meeting(Model):
     assignment_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_assignment_poll_default_id"}
     )
+    assignment_poll_default_backend = fields.CharField(
+        default="fast", constraints={"enum": ["long", "fast"]}
+    )
     poll_ballot_paper_selection = fields.CharField(
         constraints={
             "enum": [
@@ -550,6 +556,9 @@ class Meeting(Model):
     poll_default_100_percent_base = fields.CharField(default="YNA")
     poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_poll_default_id"}
+    )
+    poll_default_backend = fields.CharField(
+        default="fast", constraints={"enum": ["long", "fast"]}
     )
     poll_couple_countdown = fields.BooleanField(default=True)
     projector_ids = fields.RelationListField(
@@ -1388,7 +1397,7 @@ class Poll(Model):
         required=True, constraints={"enum": ["analog", "named", "pseudoanonymous"]}
     )
     backend = fields.CharField(
-        required=True, default="long", constraints={"enum": ["long", "fast"]}
+        required=True, default="fast", constraints={"enum": ["long", "fast"]}
     )
     is_pseudoanonymized = fields.BooleanField()
     pollmethod = fields.CharField(
