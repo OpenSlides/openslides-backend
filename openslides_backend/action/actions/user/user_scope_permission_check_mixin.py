@@ -17,7 +17,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 
 
-class UserScope(Enum):
+class UserScope(int, Enum):
     Meeting = 1
     Committee = 2
     Organization = 3

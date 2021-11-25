@@ -38,7 +38,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
 
     def test_search_fields_variations(self) -> None:
         status_code, data = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Meeting.value,
                 "permission_id": 1,
@@ -109,9 +109,9 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             ],
         )
 
-    def test_search_wrong_permission_scope(self) -> None:
+    def test_search_wrong_permission_type(self) -> None:
         status_code, data = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": 4,
                 "permission_id": 1,
@@ -123,6 +123,20 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         self.assertEqual(status_code, 400)
         self.assertIn("data.permission_type must be one of [1, 2, 3]", data["message"])
 
+    def test_search_wrong_permission_id(self) -> None:
+        status_code, data = self.request(
+            "search_users_by_name_or_email",
+            {
+                "permission_type": UserScope.Organization.value,
+                "permission_id": 0,
+                "search": [
+                    {"username": "user2"},
+                ],
+            },
+        )
+        self.assertEqual(status_code, 400)
+        self.assertIn("data.permission_id must be bigger than or equal to 1", data["message"])
+
     def test_permission_organization_ok(self) -> None:
         self.update_model(
             "user/1",
@@ -131,7 +145,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             },
         )
         status_code, _ = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Organization.value,
                 "permission_id": 1,
@@ -145,7 +159,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
     def test_permission_organization_error(self) -> None:
         self.update_model("user/1", {"organization_management_level": None})
         status_code, data = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Organization.value,
                 "permission_id": 1,
@@ -168,7 +182,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             },
         )
         status_code, _ = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Committee.value,
                 "permission_id": 1,
@@ -182,7 +196,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
     def test_permission_committee_error(self) -> None:
         self.update_model("user/1", {"organization_management_level": None})
         status_code, data = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Committee.value,
                 "permission_id": 1,
@@ -217,7 +231,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             },
         )
         status_code, _ = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Meeting.value,
                 "permission_id": 1,
@@ -236,7 +250,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         )
         self.update_model("user/1", {"organization_management_level": None})
         status_code, data = self.request(
-            "search_users_by_name_email",
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Meeting.value,
                 "permission_id": 1,
@@ -264,8 +278,8 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
                 "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
             },
         )
-        status_code, _ = self.request(
-            "search_users_by_name_email",
+        status_code, data = self.request(
+            "search_users_by_name_or_email",
             {
                 "permission_type": UserScope.Meeting.value,
                 "permission_id": 1,

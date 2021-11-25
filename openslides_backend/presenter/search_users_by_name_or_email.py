@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, cast
 
 import fastjsonschema
 
@@ -20,11 +20,11 @@ from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-search_users_by_name_email_schema = fastjsonschema.compile(
+search_users_by_name_or_email_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
         "type": "object",
-        "title": "search_users_by_name_email",
+        "title": "search_users_by_name_or_email",
         "description": "get lists of id, first-, last-name and email for tuples of exact (username, emails)-tuples.",
         "properties": {
             "permission_type": {
@@ -32,7 +32,7 @@ search_users_by_name_email_schema = fastjsonschema.compile(
                 "enum": [1, 2, 3],
             },  # 1=meeting, 2=committee, 3=organization
             "permission_id": {
-                "type": "integer",
+                "type": "integer", "minimum": 1,
             },
             "search": {
                 "type": "array",
@@ -52,13 +52,13 @@ search_users_by_name_email_schema = fastjsonschema.compile(
 )
 
 
-@register_presenter("search_users_by_name_email")
+@register_presenter("search_users_by_name_or_email")
 class SearchUsersByNameEmail(BasePresenter):
     """
     Collects users with exect usernames or exact emails.
     """
 
-    schema = search_users_by_name_email_schema
+    schema = search_users_by_name_or_email_schema
 
     def get_result(self) -> Any:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
@@ -91,9 +91,9 @@ class SearchUsersByNameEmail(BasePresenter):
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
             return
-        if permission_type == UserScope.Organization.value:
+        if permission_type == UserScope.Organization:
             raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
-        if permission_type == UserScope.Committee.value:
+        if permission_type == UserScope.Committee:
             if has_committee_management_level(
                 self.datastore,
                 self.user_id,
