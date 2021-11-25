@@ -1,0 +1,4 @@
+requests==2.25.1
+
+-r partial/requirements_datastore_locally.txt
+-r partial/requirements_development.txt

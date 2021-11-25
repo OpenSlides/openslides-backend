@@ -1,0 +1,1 @@
+git+git://github.com/OpenSlides/openslides-datastore-service@c2b4e325e08300efc3d37a4dcb81740fde2bdb4b#egg=datastore

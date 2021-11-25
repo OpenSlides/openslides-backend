@@ -76,14 +76,11 @@ run-prod: | build-prod
 start-dev:
 	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build --detach
 
-start-dev-attach:
+start-dev-attach start-dev-interactive:
 	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
 
 stop-dev:
 	docker-compose -f dev/docker-compose.dev.yml down --volumes
-
-start-dev-interactive:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml up --build
 
 run-dev-attach:
 	docker-compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile dev/bashrc
@@ -92,6 +89,23 @@ run-dev run-bash: | start-dev run-dev-attach
 
 run-tests:
 	dev/run-tests.sh
+
+
+# Build and run development container with local datastore in use
+
+start-dev-local-ds:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml up --build --detach
+
+start-dev-attach-local-ds start-dev-interactive-local-ds:
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml up --build
+
+stop-dev-local-ds:
+	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml down --volumes
+
+run-dev-attach-local-ds:
+	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml exec backend ./entrypoint.sh bash --rcfile dev/bashrc
+
+run-dev-local-ds run-bash-local-ds: | start-dev-local-ds run-dev-attach-local-ds
 
 
 # Build standalone development container (not usable inside the docker container)

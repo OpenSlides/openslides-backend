@@ -1,0 +1,3 @@
+-r partial/requirements_datastore_locally.txt
+-r partial/requirements_production.txt
+-r partial/requirements_development.txt

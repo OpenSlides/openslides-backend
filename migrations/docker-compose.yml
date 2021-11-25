@@ -1,7 +1,9 @@
 version: "3"
 services:
     backend:
-        build: .
+        build:
+            context: ..
+            dockerfile: migrations/Dockerfile
         image: openslides-backend-migrations-dev
         ports:
             - "5678:5678"

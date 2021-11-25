@@ -1,6 +1,18 @@
 def test_migration(write, finalize, assert_model):
-    write({"type": "create", "fqid": "motion_state/1", "fields": {"a": 1, "dont_set_identifier": False}})
-    write({"type": "update", "fqid": "motion_state/1", "fields": {"a": 2, "dont_set_identifier": True}})
+    write(
+        {
+            "type": "create",
+            "fqid": "motion_state/1",
+            "fields": {"a": 1, "dont_set_identifier": False},
+        }
+    )
+    write(
+        {
+            "type": "update",
+            "fqid": "motion_state/1",
+            "fields": {"a": 2, "dont_set_identifier": True},
+        }
+    )
     write({"type": "delete", "fqid": "motion_state/1"})
     write({"type": "restore", "fqid": "motion_state/1"})
 

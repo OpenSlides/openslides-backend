@@ -5,8 +5,8 @@ RUN apt-get -y update && apt-get -y upgrade && \
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir --requirement requirements.txt
+COPY requirements/ requirements/
+RUN pip install --no-cache-dir --requirement requirements/requirements_production.txt
 
 RUN adduser --system --no-create-home appuser
 USER appuser
