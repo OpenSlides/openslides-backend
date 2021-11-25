@@ -291,3 +291,31 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             },
         )
         self.assertEqual(status_code, 200)
+
+    def test_permission_meeting_via_committee_with_database_error(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+            }
+        )
+        self.update_model(
+            "user/1",
+            {
+                "organization_management_level": None,
+                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+            },
+        )
+        status_code, data = self.request(
+            "search_users_by_name_or_email",
+            {
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
+                "search": [
+                    {"username": "user2"},
+                ],
+            },
+        )
+        self.assertEqual(status_code, 400)
+        self.assertIn(
+            "Error in database: Meeting 1 has no valid committee_id!", data["message"]
+        )
