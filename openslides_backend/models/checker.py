@@ -677,29 +677,29 @@ class Checker:
     ) -> None:
         if collection != "mediafile":
             return
-        if model["is_directory"] and not model.get("parent_id"):
-            return
+
         access_group_ids = model["access_group_ids"]
         parent_is_public = None
         parent_inherited_access_group_ids = None
         if model.get("parent_id"):
-            parent = self.find_model(collection, model.get("parent_id", 0))
-            if parent:
-                parent_is_public = parent.get("is_public")
-                parent_inherited_access_group_ids = parent.get(
-                    "inherited_access_group_ids"
-                )
-            is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
-                access_group_ids, parent_is_public, parent_inherited_access_group_ids
+            parent = self.find_model(collection, model["parent_id"])
+            # relations are checked beforehand, so parent always exists
+            assert parent
+            parent_is_public = parent["is_public"]
+            parent_inherited_access_group_ids = parent["inherited_access_group_ids"]
+        is_public, inherited_access_group_ids = calculate_inherited_groups_helper(
+            access_group_ids, parent_is_public, parent_inherited_access_group_ids
+        )
+        if is_public != model["is_public"]:
+            self.errors.append(
+                f"{collection}/{model['id']}: is_public is wrong. {is_public} != {model['is_public']}"
             )
-            if is_public != model["is_public"]:
-                self.errors.append(
-                    f"{collection}/{model['id']}: is_public is wrong. {is_public} != {model['is_public']}"
-                )
-            if inherited_access_group_ids != model["inherited_access_group_ids"]:
-                self.errors.append(
-                    f"{collection}/{model['id']}: inherited_access_group_ids is wrong"
-                )
+        if set(inherited_access_group_ids) != set(
+            model["inherited_access_group_ids"] or []
+        ):
+            self.errors.append(
+                f"{collection}/{model['id']}: inherited_access_group_ids is wrong"
+            )
 
     def find_model(self, collection: str, id: int) -> Optional[Dict[str, Any]]:
         return self.data.get(collection, {}).get(str(id))

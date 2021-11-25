@@ -193,6 +193,7 @@ class MeetingClone(BaseActionTestCase):
                     "used_as_font_$_in_meeting_id": [],
                     "used_as_logo_$_in_meeting_id": [],
                     "mimetype": "text/plain",
+                    "is_public": True,
                 },
             }
         )
