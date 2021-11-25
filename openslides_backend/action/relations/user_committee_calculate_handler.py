@@ -48,20 +48,31 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             meeting_ids = list(map(int, instance.get("group_$_ids", []))) or []
         else:
             meeting_ids = list(map(int, db_user.get("group_$_ids", []))) or []
+        meeting_collection = Collection("meeting")
         committee_ids: Set[int] = set(
             map(
                 lambda x: x.get("committee_id", 0),
                 self.datastore.get_many(
                     [
                         GetManyRequest(
-                            Collection("meeting"),
+                            meeting_collection,
                             list(meeting_ids),
                             ["committee_id"],
                         )
                     ]
                 )
-                .get(Collection("meeting"), {})
+                .get(meeting_collection, {})
                 .values(),
+            )
+        )
+        new_committees_ids.update(committee_ids)
+        committee_ids = set(
+            committee_id
+            for meeting_id in meeting_ids
+            if (
+                committee_id := self.datastore.additional_relation_models.get(
+                    FullQualifiedId(meeting_collection, meeting_id), {}
+                ).get("committee_id")
             )
         )
         new_committees_ids.update(committee_ids)
