@@ -13,7 +13,7 @@ from ..permissions.permission_helper import (
     has_perm,
 )
 from ..permissions.permissions import Permissions
-from ..shared.exceptions import ActionException, MissingPermission
+from ..shared.exceptions import MissingPermission, PresenterException
 from ..shared.filters import FilterOperator, Or
 from ..shared.patterns import Collection, FullQualifiedId
 from ..shared.schema import schema_version
@@ -119,7 +119,7 @@ class SearchUsersByNameEmail(BasePresenter):
                 ["committee_id"],
             )
             if (committee_id := meeting.get("committee_id", 0)) < 1:
-                raise ActionException(
+                raise PresenterException(
                     f"Error in database: Meeting {permission_id} has no valid committee_id!"
                 )
             if has_committee_management_level(
