@@ -9,6 +9,7 @@
             "privacy_policy": "",
             "login_text": "Guten Morgen!",
             "enable_electronic_voting": true,
+            "enable_chat": true,
             "reset_password_verbose_errors": true,
             "committee_ids": [
                 1

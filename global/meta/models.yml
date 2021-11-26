@@ -94,6 +94,9 @@ organization:
   enable_electronic_voting:
     type: boolean
     restriction_mode: B
+  enable_chat:
+    type: boolean
+    restriction_mode: B
   limit_of_meetings:
     type: number
     description: Maximum of active meetings for the whole organization. 0 means no limitation at all

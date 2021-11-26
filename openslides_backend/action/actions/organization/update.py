@@ -28,6 +28,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
             "login_text",
             "theme_id",
             "enable_electronic_voting",
+            "enable_chat",
             "reset_password_verbose_errors",
             "limit_of_meetings",
             "limit_of_users",
@@ -61,6 +62,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
                 field in instance
                 for field in [
                     "enable_electronic_voting",
+                    "enable_chat",
                     "reset_password_verbose_errors",
                     "limit_of_meetings",
                     "limit_of_users",

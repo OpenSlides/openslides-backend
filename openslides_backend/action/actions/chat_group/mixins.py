@@ -5,6 +5,8 @@ from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import Action
 
+ONE_ORGANIZATION_ID = 1
+
 
 class ChatEnabledMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -18,7 +20,12 @@ class ChatEnabledMixin(Action):
             FullQualifiedId(Collection("meeting"), meeting_id),
             ["enable_chat"],
         )
-        if not meeting.get("enable_chat"):
+        organization = self.datastore.get(
+            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION_ID),
+            ["enable_chat"],
+        )
+
+        if not meeting.get("enable_chat") or not organization.get("enable_chat"):
             raise ActionException("Chat is not enabled.")
         return instance
 
