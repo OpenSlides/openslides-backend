@@ -311,3 +311,38 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("committee/1")
+
+    def test_create_after_deleting_default_committee(self) -> None:
+        # details see Backend Issue1071
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/1": {"organization_id": 1, "user_ids": [1]},
+                "user/1": {
+                    "committee_$_management_level": ["1"],
+                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                },
+            }
+        )
+        response = self.request("committee.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+
+        response = self.request(
+            "committee.create",
+            {
+                "name": "committee2",
+                "organization_id": 1,
+                "manager_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("committee/1", {"user_ids": [1]})
+        self.assert_model_exists("committee/2", {"name": "committee2", "user_ids": [1]})
+        user = self.assert_model_exists(
+            "user/1",
+            {
+                "committee_$1_management_level": "can_manage",
+                "committee_$1_management_level": "can_manage",
+            },
+        )
+        self.assertCountEqual(user.get("committee_$_management_level", []), ["1", "2"])

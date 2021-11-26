@@ -18,6 +18,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     back relation from committee. That's the reason that all relations between
     the two collections are only set via user, even committee.create/change make calls
     to user.change-actions.
+    Backend Issue1071: Prevent changes for deleted committees
     """
 
     def process_field(
@@ -36,6 +37,10 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             exception=False,
         )
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
+        db_committee_cml = set(
+            map(int, db_user.get("committee_$_management_level", []) or [])
+        )
+        detected_deleted_committee_ids = db_committee_cml - db_committee_ids
         if "committee_$_management_level" in instance:
             new_committees_ids = set(
                 map(int, instance.get("committee_$_management_level", [])) or []
@@ -76,8 +81,12 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             )
         )
         new_committees_ids.update(committee_ids)
-        added_ids = new_committees_ids.difference(db_committee_ids)
-        removed_ids = db_committee_ids.difference(new_committees_ids)
+        added_ids = (
+            new_committees_ids - db_committee_ids - detected_deleted_committee_ids
+        )
+        removed_ids = (
+            db_committee_ids - new_committees_ids - detected_deleted_committee_ids
+        )
 
         if not added_ids and not removed_ids:
             return {}
