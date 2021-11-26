@@ -31,6 +31,19 @@ class ChatGroupCreate(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Chat is not enabled." in response.json["message"]
 
+    def test_create_chat_not_enabled_in_organization(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"enable_chat": False},
+                "meeting/1": {"is_active_in_organization_id": 1, "enable_chat": True},
+            }
+        )
+        response = self.request(
+            "chat_group.create", {"name": "redekreis2", "meeting_id": 1}
+        )
+        self.assert_status_code(response, 400)
+        assert "Chat is not enabled." in response.json["message"]
+
     def test_create_optional_fields(self) -> None:
         self.set_models(
             {

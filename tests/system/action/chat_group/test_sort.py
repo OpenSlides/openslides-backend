@@ -73,6 +73,28 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Chat is not enabled." in response.json["message"]
 
+    def test_sort_not_enabled_in_organization(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"enable_chat": False},
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "enable_chat": True,
+                    "is_active_in_organization_id": 1,
+                },
+                "chat_group/31": {
+                    "meeting_id": 222,
+                    "name": "name_loisueb",
+                },
+            }
+        )
+        response = self.request(
+            "chat_group.sort",
+            {"meeting_id": 222, "chat_group_ids": [31]},
+        )
+        self.assert_status_code(response, 400)
+        assert "Chat is not enabled." in response.json["message"]
+
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
