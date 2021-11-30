@@ -39,9 +39,13 @@ class Database:
     def _query(self, connection, file_id, file_type):
         with connection.cursor() as cur:
             if file_type == "mediafile":
-                fetch_query = "SELECT data, mimetype FROM mediafile_data WHERE id=%s"
+                fetch_query = (
+                    "SELECT data, mimetype FROM media.mediafile_data WHERE id=%s"
+                )
             elif file_type == "resource":
-                fetch_query = "SELECT data, mimetype FROM resource_data WHERE id=%s"
+                fetch_query = (
+                    "SELECT data, mimetype FROM media.resource_data WHERE id=%s"
+                )
             cur.execute(fetch_query, [file_id])
             row = cur.fetchone()
             if not row:
@@ -69,12 +73,13 @@ class Database:
     def _insert(self, connection, file_id, file_type, media, mimetype):
         if file_type == "mediafile":
             insert_sql = (
-                "INSERT INTO mediafile_data (id, data, mimetype) "
+                "INSERT INTO media.mediafile_data (id, data, mimetype) "
                 " VALUES (%s, %s, %s)"
             )
         elif file_type == "resource":
             insert_sql = (
-                "INSERT INTO resource_data (id, data, mimetype) " " VALUES (%s, %s, %s)"
+                "INSERT INTO media.resource_data (id, data, mimetype) "
+                " VALUES (%s, %s, %s)"
             )
 
         with connection.cursor() as cur:

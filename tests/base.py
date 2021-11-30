@@ -6,7 +6,7 @@ def reset_db():
     conn = get_connection()
     with conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM mediafile_data WHERE id NOT IN (2, 3)")
+            cur.execute("DELETE FROM media.mediafile_data WHERE id NOT IN (2, 3)")
 
 
 def get_connection():
