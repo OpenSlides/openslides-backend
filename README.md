@@ -124,11 +124,11 @@ The action component listens to port 9002. The presenter component listens to po
 
 You may run curl against this service like this:
 
-    $ curl localhost:9002/internal/health
+    $ curl localhost:9002/system/action/health
     $ curl localhost:9002/system/action/handle_request -X POST -H "Content-Type: application/json" -d '[{"action": "topic.create", "data": [{"meeting_id": 1, "title": "foo"}]}]'
     $ curl localhost:9002/system/action/handle_request -X POST -H "Content-Type: application/json" -d '[{"action": "topic.update", "data": [{"id": 1, "title": "bar"}]}]'
 
-    $ curl localhost:9003/internal/health
+    $ curl localhost:9003/system/presenter/health
     $ curl localhost:9003/system/presenter/handle_request -X GET -H "Content-Type:application/json" -d '[{"presenter": "whoami"}]'
 
 The action health path returns a list of all possible actions with its JSON schema.
@@ -145,10 +145,10 @@ General schema for internal routes: `/internal/<route>`
   meaning each action is executed and the result sent to the datastore separately.
 * `/internal/handle_request`: Same as the first route, but only for internal usage: All permission checks are skipped
   and created write requests will have id -1.
-* `/internal/health`: Returns a list of all possible actions with their respective JSON schema.
+* `/system/action/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
 * `/internal/migrations`: Provides remote access to the migration tool.
 
 ### Presenter Service
 
 * `/system/presenter/handle_request`: Main route of the service, is used to fetch presenter results.
-* `/internal/health`: Currently not implemented.
+* `/system/presenter/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
