@@ -1,4 +1,6 @@
-from migrations import assert_migration_index as base_assert_migration_index, InvalidMigrationsException
+from migrations import InvalidMigrationsException
+from migrations import assert_migration_index as base_assert_migration_index
+
 from ..shared.exceptions import View400Exception
 
 

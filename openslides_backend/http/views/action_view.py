@@ -1,8 +1,8 @@
 from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
-from ...migrations.migration_handler import MigrationHandler
 from ...migrations import assert_migration_index
+from ...migrations.migration_handler import MigrationHandler
 from ...shared.interfaces.wsgi import ResponseBody
 from ..request import Request
 from .base_view import BaseView, route
