@@ -363,7 +363,7 @@ user:
   chat_message_$_ids:
     type: template
     replacement_collection: meeting
-    restriction_mode: B
+    restriction_mode: A
     fields:
       type: relation-list
       to: chat_message/user_id
