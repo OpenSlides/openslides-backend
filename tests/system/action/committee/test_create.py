@@ -342,7 +342,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
             "user/1",
             {
                 "committee_$1_management_level": "can_manage",
-                "committee_$1_management_level": "can_manage",
+                "committee_$2_management_level": "can_manage",
             },
         )
         self.assertCountEqual(user.get("committee_$_management_level", []), ["1", "2"])
