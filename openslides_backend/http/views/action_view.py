@@ -74,6 +74,6 @@ class ActionView(BaseView):
             "output": output,
         }, None
 
-    @route("health", internal=True, method="GET", json=False)
+    @route("health", method="GET", json=False)
     def health_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
-        return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+        return {"status": "running"}, None

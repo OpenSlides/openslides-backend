@@ -29,6 +29,6 @@ class PresenterView(BaseView):
         self.logger.debug("Presenter request finished successfully. Send response now.")
         return presenter_response, access_token
 
-    @route("health", internal=True, method="GET", json=False)
+    @route("health", method="GET", json=False)
     def health_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
-        return {"status": "unkown"}, None
+        return {"status": "running"}, None
