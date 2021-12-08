@@ -24,7 +24,7 @@ class InMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            'Meeting 1 ("test") cannot be changed, because it is archived.',
             response.json["message"],
         )
 
@@ -38,7 +38,7 @@ class InMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            'Meeting 1 ("test") cannot be changed, because it is archived.',
             response.json["message"],
         )
 
@@ -51,7 +51,7 @@ class InMeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            'Meeting 1 ("test") cannot be changed, because it is archived.',
             response.json["message"],
         )
 
@@ -98,7 +98,7 @@ class MeetingActions(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting test/1 cannot be changed, because it is archived.",
+            'Meeting 1 ("test") cannot be changed, because it is archived.',
             response.json["message"],
         )
 

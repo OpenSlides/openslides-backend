@@ -83,7 +83,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Meeting /1 cannot be changed, because it is archived",
+            'Meeting 1 ("") cannot be changed, because it is archived',
             response.json["message"],
         )
 

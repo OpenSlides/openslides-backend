@@ -9,7 +9,11 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "committee/1": {"name": "test_committee", "user_ids": [1, 2]},
+                "committee/1": {
+                    "name": "test_committee",
+                    "user_ids": [1, 2],
+                    "meeting_ids": [1],
+                },
                 "group/1": {},
                 "user/2": {},
                 "meeting/1": {"name": "test", "committee_id": 1},
@@ -122,13 +126,9 @@ class MeetingDeleteActionTest(BaseActionTestCase):
     def test_delete_with_tag_and_motion(self) -> None:
         self.set_models(
             {
-                "committee/1": {
-                    "meeting_ids": [1],
-                },
                 "meeting/1": {
                     "tag_ids": [42],
                     "motion_ids": [1],
-                    "committee_id": 1,
                 },
                 "tag/42": {"meeting_id": 1, "tagged_ids": ["motion/1"]},
                 "motion/1": {"meeting_id": 1, "tag_ids": [42]},
@@ -142,3 +142,42 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             "tag/42", {"meeting_id": 1, "tagged_ids": ["motion/1"]}
         )
         self.assert_model_deleted("motion/1", {"meeting_id": 1, "tag_ids": [42]})
+
+    def test_delete_with_history_projection(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "all_projection_ids": [42],
+                    "projector_ids": [1],
+                },
+                "projector/1": {
+                    "meeting_id": 1,
+                    "history_projection_ids": [42],
+                },
+                "projection/42": {
+                    "meeting_id": 1,
+                    "content_object_id": "meeting/1",
+                    "history_projector_id": 1,
+                    "stable": False,
+                },
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("committee/1", {"meeting_ids": []})
+        self.assert_model_deleted(
+            "meeting/1",
+            {"committee_id": 1, "all_projection_ids": [42], "projector_ids": [1]},
+        )
+        self.assert_model_deleted(
+            "projector/1", {"meeting_id": 1, "history_projection_ids": [42]}
+        )
+        self.assert_model_deleted(
+            "projection/42",
+            {
+                "meeting_id": 1,
+                "content_object_id": "meeting/1",
+                "history_projector_id": 1,
+                "stable": False,
+            },
+        )
