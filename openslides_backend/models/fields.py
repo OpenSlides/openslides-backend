@@ -337,10 +337,12 @@ class OrganizationField(RelationField):
 class BaseTemplateField(Field):
 
     replacement_collection: Optional[Collection]
+    replacement_enum: Optional[List[str]]
     index: int
 
     def __init__(self, **kwargs: Any) -> None:
         self.replacement_collection = kwargs.pop("replacement_collection", None)
+        self.replacement_enum = kwargs.pop("replacement_enum", None)
         self.index = kwargs.pop("index")
         super().__init__(**kwargs)
 
@@ -350,6 +352,17 @@ class BaseTemplateField(Field):
     def get_payload_schema(
         self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
     ) -> Schema:
+        if self.replacement_enum:
+            return {
+                "description": f"Enum Replacement for {self.own_field_name}{' required' if self.required else ''}",
+                "type": "object",
+                "properties": {
+                    #name: {"type": "integer" if self.required else ["integer", "null"], "minimum": 1}
+                    name: {"type": "integer", "minimum": 1}
+                    for name in self.replacement_enum
+                },
+                "additionalProperties": False,
+            }
         if not replacement_pattern:
             if self.replacement_collection:
                 replacement_pattern = ID_REGEX

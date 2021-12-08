@@ -1,8 +1,6 @@
 from typing import Any, Dict, Tuple
 
-from openslides_backend.action.actions.meeting.shared_meeting import (
-    meeting_projector_default_replacements,
-)
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -22,20 +20,20 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                 "admin_group_id": 1,
                 "projector_ids": [1],
                 "reference_projector_id": 1,
-                "default_projector_$_id": meeting_projector_default_replacements,
+                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                 **{
                     f"default_projector_${name}_id": 1
-                    for name in meeting_projector_default_replacements
+                    for name in Meeting.default_projector__id.replacement_enum
                 },
             },
             "projector/1": {
                 "name": "Projector 1",
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
-                "used_as_default_$_in_meeting_id": meeting_projector_default_replacements,
+                "used_as_default_$_in_meeting_id": Meeting.default_projector__id.replacement_enum,
                 **{
                     f"used_as_default_${name}_in_meeting_id": 1
-                    for name in meeting_projector_default_replacements
+                    for name in Meeting.default_projector__id.replacement_enum
                 },
             },
         }
@@ -54,20 +52,20 @@ class MeetingUpdateActionTest(BaseActionTestCase):
                     "default_group_id": 1,
                     "projector_ids": [1],
                     "reference_projector_id": 1,
-                    "default_projector_$_id": meeting_projector_default_replacements,
+                    "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                     **{
                         f"default_projector_${name}_id": 1
-                        for name in meeting_projector_default_replacements
+                        for name in Meeting.default_projector__id.replacement_enum
                     },
                 },
                 "projector/1": {
                     "name": "Projector 1",
                     "meeting_id": 1,
                     "used_as_reference_projector_meeting_id": 1,
-                    "used_as_default_$_in_meeting_id": meeting_projector_default_replacements,
+                    "used_as_default_$_in_meeting_id": Meeting.default_projector__id.replacement_enum,
                     **{
                         f"used_as_default_${name}_in_meeting_id": 1
-                        for name in meeting_projector_default_replacements
+                        for name in Meeting.default_projector__id.replacement_enum
                     },
                 },
             }
@@ -219,7 +217,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    def test_update_default_projector_to__projector_from_wrong_meeting_error(
+    def test_update_default_projector_to_projector_from_wrong_meeting_error(
         self,
     ) -> None:
         self.set_models(

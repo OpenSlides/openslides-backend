@@ -18,7 +18,7 @@ from ..projector.create import ProjectorCreateAction
 from ..projector_countdown.create import ProjectorCountdownCreate
 from ..user.update import UserUpdate
 from .mixins import MeetingPermissionMixin
-from .shared_meeting import meeting_projector_default_replacements
+from openslides_backend.models.models import Meeting
 
 
 @register_action("meeting.create")
@@ -234,7 +234,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "used_as_reference_projector_meeting_id": instance["id"],
                     "used_as_default_$_in_meeting_id": {
                         name: instance["id"]
-                        for name in meeting_projector_default_replacements
+                        for name in Meeting.default_projector__id.replacement_enum
                     },
                 }
             ]

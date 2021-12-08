@@ -712,6 +712,23 @@ class Meeting(Model):
     default_projector__id = fields.TemplateRelationField(
         index=18,
         to={Collection("projector"): "used_as_default_$_in_meeting_id"},
+        replacement_enum=[
+            "agenda_all_items",
+            "topics",
+            "list_of_speakers",
+            "current_list_of_speakers",
+            "motion",
+            "amendment",
+            "motion_block",
+            "assignment",
+            "user",
+            "mediafile",
+            "projector_message",
+            "projector_countdowns",
+            "assignment_poll",
+            "motion_poll",
+            "poll",
+        ],
     )
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}
@@ -1761,6 +1778,23 @@ class Projector(Model):
     used_as_default__in_meeting_id = fields.TemplateRelationField(
         index=16,
         to={Collection("meeting"): "default_projector_$_id"},
+        replacement_enum=[
+            "agenda_all_items",
+            "topics",
+            "list_of_speakers",
+            "current_list_of_speakers",
+            "motion",
+            "amendment",
+            "motion_block",
+            "assignment",
+            "user",
+            "mediafile",
+            "projector_message",
+            "projector_countdowns",
+            "assignment_poll",
+            "motion_poll",
+            "poll",
+        ],
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "projector_ids"}, required=True
