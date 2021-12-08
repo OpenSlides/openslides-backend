@@ -1,0 +1,12 @@
+# Use local datastore instead of pip package
+services:
+    backend:
+        build:
+            args:
+                - REQUIREMENTS_FILE=requirements_development_local_ds.txt
+        volumes:
+            - ../../openslides-datastore-service/:/datastore-service
+        environment:
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - PYTHONPATH=/app:/datastore-service
+            - MYPYPATH=/app:/datastore-service

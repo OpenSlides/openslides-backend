@@ -59,7 +59,7 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      run: pip install --requirement dev/requirements_development.txt
+      run: pip install --requirement requirements/requirements_development.txt
 
     - name: Check black
       if: always()
@@ -91,7 +91,7 @@ jobs:
 
     - name: Install requirements
       id: requirements
-      run: pip install --requirement dev/requirements_development.txt
+      run: pip install --requirement requirements/requirements_development.txt
 
     - name: Validate models.yml
       run: PYTHONPATH=. python cli/modelsvalidator/validate.py

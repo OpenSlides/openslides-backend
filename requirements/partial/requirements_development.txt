@@ -9,5 +9,3 @@ pip-check==2.6
 autoflake==1.4
 debugpy==1.2.1
 aiosmtpd==1.4.2
-
---requirement ../requirements.txt

@@ -4,25 +4,28 @@ from argparse import ArgumentParser
 from importlib import import_module
 from typing import List, Type
 
-from datastore.migrations import BaseMigration, setup
+from datastore.migrations import BaseMigration, PrintFunction, setup, MigrationException
 
 
-class BadMigrationModule(Exception):
+class BadMigrationModule(MigrationException):
     pass
 
 
-class InvalidMigrationCommand(Exception):
-    pass
+class InvalidMigrationCommand(MigrationException):
+    def __init__(self, command: str) -> None:
+        super().__init__(f"Invalid migration command: {command}")
 
 
-class MigrationHandler():
-    def __init__(self, verbose: bool = False) -> None:
-        migrations = MigrationHandler.load_migrations()
-        self.handler = setup(verbose=verbose)
+class MigrationWrapper:
+    def __init__(self, verbose: bool = False, print_fn: PrintFunction = print) -> None:
+        migrations = MigrationWrapper.load_migrations()
+        self.handler = setup(verbose, print_fn)
         self.handler.register_migrations(*migrations)
 
     @staticmethod
-    def load_migrations(base_migration_module_pypath: str = None) -> List[Type[BaseMigration]]:
+    def load_migrations(
+        base_migration_module_pypath: str = None,
+    ) -> List[Type[BaseMigration]]:
         if not base_migration_module_pypath:
             base_module = __name__.rsplit(".", 1)[0]
             if base_module == "__main__":
@@ -52,7 +55,7 @@ class MigrationHandler():
                 )
             migration_classes.append(migration_class)
         return migration_classes
-    
+
     def execute_command(self, command: str) -> None:
         if command == "migrate":
             self.handler.migrate()
@@ -65,7 +68,7 @@ class MigrationHandler():
         elif command == "stats":
             self.handler.print_stats()
         else:
-            raise InvalidMigrationCommand()
+            raise InvalidMigrationCommand(command)
 
 
 def get_parser() -> ArgumentParser:
@@ -118,7 +121,7 @@ def main() -> int:
     parser = get_parser()
     args = parser.parse_args()
 
-    handler = MigrationHandler(args.verbose)
+    handler = MigrationWrapper(args.verbose)
 
     if not args.command:
         print("No command provided.\n")

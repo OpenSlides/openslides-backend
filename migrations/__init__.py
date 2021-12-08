@@ -2,27 +2,30 @@ from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 
-from .migrate import MigrationHandler
-from openslides_backend.shared.exceptions import View400Exception
+from .migrate import MigrationWrapper
 
 
-class MissingMigrations(View400Exception):
+class InvalidMigrationsException(Exception):
     pass
 
 
-class MisconfiguredMigrations(View400Exception):
+class MissingMigrations(InvalidMigrationsException):
+    pass
+
+
+class MisconfiguredMigrations(InvalidMigrationsException):
     pass
 
 
 def get_backend_migration_index() -> int:
-    migration_classes = MigrationHandler.load_migrations()
+    migration_classes = MigrationWrapper.load_migrations()
 
     backend_migration_index = 1
     for migration_class in migration_classes:
         backend_migration_index = max(
             backend_migration_index, migration_class().target_migration_index
         )
-    
+
     return backend_migration_index
 
 
@@ -36,9 +39,9 @@ def assert_migration_index() -> None:
     read_db = injector.get(ReadDatabase)
     with read_db.get_context():
         datastore_migration_index = read_db.get_current_migration_index()
-    
+
     if datastore_migration_index == -1:
-        return  # Datastore is up-to-date; nothing to do. 
+        return  # Datastore is up-to-date; nothing to do.
 
     backend_migration_index = get_backend_migration_index()
 

@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from migrations import assert_migration_index, get_backend_migration_index
-from migrations.migrate import MigrationHandler
+from migrations.migrate import MigrationWrapper
 from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 
@@ -143,6 +143,6 @@ class OrganizationInitialImport(BaseActionTestCase):
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
 
-        handler = MigrationHandler(verbose=True)
+        handler = MigrationWrapper(verbose=True)
         handler.execute_command("finalize")
         assert_migration_index()

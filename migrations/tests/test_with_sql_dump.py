@@ -11,5 +11,7 @@ def test_with_sql_dump(write, finalize, assert_model):
         with connection_handler.get_current_connection().cursor() as cursor:
             cursor.execute(open("tests/dump.sql", "r").read(), [])
     migration_handler = injector.get(MigrationHandler)
-    migration_handler.register_migrations(*MigrationHandler.load_migrations("migrations"))
+    migration_handler.register_migrations(
+        *MigrationHandler.load_migrations("migrations")
+    )
     migration_handler.finalize()

@@ -5,12 +5,12 @@ RUN apt-get update && apt-get install --yes bash-completion vim postgresql-clien
 WORKDIR /app
 RUN mkdir /datastore-service
 
-COPY requirements.txt .
+COPY requirements/ requirements/
 
-RUN pip install --no-cache-dir --requirement requirements.txt
+RUN pip install --no-cache-dir --requirement requirements/requirements_migrations.txt
 
-COPY .bashrc ./
-COPY entrypoint.sh ./
+COPY dev/.bashrc .
+COPY migrations/entrypoint.sh ./
 
 EXPOSE 5678
 ENV OPENSLIDES_DEVELOPMENT 1

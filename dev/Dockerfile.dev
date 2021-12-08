@@ -5,14 +5,13 @@ RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completi
 WORKDIR /app
 RUN mkdir dev migrations
 
-COPY requirements.txt .
-COPY dev/requirements_development.txt dev/.
-
-RUN pip install --no-cache-dir --requirement dev/requirements_development.txt
+COPY requirements/ requirements/
+ARG REQUIREMENTS_FILE=requirements_development.txt
+RUN pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
 
 COPY wait.sh ./
 COPY dev/run-tests.sh dev/.
-COPY dev/bashrc dev/.
+COPY dev/.bashrc dev/.
 COPY dev/cleanup.sh .
 
 COPY Makefile Makefile
