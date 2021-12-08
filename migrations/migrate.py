@@ -4,15 +4,16 @@ from argparse import ArgumentParser
 from importlib import import_module
 from typing import List, Type
 
-from datastore.migrations import BaseMigration, PrintFunction, setup
+from datastore.migrations import BaseMigration, PrintFunction, setup, MigrationException
 
 
-class BadMigrationModule(Exception):
+class BadMigrationModule(MigrationException):
     pass
 
 
-class InvalidMigrationCommand(Exception):
-    pass
+class InvalidMigrationCommand(MigrationException):
+    def __init__(self, command: str) -> None:
+        super().__init__(f"Invalid migration command: {command}")
 
 
 class MigrationWrapper:
@@ -67,7 +68,7 @@ class MigrationWrapper:
         elif command == "stats":
             self.handler.print_stats()
         else:
-            raise InvalidMigrationCommand()
+            raise InvalidMigrationCommand(command)
 
 
 def get_parser() -> ArgumentParser:

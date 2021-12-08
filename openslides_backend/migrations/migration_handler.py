@@ -1,4 +1,3 @@
-import time
 from enum import Enum
 from io import StringIO
 from threading import Lock, Thread
@@ -98,13 +97,14 @@ class MigrationHandler(BaseHandler):
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         MigrationHandler.migration_running = True
-        time.sleep(10)
         handler = MigrationWrapper(verbose, self.write_line)
         try:
             handler.execute_command(command)
         except MigrationException as e:
+            self.close_migrate_thread_stream()
             raise View400Exception(str(e))
-        MigrationHandler.migration_running = False
+        finally:
+            MigrationHandler.migration_running = False
 
     def write_line(self, message: str) -> None:
         assert MigrationHandler.migrate_thread_stream
