@@ -216,8 +216,9 @@ class Checker:
                 self.errors.append(
                     f"The template field {collectionfield} is missing a $"
                 )
-            valid_attributes.extend(("replacement_collection", "replacement_enum"))
-            if "replacement_enum" in field:
+            valid_attributes.append("replacement_collection")
+            fields = field.get("fields")
+            if isinstance(fields, dict) and fields.get("type") in ("relation", "relation_list") and "replacement_enum" in field:
                 if "replacement_collection" in field:
                     self.errors.append(
                         f"Field {collectionfield}' may contain either 'replacement_collection' or 'replacement_enum'."
@@ -226,10 +227,11 @@ class Checker:
                     self.errors.append(
                         f"'replacement_enum' for {collectionfield} is not a list."
                     )
+                valid_attributes.append("replacement_enum")
                 for value in field["replacement_enum"]:
                     self.validate_value_for_type("string", value, collectionfield)
             if (
-                isinstance(fields := field.get("fields"), dict)
+                isinstance(fields, dict)
                 and fields.get("type") == "decimal(6)"
             ):
                 valid_attributes.append("minimum")

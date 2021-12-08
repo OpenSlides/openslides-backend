@@ -712,6 +712,7 @@ class Meeting(Model):
     default_projector__id = fields.TemplateRelationField(
         index=18,
         to={Collection("projector"): "used_as_default_$_in_meeting_id"},
+        required=True,
         replacement_enum=[
             "agenda_all_items",
             "topics",

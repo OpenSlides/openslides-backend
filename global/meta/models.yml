@@ -260,6 +260,8 @@ user:
   committee_$_management_level:
     type: template
     replacement_collection: committee
+    replacement_enum:
+      - xyz
     description: Hierarchical permission level for the each committee organization.
     fields:
       type: string
@@ -1515,6 +1517,7 @@ meeting:
     fields:
       type: relation
       to: projector/used_as_default_$_in_meeting_id
+      required: true
     restriction_mode: B
     replacement_enum:
       - agenda_all_items

@@ -145,7 +145,7 @@ class Model(metaclass=ModelMetaClass):
                         fields.GenericRelationListField,
                         fields.BaseTemplateField,
                     ),
-                ):
+                ) and not model_field.replacement_enum:
                     raise NotImplementedError(
                         f"{self.collection.collection}.{model_field.own_field_name}"
                     )
