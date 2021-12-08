@@ -357,7 +357,7 @@ class BaseTemplateField(Field):
                 "description": f"Enum Replacement for {self.own_field_name}{' required' if self.required else ''}",
                 "type": "object",
                 "properties": {
-                    #name: {"type": "integer" if self.required else ["integer", "null"], "minimum": 1}
+                    # name: {"type": "integer" if self.required else ["integer", "null"], "minimum": 1}
                     name: {"type": "integer", "minimum": 1}
                     for name in self.replacement_enum
                 },
