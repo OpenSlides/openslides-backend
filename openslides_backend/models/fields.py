@@ -446,7 +446,10 @@ class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
         parts = own_field_name.split("$")
         template = parts[0] + "$%s" + parts[1]
         return any(
-            not instance.get(template % value) for value in instance[own_field_name]
+            # Check every structure field and return True (=Error) if any structure field is empty.
+            # If structure-field doesn't exist, it will not try to set anything empty and return True.
+            not instance.get(template % replace_text, True)
+            for replace_text in instance[own_field_name]
         )
 
 

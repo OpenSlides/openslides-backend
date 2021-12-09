@@ -1,7 +1,7 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
-from openslides_backend.models.models import AgendaItem
+from openslides_backend.models.models import AgendaItem, Meeting, Projector
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -34,7 +34,13 @@ class MeetingClone(BaseActionTestCase):
                 "motion_workflow_ids": [1],
                 "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": None,
+                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                **{
+                    f"default_projector_${name}_id": 1
+                    for name in cast(
+                        List[str], Meeting.default_projector__id.replacement_enum
+                    )
+                },
                 "is_active_in_organization_id": 1,
             },
             "group/1": {
@@ -65,7 +71,14 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
                 "name": "Default projector",
-                "used_as_default_$_in_meeting_id": [],
+                "used_as_default_$_in_meeting_id": Projector.used_as_default__in_meeting_id.replacement_enum,
+                **{
+                    f"used_as_default_${name}_in_meeting_id": 1
+                    for name in cast(
+                        List[str],
+                        Projector.used_as_default__in_meeting_id.replacement_enum,
+                    )
+                },
             },
         }
 
@@ -93,7 +106,7 @@ class MeetingClone(BaseActionTestCase):
                 "motion_workflow_ids": [2],
                 "logo_$_id": None,
                 "font_$_id": [],
-                "default_projector_$_id": None,
+                "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
             },
         )
 
