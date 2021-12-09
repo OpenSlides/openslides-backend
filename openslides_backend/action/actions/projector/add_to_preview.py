@@ -1,4 +1,3 @@
-
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator

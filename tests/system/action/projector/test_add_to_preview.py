@@ -106,6 +106,22 @@ class ProjectorAddToPreview(BaseActionTestCase):
         assert projection.get("meeting_id") == 1
         assert projection.get("weight") == 11
 
+    def test_add_to_preview_non_existent_content_object(self) -> None:
+        response = self.request(
+            "projector.add_to_preview",
+            {
+                "ids": [1],
+                "content_object_id": "motion/42",
+                "stable": False,
+                "meeting_id": 1,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The following models do not belong to meeting 1: ['motion/42']",
+            response.json["message"],
+        )
+
     def test_add_to_preview_no_permission(self) -> None:
         self.base_permission_test(
             {},
