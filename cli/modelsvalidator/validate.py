@@ -218,7 +218,11 @@ class Checker:
                 )
             valid_attributes.append("replacement_collection")
             fields = field.get("fields")
-            if isinstance(fields, dict) and fields.get("type") in ("relation", "relation_list") and "replacement_enum" in field:
+            if (
+                isinstance(fields, dict)
+                and fields.get("type") in ("relation", "relation_list")
+                and "replacement_enum" in field
+            ):
                 if "replacement_collection" in field:
                     self.errors.append(
                         f"Field {collectionfield}' may contain either 'replacement_collection' or 'replacement_enum'."
@@ -230,10 +234,7 @@ class Checker:
                 valid_attributes.append("replacement_enum")
                 for value in field["replacement_enum"]:
                     self.validate_value_for_type("string", value, collectionfield)
-            if (
-                isinstance(fields, dict)
-                and fields.get("type") == "decimal(6)"
-            ):
+            if isinstance(fields, dict) and fields.get("type") == "decimal(6)":
                 valid_attributes.append("minimum")
         elif "$" in field_name and not nested:
             print(field_name, field)

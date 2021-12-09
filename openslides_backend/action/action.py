@@ -410,7 +410,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Validate required fields with the events of one WriteRequest.
         Precondition: Events are sorted create/update/delete-events
         Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
-        one, during getting required_fields from model.
+        one, during getting required_fields from model, except TemplateRelationField and
+        TemplateRelationListField with replacement_enum-attribute.
         """
         fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
         for event in write_request.events:

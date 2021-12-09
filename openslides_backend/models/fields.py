@@ -357,7 +357,10 @@ class BaseTemplateField(Field):
                 "description": f"Enum Replacement for {self.own_field_name}{' required' if self.required else ''}",
                 "type": "object",
                 "properties": {
-                    name: {"type": "integer" if self.required else ["integer", "null"], "minimum": 1}
+                    name: {
+                        "type": "integer" if self.required else ["integer", "null"],
+                        "minimum": 1,
+                    }
                     for name in self.replacement_enum
                 },
                 "additionalProperties": False,
@@ -427,7 +430,24 @@ class BaseTemplateField(Field):
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
-    pass
+    def check_required_not_fulfilled(
+        self, instance: Dict[str, Any], is_create: bool
+    ) -> bool:
+        own_field_name = self.get_own_field_name()
+        assert hasattr(
+            self, "replacement_enum"
+        ), f"field {own_field_name} required is only implemented with replacement_enum"
+        if own_field_name not in instance:
+            return is_create
+        if is_create and set(instance.get(own_field_name, ())) != set(
+            cast(List[str], self.replacement_enum)
+        ):
+            return True
+        parts = own_field_name.split("$")
+        template = parts[0] + "$%s" + parts[1]
+        return any(
+            not instance.get(template % value) for value in instance[own_field_name]
+        )
 
 
 class TemplateRelationField(BaseTemplateRelationField, RelationField):
