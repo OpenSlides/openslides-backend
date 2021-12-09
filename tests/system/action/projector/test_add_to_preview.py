@@ -38,7 +38,12 @@ class ProjectorAddToPreview(BaseActionTestCase):
     def test_add_to_preview(self) -> None:
         response = self.request(
             "projector.add_to_preview",
-            {"ids": [1, 2], "content_object_id": "assignment/1", "stable": False},
+            {
+                "ids": [1, 2],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
         )
         self.assert_status_code(response, 200)
         projector_1 = self.get_model("projector/1")
@@ -57,7 +62,12 @@ class ProjectorAddToPreview(BaseActionTestCase):
     def test_add_to_preview_empty_projector(self) -> None:
         response = self.request(
             "projector.add_to_preview",
-            {"ids": [3], "content_object_id": "assignment/1", "stable": False},
+            {
+                "ids": [3],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
         )
         self.assert_status_code(response, 200)
         projector_1 = self.get_model("projector/3")
@@ -65,12 +75,17 @@ class ProjectorAddToPreview(BaseActionTestCase):
         projection_13 = self.get_model("projection/13")
         assert projection_13.get("preview_projector_id") == 3
         assert projection_13.get("content_object_id") == "assignment/1"
-        assert projection_13.get("weight") == 2
+        assert projection_13.get("weight") == 1
 
     def test_add_to_preview_non_unique_ids(self) -> None:
         response = self.request(
             "projector.add_to_preview",
-            {"ids": [1, 1], "content_object_id": "assignment/1", "stable": False},
+            {
+                "ids": [1, 1],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
         )
         self.assert_status_code(response, 400)
         assert "data.ids must contain unique items" in response.json["message"]
@@ -78,7 +93,12 @@ class ProjectorAddToPreview(BaseActionTestCase):
     def test_add_to_preview_check_meeting_id(self) -> None:
         response = self.request(
             "projector.add_to_preview",
-            {"ids": [4], "content_object_id": "assignment/1", "stable": False},
+            {
+                "ids": [4],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -126,13 +146,23 @@ class ProjectorAddToPreview(BaseActionTestCase):
         self.base_permission_test(
             {},
             "projector.add_to_preview",
-            {"ids": [1, 2], "content_object_id": "assignment/1", "stable": False},
+            {
+                "ids": [1, 2],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
         )
 
     def test_add_to_preview_permission(self) -> None:
         self.base_permission_test(
             {},
             "projector.add_to_preview",
-            {"ids": [1, 2], "content_object_id": "assignment/1", "stable": False},
+            {
+                "ids": [1, 2],
+                "content_object_id": "assignment/1",
+                "stable": False,
+                "meeting_id": 1,
+            },
             Permissions.Projector.CAN_MANAGE,
         )
