@@ -141,7 +141,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.index += 1
         self.index = -1
 
-        action_data = self.pre_get_ids(action_data)
+        action_data = self.prepare_action_data(action_data)
         instances = self.get_updated_instances(action_data)
         is_original_instances = hasattr(
             self.get_updated_instances, "_original_instances"
@@ -266,7 +266,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         yield from action_data
 
-    def pre_get_ids(self, action_data: ActionData) -> ActionData:
+    def prepare_action_data(self, action_data: ActionData) -> ActionData:
         """
         By default this does nothing.
         Override in subclass to pre_get ids.

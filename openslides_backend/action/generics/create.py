@@ -12,7 +12,7 @@ class CreateAction(Action):
     Generic create action.
     """
 
-    def pre_get_ids(self, action_data: ActionData) -> ActionData:
+    def prepare_action_data(self, action_data: ActionData) -> ActionData:
         if not action_data:
             return action_data
         new_ids = self.datastore.reserve_ids(
