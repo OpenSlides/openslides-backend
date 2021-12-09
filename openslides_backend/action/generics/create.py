@@ -4,7 +4,7 @@ from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import FullQualifiedId
 from ..action import Action
-from ..util.typing import ActionResultElement
+from ..util.typing import ActionData, ActionResultElement
 
 
 class CreateAction(Action):
@@ -12,14 +12,20 @@ class CreateAction(Action):
     Generic create action.
     """
 
+    def prepare_action_data(self, action_data: ActionData) -> ActionData:
+        if not action_data:
+            return action_data
+        new_ids = self.datastore.reserve_ids(
+            collection=self.model.collection, amount=len(list(action_data))
+        )
+        for instance, new_id in zip(action_data, new_ids):
+            instance["id"] = new_id
+        return action_data
+
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Primary instance manipulation for defaults and extra fields.
         instance = self.set_defaults(instance)
         instance = self.validate_fields(instance)
-
-        # Fetch new id to have it available in update_instance method
-        new_id = self.datastore.reserve_id(collection=self.model.collection)
-        instance["id"] = new_id
 
         instance = self.update_instance(instance)
         self.apply_instance(instance)
