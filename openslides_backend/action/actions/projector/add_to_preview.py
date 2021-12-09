@@ -1,6 +1,6 @@
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -31,7 +31,7 @@ class ProjectorAddToPreview(UpdateAction):
         for instance in action_data:
             # add the preview projections
             for projector_id in instance["ids"]:
-                max_weight = self.get_max_projection_weight(projector_id)
+                max_weight = self.get_max_projection_weight(projector_id, meeting_id)
                 data = {
                     "meeting_id": instance["meeting_id"],
                     "preview_projector_id": projector_id,
@@ -44,9 +44,9 @@ class ProjectorAddToPreview(UpdateAction):
                 self.execute_other_action(ProjectionCreate, [data])
         return []
 
-    def get_max_projection_weight(self, projector_id: int) -> int:
-        filter_ = FilterOperator("preview_projector_id", "=", projector_id)
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
-        if maximum is None:
-            maximum = 0
-        return maximum
+    def get_max_projection_weight(self, projector_id: int, meeting_id: int) -> int:
+        filter_ = And(
+            FilterOperator("preview_projector_id", "=", projector_id),
+            FilterOperator("meeting_id", "=", meeting_id),
+        )
+        return self.datastore.max(Collection("projection"), filter_, "weight") or 0
