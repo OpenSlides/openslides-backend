@@ -1,0 +1,36 @@
+version: "3"
+services:
+    backend:
+        build:
+            context: ../..
+            dockerfile: migrations/Dockerfile
+        image: openslides-backend-migrations-dev
+        volumes:
+            - ../../migrations:/app/
+        environment:
+            - DATASTORE_READER_HOST=reader
+            - DATASTORE_WRITER_HOST=writer
+            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - PYTHONPATH=/app
+            - MYPYPATH=/app
+        depends_on:
+            - postgresql
+            - redis
+        networks:
+            - postgresql
+            - redis
+    postgresql:
+        image: postgres:11
+        environment:
+            - POSTGRES_USER=openslides
+            - POSTGRES_PASSWORD=openslides
+            - POSTGRES_DB=openslides
+        networks:
+            - postgresql
+    redis:
+        image: redis:alpine
+        networks:
+            - redis
+networks:
+    postgresql:
+    redis:

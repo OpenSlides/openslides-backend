@@ -1,23 +1,12 @@
 #!/bin/bash
 
-export MESSAGE_BUS_HOST=${MESSAGE_BUS_HOST:-redis}
-export MESSAGE_BUS_PORT=${MESSAGE_BUS_PORT:-6379}
+source wait.sh
 
-wait-for-it -t 0 "$MESSAGE_BUS_HOST:$MESSAGE_BUS_PORT"
-
-export DATASTORE_DATABASE_HOST=${DATASTORE_DATABASE_HOST:-postgresql}
-export DATASTORE_DATABASE_PORT=${DATASTORE_DATABASE_PORT:-5432}
-export DATASTORE_DATABASE_USER=${DATASTORE_DATABASE_USER:-openslides}
-export DATASTORE_DATABASE_NAME=${DATASTORE_DATABASE_NAME:-openslides}
-export DATASTORE_DATABASE_PASSWORD=${DATASTORE_DATABASE_PASSWORD:-openslides}
-
-until pg_isready -h "$DATASTORE_DATABASE_HOST" -p "$DATASTORE_DATABASE_PORT" -U "$DATASTORE_DATABASE_USER"; do
-  echo "Waiting for Postgres server '$DATASTORE_DATABASE_HOST' to become available..."
-  sleep 3
-done
-
-export PGPASSWORD="$DATASTORE_DATABASE_PASSWORD"
-psql -1 -h "$DATASTORE_DATABASE_HOST" -p "$DATASTORE_DATABASE_PORT" -U "$DATASTORE_DATABASE_USER" \
-        -d "$DATASTORE_DATABASE_NAME" -f /datastore-service/datastore/shared/postgresql_backend/schema.sql
+if [[ -f /datastore-service/scripts/system/create_schema.sh ]]; then
+    pushd /datastore-service/
+    export PGPASSWORD="$DATASTORE_DATABASE_PASSWORD"
+    scripts/system/create_schema.sh
+    popd
+fi
 
 exec "$@"

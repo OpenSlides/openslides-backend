@@ -1,4 +1,4 @@
-from typing import Any, Dict, Set
+from typing import Any, Dict, List, Set, cast
 
 import fastjsonschema
 
@@ -40,7 +40,7 @@ class GetHistoryInformation(BasePresenter):
 
         fqid = self.data["fqid"]
         response = self.datastore.history_information([fqid])
-        information = response.get(fqid, [])
+        information = cast(List[Dict[str, Any]], response.get(fqid, []))
 
         # get all users
         user_ids = {position["user_id"] for position in information}

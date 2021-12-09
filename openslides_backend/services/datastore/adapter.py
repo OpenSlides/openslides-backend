@@ -117,7 +117,7 @@ class DatastoreAdapter(DatastoreService):
                 mapped_fields_set.add("meta_position")
         request = GetRequest(
             fqid=str(fqid),
-            mapped_fields=mapped_fields_set,
+            mapped_fields=list(mapped_fields_set),
             position=position,
             get_deleted_models=get_deleted_models,
         )
@@ -127,9 +127,9 @@ class DatastoreAdapter(DatastoreService):
         response = self.reader.get(request)
         if lock_result:
             instance_position = response.get("meta_position")
-            if instance_position is None:
+            if not isinstance(instance_position, int):
                 raise DatastoreException(
-                    "Response from datastore does not contain field 'meta_position' but this is required."
+                    "Response from datastore contains invalid 'meta_position'."
                 )
             if isinstance(lock_result, list):
                 mapped_fields_set = set(lock_result)
@@ -174,9 +174,9 @@ class DatastoreAdapter(DatastoreService):
                 value = response[collection.collection][instance_id]
                 if lock_result:
                     instance_position = value.get("meta_position")
-                    if instance_position is None:
+                    if not isinstance(instance_position, int):
                         raise DatastoreException(
-                            "Response from datastore does not contain field 'meta_position' but this is required."
+                            "Response from datastore contains invalid 'meta_position'."
                         )
                     fqid = FullQualifiedId(collection, instance_id)
                     self.update_locked_fields_from_mapped_fields(
@@ -215,9 +215,9 @@ class DatastoreAdapter(DatastoreService):
             for field in mapped_fields_set:
                 # just take the first position, new positions will always be higher anyway
                 instance_position = list(response.values())[0].get("meta_position")
-                if instance_position is None:
+                if not isinstance(instance_position, int):
                     raise DatastoreException(
-                        "Response from datastore does not contain field 'meta_position' but this is required."
+                        "Response from datastore contains invalid 'meta_position'."
                     )
                 collection_field = CollectionField(collection, field)
                 self.update_locked_fields(collection_field, instance_position)

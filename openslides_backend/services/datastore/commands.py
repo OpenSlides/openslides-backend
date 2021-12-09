@@ -3,7 +3,7 @@ from typing import Dict, List, Optional, Set, Union
 import simplejson as json
 from mypy_extensions import TypedDict
 
-from ...shared.filters import Filter as FilterInterface
+from ...shared.filters import FilterBase as FilterInterface
 from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.event import Event
 from ...shared.interfaces.write_request import WriteRequest

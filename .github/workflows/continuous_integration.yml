@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-18.04
     defaults:
       run:
-        working-directory: .github/startup_test
+        working-directory: .github/docker-compose
 
     steps:
     - uses: actions/checkout@v2
@@ -25,12 +25,12 @@ jobs:
         echo "openslides" >> secrets/datastore_postgres_password
 
     - name: Run docker production image
-      run: docker-compose up -d
+      run: docker-compose -f docker-compose.prod.yml up -d
 
     - name: Wait for action service
       # we have to execute this inside the container since the port to the outside is opened directly after the
       # container started, while the code itself is not ready yet
-      run: docker-compose exec -T backend ./wait.sh backend 9002
+      run: docker-compose -f docker-compose.prod.yml exec -T backend ./wait.sh backend 9002
 
     - name: Fire a test request to actions component
       run: curl localhost:9002/system/action/health
@@ -46,6 +46,44 @@ jobs:
 
     - name: Run tests
       run: dev/run-tests.sh
+
+  run-migration-tests:
+    name: Run the migration tests & cleanup tools
+    runs-on: ubuntu-18.04
+    defaults:
+      run:
+        working-directory: .github/docker-compose
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Start docker setup
+      run: docker-compose -f docker-compose.migrations.yml up -d
+
+    - name: Install datastore package
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend pip install --no-cache-dir --requirement /util/requirements/partial/requirements_datastore_as_package.txt
+
+    - name: Create schema
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh python create_schema.py
+
+    - name: Run black check
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh black --check --diff .
+
+    - name: Run isort check
+      if: always()
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh isort --check-only --diff .
+  
+    - name: Run flake8 check
+      if: always()
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh flake8 .
+  
+    - name: Run mypy check
+      if: always()
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh mypy .
+  
+    - name: Run pytest
+      if: always()
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh pytest --cov .
 
   check-coding-style:
     name: Check coding style

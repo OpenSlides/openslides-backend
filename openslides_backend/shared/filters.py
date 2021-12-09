@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Sequence, Union
 
 from datastore.shared.util import And as BaseAnd
 from datastore.shared.util import FilterOperator as BaseFilterOperator
@@ -9,38 +9,47 @@ from datastore.shared.util import Or as BaseOr
 FilterData = Dict[str, Any]
 
 
-class Filter(ABC):
+class FilterBase(ABC):
     @abstractmethod
     def to_dict(self) -> FilterData:
         """Return a dict representation of this filter."""
 
 
-class FilterOperator(Filter, BaseFilterOperator):
+class FilterOperator(FilterBase, BaseFilterOperator):
     def to_dict(self) -> FilterData:
         return {"field": self.field, "operator": self.operator, "value": self.value}
 
 
-class And(Filter, BaseAnd):
-    def __init__(self, *filters: Filter) -> None:
-        super().__init__(filters)
+class And(FilterBase, BaseAnd):
+    and_filter: Sequence["Filter"]
+
+    def __init__(self, *filters: "Filter") -> None:
+        super().__init__(list(filters))
 
     def to_dict(self) -> FilterData:
         filters = list(map(lambda x: x.to_dict(), self.and_filter))
         return {"and_filter": filters}
 
 
-class Or(Filter, BaseOr):
-    def __init__(self, *filters: Filter) -> None:
-        super().__init__(filters)
+class Or(FilterBase, BaseOr):
+    or_filter: Sequence["Filter"]
+
+    def __init__(self, *filters: "Filter") -> None:
+        super().__init__(list(filters))
 
     def to_dict(self) -> FilterData:
         filters = list(map(lambda x: x.to_dict(), self.or_filter))
         return {"or_filter": filters}
 
 
-class Not(Filter, BaseNot):
+class Not(FilterBase, BaseNot):
+    not_filter: "Filter"
+
     def to_dict(self) -> FilterData:
         return {"not_filter": self.not_filter.to_dict()}
+
+
+Filter = Union[And, Or, Not, FilterOperator]
 
 
 def filter_visitor(filter: Filter, callback: Callable[[FilterOperator], None]) -> None:
