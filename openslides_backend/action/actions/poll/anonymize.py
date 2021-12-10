@@ -40,8 +40,10 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
             FullQualifiedId(Collection("poll"), poll_id), ["type", "state"]
         )
 
-        if not poll.get("state") == Poll.STATE_FINISHED:
-            raise ActionException("Anonymize only in state finished allowed.")
+        if not poll.get("state") in (Poll.STATE_FINISHED, Poll.STATE_PUBLISHED):
+            raise ActionException(
+                "Anonymize only in state finished or published allowed."
+            )
         if poll.get("type") == Poll.TYPE_ANALOG:
             raise ActionException("Anonymize is not allowed for type analog.")
 
