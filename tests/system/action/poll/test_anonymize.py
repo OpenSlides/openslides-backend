@@ -29,9 +29,7 @@ class PollAnonymize(BaseActionTestCase):
             }
         )
 
-    def test_anonymize(self) -> None:
-        response = self.request("poll.anonymize", {"id": 1})
-        self.assert_status_code(response, 200)
+    def assert_anonymize(self) -> None:
         poll = self.get_model("poll/1")
         assert poll.get("description") == "test"
         assert poll.get("is_pseudoanonymized") is True
@@ -44,6 +42,17 @@ class PollAnonymize(BaseActionTestCase):
         assert user.get("vote_$1_ids") == []
         assert user.get("vote_delegated_vote_$_ids") == []
         assert user.get("vote_delegated_vote_$1_ids") == []
+
+    def test_anonymize(self) -> None:
+        response = self.request("poll.anonymize", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_anonymize()
+
+    def test_anonymize_publish_state(self) -> None:
+        self.update_model("poll/1", {"state": Poll.STATE_PUBLISHED})
+        response = self.request("poll.anonymize", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_anonymize()
 
     def test_anonymize_wrong_state(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_CREATED})
