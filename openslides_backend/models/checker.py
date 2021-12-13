@@ -24,6 +24,7 @@ from openslides_backend.models.fields import (
     NumberArrayField,
     RelationField,
     RelationListField,
+    TextField,
     TimestampField,
 )
 from openslides_backend.models.helper import calculate_inherited_groups_helper
@@ -136,6 +137,7 @@ checker_map: Dict[Type[Field], Callable[..., bool]] = {
     DecimalField: check_decimal,
     ColorField: check_color,
     JSONField: check_json,
+    TextField: check_string,
 }
 
 

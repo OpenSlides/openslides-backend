@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0059d448971bfd159042f4b2486ac430"
+MODELS_YML_CHECKSUM = "a70427cdd74fa79b36d6739fcf00670a"
 
 
 class Organization(Model):
@@ -512,7 +512,7 @@ class Meeting(Model):
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
-    users_email_body = fields.CharField(
+    users_email_body = fields.TextField(
         default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
     )
     assignments_export_title = fields.CharField(default="Elections")

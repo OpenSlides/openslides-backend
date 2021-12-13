@@ -1152,7 +1152,7 @@ meeting:
     default: OpenSlides access data
     restriction_mode: B
   users_email_body:
-    type: string
+    type: text
     default: >-
       Dear {name},
 
