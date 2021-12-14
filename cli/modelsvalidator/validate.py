@@ -43,6 +43,7 @@ DATA_TYPES = (
     "decimal(6)",
     "timestamp",
     "color",
+    "text",
 )
 
 
@@ -247,6 +248,7 @@ class Checker:
             "HTMLStrict": str,
             "HTMLPermissive": str,
             "timestamp": int,
+            "text": str,
         }
         if type_str in basic_types:
             if type(value) != basic_types[type_str]:

@@ -37,6 +37,7 @@ COMMON_FIELD_CLASSES = {
     "color": "ColorField",
     "string[]": "CharArrayField",
     "number[]": "NumberArrayField",
+    "text": "TextField",
 }
 
 RELATION_FIELD_CLASSES = {
