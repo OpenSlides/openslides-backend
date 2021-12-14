@@ -20,6 +20,7 @@ COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
 COPY migrations/*.py migrations/
 COPY migrations/migrations migrations/migrations/.
+COPY global global
 
 ENV EMAIL_HOST postfix
 ENV EMAIL_PORT 25
