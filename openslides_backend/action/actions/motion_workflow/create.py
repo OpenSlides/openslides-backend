@@ -5,6 +5,7 @@ from ....permissions.permissions import Permissions
 from ...action import Action
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..motion_state.create import MotionStateCreateAction
@@ -37,7 +38,9 @@ class MotionWorkflowCreateAction(CreateActionWithDependencies):
         ]
 
 
-@register_action("motion_workflow.create_simple_workflow", internal=True)
+@register_action(
+    "motion_workflow.create_simple_workflow", action_type=ActionType.BACKEND_INTERNAL
+)
 class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
     """
     Action to create a simple motion workflow.
@@ -104,7 +107,9 @@ class MotionWorkflowCreateSimpleWorkflowAction(CreateAction):
         return instance
 
 
-@register_action("motion_workflow.create_complex_workflow", internal=True)
+@register_action(
+    "motion_workflow.create_complex_workflow", action_type=ActionType.BACKEND_INTERNAL
+)
 class MotionWorkflowCreateComplexWorkflowAction(CreateAction):
     """
     Action to create a complex motion workflow.

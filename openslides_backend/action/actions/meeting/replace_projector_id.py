@@ -2,6 +2,7 @@ from ....models.models import Meeting
 from ....shared.patterns import FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -9,7 +10,9 @@ from .mixins import GetMeetingIdFromIdMixin
 from .shared_meeting import meeting_projector_default_replacements
 
 
-@register_action("meeting.replace_projector_id", internal=True)
+@register_action(
+    "meeting.replace_projector_id", action_type=ActionType.BACKEND_INTERNAL
+)
 class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
     """
     Internal action to replace default projector id with reference id.

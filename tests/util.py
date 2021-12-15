@@ -76,7 +76,9 @@ class Client(WerkzeugClient):
         """
         Overwrite the return type since it's actually our Response type. Also add headers.
         """
-        return cast(Response, super().post(*args, headers=self.headers, **kwargs))
+        kw_headers = kwargs.pop("headers", {})
+        headers = {**self.headers, **kw_headers}
+        return cast(Response, super().post(*args, headers=headers, **kwargs))
 
 
 def get_fqid(value: str) -> FullQualifiedId:

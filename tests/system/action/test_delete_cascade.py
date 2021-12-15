@@ -1,4 +1,5 @@
 from openslides_backend.action.generics.delete import DeleteAction
+from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -71,21 +72,21 @@ class FakeModelCDC(Model):
     )
 
 
-@register_action("fake_model_cd_a.delete", internal=True)
+@register_action("fake_model_cd_a.delete", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCDADeleteAction(DeleteAction):
     model = FakeModelCDA()
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
 
-@register_action("fake_model_cd_b.delete", internal=True)
+@register_action("fake_model_cd_b.delete", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCDBDeleteAction(DeleteAction):
     model = FakeModelCDB()
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
 
-@register_action("fake_model_cd_c.delete", internal=True)
+@register_action("fake_model_cd_c.delete", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCDCDeleteAction(DeleteAction):
     model = FakeModelCDC()
     schema = {}  # type: ignore

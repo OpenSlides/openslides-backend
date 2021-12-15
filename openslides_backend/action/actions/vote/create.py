@@ -2,11 +2,12 @@ from ....models.models import Vote
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("vote.create", internal=True)
+@register_action("vote.create", action_type=ActionType.BACKEND_INTERNAL)
 class VoteCreate(CreateActionWithInferredMeeting):
     """
     Internal action to create a vote.

@@ -2,11 +2,12 @@ from typing import Callable, Type
 
 from ..action import Action
 from ..action_set import ActionSet
+from .action_type import ActionType
 from .actions_map import actions_map
 
 
 def register_action(
-    name: str, internal: bool = False
+    name: str, action_type: ActionType = ActionType.PUBLIC
 ) -> Callable[[Type[Action]], Type[Action]]:
     """
     Decorator to be used for action classes. Registers the class so that it can
@@ -15,7 +16,7 @@ def register_action(
 
     def wrapper(clazz: Type[Action]) -> Type[Action]:
         _register_action(name, clazz)
-        clazz.internal = internal
+        clazz.action_type = action_type
         return clazz
 
     return wrapper

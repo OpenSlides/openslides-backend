@@ -1,5 +1,6 @@
 from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.generics.update import UpdateAction
+from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -67,14 +68,14 @@ class FakeModelEFC(Model):
     )
 
 
-@register_action("fake_model_ef_b.create", internal=True)
+@register_action("fake_model_ef_b.create", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelEFBCreateAction(CreateAction):
     model = FakeModelEFB()
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
 
-@register_action("fake_model_ef_b.update", internal=True)
+@register_action("fake_model_ef_b.update", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelEFBUpdateAction(UpdateAction):
     model = FakeModelEFB()
     schema = {}  # type: ignore
