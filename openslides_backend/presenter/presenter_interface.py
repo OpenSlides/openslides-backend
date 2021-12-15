@@ -1,6 +1,4 @@
-from typing import Any, Dict, List, Protocol
-
-from mypy_extensions import TypedDict
+from typing import Any, Dict, List, Protocol, TypedDict
 
 PresenterBlob = TypedDict(
     "PresenterBlob", {"presenter": str, "data": Any}, total=False

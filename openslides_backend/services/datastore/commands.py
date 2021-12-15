@@ -1,7 +1,6 @@
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, TypedDict, Union
 
 import simplejson as json
-from mypy_extensions import TypedDict
 
 from ...shared.filters import FilterBase as FilterInterface
 from ...shared.interfaces.collection_field_lock import CollectionFieldLock

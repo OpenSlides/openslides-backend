@@ -61,7 +61,7 @@ jobs:
       run: docker-compose -f docker-compose.migrations.yml up -d
 
     - name: Install datastore package
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend pip install --no-cache-dir --requirement /util/requirements/partial/requirements_datastore_as_package.txt
+      run: docker-compose -f docker-compose.migrations.yml exec -T backend bash -c ". /util/requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement /util/requirements/partial/requirements_datastore_as_package.txt"
 
     - name: Create schema
       run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh python create_schema.py
@@ -97,7 +97,7 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
 
     - name: Install requirements
-      run: pip install --requirement requirements/requirements_development.txt
+      run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Check black
       if: always()
@@ -129,7 +129,7 @@ jobs:
 
     - name: Install requirements
       id: requirements
-      run: pip install --requirement requirements/requirements_development.txt
+      run: . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
 
     - name: Validate models.yml
       run: PYTHONPATH=. python cli/modelsvalidator/validate.py
