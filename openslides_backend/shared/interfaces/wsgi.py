@@ -1,6 +1,4 @@
-from typing import Any, Callable, Dict, Iterable, Optional, Text, Tuple
-
-from typing_extensions import Protocol
+from typing import Any, Callable, Dict, Iterable, Optional, Protocol, Text, Tuple
 
 from openslides_backend.http.request import Request
 

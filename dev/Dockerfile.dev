@@ -7,7 +7,7 @@ RUN mkdir dev migrations
 
 COPY requirements/ requirements/
 ARG REQUIREMENTS_FILE=requirements_development.txt
-RUN pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
+RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement requirements/$REQUIREMENTS_FILE
 
 COPY wait.sh ./
 COPY dev/run-tests.sh dev/.

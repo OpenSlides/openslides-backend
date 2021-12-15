@@ -7,7 +7,7 @@ RUN mkdir /datastore-service
 
 COPY requirements/ requirements/
 
-RUN pip install --no-cache-dir --requirement requirements/requirements_migrations.txt
+RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement requirements/requirements_migrations.txt
 
 COPY dev/.bashrc .
 
