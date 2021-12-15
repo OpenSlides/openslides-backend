@@ -1,6 +1,5 @@
 import os
-
-from mypy_extensions import TypedDict
+from typing import TypedDict
 
 Environment = TypedDict(
     "Environment",

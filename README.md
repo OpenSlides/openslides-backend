@@ -55,7 +55,7 @@ To setup and local development version run
 
     $ python -m venv .virtualenv
     $ source .virtualenv/bin/activate
-    $ pip install --requirement dev/requirements_development.txt
+    $ . requirements/export_datastore_commit.sh && pip install --requirement requirements/requirements_development.txt
 
 To start it run
 

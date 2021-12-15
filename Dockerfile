@@ -6,7 +6,7 @@ RUN apt-get -y update && apt-get -y upgrade && \
 WORKDIR /app
 
 COPY requirements/ requirements/
-RUN pip install --no-cache-dir --requirement requirements/requirements_production.txt
+RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement requirements/requirements_production.txt
 
 RUN adduser --system --no-create-home appuser
 USER appuser

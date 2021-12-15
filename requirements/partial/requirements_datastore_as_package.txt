@@ -1,1 +1,1 @@
-git+git://github.com/OpenSlides/openslides-datastore-service@7170f008ccac0b31c37ffeee083b972bc314660d
+git+git://github.com/OpenSlides/openslides-datastore-service@${DATASTORE_COMMIT_HASH}
