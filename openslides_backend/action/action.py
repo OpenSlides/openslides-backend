@@ -90,6 +90,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     permission: Optional[Union[Permission, OrganizationManagementLevel]] = None
     permission_model: Optional[Model] = None
     permission_id: Optional[str] = None
+    skip_archived_meeting_check: bool = False
     relation_manager: RelationManager
 
     write_requests: List[WriteRequest]
@@ -101,7 +102,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         datastore: DatastoreService,
         relation_manager: RelationManager,
         logging: LoggingModule,
-        skip_archived_meeting_check: bool = False,
+        skip_archived_meeting_check: Optional[bool] = None,
     ) -> None:
         self.services = services
         self.auth = services.authentication()
@@ -111,11 +112,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.relation_manager = relation_manager
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-        if hasattr(self.__class__, "skip_archived_meeting_check"):
-            self.skip_archived_meeting_check: bool = (
-                self.__class__.skip_archived_meeting_check
-            )
-        else:
+        if skip_archived_meeting_check is not None:
             self.skip_archived_meeting_check = skip_archived_meeting_check
         self.write_requests = []
         self.results = []
@@ -358,7 +355,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if fields:
             event["fields"] = fields
-            self.datastore.update_additional_models(fqid, fields)
+            self.datastore.apply_changed_model(fqid, fields)
         if list_fields:
             event["list_fields"] = list_fields
         return WriteRequest(
@@ -532,7 +529,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     ) -> None:
         if not fqid:
             fqid = FullQualifiedId(self.model.collection, instance["id"])
-        self.datastore.update_additional_models(fqid, instance)
+        self.datastore.apply_changed_model(fqid, instance)
 
     def execute_other_action(
         self,
@@ -550,8 +547,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         to the called class if set. Usually this is needed for cascading deletes from
         outside of meeting.
         """
-        if hasattr(self.__class__, "skip_archived_meeting_check"):
-            skip_archived_meeting_check = self.__class__.skip_archived_meeting_check
+        if self.skip_archived_meeting_check:
+            skip_archived_meeting_check = self.skip_archived_meeting_check
 
         action = ActionClass(
             self.services,

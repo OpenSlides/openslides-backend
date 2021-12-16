@@ -15,13 +15,13 @@ class GetManyRequest:
     datastore.
     """
 
-    mapped_fields: Optional[Set[str]]
+    mapped_fields: Set[str]
 
     def __init__(
         self,
         collection: Collection,
         ids: List[int],
-        mapped_fields: Union[Set[str], List[str]] = None,
+        mapped_fields: Union[Set[str], List[str]],
     ) -> None:
         self.collection = collection
         self.ids = ids
@@ -29,6 +29,14 @@ class GetManyRequest:
             self.mapped_fields = set(mapped_fields)
         else:
             self.mapped_fields = mapped_fields
+
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, GetManyRequest)
+            and self.collection == other.collection
+            and self.ids == other.ids
+            and self.mapped_fields == other.mapped_fields
+        )
 
 
 CommandData = Dict[str, Union[str, int, List[str]]]

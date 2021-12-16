@@ -31,7 +31,9 @@ class ProjectorAddToPreview(UpdateAction):
         for instance in action_data:
             # add the preview projections
             for projector_id in instance["ids"]:
-                max_weight = self.get_max_projection_weight(projector_id, meeting_id)
+                max_weight = self.get_max_projection_weight(
+                    projector_id, instance["meeting_id"]
+                )
                 data = {
                     "meeting_id": instance["meeting_id"],
                     "preview_projector_id": projector_id,

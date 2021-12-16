@@ -112,7 +112,7 @@ class ProjectorToggle(UpdateAction):
 
     def get_max_projection_weight(self, projector_id: int) -> int:
         filter_ = FilterOperator("history_projector_id", "=", projector_id)
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
+        maximum = self.datastore.max(Collection("projection"), filter_, "weight")
         if maximum is None:
             maximum = 0
         return maximum

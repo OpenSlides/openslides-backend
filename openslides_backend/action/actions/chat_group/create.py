@@ -31,7 +31,7 @@ class ChatGroupCreate(ChatEnabledMixin, CheckUniqueNameMixin, CreateAction):
 
     def get_weight(self, meeting_id: int) -> int:
         filter_ = FilterOperator("meeting_id", "=", meeting_id)
-        maximum = self.datastore.max(Collection("chat_group"), filter_, "weight", "int")
+        maximum = self.datastore.max(Collection("chat_group"), filter_, "weight")
         if maximum is None:
             return 1
         return maximum + 1

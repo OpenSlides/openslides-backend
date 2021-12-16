@@ -1,5 +1,6 @@
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
+from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -29,7 +30,6 @@ class ChatGroupSort(
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
         yield from self.sort_linear(
-            nodes=instance["chat_group_ids"],
-            filter_id=instance["meeting_id"],
-            filter_str="meeting_id",
+            instance["chat_group_ids"],
+            FilterOperator("meeting_id", "=", instance["meeting_id"]),
         )

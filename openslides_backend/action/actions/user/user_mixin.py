@@ -168,7 +168,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
         user_collection = Collection("user")
         meeting_users = defaultdict(list)
         if instance.get("group_$_ids") is not None:
-            self.datastore.update_additional_models(
+            self.datastore.apply_changed_model(
                 user_fqid,
                 {
                     **{
@@ -181,7 +181,7 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 },
             )
         if instance.get("meeting_id") is not None:
-            self.datastore.update_additional_models(
+            self.datastore.apply_changed_model(
                 user_fqid, {"meeting_id": instance.get("meeting_id")}
             )
         for meeting_id, user_id in instance.get("vote_delegated_$_to_id", {}).items():

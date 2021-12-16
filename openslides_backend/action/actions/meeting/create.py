@@ -143,17 +143,10 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         )
         fqid_admin_group = FullQualifiedId(Collection("group"), action_results[1]["id"])  # type: ignore
         fqid_delegates_group = FullQualifiedId(Collection("group"), action_results[2]["id"])  # type: ignore
+        assert self.datastore.changed_models[fqid_default_group]["name"] == "Default"
+        assert self.datastore.changed_models[fqid_admin_group]["name"] == "Admin"
         assert (
-            self.datastore.additional_relation_models[fqid_default_group]["name"]
-            == "Default"
-        )
-        assert (
-            self.datastore.additional_relation_models[fqid_admin_group]["name"]
-            == "Admin"
-        )
-        assert (
-            self.datastore.additional_relation_models[fqid_delegates_group]["name"]
-            == "Delegates"
+            self.datastore.changed_models[fqid_delegates_group]["name"] == "Delegates"
         )
 
         instance["default_group_id"] = fqid_default_group.id

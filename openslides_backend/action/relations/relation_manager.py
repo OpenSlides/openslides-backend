@@ -2,10 +2,7 @@ from typing import Any, Dict, List, cast
 
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
-from ...services.datastore.interface import (
-    DatastoreService,
-    InstanceAdditionalBehaviour,
-)
+from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import (
     Collection,
@@ -130,7 +127,7 @@ class RelationManager:
                 return self.datastore.get(
                     fqid=FullQualifiedId(model.collection, instance["id"]),
                     mapped_fields=[template_field_name],
-                    db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
+                    use_changed_models=False,
                 ).get(template_field_name, [])
             except DatastoreException:
                 return []
@@ -257,7 +254,7 @@ class RelationManager:
         for fqfield, relations_element in relations.items():
             if relations_element["type"] in ("add", "remove"):
                 field_update_element = cast(FieldUpdateElement, relations_element)
-                self.datastore.update_additional_models(
+                self.datastore.apply_changed_model(
                     fqfield.fqid, {fqfield.field: field_update_element["value"]}
                 )
             elif relations_element["type"] == "list_update":

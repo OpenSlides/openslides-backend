@@ -80,16 +80,14 @@ class DatastoreAdapter(BaseDatastoreService):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: Optional[List[str]] = None,
+        mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
     ) -> PartialModel:
-        mapped_fields_set = set()
-        if mapped_fields:
-            mapped_fields_set.update(mapped_fields)
-            if lock_result:
-                mapped_fields_set.add("meta_position")
+        mapped_fields_set = set(mapped_fields)
+        if lock_result:
+            mapped_fields_set.add("meta_position")
         request = GetRequest(
             fqid=str(fqid),
             mapped_fields=list(mapped_fields_set),
@@ -123,8 +121,7 @@ class DatastoreAdapter(BaseDatastoreService):
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if lock_result:
             for get_many_request in get_many_requests:
-                if get_many_request.mapped_fields is not None:
-                    get_many_request.mapped_fields.add("meta_position")
+                get_many_request.mapped_fields.add("meta_position")
 
         request_parts = [
             GetManyRequestPart(
@@ -164,15 +161,13 @@ class DatastoreAdapter(BaseDatastoreService):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: List[str] = None,
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
-        mapped_fields_set = set()
-        if mapped_fields:
-            mapped_fields_set.update(mapped_fields)
-            if lock_result:
-                mapped_fields_set.add("meta_position")
+        mapped_fields_set = set(mapped_fields)
+        if lock_result:
+            mapped_fields_set.add("meta_position")
         request = GetAllRequest(
             collection=str(collection),
             mapped_fields=list(mapped_fields_set),
@@ -203,7 +198,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str] = [],
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[int, PartialModel]:

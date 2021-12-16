@@ -91,7 +91,7 @@ class ProjectorProjectPreview(UpdateAction):
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("history_projector_id", "=", projector_id),
         )
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
+        maximum = self.datastore.max(Collection("projection"), filter_, "weight")
         if maximum is None:
             maximum = 1
         return maximum

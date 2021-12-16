@@ -1,9 +1,18 @@
-from typing import Any, ContextManager, Dict, List, Optional, Protocol, Sequence, Tuple, Union
+from typing import (
+    Any,
+    ContextManager,
+    Dict,
+    List,
+    Optional,
+    Protocol,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import DeletedModelsBehaviour
 
-from ...shared.enum import Enum
 from ...shared.filters import Filter
 from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.write_request import WriteRequest
@@ -15,13 +24,6 @@ PartialModel = Dict[str, Any]
 
 
 LockResult = Union[bool, List[str]]
-
-
-class InstanceAdditionalBehaviour(int, Enum):
-    ADDITIONAL_BEFORE_DBINST = 1
-    DBINST_BEFORE_ADDITIONAL = 2
-    ONLY_DBINST = 3
-    ONLY_ADDITIONAL = 4
 
 
 class BaseDatastoreService(Protocol):
@@ -38,7 +40,7 @@ class BaseDatastoreService(Protocol):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: Optional[List[str]] = None,
+        mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
@@ -48,7 +50,6 @@ class BaseDatastoreService(Protocol):
     def get_many(
         self,
         get_many_requests: List[GetManyRequest],
-        mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
@@ -58,7 +59,7 @@ class BaseDatastoreService(Protocol):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: List[str] = None,
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
@@ -68,7 +69,7 @@ class BaseDatastoreService(Protocol):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str] = [],
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
@@ -137,7 +138,7 @@ class BaseDatastoreService(Protocol):
 
 
 class DatastoreService(BaseDatastoreService):
-    additional_relation_models: ModelMap
+    changed_models: ModelMap
 
     def get(
         self,
@@ -146,7 +147,7 @@ class DatastoreService(BaseDatastoreService):
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+        use_changed_models: bool = True,
         raise_exception: bool = True,
     ) -> PartialModel:
         ...
@@ -158,8 +159,28 @@ class DatastoreService(BaseDatastoreService):
         mapped_fields: List[str] = [],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+        use_changed_models: bool = True,
     ) -> Dict[int, PartialModel]:
+        ...
+
+    def exists(
+        self,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> bool:
+        ...
+
+    def count(
+        self,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> int:
         ...
 
     def min(
@@ -169,7 +190,7 @@ class DatastoreService(BaseDatastoreService):
         field: str,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+        use_changed_models: bool = True,
     ) -> Optional[int]:
         ...
 
@@ -180,7 +201,7 @@ class DatastoreService(BaseDatastoreService):
         field: str,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
+        use_changed_models: bool = True,
     ) -> Optional[int]:
         ...
 
@@ -189,7 +210,7 @@ class DatastoreService(BaseDatastoreService):
         Returns whether the given model was deleted during this request or not.
         """
 
-    def update_additional_models(
+    def apply_changed_model(
         self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
     ) -> None:
         ...

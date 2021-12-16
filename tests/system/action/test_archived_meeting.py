@@ -146,11 +146,11 @@ class MeetingActions(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "group_$1_ids": [],
-                "group_$_ids": [],
+                "group_$1_ids": None,
+                "group_$_ids": None,
                 "is_active": True,
-                "speaker_$1_ids": [],
-                "speaker_$_ids": [],
+                "speaker_$1_ids": None,
+                "speaker_$_ids": None,
                 "structure_level_$": ["1", "2"],
                 "structure_level_$1": "Member M1",
                 "structure_level_$2": "Member M2",

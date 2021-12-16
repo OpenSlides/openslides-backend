@@ -17,7 +17,6 @@ from ...models.fields import (
 from ...services.datastore.interface import (
     DatastoreService,
     GetManyRequest,
-    InstanceAdditionalBehaviour,
     PartialModel,
 )
 from ...shared.exceptions import ActionException
@@ -231,7 +230,7 @@ class SingleRelationHandler:
                     db_instance = self.datastore.get(
                         fqid=FullQualifiedId(self.model.collection, self.id),
                         mapped_fields=[replacement_field],
-                        db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
+                        use_changed_models=False,
                     )
                     replacement = db_instance.get(replacement_field)
                     assert replacement
@@ -256,7 +255,7 @@ class SingleRelationHandler:
         current_obj = self.datastore.get(
             FullQualifiedId(self.model.collection, self.id),
             [self.field_name],
-            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
+            use_changed_models=False,
             raise_exception=False,
         )
 

@@ -40,7 +40,7 @@ class DeleteAction(Action):
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted
         delete_actions: List[Tuple[Type[Action], ActionData]] = []
-        self.datastore.update_additional_models(this_fqid, DeletedModel())
+        self.datastore.apply_changed_model(this_fqid, DeletedModel())
         for field in self.model.get_relation_fields():
             # Check on_delete.
             if field.on_delete != OnDelete.SET_NULL:
@@ -74,6 +74,7 @@ class DeleteAction(Action):
                     # field.on_delete == OnDelete.CASCADE
                     # Execute the delete action for all fqids
                     for fqid in foreign_fqids:
+                        # breakpoint()
                         if self.is_deleted(fqid):
                             # skip models that are already deleted
                             continue
@@ -88,7 +89,7 @@ class DeleteAction(Action):
                         # Assume that the delete action uses the standard action data
                         action_data = [{"id": fqid.id}]
                         delete_actions.append((delete_action_class, action_data))
-                        self.datastore.update_additional_models(fqid, DeletedModel())
+                        self.datastore.apply_changed_model(fqid, DeletedModel())
             else:
                 # field.on_delete == OnDelete.SET_NULL
                 if not isinstance(field, BaseTemplateRelationField):
