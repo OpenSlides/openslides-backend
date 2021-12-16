@@ -2,7 +2,7 @@ import os
 from base64 import b64encode
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 from openslides_backend.http.views.action_view import (
     INTERNAL_AUTHORIZATION_HEADER,
