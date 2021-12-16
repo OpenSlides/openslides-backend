@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install --yes bash-completion vim postgresql-clien
 WORKDIR /util
 RUN mkdir /datastore-service
 
-COPY requirements/ requirements/
+COPY requirements requirements
+COPY scripts scripts
 
 RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement requirements/requirements_migrations.txt
 
