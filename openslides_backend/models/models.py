@@ -14,9 +14,9 @@ class Organization(Model):
     id = fields.IntegerField()
     name = fields.CharField()
     description = fields.HTMLStrictField()
-    legal_notice = fields.CharField()
-    privacy_policy = fields.CharField()
-    login_text = fields.CharField()
+    legal_notice = fields.TextField()
+    privacy_policy = fields.TextField()
+    login_text = fields.TextField()
     reset_password_verbose_errors = fields.BooleanField()
     enable_electronic_voting = fields.BooleanField()
     enable_chat = fields.BooleanField()
@@ -507,7 +507,7 @@ class Meeting(Model):
     users_enable_vote_weight = fields.BooleanField(default=False)
     users_allow_self_set_present = fields.BooleanField(default=False)
     users_pdf_welcometitle = fields.CharField(default="Welcome to OpenSlides")
-    users_pdf_welcometext = fields.CharField(
+    users_pdf_welcometext = fields.TextField(
         default="[Place for your welcome and help text.]"
     )
     users_pdf_url = fields.CharField(default="http://example.com:8000")

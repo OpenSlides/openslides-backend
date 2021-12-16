@@ -1,6 +1,6 @@
 ---
 # Types:
-#     - Nativ datatypes: string, number, boolean, JSON
+#     - Nativ datatypes: string, text, number, boolean, JSON
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
@@ -78,13 +78,13 @@ organization:
 
   # Settings (configurable by the client)
   legal_notice:
-    type: string
+    type: text
     restriction_mode: A
   privacy_policy:
-    type: string
+    type: text
     restriction_mode: A
   login_text:
-    type: string
+    type: text
     restriction_mode: A
   reset_password_verbose_errors:
     type: boolean
@@ -1153,7 +1153,7 @@ meeting:
     default: Welcome to OpenSlides
     restriction_mode: B
   users_pdf_welcometext:
-    type: string
+    type: text
     default: "[Place for your welcome and help text.]"
     restriction_mode: B
   users_pdf_url:
