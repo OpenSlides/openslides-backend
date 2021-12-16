@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict, List, Type, cast
 from unittest import TestCase
 
@@ -72,12 +73,26 @@ class BaseSystemTestCase(TestCase):
         Do NOT use in final tests since it takes a long time.
         """
         example_data = get_initial_data_file(EXAMPLE_DATA_FILE)
+        self._load_data(example_data)
+
+    def load_json_data(self, filename: str) -> None:
+        """
+        Useful for debug purposes when an action fails with a specific dump.
+        Do NOT use in final tests since it takes a long time.
+        """
+        with open(filename) as file:
+            data = json.loads(file.read())
+        self._load_data(data)
+
+    def _load_data(self, raw_data: Dict[str, Dict[str, Any]]) -> None:
         data = {}
-        for collection, models in example_data.items():
+        for collection, models in raw_data.items():
             if collection == "_migration_index":
                 continue
-            for model_id in models:
-                data[f"{collection}/{model_id}"] = models[model_id]
+            for model_id, model in models.items():
+                data[f"{collection}/{model_id}"] = {
+                    f: v for f, v in model.items() if not f.startswith("meta_")
+                }
         self.set_models(data)
 
     def create_client(self, username: str = None, password: str = None) -> Client:
