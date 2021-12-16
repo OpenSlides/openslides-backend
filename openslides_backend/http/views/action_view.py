@@ -1,3 +1,4 @@
+from base64 import b64decode
 from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
@@ -49,7 +50,10 @@ class ActionView(BaseView):
         # Check authorization for internal route
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
         secret_password = get_internal_auth_password()
-        if request_password is None or request_password != secret_password:
+        if (
+            request_password is None
+            or b64decode(request_password).decode() != secret_password
+        ):
             raise Unauthorized()
 
         handler = ActionHandler(self.services, self.logging)

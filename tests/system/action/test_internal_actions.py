@@ -1,15 +1,14 @@
 import os
+from base64 import b64encode
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
+from unittest.mock import patch, Mock
 
 from openslides_backend.http.views.action_view import (
     INTERNAL_AUTHORIZATION_HEADER,
     ActionView,
 )
-from openslides_backend.shared.env import (
-    INTERNAL_AUTH_PASSWORD_FILE,
-    OPENSLIDES_DEVELOPMENT,
-)
+from openslides_backend.shared.env import INTERNAL_AUTH_PASSWORD_FILE
 from tests.system.util import get_route_path
 from tests.util import Response
 
@@ -44,7 +43,11 @@ class TestInternalActions(BaseActionTestCase):
         if internal_auth_password is None:
             headers = {}
         else:
-            headers = {INTERNAL_AUTHORIZATION_HEADER: internal_auth_password}
+            headers = {
+                INTERNAL_AUTHORIZATION_HEADER: b64encode(
+                    internal_auth_password.encode()
+                ).decode()
+            }
         return self.anon_client.post(
             get_route_path(ActionView.internal_action_route),
             json=[{"action": action, "data": [data]}],
@@ -99,11 +102,13 @@ class TestInternalActions(BaseActionTestCase):
         self.assert_status_code(response, 500)
         self.assert_model_not_exists("user/2")
 
-    def test_internal_try_access_backend_internal_action(self) -> None:
-        os.environ[OPENSLIDES_DEVELOPMENT] = "0"
+    @patch("openslides_backend.shared.env.is_dev_mode")
+    def test_internal_try_access_backend_internal_action(
+        self, is_dev_mode: Mock
+    ) -> None:
+        is_dev_mode.return_value = False
         response = self.internal_request(
             "option.create", {"meeting_id": 1, "text": "test"}
         )
         self.assert_status_code(response, 400)
         self.assert_model_not_exists("option/1")
-        os.environ[OPENSLIDES_DEVELOPMENT] = "1"
