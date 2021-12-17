@@ -149,15 +149,18 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "all_projection_ids": [42],
                     "projector_ids": [1],
+                    "is_active_in_organization_id": 1,
                 },
                 "projector/1": {
                     "meeting_id": 1,
                     "history_projection_ids": [42],
+                    "current_projection_ids": [42],
                 },
                 "projection/42": {
                     "meeting_id": 1,
                     "content_object_id": "meeting/1",
                     "history_projector_id": 1,
+                    "current_projector_id": 1,
                     "stable": False,
                 },
             }
