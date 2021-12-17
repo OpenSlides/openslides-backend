@@ -15,7 +15,7 @@ EXPOSE 9002
 EXPOSE 9003
 ENV PYTHONPATH /app
 
-COPY wait.sh ./
+COPY scripts scripts
 COPY entrypoint.sh ./
 COPY openslides_backend openslides_backend
 COPY migrations/*.py migrations/

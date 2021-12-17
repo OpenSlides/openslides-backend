@@ -17,6 +17,7 @@ services:
             - ../tests:/app/tests
             - ../cli:/app/cli
             - ../global:/app/global
+            - ../scripts:/app/scripts
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_READER_PORT=9010
@@ -39,7 +40,7 @@ services:
         ports:
             - "9010:9010"
         environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - OPENSLIDES_DEVELOPMENT=1
         depends_on:
             - postgresql
         networks:
@@ -55,7 +56,7 @@ services:
         ports:
             - "9011:9011"
         environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
+            - OPENSLIDES_DEVELOPMENT=1
         depends_on:
             - postgresql
             - redis
