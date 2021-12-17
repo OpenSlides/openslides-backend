@@ -1,4 +1,6 @@
-from typing import List
+from typing import List, cast
+
+from openslides_backend.models.models import User
 
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
@@ -107,17 +109,31 @@ def has_committee_management_level(
 ) -> bool:
     """Checks wether a user has the minimum necessary CommitteeManagementLevel"""
     if user_id > 0:
-        cml_field = f"committee_${committee_id}_management_level"
+        cml_fields = [
+            f"committee_${management_level}_management_level"
+            for management_level in cast(
+                List[str], User.committee__management_level.replacement_enum
+            )
+        ]
         user = datastore.get(
             FullQualifiedId(Collection("user"), user_id),
-            ["organization_management_level", cml_field],
+            ["organization_management_level", *cml_fields],
         )
         if user.get("organization_management_level") in (
             OrganizationManagementLevel.SUPERADMIN,
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         ):
             return True
-        return expected_level <= CommitteeManagementLevel(user.get(cml_field))
+        return any(
+            [
+                CommitteeManagementLevel(management_level) >= expected_level
+                for management_level in cast(
+                    List[str], User.committee__management_level.replacement_enum
+                )
+                if committee_id
+                in user.get(f"committee_${management_level}_management_level", [])
+            ]
+        )
     return False
 
 

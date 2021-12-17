@@ -97,10 +97,10 @@ class User(Model):
         read_only=True,
         constraints={"description": "Calculated field."},
     )
-    committee__management_level = fields.TemplateCharField(
+    committee__management_level = fields.TemplateRelationListField(
         index=10,
-        replacement_collection=Collection("committee"),
-        constraints={"enum": ["can_manage"]},
+        to={Collection("committee"): "user_$_management_level"},
+        replacement_enum=["can_manage", "can_todo"],
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
@@ -312,6 +312,11 @@ class Committee(Model):
         to={Collection("user"): "committee_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
+    )
+    user__management_level = fields.TemplateRelationListField(
+        index=5,
+        to={Collection("user"): "committee_$_management_level"},
+        replacement_enum=["can_manage"],
     )
     forward_to_committee_ids = fields.RelationListField(
         to={Collection("committee"): "receive_forwardings_from_committee_ids"}

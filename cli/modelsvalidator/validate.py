@@ -210,6 +210,8 @@ class Checker:
                     f"invalid value for 'on_delete' for {collectionfield}"
                 )
             valid_attributes.append("equal_fields")
+            if nested and type in ("relation", "relation-list"):
+                valid_attributes.append("enum")
 
         if type == "template":
             if "$" not in field_name:
@@ -220,7 +222,7 @@ class Checker:
             fields = field.get("fields")
             if (
                 isinstance(fields, dict)
-                and fields.get("type") in ("relation", "relation_list")
+                and fields.get("type") in ("relation", "relation-list")
                 and "replacement_enum" in field
             ):
                 if "replacement_collection" in field:

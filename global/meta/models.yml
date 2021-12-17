@@ -47,7 +47,8 @@
 #       the placeholder.
 #     - The type `template` describes a structured field for the given model. If the
 #       property `replacement_collection` is given, it describes which model the
-#       replacement ids are belonging to (=> structured relation), `replacement_enum` describes the possibel replacement as list of strings.
+#       replacement ids are belonging to (=> structured relation), 
+#       `replacement_enum` describes the possibel replacement as list of strings.
 #       If it is not given, the field is a structured tag. 
 #       The property `fields` contains the definition
 #       for all the fields that come from the template field.
@@ -249,6 +250,10 @@ user:
     type: relation-list
     to: meeting/present_user_ids
     restriction_mode: A
+
+  # Calculates all committee's where the user has
+  # - committee_$management_level rights or
+  # - is member (= has group-rights) of a meeting in the committee
   committee_ids:
     type: relation-list
     to: committee/user_ids
@@ -259,12 +264,13 @@ user:
   # committee specific permissions
   committee_$_management_level:
     type: template
-    replacement_collection: committee
+    replacement_enum:
+      - can_manage
+      - can_todo
     description: Hierarchical permission level for the each committee organization.
     fields:
-      type: string
-      enum:
-        - can_manage
+      type: relation-list
+      to: committee/user_$_management_level
     restriction_mode: E
 
   # Meeting specific personal data
@@ -645,6 +651,17 @@ committee:
     restriction_mode: A
     read_only: true
     description: "Calculated field."
+
+  user_$_management_level:
+    type: template
+    restriction_mode: B
+    replacement_enum:
+      - can_manage
+    description: Hierarchical permission level for the users.
+    fields:
+      type: relation-list
+      to: user/committee_$_management_level
+
   forward_to_committee_ids:
     type: relation-list
     to: committee/receive_forwardings_from_committee_ids

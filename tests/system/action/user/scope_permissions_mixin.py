@@ -27,7 +27,7 @@ class ScopePermissionsTestMixin(BaseActionTestCase):
                 "user/1",
                 {
                     "organization_management_level": None,
-                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$can_manage_management_level": [1],
                 },
             )
         elif scope == UserScope.Meeting:

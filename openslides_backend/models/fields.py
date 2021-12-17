@@ -10,6 +10,8 @@ from ..shared.schema import (
     id_list_schema,
     optional_fqid_schema,
     optional_id_schema,
+    optional_str_list_schema,
+    optional_str_schema,
     required_fqid_schema,
     required_id_schema,
 )
@@ -352,29 +354,26 @@ class BaseTemplateField(Field):
     def get_payload_schema(
         self, replacement_pattern: Optional[str] = None, *args: Any, **kwargs: Any
     ) -> Schema:
-        if self.replacement_enum:
-            return {
-                "description": f"Enum Replacement for {self.own_field_name}{' required' if self.required else ''}",
-                "type": "object",
-                "properties": {
-                    name: {
-                        "type": "integer" if self.required else ["integer", "null"],
-                        "minimum": 1,
-                    }
-                    for name in self.replacement_enum
-                },
-                "additionalProperties": False,
-            }
-        if not replacement_pattern:
-            if self.replacement_collection:
-                replacement_pattern = ID_REGEX
-            else:
-                replacement_pattern = ".*"
-        return {
+        schema = {
             "type": "object",
-            "patternProperties": {replacement_pattern: super().get_schema()},
             "additionalProperties": False,
         }
+
+        if self.replacement_enum:
+            subschema: Schema = self.get_schema()
+            schema.update(
+                {"properties": {name: subschema for name in self.replacement_enum}}
+            )
+        else:
+            if not replacement_pattern:
+                if self.replacement_collection:
+                    replacement_pattern = ID_REGEX
+                else:
+                    replacement_pattern = ".*"
+            schema.update(
+                {"patternProperties": {replacement_pattern: self.get_schema()}}
+            )
+        return schema
 
     def get_regex(self) -> str:
         """
@@ -454,11 +453,29 @@ class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):
 
 
 class TemplateRelationField(BaseTemplateRelationField, RelationField):
-    pass
+    def get_schema(self) -> Schema:
+        if self.constraints and self.constraints.get("enum"):
+            return self.extend_schema(super().get_schema(), **optional_str_schema)
+        else:
+            id_schema = required_id_schema if self.required else optional_id_schema
+            return self.extend_schema(super().get_schema(), **id_schema)
 
 
 class TemplateRelationListField(BaseTemplateRelationField, RelationListField):
-    pass
+    def get_schema(self) -> Schema:
+        schema = super().get_schema()
+        if self.constraints:
+            for key in self.constraints.keys():
+                del schema[key]
+        if self.constraints and self.constraints.get("enum"):
+            schema = self.extend_schema(schema, **optional_str_list_schema)
+        else:
+            schema = self.extend_schema(schema, **id_list_schema)
+        if self.constraints:
+            schema["items"].update(self.constraints)
+        if not hasattr(self, "required") or not self.required:
+            schema["type"] = ["array", "null"]
+        return schema
 
 
 class TemplateCharField(BaseTemplateField, CharField):

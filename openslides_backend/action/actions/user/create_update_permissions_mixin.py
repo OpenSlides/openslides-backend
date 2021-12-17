@@ -1,6 +1,9 @@
 from collections import defaultdict
+from functools import reduce
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+
+from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -10,6 +13,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, PermissionDenied
 from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.util_dict_sets import get_set_from_dict_by_fieldlist
 from .user_scope_permission_check_mixin import UserScope, UserScopePermissionCheckMixin
 
 
@@ -17,13 +21,19 @@ class PermissionVarStore:
     def __init__(self, datastore: DatastoreService, user_id: int) -> None:
         self.datastore = datastore
         self.user_id = user_id
+        self._cml_replacement_min_can_manage = [
+            f"committee_${replacement}_management_level"
+            for replacement in User.committee__management_level.replacement_enum
+            if CommitteeManagementLevel(replacement)
+            >= CommitteeManagementLevel.CAN_MANAGE
+        ]
         self.user = self.datastore.get(
             FullQualifiedId(Collection("user"), self.user_id),
             [
                 "organization_management_level",
-                "committee_$_management_level",
                 "group_$_ids",
                 "committee_ids",
+                *self._cml_replacement_min_can_manage,
             ],
         )
         self.user_oml = OrganizationManagementLevel(
@@ -39,9 +49,7 @@ class PermissionVarStore:
             (
                 self._user_committees,
                 self._user_committees_meetings,
-            ) = self._get_user_committees_and_meetings(
-                self.user.get("committee_$_management_level", [])
-            )
+            ) = self._get_user_committees_and_meetings()
         return self._user_committees
 
     @property
@@ -51,9 +59,7 @@ class PermissionVarStore:
             (
                 self._user_committees,
                 self._user_committees_meetings,
-            ) = self._get_user_committees_and_meetings(
-                self.user.get("committee_$_management_level", [])
-            )
+            ) = self._get_user_committees_and_meetings()
         return self._user_committees_meetings
 
     @property
@@ -65,35 +71,16 @@ class PermissionVarStore:
             )
         return self._user_meetings
 
-    def _get_user_committees_and_meetings(
-        self, committee_manage_ids: List[str]
-    ) -> Tuple[Set[int], Set[int]]:
+    def _get_user_committees_and_meetings(self) -> Tuple[Set[int], Set[int]]:
         """
         Returns a set of committees and a set of meetings
         belonging to those committees, where the request user has minimum
         CommitteeManagementLevel.CAN_MANAGE and is member of committee_id,
         """
-        user_committees = set(map(int, committee_manage_ids))
-        user_meetings = set()
-        user_committees = user_committees & set(self.user.get("committee_ids", set()))
+        user_committees = get_set_from_dict_by_fieldlist(
+            self.user, self._cml_replacement_min_can_manage
+        )
         if user_committees:
-            committees = tuple(user_committees)
-            user_committees = set()
-            user = self.datastore.get(
-                FullQualifiedId(Collection("user"), self.user_id),
-                [
-                    f"committee_${committee_id}_management_level"
-                    for committee_id in committees
-                ],
-            )
-            for committee_id in committees:
-                value = user.get(f"committee_${committee_id}_management_level")
-                if (
-                    CommitteeManagementLevel(value)
-                    >= CommitteeManagementLevel.CAN_MANAGE
-                ):
-                    user_committees.add(int(committee_id))
-
             committees_d = (
                 self.datastore.get_many(
                     [
@@ -107,9 +94,15 @@ class PermissionVarStore:
                 .get(Collection("committee"), {})
                 .values()
             )
-            for committee in committees_d:
-                user_meetings.update(committee.get("meeting_ids", []))
-
+            user_meetings = reduce(
+                lambda i1, i2: i1 | i2,
+                [
+                    set(committee.get("meeting_ids", set()))
+                    for committee in committees_d
+                ],
+            )
+        else:
+            user_meetings = set()
         return user_committees, user_meetings
 
     def _get_user_meetings_with_user_can_manage(
@@ -351,23 +344,32 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
 
     def _get_all_committees_from_instance(self, instance: Dict[str, Any]) -> Set[int]:
         """
-        Gets a Set of all committees from the instance regarding committees from group D
+        Gets a Set of all committees from the instance regarding committees from group D.
+        To get committees, that should be removed from cml, the user must be read.
         """
-        committee_ids_affected = instance.get("committee_ids") is not None
-        committees = set(instance.get("committee_ids", []))
-
+        right_list = instance.get("committee_$_management_level").keys()
+        committees = set(
+            [
+                committee_id
+                for committees in instance.get(
+                    "committee_$_management_level", {}
+                ).values()
+                for committee_id in committees
+            ]
+        )
         # In case of create there is no id, in case of update the user can remove committees only with the committee right
-        if (instance_user_id := instance.get("id")) and committee_ids_affected:
+        if instance_user_id := instance.get("id"):
+            cml_fields = [
+                f"committee_${replacement}_management_level"
+                for replacement in right_list
+            ]
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), instance_user_id),
-                ["committee_ids"],
+                [*cml_fields],
             )
-            # Just changes with ^ symmetric_difference operator
-            committees = committees ^ set(user.get("committee_ids", []))
-
-        if committee_str := instance.get("committee_$_management_level", {}).keys():
-            committees.update(map(int, committee_str))
-
+            committees_existing = get_set_from_dict_by_fieldlist(user, cml_fields)
+            # Just changes with ^ symmetric_difference operat
+            committees = committees ^ committees_existing
         return committees
 
     def _meetings_from_group_B_fields_from_instance(
