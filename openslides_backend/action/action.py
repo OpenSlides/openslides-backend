@@ -127,11 +127,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         self.user_id = user_id
         self.index = 0
+        self.internal = internal or self.internal
         for instance in action_data:
             self.validate_instance(instance)
             self.check_for_archived_meeting(instance)
             # perform permission check not for internal actions
-            if not internal and not self.internal:
+            if not self.internal:
                 try:
                     self.check_permissions(instance)
                 except MissingPermission as e:
@@ -224,7 +225,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if not meeting.get("is_active_in_organization_id"):
             raise ActionException(
-                f'Meeting {meeting.get("name", "")}/{meeting_id} cannot be changed, because it is archived.'
+                f'Meeting {meeting_id} ("{meeting.get("name", "")}") cannot be changed, because it is archived.'
             )
 
     def assert_not_anonymous(self) -> None:
@@ -542,8 +543,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         to the called class if set. Usually this is needed for cascading deletes from
         outside of meeting.
         """
-        if hasattr(self.__class__, "skip_archived_meeting_check"):
-            skip_archived_meeting_check = self.__class__.skip_archived_meeting_check
+        if self.skip_archived_meeting_check:
+            skip_archived_meeting_check = self.skip_archived_meeting_check
 
         action = ActionClass(
             self.services,

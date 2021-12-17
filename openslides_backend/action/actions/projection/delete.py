@@ -24,7 +24,7 @@ class ProjectionDelete(DeleteAction):
             FullQualifiedId(self.model.collection, instance["id"]),
             ["current_projector_id", "preview_projector_id"],
         )
-        if not (
+        if not self.internal and not (
             projection.get("current_projector_id")
             or projection.get("preview_projector_id")
         ):
