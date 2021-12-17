@@ -14,17 +14,24 @@ from typing import Any, Dict, Optional, Tuple, Union
 from fastjsonschema import JsonSchemaException
 
 from ....models.models import User
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import (
+    has_organization_management_level,
+    has_perm,
+)
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import DatastoreException, MissingPermission
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import Collection, FullQualifiedId
-from ....shared.schema import required_id_schema
+from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailMixin, EmailSettings
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
 from .helper import get_user_name
+
+ONE_ORGANIZATION = 1
 
 
 @register_action("user.send_invitation_email")
@@ -35,9 +42,8 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
     model = User()
     schema = DefaultSchema(User()).get_update_schema(
-        additional_required_fields={"meeting_id": required_id_schema},
+        additional_optional_fields={"meeting_id": optional_id_schema},
     )
-    permission = Permissions.User.CAN_MANAGE
 
     def perform(
         self, action_data: ActionData, user_id: int, internal: bool = False
@@ -61,7 +67,8 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                     result = self.get_initial_result_false(instance)
                     try:
                         self.validate_instance(instance)
-                        self.check_for_archived_meeting(instance)
+                        if instance.get("meeting_id"):
+                            self.check_for_archived_meeting(instance)
                         self.check_permissions(instance)
                         instance = self.update_instance(instance)
                         result = instance.pop("result")
@@ -112,7 +119,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         user_id = instance["id"]
-        meeting_id = instance["meeting_id"]
+        meeting_id = instance.get("meeting_id")
 
         result = self.get_initial_result_false(instance)
         instance["result"] = result
@@ -139,27 +146,15 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             return instance
         result["recipient"] = to_email
 
-        if meeting_id not in user["meeting_ids"]:
+        if meeting_id and meeting_id not in user["meeting_ids"]:
             result[
                 "message"
             ] = f"User/{user_id} does not belong to meeting/{meeting_id}"
             return instance
 
-        meeting = self.datastore.fetch_model(
-            FullQualifiedId(Collection("meeting"), meeting_id),
-            [
-                "name",
-                "users_email_sender",
-                "users_email_replyto",
-                "users_email_subject",
-                "users_email_body",
-                "users_pdf_url",
-            ],
-            lock_result=False,
-        )
-
+        mail_data = self.get_data_from_meeting_or_organization(meeting_id)
         from_email: Union[str, Address]
-        if users_email_sender := meeting.get("users_email_sender", "").strip():
+        if users_email_sender := mail_data.get("users_email_sender", "").strip():
             blacklist = ("[", "]", "\\")
             if any(x in users_email_sender for x in blacklist):
                 result["message"] = (
@@ -175,7 +170,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             from_email = EmailSettings.default_from_email
 
         if (
-            reply_to := meeting.get("users_email_replyto", "")
+            reply_to := mail_data.get("users_email_replyto", "")
         ) and not self.check_email(reply_to):
             result["message"] = f"The given reply_to address '{reply_to}' is not valid."
             return instance
@@ -187,32 +182,59 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         subject_format = format_dict(
             None,
             {
-                "event_name": meeting.get("name", ""),
+                "event_name": mail_data.get("name", ""),
                 "name": get_user_name(user),
                 "username": user.get("username", ""),
             },
         )
-        body_format = format_dict(
-            None,
-            {
-                "url": meeting.get("users_pdf_url", ""),
-                "password": user.get("default_password", ""),
-                **subject_format,
-            },
-        )
+        body_dict = {
+            "password": user.get("default_password", ""),
+            **subject_format,
+        }
+        if meeting_id:
+            body_dict["url"] = mail_data.get("users_pdf_url", "")
+        else:
+            body_dict["url"] = mail_data.get("url", "")
+
+        body_format = format_dict(None, body_dict)
 
         self.send_email(
             self.mail_client,
             from_email,
             to_email,
-            meeting.get("users_email_subject", "").format_map(subject_format),
-            meeting.get("users_email_body", "").format_map(body_format),
+            mail_data.get("users_email_subject", "").format_map(subject_format),
+            mail_data.get("users_email_body", "").format_map(body_format),
             reply_to=reply_to,
             html=False,
         )
         result["sent"] = True
         instance["last_email_send"] = round(time())
         return super().update_instance(instance)
+
+    def get_data_from_meeting_or_organization(
+        self, meeting_id: Optional[int]
+    ) -> Dict[str, Any]:
+        fields = [
+            "name",
+            "users_email_sender",
+            "users_email_replyto",
+            "users_email_subject",
+            "users_email_body",
+        ]
+        if not meeting_id:
+            collection = Collection("organization")
+            id_ = ONE_ORGANIZATION
+            fields.append("url")
+        else:
+            collection = Collection("meeting")
+            id_ = meeting_id
+            fields.append("users_pdf_url")
+
+        return self.datastore.fetch_model(
+            FullQualifiedId(collection, id_),
+            fields,
+            lock_result=False,
+        )
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         type(self).schema_validator(instance)
@@ -223,3 +245,20 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             "recipient_user_id": instance.get("id"),
             "recipient_meeting_id": instance.get("meeting_id"),
         }
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        if instance.get("meeting_id") and has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.User.CAN_MANAGE,
+            instance["meeting_id"],
+        ):
+            return
+        if has_organization_management_level(
+            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
+        ):
+            return
+        if instance.get("meeting_id"):
+            raise MissingPermission(Permissions.User.CAN_MANAGE)
+        else:
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)

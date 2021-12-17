@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a70427cdd74fa79b36d6739fcf00670a"
+MODELS_YML_CHECKSUM = "e97c548a9119ec2c64f1f4688f758e52"
 
 
 class Organization(Model):
@@ -50,6 +50,13 @@ class Organization(Model):
         to={Collection("theme"): "theme_for_organization_id"}, required=True
     )
     theme_ids = fields.RelationListField(to={Collection("theme"): "organization_id"})
+    users_email_sender = fields.CharField(default="OpenSlides")
+    users_email_replyto = fields.CharField()
+    users_email_subject = fields.CharField(default="OpenSlides access data")
+    users_email_body = fields.TextField(
+        default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
+    )
+    url = fields.CharField(default="http://example.com:8000")
 
 
 class User(Model):

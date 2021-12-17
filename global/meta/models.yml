@@ -135,6 +135,40 @@ organization:
     type: relation-list
     restriction_mode: A
     to: theme/organization_id
+  users_email_sender:
+    type: string
+    default: OpenSlides
+    restriction_mode: A
+  users_email_replyto:
+    type: string
+    restriction_mode: A
+  users_email_subject:
+    type: string
+    default: OpenSlides access data
+    restriction_mode: A
+  users_email_body:
+    type: text
+    default: >-
+      Dear {name},
+
+
+
+      this is your personal OpenSlides login:
+
+          {url}
+
+          username: {username}
+
+          password: {password}
+
+
+
+      This email was generated automatically.
+    restriction_mode: A
+  url:
+    type: string
+    default: http://example.com:8000
+    restriction_mode: A
 
 user:
   id:
