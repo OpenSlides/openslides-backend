@@ -2,11 +2,12 @@ from typing import Any, Dict
 
 from ....models.models import Option
 from ...generics.update import UpdateAction
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("option.set_auto_fields", internal=True)
+@register_action("option.set_auto_fields", action_type=ActionType.BACKEND_INTERNAL)
 class OptionSetAutoFields(UpdateAction):
     """
     Action to calculate auto fields for options (yes, no, abstain)

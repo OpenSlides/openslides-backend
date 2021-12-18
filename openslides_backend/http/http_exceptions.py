@@ -4,8 +4,10 @@ from typing import Any, Dict, List, Optional, Text, Tuple
 from werkzeug.exceptions import BadRequest as BaseBadRequest
 from werkzeug.exceptions import Forbidden as BaseForbidden
 from werkzeug.exceptions import HTTPException as BaseHTTPException
+from werkzeug.exceptions import InternalServerError as BaseInternalServerError
 from werkzeug.exceptions import MethodNotAllowed as BaseMethodNotAllowed
 from werkzeug.exceptions import NotFound as BaseNotFound
+from werkzeug.exceptions import Unauthorized as BaseUnauthorized
 
 from openslides_backend.shared.exceptions import ViewException
 
@@ -46,9 +48,17 @@ class Forbidden(HTTPException, BaseForbidden):
     pass
 
 
+class Unauthorized(HTTPException, BaseUnauthorized):
+    pass
+
+
 class MethodNotAllowed(HTTPException, BaseMethodNotAllowed):
     pass
 
 
 class NotFound(HTTPException, BaseNotFound):
+    pass
+
+
+class InternalServerError(HTTPException, BaseInternalServerError):
     pass

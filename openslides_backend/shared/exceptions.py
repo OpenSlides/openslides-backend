@@ -102,6 +102,10 @@ class PermissionDenied(ViewException):
     status_code = 403
 
 
+class ServerError(ViewException):
+    status_code = 500
+
+
 class AnonymousNotAllowed(PermissionDenied):
     def __init__(self, action_name: str) -> None:
         self.message = f"Anonymous is not allowed to execute {action_name}"

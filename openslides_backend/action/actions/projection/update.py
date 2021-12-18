@@ -1,10 +1,11 @@
 from ....models.models import Projection
 from ...generics.update import UpdateAction
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("projection.update", internal=True)
+@register_action("projection.update", action_type=ActionType.BACKEND_INTERNAL)
 class ProjectionUpdate(UpdateAction):
     """
     Action to update a projection.

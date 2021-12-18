@@ -8,7 +8,13 @@ from ..services.auth.adapter import AUTHENTICATION_HEADER
 from ..shared.env import is_truthy
 from ..shared.exceptions import ViewException
 from ..shared.interfaces.wsgi import StartResponse, WSGIEnvironment
-from .http_exceptions import BadRequest, Forbidden, HTTPException
+from .http_exceptions import (
+    BadRequest,
+    Forbidden,
+    HTTPException,
+    InternalServerError,
+    Unauthorized,
+)
 from .request import Request
 
 
@@ -42,8 +48,12 @@ class OpenSlidesBackendWSGIApplication:
                 raise exception
             if exception.status_code == 400:
                 return BadRequest(exception)
+            elif exception.status_code == 401:
+                return Unauthorized(exception)
             elif exception.status_code == 403:
                 return Forbidden(exception)
+            elif exception.status_code == 500:
+                return InternalServerError(exception)
             else:
                 text = (
                     f"Unknown ViewException with status_code {exception.status_code} "

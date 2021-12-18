@@ -4,6 +4,7 @@ from openslides_backend.action.relations.single_relation_handler import (
     SingleRelationHandler,
 )
 from openslides_backend.action.relations.typing import RelationFieldUpdates
+from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -114,14 +115,14 @@ class FakeModelC(Model):
     )
 
 
-@register_action("fake_model_a.create", internal=True)
+@register_action("fake_model_a.create", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelACreateAction(CreateAction):
     model = FakeModelA()
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
 
-@register_action("fake_model_a.update", internal=True)
+@register_action("fake_model_a.update", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelAUpdateAction(UpdateAction):
     model = FakeModelA()
     schema = {}  # type: ignore

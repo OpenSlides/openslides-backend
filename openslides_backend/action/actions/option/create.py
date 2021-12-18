@@ -3,13 +3,14 @@ from typing import Any, Dict, Optional
 from ....models.models import Option
 from ....shared.exceptions import ActionException
 from ...generics.create import CreateAction
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..vote.create import VoteCreate
 from ..vote.user_token_helper import get_user_token
 
 
-@register_action("option.create", internal=True)
+@register_action("option.create", action_type=ActionType.BACKEND_INTERNAL)
 class OptionCreateAction(CreateAction):
     """
     (internal) Action to create an option

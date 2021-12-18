@@ -1,4 +1,5 @@
 from openslides_backend.action.generics.update import UpdateAction
+from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -33,7 +34,7 @@ class FakeModelURB(Model):
     )
 
 
-@register_action("fake_model_ur_a.update", internal=True)
+@register_action("fake_model_ur_a.update", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelURAUpdateAction(UpdateAction):
     model = FakeModelURA()
     schema = {}  # type: ignore

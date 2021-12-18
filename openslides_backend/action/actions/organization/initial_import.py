@@ -12,12 +12,13 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from ...action import Action
 from ...mixins.singular_action_mixin import SingularActionMixin
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResults
 
 
-@register_action("organization.initial_import", internal=True)
+@register_action("organization.initial_import", action_type=ActionType.STACK_INTERNAL)
 class OrganizationInitialImport(SingularActionMixin, Action):
     """
     Action to import an initial-data.json in an empty datastore.

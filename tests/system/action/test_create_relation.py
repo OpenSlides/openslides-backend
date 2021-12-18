@@ -7,6 +7,7 @@ from openslides_backend.action.generics.create import CreateAction
 from openslides_backend.action.mixins.create_action_with_dependencies import (
     CreateActionWithDependencies,
 )
+from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
@@ -60,21 +61,21 @@ class FakeModelCRD(Model):
     )
 
 
-@register_action("fake_model_cr_a.create", internal=True)
+@register_action("fake_model_cr_a.create", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCRACreateAction(CreateAction):
     model = FakeModelCRA()
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
 
-@register_action("fake_model_cr_c.create", internal=True)
+@register_action("fake_model_cr_c.create", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCRCCreateAction(CreateAction):
     model = FakeModelCRC()
     schema = {}  # type: ignore
     skip_archived_meeting_check = True
 
 
-@register_action("fake_model_cr_b.create", internal=True)
+@register_action("fake_model_cr_b.create", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCRBCreateAction(CreateActionWithDependencies):
     model = FakeModelCRB()
     schema = {}  # type: ignore
@@ -93,7 +94,7 @@ class FakeModelCRBCreateAction(CreateActionWithDependencies):
         ]
 
 
-@register_action("fake_model_cr_d.create", internal=True)
+@register_action("fake_model_cr_d.create", action_type=ActionType.BACKEND_INTERNAL)
 class FakeModelCRDCreateAction(CreateAction):
     model = FakeModelCRD()
     schema = {}  # type: ignore

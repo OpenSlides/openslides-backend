@@ -16,6 +16,7 @@ from ..shared.interfaces.write_request import WriteRequest
 from ..shared.schema import schema_version
 from . import actions  # noqa
 from .relations.relation_manager import RelationManager
+from .util.action_type import ActionType
 from .util.actions_map import actions_map
 from .util.typing import (
     ActionError,
@@ -204,7 +205,9 @@ class ActionHandler(BaseHandler):
     ) -> Tuple[Optional[WriteRequest], Optional[ActionResults]]:
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
-        if ActionClass is None or (ActionClass.internal and not is_dev_mode()):
+        if ActionClass is None or (
+            ActionClass.action_type == ActionType.BACKEND_INTERNAL and not is_dev_mode()
+        ):
             raise View400Exception(f"Action {action_name} does not exist.")
         if not relation_manager:
             relation_manager = RelationManager(self.datastore)

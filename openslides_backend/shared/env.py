@@ -1,5 +1,10 @@
 import os
 
+from .exceptions import ServerError
+
+INTERNAL_AUTH_PASSWORD_FILE = "INTERNAL_AUTH_PASSWORD_FILE"
+OPENSLIDES_DEVELOPMENT = "OPENSLIDES_DEVELOPMENT"
+
 
 def is_truthy(value: str) -> bool:
     truthy = ("1", "on", "true")
@@ -10,5 +15,14 @@ def is_truthy(value: str) -> bool:
 
 
 def is_dev_mode() -> bool:
-    dev = os.environ.get("OPENSLIDES_DEVELOPMENT", "off")
+    dev = os.environ.get(OPENSLIDES_DEVELOPMENT, "off")
     return is_truthy(dev)
+
+
+def get_internal_auth_password() -> str:
+    filename = os.environ.get(INTERNAL_AUTH_PASSWORD_FILE)
+    if filename:
+        with open(filename) as file_:
+            return file_.read()
+    else:
+        raise ServerError("No internal auth password specified.")

@@ -1,10 +1,11 @@
 from ....models.models import Projection
 from ...generics.create import CreateAction
+from ...util.action_type import ActionType
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
-@register_action("projection.create", internal=True)
+@register_action("projection.create", action_type=ActionType.BACKEND_INTERNAL)
 class ProjectionCreate(CreateAction):
     """
     Action to create a projection.
