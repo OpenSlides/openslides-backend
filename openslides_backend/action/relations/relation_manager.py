@@ -43,6 +43,40 @@ class RelationManager:
         self.process_template_fields(model, instance)
 
         relations: RelationUpdates = {}
+        for field_name in instance:
+            if not model.has_field(field_name):
+                continue
+            field = model.get_field(field_name)
+
+            # only relations are handled here
+            if not isinstance(field, BaseRelationField):
+                continue
+            # ignore template fields, we have to do no relation handling there
+            if isinstance(field, BaseTemplateField) and field.is_template_field(
+                field_name
+            ):
+                continue
+
+            handler = SingleRelationHandler(
+                self.datastore,
+                field,
+                field_name,
+                instance,
+            )
+            result = handler.perform()
+            for fqfield, relations_element in result.items():
+                self.process_relation_element(fqfield, relations_element, relations)
+
+        calculated_field_handler_calls = self.handle_calculated_fields_1(
+            instance, action, model
+        )
+        self.apply_relation_updates(relations)
+        self.handle_calculated_fields_2(relations, calculated_field_handler_calls)
+        return relations
+
+    def handle_calculated_fields_1(
+        self, instance: Dict[str, Any], action: str, model: Model
+    ) -> List[CalculatedFieldHandlerCall]:
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
@@ -75,8 +109,6 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-                self.process_relation_element(fqfield, relations_element, relations)
-
                 # call calculated field handlers again on updated related field
                 related_field_name = fqfield.field
                 related_model = model_registry[fqfield.collection]()
@@ -93,13 +125,15 @@ class RelationManager:
                         "action": action,
                     }
                 )
+        return calculated_field_handler_calls
 
-        self.apply_relation_updates(relations)
-
+    def handle_calculated_fields_2(
+        self,
+        relations: RelationUpdates,
+        calculated_field_handler_calls: List[CalculatedFieldHandlerCall],
+    ) -> None:
         for call in calculated_field_handler_calls:
             self.call_calculated_field_handlers(relations, **call)
-
-        return relations
 
     def process_template_fields(self, model: Model, instance: Dict[str, Any]) -> None:
         """
