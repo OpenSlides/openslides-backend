@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from ....models.base import model_registry
 from ....models.checker import Checker, CheckException
@@ -21,8 +21,9 @@ from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
-from ...action import Action
+from ...action import Action, RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
+from ...relations.relation_manager import CalculatedFieldHandlerCall
 from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -380,6 +381,20 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                     {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
                 )
             )
+        calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
+        for collection in json_data:
+            for entry in json_data[collection].values():
+                model = model_registry[Collection(collection)]()
+                calculated_field_handler_calls.extend(
+                    self.relation_manager.handle_calculated_fields_1(
+                        entry, "meeting.import", model
+                    )
+                )
+        relations: RelationUpdates = {}
+        self.relation_manager.handle_calculated_fields_2(
+            relations, calculated_field_handler_calls
+        )
+        write_requests.extend(list(self.handle_relation_updates_helper(relations)))
         return write_requests
 
     def create_action_result_element(
