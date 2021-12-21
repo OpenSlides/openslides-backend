@@ -381,6 +381,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                     {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
                 )
             )
+
+        # handle the calc fields.
+        write_requests.extend(list(self.handle_calc_fields(instance)))
+        return write_requests
+
+    def handle_calc_fields(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+        json_data = instance["meeting"]
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
         for collection in json_data:
             for entry in json_data[collection].values():
@@ -394,8 +401,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         self.relation_manager.handle_calculated_fields_2(
             relations, calculated_field_handler_calls
         )
-        write_requests.extend(list(self.handle_relation_updates_helper(relations)))
-        return write_requests
+        return self.handle_relation_updates_helper(relations)
 
     def create_action_result_element(
         self, instance: Dict[str, Any]
