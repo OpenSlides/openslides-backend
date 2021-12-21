@@ -9,7 +9,12 @@ class MeetingClone(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "organization/1": {"active_meeting_ids": [1]},
+            "organization/1": {"active_meeting_ids": [1], "organization_tag_ids": [1]},
+            "organization_tag/1": {
+                "name": "TEST",
+                "color": "#eeeeee",
+                "organization_id": 1,
+            },
             "committee/1": {"organization_id": 1},
             "meeting/1": {
                 "committee_id": 1,
@@ -117,6 +122,30 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_model_exists("meeting/1", {"user_ids": [1]})
         self.assert_model_exists("meeting/2", {"user_ids": [1]})
+
+    def test_clone_with_set_fields(self) -> None:
+        self.set_models(self.test_models)
+
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "welcome_title": "Modifizierte Name",
+                "description": "blablabla",
+                "location": "Testraum",
+                "organization_tag_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "welcome_title": "Modifizierte Name",
+                "description": "blablabla",
+                "location": "Testraum",
+                "organization_tag_ids": [1],
+            },
+        )
 
     def test_clone_with_personal_note(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
