@@ -12,6 +12,11 @@ RUN . requirements/export_datastore_commit.sh && pip install --no-cache-dir --re
 COPY dev/.bashrc .
 COPY dev/cleanup.sh .
 
+# Copy files which are mounted to make the full stack work
+COPY scripts scripts
+COPY global global
+COPY cli cli
+
 COPY Makefile .
 COPY setup.cfg .
 COPY dev/entrypoint.sh ./
