@@ -59,7 +59,8 @@ class MeetingArchiveTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [1],
                     "committee_ids": [1],
                 }
             }

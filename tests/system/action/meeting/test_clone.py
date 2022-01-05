@@ -526,7 +526,8 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "committee_$2_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [2],
                     "committee_ids": [2],
                     "organization_management_level": None,
                 },
@@ -545,7 +546,8 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee/2": {"organization_id": 1},
                 "user/1": {
-                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [1],
                     "committee_ids": [1],
                     "organization_management_level": None,
                 },

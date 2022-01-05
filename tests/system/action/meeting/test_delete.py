@@ -42,8 +42,8 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "user/1": {
-                    "committee_$1_management_level": "can_manage",
-                    "committee_$_management_level": ["1"],
+                    "committee_$can_manage_management_level": [1],
+                    "committee_$_management_level": ["can_manage"],
                     "organization_management_level": "can_manage_users",
                 }
             }
