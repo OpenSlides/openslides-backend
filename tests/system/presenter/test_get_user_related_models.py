@@ -1,4 +1,4 @@
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import CommitteeManagementLevel, OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 
 from .base import BasePresenterTestCase
@@ -16,8 +16,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/1": {"name": "test"},
                 "user/1": {
                     "committee_ids": [1],
-                    "committee_$_management_level": ["1"],
-                    "committee_$1_management_level": "can_manage",
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [1],
                 },
             }
         )
@@ -33,13 +33,13 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/1": {"name": "test", "user_ids": [1, 2, 3]},
                 "user/1": {
                     "committee_ids": [1],
-                    "committee_$_management_level": ["1"],
-                    "committee_$1_management_level": "can_manage",
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [1],
                 },
                 "user/2": {
                     "committee_ids": [1],
-                    "committee_$_management_level": ["1"],
-                    "committee_$1_management_level": "can_manage",
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [1],
                 },
                 "user/3": {
                     "committee_ids": [1],
@@ -64,9 +64,8 @@ class TestGetUserRelatedModels(BasePresenterTestCase):
                 "committee/3": {"name": "test3", "user_ids": [1]},
                 "user/1": {
                     "committee_ids": [1, 2, 3],
-                    "committee_$_management_level": ["1", "2"],
-                    "committee_$1_management_level": "can_manage",
-                    "committee_$2_management_level": "can_manage",
+                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$can_manage_management_level": [1, 2],
                 },
             }
         )
