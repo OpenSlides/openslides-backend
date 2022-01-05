@@ -132,6 +132,8 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "welcome_title": "Modifizierte Name",
                 "description": "blablabla",
+                "start_time": 1641370959,
+                "end_time": 1641370959,
                 "location": "Testraum",
                 "organization_tag_ids": [1],
             },
@@ -144,6 +146,8 @@ class MeetingClone(BaseActionTestCase):
                 "description": "blablabla",
                 "location": "Testraum",
                 "organization_tag_ids": [1],
+                "start_time": 1641370959,
+                "end_time": 1641370959,
             },
         )
 
