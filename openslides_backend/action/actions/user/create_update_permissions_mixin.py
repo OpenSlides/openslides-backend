@@ -2,7 +2,6 @@ from collections import defaultdict
 from functools import reduce
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-
 from ....models.models import User
 from ....permissions.management_levels import (
     CommitteeManagementLevel,

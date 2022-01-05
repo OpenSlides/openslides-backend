@@ -1,5 +1,5 @@
-from typing import Any, Dict, Iterable, List, Set
 from functools import reduce
+from typing import Any, Dict, Iterable, List, Set
 
 
 def get_set_from_dict_by_fieldlist(

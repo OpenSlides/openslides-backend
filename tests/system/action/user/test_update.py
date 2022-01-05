@@ -75,7 +75,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/223": {
                     "committee_ids": [1],
                     "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
                 },
                 "group/11": {"meeting_id": 1},
                 "group/22": {"meeting_id": 2},
@@ -179,9 +181,12 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        user = self.assert_model_exists("user/111", {
-            "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
-        })
+        user = self.assert_model_exists(
+            "user/111",
+            {
+                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+            },
+        )
         self.assertCountEqual(user["committee_ids"], [60, 61])
         self.assertCountEqual(user["committee_$can_manage_management_level"], [60, 61])
 
@@ -192,7 +197,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "user/111": {
                     "committee_ids": [1],
                     "committee_$can_manage_management_level": [1],
-                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
                 },
             }
         )
@@ -250,7 +257,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_ids": [11, 22],
                     "committee_ids": [1, 2],
                     "committee_$can_manage_management_level": [1, 2],
-                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
                     "group_$_ids": ["11", "22"],
                     "group_$11_ids": [111],
                     "group_$22_ids": [222],
@@ -897,9 +906,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(
             user111.get("committee_$can_manage_management_level"), [60, 63]
         )
-        self.assertCountEqual(
-            user111.get("committee_ids"), [60, 63]
-        )
+        self.assertCountEqual(user111.get("committee_ids"), [60, 63])
 
     def test_perm_group_D_no_permission(self) -> None:
         """May not update Group D committee fields, because of missing CML permission for one committee"""
@@ -953,7 +960,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
-        self.assertCountEqual(user111.get("committee_$can_manage_management_level"), [60, 63])
+        self.assertCountEqual(
+            user111.get("committee_$can_manage_management_level"), [60, 63]
+        )
 
     def test_perm_group_D_permission_with_CML_missing_permission(
         self,
@@ -1272,7 +1281,9 @@ class UserUpdateActionTest(BaseActionTestCase):
                     "meeting_ids": [1, 3],
                     "committee_ids": [1, 3],
                     "committee_$can_manage_management_level": [1, 3],
-                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
                     "group_$_ids": ["1", "3"],
                     "group_$1_ids": [11],
                     "group_$3_ids": [33],
@@ -1300,7 +1311,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assertCountEqual(user.get("committee_ids", []), [2, 3])
-        self.assertCountEqual(user.get("committee_$can_manage_management_level", []), [2, 3])
+        self.assertCountEqual(
+            user.get("committee_$can_manage_management_level", []), [2, 3]
+        )
         self.assertCountEqual(user.get("group_$_ids", []), ["2", "3"])
         self.assertCountEqual(user.get("meeting_ids", []), [2, 3])
 

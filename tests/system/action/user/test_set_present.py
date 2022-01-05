@@ -140,7 +140,9 @@ class UserSetPresentActionTest(BaseActionTestCase):
                 "user/1": {
                     "organization_management_level": None,
                     "committee_ids": [1],
-                    "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
                     "committee_$can_manage_management_level": [1],
                 },
             }

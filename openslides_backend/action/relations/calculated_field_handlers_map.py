@@ -6,8 +6,8 @@ from ...models.models import Committee, Group, User
 from .calculated_field_handler import CalculatedFieldHandler
 from .meeting_user_ids_handler import MeetingUserIdsHandler
 from .user_committee_calculate_handler import (
-    UserCommitteeCalculateHandler,
     CommitteeUserCalculateHandler,
+    UserCommitteeCalculateHandler,
 )
 from .user_meeting_ids_handler import UserMeetingIdsHandler
 
