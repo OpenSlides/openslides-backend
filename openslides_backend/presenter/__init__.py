@@ -1,6 +1,7 @@
 from . import (  # noqa
     check_mediafile_id,
     check_resource_id,
+    get_active_users_amount,
     get_forwarding_meetings,
     get_history_information,
     get_user_related_models,
