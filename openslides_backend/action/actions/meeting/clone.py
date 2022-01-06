@@ -108,7 +108,7 @@ class MeetingClone(MeetingImport):
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))
         self.append_extra_write_requests(write_requests, instance["meeting"])
-        write_requests.extend(list(self.handle_calc_fields(instance)))
+        write_requests.extend(list(self.handle_calculated_fields(instance)))
         return write_requests
 
     def append_extra_write_requests(

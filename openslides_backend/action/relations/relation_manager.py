@@ -67,14 +67,16 @@ class RelationManager:
             for fqfield, relations_element in result.items():
                 self.process_relation_element(fqfield, relations_element, relations)
 
-        calculated_field_handler_calls = self.handle_calculated_fields_1(
+        calculated_field_handler_calls = self.get_calculated_field_handler_calls(
             instance, action, model
         )
         self.apply_relation_updates(relations)
-        self.handle_calculated_fields_2(relations, calculated_field_handler_calls)
+        self.execute_calculated_field_handler_calls(
+            relations, calculated_field_handler_calls
+        )
         return relations
 
-    def handle_calculated_fields_1(
+    def get_calculated_field_handler_calls(
         self, instance: Dict[str, Any], action: str, model: Model
     ) -> List[CalculatedFieldHandlerCall]:
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
@@ -127,7 +129,7 @@ class RelationManager:
                 )
         return calculated_field_handler_calls
 
-    def handle_calculated_fields_2(
+    def execute_calculated_field_handler_calls(
         self,
         relations: RelationUpdates,
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall],

@@ -383,22 +383,24 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             )
 
         # handle the calc fields.
-        write_requests.extend(list(self.handle_calc_fields(instance)))
+        write_requests.extend(list(self.handle_calculated_fields(instance)))
         return write_requests
 
-    def handle_calc_fields(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def handle_calculated_fields(
+        self, instance: Dict[str, Any]
+    ) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
         for collection in json_data:
             for entry in json_data[collection].values():
                 model = model_registry[Collection(collection)]()
                 calculated_field_handler_calls.extend(
-                    self.relation_manager.handle_calculated_fields_1(
+                    self.relation_manager.get_calculated_field_handler_calls(
                         entry, "meeting.import", model
                     )
                 )
         relations: RelationUpdates = {}
-        self.relation_manager.handle_calculated_fields_2(
+        self.relation_manager.execute_calculated_field_handler_calls(
             relations, calculated_field_handler_calls
         )
         return self.handle_relation_updates_helper(relations)
