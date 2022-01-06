@@ -36,49 +36,15 @@ class RelationManager:
         model: Model,
         instance: Dict[str, Any],
         action: str,
+        process_calculated_fields_only: bool = False,
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
 
-        self.process_template_fields(model, instance)
+        if not process_calculated_fields_only:
+            self.process_template_fields(model, instance)
 
         relations: RelationUpdates = {}
-        for field_name in instance:
-            if not model.has_field(field_name):
-                continue
-            field = model.get_field(field_name)
-
-            # only relations are handled here
-            if not isinstance(field, BaseRelationField):
-                continue
-            # ignore template fields, we have to do no relation handling there
-            if isinstance(field, BaseTemplateField) and field.is_template_field(
-                field_name
-            ):
-                continue
-
-            handler = SingleRelationHandler(
-                self.datastore,
-                field,
-                field_name,
-                instance,
-            )
-            result = handler.perform()
-            for fqfield, relations_element in result.items():
-                self.process_relation_element(fqfield, relations_element, relations)
-
-        calculated_field_handler_calls = self.get_calculated_field_handler_calls(
-            instance, action, model
-        )
-        self.apply_relation_updates(relations)
-        self.execute_calculated_field_handler_calls(
-            relations, calculated_field_handler_calls
-        )
-        return relations
-
-    def get_calculated_field_handler_calls(
-        self, instance: Dict[str, Any], action: str, model: Model
-    ) -> List[CalculatedFieldHandlerCall]:
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
@@ -111,7 +77,10 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-                # call calculated field handlers again on updated related field
+
+                if not process_calculated_fields_only:
+                    self.process_relation_element(fqfield, relations_element, relations)
+
                 related_field_name = fqfield.field
                 related_model = model_registry[fqfield.collection]()
                 related_field = related_model.get_field(related_field_name)
@@ -127,7 +96,12 @@ class RelationManager:
                         "action": action,
                     }
                 )
-        return calculated_field_handler_calls
+        if not process_calculated_fields_only:
+            self.apply_relation_updates(relations)
+        self.execute_calculated_field_handler_calls(
+            relations, calculated_field_handler_calls
+        )
+        return relations
 
     def execute_calculated_field_handler_calls(
         self,

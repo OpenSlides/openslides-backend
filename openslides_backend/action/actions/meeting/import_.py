@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Tuple
 
 from ....models.base import model_registry
 from ....models.checker import Checker, CheckException
@@ -23,7 +23,6 @@ from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action, RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
-from ...relations.relation_manager import CalculatedFieldHandlerCall
 from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -390,19 +389,18 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         self, instance: Dict[str, Any]
     ) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
-        calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
+        relations: RelationUpdates = {}
         for collection in json_data:
             for entry in json_data[collection].values():
                 model = model_registry[Collection(collection)]()
-                calculated_field_handler_calls.extend(
-                    self.relation_manager.get_calculated_field_handler_calls(
-                        entry, "meeting.import", model
+                relations.update(
+                    self.relation_manager.get_relation_updates(
+                        model,
+                        entry,
+                        "meeting.import",
+                        process_calculated_fields_only=True,
                     )
                 )
-        relations: RelationUpdates = {}
-        self.relation_manager.execute_calculated_field_handler_calls(
-            relations, calculated_field_handler_calls
-        )
         return self.handle_relation_updates_helper(relations)
 
     def create_action_result_element(
