@@ -588,6 +588,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
 
     def test_check_usernames(self) -> None:
         self.set_models(
