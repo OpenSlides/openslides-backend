@@ -1,5 +1,5 @@
 {
-    "_migration_index": 9,
+    "_migration_index": 10,
     "organization": {
         "1": {
             "id": 1,
@@ -22,7 +22,12 @@
             "resource_ids": [],
             "organization_tag_ids": [],
             "theme_id": 1,
-            "theme_ids": [1, 2, 3]
+            "theme_ids": [1, 2, 3],
+	    "users_email_sender": "OpenSlides",
+	    "users_email_replyto": "",
+	    "users_email_subject": "OpenSlides access data",
+	    "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n{url}\nusername: {username}\npassword: {password}\n\n\nThis email was generated automatically.\n",
+	    "url": "http://example.com:8000"
         }
     },
     "user": {

@@ -537,3 +537,60 @@ class SendInvitationMail(BaseActionTestCase):
             "event name: 'yevent_name'",
             handler.emails[0]["data"],
         )
+
+    def test_correct_organization_send(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        print(response.json["results"])
+        self.assertEqual(response.json["results"][0][0]["sent"], True)
+        self.assertIn(
+            "Subject: Invitation for Openslides 'test orga name'",
+            handler.emails[0]["data"],
+        )
+        self.assertIn(
+            "event name: test orga name",
+            handler.emails[0]["data"],
+        )
+
+    def test_correct_organization_send_no_permission(self) -> None:
+        self.set_models(
+            {
+                "user/1": {"organization_management_level": None},
+                "user/2": {"group_$1_ids": []},
+                "organization/1": {
+                    "name": "test orga name",
+                    "users_email_subject": "Invitation for Openslides '{event_name}'",
+                    "users_email_body": "event name: {event_name}",
+                },
+            }
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.send_invitation_email",
+                {
+                    "id": 2,
+                },
+            )
+        self.assert_status_code(response, 200)
+        self.assertEqual(response.json["results"][0][0]["sent"], False)
+        self.assertEqual(
+            response.json["results"][0][0]["message"],
+            "Missing OrganizationManagementLevel: can_manage_users",
+        )
