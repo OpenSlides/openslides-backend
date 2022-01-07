@@ -136,7 +136,7 @@ class MeetingImport(BaseActionTestCase):
                         "users_email_sender": "noreply@yourdomain.com",
                         "users_email_replyto": "",
                         "users_email_subject": "Your login for {event_name}",
-                        "users_email_body": "Dear {name},\n\nthis is your OpenSlides login for the event {event_name}:\n\n    {url}\n    username: {username}\n    password: {password}\n\nThis email was generated automatically.",
+                        "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n{url}\nusername:\n{username}\n\npassword:\n{password}\n\n\nThis email was generated automatically.\n",
                         "assignments_export_title": "Elections",
                         "assignments_export_preamble": "",
                         "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
