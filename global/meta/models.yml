@@ -213,7 +213,7 @@ user:
     restriction_mode: A
   email:
     type: string
-    restriction_mode: C
+    restriction_mode: E
   default_number:
     type: string
     restriction_mode: A
@@ -304,7 +304,7 @@ user:
     fields:
       type: relation-list
       to: group/user_ids
-    restriction_mode: C
+    restriction_mode: A
   speaker_$_ids:
     type: template
     replacement_collection: meeting
@@ -386,14 +386,14 @@ user:
       type: relation
       to: user/vote_delegations_$_from_ids
       required: false
-    restriction_mode: C
+    restriction_mode: A
   vote_delegations_$_from_ids:
     type: template
     replacement_collection: meeting
     fields:
       type: relation-list
       to: user/vote_delegated_$_to_id
-    restriction_mode: C
+    restriction_mode: A
   chat_message_$_ids:
     type: template
     replacement_collection: meeting

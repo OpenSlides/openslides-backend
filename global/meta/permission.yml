@@ -57,5 +57,4 @@ tag:
     can_manage:
 user:
     can_manage:
-        can_see_extra_data:
-            can_see:
+        can_see:
