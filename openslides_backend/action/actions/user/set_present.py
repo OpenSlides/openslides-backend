@@ -71,6 +71,11 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
             self.user_id,
             Permissions.User.CAN_MANAGE,
             instance["meeting_id"],
+        ) or has_perm(
+            self.datastore,
+            self.user_id,
+            Permissions.User.CAN_MANAGE_PRESENCE,
+            instance["meeting_id"],
         ):
             return
         meeting = self.datastore.get(

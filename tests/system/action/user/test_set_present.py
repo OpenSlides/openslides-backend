@@ -174,6 +174,31 @@ class UserSetPresentActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
 
+    def test_set_present_meeting_can_manage_presence_permission(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "users_allow_self_set_present": False,
+                    "group_ids": [1],
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/1": {
+                    "user_ids": [1],
+                    "permissions": [Permissions.User.CAN_MANAGE_PRESENCE],
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "group_$1_ids": [1],
+                },
+                "committee/1": {},
+            }
+        )
+        response = self.request(
+            "user.set_present", {"id": 1, "meeting_id": 1, "present": True}
+        )
+        self.assert_status_code(response, 200)
+
     def test_set_present_self_permission(self) -> None:
         self.set_models(
             {

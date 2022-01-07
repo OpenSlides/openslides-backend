@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from .base_classes import Permission
 
-PERMISSION_YML_CHECKSUM = "fafcf94d1b25ce4b64d8eb73125c0901"
+PERMISSION_YML_CHECKSUM = "8a908837830f08606d9580f7b0bfa388"
 
 
 class _AgendaItem(Permission, Enum):
@@ -72,6 +72,7 @@ class _Tag(Permission, Enum):
 
 class _User(Permission, Enum):
     CAN_MANAGE = "user.can_manage"
+    CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"
 
 
@@ -136,6 +137,7 @@ permission_parents: Dict[Permission, List[Permission]] = {
     _Projector.CAN_SEE: [_Projector.CAN_MANAGE],
     _Projector.CAN_MANAGE: [],
     _Tag.CAN_MANAGE: [],
-    _User.CAN_SEE: [_User.CAN_MANAGE],
+    _User.CAN_SEE: [_User.CAN_MANAGE_PRESENCE],
+    _User.CAN_MANAGE_PRESENCE: [_User.CAN_MANAGE],
     _User.CAN_MANAGE: [],
 }

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "1ab36d333c6173b2413cb5129c460485"
+MODELS_YML_CHECKSUM = "724e0060477805cdbc12260bd72cbd31"
 
 
 class Organization(Model):
@@ -765,6 +765,7 @@ class Group(Model):
                 "projector.can_see",
                 "tag.can_manage",
                 "user.can_manage",
+                "user.can_manage_presence",
                 "user.can_see",
             ]
         }
