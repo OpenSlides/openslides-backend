@@ -600,7 +600,6 @@
                 "projector.can_manage",
                 "tag.can_manage",
                 "user.can_see",
-                "user.can_see_extra_data",
                 "user.can_manage"
             ],
             "user_ids": [],

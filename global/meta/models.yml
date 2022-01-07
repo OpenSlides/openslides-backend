@@ -1591,7 +1591,6 @@ group:
         - tag.can_manage
         - user.can_manage
         - user.can_see
-        - user.can_see_extra_data
     restriction_mode: A
 
   user_ids:
