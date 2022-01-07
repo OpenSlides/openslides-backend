@@ -2,6 +2,7 @@ import inspect
 import re
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 
+from opentelemetry import trace
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
@@ -55,6 +56,9 @@ def route(
     return wrapper
 
 
+tracer = trace.get_tracer(__name__)
+
+
 class BaseView(View):
     """
     Base class for views of this service.
@@ -89,26 +93,29 @@ class BaseView(View):
             predicate=lambda attr: inspect.ismethod(attr)
             and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
-        for _, func in functions:
-            route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
-            for route_options in route_options_list:
-                if route_options["path"].match(request.environ["RAW_URI"]):
-                    # Check request method
-                    if request.method != route_options["method"]:
-                        raise MethodNotAllowed(valid_methods=[route_options["method"]])
-                    self.logger.debug(f"Request method is {request.method}.")
-
-                    if route_options["json"]:
-                        # Check mimetype and parse JSON body. The result is cached in request.json
-                        if not request.is_json:
-                            raise View400Exception(
-                                "Wrong media type. Use 'Content-Type: application/json' instead."
+        with tracer.start_as_current_span("base view") as span:
+            for _, func in functions:
+                route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
+                for route_options in route_options_list:
+                    if route_options["path"].match(request.environ["RAW_URI"]):
+                        # Check request method
+                        if request.method != route_options["method"]:
+                            raise MethodNotAllowed(
+                                valid_methods=[route_options["method"]]
                             )
-                        try:
-                            request_body = request.get_json()
-                        except WerkzeugBadRequest as exception:
-                            raise View400Exception(exception.description)
-                        self.logger.debug(f"Request contains JSON: {request_body}.")
+                        self.logger.debug(f"Request method is {request.method}.")
 
-                    return func(request)
-        raise NotFound()
+                        if route_options["json"]:
+                            # Check mimetype and parse JSON body. The result is cached in request.json
+                            if not request.is_json:
+                                raise View400Exception(
+                                    "Wrong media type. Use 'Content-Type: application/json' instead."
+                                )
+                            try:
+                                request_body = request.get_json()
+                            except WerkzeugBadRequest as exception:
+                                raise View400Exception(exception.description)
+                            self.logger.debug(f"Request contains JSON: {request_body}.")
+
+                        return func(request)
+            raise NotFound()
