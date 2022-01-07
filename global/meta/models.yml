@@ -1590,6 +1590,7 @@ group:
         - projector.can_see
         - tag.can_manage
         - user.can_manage
+        - user.can_manage_presence
         - user.can_see
     restriction_mode: A
 

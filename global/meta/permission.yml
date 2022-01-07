@@ -57,4 +57,5 @@ tag:
     can_manage:
 user:
     can_manage:
-        can_see:
+        can_manage_presence:
+            can_see:
