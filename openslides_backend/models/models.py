@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "e97c548a9119ec2c64f1f4688f758e52"
+MODELS_YML_CHECKSUM = "1ab36d333c6173b2413cb5129c460485"
 
 
 class Organization(Model):
@@ -766,7 +766,6 @@ class Group(Model):
                 "tag.can_manage",
                 "user.can_manage",
                 "user.can_see",
-                "user.can_see_extra_data",
             ]
         }
     )
