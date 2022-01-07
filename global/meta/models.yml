@@ -152,14 +152,14 @@ organization:
       Dear {name},
 
 
-
       this is your personal OpenSlides login:
 
-          {url}
 
-          username: {username}
+      {url}
 
-          password: {password}
+      Username: {username}
+
+      Password: {password}
 
 
 
@@ -167,7 +167,7 @@ organization:
     restriction_mode: A
   url:
     type: string
-    default: http://example.com:8000
+    default: https://example.com
     restriction_mode: A
 
 user:
@@ -1158,7 +1158,7 @@ meeting:
     restriction_mode: B
   users_pdf_url:
     type: string
-    default: http://example.com:8000
+    default: https://example.com
     restriction_mode: B
   users_pdf_wlan_ssid:
     type: string
@@ -1191,14 +1191,14 @@ meeting:
       Dear {name},
 
 
-
       this is your personal OpenSlides login:
 
-          {url}
 
-          username: {username}
+      {url}
 
-          password: {password}
+      Username: {username}
+
+      Password: {password}
 
 
 

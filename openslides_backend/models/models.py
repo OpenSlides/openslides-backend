@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "e0094105800e61b9cd2437f297bdcc3f"
+MODELS_YML_CHECKSUM = "1bb561c74ceac9d2fc7ee05816995b4c"
 
 
 class Organization(Model):
@@ -54,9 +54,9 @@ class Organization(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
-    url = fields.CharField(default="http://example.com:8000")
+    url = fields.CharField(default="https://example.com")
 
 
 class User(Model):
@@ -510,7 +510,7 @@ class Meeting(Model):
     users_pdf_welcometext = fields.TextField(
         default="[Place for your welcome and help text.]"
     )
-    users_pdf_url = fields.CharField(default="http://example.com:8000")
+    users_pdf_url = fields.CharField(default="https://example.com")
     users_pdf_wlan_ssid = fields.CharField()
     users_pdf_wlan_password = fields.CharField()
     users_pdf_wlan_encryption = fields.CharField(
@@ -520,7 +520,7 @@ class Meeting(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()

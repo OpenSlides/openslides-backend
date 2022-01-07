@@ -18,7 +18,7 @@ class SendInvitationMail(BaseActionTestCase):
                 "meeting/1": {
                     "name": "annual general meeting",
                     "users_email_sender": "Openslides",
-                    "users_pdf_url": "http://example.com:8000",
+                    "users_pdf_url": "https://example.com",
                     "is_active_in_organization_id": 1,
                 },
                 "user/2": {
@@ -476,7 +476,7 @@ class SendInvitationMail(BaseActionTestCase):
             handler.emails[0]["data"],
         )
         self.assertIn(
-            "http://example.com:8000",
+            "https://example.com",
             handler.emails[0]["data"],
         )
 
