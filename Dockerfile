@@ -13,6 +13,11 @@ COPY src/* src/
 COPY scripts/entrypoint.sh .
 COPY scripts/service_env.sh scripts/
 
+LABEL org.opencontainers.image.title="OpenSlides Media Service"
+LABEL org.opencontainers.image.description="Service for OpenSlides which delivers media files."
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-media-service"
+
 EXPOSE 9006
 ENTRYPOINT ["./entrypoint.sh"]
 CMD ["gunicorn", "-b", "0.0.0.0:9006", "src.mediaserver:app"]
