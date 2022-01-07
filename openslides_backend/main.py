@@ -23,6 +23,18 @@ DEFAULT_ADDRESSES = {
     "PresenterView": "0.0.0.0:9003",
 }
 
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+    OTLPSpanExporter,
+)
+
+RequestsInstrumentor().instrument()
+
+
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
@@ -64,6 +76,19 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
 
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
+
+        span_exporter = OTLPSpanExporter(
+            # optional
+            endpoint="collector:4317",
+            # credentials=ChannelCredentials(credentials),
+            # headers=(("metadata", "metadata")),
+        )
+        tracer_provider = TracerProvider(
+            resource=Resource.create({SERVICE_NAME: "bakend"})
+        )
+        trace.set_tracer_provider(tracer_provider)
+        span_processor = BatchSpanProcessor(span_exporter)
+        tracer_provider.add_span_processor(span_processor)
 
         return create_wsgi_application(logging_module, self.view_name)
 
