@@ -32,5 +32,10 @@ ENV EMAIL_TIMEOUT 5
 ENV EMAIL_ACCEPT_SELF_SIGNED_CERTIFICATE false
 ENV DEFAULT_FROM_EMAIL noreply@example.com
 
+LABEL org.opencontainers.image.title="OpenSlides Backend Service"
+LABEL org.opencontainers.image.description="Backend service for OpenSlides which provides actions and presenters."
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.source="https://github.com/OpenSlides/openslides-backend"
+
 ENTRYPOINT ["./entrypoint.sh"]
 CMD [ "python", "-m", "openslides_backend" ]
