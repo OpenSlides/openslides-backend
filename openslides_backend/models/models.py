@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "724e0060477805cdbc12260bd72cbd31"
+MODELS_YML_CHECKSUM = "25d567e5c04408e378c45d1230d18209"
 
 
 class Organization(Model):
@@ -437,7 +437,7 @@ class Meeting(Model):
         },
         required=True,
     )
-    motions_preamble = fields.CharField(default="The assembly may decide:")
+    motions_preamble = fields.TextField(default="The assembly may decide:")
     motions_default_line_numbering = fields.CharField(
         default="outside", constraints={"enum": ["outside", "inline", "none"]}
     )
@@ -477,7 +477,7 @@ class Meeting(Model):
         default=0, constraints={"minimum": 0}
     )
     motions_export_title = fields.CharField(default="Motions")
-    motions_export_preamble = fields.CharField()
+    motions_export_preamble = fields.TextField()
     motions_export_submitter_recommendation = fields.BooleanField(default=False)
     motions_export_follow_recommendation = fields.BooleanField(default=False)
     motion_poll_ballot_paper_selection = fields.CharField(
@@ -523,7 +523,7 @@ class Meeting(Model):
         default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
     )
     assignments_export_title = fields.CharField(default="Elections")
-    assignments_export_preamble = fields.CharField()
+    assignments_export_preamble = fields.TextField()
     assignment_poll_ballot_paper_selection = fields.CharField(
         default="CUSTOM_NUMBER",
         constraints={
@@ -1399,7 +1399,7 @@ class Poll(Model):
     verbose_name = "poll"
 
     id = fields.IntegerField()
-    description = fields.CharField()
+    description = fields.TextField()
     title = fields.CharField(required=True)
     type = fields.CharField(
         required=True, constraints={"enum": ["analog", "named", "pseudoanonymous"]}
@@ -1531,7 +1531,7 @@ class Assignment(Model):
     phase = fields.CharField(
         default="search", constraints={"enum": ["search", "voting", "finished"]}
     )
-    default_poll_description = fields.CharField()
+    default_poll_description = fields.TextField()
     number_poll_candidates = fields.BooleanField()
     candidate_ids = fields.RelationListField(
         to={Collection("assignment_candidate"): "assignment_id"},
