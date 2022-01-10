@@ -15,6 +15,16 @@ from ...util.register import register_action
 from .export_helper import export_meeting
 from .import_ import MeetingImport
 
+updatable_fields = [
+    "committee_id",
+    "welcome_title",
+    "description",
+    "start_time",
+    "end_time",
+    "location",
+    "organization_tag_ids",
+]
+
 
 @register_action("meeting.clone")
 class MeetingClone(MeetingImport):
@@ -23,7 +33,7 @@ class MeetingClone(MeetingImport):
     """
 
     schema = DefaultSchema(Meeting()).get_default_schema(
-        optional_properties=["committee_id"],
+        optional_properties=updatable_fields,
         additional_required_fields={"meeting_id": {"type": "integer"}},
     )
 
@@ -50,6 +60,12 @@ class MeetingClone(MeetingImport):
             committee_id := instance.get("committee_id")
         ) and committee_id != self.get_meeting_from_json(meeting_json)["committee_id"]:
             self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
+
+        # pre update the meeting
+        for field in updatable_fields:
+            if field in instance:
+                value = instance.pop(field)
+                self.get_meeting_from_json(meeting_json)[field] = value
 
         # check datavalidation
         checker = Checker(data=meeting_json, mode="internal")
