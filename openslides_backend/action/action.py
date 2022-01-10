@@ -38,7 +38,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import Collection, FullQualifiedId, transform_to_fqids
-from .relations.relation_manager import RelationManager
+from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
 from .util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -307,6 +307,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
         relation_updates = self.relation_manager.get_relation_updates(
             self.model, instance, self.name
         )
+
+        return self.handle_relation_updates_helper(relation_updates)
+
+    def handle_relation_updates_helper(
+        self,
+        relation_updates: RelationUpdates,
+    ) -> Iterable[WriteRequest]:
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
             list_fields: Optional[ListFields] = None

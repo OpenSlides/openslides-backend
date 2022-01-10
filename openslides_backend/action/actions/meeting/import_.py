@@ -21,7 +21,7 @@ from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
-from ...action import Action
+from ...action import Action, RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
@@ -380,7 +380,28 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                     {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
                 )
             )
+
+        # handle the calc fields.
+        write_requests.extend(list(self.handle_calculated_fields(instance)))
         return write_requests
+
+    def handle_calculated_fields(
+        self, instance: Dict[str, Any]
+    ) -> Iterable[WriteRequest]:
+        json_data = instance["meeting"]
+        relations: RelationUpdates = {}
+        for collection in json_data:
+            for entry in json_data[collection].values():
+                model = model_registry[Collection(collection)]()
+                relations.update(
+                    self.relation_manager.get_relation_updates(
+                        model,
+                        entry,
+                        "meeting.import",
+                        process_calculated_fields_only=True,
+                    )
+                )
+        return self.handle_relation_updates_helper(relations)
 
     def create_action_result_element(
         self, instance: Dict[str, Any]

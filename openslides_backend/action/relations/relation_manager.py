@@ -36,11 +36,13 @@ class RelationManager:
         model: Model,
         instance: Dict[str, Any],
         action: str,
+        process_calculated_fields_only: bool = False,
     ) -> RelationUpdates:
         # id has to be provided to be able to correctly update relations
         assert "id" in instance
 
-        self.process_template_fields(model, instance)
+        if not process_calculated_fields_only:
+            self.process_template_fields(model, instance)
 
         relations: RelationUpdates = {}
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
@@ -75,9 +77,10 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-                self.process_relation_element(fqfield, relations_element, relations)
 
-                # call calculated field handlers again on updated related field
+                if not process_calculated_fields_only:
+                    self.process_relation_element(fqfield, relations_element, relations)
+
                 related_field_name = fqfield.field
                 related_model = model_registry[fqfield.collection]()
                 related_field = related_model.get_field(related_field_name)
@@ -93,13 +96,20 @@ class RelationManager:
                         "action": action,
                     }
                 )
+        if not process_calculated_fields_only:
+            self.apply_relation_updates(relations)
+        self.execute_calculated_field_handler_calls(
+            relations, calculated_field_handler_calls
+        )
+        return relations
 
-        self.apply_relation_updates(relations)
-
+    def execute_calculated_field_handler_calls(
+        self,
+        relations: RelationUpdates,
+        calculated_field_handler_calls: List[CalculatedFieldHandlerCall],
+    ) -> None:
         for call in calculated_field_handler_calls:
             self.call_calculated_field_handlers(relations, **call)
-
-        return relations
 
     def process_template_fields(self, model: Model, instance: Dict[str, Any]) -> None:
         """

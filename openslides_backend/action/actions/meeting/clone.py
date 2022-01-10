@@ -108,6 +108,7 @@ class MeetingClone(MeetingImport):
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))
         self.append_extra_write_requests(write_requests, instance["meeting"])
+        write_requests.extend(list(self.handle_calculated_fields(instance)))
         return write_requests
 
     def append_extra_write_requests(
@@ -183,23 +184,6 @@ class MeetingClone(MeetingImport):
         )
         for tuple_ in updated_field_n_co:
             self.append_helper_list_cobj(write_requests, json_data, *tuple_)
-
-        for user_id in self.get_meeting_from_json(json_data).get("user_ids") or []:
-            write_requests.append(
-                self.build_write_request(
-                    EventType.Update,
-                    FullQualifiedId(Collection("user"), user_id),
-                    f"clone meeting {self.get_meeting_from_json(json_data)['id']}",
-                    list_fields={
-                        "add": {
-                            "meeting_ids": [
-                                self.get_meeting_from_json(json_data)["id"]
-                            ],
-                        },
-                        "remove": {},
-                    },
-                )
-            )
 
     def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
         front, back = field.split("$")
