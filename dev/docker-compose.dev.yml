@@ -32,7 +32,7 @@ services:
             - auth
     reader:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
             args:
                 MODULE: "reader"
                 PORT: "9010"
@@ -48,7 +48,7 @@ services:
             - postgresql
     writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
             args:
                 MODULE: "writer"
                 PORT: "9011"
@@ -66,7 +66,7 @@ services:
             - redis
     auth:
         build:
-            context: "https://github.com/OpenSlides/openslides-auth-service.git"
+            context: "https://github.com/OpenSlides/openslides-auth-service.git#main"
             dockerfile: "Dockerfile.dev"
         image: openslides-auth-dev
         ports:

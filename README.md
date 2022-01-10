@@ -12,7 +12,7 @@ Use docker to build and start the application with your favorite tools. See [Doc
 
 ### Development with Docker Compose
 
-The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run 
+The setup is structured to do all development inside the docker containers. To start everything at once and get entered into a bash shell, run
 
     $ make run-dev
 
@@ -41,7 +41,7 @@ To generate a new models.py file run (inside the docker container)
 
     $ make generate-models
 
-The original models.yml is now included in this repository at global/meta/. If you do not want to generate from the current backend, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the master:
+The original models.yml is now included in this repository at global/meta/. If you do not want to generate from the current backend, you can provide either a local path or an URL via the variable `MODELS_PATH`. This way, you can generate only partial changes if multiple changes to the models file were merged into the main:
 
     $ MODEL_PATH="local path or GitHub link" make generate-models
 
