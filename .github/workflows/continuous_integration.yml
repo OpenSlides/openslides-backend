@@ -2,7 +2,7 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   PYTHON_VERSION: 3.8.5
@@ -69,15 +69,15 @@ jobs:
     - name: Run isort check
       if: always()
       run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh isort --check-only --diff .
-  
+
     - name: Run flake8 check
       if: always()
       run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh flake8 .
-  
+
     - name: Run mypy check
       if: always()
       run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh mypy .
-  
+
     - name: Run pytest
       if: always()
       run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh pytest --cov .

@@ -18,7 +18,7 @@ services:
             - postgres_password
     reader:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
             args:
                 MODULE: "reader"
                 PORT: "9010"
@@ -31,7 +31,7 @@ services:
             - postgres_password
     writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git"
+            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
             args:
                 MODULE: "writer"
                 PORT: "9011"

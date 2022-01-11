@@ -3,7 +3,7 @@ name: Create issues if global files change
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - 'global/meta/models.yml'
       - 'global/meta/permission.yml'
