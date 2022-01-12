@@ -1,6 +1,6 @@
 ---
 # Types:
-#     - Nativ datatypes: string, number, boolean, JSON
+#     - Nativ datatypes: string, text, number, boolean, JSON
 #     - HTMLStrict: A string with HTML content.
 #     - HTMLPermissive: A string with HTML content (with video tags).
 #     - float: Numbers that are expected to be non-integer. Formatted as in rfc7159.
@@ -78,13 +78,13 @@ organization:
 
   # Settings (configurable by the client)
   legal_notice:
-    type: string
+    type: text
     restriction_mode: A
   privacy_policy:
-    type: string
+    type: text
     restriction_mode: A
   login_text:
-    type: string
+    type: text
     restriction_mode: A
   reset_password_verbose_errors:
     type: boolean
@@ -959,7 +959,7 @@ meeting:
     required: true
     restriction_mode: B
   motions_preamble:
-    type: string
+    type: text
     default: "The assembly may decide:"
     restriction_mode: B
   motions_default_line_numbering:
@@ -1083,7 +1083,7 @@ meeting:
     default: Motions
     restriction_mode: B
   motions_export_preamble:
-    type: string
+    type: text
     restriction_mode: B
   motions_export_submitter_recommendation:
     type: boolean
@@ -1153,7 +1153,7 @@ meeting:
     default: Welcome to OpenSlides
     restriction_mode: B
   users_pdf_welcometext:
-    type: string
+    type: text
     default: "[Place for your welcome and help text.]"
     restriction_mode: B
   users_pdf_url:
@@ -1211,7 +1211,7 @@ meeting:
     default: Elections
     restriction_mode: B
   assignments_export_preamble:
-    type: string
+    type: text
     restriction_mode: B
 
   # Assignment polls
@@ -2572,7 +2572,7 @@ poll:
     type: number
     restriction_mode: A
   description:
-    type: string
+    type: text
     restriction_mode: A
   title:
     type: string
@@ -2825,7 +2825,7 @@ assignment:
     default: search
     restriction_mode: B
   default_poll_description:
-    type: string
+    type: text
     restriction_mode: B
   number_poll_candidates:
     type: boolean
