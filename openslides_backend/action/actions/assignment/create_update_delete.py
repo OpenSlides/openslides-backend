@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from ....models.models import Assignment
 from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
@@ -13,14 +15,23 @@ from ..list_of_speakers.create import ListOfSpeakersCreate
 from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
+from ..motion.sequential_numbers_mixin import SequentialNumbersMixin
 
 
 class AssignmentCreate(
+    SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,
 ):
     dependencies = [AgendaItemCreate, ListOfSpeakersCreate]
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        instance["sequential_number"] = self.get_sequential_number(
+            instance["meeting_id"]
+        )
+        return instance
 
 
 @register_action_set("assignment")

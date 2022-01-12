@@ -1542,6 +1542,12 @@ class Assignment(Model):
     )
     default_poll_description = fields.TextField()
     number_poll_candidates = fields.BooleanField()
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     candidate_ids = fields.RelationListField(
         to={Collection("assignment_candidate"): "assignment_id"},
         on_delete=fields.OnDelete.CASCADE,

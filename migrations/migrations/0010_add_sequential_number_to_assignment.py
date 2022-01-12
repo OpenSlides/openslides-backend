@@ -1,0 +1,38 @@
+from collections import defaultdict
+
+from datastore.migrations import AddFieldMigration, BaseEvent
+from datastore.shared.typing import JSON
+
+
+class Migration(AddFieldMigration):
+    """
+    This migration adds `assignment/sequential_number` with a added up number.
+    """
+
+    target_migration_index = 11
+
+    collection = "assignment"
+    field = "sequential_number"
+
+    def __init__(self):
+        super().__init__()
+        self.sequential_numbers_map = None
+
+    def get_default(self, event: BaseEvent) -> JSON:
+        if self.sequential_numbers_map is None:
+            self.init_sequential_numbers_map()
+        self.sequential_numbers_map[event.data["meeting_id"]] += 1
+        return self.sequential_numbers_map[event.data["meeting_id"]]
+
+    def init_sequential_numbers_map(self) -> None:
+        ids = self.new_accessor.get_all_ids_for_collection(Migration.collection)
+        self.sequential_numbers_map = defaultdict(int)
+        for id_ in ids:
+            fqid = Migration.collection + "/" + str(id_)
+            data, _ = self.new_accessor.get_model_ignore_deleted(fqid)
+            if self.sequential_numbers_map[data["meeting_id"]] < data.get(
+                "sequential_number", 0
+            ):
+                self.sequential_numbers_map[data["meeting_id"]] = data[
+                    "sequential_number"
+                ]

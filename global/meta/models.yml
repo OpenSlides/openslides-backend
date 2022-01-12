@@ -2837,6 +2837,11 @@ assignment:
   number_poll_candidates:
     type: boolean
     restriction_mode: B
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: B
 
   candidate_ids:
     type: relation-list
