@@ -23,7 +23,7 @@ class CommitteeDeleteAction(DeleteAction):
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if not is_dev_mode():
             raise ActionException(
-                "Deleting of committees is temporarely blocked in production-mode!"
+                "Deleting of committees is temporarily blocked in production mode!"
             )
 
         try:
