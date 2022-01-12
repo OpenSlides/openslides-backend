@@ -745,7 +745,7 @@ meeting:
     restriction_mode: C
   conference_los_restriction:
     type: boolean
-    default: False
+    default: True
     restriction_mode: C
   conference_stream_url:
     type: string
@@ -879,7 +879,7 @@ meeting:
       - never
       - default_yes
       - default_no
-    default: default_yes
+    default: default_no
     restriction_mode: B
   agenda_new_items_default_visibility:
     type: string
@@ -923,7 +923,7 @@ meeting:
     restriction_mode: B
   list_of_speakers_enable_point_of_order_speakers:
     type: boolean
-    default: False
+    default: True
     restriction_mode: B
   list_of_speakers_enable_pro_contra_speech:
     type: boolean
@@ -935,7 +935,7 @@ meeting:
     restriction_mode: B
   list_of_speakers_speaker_note_for_everyone:
     type: boolean
-    default: False
+    default: True
     restriction_mode: B
   list_of_speakers_initially_closed:
     type: boolean
@@ -985,7 +985,7 @@ meeting:
     restriction_mode: B
   motions_enable_reason_on_projector:
     type: boolean
-    default: True
+    default: False
     restriction_mode: B
   motions_enable_sidebox_on_projector:
     type: boolean
@@ -1035,7 +1035,7 @@ meeting:
     restriction_mode: B
   motions_number_min_digits:
     type: number
-    default: 1
+    default: 2
     restriction_mode: B
   motions_number_with_blank:
     type: boolean
@@ -1047,7 +1047,7 @@ meeting:
     restriction_mode: B
   motions_amendments_enabled:
     type: boolean
-    default: False
+    default: True
     restriction_mode: B
   motions_amendments_in_main_list:
     type: boolean
@@ -1059,7 +1059,7 @@ meeting:
     restriction_mode: B
   motions_amendments_prefix:
     type: string
-    default: "-"
+    default: "-Ä"
     restriction_mode: B
   motions_amendments_text_mode:
     type: string
@@ -1087,7 +1087,7 @@ meeting:
     restriction_mode: B
   motions_export_submitter_recommendation:
     type: boolean
-    default: False
+    default: True
     restriction_mode: B
   motions_export_follow_recommendation:
     type: boolean
@@ -1109,7 +1109,7 @@ meeting:
     restriction_mode: B
   motion_poll_default_type:
     type: string
-    default: analog
+    default: pseudoanonymous
     restriction_mode: B
   motion_poll_default_100_percent_base:
     type: string
@@ -1146,7 +1146,7 @@ meeting:
     restriction_mode: B
   users_allow_self_set_present:
     type: boolean
-    default: False
+    default: True
     restriction_mode: B
   users_pdf_welcometitle:
     type: string
@@ -1229,7 +1229,7 @@ meeting:
     restriction_mode: B
   assignment_poll_add_candidates_to_list_of_speakers:
     type: boolean
-    default: True
+    default: False
     restriction_mode: B
   assignment_poll_sort_poll_result_by_votes:
     type: boolean
@@ -1237,7 +1237,7 @@ meeting:
     restriction_mode: B
   assignment_poll_default_type:
     type: string
-    default: analog
+    default: pseudoanonymous
     restriction_mode: B
   assignment_poll_default_method:
     type: string
