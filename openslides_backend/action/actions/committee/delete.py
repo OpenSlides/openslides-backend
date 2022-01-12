@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.env import is_dev_mode
 from ....shared.exceptions import ActionException, ProtectedModelsException
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -20,6 +21,11 @@ class CommitteeDeleteAction(DeleteAction):
     skip_archived_meeting_check = True
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        if not is_dev_mode():
+            raise ActionException(
+                "Deleting of committees is temporarely blocked in production-mode!"
+            )
+
         try:
             return super().base_update_instance(instance)
         except ProtectedModelsException as e:
