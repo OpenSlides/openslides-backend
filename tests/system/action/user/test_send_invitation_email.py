@@ -464,7 +464,7 @@ class SendInvitationMail(BaseActionTestCase):
             handler.emails[0]["data"],
         )
         self.assertIn(
-            "username: Testuser 2",
+            "Username: Testuser 2",
             handler.emails[0]["data"],
         )
         self.assertIn(
@@ -472,7 +472,7 @@ class SendInvitationMail(BaseActionTestCase):
             handler.emails[0]["data"],
         )
         self.assertIn(
-            "password: secret",
+            "Password: secret",
             handler.emails[0]["data"],
         )
         self.assertIn(
