@@ -205,7 +205,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         assert meeting.get("url_name") == "JWdYZqDX"
 
         # check two defaults:
-        assert meeting.get("assignment_poll_default_type") == "analog"
+        assert meeting.get("assignment_poll_default_type") == "pseudoanonymous"
         assert meeting.get("assignment_poll_default_method") == "Y"
 
     def test_create_check_users(self) -> None:

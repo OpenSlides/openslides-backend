@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "25d567e5c04408e378c45d1230d18209"
+MODELS_YML_CHECKSUM = "1bb561c74ceac9d2fc7ee05816995b4c"
 
 
 class Organization(Model):
@@ -54,9 +54,9 @@ class Organization(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
-    url = fields.CharField(default="http://example.com:8000")
+    url = fields.CharField(default="https://example.com")
 
 
 class User(Model):
@@ -357,7 +357,7 @@ class Meeting(Model):
     custom_translations = fields.JSONField()
     conference_show = fields.BooleanField(default=False)
     conference_auto_connect = fields.BooleanField(default=False)
-    conference_los_restriction = fields.BooleanField(default=False)
+    conference_los_restriction = fields.BooleanField(default=True)
     conference_stream_url = fields.CharField()
     conference_stream_poster_url = fields.CharField()
     conference_open_microphone = fields.BooleanField(default=False)
@@ -398,7 +398,7 @@ class Meeting(Model):
         default="arabic", constraints={"enum": ["arabic", "roman"]}
     )
     agenda_item_creation = fields.CharField(
-        default="default_yes",
+        default="default_no",
         constraints={"enum": ["always", "never", "default_yes", "default_no"]},
     )
     agenda_new_items_default_visibility = fields.CharField(
@@ -417,10 +417,10 @@ class Meeting(Model):
     )
     list_of_speakers_present_users_only = fields.BooleanField(default=False)
     list_of_speakers_show_first_contribution = fields.BooleanField(default=False)
-    list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=False)
+    list_of_speakers_enable_point_of_order_speakers = fields.BooleanField(default=True)
     list_of_speakers_enable_pro_contra_speech = fields.BooleanField(default=False)
     list_of_speakers_can_set_contribution_self = fields.BooleanField(default=False)
-    list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=False)
+    list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
     motions_default_workflow_id = fields.RelationField(
         to={Collection("motion_workflow"): "default_workflow_meeting_id"}, required=True
@@ -444,7 +444,7 @@ class Meeting(Model):
     motions_line_length = fields.IntegerField(default=85, constraints={"minimum": 40})
     motions_reason_required = fields.BooleanField(default=False)
     motions_enable_text_on_projector = fields.BooleanField(default=True)
-    motions_enable_reason_on_projector = fields.BooleanField(default=True)
+    motions_enable_reason_on_projector = fields.BooleanField(default=False)
     motions_enable_sidebox_on_projector = fields.BooleanField(default=False)
     motions_enable_recommendation_on_projector = fields.BooleanField(default=True)
     motions_show_referring_motions = fields.BooleanField(default=True)
@@ -461,13 +461,13 @@ class Meeting(Model):
         default="per_category",
         constraints={"enum": ["per_category", "serially_numbered", "manually"]},
     )
-    motions_number_min_digits = fields.IntegerField(default=1)
+    motions_number_min_digits = fields.IntegerField(default=2)
     motions_number_with_blank = fields.BooleanField(default=False)
     motions_statutes_enabled = fields.BooleanField(default=False)
-    motions_amendments_enabled = fields.BooleanField(default=False)
+    motions_amendments_enabled = fields.BooleanField(default=True)
     motions_amendments_in_main_list = fields.BooleanField(default=True)
     motions_amendments_of_amendments = fields.BooleanField(default=False)
-    motions_amendments_prefix = fields.CharField(default="-")
+    motions_amendments_prefix = fields.CharField(default="-Ä")
     motions_amendments_text_mode = fields.CharField(
         default="paragraph",
         constraints={"enum": ["freestyle", "fulltext", "paragraph"]},
@@ -478,7 +478,7 @@ class Meeting(Model):
     )
     motions_export_title = fields.CharField(default="Motions")
     motions_export_preamble = fields.TextField()
-    motions_export_submitter_recommendation = fields.BooleanField(default=False)
+    motions_export_submitter_recommendation = fields.BooleanField(default=True)
     motions_export_follow_recommendation = fields.BooleanField(default=False)
     motion_poll_ballot_paper_selection = fields.CharField(
         default="CUSTOM_NUMBER",
@@ -491,7 +491,7 @@ class Meeting(Model):
         },
     )
     motion_poll_ballot_paper_number = fields.IntegerField(default=8)
-    motion_poll_default_type = fields.CharField(default="analog")
+    motion_poll_default_type = fields.CharField(default="pseudoanonymous")
     motion_poll_default_100_percent_base = fields.CharField(default="YNA")
     motion_poll_default_group_ids = fields.RelationListField(
         to={Collection("group"): "used_as_motion_poll_default_id"}
@@ -505,12 +505,12 @@ class Meeting(Model):
     )
     users_enable_presence_view = fields.BooleanField(default=False)
     users_enable_vote_weight = fields.BooleanField(default=False)
-    users_allow_self_set_present = fields.BooleanField(default=False)
+    users_allow_self_set_present = fields.BooleanField(default=True)
     users_pdf_welcometitle = fields.CharField(default="Welcome to OpenSlides")
     users_pdf_welcometext = fields.TextField(
         default="[Place for your welcome and help text.]"
     )
-    users_pdf_url = fields.CharField(default="http://example.com:8000")
+    users_pdf_url = fields.CharField(default="https://example.com")
     users_pdf_wlan_ssid = fields.CharField()
     users_pdf_wlan_password = fields.CharField()
     users_pdf_wlan_encryption = fields.CharField(
@@ -520,7 +520,7 @@ class Meeting(Model):
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
     users_email_body = fields.TextField(
-        default="Dear {name},\n\n\nthis is your personal OpenSlides login:\n\n    {url}\n\n    username: {username}\n\n    password: {password}\n\n\n\nThis email was generated automatically."
+        default="Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
     )
     assignments_export_title = fields.CharField(default="Elections")
     assignments_export_preamble = fields.TextField()
@@ -536,10 +536,10 @@ class Meeting(Model):
     )
     assignment_poll_ballot_paper_number = fields.IntegerField(default=8)
     assignment_poll_add_candidates_to_list_of_speakers = fields.BooleanField(
-        default=True
+        default=False
     )
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
-    assignment_poll_default_type = fields.CharField(default="analog")
+    assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
     assignment_poll_default_method = fields.CharField(default="Y")
     assignment_poll_default_100_percent_base = fields.CharField(default="valid")
     assignment_poll_default_group_ids = fields.RelationListField(
