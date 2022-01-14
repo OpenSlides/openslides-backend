@@ -5,6 +5,7 @@ from ....models.models import Motion
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ..agenda_item.agenda_creation import CreateActionWithAgendaItemMixin
 from ..agenda_item.create import AgendaItemCreate
 from ..list_of_speakers.create import ListOfSpeakersCreate
@@ -12,7 +13,6 @@ from ..list_of_speakers.list_of_speakers_creation import (
     CreateActionWithListOfSpeakersMixin,
 )
 from ..motion_submitter.create import MotionSubmitterCreateAction
-from .sequential_numbers_mixin import SequentialNumbersMixin
 from .set_number_mixin import SetNumberMixin
 
 

@@ -17,6 +17,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         topic = self.get_model("topic/42")
         self.assertEqual(topic.get("meeting_id"), 1)
         self.assertEqual(topic.get("agenda_item_id"), 1)
+        self.assertEqual(topic.get("sequential_number"), 1)
         self.assert_model_exists("agenda_item/1")
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
@@ -55,7 +56,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'meeting/1/agenda_item_ids', 'meeting/1/list_of_speakers_ids', 'meeting/1/topic_ids'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/meeting_id', 'list_of_speakers/sequential_number', 'meeting/1/agenda_item_ids', 'meeting/1/list_of_speakers_ids', 'meeting/1/topic_ids', 'topic/meeting_id', 'topic/sequential_number'",
             response.json["message"],
         )
         self.assert_model_not_exists("topic/1")

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "285512ee243cf7c27afed3d443dd0ec5"
+MODELS_YML_CHECKSUM = "8bc33c6c7b7a77eae202fe434204a9e6"
 
 
 class Organization(Model):
@@ -916,6 +916,12 @@ class ListOfSpeakers(Model):
 
     id = fields.IntegerField()
     closed = fields.BooleanField(default=False)
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     content_object_id = fields.GenericRelationField(
         to={
             Collection("motion"): "list_of_speakers_id",
@@ -975,6 +981,12 @@ class Topic(Model):
     id = fields.IntegerField()
     title = fields.CharField(required=True)
     text = fields.HTMLPermissiveField()
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     attachment_ids = fields.RelationListField(
         to={Collection("mediafile"): "attachment_ids"}, equal_fields="meeting_id"
     )
@@ -1192,6 +1204,12 @@ class MotionCommentSection(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     comment_ids = fields.RelationListField(
         to={Collection("motion_comment"): "section_id"},
         on_delete=fields.OnDelete.PROTECT,
@@ -1219,6 +1237,12 @@ class MotionCategory(Model):
     level = fields.IntegerField(
         read_only=True, constraints={"description": "Calculated field."}
     )
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     parent_id = fields.RelationField(
         to={Collection("motion_category"): "child_ids"}, equal_fields="meeting_id"
     )
@@ -1240,6 +1264,12 @@ class MotionBlock(Model):
     id = fields.IntegerField()
     title = fields.CharField(required=True)
     internal = fields.BooleanField()
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     motion_ids = fields.RelationListField(
         to={Collection("motion"): "block_id"}, equal_fields="meeting_id"
     )
@@ -1359,6 +1389,12 @@ class MotionWorkflow(Model):
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     state_ids = fields.RelationListField(
         to={Collection("motion_state"): "workflow_id"},
         on_delete=fields.OnDelete.CASCADE,
@@ -1391,6 +1427,12 @@ class MotionStatuteParagraph(Model):
     title = fields.CharField(required=True)
     text = fields.HTMLStrictField()
     weight = fields.IntegerField(default=10000)
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     motion_ids = fields.RelationListField(
         to={Collection("motion"): "statute_paragraph_id"}, equal_fields="meeting_id"
     )
@@ -1436,6 +1478,12 @@ class Poll(Model):
     votesinvalid = fields.DecimalField()
     votescast = fields.DecimalField()
     entitled_users_at_stop = fields.JSONField()
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     content_object_id = fields.GenericRelationField(
         to={
             Collection("motion"): "poll_ids",
@@ -1697,6 +1745,12 @@ class Projector(Model):
     show_title = fields.BooleanField(default=True)
     show_logo = fields.BooleanField(default=True)
     show_clock = fields.BooleanField(default=True)
+    sequential_number = fields.IntegerField(
+        read_only=True,
+        constraints={
+            "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
+        },
+    )
     current_projection_ids = fields.RelationListField(
         to={Collection("projection"): "current_projector_id"},
         on_delete=fields.OnDelete.CASCADE,

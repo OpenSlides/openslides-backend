@@ -35,12 +35,3 @@ class SequentialNumberMigration(AddFieldMigration):
                 self.sequential_numbers_map[data["meeting_id"]] = data[
                     "sequential_number"
                 ]
-
-
-class Migration(SequentialNumberMigration):
-    """
-    This migration adds `assignment/sequential_number` with a added up number.
-    """
-
-    target_migration_index = 11
-    collection = "assignment"

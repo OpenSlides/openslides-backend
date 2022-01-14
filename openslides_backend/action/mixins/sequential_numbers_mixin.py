@@ -1,7 +1,7 @@
 from datastore.shared.util import DeletedModelsBehaviour
 
-from ....shared.filters import FilterOperator
-from ...generics.create import CreateAction
+from ...shared.filters import FilterOperator
+from ..generics.create import CreateAction
 
 
 class SequentialNumbersMixin(CreateAction):

@@ -39,8 +39,8 @@ class SequentialNumberMigration(AddFieldMigration):
 
 class Migration(SequentialNumberMigration):
     """
-    This migration adds `assignment/sequential_number` with a added up number.
+    This migration adds `list_of_speakers/sequential_number` with a added up number.
     """
 
-    target_migration_index = 11
-    collection = "assignment"
+    target_migration_index = 18
+    collection = "list_of_speakers"

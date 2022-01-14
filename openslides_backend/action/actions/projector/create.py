@@ -1,13 +1,15 @@
+from typing import Any, Dict
+
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
-from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting.shared_meeting import used_as_default_for_schema
 
 
 @register_action("projector.create")
-class ProjectorCreateAction(CreateAction):
+class ProjectorCreateAction(SequentialNumbersMixin):
     """
     Action to create a projector.
     """
@@ -37,3 +39,10 @@ class ProjectorCreateAction(CreateAction):
         },
     )
     permission = Permissions.Projector.CAN_MANAGE
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        instance["sequential_number"] = self.get_sequential_number(
+            instance["meeting_id"]
+        )
+        return instance

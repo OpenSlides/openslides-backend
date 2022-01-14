@@ -39,8 +39,8 @@ class SequentialNumberMigration(AddFieldMigration):
 
 class Migration(SequentialNumberMigration):
     """
-    This migration adds `assignment/sequential_number` with a added up number.
+    This migration adds `motion_statute_paragraph/sequential_number` with a added up number.
     """
 
-    target_migration_index = 11
-    collection = "assignment"
+    target_migration_index = 19
+    collection = "motion_statute_paragraph"

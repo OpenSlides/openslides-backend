@@ -20,7 +20,8 @@ class ProjectorCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "projector/1", {"name": "test projector", "meeting_id": 222}
+            "projector/1",
+            {"name": "test projector", "meeting_id": 222, "sequential_number": 1},
         )
         model = self.get_model("projector/1")
         self.assert_defaults(Projector, model)

@@ -228,6 +228,7 @@ class MeetingImport(BaseActionTestCase):
                         "default_statute_amendment_workflow_meeting_id": 1,
                         "default_workflow_meeting_id": 1,
                         "state_ids": [1],
+                        "sequential_number": 1,
                     }
                 },
                 "motion_state": {
@@ -281,6 +282,7 @@ class MeetingImport(BaseActionTestCase):
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
                         "used_as_default_$_in_meeting_id": [],
+                        "sequential_number": 1,
                     }
                 },
             },
@@ -531,6 +533,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "content_object_id": "motion/1",
                         "closed": False,
+                        "sequential_number": 1,
                         "speaker_ids": [],
                         "projection_ids": [],
                     }
@@ -689,6 +692,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "content_object_id": "motion/1",
                         "closed": False,
+                        "sequential_number": 1,
                         "speaker_ids": [],
                         "projection_ids": [],
                     }
@@ -863,6 +867,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "content_object_id": "motion/1",
                         "closed": False,
+                        "sequential_number": 1,
                         "speaker_ids": [],
                         "projection_ids": [],
                     },
@@ -871,6 +876,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "content_object_id": "motion/2",
                         "closed": False,
+                        "sequential_number": 2,
                         "speaker_ids": [],
                         "projection_ids": [],
                     },
@@ -1017,6 +1023,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "content_object_id": "motion/1",
                         "closed": False,
+                        "sequential_number": 1,
                         "speaker_ids": [],
                         "projection_ids": [],
                     }
@@ -1052,6 +1059,7 @@ class MeetingImport(BaseActionTestCase):
                         "meeting_id": 1,
                         "content_object_id": "motion/1",
                         "closed": False,
+                        "sequential_number": 1,
                         "speaker_ids": [],
                         "projection_ids": [],
                     },

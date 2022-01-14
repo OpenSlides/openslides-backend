@@ -1425,6 +1425,7 @@
         "1": {
             "id": 1,
             "closed": false,
+	    "sequential_number": 1,
             "content_object_id": "motion/1",
             "speaker_ids": [
                 11,
@@ -1437,6 +1438,7 @@
         "2": {
             "id": 2,
             "closed": false,
+	    "sequential_number": 2,
             "content_object_id": "motion/2",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1445,6 +1447,7 @@
         "3": {
             "id": 3,
             "closed": false,
+	    "sequential_number": 3,
             "content_object_id": "topic/1",
             "speaker_ids": [
                 1,
@@ -1456,6 +1459,7 @@
         "4": {
             "id": 4,
             "closed": false,
+	    "sequential_number": 4,
             "content_object_id": "topic/2",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1464,6 +1468,7 @@
         "5": {
             "id": 5,
             "closed": false,
+	    "sequential_number": 5,
             "content_object_id": "topic/3",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1472,6 +1477,7 @@
         "6": {
             "id": 6,
             "closed": false,
+	    "sequential_number": 6,
             "content_object_id": "topic/4",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1480,6 +1486,7 @@
         "7": {
             "id": 7,
             "closed": false,
+	    "sequential_number": 7,
             "content_object_id": "topic/5",
             "speaker_ids": [
                 3,
@@ -1491,6 +1498,7 @@
         "8": {
             "id": 8,
             "closed": false,
+	    "sequential_number": 8,
             "content_object_id": "topic/6",
             "speaker_ids": [
                 5
@@ -1501,6 +1509,7 @@
         "9": {
             "id": 9,
             "closed": false,
+	    "sequential_number": 9,
             "content_object_id": "topic/7",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1509,6 +1518,7 @@
         "10": {
             "id": 10,
             "closed": false,
+	    "sequential_number": 10,
             "content_object_id": "topic/8",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1517,6 +1527,7 @@
         "11": {
             "id": 11,
             "closed": false,
+	    "sequential_number": 11,
             "content_object_id": "assignment/1",
             "speaker_ids": [
                 6,
@@ -1529,6 +1540,7 @@
         "12": {
             "id": 12,
             "closed": false,
+	    "sequential_number": 12,
             "content_object_id": "motion/3",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1537,6 +1549,7 @@
         "13": {
             "id": 13,
             "closed": false,
+	    "sequential_number": 13,
             "content_object_id": "motion/4",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1545,6 +1558,7 @@
         "14": {
             "id": 14,
             "closed": false,
+	    "sequential_number": 14,
             "content_object_id": "assignment/2",
             "speaker_ids": [
                 9,
@@ -1556,6 +1570,7 @@
         "15": {
             "id": 15,
             "closed": false,
+	    "sequential_number": 15,
             "content_object_id": "motion_block/1",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1564,6 +1579,7 @@
         "16": {
             "id": 16,
             "closed": false,
+	    "sequential_number": 16,
             "content_object_id": "mediafile/1",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1572,6 +1588,7 @@
         "17": {
             "id": 17,
             "closed": false,
+	    "sequential_number": 17,
             "content_object_id": "mediafile/2",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1580,6 +1597,7 @@
         "18": {
             "id": 18,
             "closed": false,
+	    "sequential_number": 18,
             "content_object_id": "mediafile/3",
             "speaker_ids": [],
             "projection_ids": [],
@@ -1749,6 +1767,7 @@
             "id": 1,
             "title": "A",
             "text": "",
+	    "sequential_number": 1,
             "attachment_ids": [],
             "agenda_item_id": 3,
             "list_of_speakers_id": 3,
@@ -1762,6 +1781,7 @@
             "id": 2,
             "title": "B",
             "text": "",
+	    "sequential_number": 2,
             "attachment_ids": [],
             "agenda_item_id": 4,
             "list_of_speakers_id": 4,
@@ -1775,6 +1795,7 @@
             "id": 3,
             "title": "C",
             "text": "",
+	    "sequential_number": 3,
             "attachment_ids": [],
             "agenda_item_id": 5,
             "list_of_speakers_id": 5,
@@ -1788,6 +1809,7 @@
             "id": 4,
             "title": "D",
             "text": "",
+	    "sequential_number": 4,
             "attachment_ids": [],
             "agenda_item_id": 6,
             "list_of_speakers_id": 6,
@@ -1801,6 +1823,7 @@
             "id": 5,
             "title": "E",
             "text": "",
+	    "sequential_number": 5,
             "attachment_ids": [],
             "agenda_item_id": 7,
             "list_of_speakers_id": 7,
@@ -1814,6 +1837,7 @@
             "id": 6,
             "title": "F",
             "text": "",
+	    "sequential_number": 6,
             "attachment_ids": [],
             "agenda_item_id": 8,
             "list_of_speakers_id": 8,
@@ -1827,6 +1851,7 @@
             "id": 7,
             "title": "G",
             "text": "",
+	    "sequential_number": 7,
             "attachment_ids": [],
             "agenda_item_id": 9,
             "list_of_speakers_id": 9,
@@ -1840,6 +1865,7 @@
             "id": 8,
             "title": "H",
             "text": "",
+	    "sequential_number": 8,
             "attachment_ids": [],
             "agenda_item_id": 10,
             "list_of_speakers_id": 10,
@@ -2111,6 +2137,7 @@
             "id": 1,
             "name": "Neu",
             "weight": 10000,
+	    "sequential_number": 1,
             "comment_ids": [
                 1
             ],
@@ -2132,6 +2159,7 @@
             "prefix": "C",
             "weight": 2,
             "level": 0,
+	    "sequential_number": 1,
             "parent_id": null,
             "child_ids": [
                 2
@@ -2147,6 +2175,7 @@
             "prefix": "B",
             "weight": 4,
             "level": 1,
+	    "sequential_number": 2,
             "parent_id": 1,
             "child_ids": [],
             "motion_ids": [
@@ -2161,6 +2190,7 @@
             "id": 1,
             "title": "BLOCK A",
             "internal": false,
+	    "sequential_number": 1,
             "motion_ids": [
                 3,
                 4
@@ -2551,6 +2581,7 @@
         "1": {
             "id": 1,
             "name": "Simple Workflow",
+	    "sequential_number": 1,
             "state_ids": [
                 1,
                 2,
@@ -2566,6 +2597,7 @@
         "2": {
             "id": 2,
             "name": "Complex Workflow",
+	    "sequential_number": 2,
             "state_ids": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
             "first_state_id": 5,
             "default_workflow_meeting_id": null,
@@ -2595,6 +2627,7 @@
             "votesinvalid": "9.000000",
             "votescast": "2.000000",
             "entitled_users_at_stop": null,
+	    "sequential_number": 1,
             "content_object_id": "motion/1",
             "option_ids": [
                 1
@@ -2624,6 +2657,7 @@
             "votesinvalid": null,
             "votescast": null,
             "entitled_users_at_stop": null,
+	    "sequential_number": 2,
             "content_object_id": "motion/1",
             "option_ids": [
                 3
@@ -2653,6 +2687,7 @@
             "votesinvalid": null,
             "votescast": null,
             "entitled_users_at_stop": null,
+	    "sequential_number": 3,
             "content_object_id": "assignment/1",
             "voted_ids": [],
             "entitled_group_ids": [],
@@ -2682,6 +2717,7 @@
             "votesinvalid": "2.000000",
             "votescast": "16.000000",
             "entitled_users_at_stop": null,
+	    "sequential_number": 4,
             "content_object_id": "assignment/1",
             "voted_ids": [],
             "entitled_group_ids": [],
@@ -2713,6 +2749,7 @@
             "votesinvalid": "0.000000",
             "votescast": "1.000000",
             "entitled_users_at_stop": null,
+	    "sequential_number": 5,
             "content_object_id": "assignment/2",
             "voted_ids": [
                 1
@@ -3016,6 +3053,7 @@
             "phase": "voting",
             "default_poll_description": "",
             "number_poll_candidates": false,
+	    "sequential_number": 1,
             "candidate_ids": [
                 1,
                 2,
@@ -3042,6 +3080,7 @@
             "phase": "search",
             "default_poll_description": "",
             "number_poll_candidates": true,
+	    "sequential_number": 2,
             "candidate_ids": [
                 4,
                 5
@@ -3197,6 +3236,7 @@
             "show_title": true,
             "show_logo": true,
             "show_clock": true,
+	    "sequential_number": 1,
             "current_projection_ids": [
                 3,
                 4
@@ -3256,6 +3296,7 @@
             "show_title": true,
             "show_logo": true,
             "show_clock": true,
+	    "sequential_number": 2,
             "current_projection_ids": [],
             "preview_projection_ids": [],
             "history_projection_ids": [],
