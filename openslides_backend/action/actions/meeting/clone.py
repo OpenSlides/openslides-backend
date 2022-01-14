@@ -67,7 +67,8 @@ class MeetingClone(MeetingImport):
                 value = instance.pop(field)
                 self.get_meeting_from_json(meeting_json)[field] = value
 
-        for mediafile_id in instance["meeting"]["mediafile"]:
+        # reset mediafile/attachment_ids to [] if None.
+        for mediafile_id in instance["meeting"].get("mediafile", []):
             if (
                 instance["meeting"]["mediafile"][mediafile_id].get("attachment_ids")
                 is None
