@@ -43,6 +43,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "committee_$1_management_level": "can_manage",
+                    "committee_$_management_level": ["1"],
                     "organization_management_level": "can_manage_users",
                 }
             }
@@ -53,6 +54,22 @@ class MeetingDeleteActionTest(BaseActionTestCase):
 
     def test_delete_full_meeting(self) -> None:
         self.load_example_data()
+        self.set_models(
+            {
+                "meeting/1": {"all_projection_ids": [1, 2, 3, 4, 5]},
+                "projection/5": {
+                    "current_projector_id": None,
+                    "preview_projector_id": None,
+                    "history_projector_id": 1,
+                    "content_object_id": "assignment/1",
+                    "stable": False,
+                    "type": None,
+                    "weight": 1,
+                    "options": {},
+                    "meeting_id": 1,
+                },
+            }
+        )
         response = self.request("meeting.delete", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_deleted(
@@ -102,7 +119,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(f"mediafile/{i+1}")
         for i in range(2):
             self.assert_model_deleted(f"projector/{i+1}")
-        for i in range(4):
+        for i in range(5):
             self.assert_model_deleted(f"projection/{i+1}")
         self.assert_model_deleted("projector_message/1")
         for i in range(2):

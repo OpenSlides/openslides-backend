@@ -102,6 +102,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         relation_manager: RelationManager,
         logging: LoggingModule,
         skip_archived_meeting_check: bool = False,
+        parent_action: str = "",
     ) -> None:
         self.services = services
         self.auth = services.authentication()
@@ -117,6 +118,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
         else:
             self.skip_archived_meeting_check = skip_archived_meeting_check
+        self.parent_action = parent_action
         self.write_requests = []
         self.results = []
 
@@ -559,6 +561,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.relation_manager,
             self.logging,
             skip_archived_meeting_check,
+            self.name,
         )
         write_request, action_results = action.perform(
             action_data, self.user_id, internal=True
