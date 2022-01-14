@@ -8,7 +8,7 @@ class ProjectionDelete(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/1": {
-                    "all_projection_ids": [12, 13],
+                    "all_projection_ids": [12, 13, 14],
                     "projector_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
@@ -38,10 +38,10 @@ class ProjectionDelete(BaseActionTestCase):
         response = self.request("projection.delete", {"id": 14})
         self.assert_status_code(response, 400)
         assert (
-            "Projection must have a current_projector_id or a preview_projector_id."
+            "Projection 14 must have a current_projector_id or a preview_projector_id."
             in response.json["message"]
         )
-        self.assert_model_exists("projection/13")
+        self.assert_model_exists("projection/14")
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test({}, "projection.delete", {"id": 12})
