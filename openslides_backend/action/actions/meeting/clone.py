@@ -67,6 +67,13 @@ class MeetingClone(MeetingImport):
                 value = instance.pop(field)
                 self.get_meeting_from_json(meeting_json)[field] = value
 
+        for mediafile_id in instance["meeting"]["mediafile"]:
+            if (
+                instance["meeting"]["mediafile"][mediafile_id].get("attachment_ids")
+                is None
+            ):
+                instance["meeting"]["mediafile"][mediafile_id]["attachment_ids"] = []
+
         # check datavalidation
         checker = Checker(data=meeting_json, mode="internal")
         try:

@@ -236,6 +236,28 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.media.duplicate_mediafile.assert_called_with(1, 2)
 
+    def test_clone_with_mediafile_directory(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["group/1"]["user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request(
+            "mediafile.create_directory", {"meeting_id": 1, "title": "bla"}
+        )
+        self.assert_status_code(response, 200)
+
+        self.media.duplicate_mediafile = MagicMock()
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
     def test_clone_with_organization_tag(self) -> None:
         self.test_models["meeting/1"]["organization_tag_ids"] = [1]
         self.set_models(

@@ -383,7 +383,7 @@ class Checker:
                 try:
                     field.validate(model[fieldname], model)
                 except AssertionError as e:
-                    error = f"{collection}/{model['id']}: {str(e)}"
+                    error = f"{collection}/{model['id']}/{fieldname}: {str(e)}"
                     self.errors.append(error)
                     errors = True
 
