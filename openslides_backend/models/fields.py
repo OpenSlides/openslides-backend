@@ -465,5 +465,7 @@ class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
             return {key: sup.validate(struc) for key, struc in value.items()}
         elif type(value) == list:
             return value
+        elif value == None:
+            return None
         else:
             raise NotImplementedError
