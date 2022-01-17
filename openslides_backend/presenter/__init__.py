@@ -5,6 +5,7 @@ from . import (  # noqa
     get_forwarding_meetings,
     get_history_information,
     get_user_related_models,
+    get_user_scope,
     get_users,
     number_of_users,
     search_users_by_name_or_email,
