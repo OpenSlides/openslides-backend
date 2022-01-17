@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, cast
 
 from ....models.models import AgendaItem
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -72,7 +72,7 @@ class CreateActionWithAgendaItemMixin(Action):
             for extra_field in agenda_creation_properties.keys():
                 instance.pop(extra_field, None)
 
-        return result_value
+        return cast(bool, result_value)
 
     def get_dependent_action_data_agenda_item(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
