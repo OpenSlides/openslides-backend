@@ -588,3 +588,14 @@ class MeetingClone(BaseActionTestCase):
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+
+    def test_clone_with_archived_meeting(self) -> None:
+        """
+        Archived meeting stays archived by cloning
+        """
+        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
+        self.set_models(self.test_models)
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
