@@ -308,8 +308,7 @@ class GenericRelationField(BaseGenericRelationField):
         assert not isinstance(value, list)
         if value:
             return string_to_fqid(value)
-        else:
-            return value
+        return value
 
 
 class GenericRelationListField(BaseGenericRelationField):
@@ -319,8 +318,10 @@ class GenericRelationListField(BaseGenericRelationField):
         return self.extend_schema(super().get_schema(), **fqid_list_schema)
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
-        assert isinstance(value, list)
-        return [string_to_fqid(fqid) for fqid in value]
+        if value or self.required:
+            assert isinstance(value, list), "assert list-failure"
+            return [string_to_fqid(fqid) for fqid in value]
+        return value
 
 
 class OrganizationField(RelationField):
@@ -467,5 +468,4 @@ class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
             return value
         elif value is None:
             return None
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
