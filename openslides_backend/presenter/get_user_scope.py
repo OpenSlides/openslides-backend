@@ -1,9 +1,8 @@
-from enum import Enum
 from typing import Any, Dict
 
 import fastjsonschema
 
-from ..shared.mixins.user_scope_mixin import UserScopeMixin
+from ..shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -24,12 +23,6 @@ get_user_scope_schema = fastjsonschema.compile(
         "additionalProperties": False,
     }
 )
-
-
-class UserScope(int, Enum):
-    Meeting = 1
-    Committee = 2
-    Organization = 3
 
 
 @register_presenter("get_user_scope")
