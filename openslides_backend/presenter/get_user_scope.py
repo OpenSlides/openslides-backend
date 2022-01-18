@@ -1,10 +1,9 @@
 from enum import Enum
-from typing import Any, Dict, Tuple, cast
+from typing import Any, Dict
 
 import fastjsonschema
 
-from ..services.datastore.commands import GetManyRequest
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.mixins.user_scope_mixin import UserScopeMixin
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -34,7 +33,7 @@ class UserScope(int, Enum):
 
 
 @register_presenter("get_user_scope")
-class GetUserScope(BasePresenter):
+class GetUserScope(UserScopeMixin, BasePresenter):
     """
     Gets for the user_ids the user scope.
     """
@@ -54,37 +53,3 @@ class GetUserScope(BasePresenter):
                 scope_str = "meeting"
             result[str(user_id)] = {"collection": scope_str, "id": scope_id}
         return result
-
-    def get_user_scope(self, user_id: int) -> Tuple[UserScope, int]:
-        user = self.datastore.fetch_model(
-            FullQualifiedId(Collection("user"), user_id),
-            ["meeting_ids", "committee_$_management_level"],
-        )
-        meetings = user.get("meeting_ids", [])
-        committees_manager = set(map(int, user.get("committee_$_management_level", [])))
-        result = self.datastore.get_many(
-            [
-                GetManyRequest(
-                    Collection("meeting"),
-                    meetings,
-                    ["committee_id", "is_active_in_organization_id"],
-                )
-            ]
-        ).get(Collection("meeting"), {})
-        committees_of_meetings = set(
-            meeting_data.get("committee_id")
-            for _, meeting_data in result.items()
-            if meeting_data.get("is_active_in_organization_id")
-        )
-        committees = list(committees_manager | committees_of_meetings)
-        meetings_committee = {
-            meeting_id: meeting_data.get("committee_id")  # type: ignore
-            for meeting_id, meeting_data in result.items()
-            if meeting_data.get("is_active_in_organization_id")
-        }
-
-        if len(meetings_committee) == 1 and len(committees) == 1:
-            return UserScope.Meeting, next(iter(meetings_committee))
-        elif len(committees) == 1:
-            return UserScope.Committee, cast(int, committees[0])
-        return UserScope.Organization, 1
