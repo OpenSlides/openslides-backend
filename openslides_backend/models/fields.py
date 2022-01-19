@@ -191,7 +191,7 @@ class DecimalField(Field):
                     min
                 ), f"{self.own_field_name} must be bigger than or equal to {min}."
             else:
-                raise NotImplementedError
+                raise NotImplementedError()
         return value
 
 
@@ -318,7 +318,7 @@ class GenericRelationListField(BaseGenericRelationField):
         return self.extend_schema(super().get_schema(), **fqid_list_schema)
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
-        if value or self.required:
+        if value is not None or self.required:
             assert isinstance(value, list), "assert list-failure"
             return [string_to_fqid(fqid) for fqid in value]
         return value
@@ -455,7 +455,7 @@ class TemplateDecimalField(BaseTemplateField, DecimalField):
                     for replacement in value
                 ), f"{self.get_own_field_name()} must be bigger than or equal to {min}."
             else:
-                raise NotImplementedError
+                raise NotImplementedError()
         return value
 
 
@@ -468,4 +468,4 @@ class TemplateHTMLStrictField(BaseTemplateField, HTMLStrictField):
             return value
         elif value is None:
             return None
-        raise NotImplementedError
+        raise NotImplementedError()

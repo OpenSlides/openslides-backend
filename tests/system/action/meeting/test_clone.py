@@ -534,6 +534,7 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_with_created_topic_and_agenda_type(self) -> None:
         self.set_models(self.test_models)
+
         response = self.request(
             "topic.create",
             {
@@ -545,9 +546,9 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         topic_fqid = f'topic/{response.json["results"][0][0]["id"]}'
-        topic = self.assert_model_exists(
-            topic_fqid, {"agenda_type": None, "agenda_duration": None}
-        )
+        topic = self.get_model(topic_fqid)
+        self.assertNotIn("agenda_type", topic)
+        self.assertNotIn("agenda_duration", topic)
         agenda_item_fqid = f"agenda_item/{topic.get('agenda_item_id')}"
         self.assert_model_exists(
             agenda_item_fqid,
