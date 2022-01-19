@@ -1,6 +1,7 @@
 from typing import Any, Dict
 from unittest.mock import MagicMock
 
+from openslides_backend.models.models import AgendaItem
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
@@ -530,3 +531,72 @@ class MeetingClone(BaseActionTestCase):
             "Missing CommitteeManagementLevel: can_manage for committee 2",
             response.json["message"],
         )
+
+    def test_clone_with_created_topic_and_agenda_type(self) -> None:
+        self.set_models(self.test_models)
+
+        response = self.request(
+            "topic.create",
+            {
+                "meeting_id": 1,
+                "title": "test",
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+                "agenda_duration": 60,
+            },
+        )
+        self.assert_status_code(response, 200)
+        topic_fqid = f'topic/{response.json["results"][0][0]["id"]}'
+        topic = self.get_model(topic_fqid)
+        self.assertNotIn("agenda_type", topic)
+        self.assertNotIn("agenda_duration", topic)
+        agenda_item_fqid = f"agenda_item/{topic.get('agenda_item_id')}"
+        self.assert_model_exists(
+            agenda_item_fqid,
+            {
+                "type": AgendaItem.INTERNAL_ITEM,
+                "duration": 60,
+                "content_object_id": topic_fqid,
+            },
+        )
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
+    def test_clone_with_created_motion_and_agenda_type(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request(
+            "motion.create",
+            {
+                "meeting_id": 1,
+                "title": "test",
+                "text": "Motion test",
+                "agenda_create": False,
+                "agenda_type": AgendaItem.INTERNAL_ITEM,
+                "agenda_duration": 60,
+            },
+        )
+        self.assert_status_code(response, 200)
+        motion_fqid = f'motion/{response.json["results"][0][0]["id"]}'
+        self.assert_model_exists(
+            motion_fqid,
+            {
+                "agenda_item_id": None,
+                "agenda_create": None,
+                "agenda_type": None,
+                "agenda_duration": None,
+            },
+        )
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+
+    def test_clone_with_archived_meeting(self) -> None:
+        """
+        Archived meeting stays archived by cloning
+        """
+        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
+        self.set_models(self.test_models)
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})

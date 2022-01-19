@@ -56,18 +56,23 @@ class CreateActionWithAgendaItemMixin(Action):
         )
         agenda_item_creation = meeting.get("agenda_item_creation")
         agenda_create = instance.pop("agenda_create", None)
+        result_value: bool
         if agenda_item_creation == "always":
             return True
         elif agenda_item_creation == "never":
-            return False
+            result_value = False
+        elif agenda_create is not None:
+            result_value = agenda_create
         elif agenda_item_creation == "default_yes":
-            result_default = True
+            result_value = True
         else:
-            result_default = False
+            result_value = False
 
-        if agenda_create is None:
-            return result_default
-        return agenda_create
+        if not result_value:
+            for extra_field in agenda_creation_properties.keys():
+                instance.pop(extra_field, None)
+
+        return result_value
 
     def get_dependent_action_data_agenda_item(
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]

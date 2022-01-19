@@ -69,7 +69,7 @@ class Command:
         return json.dumps(self.get_raw_data())
 
     def get_raw_data(self) -> CommandData:
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Command):

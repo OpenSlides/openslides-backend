@@ -92,6 +92,17 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             if blob := entry.pop("blob", None):
                 self.mediadata.append((blob, entry["id"], entry["mimetype"]))
 
+        for entry in meeting_json.get("motion", {}).values():
+            to_remove = set()
+            for paragraph in entry.get("amendment_paragraph_$", []):
+                if (entry.get(fname := "amendment_paragraph_$" + paragraph)) is None:
+                    to_remove.add(paragraph)
+                    entry.pop(fname, None)
+            if to_remove:
+                entry["amendment_paragraph_$"] = list(
+                    set(entry["amendment_paragraph_$"]) - to_remove
+                )
+
         # check datavalidation
         checker = Checker(data=meeting_json, mode="external")
         try:

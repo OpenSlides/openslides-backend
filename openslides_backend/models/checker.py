@@ -428,7 +428,7 @@ class Checker:
 
             for replacement in replacements:
                 structured_field = self.make_structured(template_field, replacement)
-                if structured_field not in model:
+                if model.get(structured_field) is None:
                     self.errors.append(
                         f"{collection}/{model['id']}/{template_field.get_own_field_name()}: Missing {structured_field} since it is given as a replacement"
                     )
