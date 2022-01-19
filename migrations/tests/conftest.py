@@ -29,6 +29,12 @@ def clear_datastore(setup) -> None:
     writer: Writer = injector.get(Writer)
     writer.truncate_db()
 
+    def _clear_datastore() -> None:
+        writer: Writer = injector.get(Writer)
+        writer.truncate_db()
+
+    return _clear_datastore
+
 
 @pytest.fixture()
 def write(clear_datastore) -> None:
