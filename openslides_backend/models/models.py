@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "1bb561c74ceac9d2fc7ee05816995b4c"
+MODELS_YML_CHECKSUM = "285512ee243cf7c27afed3d443dd0ec5"
 
 
 class Organization(Model):
@@ -998,6 +998,11 @@ class Topic(Model):
     tag_ids = fields.RelationListField(
         to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
     )
+    poll_ids = fields.RelationListField(
+        to={Collection("poll"): "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
+    )
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
@@ -1432,7 +1437,11 @@ class Poll(Model):
     votescast = fields.DecimalField()
     entitled_users_at_stop = fields.JSONField()
     content_object_id = fields.GenericRelationField(
-        to={Collection("motion"): "poll_ids", Collection("assignment"): "poll_ids"},
+        to={
+            Collection("motion"): "poll_ids",
+            Collection("assignment"): "poll_ids",
+            Collection("topic"): "poll_ids",
+        },
         equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(

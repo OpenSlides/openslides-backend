@@ -1940,6 +1940,12 @@ topic:
     to: tag/tagged_ids
     equal_fields: meeting_id
     restriction_mode: A
+  poll_ids:
+    type: relation-list
+    to: poll/content_object_id
+    on_delete: CASCADE
+    equal_fields: meeting_id
+    restriction_mode: A
   projection_ids:
     type: relation-list
     to: projection/content_object_id
@@ -2672,6 +2678,7 @@ poll:
       collections:
         - motion
         - assignment
+        - topic
       field: poll_ids
     equal_fields: meeting_id
     restriction_mode: A
