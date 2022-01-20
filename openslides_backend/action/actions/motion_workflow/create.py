@@ -58,9 +58,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
+        instance = super().update_instance(instance)
         self.apply_instance(instance)
         action_data = [
             {
@@ -130,9 +128,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
+        instance = super().update_instance(instance)
         self.apply_instance(instance)
         action_data = [
             {
