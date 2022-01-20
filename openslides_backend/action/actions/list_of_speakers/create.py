@@ -19,9 +19,6 @@ class ListOfSpeakersCreate(SequentialNumbersMixin, CreateActionWithInferredMeeti
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
         meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
             ["list_of_speakers_initially_closed"],

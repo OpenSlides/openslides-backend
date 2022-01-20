@@ -38,13 +38,6 @@ class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDepende
             }
         ]
 
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
-        return instance
-
 
 @register_action(
     "motion_workflow.create_simple_workflow", action_type=ActionType.BACKEND_INTERNAL

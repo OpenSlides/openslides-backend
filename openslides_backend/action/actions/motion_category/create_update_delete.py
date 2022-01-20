@@ -1,5 +1,3 @@
-from typing import Any, Dict
-
 from ....models.models import MotionCategory
 from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
@@ -9,12 +7,7 @@ from ...util.register import register_action_set
 
 
 class MotionCategoryCreate(SequentialNumbersMixin):
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
-        return instance
+    pass
 
 
 @register_action_set("motion_category")

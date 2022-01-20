@@ -20,10 +20,10 @@ from ..list_of_speakers.list_of_speakers_creation import (
 
 @register_action("topic.create")
 class TopicCreate(
+    SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,
-    SequentialNumbersMixin,
 ):
     """
     Action to create simple topics that can be shown in the agenda.
@@ -46,10 +46,3 @@ class TopicCreate(
         the given action data or metting settings.
         """
         return True
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
-        return instance

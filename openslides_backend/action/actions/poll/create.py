@@ -63,11 +63,8 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         action_data = []
-
-        instance["sequential_number"] = self.get_sequential_number(
-            instance["meeting_id"]
-        )
 
         state_change = self.check_state_change(instance)
 
