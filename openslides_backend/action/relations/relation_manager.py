@@ -1,5 +1,4 @@
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, cast
 
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
@@ -46,9 +45,7 @@ class RelationManager:
             self.process_template_fields(model, instance)
 
         relations: RelationUpdates = {}
-        instances: Dict[FullQualifiedId, Dict[str, Any]] = defaultdict(dict)
         calculated_field_handler_calls: List[CalculatedFieldHandlerCall] = []
-        calculated_field_relations_handler_calls: List[CalculatedFieldHandlerCall] = []
         for field_name in instance:
             if not model.has_field(field_name):
                 continue
@@ -80,43 +77,29 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-                self.process_relation_element(
-                    fqfield, relations_element, relations, instances
-                )
-
                 if not process_calculated_fields_only:
                     self.process_relation_element(fqfield, relations_element, relations)
 
                 related_field_name = fqfield.field
                 related_model = model_registry[fqfield.collection]()
                 related_field = related_model.get_field(related_field_name)
-                calculated_field_relations_handler_calls.append(
+                related_instance = {
+                    "id": fqfield.id,
+                    related_field_name: relations_element["value"],
+                }
+                calculated_field_handler_calls.append(
                     {
                         "field": related_field,
                         "field_name": related_field_name,
-                        "id": fqfield.id,
+                        "instance": related_instance,
                         "action": action,
                     }
                 )
         if not process_calculated_fields_only:
             self.apply_relation_updates(relations)
-        self.execute_calculated_field_handler_calls(
-            relations, calculated_field_handler_calls
-        )
-        return relations
-
-    def execute_calculated_field_handler_calls(
-        self,
-        relations: RelationUpdates,
-        calculated_field_handler_calls: List[CalculatedFieldHandlerCall],
-    ) -> None:
         for call in calculated_field_handler_calls:
             self.call_calculated_field_handlers(relations, **call)
-        for call in calculated_field_relations_handler_calls:
-            instance = instances[
-                FullQualifiedId(call["field"].own_collection, call.pop("id"))
-            ]
-            self.call_calculated_field_handlers(relations, instance=instance, **call)
+        return relations
 
     def process_template_fields(self, model: Model, instance: Dict[str, Any]) -> None:
         """
@@ -246,7 +229,6 @@ class RelationManager:
         fqfield: FullQualifiedField,
         relation_update_element: RelationUpdateElement,
         relations: RelationUpdates,
-        instances: Optional[Dict[FullQualifiedId, Dict[str, Any]]] = None,
     ) -> None:
         """
         Processes the given RelationUpdateElement. If the fqfield is not in relations
@@ -264,10 +246,6 @@ class RelationManager:
         relations[fqfield] = self.relation_field_updates[
             fqfield
         ] = relation_update_element
-        if type(instances) == defaultdict:
-            instances[fqfield.fqid].update(
-                {fqfield.field: relation_update_element["value"], "id": fqfield.id}
-            )
 
     def apply_relation_updates(self, relations: RelationUpdates) -> None:
         """

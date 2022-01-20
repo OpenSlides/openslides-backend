@@ -216,12 +216,15 @@ class BaseSystemTestCase(TestCase):
         with self.assertRaises(DatastoreException):
             self.get_model(fqid)
 
-    def assert_model_deleted(self, fqid: str, fields: Dict[str, Any] = None) -> None:
+    def assert_model_deleted(
+        self, fqid: str, fields: Dict[str, Any] = None
+    ) -> Dict[str, Any]:
         model = self.get_model(fqid)
         self.assertTrue(model.get("meta_deleted"), f"Model '{fqid}' was not deleted.")
         if fields is not None:
             for field_name, value in fields.items():
                 self.assertEqual(model.get(field_name), value)
+        return model
 
     def assert_defaults(self, model: Type[Model], instance: Dict[str, Any]) -> None:
         for field in model().get_fields():

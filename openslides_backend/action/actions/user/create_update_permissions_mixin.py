@@ -1,6 +1,6 @@
 from collections import defaultdict
 from functools import reduce
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from ....models.models import User
 from ....permissions.management_levels import (
@@ -22,7 +22,9 @@ class PermissionVarStore:
         self.user_id = user_id
         self._cml_replacement_min_can_manage = [
             f"committee_${replacement}_management_level"
-            for replacement in User.committee__management_level.replacement_enum
+            for replacement in cast(
+                List[str], User.committee__management_level.replacement_enum
+            )
             if CommitteeManagementLevel(replacement)
             >= CommitteeManagementLevel.CAN_MANAGE
         ]
@@ -346,7 +348,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         Gets a Set of all committees from the instance regarding committees from group D.
         To get committees, that should be removed from cml, the user must be read.
         """
-        right_list = instance.get("committee_$_management_level").keys()
+        right_list = instance.get("committee_$_management_level", {}).keys()
         committees = set(
             [
                 committee_id

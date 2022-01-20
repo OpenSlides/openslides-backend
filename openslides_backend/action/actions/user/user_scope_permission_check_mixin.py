@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from ....models.models import Committee
 from ....permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -14,10 +13,6 @@ from ....permissions.permissions import Permissions
 from ....shared.exceptions import MissingPermission
 from ....shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
 from ....shared.patterns import Collection, FullQualifiedId
-from ....shared.util_dict_sets import (
-    get_set_from_dict_by_fieldlist,
-    get_set_from_dict_from_dict,
-)
 from ...action import Action
 
 

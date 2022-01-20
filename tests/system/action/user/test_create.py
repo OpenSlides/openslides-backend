@@ -726,7 +726,7 @@ class UserCreateActionTest(BaseActionTestCase):
             },
         )
         self.assertCountEqual(
-            user3.get("committee_$can_manage_management_level"), [60, 63]
+            user3.get("committee_$can_manage_management_level", []), [60, 63]
         )
 
     def test_create_permission_group_D_permission_with_CML(self) -> None:

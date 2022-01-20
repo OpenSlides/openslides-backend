@@ -266,7 +266,6 @@ user:
     type: template
     replacement_enum:
       - can_manage
-      - can_todo
     description: Hierarchical permission level for the each committee organization.
     fields:
       type: relation-list

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import fastjsonschema
 
@@ -98,7 +98,9 @@ class GetUserRelatedModels(BasePresenter):
         committees_data = []
         cml_fields = [
             f"committee_${cml_field}_management_level"
-            for cml_field in Committee.user__management_level.replacement_enum
+            for cml_field in cast(
+                List[str], Committee.user__management_level.replacement_enum
+            )
         ]
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), user_id),
@@ -109,8 +111,11 @@ class GetUserRelatedModels(BasePresenter):
         gmr = GetManyRequest(
             Collection("committee"), user["committee_ids"], ["id", "name"]
         )
-        committees = { committee["id"]: {"name": committee.get("name", ""), "cml": []}
-            for committee in self.datastore.get_many([gmr]).get(Collection("committee"), {}).values()
+        committees = {
+            committee["id"]: {"name": committee.get("name", ""), "cml": []}
+            for committee in self.datastore.get_many([gmr])
+            .get(Collection("committee"), {})
+            .values()
         }
         for level in user.get("committee_$_management_level", []):
             for committee_nr in user.get(f"committee_${level}_management_level", []):
@@ -120,7 +125,7 @@ class GetUserRelatedModels(BasePresenter):
                 {
                     "id": committee_id,
                     "name": committee.get("name", ""),
-                    "cml": ", ".join(committee.get("cml"))
+                    "cml": ", ".join(committee.get("cml", [])),
                 }
             )
         return committees_data

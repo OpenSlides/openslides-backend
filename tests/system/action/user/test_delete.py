@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from tests.system.action.base import BaseActionTestCase
 
 from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
@@ -25,20 +26,42 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
                     "username": "username_srtgb123",
                     "group_$_ids": ["42"],
                     "group_$42_ids": [456],
+                    "committee_ids": [1],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
+                    "committee_$can_manage_management_level": [1],
                 },
                 "group/456": {"meeting_id": 42, "user_ids": [111, 222]},
-                "meeting/42": {"group_ids": [456], "user_ids": [111]},
+                "meeting/42": {
+                    "group_ids": [456],
+                    "user_ids": [111, 222],
+                    "is_active_in_organization_id": 1,
+                },
+                "committee/1": {
+                    "meeting_ids": [456],
+                    "user_ids": [111, 222],
+                    "user_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                    "user_$can_manage_management_level": [111],
+                },
             }
         )
         response = self.request("user.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("user/111")
-        model = self.get_model("group/456")
-        assert model.get("user_ids") == [222]
-        # check meeting.user_ids
-        meeting = self.get_model("meeting/42")
-        assert meeting.get("user_ids") == []
+        self.assert_model_deleted(
+            "user/111",
+            {
+                "group_$42_ids": [456],
+                "committee_ids": [1],
+                "committee_$can_manage_management_level": [1],
+            },
+        )
+        self.assert_model_exists("group/456", {"user_ids": [222]})
+        self.assert_model_exists("meeting/42", {"user_ids": [222]})
+        self.assert_model_exists(
+            "committee/1", {"user_ids": [222], "user_$can_manage_management_level": []}
+        )
 
     def test_delete_with_speaker(self) -> None:
         self.set_models(

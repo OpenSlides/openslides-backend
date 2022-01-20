@@ -9,14 +9,28 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
+                "organization/1": {
+                    "committee_ids": [1],
+                    "active_meeting_ids": [1],
+                },
                 "committee/1": {
+                    "organization_id": 1,
                     "name": "test_committee",
-                    "user_ids": [1, 2],
                     "meeting_ids": [1],
                 },
-                "group/1": {},
+                "group/11": {
+                    "meeting_id": 1,
+                },
+                "user/1": {
+                    "username": "user1",
+                },
                 "user/2": {},
-                "meeting/1": {"name": "test", "committee_id": 1},
+                "meeting/1": {
+                    "name": "test",
+                    "committee_id": 1,
+                    "is_active_in_organization_id": 1,
+                    "group_ids": [11],
+                },
             }
         )
 
@@ -201,3 +215,64 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 "stable": False,
             },
         )
+
+    def test_delete_meeting_with_relations(self) -> None:
+        self.set_models(
+            {
+                "committee/1": {
+                    "user_ids": [1, 2],
+                    "user_$can_manage_management_level": [1],
+                    "user_$_management_level": ["can_manage"],
+                },
+                "user/1": {
+                    "committee_$can_manage_management_level": [1],
+                    "committee_$_management_level": ["can_manage"],
+                    "organization_management_level": "can_manage_users",
+                    "committee_ids": [1],
+                },
+                "user/2": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [11],
+                    "committee_ids": [1],
+                },
+                "group/11": {
+                    "user_ids": [2],
+                },
+                "meeting/1": {
+                    "user_ids": [2],
+                },
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        meeting1 = self.assert_model_deleted(
+            "meeting/1",
+            {"group_ids": [11], "committee_id": 1, "is_active_in_organization_id": 1},
+        )
+        # One would expect the user_ids is still filled with user_ids = [2],
+        # but relation user_ids will be reseted in an execute_other_action
+        # group.delete without context of meeting.delete
+        self.assertCountEqual(meeting1.get("user_ids", []), [])
+
+        self.assert_model_exists(
+            "organization/1", {"active_meeting_ids": [], "committee_ids": [1]}
+        )
+        self.assert_model_exists(
+            "committee/1",
+            {
+                "user_ids": [1],
+                "meeting_ids": [],
+                "user_$can_manage_management_level": [1],
+                "user_$_management_level": ["can_manage"],
+            },
+        )
+        self.assert_model_deleted("group/11", {"user_ids": [2], "meeting_id": 1})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "committee_ids": [1],
+                "committee_$_management_level": ["can_manage"],
+                "committee_$can_manage_management_level": [1],
+            },
+        )
+        self.assert_model_exists("user/2", {"group_$_ids": [], "committee_ids": []})

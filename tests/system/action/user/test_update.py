@@ -904,9 +904,9 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assertCountEqual(
-            user111.get("committee_$can_manage_management_level"), [60, 63]
+            user111.get("committee_$can_manage_management_level", []), [60, 63]
         )
-        self.assertCountEqual(user111.get("committee_ids"), [60, 63])
+        self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
 
     def test_perm_group_D_no_permission(self) -> None:
         """May not update Group D committee fields, because of missing CML permission for one committee"""
@@ -961,7 +961,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assertCountEqual(user111.get("committee_ids", []), [60, 63])
         self.assertCountEqual(
-            user111.get("committee_$can_manage_management_level"), [60, 63]
+            user111.get("committee_$can_manage_management_level", []), [60, 63]
         )
 
     def test_perm_group_D_permission_with_CML_missing_permission(

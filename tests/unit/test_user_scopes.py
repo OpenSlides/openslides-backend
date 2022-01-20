@@ -3,10 +3,10 @@ from unittest import TestCase
 from unittest.mock import MagicMock
 
 from openslides_backend.action.actions.user.user_scope_permission_check_mixin import (
-    UserScope,
     UserScopePermissionCheckMixin,
 )
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
+from openslides_backend.shared.mixins.user_scope_mixin import UserScope
 from openslides_backend.shared.patterns import Collection
 
 
