@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import List, Optional
+from typing import Dict, List, Optional, cast
 
 from datastore.migrations import BaseEvent, BaseMigration, CreateEvent
 from datastore.shared.typing import JSON
@@ -27,9 +27,9 @@ class Migration(BaseMigration):
     )
     field = "sequential_number"
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
-        self.sequential_numbers_map = None
+        self.sequential_numbers_map: Dict[str, Dict[int, int]] = {}
 
     def migrate_event(
         self,
@@ -43,10 +43,14 @@ class Migration(BaseMigration):
             return None
 
     def get_default(self, event: BaseEvent, collection: str) -> JSON:
-        if self.sequential_numbers_map is None:
+        if not self.sequential_numbers_map:
             self.init_sequential_numbers_map()
-        self.sequential_numbers_map[collection][event.data["meeting_id"]] += 1
-        return self.sequential_numbers_map[collection][event.data["meeting_id"]]
+        self.sequential_numbers_map[collection][
+            cast(int, event.data["meeting_id"])
+        ] += 1
+        return self.sequential_numbers_map[collection][
+            cast(int, event.data["meeting_id"])
+        ]
 
     def init_sequential_numbers_map(self) -> None:
         self.sequential_numbers_map = {}
@@ -57,8 +61,8 @@ class Migration(BaseMigration):
                 fqid = collection + KEYSEPARATOR + str(id_)
                 data, _ = self.new_accessor.get_model_ignore_deleted(fqid)
                 if self.sequential_numbers_map[collection][
-                    data["meeting_id"]
-                ] < data.get("sequential_number", 0):
-                    self.sequential_numbers_map[collection][data["meeting_id"]] = data[
-                        "sequential_number"
-                    ]
+                    cast(int, data["meeting_id"])
+                ] < cast(int, data.get("sequential_number", 0)):
+                    self.sequential_numbers_map[collection][
+                        cast(int, data["meeting_id"])
+                    ] = cast(int, data["sequential_number"])
