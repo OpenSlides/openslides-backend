@@ -12,8 +12,9 @@ from .typing import ListUpdateElement, RelationUpdates
 
 class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     """
-    CalculatedFieldHandler to fill the user.committee_ids and also handle on the opposite
-    side the committee.user_ids, because changing groups can't be handled on committee side.
+    CalculatedFieldHandler for user-actions to fill the user.committee_ids
+    and also handle on the opposite side the committee.user_ids,
+    because changing groups can't be handled on committee side.
     Catches fields user.committee_$_management_level and user.group_$_ids
     A user belongs to a committee, if he is member of a meeting in the committee via group or
     he has rights on CommitteeManagementLevel.
@@ -22,17 +23,25 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        parts = action.split(".")
+        update_primary = (
+            True  # do not remove values of relation fields in instance to delete
+        )
+        collection_part, action_part = action.split(".")
         if (
-            parts[0] != "user"
+            field.own_collection.collection != "user"
             or field_name not in ["group_$_ids", "committee_$_management_level"]
             or ("group_$_ids" in instance and field_name != "group_$_ids")
         ):
             return {}
+        if (
+            action_part == "delete"
+            and collection_part == field.own_collection.collection
+        ):
+            update_primary = False
         user_id: int = instance["id"]
         fqid = FullQualifiedId(Collection("user"), user_id)
         cml_fields = get_field_list_from_template(
-            User.committee__management_level.replacement_enum,
+            cast(List[str], User.committee__management_level.replacement_enum),
             "committee_$%s_management_level",
         )
         db_user = self.datastore.fetch_model(
@@ -84,13 +93,17 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         if not added_ids and not removed_ids:
             return {}
 
-        fqfield_user = FullQualifiedField(Collection("user"), user_id, "committee_ids")
-        relation_el: ListUpdateElement = {
-            "type": "list_update",
-            "add": [int(x) for x in added_ids],
-            "remove": [int(x) for x in removed_ids],
-        }
-        relation_update: RelationUpdates = {fqfield_user: relation_el}
+        relation_update: RelationUpdates = {}
+        if update_primary:
+            fqfield_user = FullQualifiedField(
+                Collection("user"), user_id, "committee_ids"
+            )
+            relation_el: ListUpdateElement = {
+                "type": "list_update",
+                "add": [int(x) for x in added_ids],
+                "remove": [int(x) for x in removed_ids],
+            }
+            relation_update[fqfield_user] = relation_el
 
         def add_relation(add: bool, set_: Set[int]) -> None:
             for committee_id in set_:
@@ -111,7 +124,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
 
 class CommitteeUserCalculateHandler(CalculatedFieldHandler):
     """
-    CalculatedFieldHandler to fill committee.user_ids and the opposite side user.committee_ids.
+    CalculatedFieldHandler for committee-actions to fill committee.user_ids
+    and the opposite side user.committee_ids.
     Catches fields committee.user_$_management_level.
     A user belongs to a committee, if he is member of a meeting
     in the committee via group or has rights on CommitteeManagementLevel.
@@ -120,16 +134,24 @@ class CommitteeUserCalculateHandler(CalculatedFieldHandler):
     def process_field(
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
-        parts = action.split(".")
-        if parts[0] != "committee" or (
+        update_primary = (
+            True  # do not remove values of relation fields in instance to delete
+        )
+        collection_part, action_part = action.split(".")
+        if field.own_collection.collection != "committee" or (
             "user_$_management_level" in instance
             and field_name != "user_$_management_level"
         ):
             return {}
+        if (
+            action_part == "delete"
+            and collection_part == field.own_collection.collection
+        ):
+            update_primary = False
         committee_id: int = instance["id"]
         fqid = FullQualifiedId(Collection("committee"), committee_id)
         cml_fields = get_field_list_from_template(
-            Committee.user__management_level.replacement_enum,
+            cast(List[str], Committee.user__management_level.replacement_enum),
             "user_$%s_management_level",
         )
         db_committee = self.datastore.fetch_model(
@@ -140,7 +162,9 @@ class CommitteeUserCalculateHandler(CalculatedFieldHandler):
         )
         db_user_ids = set(db_committee.get("user_ids", []) or [])
         new_user_ids: Set[int] = set()
-        for replacement in Committee.user__management_level.replacement_enum:
+        for replacement in cast(
+            List[str], Committee.user__management_level.replacement_enum
+        ):
             if (rep_field := f"user_${replacement}_management_level") in instance:
                 new_user_ids.update(instance[rep_field] or [])
             else:
@@ -174,15 +198,33 @@ class CommitteeUserCalculateHandler(CalculatedFieldHandler):
         if not added_ids and not removed_ids:
             return {}
 
-        fqfield_committee = FullQualifiedField(
-            Collection("committee"), committee_id, "user_ids"
-        )
-        relation_el: ListUpdateElement = {
-            "type": "list_update",
-            "add": [int(x) for x in added_ids],
-            "remove": [int(x) for x in removed_ids],
-        }
-        return {fqfield_committee: relation_el}
+        relation_update: RelationUpdates = {}
+        if update_primary:
+            fqfield_committee = FullQualifiedField(
+                Collection("committee"), committee_id, "user_ids"
+            )
+            relation_el: ListUpdateElement = {
+                "type": "list_update",
+                "add": [int(x) for x in added_ids],
+                "remove": [int(x) for x in removed_ids],
+            }
+            relation_update[fqfield_committee] = relation_el
+
+        def add_relation(add: bool, set_: Set[int]) -> None:
+            for user_id in set_:
+                fqfield_user = FullQualifiedField(
+                    Collection("user"), user_id, "committee_ids"
+                )
+
+                relation_update[fqfield_user] = {
+                    "type": "list_update",
+                    "add": [committee_id] if add else cast(List[int], []),
+                    "remove": [] if add else [committee_id],
+                }
+
+        add_relation(True, added_ids)
+        add_relation(False, removed_ids)
+        return relation_update
 
 
 def get_field_list_from_template(
