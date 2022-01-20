@@ -81,6 +81,7 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
+                "pronoun": "Test",
                 "username": "test_Xcdfgee",
                 "default_vote_weight": "1.500000",
                 "organization_management_level": "can_manage_users",
@@ -95,6 +96,7 @@ class UserCreateActionTest(BaseActionTestCase):
         user2 = self.assert_model_exists(
             "user/2",
             {
+                "pronoun": "Test",
                 "username": "test_Xcdfgee",
                 "default_vote_weight": "1.500000",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,

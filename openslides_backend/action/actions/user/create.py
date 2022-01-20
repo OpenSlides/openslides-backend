@@ -29,6 +29,7 @@ class UserCreate(
         optional_properties=[
             "title",
             "username",
+            "pronoun",
             "first_name",
             "last_name",
             "is_active",

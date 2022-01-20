@@ -342,6 +342,7 @@ class MeetingImport(BaseActionTestCase):
             "committee_$_management_level": [],
             "vote_weight_$": [],
             "title": "",
+            "pronoun": "",
             "first_name": "",
             "last_name": "Administrator",
             "is_active": True,
