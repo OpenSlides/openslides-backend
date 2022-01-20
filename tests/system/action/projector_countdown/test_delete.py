@@ -15,7 +15,7 @@ class ProjectorCountdownDelete(BaseActionTestCase):
                 "projector_countdown/2": {
                     "meeting_id": 1,
                     "title": "test2",
-                    "used_as_list_of_speaker_countdown_meeting_id": 1,
+                    "used_as_list_of_speakers_countdown_meeting_id": 1,
                 },
                 "projector_countdown/3": {
                     "meeting_id": 1,

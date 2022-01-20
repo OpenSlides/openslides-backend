@@ -1501,7 +1501,7 @@ meeting:
     restriction_mode: B
   list_of_speakers_countdown_id:
     type: relation
-    to: projector_countdown/used_as_list_of_speaker_countdown_meeting_id
+    to: projector_countdown/used_as_list_of_speakers_countdown_meeting_id
     restriction_mode: B
     required: false
   poll_countdown_id:
@@ -3294,7 +3294,7 @@ projector_countdown:
     to: projection/content_object_id
     equal_fields: meeting_id
     restriction_mode: A
-  used_as_list_of_speaker_countdown_meeting_id:
+  used_as_list_of_speakers_countdown_meeting_id:
     type: relation
     to: meeting/list_of_speakers_countdown_id
     restriction_mode: A
