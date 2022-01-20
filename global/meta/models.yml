@@ -178,6 +178,9 @@ user:
     type: string
     required: true
     restriction_mode: A
+  pronoun:
+    type: string
+    restriction_mode: A
   title:
     type: string
     restriction_mode: A

@@ -34,6 +34,7 @@
         "1": {
             "id": 1,
             "username": "superadmin",
+            "pronoun": "",
             "title": "",
             "first_name": "",
             "last_name": "Administrator",

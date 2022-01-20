@@ -12,12 +12,14 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
             {
                 "username": "username_Xcdfgee",
                 "email": "email1@example.com",
+                "pronoun": "Test",
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/1")
         assert model.get("username") == "username_Xcdfgee"
         assert model.get("email") == "email1@example.com"
+        assert model.get("pronoun") == "Test"
 
     def test_username_already_given(self) -> None:
         self.create_model("user/222", {"username": "user"})

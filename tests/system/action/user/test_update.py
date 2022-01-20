@@ -41,6 +41,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user.update",
             {
                 "id": 111,
+                "pronoun": "Test",
                 "username": "username_Xcdfgee",
                 "default_vote_weight": "1.700000",
                 "organization_management_level": "can_manage_users",
@@ -51,6 +52,7 @@ class UserUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
+        assert model.get("pronoun") == "Test"
         assert model.get("username") == "username_Xcdfgee"
         assert model.get("default_vote_weight") == "1.700000"
         assert model.get("committee_ids") == [78]

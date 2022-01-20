@@ -24,6 +24,7 @@ class UserUpdate(
     schema = DefaultSchema(User()).get_update_schema(
         optional_properties=[
             "username",
+            "pronoun",
             "title",
             "first_name",
             "last_name",
