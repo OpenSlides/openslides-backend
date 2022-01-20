@@ -2725,7 +2725,7 @@ poll:
       field: poll_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
+    required: true
   option_ids:
     type: relation-list
     to: option/poll_id

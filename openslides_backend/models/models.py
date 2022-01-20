@@ -4,7 +4,11 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
+<<<<<<< HEAD
 MODELS_YML_CHECKSUM = "8aa2b0d34fdaa9bb3bc7bcb73fbb14c9"
+=======
+MODELS_YML_CHECKSUM = "57ae04c54611fa9267494b8ac4165bed"
+>>>>>>> 7c1fc7b (Set poll/content_object_id to required)
 
 
 class Organization(Model):
@@ -1491,6 +1495,7 @@ class Poll(Model):
             Collection("assignment"): "poll_ids",
             Collection("topic"): "poll_ids",
         },
+        required=True,
         equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
