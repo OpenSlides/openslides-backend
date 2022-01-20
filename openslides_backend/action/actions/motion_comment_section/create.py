@@ -1,12 +1,13 @@
 from ....models.models import MotionCommentSection
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("motion_comment_section.create")
-class MotionCommentSectionCreateAction(CreateAction):
+class MotionCommentSectionCreateAction(SequentialNumbersMixin, CreateAction):
     """
     Create Action with default weight.
     """

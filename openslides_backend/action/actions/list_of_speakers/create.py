@@ -5,11 +5,12 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 
 
 # This action is not registered because you can not call it from outside.
-class ListOfSpeakersCreate(CreateActionWithInferredMeeting):
+class ListOfSpeakersCreate(SequentialNumbersMixin, CreateActionWithInferredMeeting):
     name = "list_of_speakers.create"
     model = ListOfSpeakers()
     schema = DefaultSchema(ListOfSpeakers()).get_create_schema(["content_object_id"])

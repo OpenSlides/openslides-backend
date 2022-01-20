@@ -53,6 +53,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("min_votes_amount") == 5
         assert poll.get("max_votes_amount") == 10
         assert poll.get("backend") == "long"
+        assert poll.get("sequential_number") == 1
         assert "options" not in poll
         option = self.get_model("option/1")
         assert option.get("text") == "test2"

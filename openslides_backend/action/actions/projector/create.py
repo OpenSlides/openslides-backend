@@ -1,13 +1,14 @@
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..meeting.shared_meeting import used_as_default_for_schema
 
 
 @register_action("projector.create")
-class ProjectorCreateAction(CreateAction):
+class ProjectorCreateAction(SequentialNumbersMixin, CreateAction):
     """
     Action to create a projector.
     """

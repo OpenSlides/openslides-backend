@@ -15,6 +15,7 @@ class MotionStatuteParagraphActionTest(BaseActionTestCase):
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("weight") == 10000
         assert model.get("text") == "blablabla"
+        assert model.get("sequential_number") == 1
 
     def test_create_empty_data(self) -> None:
         response = self.request("motion_statute_paragraph.create", {})

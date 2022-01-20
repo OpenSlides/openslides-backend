@@ -1,8 +1,14 @@
 from ....models.models import MotionStatuteParagraph
 from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
+from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
+
+
+class MotionStatuteParagraphCreate(SequentialNumbersMixin, CreateAction):
+    pass
 
 
 @register_action_set("motion_statute_paragraph")
@@ -21,3 +27,5 @@ class MotionStatuteParagraphActionSet(ActionSet):
     )
     delete_schema = DefaultSchema(MotionStatuteParagraph()).get_delete_schema()
     permission = Permissions.Motion.CAN_MANAGE
+
+    CreateActionClass = MotionStatuteParagraphCreate

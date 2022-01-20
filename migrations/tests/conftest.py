@@ -26,8 +26,12 @@ def setup() -> None:
 
 @pytest.fixture(autouse=True)
 def clear_datastore(setup) -> None:
-    writer: Writer = injector.get(Writer)
-    writer.truncate_db()
+    def _clear_datastore() -> None:
+        writer: Writer = injector.get(Writer)
+        writer.truncate_db()
+
+    _clear_datastore()
+    return _clear_datastore
 
 
 @pytest.fixture()
@@ -43,6 +47,25 @@ def write(clear_datastore) -> None:
         write_handler.write(payload)
 
     yield _write
+
+
+@pytest.fixture()
+def migrate(clear_datastore):
+    def _migrate(migration_module_name):
+        migration_module = import_module(f"migrations.{migration_module_name}")
+
+        class Migration(migration_module.Migration):
+            target_migration_index = 2
+
+        connection = injector.get(ConnectionHandler)
+        with connection.get_connection_context():
+            connection.execute("update positions set migration_index=%s", [1])
+
+        migration_handler = injector.get(MigrationHandler)
+        migration_handler.register_migrations(Migration)
+        migration_handler.migrate()
+
+    yield _migrate
 
 
 @pytest.fixture()

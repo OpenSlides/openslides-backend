@@ -15,6 +15,7 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 222
         assert model.get("weight") == 10000
+        assert model.get("sequential_number") == 1
 
     def test_create_good_case_all_fields(self) -> None:
         self.set_models(

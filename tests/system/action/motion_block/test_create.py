@@ -19,6 +19,7 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion_block/1")
         self.assertEqual(model.get("title"), "test_Xcdfgee")
+        self.assertEqual(model.get("sequential_number"), 1)
         self.assert_model_exists(
             f"agenda_item/{model['agenda_item_id']}",
             {

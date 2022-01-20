@@ -5,6 +5,7 @@ from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import decimal_schema, optional_fqid_schema
 from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..option.create import OptionCreateAction
@@ -26,7 +27,7 @@ options_schema = {
 
 
 @register_action("poll.create")
-class PollCreateAction(CreateAction, PollPermissionMixin):
+class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin):
     """
     Action to create a poll.
     """
@@ -62,6 +63,7 @@ class PollCreateAction(CreateAction, PollPermissionMixin):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         action_data = []
 
         state_change = self.check_state_change(instance)

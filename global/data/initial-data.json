@@ -1,5 +1,5 @@
 {
-    "_migration_index": 10,
+    "_migration_index": 11,
     "organization": {
         "1": {
             "id": 1,
@@ -1024,11 +1024,13 @@
             "default_workflow_meeting_id": 1,
             "default_amendment_workflow_meeting_id": 1,
             "default_statute_amendment_workflow_meeting_id": 1,
+	    "sequential_number": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "name": "Complex Workflow",
+	    "sequential_number": 2,
             "state_ids": [
                 5,
                 6,
@@ -1112,6 +1114,7 @@
             "used_as_default_$assignment_poll_in_meeting_id": 1,
             "used_as_default_$motion_poll_in_meeting_id": 1,
             "used_as_default_$poll_in_meeting_id": 1,
+	    "sequential_number": 1,
             "meeting_id": 1
         }
     },

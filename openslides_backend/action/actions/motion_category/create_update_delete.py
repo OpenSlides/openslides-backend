@@ -1,8 +1,13 @@
 from ....models.models import MotionCategory
 from ....permissions.permissions import Permissions
 from ...action_set import ActionSet
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
+
+
+class MotionCategoryCreate(SequentialNumbersMixin):
+    pass
 
 
 @register_action_set("motion_category")
@@ -21,3 +26,4 @@ class MotionCategoryActionSet(ActionSet):
     )
     delete_schema = DefaultSchema(MotionCategory()).get_delete_schema()
     permission = Permissions.Motion.CAN_MANAGE
+    CreateActionClass = MotionCategoryCreate

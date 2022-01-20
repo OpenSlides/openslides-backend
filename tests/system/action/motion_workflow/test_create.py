@@ -15,6 +15,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         workflow = self.get_model("motion_workflow/1")
         assert workflow.get("name") == "test_Xcdfgee"
         assert workflow.get("first_state_id") == 1
+        assert workflow.get("sequential_number") == 1
         state = self.get_model("motion_state/1")
         assert state.get("workflow_id") == 1
         assert state.get("first_state_of_workflow_id") == 1

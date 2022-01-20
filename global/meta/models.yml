@@ -1818,6 +1818,11 @@ list_of_speakers:
     type: boolean
     default: false
     restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   content_object_id:
     type: generic-relation
@@ -1909,6 +1914,11 @@ topic:
   text:
     type: HTMLPermissive
     restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   attachment_ids:
     type: relation-list
@@ -1973,7 +1983,7 @@ motion:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
-    restriction_mode: C
+    restriction_mode: A
   title:
     type: string
     required: true
@@ -2231,6 +2241,11 @@ motion_comment_section:
     type: number
     default: 10000
     restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   comment_ids:
     type: relation-list
@@ -2274,6 +2289,11 @@ motion_category:
     description: Calculated field.
     read_only: true
     restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   parent_id:
     type: relation
@@ -2308,6 +2328,11 @@ motion_block:
   internal:
     type: boolean
     restriction_mode: B
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   motion_ids:
     type: relation-list
@@ -2512,6 +2537,11 @@ motion_workflow:
     type: string
     required: true
     restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   state_ids:
     type: relation-list
@@ -2560,6 +2590,11 @@ motion_statute_paragraph:
   weight:
     type: number
     default: 10000
+    restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
     restriction_mode: A
 
   motion_ids:
@@ -2672,6 +2707,11 @@ poll:
     calculated: true
     description: get it from vote-service, anyway not handled by backend
     restriction_mode: C
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
   content_object_id: # Note: must not be set - it is allowed to have standalone polls
     type: generic-relation
     to:
@@ -2837,6 +2877,11 @@ assignment:
   number_poll_candidates:
     type: boolean
     restriction_mode: B
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
+    restriction_mode: A
 
   candidate_ids:
     type: relation-list
@@ -3087,6 +3132,11 @@ projector:
   show_clock:
     type: boolean
     default: true
+    restriction_mode: A
+  sequential_number:
+    type: number
+    description: The (positive) serial number of this motion. This number is auto-generated and read-only.
+    read_only: true
     restriction_mode: A
 
   current_projection_ids:

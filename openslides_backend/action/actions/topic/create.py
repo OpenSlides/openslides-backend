@@ -4,6 +4,7 @@ from ....models.models import Topic
 from ....permissions.permissions import Permissions
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..agenda_item.agenda_creation import (
@@ -19,6 +20,7 @@ from ..list_of_speakers.list_of_speakers_creation import (
 
 @register_action("topic.create")
 class TopicCreate(
+    SequentialNumbersMixin,
     CreateActionWithDependencies,
     CreateActionWithAgendaItemMixin,
     CreateActionWithListOfSpeakersMixin,
