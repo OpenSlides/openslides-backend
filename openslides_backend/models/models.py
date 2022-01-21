@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "4dca43861ec0d13da86e0e99e7362a3c"
+MODELS_YML_CHECKSUM = "8aa2b0d34fdaa9bb3bc7bcb73fbb14c9"
 
 
 class Organization(Model):
@@ -703,7 +703,7 @@ class Meeting(Model):
         to={
             Collection(
                 "projector_countdown"
-            ): "used_as_list_of_speaker_countdown_meeting_id"
+            ): "used_as_list_of_speakers_countdown_meeting_id"
         }
     )
     poll_countdown_id = fields.RelationField(
@@ -1845,7 +1845,7 @@ class ProjectorCountdown(Model):
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
     )
-    used_as_list_of_speaker_countdown_meeting_id = fields.RelationField(
+    used_as_list_of_speakers_countdown_meeting_id = fields.RelationField(
         to={Collection("meeting"): "list_of_speakers_countdown_id"}
     )
     used_as_poll_countdown_meeting_id = fields.RelationField(

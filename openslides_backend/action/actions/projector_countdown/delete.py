@@ -23,12 +23,12 @@ class ProjectorCountdownDelete(DeleteAction):
         projector_countdown = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
             [
-                "used_as_list_of_speaker_countdown_meeting_id",
+                "used_as_list_of_speakers_countdown_meeting_id",
                 "used_as_poll_countdown_meeting_id",
             ],
         )
         meeting_id = projector_countdown.get(
-            "used_as_list_of_speaker_countdown_meeting_id"
+            "used_as_list_of_speakers_countdown_meeting_id"
         ) or projector_countdown.get("used_as_poll_countdown_meeting_id")
         if (
             meeting_id

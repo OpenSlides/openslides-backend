@@ -1,5 +1,5 @@
 {
-    "_migration_index": 11,
+    "_migration_index": 12,
     "organization": {
         "1": {
             "id": 1,
@@ -1130,7 +1130,7 @@
             "countdown_time": 60,
             "running": false,
             "projection_ids": [],
-            "used_as_list_of_speaker_countdown_meeting_id": 1,
+            "used_as_list_of_speakers_countdown_meeting_id": 1,
             "used_as_poll_countdown_meeting_id": null,
             "meeting_id": 1
         },
@@ -1142,7 +1142,7 @@
             "countdown_time": 60,
             "running": false,
             "projection_ids": [],
-            "used_as_list_of_speaker_countdown_meeting_id": null,
+            "used_as_list_of_speakers_countdown_meeting_id": null,
             "used_as_poll_countdown_meeting_id": 1,
             "meeting_id": 1
         }

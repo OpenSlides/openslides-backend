@@ -172,7 +172,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "title": "List of speakers countdown",
                 "meeting_id": 1,
-                "used_as_list_of_speaker_countdown_meeting_id": 1,
+                "used_as_list_of_speakers_countdown_meeting_id": 1,
                 "default_time": 60,
                 "countdown_time": 60,
             },
