@@ -193,7 +193,7 @@ class MeetingClone(MeetingImport):
                 "user_id",
                 "assignment_candidate_$_ids",
             ),
-                   )
+        )
         for tuple_ in updated_field_n_1:
             self.append_helper_list_int(write_requests, json_data, *tuple_)
 
