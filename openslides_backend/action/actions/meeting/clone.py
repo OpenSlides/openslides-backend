@@ -89,10 +89,13 @@ class MeetingClone(MeetingImport):
                     "Motion all_origin_ids and all_derived_motion_ids should be empty."
                 )
 
-        if self.get_meeting_from_json(meeting_json).get("is_active_in_organization_id"):
-            self.check_limit_of_meetings(
-                self.get_meeting_from_json(meeting_json)["committee_id"], text="clone"
-            )
+        # set active
+        self.get_meeting_from_json(meeting_json)["is_active_in_organization_id"] = 1
+
+        # check limit of meetings
+        self.check_limit_of_meetings(
+            self.get_meeting_from_json(meeting_json)["committee_id"], text="clone"
+        )
 
         # set imported_at
         self.get_meeting_from_json(meeting_json)["imported_at"] = round(time.time())
@@ -190,7 +193,7 @@ class MeetingClone(MeetingImport):
                 "user_id",
                 "assignment_candidate_$_ids",
             ),
-        )
+                   )
         for tuple_ in updated_field_n_1:
             self.append_helper_list_int(write_requests, json_data, *tuple_)
 
