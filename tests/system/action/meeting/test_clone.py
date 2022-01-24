@@ -395,7 +395,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You cannot clone an active meeting, because you reached your limit of 1 active meetings.",
+            "You cannot clone an meeting, because you reached your limit of 1 active meetings.",
             response.json["message"],
         )
 
@@ -408,7 +408,7 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You cannot clone an active meeting, because you reached your limit of 1 active meetings.",
+            "You cannot clone an meeting, because you reached your limit of 1 active meetings.",
             response.json["message"],
         )
 

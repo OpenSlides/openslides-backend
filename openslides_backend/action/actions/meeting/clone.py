@@ -94,7 +94,9 @@ class MeetingClone(MeetingImport):
 
         # check limit of meetings
         self.check_limit_of_meetings(
-            self.get_meeting_from_json(meeting_json)["committee_id"], text="clone"
+            self.get_meeting_from_json(meeting_json)["committee_id"],
+            text="clone",
+            text2="",
         )
 
         # set imported_at
