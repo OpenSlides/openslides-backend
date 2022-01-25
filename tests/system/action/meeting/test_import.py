@@ -191,6 +191,7 @@ class MeetingImport(BaseActionTestCase):
                         "font_$_id": [],
                         "committee_id": None,
                         "is_active_in_organization_id": None,
+                        "is_archived_in_organization_id": None,
                         "default_meeting_for_committee_id": None,
                         "organization_tag_ids": [],
                         "present_user_ids": [],
