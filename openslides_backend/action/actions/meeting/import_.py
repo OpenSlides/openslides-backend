@@ -150,7 +150,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 is_username_unique = True
             used_usernames.add(entry["username"])
 
-    def check_limit_of_meetings(self, committee_id: int, text: str = "import") -> int:
+    def check_limit_of_meetings(
+        self, committee_id: int, text: str = "import", text2: str = "active "
+    ) -> int:
         committee = self.datastore.get(
             FullQualifiedId(Collection("committee"), committee_id), ["organization_id"]
         )
@@ -163,7 +165,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             limit_of_meetings := organization.get("limit_of_meetings", 0)
         ) and limit_of_meetings == len(organization.get("active_meeting_ids", [])):
             raise ActionException(
-                f"You cannot {text} an active meeting, because you reached your limit of {limit_of_meetings} active meetings."
+                f"You cannot {text} an {text2}meeting, because you reached your limit of {limit_of_meetings} active meetings."
             )
         return organization_id
 

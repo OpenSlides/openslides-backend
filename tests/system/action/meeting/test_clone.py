@@ -395,20 +395,33 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You cannot clone an active meeting, because you reached your limit of 1 active meetings.",
+            "You cannot clone an meeting, because you reached your limit of 1 active meetings.",
             response.json["message"],
         )
 
-    def test_limit_of_meetings_archived_meeting(self) -> None:
+    def test_limit_of_meetings_error_archived_meeting(self) -> None:
         self.test_models["organization/1"]["limit_of_meetings"] = 1
         self.test_models["organization/1"]["active_meeting_ids"] = [3]
         self.test_models["meeting/1"]["is_active_in_organization_id"] = None
         self.set_models(self.test_models)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "You cannot clone an meeting, because you reached your limit of 1 active meetings.",
+            response.json["message"],
+        )
+
+    def test_activate_archived_meeting(self) -> None:
+        self.test_models["organization/1"]["limit_of_meetings"] = 2
+        self.test_models["organization/1"]["active_meeting_ids"] = [3]
+        self.test_models["meeting/1"]["is_active_in_organization_id"] = None
+        self.set_models(self.test_models)
+
+        response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"is_active_in_organization_id": None})
-        self.assert_model_exists("organization/1", {"active_meeting_ids": [3]})
+        self.assert_model_exists("meeting/2", {"is_active_in_organization_id": 1})
+        self.assert_model_exists("organization/1", {"active_meeting_ids": [3, 2]})
 
     def test_limit_of_meetings_ok(self) -> None:
         self.test_models["organization/1"]["limit_of_meetings"] = 2
