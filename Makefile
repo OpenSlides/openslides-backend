@@ -5,17 +5,17 @@ paths = openslides_backend/ tests/ cli/
 all: black autoflake isort flake8 mypy
 
 black:
-	black $(paths)
+	black $(paths) migrations/
 
 autoflake:
 	autoflake --verbose --in-place --remove-all-unused-imports \
-	--ignore-init-module-imports --recursive $(paths)
+	--ignore-init-module-imports --recursive $(paths) migrations/
 
 isort:
-	isort $(paths)
+	isort $(paths) migrations/
 
 flake8:
-	flake8 $(paths)
+	flake8 $(paths) migrations/
 
 mypy:
 	mypy $(paths)
