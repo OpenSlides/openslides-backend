@@ -251,9 +251,19 @@ def test_single_restore(write, finalize, assert_model):
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 2},
         position=2,
     )
+    assert_model(
+        "meeting/1",
+        {
+            "is_archived_in_organization_id": 1,
+            "is_active_in_organization_id": 0,
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
+        position=2,
+    )
 
 
-def test_update_meeting_2(write, finalize, assert_model):
+def test_create_and_update_in_one_position(write, finalize, assert_model):
     write(
         {
             "type": "create",
@@ -283,9 +293,19 @@ def test_update_meeting_2(write, finalize, assert_model):
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 1},
         position=1,
     )
+    assert_model(
+        "meeting/1",
+        {
+            "is_active_in_organization_id": 0,
+            "is_archived_in_organization_id": 1,
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+        position=1,
+    )
 
 
-def test_update_meeting_3(write, finalize, assert_model):
+def test_two_updates_in_a_position(write, finalize, assert_model):
     write(
         {
             "type": "create",
@@ -332,9 +352,19 @@ def test_update_meeting_3(write, finalize, assert_model):
         },
         position=2,
     )
+    assert_model(
+        "meeting/1",
+        {
+            "is_active_in_organization_id": 0,
+            "is_archived_in_organization_id": 1,
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
+        position=2,
+    )
 
 
-def test_update_meeting_4(write, finalize, assert_model):
+def test_create_and_two_updates(write, finalize, assert_model):
     write(
         {
             "type": "create",
@@ -374,6 +404,17 @@ def test_update_meeting_4(write, finalize, assert_model):
         {
             "archived_meeting_ids": [1],
             "active_meeting_ids": [],
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+        position=1,
+    )
+
+    assert_model(
+        "meeting/1",
+        {
+            "is_active_in_organization_id": 0,
+            "is_archived_in_organization_id": 1,
             "meta_deleted": False,
             "meta_position": 1,
         },
