@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
 from datastore.migrations import (
     BaseEvent,
@@ -211,10 +211,16 @@ class Migration(BaseMigration):
             )
         if remove_committee_ids:
             self.update_add_remove(
-                self.user_committee_ids, [user_id], list(remove_committee_ids), add=False
+                self.user_committee_ids,
+                [user_id],
+                list(remove_committee_ids),
+                add=False,
             )
             self.update_add_remove(
-                self.committee_user_ids, list(remove_committee_ids), [user_id], add=False
+                self.committee_user_ids,
+                list(remove_committee_ids),
+                [user_id],
+                add=False,
             )
         if not new_cml_committee_ids:
             return None
