@@ -15,7 +15,7 @@ from datastore.shared.util import collection_and_id_from_fqid
 class Migration(BaseMigration):
     """
     This migration adds the 1:N relation `organization/archived_meeting_ids` <-> `meeting/is_archived_in_organization_id`.
-    
+
     Use get_additional_events to add the organization/archived_meeting_ids at
     the end of a position, because organization/1 doesn't need to exist in
     early events of a position. See 0002 for details.
@@ -41,10 +41,7 @@ class Migration(BaseMigration):
         if isinstance(event, CreateEvent):
             if event.data.get("is_active_in_organization_id") != 1:
                 event.data["is_archived_in_organization_id"] = 1
-                if id_ in self.meeting_ids_to_remove:
-                    self.meeting_ids_to_remove.remove(id_)
-                else:
-                    self.meeting_ids_to_add.add(id_)
+                self.meeting_ids_to_add.add(id_)
                 return [event]
         elif isinstance(event, DeleteEvent):
             data, _ = self.new_accessor.get_model_ignore_deleted(event.fqid)
