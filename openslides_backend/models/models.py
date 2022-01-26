@@ -4,11 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-<<<<<<< HEAD
-MODELS_YML_CHECKSUM = "8aa2b0d34fdaa9bb3bc7bcb73fbb14c9"
-=======
-MODELS_YML_CHECKSUM = "57ae04c54611fa9267494b8ac4165bed"
->>>>>>> 7c1fc7b (Set poll/content_object_id to required)
+MODELS_YML_CHECKSUM = "d42e6dfaac83c3d623830ce908c7a4e8"
 
 
 class Organization(Model):
@@ -1007,11 +1003,6 @@ class Topic(Model):
         required=True,
         equal_fields="meeting_id",
     )
-    option_ids = fields.RelationListField(
-        to={Collection("option"): "content_object_id"},
-        on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
-    )
     tag_ids = fields.RelationListField(
         to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
     )
@@ -1551,11 +1542,7 @@ class Option(Model):
         equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
-        to={
-            Collection("user"): "option_$_ids",
-            Collection("topic"): "option_ids",
-            Collection("motion"): "option_ids",
-        },
+        to={Collection("user"): "option_$_ids", Collection("motion"): "option_ids"},
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(

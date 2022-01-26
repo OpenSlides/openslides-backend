@@ -1942,12 +1942,6 @@ topic:
     on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
-  option_ids:
-    type: relation-list
-    to: option/content_object_id
-    on_delete: CASCADE
-    equal_fields: meeting_id
-    restriction_mode: A
   tag_ids:
     type: relation-list
     to: tag/tagged_ids
@@ -2715,7 +2709,7 @@ poll:
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
     restriction_mode: A
-  content_object_id: # Note: must not be set - it is allowed to have standalone polls
+  content_object_id:
     type: generic-relation
     to:
       collections:
@@ -2802,7 +2796,6 @@ option:
     type: generic-relation
     to:
       - motion/option_ids
-      - topic/option_ids
       - user/option_$_ids
     equal_fields: meeting_id
     restriction_mode: A
