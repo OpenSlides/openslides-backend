@@ -64,29 +64,57 @@ class GroupDeleteActionTest(BaseActionTestCase):
     def test_delete_with_users(self) -> None:
         self.set_models(
             {
-                "user/42": {"group_$22_ids": [111], "group_$_ids": ["22"]},
+                "user/42": {
+                    "group_$22_ids": [111],
+                    "group_$_ids": ["22"],
+                    "meeting_ids": [22],
+                    "committee_ids": [3],
+                },
+                "user/43": {
+                    "group_$22_ids": [111],
+                    "group_$_ids": ["22"],
+                    "meeting_ids": [22],
+                    "committee_ids": [3],
+                },
+                "committee/3": {"meeting_ids": [22], "user_ids": [42, 43]},
                 "meeting/22": {
+                    "committee_id": 3,
                     "name": "name_meeting_22",
                     "group_ids": [111],
-                    "user_ids": [42],
+                    "user_ids": [42, 43],
                     "is_active_in_organization_id": 1,
                 },
                 "group/111": {
                     "name": "name_srtgb123",
                     "meeting_id": 22,
-                    "user_ids": [42],
+                    "user_ids": [42, 43],
                 },
             }
         )
         response = self.request("group.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
-        self.assert_model_deleted("group/111")
-        user = self.get_model("user/42")
-        assert user.get("group_$22_ids") == []
-        assert user.get("group_$_ids") == []
-        user = self.get_model("meeting/22")
-        assert user.get("user_ids") == []
+        self.assert_model_deleted("group/111", {"user_ids": [42, 43]})
+        self.assert_model_exists(
+            "user/42",
+            {
+                "group_$22_ids": [],
+                "group_$_ids": [],
+                "meeting_ids": [],
+                "committee_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "user/43",
+            {
+                "group_$22_ids": [],
+                "group_$_ids": [],
+                "meeting_ids": [],
+                "committee_ids": [],
+            },
+        )
+        self.assert_model_exists("meeting/22", {"user_ids": [], "group_ids": []})
+        self.assert_model_exists("committee/3", {"user_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

@@ -1,8 +1,5 @@
-from typing import Any, Dict
-
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.schema import id_list_schema
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,14 +20,7 @@ class CommitteeCreate(CommitteeCommonCreateUpdateMixin, CreateAction):
             "organization_tag_ids",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
+            "user_$_management_level",
         ],
-        additional_optional_fields={"manager_ids": id_list_schema},
     )
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
-
-    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance = super().update_instance(instance)
-        if "manager_ids" in instance:
-            self.apply_instance(instance)
-            self.update_managers(instance)
-        return instance

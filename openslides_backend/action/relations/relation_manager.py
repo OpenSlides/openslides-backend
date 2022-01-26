@@ -3,7 +3,7 @@ from typing import Any, Dict, List, cast
 from ...models.base import Model, model_registry
 from ...models.fields import BaseRelationField, BaseTemplateField, Field
 from ...services.datastore.interface import DatastoreService
-from ...shared.exceptions import DatastoreException
+from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import (
     Collection,
     FullQualifiedField,
@@ -77,7 +77,6 @@ class RelationManager:
             )
             result = handler.perform()
             for fqfield, relations_element in result.items():
-
                 if not process_calculated_fields_only:
                     self.process_relation_element(fqfield, relations_element, relations)
 
@@ -98,18 +97,9 @@ class RelationManager:
                 )
         if not process_calculated_fields_only:
             self.apply_relation_updates(relations)
-        self.execute_calculated_field_handler_calls(
-            relations, calculated_field_handler_calls
-        )
-        return relations
-
-    def execute_calculated_field_handler_calls(
-        self,
-        relations: RelationUpdates,
-        calculated_field_handler_calls: List[CalculatedFieldHandlerCall],
-    ) -> None:
         for call in calculated_field_handler_calls:
             self.call_calculated_field_handlers(relations, **call)
+        return relations
 
     def process_template_fields(self, model: Model, instance: Dict[str, Any]) -> None:
         """
@@ -167,6 +157,11 @@ class RelationManager:
                             mapped_fields=["id"],
                             exception=True,
                         )
+                    elif field.replacement_enum:
+                        if replacement not in field.replacement_enum:
+                            raise ActionException(
+                                f"Replacement {replacement} does not exist in field {field.own_field_name}´s replacement_enum."
+                            )
                     template_field.append(replacement)
 
                 if field.replacement_collection and isinstance(
@@ -214,9 +209,9 @@ class RelationManager:
     def call_calculated_field_handlers(
         self,
         relations: RelationUpdates,
+        instance: Dict[str, Any],
         field: Field,
         field_name: str,
-        instance: Dict[str, Any],
         action: str,
     ) -> None:
         """

@@ -66,9 +66,9 @@
                 1
             ],
             "committee_$_management_level": [
-                "1"
+                "can_manage"
             ],
-            "committee_$1_management_level": "can_manage",
+            "committee_$can_manage_management_level": [1],
             "comment_$": [
                 "1"
             ],
@@ -521,6 +521,8 @@
                 1,
                 2
             ],
+            "user_$_management_level": ["can_manage"],
+            "user_$can_manage_management_level": [1],
             "forward_to_committee_ids": [],
             "receive_forwardings_from_committee_ids": [],
             "organization_tag_ids": [

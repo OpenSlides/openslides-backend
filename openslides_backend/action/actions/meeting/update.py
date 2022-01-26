@@ -18,7 +18,6 @@ from ...generics.update import UpdateAction
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..meeting.shared_meeting import used_as_default_for_schema_required
 from .mixins import GetMeetingIdFromIdMixin
 
 meeting_settings_keys = [
@@ -154,10 +153,8 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
+            "default_projector_$_id",
         ],
-        additional_optional_fields={
-            "default_projector_$_id": used_as_default_for_schema_required,
-        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:

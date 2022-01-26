@@ -1,7 +1,8 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import fastjsonschema
 
+from ..models.models import Committee
 from ..permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -95,33 +96,36 @@ class GetUserRelatedModels(BasePresenter):
 
     def get_committees_data(self, user_id: int) -> List[Dict[str, Any]]:
         committees_data = []
+        cml_fields = [
+            f"committee_${cml_field}_management_level"
+            for cml_field in cast(
+                List[str], Committee.user__management_level.replacement_enum
+            )
+        ]
         user = self.datastore.get(
             FullQualifiedId(Collection("user"), user_id),
-            ["committee_ids", "committee_$_management_level"],
+            ["committee_ids", "committee_$_management_level", *cml_fields],
         )
         if not user.get("committee_ids"):
             return []
         gmr = GetManyRequest(
             Collection("committee"), user["committee_ids"], ["id", "name"]
         )
-        committees = (
-            self.datastore.get_many([gmr]).get(Collection("committee"), {}).values()
-        )
-        user2 = self.datastore.get(
-            FullQualifiedId(Collection("user"), user_id),
-            [
-                "committee_${}_management_level".format(committee_id)
-                for committee_id in user.get("committee_$_management_level", [])
-            ],
-        )
-        for committee in committees:
+        committees = {
+            committee["id"]: {"name": committee.get("name", ""), "cml": []}
+            for committee in self.datastore.get_many([gmr])
+            .get(Collection("committee"), {})
+            .values()
+        }
+        for level in user.get("committee_$_management_level", []):
+            for committee_nr in user.get(f"committee_${level}_management_level", []):
+                committees[committee_nr]["cml"].append(level)
+        for committee_id, committee in committees.items():
             committees_data.append(
                 {
-                    "id": committee["id"],
+                    "id": committee_id,
                     "name": committee.get("name", ""),
-                    "cml": user2.get(
-                        f"committee_${committee['id']}_management_level", ""
-                    ),
+                    "cml": ", ".join(committee.get("cml", [])),
                 }
             )
         return committees_data

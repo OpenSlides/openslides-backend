@@ -145,6 +145,9 @@ class Model(metaclass=ModelMetaClass):
                         fields.GenericRelationListField,
                         fields.BaseTemplateField,
                     ),
+                ) and (
+                    not hasattr(model_field, "replacement_enum")
+                    or not model_field.replacement_enum  # type: ignore
                 ):
                     raise NotImplementedError(
                         f"{self.collection.collection}.{model_field.own_field_name}"

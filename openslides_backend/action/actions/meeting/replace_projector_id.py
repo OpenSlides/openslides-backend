@@ -1,4 +1,7 @@
-from ....models.models import Meeting
+from typing import List, cast
+
+from openslides_backend.models.models import Meeting
+
 from ....shared.patterns import FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
@@ -7,7 +10,6 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .mixins import GetMeetingIdFromIdMixin
-from .shared_meeting import meeting_projector_default_replacements
 
 
 @register_action(
@@ -28,7 +30,9 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
             projector_id = instance.pop("projector_id")
             fields = [
                 "default_projector_${}_id".format(replacement)
-                for replacement in meeting_projector_default_replacements
+                for replacement in cast(
+                    List[str], Meeting.default_projector__id.replacement_enum
+                )
             ]
             meeting = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]),

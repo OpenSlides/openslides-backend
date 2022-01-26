@@ -47,8 +47,10 @@
 #       the placeholder.
 #     - The type `template` describes a structured field for the given model. If the
 #       property `replacement_collection` is given, it describes which model the
-#       replacement ids are belonging to (=> structured relation). If it is not given,
-#       the field is a structured tag. The property `fields` contains the definition
+#       replacement ids are belonging to (=> structured relation), 
+#       `replacement_enum` describes the possibel replacement as list of strings.
+#       If it is not given, the field is a structured tag. 
+#       The property `fields` contains the definition
 #       for all the fields that come from the template field.
 # JSON Schema Properties:
 #     - You can add JSON Schema properties to the fields like `enum`, `description`,
@@ -248,6 +250,10 @@ user:
     type: relation-list
     to: meeting/present_user_ids
     restriction_mode: A
+
+  # Calculates all committee's where the user has
+  # - committee_$management_level rights or
+  # - is member (= has group-rights) of a meeting in the committee
   committee_ids:
     type: relation-list
     to: committee/user_ids
@@ -258,12 +264,12 @@ user:
   # committee specific permissions
   committee_$_management_level:
     type: template
-    replacement_collection: committee
+    replacement_enum:
+      - can_manage
     description: Hierarchical permission level for the each committee organization.
     fields:
-      type: string
-      enum:
-        - can_manage
+      type: relation-list
+      to: committee/user_$_management_level
     restriction_mode: E
 
   # Meeting specific personal data
@@ -644,6 +650,17 @@ committee:
     restriction_mode: A
     read_only: true
     description: "Calculated field."
+
+  user_$_management_level:
+    type: template
+    restriction_mode: B
+    replacement_enum:
+      - can_manage
+    description: Hierarchical permission level for the users.
+    fields:
+      type: relation-list
+      to: user/committee_$_management_level
+
   forward_to_committee_ids:
     type: relation-list
     to: committee/receive_forwardings_from_committee_ids
@@ -1514,24 +1531,24 @@ meeting:
     fields:
       type: relation
       to: projector/used_as_default_$_in_meeting_id
-      required: false
+      required: true
     restriction_mode: B
-  # Available template field replacements:
-  #  - agenda_all_items
-  #  - topics
-  #  - list_of_speakers
-  #  - current_list_of_speakers
-  #  - motion
-  #  - amendment
-  #  - motion_block
-  #  - assignment
-  #  - user
-  #  - mediafile
-  #  - projector_message
-  #  - projector_countdowns
-  #  - assignment_poll
-  #  - motion_poll
-  #  - poll
+    replacement_enum:
+      - agenda_all_items
+      - topics
+      - list_of_speakers
+      - current_list_of_speakers
+      - motion
+      - amendment
+      - motion_block
+      - assignment
+      - user
+      - mediafile
+      - projector_message
+      - projector_countdowns
+      - assignment_poll
+      - motion_poll
+      - poll
   projection_ids:
     type: relation-list
     to: projection/content_object_id
@@ -3162,6 +3179,22 @@ projector:
       type: relation
       to: meeting/default_projector_$_id
       required: false
+    replacement_enum:
+      - agenda_all_items
+      - topics
+      - list_of_speakers
+      - current_list_of_speakers
+      - motion
+      - amendment
+      - motion_block
+      - assignment
+      - user
+      - mediafile
+      - projector_message
+      - projector_countdowns
+      - assignment_poll
+      - motion_poll
+      - poll
     restriction_mode: A
   meeting_id:
     type: relation

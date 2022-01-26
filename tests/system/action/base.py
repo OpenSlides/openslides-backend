@@ -129,14 +129,9 @@ class BaseActionTestCase(BaseSystemTestCase):
     ) -> None:
         d1 = {
             "committee_ids": committee_ids,
-            "committee_$_management_level": list(map(str, committee_ids)),
+            "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+            "committee_$can_manage_management_level": committee_ids,
         }
-        d1.update(
-            {
-                f"committee_${id}_management_level": CommitteeManagementLevel.CAN_MANAGE
-                for id in committee_ids
-            }
-        )
 
         self.set_models({f"user/{user_id}": d1})
 

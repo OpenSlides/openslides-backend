@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "d42e6dfaac83c3d623830ce908c7a4e8"
+MODELS_YML_CHECKSUM = "e9456c0f60d896cb3f14f5df9301bff7"
 
 
 class Organization(Model):
@@ -97,10 +97,10 @@ class User(Model):
         read_only=True,
         constraints={"description": "Calculated field."},
     )
-    committee__management_level = fields.TemplateCharField(
+    committee__management_level = fields.TemplateRelationListField(
         index=10,
-        replacement_collection=Collection("committee"),
-        constraints={"enum": ["can_manage"]},
+        to={Collection("committee"): "user_$_management_level"},
+        replacement_enum=["can_manage"],
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
@@ -312,6 +312,11 @@ class Committee(Model):
         to={Collection("user"): "committee_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
+    )
+    user__management_level = fields.TemplateRelationListField(
+        index=5,
+        to={Collection("user"): "committee_$_management_level"},
+        replacement_enum=["can_manage"],
     )
     forward_to_committee_ids = fields.RelationListField(
         to={Collection("committee"): "receive_forwardings_from_committee_ids"}
@@ -712,6 +717,24 @@ class Meeting(Model):
     default_projector__id = fields.TemplateRelationField(
         index=18,
         to={Collection("projector"): "used_as_default_$_in_meeting_id"},
+        required=True,
+        replacement_enum=[
+            "agenda_all_items",
+            "topics",
+            "list_of_speakers",
+            "current_list_of_speakers",
+            "motion",
+            "amendment",
+            "motion_block",
+            "assignment",
+            "user",
+            "mediafile",
+            "projector_message",
+            "projector_countdowns",
+            "assignment_poll",
+            "motion_poll",
+            "poll",
+        ],
     )
     projection_ids = fields.RelationListField(
         to={Collection("projection"): "content_object_id"}
@@ -1761,6 +1784,23 @@ class Projector(Model):
     used_as_default__in_meeting_id = fields.TemplateRelationField(
         index=16,
         to={Collection("meeting"): "default_projector_$_id"},
+        replacement_enum=[
+            "agenda_all_items",
+            "topics",
+            "list_of_speakers",
+            "current_list_of_speakers",
+            "motion",
+            "amendment",
+            "motion_block",
+            "assignment",
+            "user",
+            "mediafile",
+            "projector_message",
+            "projector_countdowns",
+            "assignment_poll",
+            "motion_poll",
+            "poll",
+        ],
     )
     meeting_id = fields.RelationField(
         to={Collection("meeting"): "projector_ids"}, required=True

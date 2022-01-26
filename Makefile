@@ -1,6 +1,6 @@
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
-paths = openslides_backend/ tests/ cli/
+paths = openslides_backend/ tests/ cli/ migrations/
 
 all: black autoflake isort flake8 mypy
 

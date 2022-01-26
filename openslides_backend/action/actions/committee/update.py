@@ -1,4 +1,4 @@
-from typing import Any, Dict, Set
+from typing import Any, Dict
 
 from ....models.models import Committee
 from ....permissions.management_levels import (
@@ -10,9 +10,7 @@ from ....permissions.permission_helper import (
     has_organization_management_level,
 )
 from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
-from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -35,8 +33,8 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
             "organization_tag_ids",
+            "user_$_management_level",
         ],
-        additional_optional_fields={"manager_ids": id_list_schema},
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -49,10 +47,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
             self.check_meeting_in_committee(
                 instance["default_meeting_id"], instance["id"]
             )
-
-        if "manager_ids" in instance:
-            old_manager_ids = self._get_old_manager_ids(instance["id"])
-            self.update_managers(instance, old_manager_ids)
         return instance
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
@@ -78,7 +72,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 for field in [
                     "forward_to_committee_ids",
                     "receive_forwardings_from_committee_ids",
-                    "manager_ids",
+                    "user_$_management_level",
                 ]
             ]
         ):
@@ -98,12 +92,3 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
                 CommitteeManagementLevel.CAN_MANAGE: instance["id"],
             }
         )
-
-    def _get_old_manager_ids(self, committee_id: int) -> Set[int]:
-        filter_ = FilterOperator(
-            f"committee_${committee_id}_management_level",
-            "=",
-            CommitteeManagementLevel.CAN_MANAGE,
-        )
-        old_manager = self.datastore.filter(Collection("user"), filter_, ["id"])
-        return set(id_ for id_ in old_manager)

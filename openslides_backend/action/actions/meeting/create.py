@@ -1,6 +1,7 @@
-from typing import Any, Dict, List, Type
+from typing import Any, Dict, List, Type, cast
 
-from ....models.models import Meeting
+from openslides_backend.models.models import Meeting
+
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.patterns import Collection, FullQualifiedId
@@ -18,7 +19,6 @@ from ..projector.create import ProjectorCreateAction
 from ..projector_countdown.create import ProjectorCountdownCreate
 from ..user.update import UserUpdate
 from .mixins import MeetingPermissionMixin
-from .shared_meeting import meeting_projector_default_replacements
 
 
 @register_action("meeting.create")
@@ -234,7 +234,9 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
                     "used_as_reference_projector_meeting_id": instance["id"],
                     "used_as_default_$_in_meeting_id": {
                         name: instance["id"]
-                        for name in meeting_projector_default_replacements
+                        for name in cast(
+                            List[str], Meeting.default_projector__id.replacement_enum
+                        )
                     },
                 }
             ]

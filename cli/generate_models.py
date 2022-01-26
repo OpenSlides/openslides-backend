@@ -225,6 +225,7 @@ class Model(Node):
 class Attribute(Node):
     type: str
     replacement_collection: Optional[Collection] = None
+    replacement_enum: Optional[List[str]] = None
     to: Optional["To"] = None
     fields: Optional["Attribute"] = None
     required: bool = False
@@ -262,6 +263,11 @@ class Attribute(Node):
                 inner_value = value.get("fields")
                 assert not is_inner_attribute and inner_value
                 self.fields = type(self)(inner_value, is_inner_attribute=True)
+                if self.fields.type in ("relation", "relation-list"):
+                    self.replacement_enum = value.get("replacement_enum")
+                    assert not self.replacement_collection or not self.replacement_enum
+                    if self.replacement_enum:
+                        self.required = self.fields.required
             else:
                 if self.type in RELATION_FIELD_CLASSES.keys():
                     self.to = To(value.get("to", {}))
@@ -348,6 +354,8 @@ class Attribute(Node):
             properties += f"constraints={repr(self.contraints)},"
         if self.fields.contraints:
             properties += f"constraints={repr(self.fields.contraints)},"
+        if self.replacement_enum:
+            properties += f"replacement_enum={repr(self.replacement_enum)},"
         return self.FIELD_TEMPLATE.substitute(
             dict(field_name=field_name, field_class=field_class, properties=properties)
         )

@@ -196,7 +196,7 @@ class Checker:
             valid_attributes.append("enum")
             if "enum" in field:
                 if not isinstance(field["enum"], list):
-                    self.errors.append(f"'enum' for {collectionfield}' is not a list.")
+                    self.errors.append(f"'enum' for {collectionfield} is not a list.")
                 for value in field["enum"]:
                     self.validate_value_for_type(type, value, collectionfield)
 
@@ -210,6 +210,8 @@ class Checker:
                     f"invalid value for 'on_delete' for {collectionfield}"
                 )
             valid_attributes.append("equal_fields")
+            if nested and type in ("relation", "relation-list"):
+                valid_attributes.append("enum")
 
         if type == "template":
             if "$" not in field_name:
@@ -217,10 +219,24 @@ class Checker:
                     f"The template field {collectionfield} is missing a $"
                 )
             valid_attributes.append("replacement_collection")
+            fields = field.get("fields")
             if (
-                isinstance(fields := field.get("fields"), dict)
-                and fields.get("type") == "decimal(6)"
+                isinstance(fields, dict)
+                and fields.get("type") in ("relation", "relation-list")
+                and "replacement_enum" in field
             ):
+                if "replacement_collection" in field:
+                    self.errors.append(
+                        f"Field {collectionfield}' may contain either 'replacement_collection' or 'replacement_enum'."
+                    )
+                if not isinstance(field["replacement_enum"], list):
+                    self.errors.append(
+                        f"'replacement_enum' for {collectionfield} is not a list."
+                    )
+                valid_attributes.append("replacement_enum")
+                for value in field["replacement_enum"]:
+                    self.validate_value_for_type("string", value, collectionfield)
+            if isinstance(fields, dict) and fields.get("type") == "decimal(6)":
                 valid_attributes.append("minimum")
         elif "$" in field_name and not nested:
             print(field_name, field)

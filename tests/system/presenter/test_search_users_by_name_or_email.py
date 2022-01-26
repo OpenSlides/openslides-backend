@@ -180,7 +180,8 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                "committee_$can_manage_management_level": [1],
             },
         )
         status_code, _ = self.request(
@@ -277,7 +278,8 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                "committee_$can_manage_management_level": [1],
             },
         )
         status_code, data = self.request(
@@ -302,7 +304,8 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             "user/1",
             {
                 "organization_management_level": None,
-                "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                "committee_$_management_level": [CommitteeManagementLevel.CAN_MANAGE],
+                "committee_$can_manage_management_level": [1],
             },
         )
         status_code, data = self.request(

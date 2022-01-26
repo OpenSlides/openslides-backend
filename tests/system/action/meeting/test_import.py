@@ -1,7 +1,8 @@
 import base64
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List, cast
 
+from openslides_backend.models.models import Meeting
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -195,7 +196,14 @@ class MeetingImport(BaseActionTestCase):
                         "present_user_ids": [],
                         "list_of_speakers_countdown_id": None,
                         "poll_countdown_id": None,
-                        "default_projector_$_id": [],
+                        "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                        **{
+                            f"default_projector_${name}_id": 1
+                            for name in cast(
+                                List[str],
+                                Meeting.default_projector__id.replacement_enum,
+                            )
+                        },
                         "projection_ids": [],
                     }
                 },
@@ -281,7 +289,14 @@ class MeetingImport(BaseActionTestCase):
                         "current_projection_ids": [],
                         "preview_projection_ids": [],
                         "history_projection_ids": [],
-                        "used_as_default_$_in_meeting_id": [],
+                        "used_as_default_$_in_meeting_id": Meeting.default_projector__id.replacement_enum,
+                        **{
+                            f"used_as_default_${name}_in_meeting_id": 1
+                            for name in cast(
+                                List[str],
+                                Meeting.default_projector__id.replacement_enum,
+                            )
+                        },
                         "sequential_number": 1,
                     }
                 },

@@ -1,4 +1,7 @@
-from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 
 from .base import BasePresenterTestCase
 
@@ -24,7 +27,10 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "username": "goofi",
                     "first_name": "Testy",
                     "last_name": "Tester",
-                    "committee_$_management_level": ["1"],
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
+                    "committee_$can_manage_management_level": [1],
                     "meeting_ids": [],
                 },
                 "user/4": {
@@ -32,8 +38,10 @@ class TestGetUSerScope(BasePresenterTestCase):
                     "first_name": "John",
                     "last_name": "Xylon",
                     "meeting_ids": [1],
-                    "committee_$_management_level": ["2"],
-                    "committee_$2_management_level": "can_manage",
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
+                    "committee_$can_manage_management_level": [2],
                 },
             }
         )

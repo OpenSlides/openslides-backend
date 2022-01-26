@@ -1,8 +1,6 @@
-from typing import Any, Dict, Iterable, cast
+from typing import Any, Dict, Iterable, List, cast
 
-from openslides_backend.action.actions.meeting.shared_meeting import (
-    meeting_projector_default_replacements,
-)
+from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
@@ -42,7 +40,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         meeting = self.basic_test(dict())
         self.assertCountEqual(
             cast(Iterable[Any], meeting.get("default_projector_$_id")),
-            meeting_projector_default_replacements,
+            cast(List[str], Meeting.default_projector__id.replacement_enum),
         )
         self.assert_model_exists(
             "meeting/1",
@@ -66,7 +64,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "motion_poll_default_group_ids": [4],
                 **{
                     f"default_projector_${name}_id": 1
-                    for name in meeting_projector_default_replacements
+                    for name in cast(
+                        List[str], Meeting.default_projector__id.replacement_enum
+                    )
                 },
             },
         )
@@ -153,7 +153,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         projector1 = self.get_model("projector/1")
         self.assertCountEqual(
             cast(Iterable[Any], projector1.get("used_as_default_$_in_meeting_id")),
-            meeting_projector_default_replacements,
+            cast(List[str], Meeting.default_projector__id.replacement_enum),
         )
         self.assert_model_exists(
             "projector/1",
@@ -163,7 +163,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "used_as_reference_projector_meeting_id": 1,
                 **{
                     f"used_as_default_${name}_in_meeting_id": 1
-                    for name in meeting_projector_default_replacements
+                    for name in cast(
+                        List[str], Meeting.default_projector__id.replacement_enum
+                    )
                 },
             },
         )
@@ -300,7 +302,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
-                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
+                    "committee_$can_manage_management_level": [1],
                 }
             }
         )
@@ -311,7 +316,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": None,
-                    "committee_$1_management_level": CommitteeManagementLevel.CAN_MANAGE,
+                    "committee_$_management_level": [
+                        CommitteeManagementLevel.CAN_MANAGE
+                    ],
+                    "committee_$can_manage_management_level": [1],
                 }
             }
         )
@@ -327,7 +335,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             {
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
-                    "committee_$1_management_level": None,
+                    "committee_$can_manage_management_level": [],
                 }
             }
         )

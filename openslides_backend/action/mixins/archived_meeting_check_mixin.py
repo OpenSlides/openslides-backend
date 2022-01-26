@@ -28,6 +28,7 @@ class CheckForArchivedMeetingMixin(Action):
                 raise NotImplementedError()
             if (
                 isinstance(model_field, fields.BaseTemplateField)
+                and model_field.replacement_collection
                 and model_field.replacement_collection.collection == "meeting"  # type: ignore
             ):
                 meeting_ids.update(map(int, instance[fname].keys()))

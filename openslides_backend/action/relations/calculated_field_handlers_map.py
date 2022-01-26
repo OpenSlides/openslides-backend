@@ -11,9 +11,12 @@ from .user_meeting_ids_handler import UserMeetingIdsHandler
 # This maps all CalculatedFieldsHandlers to the fields for which they need to get the
 # updates. Fill this map if you add more handlers.
 handler_to_field_map: Dict[Type[CalculatedFieldHandler], List[Field]] = {
-    MeetingUserIdsHandler: [Group.user_ids],
-    UserMeetingIdsHandler: [User.group__ids],
-    UserCommitteeCalculateHandler: [User.group__ids, User.committee__management_level],
+    MeetingUserIdsHandler: [Group.user_ids],  # calcs meeting.user_ids
+    UserMeetingIdsHandler: [User.group__ids],  # calcs user.meeting_ids
+    UserCommitteeCalculateHandler: [
+        User.group__ids,
+        User.committee__management_level,
+    ],  # calcs user.committee_ids and committee.user_ids
 }
 calculated_field_handlers_map: Dict[
     Field, List[Type[CalculatedFieldHandler]]
