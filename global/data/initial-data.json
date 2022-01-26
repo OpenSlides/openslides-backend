@@ -19,6 +19,7 @@
             "active_meeting_ids": [
                 1
             ],
+	    "archived_meeting_ids": [],
             "resource_ids": [],
             "organization_tag_ids": [],
             "theme_id": 1,
@@ -249,6 +250,7 @@
             "welcome_text": "[Space for your welcome text]",
             "name": "Default meeting",
             "is_active_in_organization_id": 1,
+	    "is_archived_in_organization_id": null,
             "description": "",
             "location": "",
             "start_time": 0,
