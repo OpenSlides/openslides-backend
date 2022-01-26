@@ -83,7 +83,7 @@ stop-dev:
 	docker-compose -f dev/docker-compose.dev.yml down --volumes
 
 run-dev-attach:
-	docker-compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile dev/.bashrc
+	docker-compose -f dev/docker-compose.dev.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
 run-dev run-bash: | start-dev run-dev-attach
 
@@ -103,7 +103,7 @@ stop-dev-local-ds:
 	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml down --volumes
 
 run-dev-attach-local-ds:
-	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml exec backend ./entrypoint.sh bash --rcfile dev/.bashrc
+	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml exec backend ./entrypoint.sh bash --rcfile .bashrc
 
 run-dev-local-ds run-bash-local-ds: | start-dev-local-ds run-dev-attach-local-ds
 

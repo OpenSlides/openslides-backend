@@ -142,6 +142,7 @@ class CreatePoll(BaseActionTestCase):
                 ],
                 "meeting_id": 1,
                 "onehundred_percent_base": "YNA",
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 200)
@@ -487,23 +488,17 @@ class CreatePoll(BaseActionTestCase):
         self.assert_model_not_exists("poll/1")
 
     def test_create_poll_for_option_with_wrong_content_object(self) -> None:
-        response = self.request_json(
-            [
-                {
-                    "action": "poll.create",
-                    "data": [
-                        {
-                            "meeting_id": 1,
-                            "title": "Wahlgang (3)",
-                            "onehundred_percent_base": "valid",
-                            "pollmethod": "YN",
-                            "type": "analog",
-                            "options": [{"content_object_id": "assignment/1"}],
-                            "content_object_id": "assignment/1",
-                        }
-                    ],
-                }
-            ],
+        response = self.request(
+            "poll.create",
+            {
+                "meeting_id": 1,
+                "title": "Wahlgang (3)",
+                "onehundred_percent_base": "valid",
+                "pollmethod": "YN",
+                "type": "analog",
+                "options": [{"content_object_id": "assignment/1"}],
+                "content_object_id": "assignment/1",
+            },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -525,6 +520,7 @@ class CreatePoll(BaseActionTestCase):
                     {"text": "test", "N": "12.000000"},
                 ],
                 "meeting_id": 1,
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 400)
@@ -545,6 +541,7 @@ class CreatePoll(BaseActionTestCase):
                     {"content_object_id": "user/1", "Y": "11.000000"},
                 ],
                 "meeting_id": 1,
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 400)
@@ -564,9 +561,10 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "valid",
                 "options": [
                     {"content_object_id": "user/1", "Y": "10.000000", "N": "5.000000"},
-                    {"text": "user/1", "Y": "10.000000"},
+                    {"text": "text", "Y": "10.000000"},
                 ],
                 "meeting_id": 1,
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 200)
@@ -633,6 +631,9 @@ class CreatePoll(BaseActionTestCase):
                     "group_$_ids": ["42"],
                     "meeting_ids": [42],
                 },
+                "assignment/2": {
+                    "meeting_id": 42,
+                },
             }
         )
         response = self.request(
@@ -646,6 +647,7 @@ class CreatePoll(BaseActionTestCase):
                 ],
                 "meeting_id": 42,
                 "onehundred_percent_base": "YN",
+                "content_object_id": "assignment/2",
             },
         )
         self.assert_status_code(response, 200)
@@ -684,12 +686,31 @@ class CreatePoll(BaseActionTestCase):
                 ],
                 "meeting_id": 7,
                 "onehundred_percent_base": "YN",
+                "content_object_id": "assignment/1",
             },
         )
         self.assert_status_code(response, 400)
         assert (
             response.json["message"]
             == "The following models do not belong to meeting 7: ['user/1']"
+        )
+
+    def test_create_without_content_object(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test_title_eing5eipue5cha2Iefai",
+                "pollmethod": "YNA",
+                "type": "named",
+                "onehundred_percent_base": "YN",
+                "meeting_id": 1,
+                "options": [{"text": "test1"}],
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            response.json["message"]
+            == "Creation of poll/1: You try to set following required fields to an empty value: ['content_object_id']"
         )
 
     def test_create_no_permissions_assignment(self) -> None:
@@ -766,7 +787,10 @@ class CreatePoll(BaseActionTestCase):
             Permissions.Motion.CAN_MANAGE_POLLS,
         )
 
-    def test_create_permissions(self) -> None:
+    def test_create_no_permissions_topic(self) -> None:
+        self.set_models(
+            {"meeting/1": {"topic_ids": [13]}, "topic/13": {"meeting_id": 1}}
+        )
         self.base_permission_test(
             {},
             "poll.create",
@@ -780,11 +804,14 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
+                "content_object_id": "topic/1",
             },
-            Permissions.Poll.CAN_MANAGE,
         )
 
-    def test_create_no_permissions(self) -> None:
+    def test_create_permissions_topic(self) -> None:
+        self.set_models(
+            {"meeting/1": {"topic_ids": [13]}, "topic/13": {"meeting_id": 1}}
+        )
         self.base_permission_test(
             {},
             "poll.create",
@@ -798,5 +825,6 @@ class CreatePoll(BaseActionTestCase):
                 "global_no": True,
                 "global_abstain": True,
                 "onehundred_percent_base": "Y",
+                "content_object_id": "topic/1",
             },
         )

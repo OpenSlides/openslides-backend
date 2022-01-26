@@ -3,7 +3,7 @@ FROM python:3.8.5-slim-buster
 RUN apt-get update && apt-get install --yes make git curl ncat vim bash-completion mime-support gcc libpq-dev
 
 WORKDIR /app
-RUN mkdir dev migrations
+RUN mkdir migrations
 
 COPY requirements/ requirements/
 ARG REQUIREMENTS_FILE=requirements_development.txt
