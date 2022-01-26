@@ -1,21 +1,21 @@
 # Development and testing inside docker container or without docker (only unit and integration tests)
 
-paths = openslides_backend/ tests/ cli/
+paths = openslides_backend/ tests/ cli/ migrations/
 
 all: black autoflake isort flake8 mypy
 
 black:
-	black $(paths) migrations/
+	black $(paths)
 
 autoflake:
 	autoflake --verbose --in-place --remove-all-unused-imports \
-	--ignore-init-module-imports --recursive $(paths) migrations/
+	--ignore-init-module-imports --recursive $(paths)
 
 isort:
-	isort $(paths) migrations/
+	isort $(paths)
 
 flake8:
-	flake8 $(paths) migrations/
+	flake8 $(paths)
 
 mypy:
 	mypy $(paths)

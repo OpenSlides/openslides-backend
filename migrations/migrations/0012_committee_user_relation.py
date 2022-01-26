@@ -33,7 +33,7 @@ class Migration(BaseMigration):
     calculated fields, which may be historic without deletion in older implementation.
 
     This implemtation assumes, that all changes to the subjects of observation will be
-    made directly or indirectly via related relations. Assuming this the migration is 
+    made directly or indirectly via related relations. Assuming this the migration is
     based only on user events for updates.
     """
 
@@ -155,7 +155,6 @@ class Migration(BaseMigration):
             map(int, user.get("committee_$can_manage_management_level", []))
         )
         committee_ids.update(cml_committee_ids)
-        # self.update_add_remove(self.user_committee_ids, [id], committee_ids, add=True)
         self.update_add_remove(
             self.committee_user_ids, committee_ids, [user_id], add=True
         )

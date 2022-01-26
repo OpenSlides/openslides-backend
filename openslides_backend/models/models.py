@@ -100,7 +100,7 @@ class User(Model):
     committee__management_level = fields.TemplateRelationListField(
         index=10,
         to={Collection("committee"): "user_$_management_level"},
-        replacement_enum=["can_manage", "can_todo"],
+        replacement_enum=["can_manage"],
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
