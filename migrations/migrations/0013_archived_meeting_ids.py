@@ -22,7 +22,7 @@ class Migration(BaseMigration):
     early events of a position. See 0002 for details.
     """
 
-    target_migration_index = 13
+    target_migration_index = 14
 
     def position_init(self) -> None:
         # Capture all meeting ids to add/remove from

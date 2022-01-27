@@ -18,7 +18,7 @@ def test_migration(write, finalize, assert_model):
         {"type": "restore", "fqid": "meeting/1", "fields": {}},
     )
 
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
 
     assert_model(
         "organization/1",
@@ -73,7 +73,7 @@ def test_one_created_archived_meeting(write, finalize, assert_model):
             "fields": {},
         },
     )
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
     assert_model(
         "organization/1",
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 1},
@@ -144,7 +144,7 @@ def test_update_meeting(write, finalize, assert_model):
         },
     )
 
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
 
     assert_model(
         "meeting/1",
@@ -214,7 +214,7 @@ def test_create_delete_in_one_position(write, finalize, assert_model):
         },
     )
 
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
     assert_model(
         "organization/1", {"meta_deleted": False, "meta_position": 1}, position=1
     )
@@ -245,7 +245,7 @@ def test_single_restore(write, finalize, assert_model):
             "fields": {},
         }
     )
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
     assert_model(
         "organization/1",
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 2},
@@ -287,7 +287,7 @@ def test_create_and_update_in_one_position(write, finalize, assert_model):
         },
     )
 
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
     assert_model(
         "organization/1",
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 1},
@@ -341,7 +341,7 @@ def test_two_updates_in_a_position(write, finalize, assert_model):
         },
     )
 
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
     assert_model(
         "organization/1",
         {
@@ -397,7 +397,7 @@ def test_create_and_two_updates(write, finalize, assert_model):
             "fields": {"active_meeting_ids": []},
         },
     )
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
 
     assert_model(
         "organization/1",
@@ -445,7 +445,7 @@ def test_delete_fields_1(write, finalize, assert_model):
             "fields": {"active_meeting_ids": []},
         },
     )
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
     assert_model(
         "organization/1",
         {
@@ -502,7 +502,7 @@ def test_delete_fields_2(write, finalize, assert_model):
             "fields": {"active_meeting_ids": []},
         },
     )
-    finalize("0012_archived_meeting_ids")
+    finalize("0013_archived_meeting_ids")
 
     assert_model(
         "meeting/1",
