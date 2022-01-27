@@ -420,3 +420,107 @@ def test_create_and_two_updates(write, finalize, assert_model):
         },
         position=1,
     )
+
+
+def test_delete_fields_1(write, finalize, assert_model):
+    write(
+        {
+            "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"is_active_in_organization_id": 1},
+        },
+        {
+            "type": "create",
+            "fqid": "organization/1",
+            "fields": {"active_meeting_ids": [1]},
+        },
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"is_active_in_organization_id": None},
+        },
+        {
+            "type": "update",
+            "fqid": "organization/1",
+            "fields": {"active_meeting_ids": []},
+        },
+    )
+    finalize("0012_archived_meeting_ids")
+    assert_model(
+        "organization/1",
+        {
+            "archived_meeting_ids": [1],
+            "active_meeting_ids": [],
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+        position=1,
+    )
+    assert_model(
+        "meeting/1",
+        {
+            "is_archived_in_organization_id": 1,
+            "meta_deleted": False,
+            "meta_position": 1,
+        },
+        position=1,
+    )
+
+
+def test_delete_fields_2(write, finalize, assert_model):
+    write(
+        {
+            "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"is_active_in_organization_id": 0},
+        },
+        {
+            "type": "create",
+            "fqid": "organization/1",
+            "fields": {"active_meeting_ids": []},
+        },
+    )
+    write(
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"is_active_in_organization_id": 1},
+        },
+        {
+            "type": "update",
+            "fqid": "organization/1",
+            "fields": {"active_meeting_ids": [1]},
+        },
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"is_active_in_organization_id": None},
+        },
+        {
+            "type": "update",
+            "fqid": "organization/1",
+            "fields": {"active_meeting_ids": []},
+        },
+    )
+    finalize("0012_archived_meeting_ids")
+
+    assert_model(
+        "meeting/1",
+        {
+            "is_archived_in_organization_id": 1,
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
+        position=2,
+    )
+
+    assert_model(
+        "organization/1",
+        {
+            "active_meeting_ids": [],
+            "archived_meeting_ids": [1],
+            "meta_deleted": False,
+            "meta_position": 2,
+        },
+        position=2,
+    )

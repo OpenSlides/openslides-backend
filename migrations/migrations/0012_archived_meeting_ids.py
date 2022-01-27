@@ -5,6 +5,7 @@ from datastore.migrations import (
     BaseMigration,
     CreateEvent,
     DeleteEvent,
+    DeleteFieldsEvent,
     ListUpdateEvent,
     RestoreEvent,
     UpdateEvent,
@@ -57,6 +58,18 @@ class Migration(BaseMigration):
                     self.meeting_ids_to_remove.remove(id_)
                 else:
                     self.meeting_ids_to_add.add(id_)
+        elif isinstance(event, DeleteFieldsEvent):
+            if "is_active_in_organization_id" in event.data:
+                data, _ = self.new_accessor.get_model_ignore_deleted(event.fqid)
+                if data.get("is_active_in_organization_id") == 1:
+                    event2 = UpdateEvent(
+                        event.fqid, {"is_archived_in_organization_id": 1}
+                    )
+                    if id_ in self.meeting_ids_to_remove:
+                        self.meeting_ids_to_remove.remove(id_)
+                    else:
+                        self.meeting_ids_to_add.add(id_)
+                    return [event, event2]
         elif isinstance(event, UpdateEvent):
             if (
                 "is_active_in_organization_id" in event.data
