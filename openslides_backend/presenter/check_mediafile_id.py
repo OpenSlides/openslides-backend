@@ -125,7 +125,7 @@ class CheckMediafileId(BasePresenter):
                 self.datastore,
                 self.user_id,
                 CommitteeManagementLevel.CAN_MANAGE,
-                meeting["committe_id"],
+                meeting["committee_id"],
             ):
                 return True
         return False
