@@ -80,7 +80,7 @@ class Migration(BaseMigration):
                     self.event_user.append((event, user))
                     return None
                 for committee_id in cml_committee_ids:
-                    event.data.pop(f"committee_${committee_id}_management_level")
+                    event.data.pop(f"committee_${committee_id}_management_level", None)
                 event.data["committee_$_management_level"] = [cml_permission]
                 event.data[
                     f"committee_${cml_permission}_management_level"
@@ -160,6 +160,7 @@ class Migration(BaseMigration):
         if not cml_committee_ids:
             return None
 
+        # create the related events for committees
         return [
             ListUpdateEvent(
                 f"committee/{committee_id}",
@@ -176,7 +177,6 @@ class Migration(BaseMigration):
     def handle_user_delete_event(
         self, event: DeleteEvent, user: Dict[str, Any], user_id: int
     ) -> Optional[List[BaseEvent]]:
-        # user = self.new_accessor.get_model_ignore_deleted(f"user/{user_id}")[0]
         meeting_ids = list(map(int, cast(List[str], user.get("group_$_ids", [])))) or []
         committee_ids = set(
             self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
@@ -198,7 +198,7 @@ class Migration(BaseMigration):
         if not cml_committee_ids:
             return None
 
-        # change create event for committee
+        # create the related events for committees
         return [
             ListUpdateEvent(
                 f"committee/{committee_id}",
@@ -230,7 +230,7 @@ class Migration(BaseMigration):
         if not cml_committee_ids:
             return None
 
-        # change create event for committee
+        # create the related events for committees
         return [
             ListUpdateEvent(
                 f"committee/{committee_id}",
@@ -255,7 +255,6 @@ class Migration(BaseMigration):
             )
         )
         new_committee_ids.update(new_cml_committee_ids)
-        # user = self.new_accessor.get_model_ignore_deleted(f"user/{user_id}")[0]
         meeting_ids = list(map(int, cast(List[str], user.get("group_$_ids", [])))) or []
         old_committee_ids = set(
             self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
@@ -300,6 +299,7 @@ class Migration(BaseMigration):
         if not new_cml_committee_ids:
             return None
 
+        # create the related events for committees
         add_cml_committee_ids = list(
             set(new_cml_committee_ids) - set(old_cml_committee_ids)
         )
@@ -307,27 +307,28 @@ class Migration(BaseMigration):
             set(old_cml_committee_ids) - set(new_cml_committee_ids)
         )
         # create event for committee
-        return [
-            *[
-                ListUpdateEvent(
-                    f"committee/{committee_id}",
-                    {
-                        "add": {
-                            f"user_${cml_permission}_management_level": [user_id],
-                            "user_$_management_level": [cml_permission],
-                        }
-                    },
-                )
-                for committee_id in add_cml_committee_ids
-            ],
-            *[
+        events = [
+            ListUpdateEvent(
+                f"committee/{committee_id}",
+                {
+                    "add": {
+                        f"user_${cml_permission}_management_level": [user_id],
+                        "user_$_management_level": [cml_permission],
+                    }
+                },
+            )
+            for committee_id in add_cml_committee_ids
+        ]
+        events.extend(
+            [
                 ListUpdateEvent(
                     f"committee/{committee_id}",
                     {"remove": {f"user_${cml_permission}_management_level": [user_id]}},
                 )
                 for committee_id in remove_cml_committee_ids
-            ],
-        ]
+            ]
+        )
+        return cast(List[BaseEvent], events)
 
     def update_add_remove(
         self,
