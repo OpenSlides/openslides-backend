@@ -2,7 +2,6 @@ from typing import Any, Dict
 
 from ....models.models import Committee
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.env import is_dev_mode
 from ....shared.exceptions import ActionException, ProtectedModelsException
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
