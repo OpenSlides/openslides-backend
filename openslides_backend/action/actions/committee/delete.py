@@ -21,11 +21,6 @@ class CommitteeDeleteAction(DeleteAction):
     skip_archived_meeting_check = True
 
     def base_update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if not is_dev_mode():
-            raise ActionException(
-                "Deleting of committees is temporarily blocked in production mode!"
-            )
-
         try:
             return super().base_update_instance(instance)
         except ProtectedModelsException as e:
