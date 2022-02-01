@@ -276,3 +276,36 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             },
         )
         self.assert_model_exists("user/2", {"group_$_ids": [], "committee_ids": []})
+
+    def test_delete_archived_meeting(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"active_meeting_ids": []},
+                "committee/1": {
+                    "user_ids": [1, 2],
+                    "user_$can_manage_management_level": [1],
+                    "user_$_management_level": ["can_manage"],
+                },
+                "user/1": {
+                    "committee_$can_manage_management_level": [1],
+                    "committee_$_management_level": ["can_manage"],
+                    "organization_management_level": "can_manage_users",
+                    "committee_ids": [1],
+                },
+                "user/2": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [11],
+                    "committee_ids": [1],
+                },
+                "group/11": {
+                    "user_ids": [2],
+                },
+                "meeting/1": {
+                    "user_ids": [2],
+                    "is_active_in_organization_id": None,
+                },
+            }
+        )
+        response = self.request("meeting.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting/1")
