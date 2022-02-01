@@ -12,6 +12,8 @@ from datastore.migrations import (
 )
 from datastore.shared.util import collection_and_id_from_fqid
 
+ONE_ORGANIZATION = 1
+
 
 class Migration(BaseMigration):
     """
@@ -40,20 +42,20 @@ class Migration(BaseMigration):
             return None
 
         if isinstance(event, CreateEvent):
-            if event.data.get("is_active_in_organization_id") != 1:
-                event.data["is_archived_in_organization_id"] = 1
+            if event.data.get("is_active_in_organization_id") != ONE_ORGANIZATION:
+                event.data["is_archived_in_organization_id"] = ONE_ORGANIZATION
                 self.meeting_ids_to_add.add(id_)
                 return [event]
         elif isinstance(event, DeleteEvent):
             data, _ = self.new_accessor.get_model_ignore_deleted(event.fqid)
-            if data.get("is_active_in_organization_id") != 1:
+            if data.get("is_active_in_organization_id") != ONE_ORGANIZATION:
                 if id_ in self.meeting_ids_to_add:
                     self.meeting_ids_to_add.remove(id_)
                 else:
                     self.meeting_ids_to_remove.add(id_)
         elif isinstance(event, RestoreEvent):
             data, _ = self.new_accessor.get_model_ignore_deleted(event.fqid)
-            if data.get("is_active_in_organization_id") != 1:
+            if data.get("is_active_in_organization_id") != ONE_ORGANIZATION:
                 if id_ in self.meeting_ids_to_remove:
                     self.meeting_ids_to_remove.remove(id_)
                 else:
@@ -61,9 +63,9 @@ class Migration(BaseMigration):
         elif isinstance(event, DeleteFieldsEvent):
             if "is_active_in_organization_id" in event.data:
                 data, _ = self.new_accessor.get_model_ignore_deleted(event.fqid)
-                if data.get("is_active_in_organization_id") == 1:
+                if data.get("is_active_in_organization_id") == ONE_ORGANIZATION:
                     event2 = UpdateEvent(
-                        event.fqid, {"is_archived_in_organization_id": 1}
+                        event.fqid, {"is_archived_in_organization_id": ONE_ORGANIZATION}
                     )
                     if id_ in self.meeting_ids_to_remove:
                         self.meeting_ids_to_remove.remove(id_)
@@ -73,19 +75,21 @@ class Migration(BaseMigration):
         elif isinstance(event, UpdateEvent):
             if (
                 "is_active_in_organization_id" in event.data
-                and event.data["is_active_in_organization_id"] == 1
+                and event.data["is_active_in_organization_id"] == ONE_ORGANIZATION
             ):
-                event.data["is_archived_in_organization_id"] = 0
+                event3 = DeleteFieldsEvent(
+                    event.fqid, ["is_archived_in_organization_id"]
+                )
                 if id_ in self.meeting_ids_to_add:
                     self.meeting_ids_to_add.remove(id_)
                 else:
                     self.meeting_ids_to_remove.add(id_)
-                return [event]
+                return [event, event3]
             elif (
                 "is_active_in_organization_id" in event.data
-                and event.data["is_active_in_organization_id"] != 1
+                and event.data["is_active_in_organization_id"] != ONE_ORGANIZATION
             ):
-                event.data["is_archived_in_organization_id"] = 1
+                event.data["is_archived_in_organization_id"] = ONE_ORGANIZATION
                 if id_ in self.meeting_ids_to_remove:
                     self.meeting_ids_to_remove.remove(id_)
                 else:

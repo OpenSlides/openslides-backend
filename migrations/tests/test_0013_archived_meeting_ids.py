@@ -123,7 +123,7 @@ def test_update_meeting(write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "meeting/1",
-            "fields": {"is_active_in_organization_id": 0},
+            "fields": {"is_active_in_organization_id": None},
         },
         {
             "type": "update",
@@ -160,7 +160,6 @@ def test_update_meeting(write, finalize, assert_model):
     assert_model(
         "meeting/1",
         {
-            "is_active_in_organization_id": 0,
             "is_archived_in_organization_id": 1,
             "meta_deleted": False,
             "meta_position": 2,
@@ -177,7 +176,6 @@ def test_update_meeting(write, finalize, assert_model):
         "meeting/1",
         {
             "is_active_in_organization_id": 1,
-            "is_archived_in_organization_id": 0,
             "meta_deleted": False,
             "meta_position": 3,
         },
