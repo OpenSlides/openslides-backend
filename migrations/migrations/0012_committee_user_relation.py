@@ -13,6 +13,8 @@ from datastore.migrations import (
 from datastore.shared.util import collection_and_id_from_fqid, id_from_fqid
 
 cml_permission = "can_manage"  # the only cml-permission
+user_cml_permission_field = f"committee_${cml_permission}_management_level"
+committee_cml_permission_field = f"user_${cml_permission}_management_level"
 
 
 class AddRemove:
@@ -82,9 +84,7 @@ class Migration(BaseMigration):
                 for committee_id in cml_committee_ids:
                     event.data.pop(f"committee_${committee_id}_management_level", None)
                 event.data["committee_$_management_level"] = [cml_permission]
-                event.data[
-                    f"committee_${cml_permission}_management_level"
-                ] = cml_committee_ids
+                event.data[user_cml_permission_field] = cml_committee_ids
                 self.event_user.append((event, user))
                 return [event]
             else:
@@ -146,9 +146,7 @@ class Migration(BaseMigration):
             ),
         )
         cml_committee_ids = list(
-            map(
-                int, event.data.get(f"committee_${cml_permission}_management_level", [])
-            )
+            map(int, event.data.get(user_cml_permission_field, []))
         )
         committee_ids.update(cml_committee_ids)
         self.update_add_remove(
@@ -166,7 +164,7 @@ class Migration(BaseMigration):
                 f"committee/{committee_id}",
                 {
                     "add": {
-                        f"user_${cml_permission}_management_level": [user_id],
+                        committee_cml_permission_field: [user_id],
                         "user_$_management_level": [cml_permission],
                     }
                 },
@@ -184,9 +182,7 @@ class Migration(BaseMigration):
             )
             for meeting_id in meeting_ids
         )
-        cml_committee_ids = cast(
-            List[int], user.get(f"committee_${cml_permission}_management_level", [])
-        )
+        cml_committee_ids = cast(List[int], user.get(user_cml_permission_field, []))
         committee_ids.update(cml_committee_ids)
         # don't apply remove on user instance, because it is deleted
         self.update_add_remove(
@@ -202,7 +198,7 @@ class Migration(BaseMigration):
         return [
             ListUpdateEvent(
                 f"committee/{committee_id}",
-                {"remove": {f"user_${cml_permission}_management_level": [user_id]}},
+                {"remove": {committee_cml_permission_field: [user_id]}},
             )
             for committee_id in cml_committee_ids
         ]
@@ -217,9 +213,7 @@ class Migration(BaseMigration):
             )
             for meeting_id in meeting_ids
         )
-        cml_committee_ids = cast(
-            List[int], user.get(f"committee_${cml_permission}_management_level", [])
-        )
+        cml_committee_ids = cast(List[int], user.get(user_cml_permission_field, []))
         committee_ids.update(cml_committee_ids)
         self.update_add_remove(
             self.committee_user_ids,
@@ -234,7 +228,7 @@ class Migration(BaseMigration):
         return [
             ListUpdateEvent(
                 f"committee/{committee_id}",
-                {"add": {f"user_${cml_permission}_management_level": [user_id]}},
+                {"add": {committee_cml_permission_field: [user_id]}},
             )
             for committee_id in cml_committee_ids
         ]
@@ -242,19 +236,6 @@ class Migration(BaseMigration):
     def handle_user_update_event(
         self, event: UpdateEvent, user: Dict[str, Any], user_id: int
     ) -> Optional[List[BaseEvent]]:
-        meeting_ids = list(map(int, event.data.get("group_$_ids", []))) or []
-        new_committee_ids = set(
-            self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
-                "committee_id"
-            )
-            for meeting_id in meeting_ids
-        )
-        new_cml_committee_ids = list(
-            map(
-                int, event.data.get(f"committee_${cml_permission}_management_level", [])
-            )
-        )
-        new_committee_ids.update(new_cml_committee_ids)
         meeting_ids = list(map(int, cast(List[str], user.get("group_$_ids", [])))) or []
         old_committee_ids = set(
             self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[0].get(
@@ -262,11 +243,28 @@ class Migration(BaseMigration):
             )
             for meeting_id in meeting_ids
         )
-        old_cml_committee_ids = cast(
-            List[int], user.get(f"committee_${cml_permission}_management_level", [])
-        )
+        if "group_$_ids" in event.data:
+            meeting_ids = list(map(int, event.data["group_$_ids"]))
+            new_committee_ids = set(
+                self.new_accessor.get_model_ignore_deleted(f"meeting/{meeting_id}")[
+                    0
+                ].get("committee_id")
+                for meeting_id in meeting_ids
+            )
+        else:
+            new_committee_ids = old_committee_ids.copy()
+
+        old_cml_committee_ids = cast(List[int], user.get(user_cml_permission_field, []))
+        if user_cml_permission_field in event.data:
+            new_cml_committee_ids = list(
+                map(int, event.data[user_cml_permission_field])
+            )
+        else:
+            new_cml_committee_ids = old_cml_committee_ids
+
+        new_committee_ids.update(new_cml_committee_ids)
         old_committee_ids.update(old_cml_committee_ids)
-        add_committee_ids = new_committee_ids - old_committee_ids
+        add_committee_ids = cast(List[int], list(new_committee_ids - old_committee_ids))
         remove_committee_ids = cast(
             List[int], list(old_committee_ids - new_committee_ids)
         )
@@ -274,12 +272,12 @@ class Migration(BaseMigration):
             self.update_add_remove(
                 self.user_committee_ids,
                 [user_id],
-                cast(List[int], list(add_committee_ids)),
+                add_committee_ids,
                 add=True,
             )
             self.update_add_remove(
                 self.committee_user_ids,
-                cast(List[int], list(add_committee_ids)),
+                add_committee_ids,
                 [user_id],
                 add=True,
             )
@@ -287,12 +285,12 @@ class Migration(BaseMigration):
             self.update_add_remove(
                 self.user_committee_ids,
                 [user_id],
-                list(remove_committee_ids),
+                remove_committee_ids,
                 add=False,
             )
             self.update_add_remove(
                 self.committee_user_ids,
-                list(remove_committee_ids),
+                remove_committee_ids,
                 [user_id],
                 add=False,
             )
@@ -312,7 +310,7 @@ class Migration(BaseMigration):
                 f"committee/{committee_id}",
                 {
                     "add": {
-                        f"user_${cml_permission}_management_level": [user_id],
+                        committee_cml_permission_field: [user_id],
                         "user_$_management_level": [cml_permission],
                     }
                 },
@@ -323,7 +321,7 @@ class Migration(BaseMigration):
             [
                 ListUpdateEvent(
                     f"committee/{committee_id}",
-                    {"remove": {f"user_${cml_permission}_management_level": [user_id]}},
+                    {"remove": {committee_cml_permission_field: [user_id]}},
                 )
                 for committee_id in remove_cml_committee_ids
             ]
