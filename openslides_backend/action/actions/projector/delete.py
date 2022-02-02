@@ -26,10 +26,8 @@ class ProjectorDelete(DeleteAction):
             ["used_as_reference_projector_meeting_id", "meeting_id"],
         )
         if (
-            (meeting_id := projector.get("used_as_reference_projector_meeting_id"))
-            and not self.is_meeting_deleted(meeting_id)
-            and self.parent_action != "meeting.delete"
-        ):
+            meeting_id := projector.get("used_as_reference_projector_meeting_id")
+        ) and not self.is_meeting_deleted(meeting_id):
             raise ActionException(
                 "A used as reference projector is not allowed to delete."
             )

@@ -30,11 +30,7 @@ class ProjectorCountdownDelete(DeleteAction):
         meeting_id = projector_countdown.get(
             "used_as_list_of_speakers_countdown_meeting_id"
         ) or projector_countdown.get("used_as_poll_countdown_meeting_id")
-        if (
-            meeting_id
-            and not self.is_meeting_deleted(meeting_id)
-            and self.parent_action != "meeting.delete"
-        ):
+        if meeting_id and not self.is_meeting_deleted(meeting_id):
             raise ActionException(
                 "List of speakers or poll countdown is not allowed to delete."
             )
