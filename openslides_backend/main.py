@@ -15,7 +15,11 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+<<<<<<< HEAD
 from .shared.env import Environment
+=======
+from .shared.env import is_dev_mode, is_truthy
+>>>>>>> opentelemetry setup (if OPENTELEMETRY_ENABLED)
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
 
@@ -28,8 +32,17 @@ DEFAULT_ADDRESSES = {
     "ActionView": "0.0.0.0:9002",
     "PresenterView": "0.0.0.0:9003",
 }
-RequestsInstrumentor().instrument()
+if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+    from opentelemetry.sdk.resources import SERVICE_NAME, Resource
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+        OTLPSpanExporter,
+    )
 
+    RequestsInstrumentor().instrument()
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
@@ -76,18 +89,21 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
-        span_exporter = OTLPSpanExporter(
-            # optional
-            endpoint="collector:4317",
-            # credentials=ChannelCredentials(credentials),
-            # headers=(("metadata", "metadata")),
-        )
-        tracer_provider = TracerProvider(
-            resource=Resource.create({SERVICE_NAME: "bakend"})
-        )
-        trace.set_tracer_provider(tracer_provider)
-        span_processor = BatchSpanProcessor(span_exporter)
-        tracer_provider.add_span_processor(span_processor)
+        if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+            collector_host = os.environ.get("OPENTELEMETRY_COLLECTOR_HOST", "collector")
+            collector_port = os.environ.get("OPENTELEMETRY_COLLECTOR_PORT", "4317")
+            span_exporter = OTLPSpanExporter(
+                # optional
+                endpoint = f"{collector_host}:{collector_port}"
+                # credentials=ChannelCredentials(credentials),
+                # headers=(("metadata", "metadata")),
+            )
+            tracer_provider = TracerProvider(
+                resource=Resource.create({SERVICE_NAME: "backend"})
+            )
+            trace.set_tracer_provider(tracer_provider)
+            span_processor = BatchSpanProcessor(span_exporter)
+            tracer_provider.add_span_processor(span_processor)
 
         return create_wsgi_application(logging_module, self.view_name, self.env)
 
