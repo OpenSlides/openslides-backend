@@ -1,3 +1,4 @@
+import os
 import inspect
 import re
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
@@ -5,6 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 from opentelemetry import trace
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
+from ...shared.env import is_truthy
 from ...shared.exceptions import View400Exception
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
@@ -12,6 +14,10 @@ from ...shared.interfaces.services import Services
 from ...shared.interfaces.wsgi import Headers, ResponseBody, View
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
+
+if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+    from opentelemetry import trace
+
 
 ROUTE_OPTIONS_ATTR = "__route_options"
 
@@ -56,7 +62,8 @@ def route(
     return wrapper
 
 
-tracer = trace.get_tracer(__name__)
+if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+    tracer = trace.get_tracer(__name__)
 
 
 class BaseView(View):
@@ -93,7 +100,7 @@ class BaseView(View):
             predicate=lambda attr: inspect.ismethod(attr)
             and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
-        with tracer.start_as_current_span("base view") as span:
+        def do_dispatch(request: Request) -> Tuple[ResponseBody, Optional[str]]:
             for _, func in functions:
                 route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
                 for route_options in route_options_list:
@@ -119,3 +126,9 @@ class BaseView(View):
 
                         return func(request)
             raise NotFound()
+
+        if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+            with tracer.start_as_current_span("base view") as span:
+                return do_dispatch(request)
+        else:
+            return do_dispatch(request)

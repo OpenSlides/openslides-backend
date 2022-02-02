@@ -92,9 +92,11 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
             collector_host = os.environ.get("OPENTELEMETRY_COLLECTOR_HOST", "collector")
             collector_port = os.environ.get("OPENTELEMETRY_COLLECTOR_PORT", "4317")
+            print("otel exporter endpoint: " + f"{collector_host}:{collector_port}")
             span_exporter = OTLPSpanExporter(
+                endpoint=f"http://{collector_host}:{collector_port}",
+                insecure=True
                 # optional
-                endpoint = f"{collector_host}:{collector_port}"
                 # credentials=ChannelCredentials(credentials),
                 # headers=(("metadata", "metadata")),
             )
