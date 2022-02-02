@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, cast
 from unittest.mock import MagicMock
 
 from openslides_backend.models.models import AgendaItem
@@ -427,7 +427,7 @@ class MeetingClone(BaseActionTestCase):
                 "user/3": {"committee_ids": [1]},
             }
         )
-        response = self.request(
+        self.execute_action_internally(
             "meeting.create",
             {
                 "committee_id": 1,
@@ -441,7 +441,6 @@ class MeetingClone(BaseActionTestCase):
                 "organization_tag_ids": [],
             },
         )
-        self.assert_status_code(response, 200)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
@@ -535,7 +534,7 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_with_created_topic_and_agenda_type(self) -> None:
         self.set_models(self.test_models)
 
-        self.execute_action_internally(
+        result = self.execute_action_internally(
             "topic.create",
             {
                 "meeting_id": 1,
@@ -544,7 +543,7 @@ class MeetingClone(BaseActionTestCase):
                 "agenda_duration": 60,
             },
         )
-        topic_fqid = "topic/1"
+        topic_fqid = f"topic/{cast(List[Dict[str, int]], result)[0]['id']}"
         topic = self.get_model(topic_fqid)
         self.assertNotIn("agenda_type", topic)
         self.assertNotIn("agenda_duration", topic)

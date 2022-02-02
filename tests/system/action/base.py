@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from openslides_backend.action.relations.relation_manager import RelationManager
 from openslides_backend.action.util.actions_map import actions_map
 from openslides_backend.action.util.crypto import get_random_string
-from openslides_backend.action.util.typing import Payload
+from openslides_backend.action.util.typing import ActionResults, Payload
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
@@ -61,7 +61,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def execute_action_internally(
         self, action_name: str, data: Dict[str, Any], user_id: int = 0
-    ) -> None:
+    ) -> Optional[ActionResults]:
         """
         Shorthand to execute an action internally where all permissions etc. are ignored.
         Useful when an action is just execute for the end result and not for testing it.
@@ -72,10 +72,13 @@ class BaseActionTestCase(BaseSystemTestCase):
         )
         action_data = deepcopy(data)
         with self.datastore.get_database_context():
-            write_request, _ = action.perform([action_data], user_id, internal=True)
+            write_request, result = action.perform(
+                [action_data], user_id, internal=True
+            )
         if write_request:
             self.datastore.write(write_request)
         self.datastore.reset()
+        return result
 
     def create_meeting(self, base: int = 1) -> None:
         """

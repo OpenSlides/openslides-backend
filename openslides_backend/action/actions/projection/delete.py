@@ -27,7 +27,7 @@ class ProjectionDelete(DeleteAction):
         if not (
             projection.get("current_projector_id")
             or projection.get("preview_projector_id")
-            or self.is_meeting_deleted(projection.get("meeting_id"))
+            or self.is_meeting_deleted(projection.get("meeting_id", 0))
         ):
             raise ActionException(
                 f"Projection {instance['id']} must have a current_projector_id or a preview_projector_id."

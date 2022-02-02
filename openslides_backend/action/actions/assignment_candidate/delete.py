@@ -30,9 +30,8 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
             ),
             mapped_fields=["phase", "meeting_id"],
         )
-        if (
-            assignment.get("phase") == "finished"
-            and not self.is_meeting_deleted(assignment.get("meeting_id"))
+        if assignment.get("phase") == "finished" and not self.is_meeting_deleted(
+            assignment.get("meeting_id", 0)
         ):
             raise ActionException(
                 "It is not permitted to remove a candidate from a finished assignment!"
