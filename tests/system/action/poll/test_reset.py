@@ -1,3 +1,5 @@
+import pytest
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -23,6 +25,7 @@ class PollResetActionTest(BaseActionTestCase):
             "vote/3": {"option_id": 2, "meeting_id": 1},
         }
 
+    @pytest.mark.skip()
     def test_reset_correct(self) -> None:
         self.set_models(
             {
@@ -88,6 +91,7 @@ class PollResetActionTest(BaseActionTestCase):
     def test_reset_no_permissions(self) -> None:
         self.base_permission_test(self.permission_test_model, "poll.reset", {"id": 1})
 
+    @pytest.mark.skip()
     def test_reset_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
@@ -96,6 +100,7 @@ class PollResetActionTest(BaseActionTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
+    @pytest.mark.skip()
     def test_reset_not_allowed_to_vote_again(self) -> None:
         self.set_models(
             {

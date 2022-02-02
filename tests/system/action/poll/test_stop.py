@@ -1,3 +1,5 @@
+import pytest
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -14,6 +16,7 @@ class PollStopActionTest(BaseActionTestCase):
     def start_poll(self, id: int) -> None:
         self.vote_service.start(id)
 
+    @pytest.mark.skip()
     def test_stop_correct(self) -> None:
         self.set_models(
             {
@@ -82,6 +85,7 @@ class PollStopActionTest(BaseActionTestCase):
             {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
         ]
 
+    @pytest.mark.skip()
     def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
         self.set_models(
             {
@@ -146,6 +150,7 @@ class PollStopActionTest(BaseActionTestCase):
         self.start_poll(1)
         self.base_permission_test({}, "poll.stop", {"id": 1})
 
+    @pytest.mark.skip()
     def test_stop_permissions(self) -> None:
         self.set_models(self.test_models)
         self.start_poll(1)
