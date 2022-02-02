@@ -1,6 +1,6 @@
 ---
 title: '{{ env.OS_ISSUE_TITLE }}'
-assignees: ostcar, normanjaeckel, GabrielInTheWorld
+assignees: ostcar, GabrielInTheWorld
 labels: documentation
 ---
 
