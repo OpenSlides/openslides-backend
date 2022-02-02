@@ -57,7 +57,8 @@ class CheckForArchivedMeetingMixin(Action):
                 for meeting_id, value in meetings.items()
                 if not value.get("is_active_in_organization_id")
             ]
-            if archived_meetings:
+
+            if archived_meetings and not self.skip_archived_meeting_check:
                 raise ActionException(
                     f'Meetings {", ".join(archived_meetings)} cannot be changed, because they are archived.'
                 )
