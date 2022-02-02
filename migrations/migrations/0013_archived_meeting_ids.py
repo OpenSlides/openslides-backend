@@ -64,27 +64,27 @@ class Migration(BaseMigration):
             if "is_active_in_organization_id" in event.data:
                 data, _ = self.new_accessor.get_model_ignore_deleted(event.fqid)
                 if data.get("is_active_in_organization_id") == ONE_ORGANIZATION:
-                    event2 = UpdateEvent(
+                    update_event = UpdateEvent(
                         event.fqid, {"is_archived_in_organization_id": ONE_ORGANIZATION}
                     )
                     if id_ in self.meeting_ids_to_remove:
                         self.meeting_ids_to_remove.remove(id_)
                     else:
                         self.meeting_ids_to_add.add(id_)
-                    return [event, event2]
+                    return [event, update_event]
         elif isinstance(event, UpdateEvent):
             if (
                 "is_active_in_organization_id" in event.data
                 and event.data["is_active_in_organization_id"] == ONE_ORGANIZATION
             ):
-                event3 = DeleteFieldsEvent(
+                delete_field_event = DeleteFieldsEvent(
                     event.fqid, ["is_archived_in_organization_id"]
                 )
                 if id_ in self.meeting_ids_to_add:
                     self.meeting_ids_to_add.remove(id_)
                 else:
                     self.meeting_ids_to_remove.add(id_)
-                return [event, event3]
+                return [event, delete_field_event]
             elif (
                 "is_active_in_organization_id" in event.data
                 and event.data["is_active_in_organization_id"] != ONE_ORGANIZATION
