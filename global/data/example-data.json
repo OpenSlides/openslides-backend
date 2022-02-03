@@ -516,7 +516,7 @@
             "meeting_ids": [
                 1
             ],
-            "template_meeting_id": null,
+            "template_meeting_ids": [],
             "default_meeting_id": 1,
             "user_ids": [
                 1,

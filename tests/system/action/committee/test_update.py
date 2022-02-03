@@ -84,7 +84,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
                     CommitteeManagementLevel.CAN_MANAGE: [20, 21]
                 },
                 "forward_to_committee_ids": [self.COMMITTEE_ID_FORWARD],
-                "template_meeting_id": 200,
+                "template_meeting_ids": [200],
                 "default_meeting_id": 201,
             },
         )
@@ -97,7 +97,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         self.assertEqual(
             model.get("forward_to_committee_ids"), [self.COMMITTEE_ID_FORWARD]
         )
-        self.assertEqual(model.get("template_meeting_id"), 200)
+        self.assertEqual(model.get("template_meeting_ids"), [200])
         self.assertEqual(model.get("default_meeting_id"), 201)
 
     def test_update_receive_forwardings(self) -> None:
@@ -464,12 +464,12 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.update",
             {
                 "id": self.COMMITTEE_ID,
-                "template_meeting_id": 299,
+                "template_meeting_ids": [299],
             },
         )
         self.assert_status_code(response, 400)
         model = self.get_model(self.COMMITTEE_FQID)
-        self.assertIsNone(model.get("template_meeting_id"))
+        self.assertIsNone(model.get("template_meeting_ids"))
         self.assertIn(
             "Model 'meeting/299' does not exist.",
             response.json["message"],
@@ -484,12 +484,12 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
             "committee.update",
             {
                 "id": self.COMMITTEE_ID,
-                "template_meeting_id": 299,
+                "template_meeting_ids": [299],
             },
         )
         self.assert_status_code(response, 400)
         model = self.get_model(self.COMMITTEE_FQID)
-        self.assertIsNone(model.get("template_meeting_id"))
+        self.assertIsNone(model.get("template_meeting_ids"))
         self.assertIn(
             f"Meeting 299 does not belong to committee {self.COMMITTEE_ID}",
             response.json["message"],
