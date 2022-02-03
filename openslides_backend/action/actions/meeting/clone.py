@@ -291,23 +291,7 @@ class MeetingClone(MeetingImport):
         )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        meeting = self.datastore.fetch_model(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
-            ["committee_id"],
-        )
-        committee_id = meeting["committee_id"]
-        if not has_committee_management_level(
-            self.datastore,
-            self.user_id,
-            CommitteeManagementLevel.CAN_MANAGE,
-            committee_id,
-        ):
-            raise PermissionDenied(
-                f"Missing {CommitteeManagementLevel.CAN_MANAGE.get_verbose_type()}: {CommitteeManagementLevel.CAN_MANAGE} for committee {committee_id}"
-            )
-        if (
-            payload_committee_id := instance.get("committee_id")
-        ) and payload_committee_id != committee_id:
+        if payload_committee_id := instance.get("committee_id"):
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,

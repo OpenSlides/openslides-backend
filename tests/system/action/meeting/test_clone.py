@@ -519,28 +519,6 @@ class MeetingClone(BaseActionTestCase):
             "meeting/2", {"is_active_in_organization_id": 1, "committee_id": 2}
         )
 
-    def test_permissions_missing_meeting_committee_permission(self) -> None:
-        self.set_models(self.test_models)
-        self.set_models(
-            {
-                "committee/2": {"organization_id": 1},
-                "user/1": {
-                    "committee_$_management_level": [
-                        CommitteeManagementLevel.CAN_MANAGE
-                    ],
-                    "committee_$can_manage_management_level": [2],
-                    "committee_ids": [2],
-                    "organization_management_level": None,
-                },
-            }
-        )
-        response = self.request("meeting.clone", {"meeting_id": 1, "committee_id": 2})
-        self.assert_status_code(response, 403)
-        self.assertIn(
-            "Missing CommitteeManagementLevel: can_manage for committee 1",
-            response.json["message"],
-        )
-
     def test_permissions_missing_payload_committee_permission(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
