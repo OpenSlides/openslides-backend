@@ -120,6 +120,10 @@ organization:
     type: relation-list
     restriction_mode: B
     to: meeting/is_active_in_organization_id
+  archived_meeting_ids:
+    type: relation-list
+    restriction_mode: B
+    to: meeting/is_archived_in_organization_id
   resource_ids:
     type: relation-list
     restriction_mode: A
@@ -701,6 +705,12 @@ meeting:
   is_active_in_organization_id:
     type: relation
     to: organization/active_meeting_ids
+    restriction_mode: A
+    description: Backrelation and boolean flag at once
+    required: false
+  is_archived_in_organization_id:
+    type: relation
+    to: organization/archived_meeting_ids
     restriction_mode: A
     description: Backrelation and boolean flag at once
     required: false

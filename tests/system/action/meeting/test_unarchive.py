@@ -21,8 +21,13 @@ class MeetingRevertArchivingTest(BaseActionTestCase):
     def test_unarchive_simple(self) -> None:
         response = self.request("meeting.unarchive", {"id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/1", {"is_active_in_organization_id": 1})
-        self.assert_model_exists("organization/1", {"active_meeting_ids": [1]})
+        self.assert_model_exists(
+            "meeting/1",
+            {"is_active_in_organization_id": 1, "is_archived_in_organization_id": None},
+        )
+        self.assert_model_exists(
+            "organization/1", {"active_meeting_ids": [1], "archived_meeting_ids": None}
+        )
 
     def test_unarchive_2_meetings(self) -> None:
         self.set_models(

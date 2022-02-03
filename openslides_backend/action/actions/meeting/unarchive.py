@@ -42,4 +42,5 @@ class MeetingUnarchive(UpdateAction):
                 f"You cannot unarchive the archived meeting, because you reached your limit of {limit_of_meetings} active meetings."
             )
         instance["is_active_in_organization_id"] = organization_id
+        instance["is_archived_in_organization_id"] = None
         return instance

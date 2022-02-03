@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "e9456c0f60d896cb3f14f5df9301bff7"
+MODELS_YML_CHECKSUM = "dcb19806dab8b216d67236ff369f6cd4"
 
 
 class Organization(Model):
@@ -39,6 +39,9 @@ class Organization(Model):
     )
     active_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "is_active_in_organization_id"}
+    )
+    archived_meeting_ids = fields.RelationListField(
+        to={Collection("meeting"): "is_archived_in_organization_id"}
     )
     resource_ids = fields.RelationListField(
         to={Collection("resource"): "organization_id"}
@@ -342,6 +345,10 @@ class Meeting(Model):
     name = fields.CharField(default="OpenSlides", constraints={"maxLength": 100})
     is_active_in_organization_id = fields.RelationField(
         to={Collection("organization"): "active_meeting_ids"},
+        constraints={"description": "Backrelation and boolean flag at once"},
+    )
+    is_archived_in_organization_id = fields.RelationField(
+        to={Collection("organization"): "archived_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
     )
     description = fields.CharField(

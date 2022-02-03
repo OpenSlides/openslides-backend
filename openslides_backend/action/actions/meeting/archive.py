@@ -24,6 +24,7 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["is_active_in_organization_id"] = None
+        instance["is_archived_in_organization_id"] = 1
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:

@@ -17,6 +17,7 @@
             "active_meeting_ids": [
                 1
             ],
+	    "archived_meeting_ids": [],
             "limit_of_meetings": 0,
             "limit_of_users": 0,
             "resource_ids": [
@@ -535,6 +536,7 @@
         "1": {
             "id": 1,
             "is_active_in_organization_id": 1,
+	    "is_archived_in_organization_id": null,
             "url_name": "os3_test",
             "template_for_committee_id": null,
             "enable_anonymous": false,
