@@ -638,8 +638,8 @@ committee:
     to: meeting/committee_id
     on_delete: PROTECT
     restriction_mode: A
-  template_meeting_id:
-    type: relation
+  template_meeting_ids:
+    type: relation-list
     to: meeting/template_for_committee_id
     restriction_mode: A
     required: false
@@ -753,7 +753,7 @@ meeting:
     restriction_mode: B
   template_for_committee_id:
     type: relation
-    to: committee/template_meeting_id
+    to: committee/template_meeting_ids
     restriction_mode: B
     required: false
   enable_anonymous:

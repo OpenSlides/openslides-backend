@@ -1,5 +1,5 @@
 {
-    "_migration_index": 14,
+    "_migration_index": 15,
     "organization": {
         "1": {
             "id": 1,
@@ -233,7 +233,7 @@
             "meeting_ids": [
                 1
             ],
-            "template_meeting_id": null,
+            "template_meeting_ids": [],
             "default_meeting_id": 1,
             "user_ids": [],
             "user_$_management_level": [],

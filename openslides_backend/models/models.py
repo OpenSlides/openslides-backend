@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "dcb19806dab8b216d67236ff369f6cd4"
+MODELS_YML_CHECKSUM = "0b7af1bcab23b33adf9a5f1795ebe4b0"
 
 
 class Organization(Model):
@@ -305,7 +305,7 @@ class Committee(Model):
     meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
-    template_meeting_id = fields.RelationField(
+    template_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "template_for_committee_id"}
     )
     default_meeting_id = fields.RelationField(
@@ -364,7 +364,7 @@ class Meeting(Model):
     enable_chat = fields.BooleanField()
     url_name = fields.CharField(constraints={"description": "For unique urls."})
     template_for_committee_id = fields.RelationField(
-        to={Collection("committee"): "template_meeting_id"}
+        to={Collection("committee"): "template_meeting_ids"}
     )
     enable_anonymous = fields.BooleanField(default=False)
     custom_translations = fields.JSONField()
