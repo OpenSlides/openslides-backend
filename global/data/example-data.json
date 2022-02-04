@@ -17,9 +17,6 @@
             ],
             "limit_of_meetings": 0,
             "limit_of_users": 0,
-            "resource_ids": [
-                1
-            ],
             "organization_tag_ids": [
                 1
             ],
@@ -280,15 +277,6 @@
             "meeting_ids": [
                 1
             ]
-        }
-    },
-    "resource": {
-        "1": {
-            "id": 1,
-            "token": "web_header",
-            "filesize": 1462,
-            "mimetype": "image/png",
-            "organization_id": 1
         }
     },
     "theme": {

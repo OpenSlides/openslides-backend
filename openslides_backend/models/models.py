@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "b10a1ebbea21786811cf77104fe0e43b"
+MODELS_YML_CHECKSUM = "1862b0ae208b86e232ee8d1b415c378c"
 
 
 class Organization(Model):
@@ -45,9 +45,6 @@ class Organization(Model):
     )
     template_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "template_for_organization_id"}
-    )
-    resource_ids = fields.RelationListField(
-        to={Collection("resource"): "organization_id"}
     )
     organization_tag_ids = fields.RelationListField(
         to={Collection("organization_tag"): "organization_id"}
@@ -208,19 +205,6 @@ class User(Model):
         constraints={
             "description": "Calculated. All ids from group_$_ids as integers."
         },
-    )
-
-
-class Resource(Model):
-    collection = Collection("resource")
-    verbose_name = "resource"
-
-    id = fields.IntegerField()
-    token = fields.CharField()
-    filesize = fields.IntegerField()
-    mimetype = fields.CharField()
-    organization_id = fields.OrganizationField(
-        to={Collection("organization"): "resource_ids"}, required=True
     )
 
 

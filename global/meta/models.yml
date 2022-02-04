@@ -129,10 +129,6 @@ organization:
     to: meeting/template_for_organization_id
     restriction_mode: A
     required: false
-  resource_ids:
-    type: relation-list
-    restriction_mode: A
-    to: resource/organization_id
   organization_tag_ids:
     type: relation-list
     restriction_mode: B
@@ -425,31 +421,6 @@ user:
     description: Calculated. All ids from group_$_ids as integers.
     read_only: true
     restriction_mode: E
-
-# New: Resource
-# Resources are organsation wide "mediafiles", like logos for the organisatio or
-# organization-wide fonts. Therefore, no permission checks are done and the user
-# must not be logged in to retrieve files. A resource has a token, e.g. `web_header`
-# or `pdf_font_italic`, so the client knowns, where to put the resource.
-resource:
-  id:
-    type: number
-    restriction_mode: A
-  token:
-    type: string
-    restriction_mode: A
-  filesize:
-    type: number
-    restriction_mode: A
-  mimetype:
-    type: string
-    restriction_mode: A
-
-  organization_id:
-    type: relation
-    to: organization/resource_ids
-    restriction_mode: A
-    required: true
 
 organization_tag:
   id:
