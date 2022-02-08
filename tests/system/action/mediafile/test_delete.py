@@ -14,7 +14,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
             "mediafile/222": {
                 "used_as_logo_$place_in_meeting_id": 111,
                 "used_as_logo_$_in_meeting_id": ["place"],
-                "meeting_id": 1,
+                "owner_id": "meeting/1",
             },
         }
 
@@ -22,7 +22,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/34": {"is_active_in_organization_id": 1},
-                "mediafile/111": {"title": "title_srtgb123", "meeting_id": 34},
+                "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/34"},
             }
         )
         response = self.request("mediafile.delete", {"id": 111})
@@ -35,7 +35,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         self.set_models(
             {
                 "meeting/34": {"is_active_in_organization_id": 1},
-                "mediafile/112": {"title": "title_srtgb123", "meeting_id": 34},
+                "mediafile/112": {"title": "title_srtgb123", "owner_id": "meeting/34"},
             }
         )
         response = self.request("mediafile.delete", {"id": 111})
@@ -51,13 +51,13 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "is_directory": True,
                     "child_ids": [110],
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": False,
                     "parent_id": 112,
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
             }
         )
@@ -74,21 +74,21 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "is_directory": True,
                     "child_ids": [110],
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": True,
                     "child_ids": [113],
                     "parent_id": 112,
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
                 "mediafile/113": {
                     "title": "title_del2",
                     "is_directory": False,
                     "child_ids": [],
                     "parent_id": 110,
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
             }
         )
@@ -106,21 +106,21 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "is_directory": True,
                     "child_ids": [110, 113],
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": False,
                     "child_ids": [],
                     "parent_id": 112,
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
                 "mediafile/113": {
                     "title": "title_del2",
                     "is_directory": False,
                     "child_ids": [],
                     "parent_id": 112,
-                    "meeting_id": 34,
+                    "owner_id": "meeting/34",
                 },
             }
         )
@@ -141,7 +141,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                 "mediafile/222": {
                     "used_as_logo_$place_in_meeting_id": 111,
                     "used_as_logo_$_in_meeting_id": ["place"],
-                    "meeting_id": 111,
+                    "owner_id": "meeting/111",
                 },
             }
         )

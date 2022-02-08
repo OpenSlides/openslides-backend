@@ -30,7 +30,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [7],
             },
@@ -55,13 +55,13 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "name": "meeting110",
                     "is_active_in_organization_id": 1,
                 },
-                "mediafile/110": {"title": "title_srtgb199", "meeting_id": 110},
+                "mediafile/110": {"title": "title_srtgb199", "owner_id": "meeting/110"},
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [7],
                 "parent_id": 110,
@@ -91,14 +91,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "title": "title_srtgb199",
                     "inherited_access_group_ids": [8],
                     "is_public": False,
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [7],
                 "parent_id": 110,
@@ -119,7 +119,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "access_group_ids": [],
                     "inherited_access_group_ids": [],
                     "is_public": True,
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
                 "meeting/110": {
                     "name": "meeting110",
@@ -130,7 +130,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [],
                 "parent_id": 110,
@@ -160,14 +160,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "child_ids": [111],
                     "inherited_access_group_ids": [2, 4],
                     "access_group_ids": [2, 4],
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [],
                 "parent_id": 110,
@@ -197,14 +197,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "child_ids": [111],
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [3, 6],
                 "parent_id": 110,
@@ -235,14 +235,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "child_ids": [111],
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [2, 3],
                 "parent_id": 110,
@@ -274,14 +274,14 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [1, 2],
                     "is_public": False,
                     "access_group_ids": [1, 2],
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [3],
                 "parent_id": 110,
@@ -302,7 +302,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         response = self.request(
             "mediafile.create_directory",
             {
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "title": "title_UoOFrRU3INADQbay",
                 "parent_id": None,
             },
@@ -320,7 +320,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             self.permission_test_model,
             "mediafile.create_directory",
             {
-                "meeting_id": 1,
+                "owner_id": "meeting/1",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [7],
             },
@@ -331,7 +331,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             self.permission_test_model,
             "mediafile.create_directory",
             {
-                "meeting_id": 1,
+                "owner_id": "meeting/1",
                 "title": "title_Xcdfgee",
                 "access_group_ids": [7],
             },

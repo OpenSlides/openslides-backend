@@ -7,20 +7,22 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .permission_mixin import MediafilePermissionMixin
 
 
 @register_action("mediafile.create_directory")
-class MediafileUpdate(CreateAction):
+class MediafileCreateDirectory(MediafilePermissionMixin, CreateAction):
     """
     Action to create directory a mediafile.
     """
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
-        required_properties=["meeting_id", "title"],
+        required_properties=["owner_id", "title"],
         optional_properties=["access_group_ids", "parent_id"],
     )
     permission = Permissions.Mediafile.CAN_MANAGE
+    skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

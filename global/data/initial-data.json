@@ -14,7 +14,8 @@
             "users_email_sender": "OpenSlides",
             "users_email_subject": "OpenSlides access data",
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
-            "url": "https://example.com"
+            "url": "https://example.com",
+	    "mediafile_ids": []
         }
     },
     "user": {

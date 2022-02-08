@@ -21,6 +21,7 @@
                 1
             ],
             "theme_id": 1,
+	    "mediafile_ids": [],
             "theme_ids": [
                 1,
                 2,
@@ -2413,7 +2414,7 @@
                 3
             ],
             "list_of_speakers_id": 16,
-            "meeting_id": 1
+            "owner_id": "meeting/1"
         }
     },
     "projector": {

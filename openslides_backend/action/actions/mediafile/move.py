@@ -13,11 +13,15 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .calculate_mixins import MediafileCalculatedFieldsMixin
+from .permission_mixin import MediafilePermissionMixin
 
 
 @register_action("mediafile.move")
 class MediafileMoveAction(
-    UpdateAction, SingularActionMixin, MediafileCalculatedFieldsMixin
+    MediafilePermissionMixin,
+    UpdateAction,
+    SingularActionMixin,
+    MediafileCalculatedFieldsMixin,
 ):
     """
     Action to move mediafiles.
@@ -27,7 +31,7 @@ class MediafileMoveAction(
     schema = DefaultSchema(Mediafile()).get_default_schema(
         title="Mediafile new parent schema",
         description="An object containing an array of mediafile ids and the new parent id the items should be moved to.",
-        required_properties=["parent_id", "meeting_id"],
+        required_properties=["parent_id", "owner_id"],
         additional_required_fields={
             "ids": {
                 "description": "An array of agenda item ids where the items should be assigned to the new parent id.",
@@ -36,6 +40,7 @@ class MediafileMoveAction(
         },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
+    skip_archived_meeting_check = True
 
     def check_is_directory(self, id_: int) -> None:
         item = self.datastore.get(
@@ -51,14 +56,14 @@ class MediafileMoveAction(
         yield from self.prepare_move_data(
             parent_id=instance["parent_id"],
             ids=instance["ids"],
-            meeting_id=instance["meeting_id"],
+            owner_id=instance["owner_id"],
         )
 
     def prepare_move_data(
-        self, parent_id: Optional[int], ids: List[int], meeting_id: int
+        self, parent_id: Optional[int], ids: List[int], owner_id: str
     ) -> ActionData:
         get_many_request = GetManyRequest(
-            self.model.collection, ids, ["meeting_id", "access_group_ids"]
+            self.model.collection, ids, ["owner_id", "access_group_ids"]
         )
         gm_result = self.datastore.get_many([get_many_request])
         db_instances = gm_result.get(self.model.collection, {})
@@ -83,10 +88,7 @@ class MediafileMoveAction(
                         f"Moving item {id_} to one of its children is not possible."
                     )
         for id_ in ids:
-            if (
-                id_ not in db_instances
-                or db_instances[id_].get("meeting_id") != meeting_id
-            ):
+            if id_ not in db_instances or db_instances[id_].get("owner_id") != owner_id:
                 raise ActionException(f"Id {id_} not in db_instances.")
 
             instance: Dict[str, Any] = {"id": id_, "parent_id": parent_id}

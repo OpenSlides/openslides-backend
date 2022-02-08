@@ -7,7 +7,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_model = {
             "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-            "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
+            "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
         }
 
     def test_update_correct(self) -> None:
@@ -15,7 +15,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             {
                 "meeting/1": {"is_active_in_organization_id": 1},
                 "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
-                "mediafile/111": {"title": "title_srtgb123", "meeting_id": 1},
+                "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
             }
         )
         response = self.request(
@@ -40,12 +40,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "is_public": False,
                     "inherited_access_group_ids": [7],
                     "access_group_ids": [7],
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -68,12 +68,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "is_directory": True,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -100,12 +100,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "is_directory": True,
                     "inherited_access_group_ids": [8],
                     "is_public": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -131,12 +131,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "access_group_ids": [],
                     "inherited_access_group_ids": [],
                     "is_public": True,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -163,12 +163,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [2, 4],
                     "access_group_ids": [2, 4],
                     "is_public": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -195,12 +195,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
                     "is_public": True,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -232,12 +232,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
                     "is_public": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -269,12 +269,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
                     "is_public": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -299,12 +299,12 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
                     "is_public": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -339,19 +339,19 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "is_directory": True,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112],
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
                     "access_group_ids": [7],
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -379,28 +379,28 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "is_directory": True,
-                    "meeting_id": 1,
                     "is_public": True,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112, 113],
                     "is_directory": True,
-                    "meeting_id": 1,
                     "is_public": True,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
-                    "meeting_id": 1,
                     "is_public": True,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/113": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
-                    "meeting_id": 1,
                     "is_public": True,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -448,26 +448,26 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "title": "title_srtgb199",
                     "child_ids": [111],
                     "is_directory": True,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112],
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
                     "access_group_ids": [7],
                     "child_ids": [113],
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "mediafile/113": {
                     "title": "title_srtgb123",
                     "parent_id": 112,
                     "access_group_ids": [7],
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )
@@ -497,7 +497,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "filename": "testfile.txt",
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
             }
         )

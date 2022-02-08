@@ -8,10 +8,13 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .calculate_mixins import MediafileCalculatedFieldsMixin
+from .permission_mixin import MediafilePermissionMixin
 
 
 @register_action("mediafile.update")
-class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
+class MediafileUpdate(
+    MediafilePermissionMixin, UpdateAction, MediafileCalculatedFieldsMixin
+):
     """
     Action to update a mediafile.
     """
@@ -21,6 +24,7 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
         optional_properties=["title", "access_group_ids"]
     )
     permission = Permissions.Mediafile.CAN_MANAGE
+    skip_archived_meeting_check = True
 
     def get_updated_instances(self, instances: ActionData) -> ActionData:
         """
