@@ -2402,6 +2402,7 @@
         "1": {
             "id": 1,
             "title": "logos",
+            "token": null,
             "is_directory": true,
 	    "is_public": false,
             "create_timestamp": 1584513763,
