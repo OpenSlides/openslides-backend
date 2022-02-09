@@ -8,6 +8,9 @@ from ....models.models import Meeting
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.patterns import Collection, FullQualifiedId
+from ....services.media.interface import MediaService
+from ....shared.filters import FilterOperator
+from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
@@ -40,24 +43,53 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         else:
             export[str(collection)] = {}
 
+    # handle mediafiles
+    res = datastore.filter(
+        Collection("mediafile"),
+        FilterOperator("owner_id", "=", "meeting" + KEYSEPARATOR + str(meeting_id)),
+    )
+    export["mediafile"] = add_empty_fields(
+        remove_meta_fields(list(res.values())), "mediafile"
+    )
+
+    # handle meeting
+    meeting = datastore.get(FullQualifiedId(Collection("meeting"), meeting_id))
+    export["meeting"] = add_empty_fields(remove_meta_fields([meeting]), "meeting")
     return export
 
 
-def get_relation_fields() -> Iterable[RelationListField]:
-    for field in Meeting().get_relation_fields():
-        if (
-            isinstance(field, RelationListField)
-            and field.on_delete == OnDelete.CASCADE
-            and field.get_own_field_name().endswith("_ids")
-        ):
-            yield field
-
-
-def transfer_keys(res: Dict[int, Any]) -> Dict[str, Any]:
-    new_dict = {}
-    for key in res:
-        new_dict[str(key)] = res[key]
-    return new_dict
+def get_collections_with_meeting_id() -> List[str]:
+    collections = [
+        "group",
+        "personal_note",
+        "tag",
+        "agenda_item",
+        "list_of_speakers",
+        "speaker",
+        "topic",
+        "motion",
+        "motion_submitter",
+        "motion_comment",
+        "motion_comment_section",
+        "motion_category",
+        "motion_block",
+        "motion_change_recommendation",
+        "motion_state",
+        "motion_workflow",
+        "motion_statute_paragraph",
+        "poll",
+        "option",
+        "vote",
+        "assignment",
+        "assignment_candidate",
+        "projector",
+        "projection",
+        "projector_message",
+        "projector_countdown",
+        "chat_group",
+        "chat_message",
+    ]
+    return collections
 
 
 def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
@@ -81,3 +113,19 @@ def add_empty_fields(res: Dict[str, Any], collection: Collection) -> Dict[str, A
             if field not in res[key]:
                 res[key][field] = None
     return res
+
+def get_relation_fields() -> Iterable[RelationListField]:
+    for field in Meeting().get_relation_fields():
+        if (
+            isinstance(field, RelationListField)
+            and field.on_delete == OnDelete.CASCADE
+            and field.get_own_field_name().endswith("_ids")
+        ):
+            yield field
+
+
+def transfer_keys(res: Dict[int, Any]) -> Dict[str, Any]:
+    new_dict = {}
+    for key in res:
+        new_dict[str(key)] = res[key]
+    return new_dict

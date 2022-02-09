@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -39,10 +39,9 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
         """
         mediafile = self.datastore.get(
             FullQualifiedId(Collection("mediafile"), instance["mediafile_id"]),
-            ["is_directory", "mimetype", "meeting_id"],
+            ["is_directory", "mimetype", "owner_id"],
         )
-        if mediafile.get("meeting_id") != instance["id"]:
-            raise ActionException("Mediafile has to belong to this meeting.")
+        self.check_owner(mediafile, instance)
         if mediafile.get("is_directory"):
             raise ActionException("Cannot set a directory.")
         if mediafile.get("mimetype") not in self.allowed_mimetypes:
@@ -52,3 +51,11 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
 
         instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
         return instance
+
+    def check_owner(self, mediafile: Dict[str, Any], instance: Dict[str, Any]) -> None:
+        owner_id = mediafile["owner_id"]
+        collection, id_ = owner_id.split(KEYSEPARATOR)
+        if collection != "meeting":
+            raise ActionException("Mediafile is not a meeting mediafile.")
+        if int(id_) != instance["id"]:
+            raise ActionException("Mediafile does not belong to the meeting.")

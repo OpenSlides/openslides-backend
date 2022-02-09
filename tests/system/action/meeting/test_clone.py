@@ -234,6 +234,7 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["mediafile_ids"] = [1]
         self.test_models["group/1"]["user_ids"] = [1]
+        self.set_models(self.test_models)
         self.set_models(
             {
                 "user/1": {
@@ -242,7 +243,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_ids": [1],
                 },
                 "mediafile/1": {
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "attachment_ids": [],
                     "used_as_font_$_in_meeting_id": [],
                     "used_as_logo_$_in_meeting_id": [],
@@ -251,7 +252,6 @@ class MeetingClone(BaseActionTestCase):
                 },
             }
         )
-        self.set_models(self.test_models)
         self.media.duplicate_mediafile = MagicMock()
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
@@ -271,7 +271,7 @@ class MeetingClone(BaseActionTestCase):
         )
         self.set_models(self.test_models)
         response = self.request(
-            "mediafile.create_directory", {"meeting_id": 1, "title": "bla"}
+            "mediafile.create_directory", {"owner_id": "meeting/1", "title": "bla"}
         )
         self.assert_status_code(response, 200)
 

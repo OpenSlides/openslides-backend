@@ -10,7 +10,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             "mediafile/17": {
                 "is_directory": False,
                 "mimetype": "image/png",
-                "meeting_id": 1,
+                "owner_id": "meeting/1",
             },
         }
 
@@ -24,7 +24,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "image/png",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                 },
             }
         )
@@ -45,7 +45,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                 "mediafile/17": {
                     "is_directory": True,
                     "mimetype": "image/png",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                 },
             }
         )
@@ -65,7 +65,7 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
                 "mediafile/17": {
                     "is_directory": False,
                     "mimetype": "text/plain",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                 },
             }
         )
