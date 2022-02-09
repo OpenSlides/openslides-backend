@@ -1,6 +1,8 @@
 from typing import Any, Dict
 
-from ....shared.exceptions import ActionException
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
 
@@ -19,10 +21,23 @@ class MediafilePermissionMixin(Action):
             )
             owner_id = mediafile["owner_id"]
         collection, id_ = owner_id.split(KEYSEPARATOR)
+
+        # handle organization permissions
         if collection == "organization":
+            self.assert_not_anonymous()
+            if not has_organization_management_level(
+                self.datastore,
+                self.user_id,
+                OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+            ):
+                raise MissingPermission(
+                    OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
+                )
             return
 
-        # check archived.
+        assert collection == "meeting"
+
+        # check for archived meeting
         fqid = FullQualifiedId(Collection("meeting"), id_)
         meeting = self.datastore.fetch_model(
             fqid,
@@ -32,6 +47,7 @@ class MediafilePermissionMixin(Action):
             raise ActionException(
                 f'Meeting {meeting.get("name", "")}/{id_} cannot be changed, because it is archived.'
             )
+
         super().check_permissions(instance)
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
