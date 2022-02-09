@@ -7,7 +7,11 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_simple(self) -> None:
         self.create_model(
             "mediafile/1",
-            {"filename": "the filename", "is_directory": False, "meeting_id": 1},
+            {
+                "filename": "the filename",
+                "is_directory": False,
+                "owner_id": "meeting/1",
+            },
         )
         self.create_model("meeting/1")
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
@@ -29,7 +33,11 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_request_without_token(self) -> None:
         self.create_model(
             "mediafile/1",
-            {"filename": "the filename", "is_directory": False, "meeting_id": 1},
+            {
+                "filename": "the filename",
+                "is_directory": False,
+                "owner_id": "meeting/1",
+            },
         )
         self.create_model("meeting/1")
         self.client.headers.clear()
@@ -53,7 +61,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "meeting/1": {"admin_group_id": 2},
                 "group/2": {"user_ids": [1]},
@@ -69,7 +77,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "used_as_logo_$_in_meeting_id": ["test"],
                     "used_as_logo_$test_in_meeting_id": 1,
                 },
@@ -86,7 +94,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "used_as_font_$_in_meeting_id": ["test"],
                     "used_as_font_$test_in_meeting_id": 1,
                 },
@@ -103,7 +111,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "projection_ids": [1],
                 },
                 "meeting/1": {"default_group_id": 2},
@@ -125,7 +133,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "is_public": True,
                 },
                 "meeting/1": {"default_group_id": 2},
@@ -145,7 +153,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "inherited_access_group_ids": [2],
                 },
                 "meeting/1": {"default_group_id": 2},

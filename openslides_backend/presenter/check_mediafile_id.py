@@ -11,7 +11,7 @@ from ..permissions.permission_helper import (
 )
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import PermissionDenied
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -53,7 +53,7 @@ class CheckMediafileId(BasePresenter):
         mediafile = self.datastore.get(
             FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
             [
-                "meeting_id",
+                "owner_id",
                 "used_as_logo_$_in_meeting_id",
                 "used_as_font_$_in_meeting_id",
                 "projection_ids",
@@ -61,7 +61,15 @@ class CheckMediafileId(BasePresenter):
                 "inherited_access_group_ids",
             ],
         )
-        meeting_id = mediafile.get("meeting_id")
+
+        # Try to get the meeting id.
+        meeting_id = None
+        if mediafile.get("owner_id"):
+            if mediafile["owner_id"].split(KEYSEPARATOR)[0] == "organization":
+                # Add the organization permissions here
+                return
+            meeting_id = int(mediafile["owner_id"].split(KEYSEPARATOR)[1])
+
         if not meeting_id:
             raise PermissionDenied("You are not allowed to see this mediafile.")
 
