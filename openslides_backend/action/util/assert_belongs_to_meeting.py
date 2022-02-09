@@ -26,6 +26,8 @@ def assert_belongs_to_meeting(
             )
             if meeting_id not in instance.get("meeting_ids", []):
                 errors.add(str(fqid))
+        elif fqid.collection.collection == "mediafile":
+            pass
         else:
             instance = datastore.get(
                 fqid,
