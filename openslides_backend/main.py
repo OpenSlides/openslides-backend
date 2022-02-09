@@ -9,9 +9,11 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
-from .shared.env import is_dev_mode, is_truthy
+from .shared.env import is_dev_mode
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
+from .shared.otel import init as otel_init
+from .shared.otel import instrument_requests as otel_instrument_requests
 
 register_services()
 
@@ -23,18 +25,7 @@ DEFAULT_ADDRESSES = {
     "PresenterView": "0.0.0.0:9003",
 }
 
-if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
-    from opentelemetry import trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.instrumentation.requests import RequestsInstrumentor
-    from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
-        OTLPSpanExporter,
-    )
-
-    RequestsInstrumentor().instrument()
-
+otel_instrument_requests()
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
@@ -77,24 +68,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
-        if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
-            collector_host = os.environ.get("OPENTELEMETRY_COLLECTOR_HOST", "collector")
-            collector_port = os.environ.get("OPENTELEMETRY_COLLECTOR_PORT", "4317")
-            print("otel exporter endpoint: " + f"{collector_host}:{collector_port}")
-            span_exporter = OTLPSpanExporter(
-                endpoint=f"http://{collector_host}:{collector_port}",
-                insecure=True
-                # optional
-                # credentials=ChannelCredentials(credentials),
-                # headers=(("metadata", "metadata")),
-            )
-            tracer_provider = TracerProvider(
-                resource=Resource.create({SERVICE_NAME: "backend"})
-            )
-            trace.set_tracer_provider(tracer_provider)
-            span_processor = BatchSpanProcessor(span_exporter)
-            tracer_provider.add_span_processor(span_processor)
-
+        otel_init("backend")
         return create_wsgi_application(logging_module, self.view_name)
 
 
