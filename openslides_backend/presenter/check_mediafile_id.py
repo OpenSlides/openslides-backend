@@ -10,7 +10,7 @@ from ..permissions.permission_helper import (
     is_admin,
 )
 from ..permissions.permissions import Permissions
-from ..shared.exceptions import PermissionDenied
+from ..shared.exceptions import AnonymousNotAllowed, PermissionDenied
 from ..shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
@@ -59,6 +59,7 @@ class CheckMediafileId(BasePresenter):
                 "projection_ids",
                 "is_public",
                 "inherited_access_group_ids",
+                "token",
             ],
         )
 
@@ -66,7 +67,8 @@ class CheckMediafileId(BasePresenter):
         meeting_id = None
         if mediafile.get("owner_id"):
             if mediafile["owner_id"].split(KEYSEPARATOR)[0] == "organization":
-                # Add the organization permissions here
+                if not mediafile.get("token"):
+                    self.assert_not_anonymous()
                 return
             meeting_id = int(mediafile["owner_id"].split(KEYSEPARATOR)[1])
 
@@ -137,3 +139,10 @@ class CheckMediafileId(BasePresenter):
             ):
                 return True
         return False
+
+    def assert_not_anonymous(self) -> None:
+        """
+        Checks if the request user is the Anonymous and raises an error if it is.
+        """
+        if self.services.authentication().is_anonymous(self.user_id):
+            raise AnonymousNotAllowed("check_mediafile_id")

@@ -1,6 +1,6 @@
 from openslides_backend.permissions.permissions import Permissions
 
-from .base import BasePresenterTestCase
+from .base import PRESENTER_URL, BasePresenterTestCase
 
 
 class TestCheckMediafileId(BasePresenterTestCase):
@@ -166,3 +166,60 @@ class TestCheckMediafileId(BasePresenterTestCase):
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
+
+    def test_simple_organization(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "filename": "the filename",
+                    "is_directory": False,
+                    "owner_id": "organization/1",
+                    "token": "web_logo",
+                },
+            }
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": True, "filename": "the filename"})
+
+    def test_anonymous_organization(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "filename": "the filename",
+                    "is_directory": False,
+                    "owner_id": "organization/1",
+                },
+            }
+        )
+
+        response = self.anon_client.post(
+            PRESENTER_URL,
+            json=[{"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}],
+        )
+        status_code = response.status_code
+        self.assertEqual(status_code, 403)
+
+    def test_anonymous_organization_with_token(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "filename": "the filename",
+                    "is_directory": False,
+                    "owner_id": "organization/1",
+                    "token": "web_logo",
+                },
+            }
+        )
+
+        response = self.anon_client.post(
+            PRESENTER_URL,
+            json=[{"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}],
+        )
+        status_code = response.status_code
+        self.assertEqual(status_code, 200)
+        data = response.json[0]
+        self.assertEqual(data, {"ok": True, "filename": "the filename"})
