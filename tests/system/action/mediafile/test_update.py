@@ -533,7 +533,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_model,
             "mediafile.update",
-            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+            {"id": 111, "title": "title_Xcdfgee"},
         )
 
     def test_update_permissions_orga_owner(self) -> None:
@@ -541,6 +541,6 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_model,
             "mediafile.update",
-            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+            {"id": 111, "title": "title_Xcdfgee"},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )

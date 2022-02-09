@@ -2,7 +2,11 @@ from typing import Any, Dict
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
-from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.exceptions import (
+    ActionException,
+    MissingPermission,
+    PermissionException,
+)
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
 
@@ -25,6 +29,10 @@ class MediafilePermissionMixin(Action):
         # handle organization permissions
         if collection == "organization":
             self.assert_not_anonymous()
+            if "access_group_ids" in instance:
+                raise PermissionException(
+                    "access_group_ids is not allowed in organization mediafiles."
+                )
             if not has_organization_management_level(
                 self.datastore,
                 self.user_id,
@@ -36,6 +44,10 @@ class MediafilePermissionMixin(Action):
             return
 
         assert collection == "meeting"
+
+        # check for token, not allowed in meeting.
+        if "token" in instance:
+            raise PermissionException("token is not allowed in meeting mediafiles.")
 
         # check for archived meeting
         fqid = FullQualifiedId(Collection("meeting"), id_)
