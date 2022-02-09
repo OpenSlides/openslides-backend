@@ -15,13 +15,12 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-<<<<<<< HEAD
 from .shared.env import Environment
-=======
 from .shared.env import is_dev_mode, is_truthy
->>>>>>> opentelemetry setup (if OPENTELEMETRY_ENABLED)
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
+from .shared.otel import init as otel_init
+from .shared.otel import instrument_requests as otel_instrument_requests
 
 register_services()
 
@@ -43,6 +42,8 @@ if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
     )
 
     RequestsInstrumentor().instrument()
+
+otel_instrument_requests()
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
@@ -107,6 +108,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             span_processor = BatchSpanProcessor(span_exporter)
             tracer_provider.add_span_processor(span_processor)
 
+        otel_init("backend")
         return create_wsgi_application(logging_module, self.view_name, self.env)
 
 

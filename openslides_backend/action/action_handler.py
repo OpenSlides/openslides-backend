@@ -3,6 +3,8 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 import fastjsonschema
 
+from ..shared.env import is_dev_mode
+from ..shared.otel import make_span
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
@@ -102,41 +104,44 @@ class ActionHandler(BaseHandler):
         self.user_id = user_id
         self.internal = internal
 
-        try:
-            payload_schema(payload)
-        except fastjsonschema.JsonSchemaException as exception:
-            raise ActionException(exception.message)
+        with make_span("verify payload"):
+            try:
+                payload_schema(payload)
+            except fastjsonschema.JsonSchemaException as exception:
+                raise ActionException(exception.message)
 
-        results: ActionsResponseResults = []
-        if atomic:
-            results = self.execute_write_requests(self.parse_actions, payload)
-        else:
+        with make_span("write requests..."):
+            results: ActionsResponseResults = []
+            if atomic:
+                results = self.execute_write_requests(self.parse_actions, payload)
+            else:
 
-            def transform_to_list(
-                tuple: Tuple[Optional[WriteRequest], Optional[ActionResults]]
-            ) -> Tuple[List[WriteRequest], Optional[ActionResults]]:
-                return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
+                def transform_to_list(
+                    tuple: Tuple[Optional[WriteRequest], Optional[ActionResults]]
+                ) -> Tuple[List[WriteRequest], Optional[ActionResults]]:
+                    return ([tuple[0]] if tuple[0] is not None else [], tuple[1])
 
-            for element in payload:
-                try:
-                    result = self.execute_write_requests(
-                        lambda e: transform_to_list(self.perform_action(e)), element
-                    )
-                    results.append(result)
-                except ActionException as exception:
-                    error = cast(ActionError, exception.get_json())
-                    results.append(error)
-                self.datastore.reset()
+                for element in payload:
+                    try:
+                        result = self.execute_write_requests(
+                            lambda e: transform_to_list(self.perform_action(e)), element
+                        )
+                        results.append(result)
+                    except ActionException as exception:
+                        error = cast(ActionError, exception.get_json())
+                        results.append(error)
+                    self.datastore.reset()
+        
+        with make_span("finish action"):
+            # execute cleanup methods
+            for on_success in self.on_success:
+                on_success()
 
-        # execute cleanup methods
-        for on_success in self.on_success:
-            on_success()
-
-        # Return action result
-        self.logger.debug("Request was successful. Send response now.")
-        return ActionsResponse(
-            success=True, message="Actions handled successfully", results=results
-        )
+            # Return action result
+            self.logger.debug("Request was successful. Send response now.")
+            return ActionsResponse(
+                success=True, message="Actions handled successfully", results=results
+            )
 
     def execute_write_requests(
         self,
