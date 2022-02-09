@@ -1,6 +1,7 @@
 import base64
 from time import time
 
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -37,6 +38,32 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
         )
         assert mediafile.get("create_timestamp", 0) >= start_time
+        assert not mediafile.get("is_directory")
+        self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
+
+    def test_create_orga(self) -> None:
+        self.create_model("organization/1", {})
+        filename = "fn_jumbo.txt"
+        file_content = base64.b64encode(b"testtesttest").decode()
+        start_time = round(time())
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "organization/1",
+                "filename": filename,
+                "file": file_content,
+            },
+        )
+        self.assert_status_code(response, 200)
+        mediafile = self.get_model("mediafile/1")
+        assert mediafile.get("title") == "title_xXRGTLAJ"
+        assert mediafile.get("owner_id") == "organization/1"
+        assert mediafile.get("filename") == filename
+        assert mediafile.get("file") is None
+        assert mediafile.get("mimetype") == "text/plain"
+        assert mediafile.get("filesize") == 12
+        assert mediafile.get("create_timestamp") >= start_time
         assert not mediafile.get("is_directory")
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
@@ -186,6 +213,31 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "file": base64.b64encode(b"testtesttest").decode(),
             },
             Permissions.Mediafile.CAN_MANAGE,
+        )
+
+    def test_upload_orga_owner_no_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "organization/1",
+                "filename": "fn_jumbo.txt",
+                "file": base64.b64encode(b"testtesttest").decode(),
+            },
+        )
+
+    def test_upload_orga_owner_permissions(self) -> None:
+        self.base_permission_test(
+            {},
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "organization/1",
+                "filename": "fn_jumbo.txt",
+                "file": base64.b64encode(b"testtesttest").decode(),
+            },
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
 
     def test_create_added_mimetype_ttf(self) -> None:

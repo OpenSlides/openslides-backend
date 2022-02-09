@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
             "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
             "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
         }
@@ -523,4 +526,21 @@ class MediafileUpdateActionTest(BaseActionTestCase):
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
             Permissions.Mediafile.CAN_MANAGE,
+        )
+
+    def test_update_no_permissions_orga_owner(self) -> None:
+        self.permission_test_model["mediafile/111"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+        )
+
+    def test_update_permissions_orga_owner(self) -> None:
+        self.permission_test_model["mediafile/111"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.update",
+            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )

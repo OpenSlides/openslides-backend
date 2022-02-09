@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
             "group/7": {
                 "name": "group_LxAHErRs",
                 "user_ids": [],
@@ -336,4 +339,25 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                 "access_group_ids": [7],
             },
             Permissions.Mediafile.CAN_MANAGE,
+        )
+
+    def test_create_dictionary_no_permissions_orga_owner(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.create_directory",
+            {
+                "owner_id": "organization/1",
+                "title": "title_Xcdfgee",
+            },
+        )
+
+    def test_create_dictionary_permissions_orga_owner(self) -> None:
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.create_directory",
+            {
+                "owner_id": "organization/1",
+                "title": "title_Xcdfgee",
+            },
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )

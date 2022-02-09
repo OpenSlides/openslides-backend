@@ -1,3 +1,4 @@
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -153,6 +154,37 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         assert meeting.get("logo_$place_id") is None
         assert meeting.get("logo_$_id") == []
 
+    def test_delete_directory_two_children_orga_owner(self) -> None:
+        self.set_models(
+            {
+                "mediafile/112": {
+                    "title": "title_srtgb123",
+                    "is_directory": True,
+                    "child_ids": [110, 113],
+                    "owner_id": "organization/1",
+                },
+                "mediafile/110": {
+                    "title": "title_ghjeu212",
+                    "is_directory": False,
+                    "child_ids": [],
+                    "parent_id": 112,
+                    "owner_id": "organization/1",
+                },
+                "mediafile/113": {
+                    "title": "title_del2",
+                    "is_directory": False,
+                    "child_ids": [],
+                    "parent_id": 112,
+                    "owner_id": "organization/1",
+                },
+            }
+        )
+        response = self.request("mediafile.delete", {"id": 112})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("mediafile/110")
+        self.assert_model_deleted("mediafile/112")
+        self.assert_model_deleted("mediafile/113")
+
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
@@ -166,4 +198,21 @@ class MediafileDeleteActionTest(BaseActionTestCase):
             "mediafile.delete",
             {"id": 222},
             Permissions.Mediafile.CAN_MANAGE,
+        )
+
+    def test_delete_orga_no_permissions(self) -> None:
+        self.permission_test_model["mediafile/222"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.delete",
+            {"id": 222},
+        )
+
+    def test_delete_orga_permission(self) -> None:
+        self.permission_test_model["mediafile/222"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.delete",
+            {"id": 222},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )

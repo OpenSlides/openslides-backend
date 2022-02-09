@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileMoveActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
             "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
             "mediafile/8": {"owner_id": "meeting/1", "is_directory": True},
         }
@@ -204,4 +207,21 @@ class MediafileMoveActionTest(BaseActionTestCase):
             "mediafile.move",
             {"owner_id": "meeting/1", "ids": [8], "parent_id": 7},
             Permissions.Mediafile.CAN_MANAGE,
+        )
+
+    def test_move_no_permissions_orga(self) -> None:
+        self.permission_test_model["mediafile/8"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.move",
+            {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+        )
+
+    def test_move_permissions_orga(self) -> None:
+        self.permission_test_model["mediafile/8"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.move",
+            {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
