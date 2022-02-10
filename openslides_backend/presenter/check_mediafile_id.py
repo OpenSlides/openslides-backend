@@ -70,6 +70,7 @@ class CheckMediafileId(BasePresenter):
                 if not mediafile.get("token"):
                     self.assert_not_anonymous()
                 return
+            assert mediafile["owner_id"].split(KEYSEPARATOR)[0] == "meeting"
             meeting_id = int(mediafile["owner_id"].split(KEYSEPARATOR)[1])
 
         if not meeting_id:
