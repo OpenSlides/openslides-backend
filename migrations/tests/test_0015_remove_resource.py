@@ -1,6 +1,7 @@
 import pytest
 from datastore.shared.util.exceptions import ModelDoesNotExist
 
+
 def test_migration(write, finalize, assert_model, read_model):
     write(
         {
