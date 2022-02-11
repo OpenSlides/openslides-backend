@@ -35,6 +35,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "max_votes_per_person": 1,
                 "backend": "long",
             },
         )
@@ -52,6 +53,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("is_pseudoanonymized") is False
         assert poll.get("min_votes_amount") == 5
         assert poll.get("max_votes_amount") == 10
+        assert poll.get("max_votes_per_person") == 1
         assert poll.get("backend") == "long"
         assert poll.get("sequential_number") == 1
         assert "options" not in poll
@@ -80,6 +82,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "max_votes_per_person": 1,
                 "publish_immediately": True,
             },
         )
@@ -113,6 +116,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "max_votes_per_person": 1,
                 "publish_immediately": True,
             },
         )

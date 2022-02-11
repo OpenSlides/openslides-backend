@@ -47,6 +47,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "type": "analog",
                 "min_votes_amount": 1,
                 "max_votes_amount": 1,
+                "max_votes_per_person": 1,
                 "global_yes": False,
                 "global_no": True,
                 "global_abstain": True,
@@ -63,6 +64,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "pollmethod": "Y",
                 "min_votes_amount": 1,
                 "max_votes_amount": 1,
+                "max_votes_per_person": 1,
                 "global_yes": False,
                 "global_no": True,
                 "global_abstain": True,
@@ -73,6 +75,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert poll.get("pollmethod") == "Y"
         assert poll.get("min_votes_amount") == 1
         assert poll.get("max_votes_amount") == 1
+        assert poll.get("max_votes_per_person") == 1
         assert poll.get("global_yes") is False
         assert poll.get("global_no") is True
         assert poll.get("global_abstain") is True

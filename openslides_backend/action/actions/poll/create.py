@@ -47,6 +47,7 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
             "description",
             "min_votes_amount",
             "max_votes_amount",
+            "max_votes_per_person",
             "global_yes",
             "global_no",
             "global_abstain",

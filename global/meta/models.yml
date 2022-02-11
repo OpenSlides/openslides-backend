@@ -2683,6 +2683,10 @@ poll:
     type: number
     default: 1
     restriction_mode: A
+  max_votes_per_person:
+    type: number
+    default: 1
+    restriction_mode: A
   global_yes:
     type: boolean
     default: false

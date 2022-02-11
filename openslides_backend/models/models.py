@@ -1489,6 +1489,7 @@ class Poll(Model):
     )
     min_votes_amount = fields.IntegerField(default=1)
     max_votes_amount = fields.IntegerField(default=1)
+    max_votes_per_person = fields.IntegerField(default=1)
     global_yes = fields.BooleanField(default=False)
     global_no = fields.BooleanField(default=False)
     global_abstain = fields.BooleanField(default=False)

@@ -254,6 +254,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                         {
                             "id": 13,
                             "max_votes_amount": 1,
+                            "max_votes_per_person": 1,
                             "min_votes_amount": 1,
                             "onehundred_percent_base": "YNA",
                             "pollmethod": "YNA",
