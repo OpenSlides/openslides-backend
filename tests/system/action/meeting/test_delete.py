@@ -98,7 +98,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(f"tag/{i+1}")
         for i in range(15):
             self.assert_model_deleted(f"agenda_item/{i+1}")
-        for i in range(18):
+        for i in range(16):
             self.assert_model_deleted(f"list_of_speakers/{i+1}")
         for i in range(13):
             self.assert_model_deleted(f"speaker/{i+1}")
@@ -129,7 +129,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
             self.assert_model_deleted(f"assignment/{i+1}")
         for i in range(5):
             self.assert_model_deleted(f"assignment_candidate/{i+1}")
-        for i in range(3):
+        for i in range(1):
             self.assert_model_deleted(f"mediafile/{i+1}")
         for i in range(2):
             self.assert_model_deleted(f"projector/{i+1}")
