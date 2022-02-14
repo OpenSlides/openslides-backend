@@ -29,6 +29,7 @@ class UserForgetPassword(BaseActionTestCase):
     def test_forget_password_two_users_with_email(self) -> None:
         self.set_models(
             {
+                "organization/1": {"url": "https://openslides.example.com"},
                 "user/1": {"email": "test@ntvtn.de"},
                 "user/2": {"email": "test@ntvtn.de", "username": "test2"},
                 "user/3": {"email": "user@ntvtn.de", "username": "test3"},
@@ -51,6 +52,7 @@ class UserForgetPassword(BaseActionTestCase):
             "For completeness your username: admin" in handler.emails[0]["data"]
             or "For completeness your username: test2" in handler.emails[0]["data"]
         )
+        assert "https://openslides.example.com" in handler.emails[0]["data"]
 
         assert handler.emails[1]["from"] == EmailSettings.default_from_email
         assert handler.emails[1]["to"][0] == "test@ntvtn.de"
@@ -58,6 +60,7 @@ class UserForgetPassword(BaseActionTestCase):
             "For completeness your username: test2" in handler.emails[1]["data"]
             or "For completeness your username: admin" in handler.emails[1]["data"]
         )
+        assert "https://openslides.example.com" in handler.emails[1]["data"]
 
     def test_forget_password_no_user_found(self) -> None:
         handler = AIOHandler()
