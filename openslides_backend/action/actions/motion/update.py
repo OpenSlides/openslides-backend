@@ -81,6 +81,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 raise ActionException("Reason is required to update.")
 
         if instance.get("workflow_id"):
+            workflow_id = instance.pop("workflow_id")
             motion = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["state_id"]
             )
@@ -88,11 +89,9 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 FullQualifiedId(Collection("motion_state"), motion["state_id"]),
                 ["workflow_id"],
             )
-            if instance["workflow_id"] != state.get("workflow_id"):
+            if workflow_id != state.get("workflow_id"):
                 workflow = self.datastore.get(
-                    FullQualifiedId(
-                        Collection("motion_workflow"), instance["workflow_id"]
-                    ),
+                    FullQualifiedId(Collection("motion_workflow"), workflow_id),
                     ["first_state_id"],
                 )
                 instance["state_id"] = workflow["first_state_id"]
