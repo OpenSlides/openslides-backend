@@ -32,6 +32,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
             "reset_password_verbose_errors",
             "limit_of_meetings",
             "limit_of_users",
+            "url",
         ]
     )
 
@@ -66,6 +67,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
                     "reset_password_verbose_errors",
                     "limit_of_meetings",
                     "limit_of_users",
+                    "url",
                 ]
             ]
         ) and not has_organization_management_level(
