@@ -223,6 +223,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "title": "title_xXRGTLAJ",
                 "owner_id": "organization/1",
                 "filename": "fn_jumbo.txt",
+                "token": "weblogo",
                 "file": base64.b64encode(b"testtesttest").decode(),
             },
         )
@@ -234,6 +235,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             {
                 "title": "title_xXRGTLAJ",
                 "owner_id": "organization/1",
+                "token": "weblogo",
                 "filename": "fn_jumbo.txt",
                 "file": base64.b64encode(b"testtesttest").decode(),
             },

@@ -36,7 +36,7 @@ class MediafileUploadAction(MediafilePermissionMixin, CreateAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
         required_properties=["title", "owner_id", "filename"],
-        optional_properties=["access_group_ids", "parent_id"],
+        optional_properties=["token", "access_group_ids", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
     )
     permission = Permissions.Mediafile.CAN_MANAGE
