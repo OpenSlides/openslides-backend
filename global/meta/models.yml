@@ -3002,11 +3002,13 @@ mediafile:
   parent_id:
     type: relation
     to: mediafile/child_ids
+    equal_fields: owner_id
     restriction_mode: A
     required: false
   child_ids:
     type: relation-list
     to: mediafile/parent_id
+    equal_fields: owner_id
     restriction_mode: A
   list_of_speakers_id:
     type: relation

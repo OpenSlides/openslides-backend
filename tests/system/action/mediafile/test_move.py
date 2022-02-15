@@ -210,6 +210,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
 
     def test_move_no_permissions_orga(self) -> None:
+        self.permission_test_model["mediafile/7"]["owner_id"] = "organization/1"
         self.permission_test_model["mediafile/8"]["owner_id"] = "organization/1"
         self.base_permission_test(
             self.permission_test_model,
@@ -218,6 +219,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
 
     def test_move_permissions_orga(self) -> None:
+        self.permission_test_model["mediafile/7"]["owner_id"] = "organization/1"
         self.permission_test_model["mediafile/8"]["owner_id"] = "organization/1"
         self.base_permission_test(
             self.permission_test_model,

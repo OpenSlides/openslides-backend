@@ -1695,8 +1695,12 @@ class Mediafile(Model):
     access_group_ids = fields.RelationListField(
         to={Collection("group"): "mediafile_access_group_ids"}
     )
-    parent_id = fields.RelationField(to={Collection("mediafile"): "child_ids"})
-    child_ids = fields.RelationListField(to={Collection("mediafile"): "parent_id"})
+    parent_id = fields.RelationField(
+        to={Collection("mediafile"): "child_ids"}, equal_fields="owner_id"
+    )
+    child_ids = fields.RelationListField(
+        to={Collection("mediafile"): "parent_id"}, equal_fields="owner_id"
+    )
     list_of_speakers_id = fields.RelationField(
         to={Collection("list_of_speakers"): "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,

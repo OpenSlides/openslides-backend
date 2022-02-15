@@ -509,9 +509,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
                                 fqid,
                                 [equal_field],
                             )
-                            if (
-                                related_instance.get(equal_field)
-                                != own_equal_field_value
+                            if str(related_instance.get(equal_field)) != str(
+                                own_equal_field_value
                             ):
                                 raise ActionException(
                                     f"The relation {field.own_field_name} requires the following "
