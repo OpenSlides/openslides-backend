@@ -51,6 +51,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "theme_id": 2,
                 "reset_password_verbose_errors": False,
                 "enable_chat": True,
+                "url": "https://openslides.example.com",
             },
         )
         self.assert_status_code(response, 200)
@@ -64,6 +65,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("theme_ids") == [1, 2]
         assert model.get("reset_password_verbose_errors") is False
         assert model.get("enable_chat") is True
+        assert model.get("url") == "https://openslides.example.com"
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
         )
@@ -128,6 +130,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "enable_electronic_voting": True,
                 "limit_of_meetings": 2,
                 "limit_of_users": 0,
+                "url": "test",
             },
         )
         self.assert_status_code(response, 403)
@@ -153,11 +156,13 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "enable_electronic_voting": True,
                 "limit_of_meetings": 2,
                 "limit_of_users": 1,
+                "url": "test",
             },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "organization/3", {"limit_of_meetings": 2, "limit_of_users": 1}
+            "organization/3",
+            {"limit_of_meetings": 2, "limit_of_users": 1, "url": "test"},
         )
 
     def test_update_too_many_active_meetings(self) -> None:

@@ -113,7 +113,6 @@ meeting_settings_keys = [
     "users_allow_self_set_present",
     "users_pdf_welcometitle",
     "users_pdf_welcometext",
-    "users_pdf_url",
     "users_pdf_wlan_ssid",
     "users_pdf_wlan_password",
     "users_pdf_wlan_encryption",
@@ -145,7 +144,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "template_for_committee_id",
             "reference_projector_id",
             "organization_tag_ids",
-            "url_name",
             "jitsi_domain",
             "jitsi_room_name",
             "jitsi_room_password",
@@ -211,7 +209,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             [
                 field in instance
                 for field in [
-                    "url_name",
                     "enable_anonymous",
                     "custom_translations",
                 ]

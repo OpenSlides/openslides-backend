@@ -378,7 +378,6 @@ class MeetingClone(BaseActionTestCase):
             "users_allow_self_set_present": True,
             "users_pdf_welcometitle": "title",
             "users_pdf_welcometext": "text",
-            "users_pdf_url": "url",
             "users_pdf_wlan_ssid": "wifi",
             "users_pdf_wlan_password": "pw",
             "users_pdf_wlan_encryption": "WEP",

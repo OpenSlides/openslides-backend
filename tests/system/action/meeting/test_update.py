@@ -338,7 +338,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request(
             "meeting.update",
-            {"id": 1, "url_name": "url_name_1"},
+            {"id": 1, "enable_anonymous": True},
         )
         self.assert_status_code(response, 403)
         assert "Missing permission:" in response.json["message"]
@@ -353,7 +353,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
             "meeting.update",
             {
                 "id": 1,
-                "url_name": "url_name_1",
                 "custom_translations": {"motion": "Antrag", "assignment": "Zuordnung"},
             },
         )

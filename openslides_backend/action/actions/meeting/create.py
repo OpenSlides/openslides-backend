@@ -31,7 +31,6 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             "location",
             "start_time",
             "end_time",
-            "url_name",
             "organization_tag_ids",
         ],
         additional_optional_fields={

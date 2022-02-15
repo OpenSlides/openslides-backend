@@ -15,10 +15,12 @@ class SendInvitationMail(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
+                "organization/1": {
+                    "url": "https://example.com",
+                },
                 "meeting/1": {
                     "name": "annual general meeting",
                     "users_email_sender": "Openslides",
-                    "users_pdf_url": "https://example.com",
                     "is_active_in_organization_id": 1,
                 },
                 "user/2": {

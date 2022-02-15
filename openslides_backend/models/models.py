@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "0b7af1bcab23b33adf9a5f1795ebe4b0"
+MODELS_YML_CHECKSUM = "dfbe18f62214d09668569eaf943d3dcf"
 
 
 class Organization(Model):
@@ -362,7 +362,6 @@ class Meeting(Model):
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()
     enable_chat = fields.BooleanField()
-    url_name = fields.CharField(constraints={"description": "For unique urls."})
     template_for_committee_id = fields.RelationField(
         to={Collection("committee"): "template_meeting_ids"}
     )
@@ -523,7 +522,6 @@ class Meeting(Model):
     users_pdf_welcometext = fields.TextField(
         default="[Place for your welcome and help text.]"
     )
-    users_pdf_url = fields.CharField(default="https://example.com")
     users_pdf_wlan_ssid = fields.CharField()
     users_pdf_wlan_password = fields.CharField()
     users_pdf_wlan_encryption = fields.CharField(

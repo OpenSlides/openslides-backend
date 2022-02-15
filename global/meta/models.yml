@@ -747,10 +747,6 @@ meeting:
     restriction_mode: B
 
   # System
-  url_name:
-    type: string
-    description: For unique urls.
-    restriction_mode: B
   template_for_committee_id:
     type: relation
     to: committee/template_meeting_ids
@@ -1185,10 +1181,6 @@ meeting:
   users_pdf_welcometext:
     type: text
     default: "[Place for your welcome and help text.]"
-    restriction_mode: B
-  users_pdf_url:
-    type: string
-    default: https://example.com
     restriction_mode: B
   users_pdf_wlan_ssid:
     type: string

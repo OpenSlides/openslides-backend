@@ -189,12 +189,9 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         )
         body_dict = {
             "password": user.get("default_password", ""),
+            "url": mail_data.get("url", ""),
             **subject_format,
         }
-        if meeting_id:
-            body_dict["url"] = mail_data.get("users_pdf_url", "")
-        else:
-            body_dict["url"] = mail_data.get("url", "")
 
         body_format = format_dict(None, body_dict)
 
@@ -228,13 +225,20 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         else:
             collection = Collection("meeting")
             id_ = meeting_id
-            fields.append("users_pdf_url")
 
-        return self.datastore.fetch_model(
+        res = self.datastore.fetch_model(
             FullQualifiedId(collection, id_),
             fields,
             lock_result=False,
         )
+        if meeting_id:
+            organization = self.datastore.fetch_model(
+                FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+                ["url"],
+                lock_result=False,
+            )
+            res["url"] = organization.get("url", "")
+        return res
 
     def validate_instance(self, instance: Dict[str, Any]) -> None:
         type(self).schema_validator(instance)

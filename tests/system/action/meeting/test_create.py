@@ -197,14 +197,12 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 "location": "LSFHPTgE",
                 "start_time": 1608120653,
                 "end_time": 1608121653,
-                "url_name": "JWdYZqDX",
             }
         )
         assert meeting.get("description") == "RRfnzxHA"
         assert meeting.get("location") == "LSFHPTgE"
         assert meeting.get("start_time") == 1608120653
         assert meeting.get("end_time") == 1608121653
-        assert meeting.get("url_name") == "JWdYZqDX"
 
         # check two defaults:
         assert meeting.get("assignment_poll_default_type") == "pseudoanonymous"

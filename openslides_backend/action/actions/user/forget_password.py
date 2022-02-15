@@ -6,6 +6,7 @@ from urllib.parse import quote
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailMixin, EmailSettings
 from ...util.default_schema import DefaultSchema
@@ -15,10 +16,11 @@ from ...util.typing import ActionData
 PW_FORGET_EMAIL_TEMPLATE = """You are receiving this email because you have requested a new password for your OpenSlides-account.
 
 Please open the following link and choose a new password:
-/login/forget-password-confirm?user_id={user_id}&token={token}
+{url}/login/forget-password-confirm?user_id={user_id}&token={token}
 
 For completeness your username: {username}"""
 PW_FORGET_EMAIL_SUBJECT = "Reset your OpenSlides password"
+ONE_ORGANIZATION = 1
 
 
 class format_dict(defaultdict):
@@ -57,6 +59,11 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                 self.model.collection, filter_, ["id", "username"]
             )
 
+            organization = self.datastore.get(
+                FullQualifiedId(Collection("organization"), ONE_ORGANIZATION), ["url"]
+            )
+            url = organization.get("url", "")
+
             # try to send the mails.
             try:
                 with EmailMixin.get_mail_connection() as mail_client:
@@ -71,6 +78,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                                 user["id"],
                                 self.get_token(user["id"], email),
                                 user["username"],
+                                url,
                             ),
                             html=False,
                         )
@@ -85,13 +93,14 @@ class UserForgetPassword(EmailMixin, UpdateAction):
     def get_token(self, user_id: int, email: str) -> str:
         return quote(self.auth.create_authorization_token(user_id, email))
 
-    def get_email_body(self, user_id: int, token: str, username: str) -> str:
+    def get_email_body(self, user_id: int, token: str, username: str, url: str) -> str:
         body_format = format_dict(
             None,
             {
                 "user_id": user_id,
                 "token": token,
                 "username": username,
+                "url": url,
             },
         )
         return PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
