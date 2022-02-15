@@ -58,8 +58,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             ["f", "weight"],
         )
         assert result == {"f": 1, "weight": 42}
-        self.db_method_mock.assert_not_called()
-        self.get_many_mock.assert_called()
+        self.db_method_mock.assert_called()
         self.add_get_many_mock.assert_called()
 
     def test_get_use_changed_models_exception(self) -> None:

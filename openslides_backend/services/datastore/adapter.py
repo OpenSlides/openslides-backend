@@ -85,12 +85,11 @@ class DatastoreAdapter(BaseDatastoreService):
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
     ) -> PartialModel:
-        mapped_fields_set = set(mapped_fields)
-        if lock_result:
-            mapped_fields_set.add("meta_position")
+        if lock_result and mapped_fields:
+            mapped_fields.append("meta_position")
         request = GetRequest(
             fqid=str(fqid),
-            mapped_fields=list(mapped_fields_set),
+            mapped_fields=mapped_fields,
             position=position,
             get_deleted_models=get_deleted_models,
         )
@@ -106,6 +105,8 @@ class DatastoreAdapter(BaseDatastoreService):
                 )
             if isinstance(lock_result, list):
                 mapped_fields_set = set(lock_result)
+            else:
+                mapped_fields_set = set(mapped_fields)
             self.update_locked_fields_from_mapped_fields(
                 fqid, instance_position, mapped_fields_set
             )
@@ -121,7 +122,8 @@ class DatastoreAdapter(BaseDatastoreService):
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         if lock_result:
             for get_many_request in get_many_requests:
-                get_many_request.mapped_fields.add("meta_position")
+                if get_many_request.mapped_fields:
+                    get_many_request.mapped_fields.add("meta_position")
 
         request_parts = [
             GetManyRequestPart(

@@ -1,9 +1,6 @@
 from unittest.mock import MagicMock
 
-from datastore.shared.util import DeletedModelsBehaviour
-
 from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.shared.typing import DeletedModel
 
 from .base import BaseTestExtendedDatastoreAdapter
 
@@ -54,45 +51,6 @@ class TestGetManyExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         gmr = self.get_many_mock.call_args[0][0]
         assert len(gmr) == 1
         assert gmr[0] == GetManyRequest(self.collection, [1], ["f"])
-        self.add_get_many_mock.assert_called()
-
-    def test_use_changed_models_deleted(self) -> None:
-        self.set_additional_models(
-            {
-                "test/2": DeletedModel(),
-            }
-        )
-        result = self.adapter.get_many(
-            [GetManyRequest(self.collection, [1, 2], ["f"])],
-        )
-        assert result == {
-            self.collection: {
-                1: {"f": 1},
-            }
-        }
-        self.get_many_mock.assert_called()
-        gmr = self.get_many_mock.call_args[0][0]
-        assert len(gmr) == 1
-        assert gmr[0] == GetManyRequest(self.collection, [1], ["f"])
-        self.add_get_many_mock.assert_called()
-
-    def test_use_changed_models_deleted_all_models(self) -> None:
-        self.set_additional_models(
-            {
-                "test/2": DeletedModel(),
-            }
-        )
-        result = self.adapter.get_many(
-            [GetManyRequest(self.collection, [1, 2], ["f"])],
-            get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
-        )
-        assert result == {
-            self.collection: {
-                1: {"f": 1},
-                2: {"f": 1},
-            }
-        }
-        self.get_many_mock.assert_called()
         self.add_get_many_mock.assert_called()
 
     def test_use_changed_models_missing_field(self) -> None:

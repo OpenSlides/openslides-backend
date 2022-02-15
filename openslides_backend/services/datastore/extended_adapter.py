@@ -102,7 +102,7 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
             mapped_fields_per_fqid = {fqid: mapped_fields}
             # fetch results from changed models
             results, missing_fields_per_fqid = self._get_many_from_changed_models(
-                mapped_fields_per_fqid, get_deleted_models
+                mapped_fields_per_fqid
             )
             changed_model = results.get(fqid.collection, {}).get(fqid.id, {})
             if not missing_fields_per_fqid:
@@ -112,7 +112,7 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
                 # overwrite params and fetch missing fields from db
                 mapped_fields = missing_fields_per_fqid[fqid]
                 # we only raise an exception now if the model is not present in the changed_models all
-                raise_exception = raise_exception and not fqid in self.changed_models
+                raise_exception = raise_exception and fqid not in self.changed_models
 
         try:
             result = super().get(
@@ -127,7 +127,7 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
                 raise
             else:
                 return {}
-        
+
         if use_changed_models:
             result.update(changed_model)
         return result
@@ -148,12 +148,14 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
 
             mapped_fields_per_fqid = defaultdict(list)
             for request in get_many_requests:
+                if not request.mapped_fields:
+                    raise DatastoreException("No mapped fields given")
                 for id in request.ids:
                     fqid = FullQualifiedId(request.collection, id)
                     mapped_fields_per_fqid[fqid].extend(list(request.mapped_fields))
             # fetch results from changed models
             results, missing_fields_per_fqid = self._get_many_from_changed_models(
-                mapped_fields_per_fqid, get_deleted_models
+                mapped_fields_per_fqid
             )
             # fetch missing fields in the changed_models from the db and merge into the results
             if missing_fields_per_fqid:
@@ -383,7 +385,6 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
     def _get_many_from_changed_models(
         self,
         mapped_fields_per_fqid: MappedFieldsPerFqid,
-        get_deleted_models: DeletedModelsBehaviour,
     ) -> Tuple[Dict[Collection, Dict[int, PartialModel]], MappedFieldsPerFqid]:
         """
         Returns a dictionary of the changed models for the given collections together with all
@@ -393,17 +394,13 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
         missing_fields_per_fqid: MappedFieldsPerFqid = defaultdict(list)
         for fqid, mapped_fields in mapped_fields_per_fqid.items():
             if fqid in self.changed_models:
-                if self.is_deleted(fqid):
-                    if get_deleted_models != DeletedModelsBehaviour.NO_DELETED:
-                        missing_fields_per_fqid[fqid] = mapped_fields
-                else:
-                    for field in mapped_fields:
-                        if field in self.changed_models[fqid]:
-                            results[fqid.collection].setdefault(fqid.id, {})[
-                                field
-                            ] = self.changed_models[fqid][field]
-                        else:
-                            missing_fields_per_fqid[fqid].append(field)
+                for field in mapped_fields:
+                    if field in self.changed_models[fqid]:
+                        results[fqid.collection].setdefault(fqid.id, {})[
+                            field
+                        ] = self.changed_models[fqid][field]
+                    else:
+                        missing_fields_per_fqid[fqid].append(field)
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
         return (results, missing_fields_per_fqid)

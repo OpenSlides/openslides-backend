@@ -151,12 +151,12 @@ class GetUserRelatedModels(BasePresenter):
                 FilterOperator("user_id", "=", user_id),
             )
             submitter_ids = self.datastore.filter(
-                Collection("motion_submitter"), filter_
+                Collection("motion_submitter"), filter_, ["id"]
             )
             candidate_ids = self.datastore.filter(
-                Collection("assignment_candidate"), filter_
+                Collection("assignment_candidate"), filter_, ["id"]
             )
-            speaker_ids = self.datastore.filter(Collection("speaker"), filter_)
+            speaker_ids = self.datastore.filter(Collection("speaker"), filter_, ["id"])
             if submitter_ids or candidate_ids or speaker_ids:
                 meetings_data.append(
                     {

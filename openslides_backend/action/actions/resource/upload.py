@@ -16,9 +16,7 @@ from .mixins import PermissionMixin
 
 
 @register_action("resource.upload")
-class MediafileUploadAction(
-    PermissionMixin, CreateAction, CheckForArchivedMeetingMixin
-):
+class ResourceUploadAction(PermissionMixin, CreateAction, CheckForArchivedMeetingMixin):
     """
     Action to upload a resourcefile.
     The token-field acts as unique key
@@ -32,6 +30,7 @@ class MediafileUploadAction(
             "filename": {"type": "string"},
         },
     )
+    skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         filename_ = instance.pop("filename")
@@ -61,6 +60,7 @@ class MediafileUploadAction(
                     FilterOperator("token", "=", instance["token"]),
                     FilterOperator("organization_id", "=", instance["organization_id"]),
                 ),
+                ["id"],
             )
             if len(results) == 0:
                 continue

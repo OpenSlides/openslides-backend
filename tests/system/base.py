@@ -189,13 +189,12 @@ class BaseSystemTestCase(TestCase):
 
     @with_database_context
     def get_model(self, fqid: str) -> Dict[str, Any]:
-        _fqid = get_fqid(fqid)
-        fields = model_registry[_fqid.collection]().get_fields()
         model = self.datastore.get(
-            fqid=_fqid,
-            mapped_fields=[f.own_field_name for f in fields] + ["meta_position", "meta_deleted"],
+            get_fqid(fqid),
+            mapped_fields=[],
             get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             lock_result=False,
+            use_changed_models=False,
         )
         self.assertTrue(model)
         self.assertEqual(model.get("id"), get_id_from_fqid(fqid))

@@ -152,6 +152,16 @@ class DatastoreService(BaseDatastoreService):
     ) -> PartialModel:
         ...
 
+    def get_many(
+        self,
+        get_many_requests: List[GetManyRequest],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
+        ...
+
     def filter(
         self,
         collection: Collection,

@@ -21,14 +21,14 @@ class GetManyRequest:
         self,
         collection: Collection,
         ids: List[int],
-        mapped_fields: Union[Set[str], List[str]],
+        mapped_fields: Optional[Union[Set[str], List[str]]] = None,
     ) -> None:
         self.collection = collection
         self.ids = ids
         if isinstance(mapped_fields, list):
             self.mapped_fields = set(mapped_fields)
         else:
-            self.mapped_fields = mapped_fields
+            self.mapped_fields = mapped_fields or set()
 
     def __eq__(self, other: object) -> bool:
         return (
