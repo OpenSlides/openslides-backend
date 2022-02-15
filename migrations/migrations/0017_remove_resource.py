@@ -15,7 +15,7 @@ class Migration(BaseMigration):
     This migration removes the `resource` collection.
     """
 
-    target_migration_index = 16
+    target_migration_index = 18
 
     def migrate_event(
         self,

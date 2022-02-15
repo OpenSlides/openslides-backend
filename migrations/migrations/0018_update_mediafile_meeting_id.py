@@ -13,7 +13,7 @@ class Migration(RenameFieldMigration):
     and modify it to generic field.
     """
 
-    target_migration_index = 17
+    target_migration_index = 19
 
     collection = "mediafile"
     old_field = "meeting_id"

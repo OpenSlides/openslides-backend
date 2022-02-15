@@ -41,7 +41,7 @@ def test_migration(write, finalize, assert_model, read_model):
         },
     )
 
-    finalize("0015_remove_resource")
+    finalize("0017_remove_resource")
     assert_model(
         "organization/1",
         {"id": 1, "meta_deleted": False, "meta_position": 3},

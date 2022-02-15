@@ -12,7 +12,7 @@ def test_migration(write, finalize, assert_model):
         },
     )
 
-    finalize("0016_update_mediafile_meeting_id")
+    finalize("0018_update_mediafile_meeting_id")
 
     assert_model(
         "meeting/8",
