@@ -19,7 +19,6 @@ class MediafileDelete(MediafilePermissionMixin, DeleteAction):
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_delete_schema()
     permission = Permissions.Mediafile.CAN_MANAGE
-    skip_archived_meeting_check = True
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

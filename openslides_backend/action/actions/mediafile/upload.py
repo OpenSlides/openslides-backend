@@ -40,7 +40,6 @@ class MediafileUploadAction(MediafilePermissionMixin, CreateAction):
         additional_required_fields={"file": {"type": "string"}},
     )
     permission = Permissions.Mediafile.CAN_MANAGE
-    skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["create_timestamp"] = round(time())

@@ -22,7 +22,6 @@ class MediafileCreateDirectory(MediafilePermissionMixin, CreateAction):
         optional_properties=["access_group_ids", "parent_id"],
     )
     permission = Permissions.Mediafile.CAN_MANAGE
-    skip_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

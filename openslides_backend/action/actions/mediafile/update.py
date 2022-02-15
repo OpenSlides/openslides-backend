@@ -24,7 +24,6 @@ class MediafileUpdate(
         optional_properties=["title", "access_group_ids"]
     )
     permission = Permissions.Mediafile.CAN_MANAGE
-    skip_archived_meeting_check = True
 
     def get_updated_instances(self, instances: ActionData) -> ActionData:
         """

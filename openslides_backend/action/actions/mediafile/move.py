@@ -40,7 +40,6 @@ class MediafileMoveAction(
         },
     )
     permission = Permissions.Mediafile.CAN_MANAGE
-    skip_archived_meeting_check = True
 
     def check_is_directory(self, id_: int) -> None:
         item = self.datastore.get(
