@@ -28,6 +28,24 @@ class MotionStateSort(BaseActionTestCase):
         self.assert_model_exists("motion_state/2", {"weight": 2})
         self.assert_model_exists("motion_state/3", {"weight": 1})
 
+    def test_sort_extra_id_in_payload(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion_state.sort",
+            {"workflow_id": 1, "motion_state_ids": [3, 2, 4, 1]},
+        )
+        self.assert_status_code(response, 400)
+        assert "Id 4 not in db_instances." == response.json["message"]
+
+    def test_sort_missing_id_in_payload(self) -> None:
+        self.set_models(self.permission_test_models)
+        response = self.request(
+            "motion_state.sort",
+            {"workflow_id": 1, "motion_state_ids": [3, 1]},
+        )
+        self.assert_status_code(response, 400)
+        assert "Additional db_instances found." == response.json["message"]
+
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
