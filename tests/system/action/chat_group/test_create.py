@@ -158,3 +158,22 @@ class ChatGroupCreate(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "The name of a chat group must be unique." == response.json["message"]
+
+    def test_create_same_name_in_two_meetings(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"enable_chat": True, "active_meeting_ids": [1, 2]},
+                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/2": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "chat_group/21": {"meeting_id": 1, "name": "test"},
+            }
+        )
+        response = self.request(
+            "chat_group.create",
+            {
+                "name": "test",
+                "meeting_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("chat_group/22", {"name": "test", "meeting_id": 2})
