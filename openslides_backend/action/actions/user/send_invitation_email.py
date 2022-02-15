@@ -189,10 +189,9 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         )
         body_dict = {
             "password": user.get("default_password", ""),
+            "url": mail_data.get("url", ""),
             **subject_format,
         }
-
-        body_dict["url"] = mail_data.get("url", "")
 
         body_format = format_dict(None, body_dict)
 
