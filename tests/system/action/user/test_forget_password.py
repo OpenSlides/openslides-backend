@@ -15,7 +15,9 @@ class UserForgetPassword(BaseActionTestCase):
         set_test_email_settings()
 
     def test_forget_password_send_mail_correct(self) -> None:
-        self.set_models({"user/1": {"email": "test@ntvtn.de"}})
+        self.set_models(
+            {"organization/1": {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
+        )
         start_time = int(time())
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
@@ -63,6 +65,7 @@ class UserForgetPassword(BaseActionTestCase):
         assert "https://openslides.example.com" in handler.emails[1]["data"]
 
     def test_forget_password_no_user_found(self) -> None:
+        self.set_models({"organization/1": {"url": None}})
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request("user.forget_password", {"email": "info@ntvtn.de"})
@@ -87,7 +90,10 @@ class UserForgetPassword(BaseActionTestCase):
         EmailSettings.password = "not secret"
         EmailSettings.user = "sender@example.com"
 
-        self.set_models({"user/1": {"email": "test@ntvtn.de"}})
+        self.set_models(
+            {"organization/1": {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
+        )
+
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request("user.forget_password", {"email": "test@ntvtn.de"})
