@@ -58,7 +58,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/meeting_id', 'list_of_speakers/sequential_number', 'meeting/1/agenda_item_ids', 'meeting/1/list_of_speakers_ids', 'meeting/1/topic_ids', 'topic/meeting_id', 'topic/sequential_number'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/meeting_id', 'list_of_speakers/sequential_number', 'topic/meeting_id', 'topic/sequential_number'",
             response.json["message"],
         )
         self.assert_model_not_exists("topic/1")
@@ -112,9 +112,9 @@ class TopicCreateSystemTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("topic/1")
         topic = self.get_model("topic/1")
         self.assertEqual(topic.get("agenda_item_id"), 1)
+        self.assertEqual(topic.get("sequential_number"), 1)
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/1")
@@ -122,6 +122,7 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assertEqual(agenda_item.get("weight"), 1000)
         topic = self.get_model("topic/2")
         self.assertEqual(topic.get("agenda_item_id"), 2)
+        self.assertEqual(topic.get("sequential_number"), 2)
         agenda_item = self.get_model("agenda_item/2")
         self.assertEqual(agenda_item.get("meeting_id"), 1)
         self.assertEqual(agenda_item.get("content_object_id"), "topic/2")
@@ -131,6 +132,32 @@ class TopicCreateSystemTest(BaseActionTestCase):
         self.assertEqual(meeting.get("topic_ids"), [1, 2])
         self.assertEqual(meeting.get("agenda_item_ids"), [1, 2])
         self.assertEqual(meeting.get("list_of_speakers_ids"), [1, 2])
+
+    def test_create_multiple_with_existing_sequential_number(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "topic/1": {"meeting_id": 1, "sequential_number": 42},
+            }
+        )
+        response = self.request_multi(
+            "topic.create",
+            [
+                {
+                    "meeting_id": 1,
+                    "title": "A",
+                },
+                {
+                    "meeting_id": 1,
+                    "title": "B",
+                },
+            ],
+        )
+        self.assert_status_code(response, 200)
+        topic = self.get_model("topic/2")
+        self.assertEqual(topic.get("sequential_number"), 43)
+        topic = self.get_model("topic/3")
+        self.assertEqual(topic.get("sequential_number"), 44)
 
     def test_create_no_permission(self) -> None:
         self.base_permission_test(

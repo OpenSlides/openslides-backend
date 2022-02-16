@@ -8,12 +8,13 @@ from datastore.shared.postgresql_backend import SqlQueryHelper
 from datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.exceptions import DatastoreException
-from ...shared.filters import Filter
+from ...shared.filters import And, Filter, FilterOperator
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import DeletedModel, ModelMap
 from .adapter import DatastoreAdapter
 from .commands import GetManyRequest
+from .handle_datastore_errors import raise_datastore_error
 from .interface import Engine, LockResult, PartialModel
 
 MODEL_FIELD_SQL = "data->>%s"
@@ -115,13 +116,18 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
                 raise_exception = raise_exception and fqid not in self.changed_models
 
         try:
-            result = super().get(
-                fqid,
-                mapped_fields,
-                position,
-                get_deleted_models,
-                lock_result,
-            )
+            if self.is_new(fqid):
+                # if the model is new, we know it does not exist in the datastore and can directly throw
+                # an exception or return an empty result
+                raise_datastore_error({"error": {"fqid": fqid}})
+            else:
+                result = super().get(
+                    fqid,
+                    mapped_fields,
+                    position,
+                    get_deleted_models,
+                    lock_result,
+                )
         except DatastoreException:
             if raise_exception:
                 raise
@@ -293,8 +299,9 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
                 collection, filter, field, get_deleted_models, lock_result
             )
         else:
+            full_filter = And(filter, FilterOperator(field, "!=", None))
             models = self.filter(
-                collection, filter, [field], get_deleted_models, lock_result
+                collection, full_filter, [field], get_deleted_models, lock_result
             )
             comparable_results = [
                 model[field]
@@ -308,6 +315,9 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         return isinstance(self.changed_models.get(fqid), DeletedModel)
+
+    def is_new(self, fqid: FullQualifiedId) -> bool:
+        return self.changed_models.get(fqid, {}).get("meta_new") is True
 
     def reset(self) -> None:
         super().reset()

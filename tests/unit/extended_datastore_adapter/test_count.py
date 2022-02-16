@@ -5,6 +5,8 @@ from .base import BaseTestExtendedDatastoreAdapter
 
 
 class TestCountExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
+    """Also basically tests `exists` which just returns len() > 0"""
+
     db_method_name = "count"
 
     def setUp(self) -> None:
