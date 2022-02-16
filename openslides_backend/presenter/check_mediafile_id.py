@@ -1,3 +1,4 @@
+import mimetypes
 from typing import Any, Dict
 
 import fastjsonschema
@@ -40,10 +41,28 @@ class CheckMediafileId(BasePresenter):
     def get_result(self) -> Any:
         mediafile = self.datastore.get(
             FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
-            mapped_fields=["filename", "is_directory"],
+            mapped_fields=["filename", "is_directory", "owner_id", "token", "mimetype"],
         )
+        if not mediafile.get("owner_id"):
+            return {"ok": False}
+        collection, _ = mediafile["owner_id"].split(KEYSEPARATOR)
+        if collection == "organization":
+            return self.get_organization_result(mediafile)
+        elif collection == "meeting":
+            return self.get_meeting_result(mediafile)
+        return {"ok": False}
 
-        if not mediafile or mediafile.get("is_directory"):
+    def get_organization_result(self, mediafile: Dict[str, Any]) -> Any:
+        self.check_permissions()
+        extension = mimetypes.guess_extension(mediafile["mimetype"])
+        if extension is None:
+            return {"ok": False}
+        filename = mediafile["token"] + extension
+
+        return {"ok": True, "filename": filename}
+
+    def get_meeting_result(self, mediafile: Dict[str, Any]) -> Any:
+        if mediafile.get("is_directory"):
             return {"ok": False}
         self.check_permissions()
 

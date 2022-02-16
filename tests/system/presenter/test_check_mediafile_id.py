@@ -48,7 +48,8 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_no_permissions(self) -> None:
         self.set_models(
             {
-                "mediafile/1": {"filename": "the filename", "is_directory": False},
+                "meeting/1": {"mediafile_ids": [1]},
+                "mediafile/1": {"owner_id": "meeting/1", "filename": "the filename", "is_directory": False},
                 "user/1": {"organization_management_level": None},
             }
         )
@@ -172,25 +173,25 @@ class TestCheckMediafileId(BasePresenterTestCase):
             {
                 "organization/1": {"mediafile_ids": [1]},
                 "mediafile/1": {
-                    "filename": "the filename",
                     "is_directory": False,
                     "owner_id": "organization/1",
                     "token": "web_logo",
+                    "mimetype": "text/plain",
                 },
             }
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
-        self.assertEqual(data, {"ok": True, "filename": "the filename"})
+        self.assertEqual(data, {"ok": True, "filename": "web_logo.txt"})
 
     def test_anonymous_organization(self) -> None:
         self.set_models(
             {
                 "organization/1": {"mediafile_ids": [1]},
                 "mediafile/1": {
-                    "filename": "the filename",
                     "is_directory": False,
                     "owner_id": "organization/1",
+                    "mimetype": "text/plain",
                 },
             }
         )
@@ -207,10 +208,10 @@ class TestCheckMediafileId(BasePresenterTestCase):
             {
                 "organization/1": {"mediafile_ids": [1]},
                 "mediafile/1": {
-                    "filename": "the filename",
                     "is_directory": False,
                     "owner_id": "organization/1",
                     "token": "web_logo",
+                    "mimetype": "text/plain",
                 },
             }
         )
@@ -222,4 +223,4 @@ class TestCheckMediafileId(BasePresenterTestCase):
         status_code = response.status_code
         self.assertEqual(status_code, 200)
         data = response.json[0]
-        self.assertEqual(data, {"ok": True, "filename": "the filename"})
+        self.assertEqual(data, {"ok": True, "filename": "web_logo.txt"})
