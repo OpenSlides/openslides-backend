@@ -49,7 +49,11 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self.set_models(
             {
                 "meeting/1": {"mediafile_ids": [1]},
-                "mediafile/1": {"owner_id": "meeting/1", "filename": "the filename", "is_directory": False},
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "filename": "the filename",
+                    "is_directory": False,
+                },
                 "user/1": {"organization_management_level": None},
             }
         )
@@ -184,6 +188,22 @@ class TestCheckMediafileId(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"ok": True, "filename": "web_logo.txt"})
 
+    def test_organization_without_token(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "filename": "the filename",
+                    "owner_id": "organization/1",
+                    "mimetype": "text/plain",
+                },
+            }
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": False})
+
     def test_anonymous_organization(self) -> None:
         self.set_models(
             {
@@ -191,6 +211,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "is_directory": False,
                     "owner_id": "organization/1",
+                    "token": "",
                     "mimetype": "text/plain",
                 },
             }

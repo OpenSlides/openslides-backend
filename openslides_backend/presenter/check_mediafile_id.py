@@ -43,8 +43,9 @@ class CheckMediafileId(BasePresenter):
             FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
             mapped_fields=["filename", "is_directory", "owner_id", "token", "mimetype"],
         )
-        if not mediafile.get("owner_id"):
+        if not mediafile.get("owner_id") or mediafile.get("is_directory"):
             return {"ok": False}
+        self.check_permissions()
         collection, _ = mediafile["owner_id"].split(KEYSEPARATOR)
         if collection == "organization":
             return self.get_organization_result(mediafile)
@@ -53,6 +54,8 @@ class CheckMediafileId(BasePresenter):
         return {"ok": False}
 
     def get_organization_result(self, mediafile: Dict[str, Any]) -> Any:
+        if not mediafile.get("token") or not mediafile.get("mimetype"):
+            return {"ok": False}
         self.check_permissions()
         extension = mimetypes.guess_extension(mediafile["mimetype"])
         if extension is None:
@@ -62,10 +65,8 @@ class CheckMediafileId(BasePresenter):
         return {"ok": True, "filename": filename}
 
     def get_meeting_result(self, mediafile: Dict[str, Any]) -> Any:
-        if mediafile.get("is_directory"):
+        if not mediafile.get("filename"):
             return {"ok": False}
-        self.check_permissions()
-
         return {"ok": True, "filename": mediafile["filename"]}
 
     def check_permissions(self) -> None:
