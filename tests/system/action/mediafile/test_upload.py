@@ -53,13 +53,14 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "owner_id": "organization/1",
                 "filename": filename,
                 "file": file_content,
+                "token": "web_logo",
             },
         )
         self.assert_status_code(response, 200)
         mediafile = self.get_model("mediafile/1")
         assert mediafile.get("title") == "title_xXRGTLAJ"
         assert mediafile.get("owner_id") == "organization/1"
-        assert mediafile.get("filename") == filename
+        assert mediafile.get("filename") is None
         assert mediafile.get("file") is None
         assert mediafile.get("mimetype") == "text/plain"
         assert mediafile.get("filesize") == 12

@@ -64,5 +64,5 @@ class MediafilePermissionMixin(Action):
                 FullQualifiedId(self.model.collection, instance["id"]), ["owner_id"]
             )
             owner_id = mediafile["owner_id"]
-        collection, id_ = owner_id.split(KEYSEPARATOR)
+        collection, id_ = str(owner_id).split(KEYSEPARATOR)
         return collection, int(id_)
