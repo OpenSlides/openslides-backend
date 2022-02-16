@@ -153,9 +153,22 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "present_user_ids",
             "default_projector_$_id",
         ],
+        additional_optional_fields={
+            "set_as_template": {"type": "boolean"},
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        # handle set_as_template
+        set_as_template = instance.pop("set_as_template", None)
+        if set_as_template is True:
+            db_instance = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
+            )
+            instance["template_for_committee_id"] = db_instance["committee_id"]
+        elif set_as_template is False:
+            instance["template_for_committee_id"] = None
+
         meeting_check = []
         if "reference_projector_id" in instance:
             if (
