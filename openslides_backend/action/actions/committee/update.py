@@ -28,7 +28,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         optional_properties=[
             "name",
             "description",
-            "template_meeting_ids",
             "default_meeting_id",
             "forward_to_committee_ids",
             "receive_forwardings_from_committee_ids",
@@ -39,8 +38,6 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        for meeting_id in instance.get("template_meeting_ids", []):
-            self.check_meeting_in_committee(meeting_id, instance["id"])
         if instance.get("default_meeting_id"):
             self.check_meeting_in_committee(
                 instance["default_meeting_id"], instance["id"]

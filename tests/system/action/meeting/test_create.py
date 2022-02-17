@@ -273,8 +273,8 @@ class MeetingCreateActionTest(BaseActionTestCase):
 
     def test_create_set_as_template(self) -> None:
         meeting = self.basic_test({"set_as_template": True})
-        assert meeting.get("template_for_committee_id") == 1
-        self.assert_model_exists("committee/1", {"template_meeting_ids": [1]})
+        assert meeting.get("template_for_organization_id") == 1
+        self.assert_model_exists("organization/1", {"template_meeting_ids": [1]})
 
     def test_create_no_permissions(self) -> None:
         self.set_models(

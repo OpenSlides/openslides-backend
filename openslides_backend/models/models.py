@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "3b58e39ab8a0ca80fa8e648f949d0066"
+MODELS_YML_CHECKSUM = "b10a1ebbea21786811cf77104fe0e43b"
 
 
 class Organization(Model):
@@ -42,6 +42,9 @@ class Organization(Model):
     )
     archived_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "is_archived_in_organization_id"}
+    )
+    template_meeting_ids = fields.RelationListField(
+        to={Collection("meeting"): "template_for_organization_id"}
     )
     resource_ids = fields.RelationListField(
         to={Collection("resource"): "organization_id"}
@@ -305,9 +308,6 @@ class Committee(Model):
     meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
-    template_meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "template_for_committee_id"}
-    )
     default_meeting_id = fields.RelationField(
         to={Collection("meeting"): "default_meeting_for_committee_id"}
     )
@@ -362,8 +362,8 @@ class Meeting(Model):
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()
     enable_chat = fields.BooleanField()
-    template_for_committee_id = fields.RelationField(
-        to={Collection("committee"): "template_meeting_ids"}
+    template_for_organization_id = fields.RelationField(
+        to={Collection("organization"): "template_meeting_ids"}
     )
     enable_anonymous = fields.BooleanField(default=False)
     custom_translations = fields.JSONField()

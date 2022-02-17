@@ -464,6 +464,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_set_as_template_true(self) -> None:
         self.set_models(self.test_models)
+        self.set_models({"organization/1": {}})
         response = self.request(
             "meeting.update",
             {
@@ -474,15 +475,15 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         assert "set_as_template" not in meeting
-        assert meeting.get("template_for_committee_id") == 1
-        self.assert_model_exists("committee/1", {"template_meeting_ids": [1]})
+        assert meeting.get("template_for_organization_id") == 1
+        self.assert_model_exists("organization/1", {"template_meeting_ids": [1]})
 
     def test_update_set_as_template_false(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
             {
-                "meeting/1": {"template_for_committee_id": 1},
-                "committee/1": {"template_meeting_ids": [1]},
+                "meeting/1": {"template_for_organization_id": 1},
+                "organization/1": {"template_meeting_ids": [1]},
             }
         )
         response = self.request(
@@ -495,5 +496,5 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting = self.get_model("meeting/1")
         assert "set_as_template" not in meeting
-        assert "template_for_committee_id" not in meeting
-        self.assert_model_exists("committee/1", {"template_meeting_ids": []})
+        assert "template_for_organization_id" not in meeting
+        self.assert_model_exists("organization/1", {"template_meeting_ids": []})

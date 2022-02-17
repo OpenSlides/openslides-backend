@@ -50,7 +50,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         instance = super().update_instance(instance)
         # handle set_as_template
         if instance.pop("set_as_template", None):
-            instance["template_for_committee_id"] = instance["committee_id"]
+            instance["template_for_organization_id"] = 1
 
         committee = self.datastore.get(
             FullQualifiedId(Collection("committee"), instance["committee_id"]),

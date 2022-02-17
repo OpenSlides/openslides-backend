@@ -38,7 +38,7 @@ class MeetingImport(BaseActionTestCase):
                         "user_ids": [1],
                         "imported_at": None,
                         "custom_translations": None,
-                        "template_for_committee_id": None,
+                        "template_for_organization_id": None,
                         "enable_anonymous": False,
                         "location": "",
                         "start_time": 10,

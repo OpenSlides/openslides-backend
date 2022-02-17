@@ -141,7 +141,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
             *meeting_settings_keys,
-            "template_for_committee_id",
             "reference_projector_id",
             "organization_tag_ids",
             "jitsi_domain",
@@ -162,12 +161,9 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
         # handle set_as_template
         set_as_template = instance.pop("set_as_template", None)
         if set_as_template is True:
-            db_instance = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
-            )
-            instance["template_for_committee_id"] = db_instance["committee_id"]
+            instance["template_for_organization_id"] = 1
         elif set_as_template is False:
-            instance["template_for_committee_id"] = None
+            instance["template_for_organization_id"] = None
 
         meeting_check = []
         if "reference_projector_id" in instance:
