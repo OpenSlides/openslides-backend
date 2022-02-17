@@ -58,4 +58,4 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
         if collection != "meeting":
             raise ActionException("Mediafile is not a meeting mediafile.")
         if int(id_) != instance["id"]:
-            raise ActionException("Mediafile does not belong to the meeting.")
+            raise ActionException("Mediafile has to belong to this meeting..")
