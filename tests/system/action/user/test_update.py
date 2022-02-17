@@ -547,6 +547,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             {
                 "id": 111,
                 "username": "new username",
+                "pronoun": "pronoun",
             },
         )
         self.assert_status_code(response, 200)
@@ -554,6 +555,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             "user/111",
             {
                 "username": "new username",
+                "pronoun": "pronoun",
                 "meeting_ids": [1],
                 "committee_ids": None,
             },
