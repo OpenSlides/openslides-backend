@@ -117,10 +117,21 @@ class PollStopActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
                 },
-                "user/2": {"group_$1_ids": [3]},
-                "group/3": {"user_ids": [2]},
+                "user/2": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [3],
+                    "meeting_ids": [1],
+                },
+                "user/3": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [4],
+                    "meeting_ids": [1],
+                },
+                "group/3": {"user_ids": [2], "meeting_id": 1},
+                "group/4": {"user_ids": [3], "meeting_id": 1},
                 "meeting/1": {
-                    "group_ids": [3],
+                    "user_ids": [2, 3],
+                    "group_ids": [3, 4],
                     "is_active_in_organization_id": 1,
                 },
             }

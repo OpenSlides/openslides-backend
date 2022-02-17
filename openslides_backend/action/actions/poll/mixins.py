@@ -53,7 +53,13 @@ class StopControl(CountdownControl, Action):
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
-            ["state", "meeting_id", "pollmethod", "global_option_id"],
+            [
+                "state",
+                "meeting_id",
+                "pollmethod",
+                "global_option_id",
+                "entitled_group_ids",
+            ],
         )
         # reset countdown given by meeting
         meeting = self.datastore.get(
@@ -153,11 +159,8 @@ class StopControl(CountdownControl, Action):
         meeting_id = poll["meeting_id"]
 
         # get all users from the groups.
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id), ["group_ids"]
-        )
         gmr = GetManyRequest(
-            Collection("group"), meeting.get("group_ids", []), ["user_ids"]
+            Collection("group"), poll.get("entitled_group_ids", []), ["user_ids"]
         )
         gm_result = self.datastore.get_many([gmr])
         groups = gm_result.get(Collection("group"), {}).values()
