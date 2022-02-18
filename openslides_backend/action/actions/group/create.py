@@ -4,6 +4,7 @@ from ....models.models import Group
 from ....permissions.permission_helper import filter_surplus_permissions
 from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
+from ...action import original_instances
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -26,6 +27,7 @@ class GroupCreate(CreateAction):
     permission = Permissions.User.CAN_MANAGE
     weight_map: Dict[int, int] = {}
 
+    @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         self.weight_map = {}
         return super().get_updated_instances(action_data)

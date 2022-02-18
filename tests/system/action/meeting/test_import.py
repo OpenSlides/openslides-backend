@@ -398,6 +398,7 @@ class MeetingImport(BaseActionTestCase):
             "id": obj_id,
             "meeting_id": 1,
             "name": "testgroup",
+            "weight": obj_id,
             "user_ids": [],
             "admin_group_for_meeting_id": None,
             "default_group_for_meeting_id": None,

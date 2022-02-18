@@ -940,6 +940,7 @@
                 "projector.can_see",
                 "user.can_see"
             ],
+	    "weight": 1,
             "user_ids": [],
             "mediafile_access_group_ids": [],
             "mediafile_inherited_access_group_ids": [],
@@ -963,6 +964,7 @@
             "admin_group_for_meeting_id": 1,
             "default_group_for_meeting_id": null,
             "permissions": [],
+	    "weight": 2,
             "user_ids": [
                 1
             ],
@@ -1010,6 +1012,7 @@
                 "tag.can_manage",
                 "user.can_manage"
             ],
+	    "weight": 3,
             "user_ids": [],
             "mediafile_access_group_ids": [
                 1
@@ -1048,6 +1051,7 @@
                 "projector.can_see",
                 "user.can_see"
             ],
+	    "weight": 4,
             "user_ids": [],
             "mediafile_access_group_ids": [],
             "mediafile_inherited_access_group_ids": [],
@@ -1080,6 +1084,7 @@
                 "projector.can_see",
                 "user.can_see"
             ],
+	    "weight": 5,
             "user_ids": [
                 2,
                 3

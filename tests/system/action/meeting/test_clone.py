@@ -46,6 +46,7 @@ class MeetingClone(BaseActionTestCase):
             "group/1": {
                 "meeting_id": 1,
                 "name": "testgroup",
+                "weight": 1,
                 "admin_group_for_meeting_id": 1,
                 "default_group_for_meeting_id": 1,
             },
