@@ -17,6 +17,7 @@ class AssignmentCreateActionTest(BaseActionTestCase):
             "assignment.create", {"title": "test_Xcdfgee", "meeting_id": 110}
         )
         self.assert_status_code(response, 200)
+        assert response.json["results"] == [[{"id": 1, "sequential_number": 1}]]
         model = self.get_model("assignment/1")
         assert model.get("title") == "test_Xcdfgee"
         assert model.get("meeting_id") == 110
