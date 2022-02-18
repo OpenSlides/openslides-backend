@@ -38,18 +38,9 @@ class MeetingClone(MeetingImport):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_json_old = export_meeting(
+        meeting_json = export_meeting(
             self.datastore, self.media, instance["meeting_id"]
         )
-
-        # Transform data format
-        # TODO: Transform format earlier, e. g. in export_meeting function
-        meeting_json: Dict[str, Any] = {}
-        for collection, objs in meeting_json_old.items():
-            meeting_json[collection] = {}
-            for obj in objs:
-                meeting_json[collection][str(obj["id"])] = obj
-
         instance["meeting"] = meeting_json
 
         # checks if the meeting is correct
