@@ -15,6 +15,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 22
         assert model.get("permissions") == []
+        assert model.get("weight") == 1
 
     def test_create_permissions(self) -> None:
         self.create_model(
@@ -33,6 +34,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 22
         assert model.get("permissions") == ["agenda_item.can_see"]
+        assert model.get("weight") == 1
 
     def test_create_redundant_permissions(self) -> None:
         self.create_model(
@@ -51,6 +53,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 22
         assert model.get("permissions") == ["agenda_item.can_manage"]
+        assert model.get("weight") == 1
 
     def test_create_redundant_permissions_2(self) -> None:
         self.create_model(

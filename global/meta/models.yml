@@ -1615,6 +1615,9 @@ group:
         - user.can_manage_presence
         - user.can_see
     restriction_mode: A
+  weight:
+    type: number
+    restriction_mode: A
 
   user_ids:
     type: relation-list
