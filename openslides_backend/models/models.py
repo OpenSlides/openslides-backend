@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "dfbe18f62214d09668569eaf943d3dcf"
+MODELS_YML_CHECKSUM = "3b58e39ab8a0ca80fa8e648f949d0066"
 
 
 class Organization(Model):
@@ -799,6 +799,7 @@ class Group(Model):
             ]
         }
     )
+    weight = fields.IntegerField()
     user_ids = fields.RelationListField(to={Collection("user"): "group_$_ids"})
     default_group_for_meeting_id = fields.RelationField(
         to={Collection("meeting"): "default_group_id"},

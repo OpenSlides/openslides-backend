@@ -46,6 +46,7 @@ class MeetingClone(BaseActionTestCase):
             "group/1": {
                 "meeting_id": 1,
                 "name": "testgroup",
+                "weight": 1,
                 "admin_group_for_meeting_id": 1,
                 "default_group_for_meeting_id": 1,
             },
@@ -109,6 +110,12 @@ class MeetingClone(BaseActionTestCase):
                 "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
             },
         )
+
+    def test_clone_group_with_weight(self) -> None:
+        self.set_models(self.test_models)
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("group/2", {"weight": 1})
 
     def test_clone_with_users(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
