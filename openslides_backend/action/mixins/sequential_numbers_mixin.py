@@ -41,6 +41,6 @@ class SequentialNumbersMixin(CreateAction):
     ) -> Optional[ActionResultElement]:
         result = super().create_action_result_element(instance)
         if result is None:
-            result = {}
+            result = {"id": instance["id"]}
         result["sequential_number"] = instance["sequential_number"]
         return result
