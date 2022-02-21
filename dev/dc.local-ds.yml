@@ -1,4 +1,5 @@
 # Use local datastore instead of pip package
+version: "3"
 services:
     backend:
         build:

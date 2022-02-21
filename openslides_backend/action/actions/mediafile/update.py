@@ -1,6 +1,7 @@
 from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
+from ....shared.exceptions import ActionException
 from ....shared.patterns import FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -36,8 +37,10 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
             if mediafile.get("parent_id"):
                 parent = self.datastore.get(
                     FullQualifiedId(self.model.collection, mediafile["parent_id"]),
-                    ["is_public", "inherited_access_group_ids"],
+                    ["is_public", "inherited_access_group_ids", "is_directory"],
                 )
+                if parent.get("is_directory") is not True:
+                    raise ActionException("Cannot have a non-directory parent.")
 
                 (
                     instance["is_public"],

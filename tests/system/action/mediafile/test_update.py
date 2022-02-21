@@ -67,6 +67,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "meeting_id": 1,
                 },
                 "mediafile/111": {
@@ -96,6 +97,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "inherited_access_group_ids": [8],
                     "is_public": False,
                     "meeting_id": 1,
@@ -125,6 +127,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "access_group_ids": [],
                     "inherited_access_group_ids": [],
                     "is_public": True,
@@ -156,6 +159,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "inherited_access_group_ids": [2, 4],
                     "access_group_ids": [2, 4],
                     "is_public": False,
@@ -187,6 +191,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
                     "is_public": True,
@@ -223,6 +228,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
                     "is_public": False,
@@ -259,6 +265,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "inherited_access_group_ids": [1, 2],
                     "access_group_ids": [1, 2],
                     "is_public": False,
@@ -288,6 +295,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "inherited_access_group_ids": [],
                     "access_group_ids": [],
                     "is_public": False,
@@ -330,6 +338,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "meeting_id": 1,
                 },
                 "mediafile/111": {
@@ -369,12 +378,14 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "meeting_id": 1,
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
                     "parent_id": 110,
                     "child_ids": [112, 113],
+                    "is_directory": True,
                     "meeting_id": 1,
                 },
                 "mediafile/112": {
@@ -418,6 +429,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                 "mediafile/110": {
                     "title": "title_srtgb199",
                     "child_ids": [111],
+                    "is_directory": True,
                     "meeting_id": 1,
                 },
                 "mediafile/111": {
