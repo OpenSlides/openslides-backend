@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from datastore.shared.util import DeletedModelsBehaviour
 
@@ -6,6 +6,7 @@ from ...models.models import Model
 from ...services.datastore.interface import DatastoreService
 from ...shared.filters import FilterOperator
 from ..generics.create import CreateAction
+from ..util.typing import ActionResultElement
 
 
 class SequentialNumbersMixin(CreateAction):
@@ -34,3 +35,12 @@ class SequentialNumbersMixin(CreateAction):
             instance["meeting_id"]
         )
         return instance
+
+    def create_action_result_element(
+        self, instance: Dict[str, Any]
+    ) -> Optional[ActionResultElement]:
+        result = super().create_action_result_element(instance)
+        if result is None:
+            result = {"id": instance["id"]}
+        result["sequential_number"] = instance["sequential_number"]
+        return result

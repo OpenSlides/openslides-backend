@@ -30,7 +30,9 @@ class TopicCreateSystemTest(BaseActionTestCase):
         )
         self.assertTrue(response.json["success"])
         self.assertEqual(response.json["message"], "Actions handled successfully")
-        self.assertEqual(response.json["results"], [[{"id": 42}]])
+        self.assertEqual(
+            response.json["results"], [[{"id": 42, "sequential_number": 1}]]
+        )
 
     def test_create_multiple_requests(self) -> None:
         self.create_model(
