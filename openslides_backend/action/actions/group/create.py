@@ -25,11 +25,10 @@ class GroupCreate(CreateAction):
         ],
     )
     permission = Permissions.User.CAN_MANAGE
-    weight_map: Dict[int, int] = {}
 
     @original_instances
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.weight_map = {}
+        self.weight_map: Dict[int, int] = {}
         return super().get_updated_instances(action_data)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -44,11 +43,10 @@ class GroupCreate(CreateAction):
         meeting_id = instance["meeting_id"]
         if meeting_id in self.weight_map:
             max_weight = self.weight_map[meeting_id]
-            self.weight_map[meeting_id] += 1
         else:
             filter_ = FilterOperator("meeting_id", "=", meeting_id)
             max_weight = (
                 self.datastore.max(self.model.collection, filter_, "weight", "int") or 0
             )
-            self.weight_map[meeting_id] = max_weight + 1
-        instance["weight"] = max_weight + 1
+        self.weight_map[meeting_id] = max_weight + 1
+        instance["weight"] = self.weight_map[meeting_id]
