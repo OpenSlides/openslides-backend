@@ -22,12 +22,15 @@ def export_meeting(
             FilterOperator("meeting_id", "=", meeting_id),
         )
         export[collection] = add_empty_fields(
-            remove_meta_fields(list(res.values())), collection
+            remove_meta_fields(transfer_keys(res)), collection
         )
 
     # handle meeting
     meeting = datastore.get(FullQualifiedId(Collection("meeting"), meeting_id))
-    export["meeting"] = add_empty_fields(remove_meta_fields([meeting]), "meeting")
+    export["meeting"] = add_empty_fields(
+        remove_meta_fields(transfer_keys({meeting_id: meeting})), "meeting"
+    )
+
     return export
 
 
@@ -66,26 +69,31 @@ def get_collections_with_meeting_id() -> List[str]:
     return collections
 
 
-def remove_meta_fields(res: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    list_without_meta_fields = []
-    for entry in res:
+def transfer_keys(res: Dict[int, Any]) -> Dict[str, Any]:
+    new_dict = {}
+    for key in res:
+        new_dict[str(key)] = res[key]
+    return new_dict
+
+
+def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
+    dict_without_meta_fields = {}
+    for key in res:
         new_entry = {}
-        for fieldname in entry:
+        for fieldname in res[key]:
             if not is_reserved_field(fieldname):
-                new_entry[fieldname] = entry[fieldname]
-        list_without_meta_fields.append(new_entry)
-    return list_without_meta_fields
+                new_entry[fieldname] = res[key][fieldname]
+        dict_without_meta_fields[str(key)] = new_entry
+    return dict_without_meta_fields
 
 
-def add_empty_fields(
-    res: List[Dict[str, Any]], collection: str
-) -> List[Dict[str, Any]]:
+def add_empty_fields(res: Dict[str, Any], collection: str) -> Dict[str, Any]:
     fields = set(
         field.get_own_field_name()
         for field in model_registry[Collection(collection)]().get_fields()
     )
-    for entry in res:
+    for key in res:
         for field in fields:
-            if field not in entry:
-                entry[field] = None
+            if field not in res[key]:
+                res[key][field] = None
     return res
