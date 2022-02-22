@@ -38,6 +38,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import Collection, FullQualifiedId, transform_to_fqids
+from ..shared.typing import DeletedModel
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
@@ -393,11 +394,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
             # sort events: create - update - delete
             events_by_type: Dict[EventType, List[Event]] = defaultdict(list)
             for event in write_request.events:
+                self.apply_event(event)
                 events_by_type[event["type"]].append(event)
             write_request.events = []
             for event_type in (EventType.Create, EventType.Update, EventType.Delete):
                 write_request.events.extend(events_by_type[event_type])
         return write_request
+
+    def apply_event(self, event: Event) -> None:
+        """
+        Applies the given event to the changed_models in the datastore.
+        """
+        if event["type"] in (EventType.Create, EventType.Update):
+            if fields := event.get("fields"):
+                self.datastore.apply_changed_model(event["fqid"], fields)
+        elif event["type"] == EventType.Delete:
+            self.datastore.apply_changed_model(event["fqid"], DeletedModel())
 
     def validate_required_fields(self, write_request: WriteRequest) -> None:
         """

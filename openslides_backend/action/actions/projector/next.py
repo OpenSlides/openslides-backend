@@ -6,6 +6,7 @@ from ....services.datastore.commands import GetManyRequest
 from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
+from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -13,7 +14,7 @@ from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.next")
-class ProjectorNext(UpdateAction):
+class ProjectorNext(WeightMixin, UpdateAction):
     """
     Action to get to the next projection.
     """
@@ -80,28 +81,18 @@ class ProjectorNext(UpdateAction):
     def is_stable(self, value: Dict[str, Any]) -> bool:
         return bool(value.get("stable"))
 
-    def get_max_projection_weight(self, meeting_id: int, projector_id: int) -> int:
-        filter_ = And(
-            FilterOperator("meeting_id", "=", meeting_id),
-            FilterOperator("history_projector_id", "=", projector_id),
-        )
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight")
-        if maximum is None:
-            maximum = 1
-        return maximum
-
     def set_weight_to_projection(
         self, projection_ids: List[int], meeting_id: int, projector_id: int
     ) -> None:
-        max_weight = self.get_max_projection_weight(meeting_id, projector_id)
-        increment = 1
-        action_data_set_weight = []
-        for projection_id in projection_ids:
-            action_data_set_weight.append(
-                {"id": projection_id, "weight": max_weight + increment}
-            )
-            increment += 1
-        self.execute_other_action(ProjectionUpdate, action_data_set_weight)
+        filter = And(
+            FilterOperator("meeting_id", "=", meeting_id),
+            FilterOperator("history_projector_id", "=", projector_id),
+        )
+        weight = self.get_weight(filter, Collection("projection"))
+        action_data = []
+        for i, projection_id in enumerate(projection_ids):
+            action_data.append({"id": projection_id, "weight": weight + i})
+        self.execute_other_action(ProjectionUpdate, action_data)
 
     def get_min_preview_projection(self, projector: Dict[str, Any]) -> int:
         gmr2 = GetManyRequest(

@@ -34,7 +34,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
                 remove_meta_fields(transfer_keys(results[collection])), collection
             )
         else:
-            export[str(collection)] = []
+            export[str(collection)] = {}
 
     return export
 
@@ -92,7 +92,7 @@ def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
     return dict_without_meta_fields
 
 
-def add_empty_fields(res: Dict[str, Any], collection: str) -> Dict[str, Any]:
+def add_empty_fields(res: Dict[str, Any], collection: Collection) -> Dict[str, Any]:
     fields = set(
         field.get_own_field_name()
         for field in model_registry[collection]().get_fields()
