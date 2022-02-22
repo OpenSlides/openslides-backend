@@ -42,6 +42,8 @@ class TestExportMeeting(BasePresenterTestCase):
         ):
             assert data[collection] == {}
 
+        assert data["_migration_index"]
+
     def test_no_permissions(self) -> None:
         self.set_models(
             {
