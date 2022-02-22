@@ -1,7 +1,7 @@
-from datastore.migrations import RemoveFieldMigration
+from datastore.migrations import RemoveFieldsMigration
 
 
-class Migration(RemoveFieldMigration):
+class Migration(RemoveFieldsMigration):
     """
     This migration removes field `motion_state/dont_set_identifier`
     from database-events
@@ -9,5 +9,4 @@ class Migration(RemoveFieldMigration):
 
     target_migration_index = 9
 
-    collection = "motion_state"
-    field = "dont_set_identifier"
+    collection_fields_map = {"motion_state": ["dont_set_identifier"]}
