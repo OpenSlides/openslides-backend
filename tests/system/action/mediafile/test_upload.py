@@ -219,7 +219,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
         )
 
-    def test_createX_media_directory_group(self) -> None:
+    def test_create_media_directory_group(self) -> None:
         self.set_models(
             {
                 "meeting/110": {

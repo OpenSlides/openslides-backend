@@ -2,6 +2,9 @@ FROM python:3.8.5-slim-buster
 
 RUN apt-get update && apt-get install --yes bash-completion vim postgresql-client redis-tools wait-for-it gcc libc-dev libpq-dev curl git
 
+WORKDIR /helper
+COPY openslides_backend/models/helper.py .
+
 WORKDIR /util
 RUN mkdir /datastore-service
 
