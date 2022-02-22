@@ -85,6 +85,15 @@ class MotionCreateForwarded(MotionCreateBase):
             msg += f" Missing permission: {perm_origin}"
             raise PermissionDenied(msg)
 
+        # check if origin motion is amendment or statute_amendment
+        origin = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["origin_id"]),
+            ["lead_motion_id", "statute_paragraph_id"],
+        )
+        if origin.get("lead_motion_id") or origin.get("statute_paragraph_id"):
+            msg = "Amendments cannot be forwarded."
+            raise PermissionDenied(msg)
+
     def calculate_all_origin_ids_and_all_derived_motion_ids(
         self, instance: Dict[str, Any]
     ) -> None:
