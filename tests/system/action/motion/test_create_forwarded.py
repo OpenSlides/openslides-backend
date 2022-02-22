@@ -198,6 +198,52 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
 
+    def test_not_allowed_to_forward_amendments(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "name_XDAddEAW",
+                    "committee_id": 53,
+                    "is_active_in_organization_id": 1,
+                },
+                "user/1": {"meeting_ids": [1, 2]},
+                "motion/6": {
+                    "title": "title_FcnPUXJB layer 1",
+                    "meeting_id": 1,
+                    "state_id": 34,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                },
+                "motion/11": {
+                    "title": "test11 layer 2",
+                    "meeting_id": 1,
+                    "state_id": 34,
+                    "derived_motion_ids": [],
+                    "all_origin_ids": [],
+                    "all_derived_motion_ids": [],
+                    "lead_motion_id": 6,
+                },
+                "motion_workflow/12": {
+                    "name": "name_workflow1",
+                    "first_state_id": 34,
+                    "state_ids": [34],
+                },
+                "motion_state/34": {"name": "name_state34", "meeting_id": 1},
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_foo",
+                "meeting_id": 1,
+                "origin_id": 11,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Amendments cannot be forwarded." in response.json["message"]
+
     def test_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
