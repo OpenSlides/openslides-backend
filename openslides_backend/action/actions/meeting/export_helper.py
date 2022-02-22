@@ -4,14 +4,11 @@ from datastore.shared.util import is_reserved_field
 
 from ....models.base import model_registry
 from ....services.datastore.interface import DatastoreService
-from ....services.media.interface import MediaService
 from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 
 
-def export_meeting(
-    datastore: DatastoreService, media: MediaService, meeting_id: int
-) -> Dict[str, Any]:
+def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
     export = {}
 
     # handle collections with meeting_id
