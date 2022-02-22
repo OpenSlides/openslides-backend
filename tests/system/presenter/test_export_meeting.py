@@ -3,10 +3,10 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from .base import BasePresenterTestCase
 
 
-class TestExport(BasePresenterTestCase):
+class TestExportMeeting(BasePresenterTestCase):
     def test_correct(self) -> None:
         self.set_models({"meeting/1": {"name": "test_foo"}})
-        status_code, data = self.request("export", {"meeting_id": 1})
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
         self.assertEqual(status_code, 200)
         assert data["meeting"]["1"]["name"] == "test_foo"
         for collection in (
@@ -51,5 +51,5 @@ class TestExport(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request("export", {"meeting_id": 1})
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 403

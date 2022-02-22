@@ -10,11 +10,11 @@ from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
 
-export_schema = fastjsonschema.compile(
+export_meeting_schema = fastjsonschema.compile(
     {
         "$schema": schema_version,
         "type": "object",
-        "title": "export",
+        "title": "export meeting",
         "description": "export meeting",
         "properties": {
             "meeting_id": required_id_schema,
@@ -23,21 +23,21 @@ export_schema = fastjsonschema.compile(
 )
 
 
-@register_presenter("export")
+@register_presenter("export_meeting")
 class Export(BasePresenter):
     """
-    Export presenter.
+    Export meeting presenter.
     It calls the export meeting function and should be used by the superadmin.
     """
 
-    schema = export_schema
+    schema = export_meeting_schema
 
     def get_result(self) -> Any:
         # check permissions
         if not has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.SUPERADMIN
         ):
-            msg = "You are not allowed to perform presenter export"
+            msg = "You are not allowed to perform presenter export_meeting."
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
         return export_meeting(self.datastore, self.data["meeting_id"])
