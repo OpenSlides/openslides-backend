@@ -199,7 +199,7 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
                 collection, results, mapped_fields, get_deleted_models
             )
             # find results which are only present in the changed_models
-            changed_results = self._filter_additional_models(
+            changed_results = self._filter_changed_models(
                 collection, filter, mapped_fields
             )
             # apply these results and find fields which are missing in the changed_models
@@ -323,7 +323,7 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
         super().reset()
         self.changed_models.clear()
 
-    def _filter_additional_models(
+    def _filter_changed_models(
         self,
         collection: Collection,
         filter: Filter,

@@ -35,7 +35,7 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
             )
 
         self.adapter = ExtendedDatastoreAdapter(MagicMock(), MagicMock())
-        self.add_filter_mock = self.add_mock_to_method("_filter_additional_models")
+        self.add_filter_mock = self.add_mock_to_method("_filter_changed_models")
         self.add_get_many_mock = self.add_mock_to_method(
             "_get_many_from_changed_models"
         )
