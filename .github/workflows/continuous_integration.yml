@@ -136,11 +136,11 @@ jobs:
       run: PYTHONPATH=. python cli/generate_models.py check
 
     - name: Check initial-data.json
-      run: PYTHONPATH=. python cli/check_json.py --partial global/data/initial-data.json
+      run: PYTHONPATH=. python cli/check_json.py global/data/initial-data.json
 
     - name: Check example-data.json
       if: ${{ always() && steps.models_py.outcome == 'success' }}
-      run: PYTHONPATH=. python cli/check_json.py --partial global/data/example-data.json
+      run: PYTHONPATH=. python cli/check_json.py global/data/example-data.json
 
     - name: Check for up to date permissions.py
       if: ${{ always() && steps.python.outcome == 'success' && steps.requirements.outcome == 'success' }}

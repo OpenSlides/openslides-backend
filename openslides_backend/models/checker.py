@@ -148,7 +148,6 @@ class Checker:
         self,
         data: Dict[str, Dict[str, Any]],
         mode: str = "all",
-        is_partial: bool = False,
     ) -> None:
         """
         The checker checks the data without access to datastore.
@@ -169,14 +168,9 @@ class Checker:
             in data, because they exist in same database.
         all: All collections are valid and has to be in the data
 
-        is_partial=True disables the check, that *all* collections have to be
-        explicitly given, so a non existing (=empty) collection will not raise
-        an error. Additionally, missing fields (=None) are ok, if they are not
-        required nor have a default (so required fields or fields with defaults
-        must be present).
+        Not all collections must be given and missing fields are ignore.
         """
         self.data = data
-        self.is_partial = is_partial
         self.mode = mode
 
         self.models: Dict[str, Type["Model"]] = {
@@ -329,9 +323,6 @@ class Checker:
         c1 = set(self.data.keys())
         c2 = set(self.allowed_collections)
         err = "Collections in file do not match with models.py."
-        if not self.is_partial and c2 - c1:
-            err += f" Missing collections: {', '.join(c2-c1)}."
-            raise CheckException(err)
         if c1 - c2:
             err += f" Invalid collections: {', '.join(c1-c2)}."
             raise CheckException(err)
@@ -362,11 +353,7 @@ class Checker:
             for field in self.models[collection]().get_fields()
             if field.required or field.default is not None
         )
-        necessary_fields = (
-            required_or_default_collection_fields
-            if self.is_partial
-            else all_collection_fields
-        )
+        necessary_fields = required_or_default_collection_fields
 
         errors = False
         if diff := necessary_fields - model_fields:
