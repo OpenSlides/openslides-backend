@@ -57,7 +57,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             instance["data"] = data
 
         # check datavalidation
-        checker = Checker(data=data, mode="all")
+        checker = Checker(data=data, mode="all", is_partial=True)
         try:
             checker.run_check()
         except CheckException as ce:
