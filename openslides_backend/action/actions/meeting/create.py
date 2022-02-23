@@ -36,6 +36,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         additional_optional_fields={
             "user_ids": id_list_schema,
             "admin_ids": id_list_schema,
+            "set_as_template": {"type": "boolean"},
         },
     )
     dependencies = [
@@ -47,6 +48,10 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+        # handle set_as_template
+        if instance.pop("set_as_template", None):
+            instance["template_for_organization_id"] = 1
+
         committee = self.datastore.get(
             FullQualifiedId(Collection("committee"), instance["committee_id"]),
             ["user_ids", "organization_id"],

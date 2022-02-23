@@ -141,7 +141,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
     schema = DefaultSchema(Meeting()).get_update_schema(
         optional_properties=[
             *meeting_settings_keys,
-            "template_for_committee_id",
             "reference_projector_id",
             "organization_tag_ids",
             "jitsi_domain",
@@ -153,9 +152,19 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "present_user_ids",
             "default_projector_$_id",
         ],
+        additional_optional_fields={
+            "set_as_template": {"type": "boolean"},
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        # handle set_as_template
+        set_as_template = instance.pop("set_as_template", None)
+        if set_as_template is True:
+            instance["template_for_organization_id"] = 1
+        elif set_as_template is False:
+            instance["template_for_organization_id"] = None
+
         meeting_check = []
         if "reference_projector_id" in instance:
             if (

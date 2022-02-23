@@ -124,6 +124,11 @@ organization:
     type: relation-list
     restriction_mode: B
     to: meeting/is_archived_in_organization_id
+  template_meeting_ids:
+    type: relation-list
+    to: meeting/template_for_organization_id
+    restriction_mode: A
+    required: false
   resource_ids:
     type: relation-list
     restriction_mode: A
@@ -638,11 +643,6 @@ committee:
     to: meeting/committee_id
     on_delete: PROTECT
     restriction_mode: A
-  template_meeting_ids:
-    type: relation-list
-    to: meeting/template_for_committee_id
-    restriction_mode: A
-    required: false
   default_meeting_id:
     type: relation
     to: meeting/default_meeting_for_committee_id
@@ -747,9 +747,9 @@ meeting:
     restriction_mode: B
 
   # System
-  template_for_committee_id:
+  template_for_organization_id:
     type: relation
-    to: committee/template_meeting_ids
+    to: organization/template_meeting_ids
     restriction_mode: B
     required: false
   enable_anonymous:

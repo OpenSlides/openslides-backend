@@ -1,7 +1,7 @@
-from datastore.migrations import RemoveFieldMigration
+from datastore.migrations import RemoveFieldsMigration
 
 
-class Migration(RemoveFieldMigration):
+class Migration(RemoveFieldsMigration):
     """
     This migration removes the field `motion/workflow_id`.
     There was a bug, which introduced it in motion.update.
@@ -9,5 +9,4 @@ class Migration(RemoveFieldMigration):
 
     target_migration_index = 16
 
-    collection = "motion"
-    field = "workflow_id"
+    collection_fields_map = {"motion": ["workflow_id"]}

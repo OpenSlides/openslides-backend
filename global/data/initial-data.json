@@ -1,5 +1,5 @@
 {
-    "_migration_index": 18,
+    "_migration_index": 19,
     "organization": {
         "1": {
             "id": 1,
@@ -19,16 +19,17 @@
             "active_meeting_ids": [
                 1
             ],
-	    "archived_meeting_ids": [],
+            "archived_meeting_ids": [],
+            "template_meeting_ids": [],
             "resource_ids": [],
             "organization_tag_ids": [],
             "theme_id": 1,
             "theme_ids": [1, 2, 3],
-	    "users_email_sender": "OpenSlides",
-	    "users_email_replyto": "",
-	    "users_email_subject": "OpenSlides access data",
-	    "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
-	    "url": "https://example.com"
+            "users_email_sender": "OpenSlides",
+            "users_email_replyto": "",
+            "users_email_subject": "OpenSlides access data",
+            "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
+            "url": "https://example.com"
         }
     },
     "user": {
@@ -233,7 +234,6 @@
             "meeting_ids": [
                 1
             ],
-            "template_meeting_ids": [],
             "default_meeting_id": 1,
             "user_ids": [],
             "user_$_management_level": [],
@@ -250,7 +250,7 @@
             "welcome_text": "[Space for your welcome text]",
             "name": "Default meeting",
             "is_active_in_organization_id": 1,
-	    "is_archived_in_organization_id": null,
+            "is_archived_in_organization_id": null,
             "description": "",
             "location": "",
             "start_time": 0,
@@ -260,7 +260,7 @@
             "jitsi_room_name": "",
             "jitsi_room_password": "",
             "enable_chat": false,
-            "template_for_committee_id": null,
+            "template_for_organization_id": null,
             "enable_anonymous": false,
             "custom_translations": {},
             "conference_show": false,
@@ -1030,13 +1030,13 @@
             "default_workflow_meeting_id": 1,
             "default_amendment_workflow_meeting_id": 1,
             "default_statute_amendment_workflow_meeting_id": 1,
-	    "sequential_number": 1,
+            "sequential_number": 1,
             "meeting_id": 1
         },
         "2": {
             "id": 2,
             "name": "Complex Workflow",
-	    "sequential_number": 2,
+            "sequential_number": 2,
             "state_ids": [
                 5,
                 6,
@@ -1120,7 +1120,7 @@
             "used_as_default_$assignment_poll_in_meeting_id": 1,
             "used_as_default_$motion_poll_in_meeting_id": 1,
             "used_as_default_$poll_in_meeting_id": 1,
-	    "sequential_number": 1,
+            "sequential_number": 1,
             "meeting_id": 1
         }
     },

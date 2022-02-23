@@ -17,7 +17,8 @@
             "active_meeting_ids": [
                 1
             ],
-	    "archived_meeting_ids": [],
+            "archived_meeting_ids": [],
+            "template_meeting_ids": [],
             "limit_of_meetings": 0,
             "limit_of_users": 0,
             "resource_ids": [
@@ -516,7 +517,6 @@
             "meeting_ids": [
                 1
             ],
-            "template_meeting_ids": [],
             "default_meeting_id": 1,
             "user_ids": [
                 1,
@@ -536,8 +536,8 @@
         "1": {
             "id": 1,
             "is_active_in_organization_id": 1,
-	    "is_archived_in_organization_id": null,
-            "template_for_committee_id": null,
+            "is_archived_in_organization_id": null,
+            "template_for_organization_id": null,
             "enable_anonymous": false,
             "custom_translations": {},
             "name": "OpenSlides Demo",
