@@ -1,6 +1,6 @@
-from enum import Enum
 from typing import Optional
 
+from ..shared.enum import Enum
 from .base_classes import VerbosePermission
 
 

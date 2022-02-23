@@ -2,7 +2,6 @@ from typing import Any, Dict, List, Set, cast
 
 from openslides_backend.models.models import User
 from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.services.datastore.interface import InstanceAdditionalBehaviour
 
 from ...models.fields import Field
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
@@ -33,11 +32,11 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             return {}
         user_id = instance["id"]
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        db_user = self.datastore.fetch_model(
+        db_user = self.datastore.get(
             fqid,
             ["committee_ids", "group_$_ids", *cml_fields],
-            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-            exception=False,
+            use_changed_models=False,
+            raise_exception=False,
         )
         db_committee_ids = set(db_user.get("committee_ids", []) or [])
         if any(cml_field in instance for cml_field in cml_fields):
@@ -70,7 +69,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             committee_id
             for meeting_id in meeting_ids
             if (
-                committee_id := self.datastore.additional_relation_models.get(
+                committee_id := self.datastore.changed_models.get(
                     FullQualifiedId(meeting_collection, meeting_id), {}
                 ).get("committee_id")
             )

@@ -127,6 +127,7 @@ class RelationManager:
                 return self.datastore.get(
                     fqid=FullQualifiedId(model.collection, instance["id"]),
                     mapped_fields=[template_field_name],
+                    use_changed_models=False,
                 ).get(template_field_name, [])
             except DatastoreException:
                 return []
@@ -150,12 +151,11 @@ class RelationManager:
                 if replacement not in template_field:
                     if field.replacement_collection:
                         # check if the model the replacement is referring to exists
-                        self.datastore.fetch_model(
+                        self.datastore.get(
                             fqid=FullQualifiedId(
                                 field.replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
-                            exception=True,
                         )
                     elif field.replacement_enum:
                         if replacement not in field.replacement_enum:
@@ -254,7 +254,7 @@ class RelationManager:
         for fqfield, relations_element in relations.items():
             if relations_element["type"] in ("add", "remove"):
                 field_update_element = cast(FieldUpdateElement, relations_element)
-                self.datastore.update_additional_models(
+                self.datastore.apply_changed_model(
                     fqfield.fqid, {fqfield.field: field_update_element["value"]}
                 )
             elif relations_element["type"] == "list_update":

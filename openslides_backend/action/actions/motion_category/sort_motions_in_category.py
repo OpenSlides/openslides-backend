@@ -1,5 +1,6 @@
 from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
+from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -26,8 +27,7 @@ class MotionCategorySortMotionInCategorySort(
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
         yield from self.sort_linear(
-            nodes=instance["motion_ids"],
-            filter_id=instance["id"],
-            filter_str="category_id",
+            instance["motion_ids"],
+            FilterOperator("category_id", "=", instance["id"]),
             weight_key="category_weight",
         )

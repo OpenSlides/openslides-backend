@@ -95,7 +95,7 @@ class ProjectorPrevious(UpdateAction):
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("preview_projector_id", "=", projector_id),
         )
-        minimum = self.datastore.min(Collection("projection"), filter_, "weight", "int")
+        minimum = self.datastore.min(Collection("projection"), filter_, "weight")
         if minimum is None:
             minimum = 10000
         return minimum

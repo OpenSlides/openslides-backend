@@ -1,5 +1,6 @@
 from ....models.models import Assignment, AssignmentCandidate
 from ....permissions.permissions import Permissions
+from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -28,7 +29,6 @@ class AssignmentCandidateSort(LinearSortMixin, SingularActionMixin, UpdateAction
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
         yield from self.sort_linear(
-            nodes=instance["candidate_ids"],
-            filter_id=instance["assignment_id"],
-            filter_str="assignment_id",
+            instance["candidate_ids"],
+            FilterOperator("assignment_id", "=", instance["assignment_id"]),
         )

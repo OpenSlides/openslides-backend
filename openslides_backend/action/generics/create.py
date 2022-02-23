@@ -27,6 +27,7 @@ class CreateAction(Action):
         instance = self.set_defaults(instance)
         instance = self.validate_fields(instance)
 
+        instance["meta_new"] = True  # mark as a new model
         instance = self.update_instance(instance)
         self.apply_instance(instance)
         self.validate_relation_fields(instance)
@@ -50,6 +51,8 @@ class CreateAction(Action):
         """
         fqid = FullQualifiedId(self.model.collection, instance["id"])
         information = "Object created"
+        if "meta_new" in instance:
+            del instance["meta_new"]
         yield self.build_write_request(EventType.Create, fqid, information, instance)
 
     def create_action_result_element(

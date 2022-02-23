@@ -26,9 +26,9 @@ FILE_TEMPLATE = dedent(
     """\
     # Code generated. DO NOT EDIT.
 
-    from enum import Enum
     from typing import Dict, List
 
+    from openslides_backend.shared.enum import Enum
     from .base_classes import Permission
 
     PERMISSION_YML_CHECKSUM = "{}"

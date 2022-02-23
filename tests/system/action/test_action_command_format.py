@@ -48,30 +48,29 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 2)
         self.assertEqual(len(write_requests[0].events), 2)
-        self.assertEqual(
-            write_requests[0].locked_fields,
-            {
-                "group/meeting_id": 2,
-                "group/weight": 2,
-                "meeting/1/group_ids": 2,
-                "meeting/1/is_active_in_organization_id": 2,
-                "meeting/1/name": 2,
-            },
+        self.assertCountEqual(
+            write_requests[0].locked_fields.keys(),
+            [
+                "group/meeting_id",
+                "group/weight",
+                "meeting/1/group_ids",
+                "meeting/1/is_active_in_organization_id",
+                "meeting/1/name",
+            ],
         )
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "update")
         self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
         self.assertEqual(str(write_requests[0].events[1]["fqid"]), "meeting/1")
         self.assertEqual(len(write_requests[1].events), 2)
-        self.assertEqual(
-            write_requests[1].locked_fields,
-            {
-                "group/meeting_id": 2,
-                "group/weight": 2,
-                "meeting/1/group_ids": 2,
-                "meeting/1/is_active_in_organization_id": 2,
-                "meeting/1/name": 2,
-            },
+        self.assertCountEqual(
+            write_requests[1].locked_fields.keys(),
+            [
+                "group/meeting_id",
+                "group/weight",
+                "meeting/1/is_active_in_organization_id",
+                "meeting/1/name",
+            ],
         )
 
     def test_parse_actions_create_1_2_events(self) -> None:
@@ -98,15 +97,15 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 1)
         self.assertEqual(len(write_requests[0].events), 4)
-        self.assertEqual(
-            write_requests[0].locked_fields,
-            {
-                "group/meeting_id": 2,
-                "group/weight": 2,
-                "meeting/1/group_ids": 2,
-                "meeting/1/is_active_in_organization_id": 2,
-                "meeting/1/name": 2,
-            },
+        self.assertCountEqual(
+            write_requests[0].locked_fields.keys(),
+            [
+                "group/meeting_id",
+                "group/weight",
+                "meeting/1/group_ids",
+                "meeting/1/is_active_in_organization_id",
+                "meeting/1/name",
+            ],
         )
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "create")
@@ -145,7 +144,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'group/meeting_id', 'group/weight', 'meeting/1/group_ids'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'group/meeting_id', 'group/weight'",
             response.json["message"],
         )
         self.assert_model_not_exists("group/1")
@@ -294,14 +293,10 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                 },
             ],
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'committee/1/meeting_ids'",
-            response.json["message"],
-        )
-        self.assert_model_exists("meeting/1")
-        self.assert_model_exists("meeting/2")
-        self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("meeting/1")
+        self.assert_model_deleted("meeting/2")
+        self.assert_model_exists("committee/1", {"meeting_ids": []})
 
     def test_delete_1_2_events(self) -> None:
         self.set_models(

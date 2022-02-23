@@ -23,12 +23,12 @@ class MotionWorkflowDeleteAction(DeleteAction):
         """
         check if is default or last workflow of meeting.
         """
-        workflow = self.datastore.fetch_model(
+        workflow = self.datastore.get(
             FullQualifiedId(Collection("motion_workflow"), instance["id"]),
             ["meeting_id"],
         )
         if not self.is_meeting_deleted(workflow["meeting_id"]):
-            meeting = self.datastore.fetch_model(
+            meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), workflow["meeting_id"]),
                 [
                     "motions_default_workflow_id",

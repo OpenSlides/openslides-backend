@@ -6,7 +6,7 @@ from .environment import get_environment
 from .http.application import OpenSlidesBackendWSGIApplication
 from .http.views import ActionView, PresenterView
 from .services.auth.adapter import AuthenticationHTTPAdapter
-from .services.datastore.adapter import DatastoreAdapter
+from .services.datastore.extended_adapter import ExtendedDatastoreAdapter
 from .services.datastore.http_engine import HTTPEngine
 from .services.media.adapter import MediaServiceAdapter
 from .services.vote.adapter import VoteAdapter
@@ -26,7 +26,7 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
     engine = providers.Singleton(
         HTTPEngine, config.datastore_reader_url, config.datastore_writer_url, logging
     )
-    datastore = providers.Factory(DatastoreAdapter, engine, logging)
+    datastore = providers.Factory(ExtendedDatastoreAdapter, engine, logging)
     vote = providers.Singleton(VoteAdapter, config.vote_url, logging)
 
 

@@ -1,4 +1,3 @@
-from enum import Enum
 from typing import (
     Any,
     ContextManager,
@@ -27,21 +26,13 @@ PartialModel = Dict[str, Any]
 LockResult = Union[bool, List[str]]
 
 
-class InstanceAdditionalBehaviour(int, Enum):
-    ADDITIONAL_BEFORE_DBINST = 1
-    DBINST_BEFORE_ADDITIONAL = 2
-    ONLY_DBINST = 3
-    ONLY_ADDITIONAL = 4
-
-
-class DatastoreService(Protocol):
+class BaseDatastoreService(Protocol):
     """
     Datastore defines the interface to the datastore.
     """
 
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField
     locked_fields: Dict[str, CollectionFieldLock]
-    additional_relation_models: ModelMap
 
     def get_database_context(self) -> ContextManager[None]:
         ...
@@ -49,7 +40,7 @@ class DatastoreService(Protocol):
     def get(
         self,
         fqid: FullQualifiedId,
-        mapped_fields: List[str] = None,
+        mapped_fields: List[str],
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: LockResult = True,
@@ -59,7 +50,6 @@ class DatastoreService(Protocol):
     def get_many(
         self,
         get_many_requests: List[GetManyRequest],
-        mapped_fields: List[str] = None,
         position: int = None,
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
@@ -69,7 +59,7 @@ class DatastoreService(Protocol):
     def get_all(
         self,
         collection: Collection,
-        mapped_fields: List[str] = None,
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
@@ -79,7 +69,7 @@ class DatastoreService(Protocol):
         self,
         collection: Collection,
         filter: Filter,
-        mapped_fields: List[str] = [],
+        mapped_fields: List[str],
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Dict[int, PartialModel]:
@@ -108,7 +98,6 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
@@ -119,7 +108,6 @@ class DatastoreService(Protocol):
         collection: Collection,
         filter: Filter,
         field: str,
-        type: str = "int",
         get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
         lock_result: bool = True,
     ) -> Optional[int]:
@@ -142,27 +130,99 @@ class DatastoreService(Protocol):
     def truncate_db(self) -> None:
         ...
 
-    def update_additional_models(
-        self, fqid: FullQualifiedId, instance: Dict[str, Any], replace: bool = False
-    ) -> None:
-        ...
-
-    def fetch_model(
-        self,
-        fqid: FullQualifiedId,
-        mapped_fields: List[str],
-        position: int = None,
-        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
-        lock_result: LockResult = True,
-        db_additional_relevance: InstanceAdditionalBehaviour = InstanceAdditionalBehaviour.ADDITIONAL_BEFORE_DBINST,
-        exception: bool = True,
-    ) -> Dict[str, Any]:
-        ...
-
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         ...
 
     def reset(self) -> None:
+        ...
+
+
+class DatastoreService(BaseDatastoreService):
+    changed_models: ModelMap
+
+    def get(
+        self,
+        fqid: FullQualifiedId,
+        mapped_fields: Optional[List[str]] = None,
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: LockResult = True,
+        use_changed_models: bool = True,
+        raise_exception: bool = True,
+    ) -> PartialModel:
+        ...
+
+    def get_many(
+        self,
+        get_many_requests: List[GetManyRequest],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
+        ...
+
+    def filter(
+        self,
+        collection: Collection,
+        filter: Filter,
+        mapped_fields: List[str] = [],
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> Dict[int, PartialModel]:
+        ...
+
+    def exists(
+        self,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> bool:
+        ...
+
+    def count(
+        self,
+        collection: Collection,
+        filter: Filter,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> int:
+        ...
+
+    def min(
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> Optional[int]:
+        ...
+
+    def max(
+        self,
+        collection: Collection,
+        filter: Filter,
+        field: str,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+        use_changed_models: bool = True,
+    ) -> Optional[int]:
+        ...
+
+    def is_deleted(self, fqid: FullQualifiedId) -> bool:
+        """
+        Returns whether the given model was deleted during this request or not.
+        """
+
+    def apply_changed_model(
+        self, fqid: FullQualifiedId, instance: PartialModel, replace: bool = False
+    ) -> None:
         ...
 
 

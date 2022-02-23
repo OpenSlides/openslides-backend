@@ -1,5 +1,6 @@
 from ....models.models import MotionCommentSection
 from ....permissions.permissions import Permissions
+from ....shared.filters import FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -26,7 +27,6 @@ class MotionCommentSectionSort(LinearSortMixin, SingularActionMixin, UpdateActio
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
         yield from self.sort_linear(
-            nodes=instance["motion_comment_section_ids"],
-            filter_id=instance["meeting_id"],
-            filter_str="meeting_id",
+            instance["motion_comment_section_ids"],
+            FilterOperator("meeting_id", "=", instance["meeting_id"]),
         )

@@ -40,7 +40,12 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
                 "user/78": {"username": "username_loetzbfg", "meeting_ids": [111]},
                 "user/79": {"username": "username_wuumpoop", "meeting_ids": [111]},
-                "motion_submitter/1": {"user_id": 79, "motion_id": 357, "weight": 100},
+                "motion_submitter/1": {
+                    "user_id": 79,
+                    "motion_id": 357,
+                    "weight": 100,
+                    "meeting_id": 111,
+                },
             }
         )
         response = self.request(

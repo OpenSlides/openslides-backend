@@ -283,7 +283,7 @@ class MeetingClone(MeetingImport):
         if instance.get("committee_id"):
             committee_id = instance["committee_id"]
         else:
-            meeting = self.datastore.fetch_model(
+            meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
                 ["committee_id"],
             )

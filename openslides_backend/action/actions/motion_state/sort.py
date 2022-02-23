@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
+from ....shared.filters import FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
@@ -29,9 +30,8 @@ class MotionStateSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
         yield from self.sort_linear(
-            nodes=instance["motion_state_ids"],
-            filter_id=instance["workflow_id"],
-            filter_str="workflow_id",
+            instance["motion_state_ids"],
+            FilterOperator("workflow_id", "=", instance["workflow_id"]),
         )
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:

@@ -38,6 +38,7 @@ from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import Collection, FullQualifiedId, transform_to_fqids
+from ..shared.typing import DeletedModel
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
 from .util.action_type import ActionType
@@ -90,6 +91,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     permission: Optional[Union[Permission, OrganizationManagementLevel]] = None
     permission_model: Optional[Model] = None
     permission_id: Optional[str] = None
+    skip_archived_meeting_check: bool = False
     relation_manager: RelationManager
 
     write_requests: List[WriteRequest]
@@ -101,7 +103,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         datastore: DatastoreService,
         relation_manager: RelationManager,
         logging: LoggingModule,
-        skip_archived_meeting_check: bool = False,
+        skip_archived_meeting_check: Optional[bool] = None,
     ) -> None:
         self.services = services
         self.auth = services.authentication()
@@ -111,11 +113,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.relation_manager = relation_manager
         self.logging = logging
         self.logger = logging.getLogger(__name__)
-        if hasattr(self.__class__, "skip_archived_meeting_check"):
-            self.skip_archived_meeting_check: bool = (
-                self.__class__.skip_archived_meeting_check
-            )
-        else:
+        if skip_archived_meeting_check is not None:
             self.skip_archived_meeting_check = skip_archived_meeting_check
         self.write_requests = []
         self.results = []
@@ -219,7 +217,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             )
 
         fqid = FullQualifiedId(Collection("meeting"), meeting_id)
-        meeting = self.datastore.fetch_model(
+        meeting = self.datastore.get(
             fqid,
             ["is_active_in_organization_id", "name"],
         )
@@ -249,10 +247,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
             identifier = "id"
             if self.permission_id:
                 identifier = self.permission_id
-            db_instance = self.datastore.fetch_model(
+            db_instance = self.datastore.get(
                 FullQualifiedId(model.collection, instance[identifier]),
                 ["meeting_id"],
-                exception=True,
             )
             return db_instance["meeting_id"]
 
@@ -359,7 +356,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         )
         if fields:
             event["fields"] = fields
-            self.datastore.update_additional_models(fqid, fields)
+            self.datastore.apply_changed_model(fqid, fields)
         if list_fields:
             event["list_fields"] = list_fields
         return WriteRequest(
@@ -397,11 +394,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
             # sort events: create - update - delete
             events_by_type: Dict[EventType, List[Event]] = defaultdict(list)
             for event in write_request.events:
+                self.apply_event(event)
                 events_by_type[event["type"]].append(event)
             write_request.events = []
             for event_type in (EventType.Create, EventType.Update, EventType.Delete):
                 write_request.events.extend(events_by_type[event_type])
         return write_request
+
+    def apply_event(self, event: Event) -> None:
+        """
+        Applies the given event to the changed_models in the datastore.
+        """
+        if event["type"] in (EventType.Create, EventType.Update):
+            if fields := event.get("fields"):
+                self.datastore.apply_changed_model(event["fqid"], fields)
+        elif event["type"] == EventType.Delete:
+            self.datastore.apply_changed_model(event["fqid"], DeletedModel())
 
     def validate_required_fields(self, write_request: WriteRequest) -> None:
         """
@@ -479,7 +487,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
                     fqid = FullQualifiedId(self.model.collection, instance["id"])
-                    db_instance = self.datastore.fetch_model(
+                    db_instance = self.datastore.get(
                         fqid,
                         [equal_field],
                     )
@@ -497,7 +505,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                         )
                     else:
                         for fqid in fqids:
-                            related_instance = self.datastore.fetch_model(
+                            related_instance = self.datastore.get(
                                 fqid,
                                 [equal_field],
                             )
@@ -533,7 +541,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     ) -> None:
         if not fqid:
             fqid = FullQualifiedId(self.model.collection, instance["id"])
-        self.datastore.update_additional_models(fqid, instance)
+        self.datastore.apply_changed_model(fqid, instance)
 
     def execute_other_action(
         self,
@@ -551,8 +559,8 @@ class Action(BaseAction, metaclass=SchemaProvider):
         to the called class if set. Usually this is needed for cascading deletes from
         outside of meeting.
         """
-        if hasattr(self.__class__, "skip_archived_meeting_check"):
-            skip_archived_meeting_check = self.__class__.skip_archived_meeting_check
+        if self.skip_archived_meeting_check:
+            skip_archived_meeting_check = self.skip_archived_meeting_check
 
         action = ActionClass(
             self.services,

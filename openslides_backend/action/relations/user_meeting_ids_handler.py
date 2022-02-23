@@ -1,7 +1,5 @@
 from typing import Any, Dict
 
-from openslides_backend.services.datastore.interface import InstanceAdditionalBehaviour
-
 from ...models.fields import Field
 from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
 from .calculated_field_handler import CalculatedFieldHandler
@@ -20,11 +18,11 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             return {}
 
         fqid = FullQualifiedId(field.own_collection, instance["id"])
-        db_instance = self.datastore.fetch_model(
+        db_instance = self.datastore.get(
             fqid,
             [field_name],
-            db_additional_relevance=InstanceAdditionalBehaviour.ONLY_DBINST,
-            exception=False,
+            use_changed_models=False,
+            raise_exception=False,
         )
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])

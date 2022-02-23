@@ -6,6 +6,7 @@ from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.weight_mixin import WeightMixin
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,7 +17,7 @@ from ..projection.update import ProjectionUpdate
 
 
 @register_action("projector.toggle")
-class ProjectorToggle(UpdateAction):
+class ProjectorToggle(WeightMixin, UpdateAction):
     """
     Action to toggle projections.
     """
@@ -75,7 +76,9 @@ class ProjectorToggle(UpdateAction):
                             ProjectionDelete, [{"id": id_} for id_ in projection_ids]
                         )
                     else:
-                        self.move_projections_to_history(projector_id, projection_ids)
+                        self.move_projections_to_history(
+                            meeting_id, projector_id, projection_ids
+                        )
                 else:
                     data: Dict[str, Any] = {
                         "current_projector_id": projector_id,
@@ -87,38 +90,34 @@ class ProjectorToggle(UpdateAction):
                     }
                     if not stable:
                         self.move_all_unstable_projections_to_history(
-                            projector_id, meeting_id
+                            meeting_id, projector_id
                         )
                         yield {"id": projector_id, "scroll": 0}
                     self.execute_other_action(ProjectionCreate, [data])
 
     def move_projections_to_history(
-        self, projector_id: int, projection_ids: List[int]
+        self, meeting_id: int, projector_id: int, projection_ids: List[int]
     ) -> None:
-        max_weight = self.get_max_projection_weight(projector_id)
-        for projection_id in projection_ids:
-            self.execute_other_action(
-                ProjectionUpdate,
-                [
-                    {
-                        "id": int(projection_id),
-                        "current_projector_id": None,
-                        "history_projector_id": projector_id,
-                        "weight": max_weight + 1,
-                    }
-                ],
-            )
-            max_weight += 1
-
-    def get_max_projection_weight(self, projector_id: int) -> int:
-        filter_ = FilterOperator("history_projector_id", "=", projector_id)
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
-        if maximum is None:
-            maximum = 0
-        return maximum
+        filter_ = And(
+            FilterOperator("meeting_id", "=", meeting_id),
+            FilterOperator("history_projector_id", "=", projector_id),
+        )
+        weight = self.get_weight(filter_, Collection("projection"))
+        self.execute_other_action(
+            ProjectionUpdate,
+            [
+                {
+                    "id": int(projection_id),
+                    "current_projector_id": None,
+                    "history_projector_id": projector_id,
+                    "weight": weight + i,
+                }
+                for i, projection_id in enumerate(projection_ids)
+            ],
+        )
 
     def move_all_unstable_projections_to_history(
-        self, projector_id: int, meeting_id: int
+        self, meeting_id: int, projector_id: int
     ) -> None:
         filter_ = And(
             FilterOperator("meeting_id", "=", meeting_id),
@@ -127,4 +126,6 @@ class ProjectorToggle(UpdateAction):
         )
         result = self.datastore.filter(Collection("projection"), filter_, ["id"])
         if result:
-            self.move_projections_to_history(projector_id, [int(id_) for id_ in result])
+            self.move_projections_to_history(
+                meeting_id, projector_id, [int(id_) for id_ in result]
+            )

@@ -169,18 +169,30 @@ class ResourceUploadActionTest(BaseActionTestCase):
             ]
         )
 
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'organization/1/resource_ids'",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("resource/1")
+        self.assert_model_exists(
+            "resource/2",
+            {
+                "organization_id": 1,
+                "mimetype": used_mimetype,
+                "filesize": len(raw_content1),
+                "token": token1,
+            },
         )
-        self.assert_model_exists("organization/1", {"resource_ids": [1]})
-        self.assert_model_exists("resource/1", {"meta_deleted": False, "token": token1})
-        self.assert_model_not_exists("resource/2")
-        self.assert_model_not_exists("resource/3")
-
-        # TODO: When the retry-problem (issue440) is solved, the 7 has to be substituted with a 3
-        self.media.upload_resource.assert_called_with(file_content2, 7, used_mimetype)
+        self.assert_model_exists(
+            "resource/3",
+            {
+                "organization_id": 1,
+                "mimetype": used_mimetype,
+                "filesize": len(raw_content2),
+                "token": token2,
+            },
+        )
+        self.assert_model_exists(
+            "organization/1",
+            {"resource_ids": [2, 3]},
+        )
 
     def test_upload_and_mixed_one_action(self) -> None:
         """

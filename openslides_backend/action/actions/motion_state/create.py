@@ -8,12 +8,13 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
+from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 
 
 @register_action("motion_state.create")
-class MotionStateCreateAction(CreateActionWithInferredMeeting):
+class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
     """
     Action to create motion states
     """
@@ -48,7 +49,7 @@ class MotionStateCreateAction(CreateActionWithInferredMeeting):
             raise ActionException(
                 f"This state of workflow {instance['workflow_id']} cannot be the first state of workflow {first_state_of_workflow_id}."
             )
-        workflow = self.datastore.fetch_model(
+        workflow = self.datastore.get(
             FullQualifiedId(Collection("motion_workflow"), instance["workflow_id"]),
             ["id", "first_state_id", "meeting_id"],
         )
@@ -62,13 +63,9 @@ class MotionStateCreateAction(CreateActionWithInferredMeeting):
 
         # set weight to max+1 if not set
         if "weight" not in instance:
-            max_weight = self.datastore.max(
-                Collection("motion_state"),
-                And(
-                    FilterOperator("meeting_id", "=", workflow["meeting_id"]),
-                    FilterOperator("workflow_id", "=", workflow["id"]),
-                ),
-                "weight",
+            filter = And(
+                FilterOperator("meeting_id", "=", workflow["meeting_id"]),
+                FilterOperator("workflow_id", "=", workflow["id"]),
             )
-            instance["weight"] = (max_weight or 0) + 1
+            instance["weight"] = self.get_weight(filter)
         return instance

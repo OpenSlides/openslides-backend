@@ -22,7 +22,9 @@ class SetNumberMixin(BaseAction):
         """
         # Conditions to stop generate an automatic number.
         if instance.get("number"):
-            if not self._check_if_unique(instance["number"], meeting_id):
+            if not self._check_if_unique(
+                instance["number"], meeting_id, instance["id"]
+            ):
                 raise ActionException("Number is not unique.")
             return
         if existing_number:
@@ -50,7 +52,7 @@ class SetNumberMixin(BaseAction):
             meeting.get("motions_number_min_digits", 0), "0"
         )
         number = f"{prefix}{number_value_str}"
-        while not self._check_if_unique(number, meeting_id):
+        while not self._check_if_unique(number, meeting_id, instance["id"]):
             number_value += 1
             number_value_str = str(number_value).rjust(
                 meeting.get("motions_number_min_digits", 0), "0"
@@ -116,10 +118,11 @@ class SetNumberMixin(BaseAction):
         max_result = 1 if max_result is None else max_result + 1
         return max_result
 
-    def _check_if_unique(self, number: str, meeting_id: int) -> bool:
+    def _check_if_unique(self, number: str, meeting_id: int, own_id: int) -> bool:
         filter = And(
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("number", "=", number),
+            FilterOperator("id", "!=", own_id),
         )
         exists = self.datastore.exists(collection=Collection("motion"), filter=filter)
         return not exists

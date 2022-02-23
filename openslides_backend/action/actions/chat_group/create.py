@@ -2,16 +2,17 @@ from typing import Any, Dict
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
-from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection
 from ...generics.create import CreateAction
+from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixins import ChatEnabledMixin, CheckUniqueNameMixin
 
 
 @register_action("chat_group.create")
-class ChatGroupCreate(ChatEnabledMixin, CheckUniqueNameMixin, CreateAction):
+class ChatGroupCreate(
+    WeightMixin, ChatEnabledMixin, CheckUniqueNameMixin, CreateAction
+):
     """
     Action to create a chat group.
     """
@@ -28,10 +29,3 @@ class ChatGroupCreate(ChatEnabledMixin, CheckUniqueNameMixin, CreateAction):
         self.check_name_unique(instance)
         instance["weight"] = self.get_weight(instance["meeting_id"])
         return instance
-
-    def get_weight(self, meeting_id: int) -> int:
-        filter_ = FilterOperator("meeting_id", "=", meeting_id)
-        maximum = self.datastore.max(Collection("chat_group"), filter_, "weight", "int")
-        if maximum is None:
-            return 1
-        return maximum + 1

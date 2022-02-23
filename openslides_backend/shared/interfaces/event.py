@@ -1,6 +1,6 @@
-from enum import Enum
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
+from ..enum import Enum
 from ..patterns import FullQualifiedId
 
 

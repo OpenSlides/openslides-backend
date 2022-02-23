@@ -1,9 +1,7 @@
-from typing import Dict, List, Optional
-
-from openslides_backend.services.datastore.interface import PartialModel
+from typing import List
 
 from ...shared.exceptions import ActionException
-from ...shared.filters import Filter, FilterOperator
+from ...shared.filters import Filter
 from ..action import BaseAction
 from ..util.typing import ActionData
 
@@ -16,22 +14,14 @@ class LinearSortMixin(BaseAction):
     def sort_linear(
         self,
         nodes: List,
-        filter_id: int,
-        filter_str: str,
+        filter: Filter,
         weight_key: str = "weight",
-        add_to_db_instances: Dict[int, PartialModel] = {},
-        filter: Optional[Filter] = None,
     ) -> ActionData:
-        if not filter:
-            filter = FilterOperator(filter_str, "=", filter_id)
-        db_instances = {
-            **add_to_db_instances,
-            **self.datastore.filter(
-                collection=self.model.collection,
-                filter=filter,
-                mapped_fields=["id"],
-            ),
-        }
+        db_instances = self.datastore.filter(
+            collection=self.model.collection,
+            filter=filter,
+            mapped_fields=["id"],
+        )
         valid_instance_ids = []
         for id_ in nodes:
             if id_ not in db_instances:

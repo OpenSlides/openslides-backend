@@ -191,8 +191,10 @@ class BaseSystemTestCase(TestCase):
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(
             get_fqid(fqid),
+            mapped_fields=[],
             get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             lock_result=False,
+            use_changed_models=False,
         )
         self.assertTrue(model)
         self.assertEqual(model.get("id"), get_id_from_fqid(fqid))

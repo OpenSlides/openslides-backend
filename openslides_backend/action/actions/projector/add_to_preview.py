@@ -1,9 +1,10 @@
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import Collection
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
+from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -11,7 +12,7 @@ from ..projection.create import ProjectionCreate
 
 
 @register_action("projector.add_to_preview")
-class ProjectorAddToPreview(UpdateAction):
+class ProjectorAddToPreview(WeightMixin, UpdateAction):
     """
     Action to projector project.
     """
@@ -31,11 +32,15 @@ class ProjectorAddToPreview(UpdateAction):
         for instance in action_data:
             # add the preview projections
             for projector_id in instance["ids"]:
-                max_weight = self.get_max_projection_weight(projector_id)
+                filter = And(
+                    FilterOperator("preview_projector_id", "=", projector_id),
+                    FilterOperator("meeting_id", "=", instance["meeting_id"]),
+                )
+                weight = self.get_weight(filter, Collection("projection"))
                 data = {
                     "meeting_id": instance["meeting_id"],
                     "preview_projector_id": projector_id,
-                    "weight": max_weight + 1,
+                    "weight": weight,
                     "content_object_id": instance["content_object_id"],
                 }
                 for field in ("options", "stable", "type"):
@@ -43,10 +48,3 @@ class ProjectorAddToPreview(UpdateAction):
                         data[field] = instance[field]
                 self.execute_other_action(ProjectionCreate, [data])
         return []
-
-    def get_max_projection_weight(self, projector_id: int) -> int:
-        filter_ = FilterOperator("preview_projector_id", "=", projector_id)
-        maximum = self.datastore.max(Collection("projection"), filter_, "weight", "int")
-        if maximum is None:
-            maximum = 0
-        return maximum

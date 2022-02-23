@@ -226,13 +226,13 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             collection = Collection("meeting")
             id_ = meeting_id
 
-        res = self.datastore.fetch_model(
+        res = self.datastore.get(
             FullQualifiedId(collection, id_),
             fields,
             lock_result=False,
         )
         if meeting_id:
-            organization = self.datastore.fetch_model(
+            organization = self.datastore.get(
                 FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
                 ["url"],
                 lock_result=False,
