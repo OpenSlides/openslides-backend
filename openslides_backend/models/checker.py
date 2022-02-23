@@ -168,7 +168,8 @@ class Checker:
             in data, because they exist in same database.
         all: All collections are valid and has to be in the data
 
-        Not all collections must be given and missing fields are ignore.
+        Not all collections must be given and missing fields are ignore, but
+        required fields and fields with a default value must be present.
         """
         self.data = data
         self.mode = mode
@@ -353,10 +354,9 @@ class Checker:
             for field in self.models[collection]().get_fields()
             if field.required or field.default is not None
         )
-        necessary_fields = required_or_default_collection_fields
 
         errors = False
-        if diff := necessary_fields - model_fields:
+        if diff := required_or_default_collection_fields - model_fields:
             error = f"{collection}/{model['id']}: Missing fields {', '.join(diff)}"
             self.errors.append(error)
             errors = True
