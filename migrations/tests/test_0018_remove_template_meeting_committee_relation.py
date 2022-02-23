@@ -42,7 +42,7 @@ def test_migration(write, finalize, assert_model):
     write({"type": "delete", "fqid": "committee/1"})
     write({"type": "restore", "fqid": "committee/1"})
 
-    finalize("0017_remove_template_meeting_committee_relation")
+    finalize("0018_remove_template_meeting_committee_relation")
 
     assert_model(
         "meeting/1",
