@@ -1,18 +1,15 @@
 import os
-from base64 import b64encode
 from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
 from unittest.mock import Mock, patch
 
-from openslides_backend.http.views.action_view import (
-    INTERNAL_AUTHORIZATION_HEADER,
-    ActionView,
-)
-from openslides_backend.shared.env import INTERNAL_AUTH_PASSWORD_FILE
+from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.shared.env import DEV_PASSWORD, INTERNAL_AUTH_PASSWORD_FILE
 from tests.system.util import get_route_path
 from tests.util import Response
 
 from .base import BaseActionTestCase
+from .util import get_internal_auth_header
 
 
 class TestInternalActions(BaseActionTestCase):
@@ -26,7 +23,7 @@ class TestInternalActions(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.secret_file = NamedTemporaryFile()
-        self.secret_file.write(b"openslides")
+        self.secret_file.write(DEV_PASSWORD.encode("ascii"))
         self.secret_file.seek(0)
         os.environ[INTERNAL_AUTH_PASSWORD_FILE] = self.secret_file.name
 
@@ -38,16 +35,12 @@ class TestInternalActions(BaseActionTestCase):
         self,
         action: str,
         data: Dict[str, Any],
-        internal_auth_password: Optional[str] = "openslides",
+        internal_auth_password: Optional[str] = DEV_PASSWORD,
     ) -> Response:
         if internal_auth_password is None:
             headers = {}
         else:
-            headers = {
-                INTERNAL_AUTHORIZATION_HEADER: b64encode(
-                    internal_auth_password.encode()
-                ).decode()
-            }
+            headers = get_internal_auth_header(internal_auth_password)
         return self.anon_client.post(
             get_route_path(ActionView.internal_action_route),
             json=[{"action": action, "data": [data]}],
@@ -96,7 +89,9 @@ class TestInternalActions(BaseActionTestCase):
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
 
-    def test_internal_no_password_on_server(self) -> None:
+    @patch("openslides_backend.shared.env.is_dev_mode")
+    def test_internal_no_password_on_server(self, is_dev_mode: Mock) -> None:
+        is_dev_mode.return_value = False
         del os.environ[INTERNAL_AUTH_PASSWORD_FILE]
         response = self.internal_request("user.create", {"username": "test"})
         self.assert_status_code(response, 500)
