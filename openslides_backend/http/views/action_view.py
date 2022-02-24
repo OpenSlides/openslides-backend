@@ -45,16 +45,9 @@ class ActionView(BaseView):
         self, request: Request
     ) -> Tuple[ResponseBody, Optional[str]]:
         self.logger.debug("Start dispatching internal action request.")
-        assert_migration_index()
 
-        # Check authorization for internal route
-        request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
-        secret_password = get_internal_auth_password()
-        if (
-            request_password is None
-            or b64decode(request_password).decode() != secret_password
-        ):
-            raise Unauthorized()
+        assert_migration_index()
+        self.check_internal_auth_password(request)
 
         handler = ActionHandler(self.services, self.logging)
         response = handler.handle_request(request.json, -1, internal=True)
@@ -64,6 +57,7 @@ class ActionView(BaseView):
     @route("migrations", internal=True)
     def migrations_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         self.logger.debug("Start executing migrations request.")
+        self.check_internal_auth_password(request)
         handler = MigrationHandler(self.services, self.logging)
         response = handler.handle_request(request.json)
         self.logger.debug("Migrations request finished successfully.")
@@ -72,3 +66,12 @@ class ActionView(BaseView):
     @route("health", method="GET", json=False)
     def health_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         return {"status": "running"}, None
+
+    def check_internal_auth_password(self, request: Request) -> None:
+        request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
+        secret_password = get_internal_auth_password()
+        if (
+            request_password is None
+            or b64decode(request_password).decode() != secret_password
+        ):
+            raise Unauthorized()
