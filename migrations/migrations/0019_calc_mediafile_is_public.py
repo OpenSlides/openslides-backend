@@ -133,6 +133,7 @@ class Migration(BaseMigration):
             if changed or child in self.mediafiles.keys():
                 self.check_recursive(child)
 
+
 def calculate_inherited_groups_helper(
     access_group_ids: Optional[List[int]],
     parent_is_public: Optional[bool],
