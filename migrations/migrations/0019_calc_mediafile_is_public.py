@@ -129,9 +129,9 @@ class Migration(BaseMigration):
             )
             self.events.append(update_event)
 
-        for child in self.mediafiles[id_].get("childs", []) or []:
-            if changed or child in self.mediafiles.keys():
-                self.check_recursive(child)
+        for child_id in self.mediafiles[id_].get("child_ids", []) or []:
+            if changed or child_id in self.mediafiles.keys():
+                self.check_recursive(child_id)
 
 
 def calculate_inherited_groups_helper(

@@ -68,7 +68,7 @@ def test_migration_upload_with_parent_not_public(write, finalize, assert_model):
             "fqid": "mediafile/11",
             "fields": {
                 "id": 11,
-                "childs": [10],
+                "child_ids": [10],
                 "is_directory": True,
                 "is_public": False,
                 "access_group_ids": [1],
@@ -134,7 +134,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "mediafile/10",
-            "fields": {"childs": [11]},
+            "fields": {"child_ids": [11]},
         },
     )
 
@@ -148,7 +148,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "mediafile/10",
-            "fields": {"childs": [12]},
+            "fields": {"child_ids": [12]},
         },
         {
             "type": "update",
@@ -158,7 +158,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "mediafile/12",
-            "fields": {"childs": [11]},
+            "fields": {"child_ids": [11]},
         },
     )
 
@@ -218,7 +218,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "is_public": False,
             "inherited_access_group_ids": [1],
             "access_group_ids": [1],
-            "childs": [11],
+            "child_ids": [11],
             "is_directory": True,
             "meta_deleted": False,
             "meta_position": 2,
@@ -246,7 +246,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "is_public": False,
             "inherited_access_group_ids": [1],
             "access_group_ids": [1],
-            "childs": [12],
+            "child_ids": [12],
             "is_directory": True,
             "meta_deleted": False,
             "meta_position": 3,
@@ -272,7 +272,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "is_public": False,
             "inherited_access_group_ids": [1],
             "parent_id": 10,
-            "childs": [11],
+            "child_ids": [11],
             "is_directory": True,
             "meta_deleted": False,
             "meta_position": 3,
@@ -303,7 +303,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "is_public": True,
             "inherited_access_group_ids": [],
             "access_group_ids": [],
-            "childs": [12],
+            "child_ids": [12],
             "is_directory": True,
             "meta_deleted": False,
             "meta_position": 5,
@@ -330,7 +330,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "is_public": True,
             "inherited_access_group_ids": [],
             "parent_id": 10,
-            "childs": [11],
+            "child_ids": [11],
             "is_directory": True,
             "meta_deleted": False,
             "meta_position": 5,
