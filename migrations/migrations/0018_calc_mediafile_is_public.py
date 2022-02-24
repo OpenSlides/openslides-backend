@@ -1,80 +1,135 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
-from helper.helper import calculate_inherited_groups_helper
+from typing import Any, Dict, List, Optional, Set, cast
 
 from datastore.migrations import (
     BaseEvent,
     BaseMigration,
     CreateEvent,
-    DeleteEvent,
     ListUpdateEvent,
-    RestoreEvent,
     UpdateEvent,
 )
-from datastore.shared.util import collection_and_id_from_fqid, id_from_fqid
+from datastore.shared.util import collection_and_id_from_fqid
+from helper.helper import calculate_inherited_groups_helper
 
 
 class Migration(BaseMigration):
     """
     This migration should check for complete mediafile fields "is_public" and
     "inherited_access_group_ids" and should fill them.
-    The error-prone action was mediafile.upload, so we check expecially
-    mediafile create-events with is_directory = False and
-    assert other events.
+    Strategy:
+        1. Build a dict with fqid and data in migrate_event
+        2. get_additional_events: Run thru the dict and
+           follow the parent_id-chain. Store the highest id of dict
+           in each chain in root-list, not it's parent
+        3. Go thru the root-list traversing the tree recursively, calculate
+           is public and inherited_access_group_ids and generate update requests
+           for the 2 fields, when the values differ. Stop the down recursion,
+           if the current one isn't changed and the child is not dict of changed mediafiles
+
+    The algorithm assumes, that the events for a SINGLE mediafile entry are sent in
+    correct sequence, because this is guaranteed by the way, the write_requests of
+    actions are built.
+    Furthermore only the Create-, Update- and ListUpdateEvent are tracked,
+    the others do not influence the result
     """
 
     target_migration_index = 19
 
     def position_init(self) -> None:
-        self.creates: List[CreateEvent] = []
-        self.updates: List[UpdateEvent] = []
+        self.mediafiles: Dict[int, Dict[str, Any]] = defaultdict(dict)
+        self.events: List[BaseEvent] = []
 
     def migrate_event(self, event: BaseEvent) -> Optional[List[BaseEvent]]:
-        collection, _ = collection_and_id_from_fqid(event.fqid)
+        collection, id_ = collection_and_id_from_fqid(event.fqid)
 
-        if (
-            collection != "mediafile"
-            or not isinstance(event, (CreateEvent, UpdateEvent))
-            or type(event.data.get("is_public")) is bool
-        ):
+        if collection != "mediafile":
             return None
 
-        # mediafile: Optional[Dict[str, Any]]
         if isinstance(event, CreateEvent):
-            assert (
-                event.data.get("is_directory") is not True
-            ), "media-directory without is_public"
-            self.creates.append(event)
-        else:
-            self.updates.append(event)
+            self.mediafiles[id_] = event.data
+        elif isinstance(event, UpdateEvent):
+            if id_ not in self.mediafiles:
+                self.mediafiles[id_] = self.new_accessor.get_model_ignore_deleted(
+                    event.fqid
+                )[0]
+            self.mediafiles[id_].update(event.data)
+        elif isinstance(event, ListUpdateEvent):
+            if id_ not in self.mediafiles:
+                self.mediafiles[id_] = self.new_accessor.get_model_ignore_deleted(
+                    event.fqid
+                )[0]
+            if remove_dict := event.remove:
+                for key, value in remove_dict.items():
+                    if not value:
+                        continue
+                    assert isinstance(
+                        old_value := self.mediafiles[id_].get(key), list
+                    ), f"'{event.fqid}' should have values for '{key}', because there is a ListUpdate.remove!"
+                    self.mediafiles[id_][key] = list(set(old_value) - set(value))
+            if add_dict := event.add:
+                for key, value in add_dict.items():
+                    if not value:
+                        continue
+                    old_value = self.mediafiles[id_].get(key, set()) or set()
+                    self.mediafiles[id_][key] = list(set(old_value) | set(value))
         return None
-        # mediafile = self.new_accessor.get_model_ignore_deleted(f"user/{mediafile_id}")[0]
 
     def get_additional_events(self) -> Optional[List[BaseEvent]]:
-        events: List[BaseEvent] = []
+        roots: Set[int] = set()
+        for key in self.mediafiles.keys():
+            root_id = key
+            while (
+                parent_id := self.mediafiles[root_id].get("parent_id", 0)
+            ) in self.mediafiles.keys():
+                root_id = parent_id
+            roots.add(root_id)
 
-        for event in self.creates:
-            mediafile_id = id_from_fqid(event.fqid)
-            parent_is_public: Optional[bool] = None
-            parent_inherited_access_group_ids: Optional[List[int]] = []
+        for mediafile_id in roots:
+            self.check_recursive(mediafile_id)
+        return self.events
 
-            if parent_id := event.data.get("parent_id"):
-                parent = self.new_accessor.get_model_ignore_deleted(
+    def check_recursive(self, id_: int) -> None:
+        parent_is_public: Optional[bool] = None
+        parent_inherited_access_group_ids: Optional[List[int]] = []
+        fqid = f"mediafile/{id_}"
+
+        if parent_id := self.mediafiles[id_].get("parent_id"):
+            if parent_id not in self.mediafiles:
+                self.mediafiles[parent_id] = self.new_accessor.get_model_ignore_deleted(
                     f"mediafile/{parent_id}"
                 )[0]
-                parent_is_public = cast(bool, parent.get("is_public"))
-                parent_inherited_access_group_ids = cast(List, parent.get(
-                    "inherited_access_group_ids"
-                ))
-            update_event = UpdateEvent(event.fqid, {})
-            (
-                update_event.data["is_public"],
-                update_event.data["inherited_access_group_ids"],
-            ) = calculate_inherited_groups_helper(
-                event.data.get("access_group_ids"),
-                parent_is_public,
-                parent_inherited_access_group_ids,
+            parent_is_public = cast(bool, self.mediafiles[parent_id].get("is_public"))
+            parent_inherited_access_group_ids = cast(
+                List, self.mediafiles[parent_id].get("inherited_access_group_ids")
             )
-            events.append(update_event)
+        (
+            calc_is_public,
+            calc_inherited_access_group_ids,
+        ) = calculate_inherited_groups_helper(
+            self.mediafiles[id_].get("access_group_ids"),
+            parent_is_public,
+            parent_inherited_access_group_ids,
+        )
+        changed: bool = False
+        if calc_is_public != self.mediafiles[id_].get(
+            "is_public"
+        ) or calc_inherited_access_group_ids != self.mediafiles[id_].get(
+            "inherited_access_group_ids"
+        ):
+            changed = True
+            self.mediafiles[id_]["is_public"] = calc_is_public
+            self.mediafiles[id_][
+                "inherited_access_group_ids"
+            ] = calc_inherited_access_group_ids
+            update_event = UpdateEvent(
+                fqid,
+                {
+                    "is_public": calc_is_public,
+                    "inherited_access_group_ids": calc_inherited_access_group_ids,
+                },
+            )
+            self.events.append(update_event)
 
-        return events
+        for child in self.mediafiles[id_].get("childs", []) or []:
+            if changed or child in self.mediafiles.keys():
+                self.check_recursive(child)
