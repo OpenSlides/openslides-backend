@@ -6,9 +6,7 @@
             "name": "[Your organization]",
             "legal_notice": "<a href=\"http://www.openslides.org\">OpenSlides</a> is a free web based presentation and assembly system for visualizing and controlling agenda, motions and elections of an assembly. The event organizer is resposible for the content.",
             "login_text": "Welcome to OpenSlides. Please login.",
-            "reset_password_verbose_errors": false,
             "enable_electronic_voting": true,
-            "enable_chat": false,
             "limit_of_meetings": 0,
             "limit_of_users": 0,
             "committee_ids": [],
@@ -30,7 +28,6 @@
             "is_physical_person": true,
             "can_change_own_password": true,
             "default_vote_weight": "1.000000",
-            "is_demo_user": false,
 	    "meeting_ids": [],
             "organization_management_level": "superadmin"
         }
