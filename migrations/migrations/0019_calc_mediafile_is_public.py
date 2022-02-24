@@ -33,7 +33,7 @@ class Migration(BaseMigration):
     the others do not influence the result
     """
 
-    target_migration_index = 19
+    target_migration_index = 20
 
     def position_init(self) -> None:
         self.mediafiles: Dict[int, Dict[str, Any]] = defaultdict(dict)

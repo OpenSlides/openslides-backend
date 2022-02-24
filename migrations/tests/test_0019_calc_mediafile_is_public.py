@@ -20,7 +20,7 @@ def test_migration_upload_without_is_public(write, finalize, assert_model):
         },
     )
 
-    finalize("0018_calc_mediafile_is_public")
+    finalize("0019_calc_mediafile_is_public")
 
     assert_model(
         "group/1",
@@ -77,7 +77,7 @@ def test_migration_upload_with_parent_not_public(write, finalize, assert_model):
         },
     )
 
-    finalize("0018_calc_mediafile_is_public")
+    finalize("0019_calc_mediafile_is_public")
 
     assert_model(
         "group/1",
@@ -191,7 +191,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
         },
     )
 
-    finalize("0018_calc_mediafile_is_public")
+    finalize("0019_calc_mediafile_is_public")
 
     # 1 create directory with access_groups
     assert_model(
