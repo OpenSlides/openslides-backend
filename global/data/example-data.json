@@ -2626,6 +2626,7 @@
         "1": {
             "id": 1,
             "title": "List of speaker countdown",
+            "description": "",
             "default_time": 60,
             "countdown_time": 60,
             "running": false,
@@ -2635,6 +2636,7 @@
         "2": {
             "id": 2,
             "title": "Voting countdown",
+            "description": "",
             "default_time": 60,
             "countdown_time": 60,
             "running": false,
