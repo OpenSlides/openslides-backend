@@ -169,6 +169,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "fqid": "mediafile/11",
             "list_fields": {
                 "add": {"access_group_ids": [2]},
+                "remove": {"access_group_ids": []},
             },
         },
     )
@@ -179,6 +180,7 @@ def test_migration_varying(read_model, write, finalize, assert_model):
             "type": "update",
             "fqid": "mediafile/11",
             "list_fields": {
+                "add": {"access_group_ids": []},
                 "remove": {"access_group_ids": [2]},
             },
         },

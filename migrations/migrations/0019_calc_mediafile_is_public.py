@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, cast
+from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from datastore.migrations import (
     BaseEvent,
@@ -9,7 +9,6 @@ from datastore.migrations import (
     UpdateEvent,
 )
 from datastore.shared.util import collection_and_id_from_fqid
-from helper.helper import calculate_inherited_groups_helper
 
 
 class Migration(BaseMigration):
@@ -133,3 +132,27 @@ class Migration(BaseMigration):
         for child in self.mediafiles[id_].get("childs", []) or []:
             if changed or child in self.mediafiles.keys():
                 self.check_recursive(child)
+
+def calculate_inherited_groups_helper(
+    access_group_ids: Optional[List[int]],
+    parent_is_public: Optional[bool],
+    parent_inherited_access_group_ids: Optional[List[int]],
+) -> Tuple[bool, List[int]]:
+    """
+    TODO: If migration and backend are combined one day,
+    import this function from openslides_backend/models/helper.py
+    """
+    inherited_access_group_ids: List[int]
+    is_public = False
+    if parent_inherited_access_group_ids and access_group_ids:
+        inherited_access_group_ids = [
+            id_ for id_ in access_group_ids if id_ in parent_inherited_access_group_ids
+        ]
+    elif access_group_ids:
+        inherited_access_group_ids = access_group_ids
+    elif parent_inherited_access_group_ids:
+        inherited_access_group_ids = parent_inherited_access_group_ids
+    else:
+        is_public = parent_is_public is not False
+        inherited_access_group_ids = []
+    return is_public, inherited_access_group_ids
