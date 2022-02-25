@@ -1337,3 +1337,15 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(committee.get("user_ids"), [222, 223])
         committee = self.get_model("committee/3")
         self.assertCountEqual(committee.get("user_ids"), [222, 223])
+
+    def test_update_empty_default_vote_weight(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 1,
+                "default_vote_weight": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/1")
+        assert "default_vote_weight" not in user

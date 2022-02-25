@@ -949,6 +949,18 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_default_vote_weight_none(self) -> None:
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "default_vote_weight": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        user = self.get_model("user/2")
+        assert "default_vote_weight" not in user
+
     def test_create_negative_vote_weight(self) -> None:
         self.set_models(
             {
