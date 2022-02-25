@@ -1,5 +1,6 @@
 import json
-from typing import Any, Dict, List, Type, cast
+from copy import deepcopy
+from typing import Any, Callable, Dict, List, Optional, Type, cast
 from unittest import TestCase
 
 from datastore.shared.util import DeletedModelsBehaviour
@@ -21,6 +22,7 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.util import EXAMPLE_DATA_FILE, get_initial_data_file
 from tests.util import (
+    AuthData,
     Client,
     Response,
     get_collection_from_fqid,
@@ -39,9 +41,12 @@ class BaseSystemTestCase(TestCase):
     auth: AuthenticationService
     datastore: DatastoreService
     vote_service: TestVoteService
+    media: Any  # Any is needed because it is mocked and has magic methods
     client: Client
     anon_client: Client
-    media: Any  # Any is needed because it is mocked and has magic methods
+
+    # Save auth data as class variable
+    auth_data: Optional[AuthData] = None
 
     def setUp(self) -> None:
         self.app = self.get_application()
@@ -62,8 +67,14 @@ class BaseSystemTestCase(TestCase):
                 "organization_management_level": "superadmin",
             },
         )
-        self.client = self.create_client(ADMIN_USERNAME, ADMIN_PASSWORD)
-        self.vote_service.set_authentication(self.client.headers, self.client.cookies)
+        self.client = self.create_client(self.update_vote_service_auth_data)
+        if self.auth_data:
+            # Reuse old login data to avoid a new login request
+            self.client.update_auth_data(self.auth_data)
+        else:
+            # Login and save copy of auth data for all following tests
+            self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
+            BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.vote_service.clear_all()
         self.anon_client = self.create_client()
 
@@ -95,8 +106,23 @@ class BaseSystemTestCase(TestCase):
                 }
         self.set_models(data)
 
-    def create_client(self, username: str = None, password: str = None) -> Client:
-        return Client(self.app, username, password)
+    def create_client(
+        self, on_auth_data_changed: Callable[[AuthData], None] = None
+    ) -> Client:
+        return Client(self.app, on_auth_data_changed)
+
+    def login(self, user_id: int) -> None:
+        """
+        Login the given user by fetching the default password from the datastore.
+        """
+        user = self.get_model(f"user/{user_id}")
+        assert user.get("default_password")
+        self.client.login(user["username"], user["default_password"])
+
+    def update_vote_service_auth_data(self, auth_data: AuthData) -> None:
+        self.vote_service.set_authentication(
+            auth_data["access_token"], auth_data["refresh_id"]
+        )
 
     def get_application(self) -> WSGIApplication:
         raise NotImplementedError()
