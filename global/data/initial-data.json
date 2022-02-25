@@ -9,8 +9,6 @@
             "enable_electronic_voting": true,
             "limit_of_meetings": 0,
             "limit_of_users": 0,
-            "committee_ids": [],
-            "active_meeting_ids": [],
             "theme_id": 1,
             "theme_ids": [1, 2, 3],
             "users_email_sender": "OpenSlides",
@@ -28,7 +26,6 @@
             "is_physical_person": true,
             "can_change_own_password": true,
             "default_vote_weight": "1.000000",
-	    "meeting_ids": [],
             "organization_management_level": "superadmin"
         }
     },

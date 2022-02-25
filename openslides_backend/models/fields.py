@@ -214,8 +214,6 @@ class ArrayField(Field):
     """
 
     def __init__(self, in_array_constraints: Dict = None, **kwargs: Any) -> None:
-        if "default" not in kwargs:
-            kwargs["default"] = []
         super().__init__(**kwargs)
         self.in_array_constraints = in_array_constraints
 
