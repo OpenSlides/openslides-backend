@@ -258,43 +258,6 @@ class MeetingImport(BaseActionTestCase):
             else:
                 data["meeting"][collection].update(models)
 
-        needed_collections = (
-            "user",
-            "meeting",
-            "group",
-            "personal_note",
-            "tag",
-            "agenda_item",
-            "list_of_speakers",
-            "speaker",
-            "topic",
-            "motion",
-            "motion_submitter",
-            "motion_comment",
-            "motion_comment_section",
-            "motion_category",
-            "motion_block",
-            "motion_change_recommendation",
-            "motion_state",
-            "motion_workflow",
-            "motion_statute_paragraph",
-            "poll",
-            "option",
-            "vote",
-            "assignment",
-            "assignment_candidate",
-            "mediafile",
-            "projector",
-            "projection",
-            "projector_message",
-            "projector_countdown",
-            "chat_group",
-            "chat_message",
-        )
-        for collection in needed_collections:
-            if collection not in data["meeting"].keys():
-                data["meeting"][collection] = {}
-
         return data
 
     def get_user_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
