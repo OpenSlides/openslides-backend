@@ -169,6 +169,23 @@ class MediafileMoveActionTest(BaseActionTestCase):
         mediafile_8 = self.get_model("mediafile/8")
         assert mediafile_8.get("parent_id") is None
 
+    def test_move_owner_mismatch(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
+                "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
+            }
+        )
+        response = self.request_multi(
+            "mediafile.move",
+            [
+                {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "Id 8 not in db_instances" in response.json["message"]
+
     def test_move_circle(self) -> None:
         self.set_models(
             {
