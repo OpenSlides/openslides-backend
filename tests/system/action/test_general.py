@@ -12,6 +12,7 @@ from openslides_backend.http.views.action_view import ActionView
 from tests.system.util import get_route_path
 
 from .base import ACTION_URL, BaseActionTestCase
+from .util import get_internal_auth_header
 
 
 class GeneralActionWSGITester(BaseActionTestCase):
@@ -72,7 +73,9 @@ class GeneralActionWSGITester(BaseActionTestCase):
 
     def test_migrations_route(self) -> None:
         response = self.client.post(
-            get_route_path(ActionView.migrations_route), json={"cmd": "stats"}
+            get_route_path(ActionView.migrations_route),
+            json={"cmd": "stats"},
+            headers=get_internal_auth_header(),
         )
         self.assert_status_code(response, 200)
 

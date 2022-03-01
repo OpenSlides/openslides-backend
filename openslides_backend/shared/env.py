@@ -4,13 +4,11 @@ from .exceptions import ServerError
 
 INTERNAL_AUTH_PASSWORD_FILE = "INTERNAL_AUTH_PASSWORD_FILE"
 OPENSLIDES_DEVELOPMENT = "OPENSLIDES_DEVELOPMENT"
+DEV_PASSWORD = "openslides"
 
 
 def is_truthy(value: str) -> bool:
     truthy = ("1", "on", "true")
-    falsy = ("0", "off", "false")
-    if value.lower() not in truthy + falsy:
-        raise ValueError(f"Value must be one off {truthy + falsy}.")
     return value.lower() in truthy
 
 
@@ -20,6 +18,8 @@ def is_dev_mode() -> bool:
 
 
 def get_internal_auth_password() -> str:
+    if is_dev_mode():
+        return DEV_PASSWORD
     filename = os.environ.get(INTERNAL_AUTH_PASSWORD_FILE)
     if filename:
         with open(filename) as file_:
