@@ -28,7 +28,8 @@ class TestCheckMediafileId(BasePresenterTestCase):
 
     def test_non_existent(self) -> None:
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
-        self.assertEqual(status_code, 400)
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": False})
 
     def test_request_without_token(self) -> None:
         self.create_model(
@@ -202,7 +203,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
-        self.assertEqual(data, {"ok": False})
+        self.assertEqual(data, {"ok": True, "filename": "the filename"})
 
     def test_anonymous_organization(self) -> None:
         self.set_models(
@@ -211,7 +212,6 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "is_directory": False,
                     "owner_id": "organization/1",
-                    "token": "",
                     "mimetype": "text/plain",
                 },
             }

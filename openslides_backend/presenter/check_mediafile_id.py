@@ -11,7 +11,11 @@ from ..permissions.permission_helper import (
     is_admin,
 )
 from ..permissions.permissions import Permissions
-from ..shared.exceptions import AnonymousNotAllowed, PermissionDenied
+from ..shared.exceptions import (
+    AnonymousNotAllowed,
+    DatastoreException,
+    PermissionDenied,
+)
 from ..shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
@@ -39,10 +43,19 @@ class CheckMediafileId(BasePresenter):
     schema = check_mediafile_id_schema
 
     def get_result(self) -> Any:
-        mediafile = self.datastore.get(
-            FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
-            mapped_fields=["filename", "is_directory", "owner_id", "token", "mimetype"],
-        )
+        try:
+            mediafile = self.datastore.get(
+                FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
+                mapped_fields=[
+                    "filename",
+                    "is_directory",
+                    "owner_id",
+                    "token",
+                    "mimetype",
+                ],
+            )
+        except DatastoreException:
+            return {"ok": False}
         if not mediafile.get("owner_id") or mediafile.get("is_directory"):
             return {"ok": False}
         self.check_permissions()
@@ -54,7 +67,9 @@ class CheckMediafileId(BasePresenter):
         return {"ok": False}
 
     def get_organization_result(self, mediafile: Dict[str, Any]) -> Any:
-        if not mediafile.get("token") or not mediafile.get("mimetype"):
+        if not mediafile.get("token"):
+            return {"ok": True, "filename": mediafile.get("filename")}
+        if not mediafile.get("mimetype"):
             return {"ok": False}
         self.check_permissions()
         extension = mimetypes.guess_extension(mediafile["mimetype"])
