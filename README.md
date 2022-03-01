@@ -146,7 +146,7 @@ General schema for internal routes: `/internal/<route>`
 * `/internal/handle_request`: Same as the first route, but only for internal usage: All permission checks are skipped
   and created write requests will have id -1.
 * `/system/action/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
-* `/internal/migrations`: Provides remote access to the migration tool.
+* `/internal/migrations`: Provides remote access to the migration tool. For more information, take a look at the [migration route docs](/docs/migration_route.md)
 
 ### Presenter Service
 

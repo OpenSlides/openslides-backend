@@ -5,6 +5,8 @@ from time import sleep
 from typing import Any, Callable, Optional
 from unittest.mock import MagicMock, Mock, patch
 
+from datastore.migrations import MigrationException
+
 from migrations import get_backend_migration_index, get_datastore_migration_index
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.migration_handler.migration_handler import (
@@ -70,6 +72,7 @@ class TestMigrationRoute(BaseActionTestCase):
     def test_migrate_success(self) -> None:
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
+        self.wait_for_migration_thread()
         assert get_datastore_migration_index() == get_backend_migration_index()
 
     def test_progress_no_migration(self) -> None:
@@ -78,34 +81,55 @@ class TestMigrationRoute(BaseActionTestCase):
         assert response.json["status"] == MigrationProgressState.NO_MIGRATION_RUNNING
         assert "output" not in response.json
 
-    def wait_for_lock(self, lock: Lock) -> Callable[[], None]:
+    def wait_for_lock(
+        self, wait_lock: Lock, indicator_lock: Lock = None, error: bool = False
+    ) -> Callable[[], None]:
+        """
+        wait_lock is intended to be waited upon and should be unlocked in the test when needed.
+        indicator_lock is used as an indicator that the thread is waiting for the wait_lock and must
+        be in locked state.
+        """
+        if not indicator_lock:
+            indicator_lock = Lock()
+            indicator_lock.acquire()
+
         def _wait_for_lock(*args: Any, **kwargs: Any) -> None:
             MigrationHandler.write_line(MagicMock(), "start")
-            lock.acquire()
+            assert indicator_lock
+            indicator_lock.release()
+            wait_lock.acquire()
+            if error:
+                raise MigrationException("test")
             MigrationHandler.write_line(MagicMock(), "finish")
 
         return _wait_for_lock
+
+    def wait_for_migration_thread(self) -> None:
+        while MigrationHandler.migration_running:
+            sleep(0.02)
 
     @patch(
         "openslides_backend.migration_handler.migration_handler.MigrationWrapper.execute_command"
     )
     def test_longer_migration(self, execute_command: Mock) -> None:
-        lock = Lock()
-        lock.acquire()
-        execute_command.side_effect = self.wait_for_lock(lock)
+        wait_lock = Lock()
+        wait_lock.acquire()
+        indicator_lock = Lock()
+        indicator_lock.acquire()
+        execute_command.side_effect = self.wait_for_lock(wait_lock, indicator_lock)
         response = self.migration_request("migrate")
         self.assert_status_code(response, 200)
         assert response.json["status"] == MigrationProgressState.MIGRATION_RUNNING
-        assert response.json["output"] == "start\n"
+        assert response.json["output"] == ""
 
+        indicator_lock.acquire()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["status"] == MigrationProgressState.MIGRATION_RUNNING
         assert response.json["output"] == "start\n"
 
-        lock.release()
-        while MigrationHandler.migration_running:
-            sleep(0.01)
+        wait_lock.release()
+        self.wait_for_migration_thread()
         response = self.migration_request("progress")
         self.assert_status_code(response, 200)
         assert response.json["status"] == MigrationProgressState.MIGRATION_FINISHED
@@ -136,3 +160,22 @@ class TestMigrationRoute(BaseActionTestCase):
             == "Migration is running, only 'progress' command is allowed"
         )
         lock.release()
+
+    @patch(
+        "openslides_backend.migration_handler.migration_handler.MigrationWrapper.execute_command"
+    )
+    def test_migration_with_error(self, execute_command: Mock) -> None:
+        execute_command.side_effect = self.wait_for_lock(Lock(), error=True)
+        response = self.migration_request("migrate")
+        self.assert_status_code(response, 200)
+        assert response.json["success"] is True
+        assert response.json["status"] == MigrationProgressState.MIGRATION_RUNNING
+        assert response.json["output"] == ""
+
+        self.wait_for_migration_thread()
+        response = self.migration_request("progress")
+        self.assert_status_code(response, 200)
+        assert response.json["success"] is True
+        assert response.json["status"] == MigrationProgressState.MIGRATION_FINISHED
+        assert response.json["output"] == "start\n"
+        assert response.json["exception"] == "test"

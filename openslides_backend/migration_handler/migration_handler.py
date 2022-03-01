@@ -10,9 +10,6 @@ from migrations import MigrationWrapper
 from ..shared.exceptions import View400Exception
 from ..shared.handlers.base_handler import BaseHandler
 
-# Amount of time that should be waited for a result from the migrate thread before returning an empty result
-THREAD_WAIT_TIME = 0.1
-
 
 class MigrationProgressState(int, Enum):
     NO_MIGRATION_RUNNING = 0
@@ -26,6 +23,7 @@ class MigrationHandler(BaseHandler):
     migration_running = False
     migrate_thread_stream: Optional[StringIO] = None
     migrate_thread_stream_can_be_closed: bool = False
+    migrate_thread_exception: Optional[MigrationException] = None
 
     def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         if not (command := payload.get("cmd")):
@@ -49,9 +47,19 @@ class MigrationHandler(BaseHandler):
                         # output in case the response is lost and must be delivered again, but set
                         # flag that it can be removed.
                         MigrationHandler.migrate_thread_stream_can_be_closed = True
+                        # handle possible exception
+                        if MigrationHandler.migrate_thread_exception:
+                            exception_data = {
+                                "exception": str(
+                                    MigrationHandler.migrate_thread_exception
+                                )
+                            }
+                        else:
+                            exception_data = {}
                         return {
                             "status": MigrationProgressState.MIGRATION_FINISHED,
                             "output": MigrationHandler.migrate_thread_stream.getvalue(),
+                            **exception_data,
                         }
                     else:
                         # Nothing to report
@@ -79,26 +87,22 @@ class MigrationHandler(BaseHandler):
                     target=self.execute_migrate_command, args=[command, verbose]
                 )
                 thread.start()
-                if THREAD_WAIT_TIME > 0:
-                    thread.join(THREAD_WAIT_TIME)
-                if thread.is_alive():
-                    # Migration still running. Report current progress and return
-                    return {
-                        "status": MigrationProgressState.MIGRATION_RUNNING,
-                        "output": MigrationHandler.migrate_thread_stream.getvalue(),
-                    }
+                return {
+                    "status": MigrationProgressState.MIGRATION_RUNNING,
+                    "output": MigrationHandler.migrate_thread_stream.getvalue(),
+                }
+            else:
+                # short-running commands can just be executed directly
+                self.execute_migrate_command(command, verbose)
+                if MigrationHandler.migrate_thread_exception:
+                    raise View400Exception(
+                        str(MigrationHandler.migrate_thread_exception),
+                        {"output": self.close_migrate_thread_stream()},
+                    )
                 else:
-                    # Migration already finished/had nothing to do. Close stream and return all output
                     return {
-                        "status": MigrationProgressState.MIGRATION_FINISHED,
                         "output": self.close_migrate_thread_stream(),
                     }
-            else:
-                # short-running commands can just be executed directy
-                self.execute_migrate_command(command, verbose)
-                return {
-                    "output": self.close_migrate_thread_stream(),
-                }
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         MigrationHandler.migration_running = True
@@ -106,8 +110,8 @@ class MigrationHandler(BaseHandler):
         try:
             handler.execute_command(command)
         except MigrationException as e:
-            self.close_migrate_thread_stream()
-            raise View400Exception(str(e))
+            MigrationHandler.migrate_thread_exception = e
+            self.logger.exception(e)
         finally:
             MigrationHandler.migration_running = False
 
@@ -121,4 +125,6 @@ class MigrationHandler(BaseHandler):
         output = stream.getvalue()
         stream.close()
         MigrationHandler.migrate_thread_stream = None
+        MigrationHandler.migrate_thread_stream_can_be_closed = False
+        MigrationHandler.migrate_thread_exception = None
         return output

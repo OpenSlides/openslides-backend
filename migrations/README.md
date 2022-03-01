@@ -34,4 +34,4 @@ They are run before the backend starts. It is ensured that is is not scaled, so 
 
 ## 3) Migrations in production:
 
-TODO: The productive setup/manage service needs to execute `migrate.py` exactly once. It does not protect against parallel executions and races.
+See [migration route docs](/docs/migration_route.md).
