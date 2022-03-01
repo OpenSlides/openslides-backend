@@ -25,8 +25,14 @@ def get_backend_migration_index() -> int:
         backend_migration_index = max(
             backend_migration_index, migration_class().target_migration_index
         )
-
     return backend_migration_index
+
+
+def get_datastore_migration_index() -> int:
+    read_db = injector.get(ReadDatabase)
+    with read_db.get_context():
+        datastore_migration_index = read_db.get_current_migration_index()
+    return datastore_migration_index
 
 
 def assert_migration_index() -> None:
@@ -51,10 +57,3 @@ def assert_migration_index() -> None:
         raise MisconfiguredMigrations(
             f"Migration indices do not match: Datastore has {datastore_migration_index} and the backend has {backend_migration_index}"
         )
-
-
-def get_datastore_migration_index() -> int:
-    read_db = injector.get(ReadDatabase)
-    with read_db.get_context():
-        datastore_migration_index = read_db.get_current_migration_index()
-    return datastore_migration_index

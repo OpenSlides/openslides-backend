@@ -25,6 +25,7 @@ class MigrationHandler(BaseHandler):
     lock = Lock()
     migration_running = False
     migrate_thread_stream: Optional[StringIO] = None
+    migrate_thread_stream_can_be_closed: bool = False
 
     def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         if not (command := payload.get("cmd")):
@@ -44,17 +45,18 @@ class MigrationHandler(BaseHandler):
                         raise RuntimeError("Invalid migration handler state")
                 else:
                     if MigrationHandler.migrate_thread_stream:
-                        # Migration finished, but last output was not read yet. Close stream and return result
-                        output = self.close_migrate_thread_stream()
+                        # Migration finished and the full output can be returned. Do not remove the
+                        # output in case the response is lost and must be delivered again, but set
+                        # flag that it can be removed.
+                        MigrationHandler.migrate_thread_stream_can_be_closed = True
                         return {
                             "status": MigrationProgressState.MIGRATION_FINISHED,
-                            "output": output,
+                            "output": MigrationHandler.migrate_thread_stream.getvalue(),
                         }
                     else:
                         # Nothing to report
                         return {
                             "status": MigrationProgressState.NO_MIGRATION_RUNNING,
-                            "message": "No migration running!",
                         }
 
             if MigrationHandler.migration_running:
@@ -63,10 +65,12 @@ class MigrationHandler(BaseHandler):
                 )
 
             if MigrationHandler.migrate_thread_stream:
-                self.logger.warning(
-                    "Deleting unread migration output:\n"
-                    + self.close_migrate_thread_stream()
-                )
+                if MigrationHandler.migrate_thread_stream_can_be_closed is False:
+                    raise View400Exception(
+                        "Last migration output not read yet. Please call 'progress' first."
+                    )
+                else:
+                    self.close_migrate_thread_stream()
 
             verbose = payload.get("verbose", False)
             MigrationHandler.migrate_thread_stream = StringIO()
@@ -75,7 +79,8 @@ class MigrationHandler(BaseHandler):
                     target=self.execute_migrate_command, args=[command, verbose]
                 )
                 thread.start()
-                thread.join(THREAD_WAIT_TIME)
+                if THREAD_WAIT_TIME > 0:
+                    thread.join(THREAD_WAIT_TIME)
                 if thread.is_alive():
                     # Migration still running. Report current progress and return
                     return {
@@ -110,7 +115,8 @@ class MigrationHandler(BaseHandler):
         assert MigrationHandler.migrate_thread_stream
         MigrationHandler.migrate_thread_stream.write(message + "\n")
 
-    def close_migrate_thread_stream(self) -> str:
+    @classmethod
+    def close_migrate_thread_stream(cls) -> str:
         assert (stream := MigrationHandler.migrate_thread_stream)
         output = stream.getvalue()
         stream.close()
