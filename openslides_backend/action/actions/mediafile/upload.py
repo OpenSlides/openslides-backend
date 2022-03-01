@@ -56,6 +56,7 @@ class MediafileUploadAction(MediafilePermissionMixin, CreateAction):
             results = self.datastore.filter(
                 self.model.collection,
                 FilterOperator("token", "=", instance["token"]),
+                ["id"],
             )
             if len(results) == 0:
                 continue
