@@ -19,7 +19,6 @@ services:
             - ../global:/app/global
             - ../scripts:/app/scripts
         environment:
-            - OPENTELEMETRY_ENABLED=0
             - DATASTORE_READER_HOST=reader
             - DATASTORE_READER_PORT=9010
             - DATASTORE_WRITER_HOST=writer
@@ -33,7 +32,8 @@ services:
             - auth
     reader:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            #context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: ../../openslides-datastore-service
             args:
                 MODULE: "reader"
                 PORT: "9010"
@@ -42,7 +42,6 @@ services:
             - "9010:9010"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - OPENTELEMETRY_ENABLED=0
         depends_on:
             - postgresql
         networks:
@@ -50,7 +49,8 @@ services:
             - postgresql
     writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            #context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: ../../openslides-datastore-service
             args:
                 MODULE: "writer"
                 PORT: "9011"
@@ -59,7 +59,6 @@ services:
             - "9011:9011"
         environment:
             - OPENSLIDES_DEVELOPMENT=1
-            - OPENTELEMETRY_ENABLED=0
         depends_on:
             - postgresql
             - redis
@@ -75,7 +74,6 @@ services:
         ports:
             - "9004:9004"
         environment:
-            - OPENTELEMETRY_ENABLED=0
             - MESSAGE_BUS_HOST=redis
             - CACHE_HOST=cache
             - DATASTORE_READER_HOST=reader
