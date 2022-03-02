@@ -122,10 +122,10 @@ run-dev-otel: | start-dev-otel run-dev-attach
 # Build and run development container with local datastore and opentelemetry enabled and jaeger tracing (web UI binds to port 16686)
 
 start-dev-local-ds-otel:
-	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml -f dev/dc.otel.yml up --build --detach
+	USER_ID=$$(id -u $${USER}) GROUP_ID=$$(id -g $${USER}) docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml -f dev/dc.otel.yml up --build --detach
 
 stop-dev-local-ds-otel:
-	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.otel.yml -f dev/dc.otel.yml down --volumes
+	docker-compose -f dev/docker-compose.dev.yml -f dev/dc.local-ds.yml -f dev/dc.otel.yml down --volumes
 
 run-dev-local-ds-otel: | start-dev-local-ds-otel run-dev-attach
 

@@ -130,7 +130,7 @@ class ActionHandler(BaseHandler):
                         error = cast(ActionError, exception.get_json())
                         results.append(error)
                     self.datastore.reset()
-        
+
         with make_span("finish action"):
             # execute cleanup methods
             for on_success in self.on_success:

@@ -1,5 +1,20 @@
 version: "3"
 services:
+  backend:
+    environment:
+      - OPENTELEMETRY_ENABLED=1
+  reader:
+    environment:
+      - OPENTELEMETRY_ENABLED=1
+  writer:
+    environment:
+      - OPENTELEMETRY_ENABLED=1
+  auth:
+    environment:
+      - OPENTELEMETRY_ENABLED=1
+  vote:
+    environment:
+      - OPENTELEMETRY_ENABLED=1
 
   collector:
     image: otel/opentelemetry-collector:0.41.0

@@ -18,4 +18,4 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [ jaeger]
+      exporters: [jaeger]
