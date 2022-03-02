@@ -24,6 +24,8 @@ class Migration(BaseMigration):
            is public and inherited_access_group_ids and generate update requests
            for the 2 fields, when the values differ. Stop the down recursion,
            if the current one isn't changed and the child is not dict of changed mediafiles
+        4. Changing group_ids in the inherited_access_group_ids of a mediafile also have
+           to be reflected in the group-events
 
     The algorithm assumes, that the events for a SINGLE mediafile entry are sent in
     correct sequence, because this is guaranteed by the way, the write_requests of
@@ -74,6 +76,7 @@ class Migration(BaseMigration):
         return None
 
     def get_additional_events(self) -> Optional[List[BaseEvent]]:
+        self.groups: Dict[int, Dict[str, Dict[str, List[int]]]] = defaultdict(dict)
         roots: Set[int] = set()
         for key in self.mediafiles.keys():
             root_id = key
@@ -85,6 +88,8 @@ class Migration(BaseMigration):
 
         for mediafile_id in roots:
             self.check_recursive(mediafile_id)
+        for group_id, data in self.groups.items():
+            self.events.append(ListUpdateEvent(f"group/{group_id}", data))  # type: ignore
         return self.events
 
     def check_recursive(self, id_: int) -> None:
@@ -92,6 +97,8 @@ class Migration(BaseMigration):
         parent_inherited_access_group_ids: Optional[List[int]] = []
         fqid = f"mediafile/{id_}"
 
+        if id_ not in self.mediafiles:
+            self.mediafiles[id_] = self.new_accessor.get_model_ignore_deleted(fqid)[0]
         if parent_id := self.mediafiles[id_].get("parent_id"):
             if parent_id not in self.mediafiles:
                 self.mediafiles[parent_id] = self.new_accessor.get_model_ignore_deleted(
@@ -116,6 +123,16 @@ class Migration(BaseMigration):
             "inherited_access_group_ids"
         ):
             changed = True
+            add = set(calc_inherited_access_group_ids) - set(
+                self.mediafiles[id_].get("inherited_access_group_ids", set())
+            )
+            if add:
+                self.__add_to_group(add, id_, True)
+            remove = set(
+                self.mediafiles[id_].get("inherited_access_group_ids", set())
+            ) - set(calc_inherited_access_group_ids)
+            if remove:
+                self.__add_to_group(remove, id_, False)
             self.mediafiles[id_]["is_public"] = calc_is_public
             self.mediafiles[id_][
                 "inherited_access_group_ids"
@@ -132,6 +149,32 @@ class Migration(BaseMigration):
         for child_id in self.mediafiles[id_].get("child_ids", []) or []:
             if changed or child_id in self.mediafiles.keys():
                 self.check_recursive(child_id)
+
+    def __add_to_group(self, group_ids: Set[int], mediafile_id: int, add: bool) -> None:
+        for group_id in group_ids:
+            for group_id in self.groups:
+                value_list = set(
+                    self.groups[group_id]["add" if add else "remove"][
+                        "mediafile_inherited_access_group_ids"
+                    ]
+                )
+                value_list.add(mediafile_id)
+                self.groups[group_id]["add" if add else "remove"][
+                    "mediafile_inherited_access_group_ids"
+                ] = list(value_list)
+            else:
+                self.groups[group_id] = {
+                    "add": {
+                        "mediafile_inherited_access_group_ids": [mediafile_id]
+                        if add
+                        else []
+                    },
+                    "remove": {
+                        "mediafile_inherited_access_group_ids": []
+                        if add
+                        else [mediafile_id]
+                    },
+                }
 
 
 def calculate_inherited_groups_helper(
