@@ -380,6 +380,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "child_ids": [111],
                     "is_directory": True,
                     "meeting_id": 1,
+                    "is_public": True,
                 },
                 "mediafile/111": {
                     "title": "title_srtgb123",
@@ -387,39 +388,56 @@ class MediafileUpdateActionTest(BaseActionTestCase):
                     "child_ids": [112, 113],
                     "is_directory": True,
                     "meeting_id": 1,
+                    "is_public": True,
                 },
                 "mediafile/112": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
-                    "access_group_ids": [7],
                     "meeting_id": 1,
+                    "is_public": True,
                 },
                 "mediafile/113": {
                     "title": "title_srtgb123",
                     "parent_id": 111,
-                    "access_group_ids": [7],
                     "meeting_id": 1,
+                    "is_public": True,
                 },
             }
         )
         response = self.request(
             "mediafile.update",
-            {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
+            {"id": 110, "title": "title_Xcdfgee", "access_group_ids": [7]},
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("mediafile/111")
-        assert model.get("title") == "title_Xcdfgee"
-        assert model.get("access_group_ids") == [7]
-        assert model.get("inherited_access_group_ids") == [7]
-        assert model.get("is_public") is False
-        child = self.get_model("mediafile/112")
-        assert child.get("access_group_ids") == [7]
-        assert child.get("inherited_access_group_ids") == [7]
-        assert child.get("is_public") is False
-        child = self.get_model("mediafile/113")
-        assert child.get("access_group_ids") == [7]
-        assert child.get("inherited_access_group_ids") == [7]
-        assert child.get("is_public") is False
+        self.assert_model_exists(
+            "group/7",
+            {
+                "mediafile_access_group_ids": [110],
+                "mediafile_inherited_access_group_ids": [110, 111, 112, 113],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/110",
+            {
+                "is_public": False,
+                "access_group_ids": [7],
+                "inherited_access_group_ids": [7],
+            },
+        )
+        mediafiles_to_check = (
+            "mediafile/111",
+            "mediafile/112",
+            "mediafile/113",
+        )
+        for mediafile in mediafiles_to_check:
+            self.assert_model_exists(
+                mediafile,
+                {
+                    "is_public": False,
+                    "access_group_ids": None,
+                    "inherited_access_group_ids": [7],
+                },
+            )
 
     def test_update_parent_and_children_3(self) -> None:
         self.set_models(

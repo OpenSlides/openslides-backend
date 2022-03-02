@@ -24,7 +24,7 @@ class MediafileUpdate(UpdateAction, MediafileCalculatedFieldsMixin):
 
     def get_updated_instances(self, instances: ActionData) -> ActionData:
         """
-        Calculate inherited_access_group_ids and inherited_access_group_ids, if
+        Calculate access_group_ids and inherited_access_group_ids, if
         access_group_ids are given.
         """
         for instance in instances:
