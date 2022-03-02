@@ -30,11 +30,11 @@ class OrganizationInitialImport(BaseActionTestCase):
     def test_initial_import_wrong_field(self) -> None:
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
-        request_data["data"]["meeting"]["1"]["test_field"] = "test"
+        request_data["data"]["organization"]["1"]["test_field"] = "test"
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         assert (
-            "meeting/1: Invalid fields test_field (value: test)"
+            "organization/1: Invalid fields test_field (value: test)"
             in response.json["message"]
         )
 
