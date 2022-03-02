@@ -9,6 +9,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_model: Dict[str, Dict[str, Any]] = {
+            "meeting/1": {"name": "meeting_1", "is_active_in_organization_id": 1},
             "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
             "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
         }
@@ -511,6 +512,95 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         self.assertIn(
             "data must not contain {'filename'} properties", response.json["message"]
+        )
+
+    def test_update_access_group_with_orga_owner(self) -> None:
+        self.permission_test_model["mediafile/111"]["owner_id"] = "organization/1"
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "mediafile.update", {"id": 111, "access_group_ids": [7]}
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "access_group_ids is not allowed in organization mediafiles."
+            == response.json["message"]
+        )
+
+    def test_update_access_group_different_owner(self) -> None:
+        self.permission_test_model["group/7"]["meeting_id"] = 2
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "mediafile.update",
+            {"id": 111, "access_group_ids": [7]},
+        )
+        self.assert_status_code(response, 400)
+        assert "Owner and access groups don't match." in response.json["message"]
+
+    def test_update_token_payload_check_orga_owner(self) -> None:
+        self.set_models(self.permission_test_model)
+        response = self.request(
+            "mediafile.update",
+            {"id": 111, "token": "test"},
+        )
+        self.assert_status_code(response, 400)
+        assert "token is not allowed in meeting mediafiles." in response.json["message"]
+
+    def test_update_token_payload_token_unique(self) -> None:
+        self.set_models(
+            {
+                "mediafile/7": {"token": "token_1", "owner_id": "organization/1"},
+                "mediafile/8": {"token": "token_2", "owner_id": "organization/2"},
+            }
+        )
+        response = self.request(
+            "mediafile.update",
+            {"id": 8, "token": "token_1"},
+        )
+        self.assert_status_code(response, 400)
+        assert "Token 'token_1' is not unique."
+
+    def test_update_token_payload_old_token(self) -> None:
+        self.set_models(
+            {
+                "mediafile/7": {"token": "token_1", "owner_id": "organization/1"},
+            }
+        )
+        response = self.request(
+            "mediafile.update",
+            {"id": 7, "token": "token_1"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("mediafile/7", {"token": "token_1"})
+
+    def test_update_title_parent_id_unique(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "mediafile_ids": [6, 7, 8],
+                },
+                "mediafile/6": {
+                    "title": "parent_title_1",
+                    "child_ids": [7, 8],
+                    "owner_id": "meeting/1",
+                },
+                "mediafile/7": {
+                    "title": "title_1",
+                    "parent_id": 6,
+                    "owner_id": "meeting/1",
+                },
+                "mediafile/8": {
+                    "title": "title_2",
+                    "parent_id": 6,
+                    "owner_id": "meeting/1",
+                },
+            }
+        )
+        response = self.request("mediafile.update", {"id": 8, "title": "title_1"})
+        self.assert_status_code(response, 400)
+        assert (
+            "Title 'title_1' and parent_id '6' are not unique."
+            in response.json["message"]
         )
 
     def test_update_no_permissions(self) -> None:
