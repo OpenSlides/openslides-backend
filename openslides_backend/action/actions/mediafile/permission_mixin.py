@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
@@ -22,32 +22,12 @@ class MediafilePermissionMixin(Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         collection, id_ = self.get_owner_data(instance)
 
-        # check parent (is_dir and owner)
-        if instance.get("parent_id"):
-            parent = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["parent_id"]),
-                ["is_directory", "owner_id"],
-            )
-            if not parent.get("is_directory"):
-                raise ActionException("Parent is not a directory.")
-            if parent.get("owner_id") != str(instance["owner_id"]):
-                raise ActionException("Owner and parent don't match.")
-
-        # check (title, parent_id) unique
-        if instance.get("title"):
-            filter_ = And(
-                FilterOperator("title", "=", instance["title"]),
-                FilterOperator("parent_id", "=", instance.get("parent_id")),
-            )
-            if instance.get("id"):
-                filter_ = And(
-                    filter_, Not(FilterOperator("id", "=", instance.get("id")))
-                )
-            results = self.datastore.filter(self.model.collection, filter_, ["id"])
-            if results:
-                raise ActionException(
-                    f"Title '{instance['title']}' and parent_id '{instance.get('parent_id')}' are not unique."
-                )
+        self.check_parent_is_dir_and_owner(
+            instance.get("parent_id"), str(instance.get("owner_id"))
+        )
+        self.check_title_parent_unique(
+            instance.get("title"), instance.get("parent_id"), instance.get("id")
+        )
 
         # handle organization permissions
         if collection == "organization":
@@ -71,18 +51,7 @@ class MediafilePermissionMixin(Action):
         # check for token, not allowed in meeting.
         if "token" in instance:
             raise PermissionException("token is not allowed in meeting mediafiles.")
-
-        # check access groups and owner
-        if instance.get("access_group_ids"):
-            collection, ids_ = self.get_owner_data(instance)
-            gm_request = GetManyRequest(
-                Collection("group"), instance["access_group_ids"], ["meeting_id"]
-            )
-            gm_result = self.datastore.get_many([gm_request])
-            groups = gm_result.get(Collection("group"), {}).values()
-            for group in groups:
-                if group.get("meeting_id") != id_:
-                    raise ActionException("Owner and access groups don't match.")
+        self.check_access_groups_and_owner(instance.get("access_group_ids"), id_)
 
         super().check_permissions(instance)
 
@@ -107,3 +76,45 @@ class MediafilePermissionMixin(Action):
             owner_id = mediafile["owner_id"]
         collection, id_ = str(owner_id).split(KEYSEPARATOR)
         return collection, int(id_)
+
+    def check_parent_is_dir_and_owner(
+        self, parent_id: Optional[int], owner_id: str
+    ) -> None:
+        if parent_id:
+            parent = self.datastore.get(
+                FullQualifiedId(self.model.collection, parent_id),
+                ["is_directory", "owner_id"],
+            )
+            if not parent.get("is_directory"):
+                raise ActionException("Parent is not a directory.")
+            if parent.get("owner_id") != str(owner_id):
+                raise ActionException("Owner and parent don't match.")
+
+    def check_title_parent_unique(
+        self, title: Optional[str], parent_id: Optional[str], id_: Optional[int]
+    ) -> None:
+        if title:
+            filter_ = And(
+                FilterOperator("title", "=", title),
+                FilterOperator("parent_id", "=", parent_id),
+            )
+            if id_:
+                filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
+            results = self.datastore.filter(self.model.collection, filter_, ["id"])
+            if results:
+                raise ActionException(
+                    f"Title '{title}' and parent_id '{parent_id}' are not unique."
+                )
+
+    def check_access_groups_and_owner(
+        self, access_group_ids: Optional[List[int]], meeting_id: int
+    ) -> None:
+        if access_group_ids:
+            gm_request = GetManyRequest(
+                Collection("group"), access_group_ids, ["meeting_id"]
+            )
+            gm_result = self.datastore.get_many([gm_request])
+            groups = gm_result.get(Collection("group"), {}).values()
+            for group in groups:
+                if group.get("meeting_id") != meeting_id:
+                    raise ActionException("Owner and access groups don't match.")
