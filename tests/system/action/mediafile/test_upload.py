@@ -191,6 +191,111 @@ class MediafileUploadActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
+    def test_create_directory_parent_id_parent_not_directory(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "meeting_1",
+                    "mediafile_ids": [7],
+                    "is_active_in_organization_id": 1,
+                },
+                "mediafile/7": {"owner_id": "meeting/1"},
+            }
+        )
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "owner_id": "meeting/1",
+                "title": "title_1",
+                "parent_id": 7,
+                "file": file_content,
+                "filename": "test.txt",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Parent is not a directory." in response.json["message"]
+
+    def test_create_directory_parent_id_owner_mismatch(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"mediafile_ids": [7], "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
+                "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
+            }
+        )
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "owner_id": "meeting/2",
+                "title": "title_1",
+                "parent_id": 7,
+                "file": file_content,
+                "filename": "test.txt",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Owner and parent don't match." in response.json["message"]
+
+    def test_create_directory_title_parent_id_unique(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "mediafile_ids": [6, 7],
+                    "is_active_in_organization_id": 1,
+                },
+                "mediafile/6": {
+                    "is_directory": True,
+                    "owner_id": "meeting/1",
+                    "child_ids": [7],
+                },
+                "mediafile/7": {
+                    "title": "title_1",
+                    "owner_id": "meeting/1",
+                    "parent_id": 6,
+                },
+            }
+        )
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "owner_id": "meeting/1",
+                "title": "title_1",
+                "parent_id": 6,
+                "file": file_content,
+                "filename": "test.txt",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Title 'title_1' and parent_id '6' are not unique."
+            in response.json["message"]
+        )
+
+    def test_create_directory_owner_access_groups_dont_match(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"group_ids": [11], "is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
+                "group/11": {"meeting_id": 1},
+            }
+        )
+        file_content = base64.b64encode(b"testtesttest").decode()
+        response = self.request(
+            "mediafile.upload",
+            {
+                "owner_id": "meeting/2",
+                "title": "title_1",
+                "access_group_ids": [11],
+                "file": file_content,
+                "filename": "test.txt",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Owner and access groups don't match." in response.json["message"]
+
     def test_upload_no_permissions(self) -> None:
         self.base_permission_test(
             {},

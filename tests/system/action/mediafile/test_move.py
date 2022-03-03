@@ -146,7 +146,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             "mediafile.move", {"owner_id": "meeting/222", "ids": [8, 9], "parent_id": 7}
         )
         self.assert_status_code(response, 400)
-        self.assertIn("New parent is not a directory.", response.json["message"])
+        self.assertIn("Parent is not a directory.", response.json["message"])
 
     def test_move_multiple_action_data_items(self) -> None:
         self.set_models(
@@ -184,7 +184,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
             ],
         )
         self.assert_status_code(response, 400)
-        assert "Id 8 not in db_instances" in response.json["message"]
+        assert "Owner and parent don't match." in response.json["message"]
 
     def test_move_circle(self) -> None:
         self.set_models(
