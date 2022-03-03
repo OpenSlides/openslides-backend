@@ -78,7 +78,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
-                    "max_votes_per_person": 1,
+                    "max_votes_per_option": 1,
                 },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
@@ -170,7 +170,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
-                    "max_votes_per_person": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -233,7 +233,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
-                    "max_votes_per_person": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -305,7 +305,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
-                    "max_votes_per_person": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -342,7 +342,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
-                    "max_votes_per_person": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -379,7 +379,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 2,
                     "max_votes_amount": 2,
-                    "max_votes_per_person": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -867,7 +867,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
-                "max_votes_per_person": 1,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1056,7 +1056,7 @@ class VotePollNamedY(VotePollBaseTestClass):
                 "global_abstain": True,
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
-                "max_votes_per_person": 1,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1280,7 +1280,7 @@ class VotePollNamedN(VotePollBaseTestClass):
                 "global_abstain": True,
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
-                "max_votes_per_person": 1,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1483,7 +1483,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
-                "max_votes_per_person": 1,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1646,7 +1646,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
-                "max_votes_per_person": 1,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1797,7 +1797,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
-                "max_votes_per_person": 1,
+                "max_votes_per_option": 1,
             },
         )
 

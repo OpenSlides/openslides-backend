@@ -2683,7 +2683,7 @@ poll:
     type: number
     default: 1
     restriction_mode: A
-  max_votes_per_person:
+  max_votes_per_option:
     type: number
     default: 1
     restriction_mode: A
