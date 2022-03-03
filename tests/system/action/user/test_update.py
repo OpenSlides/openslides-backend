@@ -1349,3 +1349,23 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         user = self.get_model("user/1")
         assert "default_vote_weight" not in user
+
+    def test_update_strip_space(self) -> None:
+        response = self.request(
+            "user.update",
+            {
+                "id": 1,
+                "username": " username test ",
+                "first_name": " first name test ",
+                "last_name": " last name test ",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "username test",
+                "first_name": "first name test",
+                "last_name": "last name test",
+            },
+        )
