@@ -8,7 +8,7 @@ from ....shared.exceptions import (
     MissingPermission,
     PermissionException,
 )
-from ....shared.filters import And, FilterOperator, Not
+from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
 
@@ -25,13 +25,20 @@ class MediafilePermissionMixin(Action):
         self.check_parent_is_dir_and_owner(
             instance.get("parent_id"), str(instance.get("owner_id"))
         )
+        parent_id = instance.get("parent_id")
+        if not parent_id and instance.get("id"):
+            mediafile = self.datastore.get(
+                FullQualifiedId(self.model.collection, instance["id"]), ["parent_id"]
+            )
+            parent_id = mediafile.get("parent_id")
         self.check_title_parent_unique(
-            instance.get("title"), instance.get("parent_id"), instance.get("id")
+            instance.get("title"), parent_id, instance.get("id")
         )
 
         # handle organization permissions
         if collection == "organization":
             self.assert_not_anonymous()
+            self.check_token_unique(instance.get("token"), instance.get("id"))
             if "access_group_ids" in instance:
                 raise PermissionException(
                     "access_group_ids is not allowed in organization mediafiles."
@@ -118,3 +125,15 @@ class MediafilePermissionMixin(Action):
             for group in groups:
                 if group.get("meeting_id") != meeting_id:
                     raise ActionException("Owner and access groups don't match.")
+
+    def check_token_unique(self, token: Optional[str], id_: Optional[int]) -> None:
+        if token:
+            filter_: Filter = FilterOperator("token", "=", token)
+            if id_:
+                filter_ = And(
+                    filter_,
+                    Not(FilterOperator("id", "=", id_)),
+                )
+            results = self.datastore.filter(self.model.collection, filter_, ["id"])
+            if results:
+                raise ActionException(f"Token '{token}' is not unique.")

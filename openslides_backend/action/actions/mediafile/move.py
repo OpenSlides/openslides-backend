@@ -41,13 +41,6 @@ class MediafileMoveAction(
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
-    def check_is_directory(self, id_: int) -> None:
-        item = self.datastore.get(
-            FullQualifiedId(self.model.collection, id_), ["is_directory"]
-        )
-        if not item.get("is_directory"):
-            raise ActionException("New parent is not a directory.")
-
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         action_data = super().get_updated_instances(action_data)
         # Action data is an iterable with exactly one item
@@ -68,8 +61,6 @@ class MediafileMoveAction(
         db_instances = gm_result.get(self.model.collection, {})
 
         if parent_id is not None:
-            self.check_is_directory(parent_id)
-
             # Calculate the ancesters of parent
             ancesters = [parent_id]
             grandparent = self.datastore.get(
