@@ -369,6 +369,24 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         self.assert_status_code(response, 400)
         assert "Owner and parent don't match." in response.json["message"]
 
+    def test_create_directory_mix_meeting_and_orga(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {"mediafile_ids": [7], "is_active_in_organization_id": 1},
+                "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
+            }
+        )
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "owner_id": "organization/1",
+                "title": "title_1",
+                "parent_id": 7,
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "Owner and parent don't match." in response.json["message"]
+
     def test_create_directory_title_parent_id_unique(self) -> None:
         self.set_models(
             {
