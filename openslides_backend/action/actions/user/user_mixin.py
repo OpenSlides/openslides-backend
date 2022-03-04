@@ -31,6 +31,8 @@ class LimitOfUserMixin(Action):
 class UserMixin(CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
+        for field in ("username", "first_name", "last_name"):
+            self.strip_field(field, instance)
         user_fqid = FullQualifiedId(Collection("user"), instance["id"])
         if "username" in instance:
             result = self.datastore.filter(
@@ -51,6 +53,10 @@ class UserMixin(CheckForArchivedMeetingMixin):
         if "username" in instance and not instance["username"].strip():
             raise ActionException("This username is forbidden.")
         return instance
+
+    def strip_field(self, field: str, instance: Dict[str, Any]) -> None:
+        if instance.get(field):
+            instance[field] = instance[field].strip()
 
     def check_vote_delegated__to_id(
         self, instance: Dict[str, Any], user_fqid: FullQualifiedId

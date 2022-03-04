@@ -99,3 +99,18 @@ class UserUpdateSelfActionTest(BaseActionTestCase):
         model = self.get_model("user/1")
         assert model.get("username") == "username_srtgb123"
         assert "This username is forbidden." in response.json["message"]
+
+    def test_update_self_strip_space(self) -> None:
+        response = self.request(
+            "user.update_self",
+            {
+                "username": " username test ",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "username test",
+            },
+        )

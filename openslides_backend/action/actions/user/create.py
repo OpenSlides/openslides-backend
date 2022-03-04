@@ -78,16 +78,11 @@ class UserCreate(
         count = 0
 
         while True:
-            possible_space = (
-                " " if instance.get("first_name") and instance.get("last_name") else ""
-            )
-            new_username = (
-                instance.get("first_name", "")
-                + possible_space
-                + instance.get("last_name", "")
+            new_username = instance.get("first_name", "") + instance.get(
+                "last_name", ""
             )
             if count > 0:
-                new_username += f" {count}"
+                new_username += str(count)
 
             result = self.datastore.filter(
                 Collection("user"),
