@@ -304,7 +304,6 @@ class MeetingImport(BaseActionTestCase):
             "owner_id": "meeting/1",
             "blob": file_content,
             "title": "A.txt",
-            "token": None,
             "is_directory": False,
             "filesize": 3,
             "filename": "A.txt",
