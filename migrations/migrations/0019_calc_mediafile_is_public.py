@@ -63,10 +63,9 @@ class Migration(BaseMigration):
                 for key, value in remove_dict.items():
                     if not value:
                         continue
-                    assert isinstance(
-                        old_value := self.mediafiles[id_].get(key), list
-                    ), f"'{event.fqid}' should have values for '{key}', because there is a ListUpdate.remove!"
-                    self.mediafiles[id_][key] = list(set(old_value) - set(value))
+                    old_value = self.mediafiles[id_].get(key)
+                    if old_value:
+                        self.mediafiles[id_][key] = list(set(old_value) - set(value))
             if add_dict := event.add:
                 for key, value in add_dict.items():
                     if not value:
@@ -182,10 +181,6 @@ def calculate_inherited_groups_helper(
     parent_is_public: Optional[bool],
     parent_inherited_access_group_ids: Optional[List[int]],
 ) -> Tuple[bool, List[int]]:
-    """
-    TODO: If migration and backend are combined one day,
-    import this function from openslides_backend/models/helper.py
-    """
     inherited_access_group_ids: List[int]
     is_public = False
     if parent_inherited_access_group_ids and access_group_ids:

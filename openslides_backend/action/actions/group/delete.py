@@ -30,7 +30,7 @@ class GroupDeleteAction(DeleteAction):
         )
         self.mediafile_ids: List[int] = list(
             (set(group.get("mediafile_access_group_ids", set())) or set())
-            | (set(group.get("mediafile_inherited_access_group_ids", set())) or set())
+            | (set(group.get("mediafile_inherited_access_group_ids", set()) or set()))
         )
         return instance
 
