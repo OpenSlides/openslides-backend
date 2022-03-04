@@ -395,6 +395,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
                     "is_active_in_organization_id": 1,
                 },
                 "mediafile/6": {
+                    "title": "parent_title_1",
                     "is_directory": True,
                     "owner_id": "meeting/1",
                     "child_ids": [7],
@@ -416,7 +417,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Title 'title_1' and parent_id '6' are not unique."
+            "File 'title_1' already exists in folder 'parent_title_1'."
             in response.json["message"]
         )
 

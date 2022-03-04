@@ -599,7 +599,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         response = self.request("mediafile.update", {"id": 8, "title": "title_1"})
         self.assert_status_code(response, 400)
         assert (
-            "Title 'title_1' and parent_id '6' are not unique."
+            "File 'title_1' already exists in folder 'parent_title_1'."
             in response.json["message"]
         )
 

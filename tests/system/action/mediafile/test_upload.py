@@ -249,6 +249,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "is_directory": True,
                     "owner_id": "meeting/1",
                     "child_ids": [7],
+                    "title": "parent",
                 },
                 "mediafile/7": {
                     "title": "title_1",
@@ -270,7 +271,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Title 'title_1' and parent_id '6' are not unique."
+            "File 'title_1' already exists in folder 'parent'."
             in response.json["message"]
         )
 

@@ -98,7 +98,7 @@ class MediafilePermissionMixin(Action):
                 raise ActionException("Owner and parent don't match.")
 
     def check_title_parent_unique(
-        self, title: Optional[str], parent_id: Optional[str], id_: Optional[int]
+        self, title: Optional[str], parent_id: Optional[int], id_: Optional[int]
     ) -> None:
         if title:
             filter_ = And(
@@ -109,8 +109,14 @@ class MediafilePermissionMixin(Action):
                 filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
+                parent_title = "NONE"
+                if parent_id:
+                    parent = self.datastore.get(
+                        FullQualifiedId(self.model.collection, parent_id), ["title"]
+                    )
+                    parent_title = parent.get("title", "")
                 raise ActionException(
-                    f"Title '{title}' and parent_id '{parent_id}' are not unique."
+                    f"File '{title}' already exists in folder '{parent_title}'."
                 )
 
     def check_access_groups_and_owner(
