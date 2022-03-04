@@ -46,7 +46,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         super().__init__(*args, **kwargs)
 
     def load_config(self) -> None:
-        dev_mode = is_dev_mode()
+        dev_mode = is_dev_mode() or True
         options = {
             "bind": DEFAULT_ADDRESSES[self.view_name],
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
