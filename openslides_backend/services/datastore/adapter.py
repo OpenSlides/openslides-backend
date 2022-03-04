@@ -7,11 +7,13 @@ from datastore.reader.core import GetManyRequest as FullGetManyRequest
 from datastore.reader.core import (
     GetManyRequestPart,
     GetRequest,
+    GetManyRequest,
     HistoryInformationRequest,
     MinMaxRequest,
     Reader,
 )
 from datastore.shared.di import injector
+from datastore.shared.typing import Model
 from datastore.shared.services.read_database import HistoryInformation
 from datastore.shared.util import DeletedModelsBehaviour
 from simplejson.errors import JSONDecodeError
@@ -36,6 +38,109 @@ from .handle_datastore_errors import handle_datastore_errors, raise_datastore_er
 from .interface import BaseDatastoreService, Engine, LockResult, PartialModel
 
 
+class ReaderCache:
+    def __init__(self, reader: Reader):
+        self.reader = reader
+        self.count = 0
+        self.cache: Dict[str, str] = {}
+
+    def __getattr__(self, name):
+        def _missing(*args, **kwargs):
+            self.count += 1
+            print(f"--------------> {self.count}: reader.{name}({args}, {kwargs})")
+
+            return getattr(self.reader, name)(*args, **kwargs)
+
+        return _missing
+
+    def get(self, request: GetRequest) -> Model:
+        if (
+            request.position != None
+            or request.get_deleted_models != DeletedModelsBehaviour.NO_DELETED
+            or len(request.mapped_fields) == 0
+        ):
+            print("----------> warning. get request skipped cache")
+            self.count += 1
+            print(f"----------> {self.count}: reader.get({request})")
+
+            return self.reader.get(request)
+
+        fqfields = [request.fqid + "/" + field for field in request.mapped_fields]
+        self.fill_cache(fqfields)
+
+        model: Model = {}
+        for field in request.mapped_fields:
+            value = self.cache.get(request.fqid + "/" + field)
+            if value is not None:
+                model[field] = value
+
+        return model
+
+    def get_many(self, request: GetManyRequest) -> Dict[str, Dict[int, Model]]:
+        if (
+            request.position != None
+            or request.get_deleted_models != DeletedModelsBehaviour.NO_DELETED
+        ):
+            print("----------> warning. get_many request skipped cache")
+            self.count += 1
+            print(f"----------> {self.count}: reader.get({request})")
+            return self.reader.get_many(request)
+
+        fqfields = []
+        for part in request.requests:
+            if part is str:
+                fqfields.append(part)
+                continue
+
+            mapped_fields = part.mapped_fields + request.mapped_fields
+            for id in part.ids:
+                for field in mapped_fields:
+                    fqfields.append(part.collection + "/" + str(id) + "/" + field)
+            continue
+
+        self.fill_cache(fqfields)
+
+        response = defaultdict(lambda: defaultdict(dict))
+        for part in request.requests:
+            if part is str:
+                value = self.cache[part]
+                if value is not None:
+                    collection, id, field = part.split("/")
+                    response[collection][int(id)][field] = value
+                    continue
+
+            mapped_fields = part.mapped_fields + request.mapped_fields
+            for id in part.ids:
+                for field in mapped_fields:
+                    value = self.cache[part.collection + "/" + str(id) + "/" + field]
+                    if value is not None:
+                        response[part.collection][int(id)][field] = value
+
+        return response
+
+    def fill_cache(self, fqfields: List[str]):
+        cache_misses = [
+            fqfield for fqfield in fqfields if self.cache.get(fqfield) is None
+        ]
+
+        if len(cache_misses) > 0:
+            self.count += 1
+            print(f"----------> {self.count}: reader.get_many_cache({cache_misses})")
+
+            data = self.reader.get_many(GetManyRequest(requests=cache_misses))
+            for fqfield, value in get_many_response_to_dict(data).items():
+                self.cache[fqfield] = value
+
+
+def get_many_response_to_dict(response: Dict[str, Dict[int, Model]]) -> Dict[str, str]:
+    data: Dict[str, str] = {}
+    for collection, id_model in response.items():
+        for id, model in id_model.items():
+            for field, value in model.items():
+                data[collection + "/" + str(id) + "/" + field] = value
+    return data
+
+
 class DatastoreAdapter(BaseDatastoreService):
     """
     Adapter to connect to readable and writeable datastore.
@@ -49,7 +154,7 @@ class DatastoreAdapter(BaseDatastoreService):
     def __init__(self, engine: Engine, logging: LoggingModule, env: Env) -> None:
         self.logger = logging.getLogger(__name__)
         self.engine = engine
-        self.reader = injector.get(Reader)
+        self.reader = ReaderCache(injector.get(Reader))
         self.locked_fields = {}
         self.env = env
 

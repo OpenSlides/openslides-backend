@@ -480,6 +480,6 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
             for fqid, fields in missing_fields_per_fqid.items()
         ]
         results = super().get_many(
-            get_many_requests, None, DeletedModelsBehaviour.ALL_MODELS, lock_result
+            get_many_requests, None, DeletedModelsBehaviour.NO_DELETED, lock_result
         )
         return results
