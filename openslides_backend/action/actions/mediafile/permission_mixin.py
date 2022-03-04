@@ -3,11 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import (
-    ActionException,
-    MissingPermission,
-    PermissionException,
-)
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
@@ -40,7 +36,7 @@ class MediafilePermissionMixin(Action):
             self.assert_not_anonymous()
             self.check_token_unique(instance.get("token"), instance.get("id"))
             if "access_group_ids" in instance:
-                raise PermissionException(
+                raise ActionException(
                     "access_group_ids is not allowed in organization mediafiles."
                 )
             if not has_organization_management_level(
@@ -57,7 +53,7 @@ class MediafilePermissionMixin(Action):
 
         # check for token, not allowed in meeting.
         if "token" in instance:
-            raise PermissionException("token is not allowed in meeting mediafiles.")
+            raise ActionException("token is not allowed in meeting mediafiles.")
         self.check_access_groups_and_owner(instance.get("access_group_ids"), id_)
 
         super().check_permissions(instance)
