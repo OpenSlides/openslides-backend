@@ -60,29 +60,17 @@ class CheckMediafileId(BasePresenter):
             return {"ok": False}
         self.check_permissions()
         collection, _ = mediafile["owner_id"].split(KEYSEPARATOR)
-        if collection == "organization":
-            return self.get_organization_result(mediafile)
-        elif collection == "meeting":
-            return self.get_meeting_result(mediafile)
+        filename = mediafile.get("filename")
+        if collection == "organization" and mediafile.get("token"):
+            if not mediafile.get("mimetype"):
+                return {"ok": False}
+            extension = mimetypes.guess_extension(mediafile["mimetype"])
+            if extension is None:
+                return {"ok": False}
+            filename = mediafile["token"] + extension
+        if filename:
+            return {"ok": True, "filename": filename}
         return {"ok": False}
-
-    def get_organization_result(self, mediafile: Dict[str, Any]) -> Any:
-        if not mediafile.get("token"):
-            return {"ok": True, "filename": mediafile.get("filename")}
-        if not mediafile.get("mimetype"):
-            return {"ok": False}
-        self.check_permissions()
-        extension = mimetypes.guess_extension(mediafile["mimetype"])
-        if extension is None:
-            return {"ok": False}
-        filename = mediafile["token"] + extension
-
-        return {"ok": True, "filename": filename}
-
-    def get_meeting_result(self, mediafile: Dict[str, Any]) -> Any:
-        if not mediafile.get("filename"):
-            return {"ok": False}
-        return {"ok": True, "filename": mediafile["filename"]}
 
     def check_permissions(self) -> None:
         mediafile = self.datastore.get(
