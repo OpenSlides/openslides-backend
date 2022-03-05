@@ -23,6 +23,9 @@ DEFAULT_ADDRESSES = {
     "PresenterView": "0.0.0.0:9003",
 }
 
+DEFAULT_NUM_WORKERS = "1"
+DEFAULT_WORKER_TIMEOUT = "30"
+
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
@@ -32,10 +35,9 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
 
     def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
-        # Setup global loglevel.
-        if is_dev_mode():
-            logging.basicConfig(level=logging.DEBUG)
+        logging.basicConfig(level=self.loglevel())
         logger = logging.getLogger(__name__)
+
         self.view_name = view_name
         if self.view_name not in ("ActionView", "PresenterView"):
             raise ValueError(
@@ -45,13 +47,22 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
 
         super().__init__(*args, **kwargs)
 
+    def loglevel(self) -> str:
+        if is_dev_mode():
+            return "DEBUG"
+        lvl = os.environ.get("OPENSLIDES_LOGLEVEL", "INFO").upper()
+        if lvl not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+            raise ValueError("Invalid OPENSLIDES_LOGLEVEL: {lvl}")
+        return lvl
+
     def load_config(self) -> None:
         dev_mode = is_dev_mode()
         options = {
             "bind": DEFAULT_ADDRESSES[self.view_name],
+            "workers": int(os.environ.get("OPENSLIDES_BACKEND_NUM_WORKERS", DEFAULT_NUM_WORKERS)),
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
-            "timeout": int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30")),
-            "loglevel": "debug" if dev_mode else "info",
+            "timeout": int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", DEFAULT_WORKER_TIMEOUT)),
+            "loglevel": self.loglevel().lower(),
             "reload": dev_mode,
             "reload_engine": "auto",  # This is the default however.
         }

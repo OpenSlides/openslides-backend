@@ -74,7 +74,11 @@ The action component listens to port 9002. The presenter component listens to po
 
 * OPENSLIDES_DEVELOPMENT
 
-  Set this variable e. g. to 1 to set loglevel to debug and activate Gunicorn's reload mechanism.
+  Set this variable e. g. to 1 to set loglevel to `debug` and activate Gunicorn's reload mechanism.
+
+* OPENSLIDES_LOGLEVEL
+
+  In production mode you can set the loglevel to `debug`, `info`, `warning`, `error` or `critical`. Default is `info`.
 
 * OPENSLIDES_BACKEND_RAISE_4XX
 
@@ -112,6 +116,10 @@ The action component listens to port 9002. The presenter component listens to po
 
   Path of datastore writer service. Default: /internal/datastore/writer
 
+* OPENSLIDES_BACKEND_NUM_WORKERS
+
+  Number of Gunicorn workers. Default: 1
+
 * OPENSLIDES_BACKEND_WORKER_TIMEOUT
 
   Gunicorn worker timeout in seconds. Default: 30
@@ -119,6 +127,7 @@ The action component listens to port 9002. The presenter component listens to po
 * AUTH_HOST and AUTH_PORT
 
   Implicitly used by the authlib to get the endpoint for the auth-service
+
 
 # Some curl examples
 
