@@ -2686,6 +2686,8 @@ poll:
   max_votes_per_option:
     type: number
     default: 1
+    minimum: 1
+    required: true
     restriction_mode: A
   global_yes:
     type: boolean

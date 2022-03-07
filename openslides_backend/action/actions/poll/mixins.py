@@ -100,12 +100,6 @@ class StopControl(CountdownControl, Action):
                         if value == 0:
                             continue
                         vote_value = poll["pollmethod"]
-                        # print("Summing up")
-                        # print(vote_value)
-                        # print(value)
-                        # print(vote_weight)
-                        # print(ballot["weight"])
-                        # vote_weight *= value
                         vote_weighted *= value
 
                     option_results[option_id][vote_value] += vote_weighted
