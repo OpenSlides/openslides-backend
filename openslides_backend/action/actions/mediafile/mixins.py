@@ -92,7 +92,6 @@ class MediafileMixin(Action):
                 FullQualifiedId(self.model.collection, parent_id),
                 ["is_directory", "owner_id"],
             )
-            print("XXX", parent.get("owner_id"), owner_id)
             if not parent.get("is_directory"):
                 raise ActionException("Parent is not a directory.")
             if parent.get("owner_id") != owner_id:
