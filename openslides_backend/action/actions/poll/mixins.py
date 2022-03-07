@@ -95,7 +95,7 @@ class StopControl(CountdownControl, Action):
                     option_id = int(option_id_str)
 
                     vote_value = value
-                    vote_weighted = vote_weight # use new variable vote_weighted because pollmethod=Y/N does not imply anymore that only one loop is done (see max_votes_per_option)
+                    vote_weighted = vote_weight  # use new variable vote_weighted because pollmethod=Y/N does not imply anymore that only one loop is done (see max_votes_per_option)
                     if poll["pollmethod"] in ("Y", "N"):
                         if value == 0:
                             continue

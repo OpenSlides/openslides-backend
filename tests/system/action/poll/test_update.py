@@ -26,6 +26,8 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_ids": [1, 2],
                     "entitled_group_ids": [1],
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
                     "max_votes_per_option": 1,
                 },
                 "option/1": {"meeting_id": 1, "poll_id": 1},
@@ -213,14 +215,15 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("max_votes_per_option"), 5)
 
-    # def test_update_negative_max_votes_per_option(self) -> None:
-    #     response = self.request(
-    #         "poll.update",
-    #         {"max_votes_per_option": -3, "id": 1},
-    #     )
-    #     self.assert_status_code(response, 400)
-    #     poll = self.get_model("poll/1")
-    #     self.assertEqual(poll.get("max_votes_per_option"), 1)
+    def test_update_negative_fields(self) -> None:
+        for field in ("max_votes_per_option", "max_votes_amount", "min_votes_amount"):
+            response = self.request(
+                "poll.update",
+                {field: -3, "id": 1},
+            )
+            self.assert_status_code(response, 400)
+            poll = self.get_model("poll/1")
+            self.assertEqual(poll.get(field), 1)
 
     def test_update_100_percent_base(self) -> None:
         response = self.request(
