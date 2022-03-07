@@ -79,15 +79,6 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         instance["create_timestamp"] = round(time())
-        collection, _ = self.get_owner_data(instance)
-        if collection == "meeting":
-            return self.update_meeting_instance(instance)
-        elif collection == "organization":
-            return self.update_organization_instance(instance)
-        else:
-            return instance
-
-    def update_organization_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         filename_ = instance.pop("filename")
         file_ = instance.pop("file")
         instance["mimetype"] = mimetypes.guess_type(filename_)[0]
@@ -97,45 +88,33 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         instance["filesize"] = len(decoded_file)
         id_ = instance["id"]
         mimetype_ = instance["mimetype"]
-        self.media.upload_mediafile(file_, id_, mimetype_)
-        return instance
-
-    def update_meeting_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["mimetype"] = mimetypes.guess_type(instance["filename"])[0]
-        if instance["mimetype"] is None:
-            raise ActionException(f"Cannot guess mimetype for {instance['filename']}.")
-        decoded_file = base64.b64decode(instance["file"])
-        instance["filesize"] = len(decoded_file)
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
+        self.media.upload_mediafile(file_, id_, mimetype_)
+        collection, _ = self.get_owner_data(instance)
+        if collection == "meeting":
+            instance["filename"] = filename_
+            instance = self.update_access_fields(instance)
+        return instance
 
+    def update_access_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get("parent_id"):
             parent = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
                 [
-                    "is_directory",
                     "is_public",
                     "inherited_access_group_ids",
                 ],
             )
-            if parent.get("is_directory") is not True:
-                raise ActionException("Cannot have a non-directory parent.")
-
-            (
-                instance["is_public"],
-                instance["inherited_access_group_ids"],
-            ) = calculate_inherited_groups_helper(
-                instance.get("access_group_ids"),
-                parent.get("is_public"),
-                parent.get("inherited_access_group_ids"),
-            )
-        else:
-            instance["is_public"] = not bool(instance.get("access_group_ids"))
-            instance["inherited_access_group_ids"] = instance.get("access_group_ids")
-        file_ = instance.pop("file")
-        id_ = instance["id"]
-        mimetype_ = instance["mimetype"]
-        self.media.upload_mediafile(file_, id_, mimetype_)
+            if instance.get("access_group_ids") is not None:
+                (
+                    instance["is_public"],
+                    instance["inherited_access_group_ids"],
+                ) = calculate_inherited_groups_helper(
+                    instance["access_group_ids"],
+                    parent_mediafile.get("is_public"),
+                    parent_mediafile.get("inherited_access_group_ids"),
+                )
         return instance
 
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:
