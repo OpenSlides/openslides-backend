@@ -14,7 +14,7 @@ class GroupCreateActionTest(BaseActionTestCase):
         model = self.get_model("group/1")
         assert model.get("name") == "test_Xcdfgee"
         assert model.get("meeting_id") == 22
-        assert model.get("permissions") == []
+        assert model.get("permissions") is None
         assert model.get("weight") == 1
 
     def test_create_weight_same_meeting(self) -> None:

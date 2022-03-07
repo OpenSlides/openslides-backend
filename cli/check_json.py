@@ -21,9 +21,8 @@ def main() -> int:
     else:
         mode = modes[0]
 
-    is_partial = "--partial" in files
-    if len(modes) or is_partial:
-        files = [x for x in files if x not in possible_modes + ("--partial",)]
+    if len(modes):
+        files = [x for x in files if x not in possible_modes]
 
     failed = False
     for f in files:
@@ -32,7 +31,6 @@ def main() -> int:
                 Checker(
                     json.load(data),
                     mode=mode,
-                    is_partial=is_partial,
                 ).run_check()
             except CheckException as e:
                 print(f"Check for {f} failed:\n", e)

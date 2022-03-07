@@ -147,7 +147,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 if isinstance(
                     field, BaseTemplateField
                 ) and field.replacement_collection == Collection("meeting"):
-                    assert user[field.get_template_field_name()] == []
+                    assert user.get(field.get_template_field_name()) in ([], None)
                     val = user.get(field.get_structured_field_name(1))
                     if isinstance(field, BaseRelationField) and field.is_list_field:
                         assert val in ([], None)
