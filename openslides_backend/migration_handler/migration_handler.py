@@ -4,17 +4,29 @@ from threading import Lock, Thread
 from typing import Any, Dict, Optional
 
 from datastore.migrations import MigrationException
+from datastore.migrations import MigrationState as DatastoreMigrationState
 
 from migrations import MigrationWrapper
 
 from ..shared.exceptions import View400Exception
 from ..shared.handlers.base_handler import BaseHandler
+from ..shared.interfaces.logging import LoggingModule
+from ..shared.interfaces.services import Services
+
+# Amount of time that should be waited for a result from the migrate thread before returning an empty result
+THREAD_WAIT_TIME = 0.1
 
 
-class MigrationProgressState(int, Enum):
-    NO_MIGRATION_RUNNING = 0
-    MIGRATION_RUNNING = 1
-    MIGRATION_FINISHED = 2
+class MigrationState(str, Enum):
+    """
+    All possible migration states, ordered by priority. E.g. a running migration implicates that
+    migrations are required and required migration implicates that finalization is also required.
+    """
+
+    MIGRATION_RUNNING = "migration_running"
+    MIGRATION_REQUIRED = DatastoreMigrationState.MIGRATION_REQUIRED.value
+    FINALIZATION_REQUIRED = DatastoreMigrationState.FINALIZATION_REQUIRED.value
+    NO_MIGRATION_REQUIRED = DatastoreMigrationState.NO_MIGRATION_REQUIRED.value
 
 
 class MigrationHandler(BaseHandler):
@@ -25,6 +37,10 @@ class MigrationHandler(BaseHandler):
     migrate_thread_stream_can_be_closed: bool = False
     migrate_thread_exception: Optional[MigrationException] = None
 
+    def __init__(self, services: Services, logging: LoggingModule) -> None:
+        super().__init__(services, logging)
+        self.migration_wrapper = MigrationWrapper(False, self.logger.info)
+
     def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         if not (command := payload.get("cmd")):
             raise View400Exception("No command provided")
@@ -32,40 +48,7 @@ class MigrationHandler(BaseHandler):
 
         with MigrationHandler.lock:
             if command == "progress":
-                if MigrationHandler.migration_running:
-                    if MigrationHandler.migrate_thread_stream:
-                        # Migration still running
-                        return {
-                            "status": MigrationProgressState.MIGRATION_RUNNING,
-                            "output": MigrationHandler.migrate_thread_stream.getvalue(),
-                        }
-                    else:
-                        raise RuntimeError("Invalid migration handler state")
-                else:
-                    if MigrationHandler.migrate_thread_stream:
-                        # Migration finished and the full output can be returned. Do not remove the
-                        # output in case the response is lost and must be delivered again, but set
-                        # flag that it can be removed.
-                        MigrationHandler.migrate_thread_stream_can_be_closed = True
-                        # handle possible exception
-                        if MigrationHandler.migrate_thread_exception:
-                            exception_data = {
-                                "exception": str(
-                                    MigrationHandler.migrate_thread_exception
-                                )
-                            }
-                        else:
-                            exception_data = {}
-                        return {
-                            "status": MigrationProgressState.MIGRATION_FINISHED,
-                            "output": MigrationHandler.migrate_thread_stream.getvalue(),
-                            **exception_data,
-                        }
-                    else:
-                        # Nothing to report
-                        return {
-                            "status": MigrationProgressState.NO_MIGRATION_RUNNING,
-                        }
+                return self.handle_progress_command()
 
             if MigrationHandler.migration_running:
                 raise View400Exception(
@@ -81,43 +64,82 @@ class MigrationHandler(BaseHandler):
                     self.close_migrate_thread_stream()
 
             verbose = payload.get("verbose", False)
-            MigrationHandler.migrate_thread_stream = StringIO()
-            if command in ("migrate", "finalize"):
+            if command in ("migrate", "finalize", "reset"):
+                MigrationHandler.migrate_thread_stream = StringIO()
                 thread = Thread(
                     target=self.execute_migrate_command, args=[command, verbose]
                 )
                 thread.start()
+                thread.join(THREAD_WAIT_TIME)
+                if thread.is_alive():
+                    # Migration still running. Report current progress and return
+                    return {
+                        "status": MigrationState.MIGRATION_RUNNING,
+                        "output": MigrationHandler.migrate_thread_stream.getvalue(),
+                    }
+                else:
+                    # Migration already finished/had nothing to do
+                    return self.get_migration_result()
+            elif command == "stats":
+                stats = self.migration_wrapper.handler.get_stats()
                 return {
-                    "status": MigrationProgressState.MIGRATION_RUNNING,
-                    "output": MigrationHandler.migrate_thread_stream.getvalue(),
+                    "stats": stats,
                 }
             else:
-                # short-running commands can just be executed directly
-                self.execute_migrate_command(command, verbose)
-                if MigrationHandler.migrate_thread_exception:
-                    raise View400Exception(
-                        str(MigrationHandler.migrate_thread_exception),
-                        {"output": self.close_migrate_thread_stream()},
-                    )
-                else:
-                    return {
-                        "output": self.close_migrate_thread_stream(),
-                    }
+                raise View400Exception("Unknown command: " + command)
 
     def execute_migrate_command(self, command: str, verbose: bool) -> None:
         MigrationHandler.migration_running = True
         handler = MigrationWrapper(verbose, self.write_line)
         try:
-            handler.execute_command(command)
+            return handler.execute_command(command)
         except MigrationException as e:
             MigrationHandler.migrate_thread_exception = e
             self.logger.exception(e)
         finally:
             MigrationHandler.migration_running = False
 
+    def handle_progress_command(self) -> Dict[str, Any]:
+        if MigrationHandler.migration_running:
+            if MigrationHandler.migrate_thread_stream:
+                # Migration still running
+                return {
+                    "status": MigrationState.MIGRATION_RUNNING,
+                    "output": MigrationHandler.migrate_thread_stream.getvalue(),
+                }
+            else:
+                raise RuntimeError("Invalid migration handler state")
+        else:
+            return self.get_migration_result()
+
+    def get_migration_result(self) -> Dict[str, Any]:
+        stats = self.migration_wrapper.handler.get_stats()
+        if MigrationHandler.migrate_thread_stream:
+            # Migration finished and the full output can be returned. Do not remove the
+            # output in case the response is lost and must be delivered again, but set
+            # flag that it can be removed.
+            MigrationHandler.migrate_thread_stream_can_be_closed = True
+            # handle possible exception
+            if MigrationHandler.migrate_thread_exception:
+                exception_data = {
+                    "exception": str(MigrationHandler.migrate_thread_exception)
+                }
+            else:
+                exception_data = {}
+            return {
+                "status": stats["status"],
+                "output": MigrationHandler.migrate_thread_stream.getvalue(),
+                **exception_data,
+            }
+        else:
+            # Nothing to report
+            return {
+                "status": stats["status"],
+            }
+
     def write_line(self, message: str) -> None:
-        assert MigrationHandler.migrate_thread_stream
-        MigrationHandler.migrate_thread_stream.write(message + "\n")
+        assert (stream := MigrationHandler.migrate_thread_stream)
+        stream.write(message + "\n")
 
     @classmethod
     def close_migrate_thread_stream(cls) -> str:

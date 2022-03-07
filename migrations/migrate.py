@@ -2,7 +2,7 @@ import pkgutil
 import sys
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import List, Type
+from typing import Any, List, Type
 
 from datastore.migrations import BaseMigration, MigrationException, PrintFunction, setup
 
@@ -56,7 +56,7 @@ class MigrationWrapper:
             migration_classes.append(migration_class)
         return migration_classes
 
-    def execute_command(self, command: str) -> None:
+    def execute_command(self, command: str) -> Any:
         if command == "migrate":
             self.handler.migrate()
         elif command == "finalize":
@@ -66,7 +66,7 @@ class MigrationWrapper:
         elif command == "clear-collectionfield-tables":
             self.handler.delete_collectionfield_aux_tables()
         elif command == "stats":
-            self.handler.print_stats()
+            return self.handler.get_stats()
         else:
             raise InvalidMigrationCommand(command)
 
