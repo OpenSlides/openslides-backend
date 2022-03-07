@@ -23,6 +23,7 @@ class PresenterView(BaseView):
 
         # Handle request.
         handler = PresenterHandler(
+            config=self.config,
             logging=self.logging,
             services=self.services,
         )

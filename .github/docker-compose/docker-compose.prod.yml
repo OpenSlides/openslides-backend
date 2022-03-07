@@ -1,12 +1,28 @@
 version: "3"
 services:
-    backend:
+    backendAction:
         build: ../..
         image: openslides-backend
         ports:
             - "9002:9002"
+        environment:
+            - OPENSLIDES_BACKEND_COMPONENT=action
+            - DATASTORE_READER_HOST=reader
+            - DATASTORE_READER_PORT=9010
+            - DATASTORE_WRITER_HOST=writer
+            - DATASTORE_WRITER_PORT=9011
+        depends_on:
+            - writer
+            - reader
+        secrets:
+            - postgres_password
+    backendPresenter:
+        build: ../..
+        image: openslides-backend
+        ports:
             - "9003:9003"
         environment:
+            - OPENSLIDES_BACKEND_COMPONENT=presenter
             - DATASTORE_READER_HOST=reader
             - DATASTORE_READER_PORT=9010
             - DATASTORE_WRITER_HOST=writer

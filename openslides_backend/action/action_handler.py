@@ -3,13 +3,14 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 import fastjsonschema
 
-from ..shared.env import is_dev_mode
+from ..shared.env import is_truthy
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
+from ..shared.interfaces.config import Config
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
@@ -68,8 +69,10 @@ class ActionHandler(BaseHandler):
 
     on_success: List[Callable[[], None]]
 
-    def __init__(self, services: Services, logging: LoggingModule) -> None:
-        super().__init__(services, logging)
+    def __init__(
+        self, config: Config, services: Services, logging: LoggingModule
+    ) -> None:
+        super().__init__(config, services, logging)
         self.on_success = []
 
     @classmethod
@@ -206,7 +209,8 @@ class ActionHandler(BaseHandler):
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
         if ActionClass is None or (
-            ActionClass.action_type == ActionType.BACKEND_INTERNAL and not is_dev_mode()
+            ActionClass.action_type == ActionType.BACKEND_INTERNAL
+            and not is_truthy(self.config["OPENSLIDES_DEVELOPMENT"])
         ):
             raise View400Exception(f"Action {action_name} does not exist.")
         if not relation_manager:

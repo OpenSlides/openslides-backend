@@ -72,6 +72,14 @@ The action component listens to port 9002. The presenter component listens to po
 
   Use one of the following values to start only one component of this service: `action` or `presenter`. Defaults to all of them using different child processes. If using `all` you can shut down all compontes by sending SIGTERM to Python master process.
 
+* ACTION_PORT
+
+  Action component listens on this port. Default: 9002
+
+* PRESENTER_PORT
+
+  Presenter component listens on this port. Default 9003
+
 * OPENSLIDES_DEVELOPMENT
 
   Set this variable e. g. to 1 to set loglevel to `debug` and activate Gunicorn's reload mechanism.

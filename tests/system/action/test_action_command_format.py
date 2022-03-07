@@ -14,7 +14,8 @@ class GeneralActionCommandFormat(BaseActionTestCase):
 
     def get_action_handler(self) -> ActionHandler:
         logger = Mock()
-        handler = ActionHandler(self.services, logger)
+        config = Mock()
+        handler = ActionHandler(config, self.services, logger)
         handler.user_id = 1
         handler.internal = False
         return handler

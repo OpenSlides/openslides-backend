@@ -1,10 +1,7 @@
-import os
-from tempfile import NamedTemporaryFile
 from typing import Any, Dict, Optional
-from unittest.mock import Mock, patch
 
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.shared.env import DEV_PASSWORD, INTERNAL_AUTH_PASSWORD_FILE
+from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.util import get_route_path
 from tests.util import Response
 
@@ -19,17 +16,6 @@ class TestInternalActions(BaseActionTestCase):
     Just rudimentary tests that the actions generally succeed since if that's the case, everything should be handled
     analogously to the external case, which is already test sufficiently in the special test cases for the actions.
     """
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.secret_file = NamedTemporaryFile()
-        self.secret_file.write(DEV_PASSWORD.encode("ascii"))
-        self.secret_file.seek(0)
-        os.environ[INTERNAL_AUTH_PASSWORD_FILE] = self.secret_file.name
-
-    def tearDown(self) -> None:
-        super().tearDown()
-        self.secret_file.close()
 
     def internal_request(
         self,
@@ -88,22 +74,3 @@ class TestInternalActions(BaseActionTestCase):
         response = self.internal_request("user.create", {"username": "test"}, None)
         self.assert_status_code(response, 401)
         self.assert_model_not_exists("user/2")
-
-    @patch("openslides_backend.shared.env.is_dev_mode")
-    def test_internal_no_password_on_server(self, is_dev_mode: Mock) -> None:
-        is_dev_mode.return_value = False
-        del os.environ[INTERNAL_AUTH_PASSWORD_FILE]
-        response = self.internal_request("user.create", {"username": "test"})
-        self.assert_status_code(response, 500)
-        self.assert_model_not_exists("user/2")
-
-    @patch("openslides_backend.shared.env.is_dev_mode")
-    def test_internal_try_access_backend_internal_action(
-        self, is_dev_mode: Mock
-    ) -> None:
-        is_dev_mode.return_value = False
-        response = self.internal_request(
-            "option.create", {"meeting_id": 1, "text": "test"}
-        )
-        self.assert_status_code(response, 400)
-        self.assert_model_not_exists("option/1")

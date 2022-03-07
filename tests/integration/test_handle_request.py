@@ -64,7 +64,7 @@ def action_handler() -> Iterable[ActionHandler]:
     datastore_mock.write = MagicMock()
     services.datastore = MagicMock(return_value=datastore_mock)
 
-    yield ActionHandler(services, MagicMock())
+    yield ActionHandler(MagicMock(), services, MagicMock())
 
 
 def test_success_actions(action_handler: ActionHandler) -> None:
