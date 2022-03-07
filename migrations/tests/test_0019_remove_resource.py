@@ -44,6 +44,20 @@ def test_migration(write, finalize, assert_model, read_model):
     finalize("0019_remove_resource")
     assert_model(
         "organization/1",
+        {"id": 1, "meta_deleted": False, "meta_position": 1},
+        position=1,
+    )
+    with pytest.raises(ModelDoesNotExist):
+        read_model("resource/8", position=1)
+    assert_model(
+        "theme/11",
+        {"id": 11, "meta_deleted": False, "meta_position": 1},
+        position=1,
+    )
+    with pytest.raises(ModelDoesNotExist):
+        read_model("resource/8", position=2)
+    assert_model(
+        "organization/1",
         {"id": 1, "meta_deleted": False, "meta_position": 3},
         position=3,
     )
