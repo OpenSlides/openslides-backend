@@ -83,6 +83,7 @@ class UserCreate(
             )
             if count > 0:
                 new_username += str(count)
+            new_username = new_username.replace(" ", "")
 
             result = self.datastore.filter(
                 Collection("user"),
