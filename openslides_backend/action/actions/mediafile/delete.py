@@ -7,11 +7,11 @@ from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .permission_mixin import MediafilePermissionMixin
+from .mixins import MediafileMixin
 
 
 @register_action("mediafile.delete")
-class MediafileDelete(MediafilePermissionMixin, DeleteAction):
+class MediafileDelete(MediafileMixin, DeleteAction):
     """
     Action to delete a user.
     """

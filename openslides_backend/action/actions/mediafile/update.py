@@ -7,13 +7,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .calculate_mixins import MediafileCalculatedFieldsMixin
-from .permission_mixin import MediafilePermissionMixin
+from .mixins import MediafileMixin
 
 
 @register_action("mediafile.update")
-class MediafileUpdate(
-    MediafilePermissionMixin, UpdateAction, MediafileCalculatedFieldsMixin
-):
+class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMixin):
     """
     Action to update a mediafile.
     """

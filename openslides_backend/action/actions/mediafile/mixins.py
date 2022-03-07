@@ -9,7 +9,7 @@ from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
 
 
-class MediafilePermissionMixin(Action):
+class MediafileMixin(Action):
     """
     Mixin to handle the check_permissions of mediafile actions.
     Overwrite check_permissions() and get_meeting_id().

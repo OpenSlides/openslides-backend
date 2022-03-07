@@ -8,11 +8,11 @@ from ....shared.patterns import FullQualifiedId
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .permission_mixin import MediafilePermissionMixin
+from .mixins import MediafileMixin
 
 
 @register_action("mediafile.create_directory")
-class MediafileCreateDirectory(MediafilePermissionMixin, CreateAction):
+class MediafileCreateDirectory(MediafileMixin, CreateAction):
     """
     Action to create directory a mediafile.
     """

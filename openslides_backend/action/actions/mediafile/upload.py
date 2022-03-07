@@ -19,7 +19,7 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .delete import MediafileDelete
-from .permission_mixin import MediafilePermissionMixin
+from .mixins import MediafileMixin
 
 PDFInformation = TypedDict(
     "PDFInformation",
@@ -32,7 +32,7 @@ PDFInformation = TypedDict(
 
 
 @register_action("mediafile.upload")
-class MediafileUploadAction(MediafilePermissionMixin, CreateAction):
+class MediafileUploadAction(MediafileMixin, CreateAction):
     """
     Action to upload a mediafile.
     """
