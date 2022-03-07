@@ -11,7 +11,7 @@ from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import FullQualifiedId
 from ...action import original_instances
 from ...generics.create import CreateAction
@@ -55,7 +55,10 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             tokens.append(instance.get("token"))
             results = self.datastore.filter(
                 self.model.collection,
-                FilterOperator("token", "=", instance["token"]),
+                And(
+                    FilterOperator("token", "=", instance["token"]),
+                    FilterOperator("owner_id", "=", "organization/1"),
+                ),
                 ["id"],
             )
             if len(results) == 0:
