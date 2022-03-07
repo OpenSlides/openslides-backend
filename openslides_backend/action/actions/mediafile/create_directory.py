@@ -29,6 +29,7 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
         Calculate inherited_access_group_ids and inherited_access_group_ids, if
         access_group_ids are given.
         """
+        instance = super().update_instance(instance)
         instance["is_directory"] = True
         instance["create_timestamp"] = round(time.time())
         collection, id_ = self.get_owner_data(instance)

@@ -12,17 +12,16 @@ from ...action import Action
 class MediafileMixin(Action):
     """
     Mixin to handle the check_permissions of mediafile actions.
-    Overwrite check_permissions() and get_meeting_id().
+    Overwrite update_instance(), check_permissions() and get_meeting_id().
     """
 
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         collection, id_ = self.get_owner_data(instance)
-
         self.check_parent_is_dir_and_owner(
             instance.get("parent_id"), str(instance.get("owner_id"))
         )
         parent_id = instance.get("parent_id")
-        if not parent_id and instance.get("id"):
+        if self.name == "mediafile.update":
             mediafile = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["parent_id"]
             )
@@ -31,14 +30,26 @@ class MediafileMixin(Action):
             instance.get("title"), parent_id, instance.get("id")
         )
 
-        # handle organization permissions
         if collection == "organization":
-            self.assert_not_anonymous()
             self.check_token_unique(instance.get("token"), instance.get("id"))
             if "access_group_ids" in instance:
                 raise ActionException(
                     "access_group_ids is not allowed in organization mediafiles."
                 )
+        else:
+            # check for token, not allowed in meeting.
+            if "token" in instance:
+                raise ActionException("token is not allowed in meeting mediafiles.")
+            self.check_access_groups_and_owner(instance.get("access_group_ids"), id_)
+
+        return instance
+
+    def check_permissions(self, instance: Dict[str, Any]) -> None:
+        collection, _ = self.get_owner_data(instance)
+
+        # handle organization permissions
+        if collection == "organization":
+            self.assert_not_anonymous()
             if not has_organization_management_level(
                 self.datastore,
                 self.user_id,
@@ -48,14 +59,7 @@ class MediafileMixin(Action):
                     OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
                 )
             return
-
         assert collection == "meeting"
-
-        # check for token, not allowed in meeting.
-        if "token" in instance:
-            raise ActionException("token is not allowed in meeting mediafiles.")
-        self.check_access_groups_and_owner(instance.get("access_group_ids"), id_)
-
         super().check_permissions(instance)
 
     def check_for_archived_meeting(self, instance: Dict[str, Any]) -> None:
@@ -88,9 +92,10 @@ class MediafileMixin(Action):
                 FullQualifiedId(self.model.collection, parent_id),
                 ["is_directory", "owner_id"],
             )
+            print("XXX", parent.get("owner_id"), owner_id)
             if not parent.get("is_directory"):
                 raise ActionException("Parent is not a directory.")
-            if parent.get("owner_id") != str(owner_id):
+            if parent.get("owner_id") != owner_id:
                 raise ActionException("Owner and parent don't match.")
 
     def check_title_parent_unique(

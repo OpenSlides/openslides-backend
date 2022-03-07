@@ -78,10 +78,11 @@ class MediafileMoveAction(
                         f"Moving item {id_} to one of its children is not possible."
                     )
         for id_ in ids:
-            if id_ not in db_instances or db_instances[id_].get("owner_id") != owner_id:
-                raise ActionException(f"Id {id_} not in db_instances.")
-
-            instance: Dict[str, Any] = {"id": id_, "parent_id": parent_id}
+            instance: Dict[str, Any] = {
+                "id": id_,
+                "parent_id": parent_id,
+                "owner_id": owner_id,
+            }
             access_group_ids = list(db_instances[id_].get("access_group_ids", []))
             if parent_id:
                 parent = self.datastore.get(

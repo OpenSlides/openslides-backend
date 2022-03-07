@@ -74,6 +74,8 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         return action_data
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        instance["create_timestamp"] = round(time())
         collection, _ = self.get_owner_data(instance)
         if collection == "meeting":
             return self.update_meeting_instance(instance)
@@ -83,7 +85,6 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             return instance
 
     def update_organization_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["create_timestamp"] = round(time())
         filename_ = instance.pop("filename")
         file_ = instance.pop("file")
         instance["mimetype"] = mimetypes.guess_type(filename_)[0]
@@ -97,7 +98,6 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         return instance
 
     def update_meeting_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["create_timestamp"] = round(time())
         instance["mimetype"] = mimetypes.guess_type(instance["filename"])[0]
         if instance["mimetype"] is None:
             raise ActionException(f"Cannot guess mimetype for {instance['filename']}.")
