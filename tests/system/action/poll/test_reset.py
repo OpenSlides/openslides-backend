@@ -109,6 +109,7 @@ class PollResetActionTest(BaseActionTestCase):
                     "meeting_id": 1,
                     "entitled_group_ids": [1],
                     "pollmethod": "Y",
+                    "max_votes_per_option": 1,
                 },
                 "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
                 "option/2": {
