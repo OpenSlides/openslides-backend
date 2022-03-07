@@ -1787,31 +1787,6 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
         vote = self.get_model("vote/1")
         self.assertIsNone(vote.get("user_id"))
 
-    def test_vote_multiple(self) -> None:
-        self.start_poll()
-        response = self.request(
-            "poll.vote",
-            {"value": {"1": 1, "2": 0}, "id": 1, "user_id": 1},
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists("vote/1")
-        self.assert_model_not_exists("vote/2")
-        poll = self.get_model("poll/1")
-        self.assertEqual(poll.get("votesvalid"), "1.000000")
-        self.assertEqual(poll.get("votesinvalid"), "0.000000")
-        self.assertEqual(poll.get("votescast"), "1.000000")
-        self.assertTrue(1 in poll.get("voted_ids", []))
-        option1 = self.get_model("option/1")
-        option2 = self.get_model("option/2")
-        self.assertEqual(option1.get("yes"), "1.000000")
-        self.assertEqual(option1.get("no"), "0.000000")
-        self.assertEqual(option1.get("abstain"), "0.000000")
-        self.assertEqual(option2.get("yes"), "0.000000")
-        self.assertEqual(option2.get("no"), "0.000000")
-        self.assertEqual(option2.get("abstain"), "0.000000")
-        vote = self.get_model("vote/1")
-        self.assertIsNone(vote.get("user_id"))
-
     def test_change_vote(self) -> None:
         self.start_poll()
         response = self.request(
