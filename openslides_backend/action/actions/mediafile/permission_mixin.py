@@ -130,7 +130,10 @@ class MediafilePermissionMixin(Action):
 
     def check_token_unique(self, token: Optional[str], id_: Optional[int]) -> None:
         if token:
-            filter_: Filter = FilterOperator("token", "=", token)
+            filter_: Filter = And(
+                FilterOperator("token", "=", token),
+                FilterOperator("owner_id", "=", "organization/1"),
+            )
             if id_:
                 filter_ = And(
                     filter_,
