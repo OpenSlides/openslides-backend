@@ -136,7 +136,7 @@ class MediafileMixin(Action):
         if token:
             filter_: Filter = And(
                 FilterOperator("token", "=", token),
-                FilterOperator("owner_id", "=", "organization/1"),
+                FilterOperator("owner_id", "=", "organization" + KEYSEPARATOR + "1"),
             )
             if id_:
                 filter_ = And(

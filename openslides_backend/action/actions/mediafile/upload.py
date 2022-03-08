@@ -12,7 +12,7 @@ from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR, FullQualifiedId
 from ...action import original_instances
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
@@ -57,7 +57,9 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                 self.model.collection,
                 And(
                     FilterOperator("token", "=", instance["token"]),
-                    FilterOperator("owner_id", "=", "organization/1"),
+                    FilterOperator(
+                        "owner_id", "=", "organization" + KEYSEPARATOR + "1"
+                    ),
                 ),
                 ["id"],
             )
