@@ -60,7 +60,7 @@ class MediafileUploadAction(
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
 
         if instance.get("parent_id"):
-            parent_mediafile = self.datastore.get(
+            parent = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
                 [
                     "is_directory",
@@ -68,17 +68,20 @@ class MediafileUploadAction(
                     "inherited_access_group_ids",
                 ],
             )
-            if parent_mediafile.get("is_directory") is not True:
+            if parent.get("is_directory") is not True:
                 raise ActionException("Cannot have a non-directory parent.")
-            if instance.get("access_group_ids") is not None:
-                (
-                    instance["is_public"],
-                    instance["inherited_access_group_ids"],
-                ) = calculate_inherited_groups_helper(
-                    instance["access_group_ids"],
-                    parent_mediafile.get("is_public"),
-                    parent_mediafile.get("inherited_access_group_ids"),
-                )
+
+            (
+                instance["is_public"],
+                instance["inherited_access_group_ids"],
+            ) = calculate_inherited_groups_helper(
+                instance.get("access_group_ids"),
+                parent.get("is_public"),
+                parent.get("inherited_access_group_ids"),
+            )
+        else:
+            instance["is_public"] = not bool(instance.get("access_group_ids"))
+            instance["inherited_access_group_ids"] = instance.get("access_group_ids")
         file_ = instance.pop("file")
         id_ = instance["id"]
         mimetype_ = instance["mimetype"]
