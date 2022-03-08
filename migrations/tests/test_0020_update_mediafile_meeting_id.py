@@ -27,7 +27,7 @@ def test_migration(write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "meeting/8",
-            "fields": {"mediafile_ids": [12, 13]},
+            "list_fields": {"add": {"mediafile_ids": [13]}},
         },
     )
     write(
@@ -39,7 +39,19 @@ def test_migration(write, finalize, assert_model):
         {
             "type": "update",
             "fqid": "meeting/8",
-            "fields": {"mediafile_ids": [12]},
+            "list_fields": {"remove": {"mediafile_ids": [13]}},
+        },
+    )
+    write(
+        {
+            "type": "delete",
+            "fqid": "mediafile/12",
+            "fields": {},
+        },
+        {
+            "type": "update",
+            "fqid": "meeting/8",
+            "fields": {"mediafile_ids": None},
         },
     )
 
@@ -115,4 +127,24 @@ def test_migration(write, finalize, assert_model):
             "meta_position": 4,
         },
         position=4,
+    )
+    assert_model(
+        "mediafile/12",
+        {
+            "id": 12,
+            "title": "blablabla",
+            "owner_id": "meeting/8",
+            "meta_deleted": True,
+            "meta_position": 5,
+        },
+        position=5,
+    )
+    assert_model(
+        "meeting/8",
+        {
+            "id": 8,
+            "meta_deleted": False,
+            "meta_position": 5,
+        },
+        position=5,
     )
