@@ -79,7 +79,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         instance["create_timestamp"] = round(time())
-        filename_ = instance.pop("filename")
+        filename_ = instance.get("filename", "")
         file_ = instance.pop("file")
         instance["mimetype"] = mimetypes.guess_type(filename_)[0]
         if instance["mimetype"] is None:
@@ -90,11 +90,10 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
         mimetype_ = instance["mimetype"]
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
-        self.media.upload_mediafile(file_, id_, mimetype_)
         collection, _ = self.get_owner_data(instance)
         if collection == "meeting":
-            instance["filename"] = filename_
             instance = self.update_access_fields(instance)
+        self.media.upload_mediafile(file_, id_, mimetype_)
         return instance
 
     def update_access_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:

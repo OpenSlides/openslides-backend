@@ -60,7 +60,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
         mediafile = self.get_model("mediafile/1")
         assert mediafile.get("title") == "title_xXRGTLAJ"
         assert mediafile.get("owner_id") == "organization/1"
-        assert mediafile.get("filename") is None
         assert mediafile.get("file") is None
         assert mediafile.get("mimetype") == "text/plain"
         assert mediafile.get("filesize") == 12
