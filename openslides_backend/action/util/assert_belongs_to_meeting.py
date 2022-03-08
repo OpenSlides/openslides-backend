@@ -32,6 +32,8 @@ def assert_belongs_to_meeting(
             if collection == "meeting":
                 if int(id_) != meeting_id:
                     errors.add(str(fqid))
+            else:
+                errors.add(str(fqid))
         else:
             instance = datastore.get(
                 fqid,
