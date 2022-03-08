@@ -45,7 +45,9 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             raise ActionException("Not allowed to set note if not point of order.")
 
         self.check_speech_state({}, instance)
-        weight_max = self._get_max_weight(instance["list_of_speakers_id"])
+        weight_max = self._get_max_weight(
+            instance["list_of_speakers_id"], instance["meeting_id"]
+        )
         if weight_max is None:
             instance["weight"] = 1
             return instance
@@ -55,14 +57,19 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             return instance
 
         list_of_speakers_id = instance["list_of_speakers_id"]
-        weight_no_poos_min = self._get_no_poo_min(list_of_speakers_id)
+        weight_no_poos_min = self._get_no_poo_min(
+            list_of_speakers_id, instance["meeting_id"]
+        )
         if weight_no_poos_min is None:
             instance["weight"] = weight_max + 1
             return instance
 
         instance["weight"] = weight_no_poos_min
         speaker_ids = self._insert_before_weight(
-            instance["id"], weight_no_poos_min, list_of_speakers_id
+            instance["id"],
+            weight_no_poos_min,
+            list_of_speakers_id,
+            instance["meeting_id"],
         )
         self.apply_instance(instance)
         action_data = [
@@ -75,7 +82,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         return instance
 
     def _insert_before_weight(
-        self, new_id: int, weight: int, list_of_speakers_id: int
+        self, new_id: int, weight: int, list_of_speakers_id: int, meeting_id: int
     ) -> List[int]:
         """
         We need to bild a list of speakers, sort them by weight and
@@ -84,6 +91,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         filter = And(
             FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
             FilterOperator("begin_time", "=", None),
+            FilterOperator("meeting_id", "=", meeting_id),
         )
         speakers = self.datastore.filter(
             self.model.collection,
@@ -98,17 +106,22 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             list_to_sort.append(speaker["id"])
         return list_to_sort
 
-    def _get_max_weight(self, list_of_speakers_id: int) -> Optional[int]:
+    def _get_max_weight(
+        self, list_of_speakers_id: int, meeting_id: int
+    ) -> Optional[int]:
         return self.datastore.max(
             collection=Collection("speaker"),
             filter=And(
                 FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
                 FilterOperator("begin_time", "=", None),
+                FilterOperator("meeting_id", "=", meeting_id),
             ),
             field="weight",
         )
 
-    def _get_no_poo_min(self, list_of_speakers_id: int) -> Optional[int]:
+    def _get_no_poo_min(
+        self, list_of_speakers_id: int, meeting_id: int
+    ) -> Optional[int]:
         return self.datastore.min(
             collection=Collection("speaker"),
             filter=And(
@@ -118,6 +131,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
                     FilterOperator("point_of_order", "=", None),
                 ),
                 FilterOperator("begin_time", "=", None),
+                FilterOperator("meeting_id", "=", meeting_id),
             ),
             field="weight",
         )
@@ -180,6 +194,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         filter_obj = And(
             FilterOperator("list_of_speakers_id", "=", instance["list_of_speakers_id"]),
             FilterOperator("begin_time", "=", None),
+            FilterOperator("meeting_id", "=", meeting_id),
         )
         speakers = self.datastore.filter(
             collection=Collection("speaker"),
