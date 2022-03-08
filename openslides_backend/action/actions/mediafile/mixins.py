@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ...action import Action
@@ -21,11 +21,15 @@ class MediafileMixin(Action):
             instance.get("parent_id"), str(instance.get("owner_id"))
         )
         parent_id = instance.get("parent_id")
-        if self.name == "mediafile.update":
-            mediafile = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["parent_id"]
-            )
-            parent_id = mediafile.get("parent_id")
+        if not parent_id:
+            try:
+                mediafile = self.datastore.get(
+                    FullQualifiedId(self.model.collection, instance["id"]),
+                    ["parent_id"],
+                )
+                parent_id = mediafile.get("parent_id")
+            except DatastoreException:
+                pass
         self.check_title_parent_unique(
             instance.get("title"), parent_id, instance.get("id")
         )
