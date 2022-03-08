@@ -109,15 +109,18 @@ class MediafileMixin(Action):
                 filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
-                parent_title = "NONE"
                 if parent_id:
                     parent = self.datastore.get(
                         FullQualifiedId(self.model.collection, parent_id), ["title"]
                     )
                     parent_title = parent.get("title", "")
-                raise ActionException(
-                    f"File '{title}' already exists in folder '{parent_title}'."
-                )
+                    raise ActionException(
+                        f"File '{title}' already exists in folder '{parent_title}'."
+                    )
+                else:
+                    raise ActionException(
+                        f"File '{title}' already exists in the root folder."
+                    )
 
     def check_access_groups_and_owner(
         self, access_group_ids: Optional[List[int]], meeting_id: int
