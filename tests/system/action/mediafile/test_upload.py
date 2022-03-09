@@ -33,7 +33,6 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "file": None,
                 "mimetype": "text/plain",
                 "filesize": 12,
-                "list_of_speakers_id": 1,
                 "is_public": True,
             },
         )
@@ -379,7 +378,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "is_directory": True,
                     "inherited_access_group_ids": [],
                     "is_public": True,
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
@@ -388,7 +387,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "filename": "fn_jumbo.txt",
                 "file": file_content,
                 "parent_id": 10,
@@ -400,7 +399,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile/11",
             {
                 "title": "title_xXRGTLAJ",
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "filename": "fn_jumbo.txt",
                 "file": None,
                 "is_public": False,
@@ -431,7 +430,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "is_directory": True,
                     "inherited_access_group_ids": [1],
                     "is_public": False,
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
@@ -440,7 +439,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "filename": "fn_jumbo.txt",
                 "file": file_content,
                 "parent_id": 10,
@@ -452,7 +451,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile/11",
             {
                 "title": "title_xXRGTLAJ",
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "filename": "fn_jumbo.txt",
                 "file": None,
                 "is_public": False,
@@ -480,7 +479,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                     "is_directory": True,
                     "inherited_access_group_ids": [1],
                     "is_public": False,
-                    "meeting_id": 110,
+                    "owner_id": "meeting/110",
                 },
             }
         )
@@ -489,7 +488,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "filename": "fn_jumbo.txt",
                 "file": file_content,
                 "parent_id": 10,
@@ -501,7 +500,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile/11",
             {
                 "title": "title_xXRGTLAJ",
-                "meeting_id": 110,
+                "owner_id": "meeting/110",
                 "filename": "fn_jumbo.txt",
                 "file": None,
                 "is_public": False,

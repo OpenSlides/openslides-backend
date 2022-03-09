@@ -107,15 +107,17 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                     "inherited_access_group_ids",
                 ],
             )
-            if instance.get("access_group_ids") is not None:
-                (
-                    instance["is_public"],
-                    instance["inherited_access_group_ids"],
-                ) = calculate_inherited_groups_helper(
-                    instance["access_group_ids"],
-                    parent_mediafile.get("is_public"),
-                    parent_mediafile.get("inherited_access_group_ids"),
-                )
+            (
+                instance["is_public"],
+                instance["inherited_access_group_ids"],
+            ) = calculate_inherited_groups_helper(
+                instance.get("access_group_ids"),
+                parent.get("is_public"),
+                parent.get("inherited_access_group_ids"),
+            )
+        else:
+            instance["is_public"] = not bool(instance.get("access_group_ids"))
+            instance["inherited_access_group_ids"] = instance.get("access_group_ids")
         return instance
 
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:

@@ -37,10 +37,8 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
             if mediafile.get("parent_id"):
                 parent = self.datastore.get(
                     FullQualifiedId(self.model.collection, mediafile["parent_id"]),
-                    ["is_public", "inherited_access_group_ids", "is_directory"],
+                    ["is_public", "inherited_access_group_ids"],
                 )
-                if parent.get("is_directory") is not True:
-                    raise ActionException("Cannot have a non-directory parent.")
 
                 (
                     instance["is_public"],
