@@ -28,10 +28,11 @@ class SpeakerSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         action_data = super().get_updated_instances(action_data)
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
-
+        meeting_id = self.get_meeting_id(instance)
         filter = And(
             FilterOperator("list_of_speakers_id", "=", instance["list_of_speakers_id"]),
             FilterOperator("begin_time", "=", None),
+            FilterOperator("meeting_id", "=", meeting_id),
         )
 
         yield from self.sort_linear(
