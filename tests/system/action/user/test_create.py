@@ -34,13 +34,13 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "first_name": "John",
-                "last_name": "Smith",
+                "first_name": "John Aloas",
+                "last_name": "Smith Brick",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "JohnSmith"})
+        self.assert_model_exists("user/2", {"username": "JohnAloasSmithBrick"})
 
     def test_create_first_name_and_count(self) -> None:
         self.set_models(

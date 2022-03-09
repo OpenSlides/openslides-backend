@@ -2,6 +2,7 @@ from datastore.shared.util import KEYSEPARATOR
 
 COLLECTIONS = (
     "assignment",
+    "motion",
     "motion_block",
     "motion_category",
     "motion_workflow",
@@ -18,21 +19,21 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
 
     for collection in COLLECTIONS:
         write(
+            {"type": "create", "fqid": "meeting/1", "fields": {"id": 1}},
+            {"type": "create", "fqid": "meeting/2", "fields": {"id": 2}},
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "1",
-                "fields": {"id": 1, "meeting_id": 1},
-            }
-        )
-        write(
+                "fields": {"id": 1, "meeting_id": 1, "sequential_number": 1},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "2",
-                "fields": {"id": 2, "meeting_id": 1},
-            }
+                "fields": {"id": 2, "meeting_id": 1, "sequential_number": 1},
+            },
         )
 
-        finalize("0010_add_sequential_numbers")
+        finalize("0020_2nd_migration_seq_numbers")
 
         assert_model(
             collection + KEYSEPARATOR + "1",
@@ -51,7 +52,7 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
                 "sequential_number": 2,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": 2,
+                "meta_position": 1,
             },
         )
         clear_datastore()
@@ -65,32 +66,26 @@ def test_migration_motion_block_more_objects(
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "1",
-                "fields": {"id": 1, "meeting_id": 1},
-            }
-        )
-        write(
+                "fields": {"id": 1, "meeting_id": 1, "sequential_number": 1},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "2",
-                "fields": {"id": 2, "meeting_id": 1},
-            }
-        )
-        write(
+                "fields": {"id": 2, "meeting_id": 1, "sequential_number": 1},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "3",
-                "fields": {"id": 3, "meeting_id": 2},
-            }
-        )
-        write(
+                "fields": {"id": 3, "meeting_id": 2, "sequential_number": 1},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "4",
-                "fields": {"id": 4, "meeting_id": 2},
-            }
+                "fields": {"id": 4, "meeting_id": 2, "sequential_number": 1},
+            },
         )
 
-        finalize("0010_add_sequential_numbers")
+        finalize("0020_2nd_migration_seq_numbers")
 
         assert_model(
             collection + KEYSEPARATOR + "1",
@@ -109,7 +104,7 @@ def test_migration_motion_block_more_objects(
                 "sequential_number": 2,
                 "meeting_id": 1,
                 "meta_deleted": False,
-                "meta_position": 2,
+                "meta_position": 1,
             },
         )
         assert_model(
@@ -119,7 +114,7 @@ def test_migration_motion_block_more_objects(
                 "sequential_number": 1,
                 "meeting_id": 2,
                 "meta_deleted": False,
-                "meta_position": 3,
+                "meta_position": 1,
             },
         )
 
@@ -130,46 +125,40 @@ def test_migration_motion_block_more_objects(
                 "sequential_number": 2,
                 "meeting_id": 2,
                 "meta_deleted": False,
-                "meta_position": 4,
+                "meta_position": 1,
             },
         )
         clear_datastore()
 
 
 def test_assignment_two_stages(migrate, write, finalize, assert_model):
-    write({"type": "create", "fqid": "meeting/1", "fields": {"id": 1}})
-    write({"type": "create", "fqid": "meeting/2", "fields": {"id": 2}})
     write(
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "1",
-            "fields": {"id": 1, "meeting_id": 1},
-        }
-    )
-    write(
+            "fields": {"id": 1, "meeting_id": 1, "sequential_number": 11},
+        },
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "2",
-            "fields": {"id": 2, "meeting_id": 1},
-        }
+            "fields": {"id": 2, "meeting_id": 1, "sequential_number": 12},
+        },
     )
-    migrate("0010_add_sequential_numbers")
+    migrate("0020_2nd_migration_seq_numbers")
     write(
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "3",
-            "fields": {"id": 3, "meeting_id": 1},
-        }
-    )
-    write(
+            "fields": {"id": 3, "meeting_id": 1, "sequential_number": 13},
+        },
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "4",
-            "fields": {"id": 4, "meeting_id": 1},
-        }
+            "fields": {"id": 4, "meeting_id": 1, "sequential_number": 14},
+        },
     )
 
-    finalize("0010_add_sequential_numbers")
+    finalize("0020_2nd_migration_seq_numbers")
 
     assert_model(
         "assignment" + KEYSEPARATOR + "1",
@@ -178,7 +167,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
             "sequential_number": 1,
             "meeting_id": 1,
             "meta_deleted": False,
-            "meta_position": 3,
+            "meta_position": 1,
         },
     )
     assert_model(
@@ -188,7 +177,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
             "sequential_number": 2,
             "meeting_id": 1,
             "meta_deleted": False,
-            "meta_position": 4,
+            "meta_position": 1,
         },
     )
     assert_model(
@@ -198,7 +187,7 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
             "sequential_number": 3,
             "meeting_id": 1,
             "meta_deleted": False,
-            "meta_position": 5,
+            "meta_position": 2,
         },
     )
 
@@ -207,93 +196,6 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
         {
             "id": 4,
             "sequential_number": 4,
-            "meeting_id": 1,
-            "meta_deleted": False,
-            "meta_position": 6,
-        },
-    )
-
-
-def test_assignment_only_2_position(migrate, write, finalize, assert_model):
-    write(
-        {
-            "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "1",
-            "fields": {"id": 1, "meeting_id": 1},
-        },
-        {
-            "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "2",
-            "fields": {"id": 2, "meeting_id": 2},
-        },
-        {
-            "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "3",
-            "fields": {"id": 3, "meeting_id": 2},
-        },
-    )
-    write(
-        {
-            "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "4",
-            "fields": {"id": 4, "meeting_id": 1},
-        },
-        {
-            "type": "create",
-            "fqid": "assignment" + KEYSEPARATOR + "5",
-            "fields": {"id": 5, "meeting_id": 1},
-        },
-    )
-
-    finalize("0010_add_sequential_numbers")
-
-    assert_model(
-        "assignment" + KEYSEPARATOR + "1",
-        {
-            "id": 1,
-            "sequential_number": 1,
-            "meeting_id": 1,
-            "meta_deleted": False,
-            "meta_position": 1,
-        },
-    )
-    assert_model(
-        "assignment" + KEYSEPARATOR + "2",
-        {
-            "id": 2,
-            "sequential_number": 1,
-            "meeting_id": 2,
-            "meta_deleted": False,
-            "meta_position": 1,
-        },
-    )
-    assert_model(
-        "assignment" + KEYSEPARATOR + "3",
-        {
-            "id": 3,
-            "sequential_number": 2,
-            "meeting_id": 2,
-            "meta_deleted": False,
-            "meta_position": 1,
-        },
-    )
-
-    assert_model(
-        "assignment" + KEYSEPARATOR + "4",
-        {
-            "id": 4,
-            "sequential_number": 2,
-            "meeting_id": 1,
-            "meta_deleted": False,
-            "meta_position": 2,
-        },
-    )
-
-    assert_model(
-        "assignment" + KEYSEPARATOR + "5",
-        {
-            "id": 5,
-            "sequential_number": 3,
             "meeting_id": 1,
             "meta_deleted": False,
             "meta_position": 2,

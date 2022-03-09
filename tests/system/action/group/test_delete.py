@@ -134,3 +134,227 @@ class GroupDeleteActionTest(BaseActionTestCase):
             {"id": 111},
             Permissions.User.CAN_MANAGE,
         )
+
+    def test_delete_mediafile1(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {
+                    "group_ids": [111, 112],
+                    "is_active_in_organization_id": 1,
+                },
+                "group/111": {
+                    "meeting_id": 22,
+                    "mediafile_access_group_ids": [1, 2],
+                    "mediafile_inherited_access_group_ids": [1, 2],
+                },
+                "group/112": {
+                    "meeting_id": 22,
+                    "mediafile_access_group_ids": [1],
+                    "mediafile_inherited_access_group_ids": [1],
+                },
+                "mediafile/1": {
+                    "access_group_ids": [111, 112],
+                    "inherited_access_group_ids": [111, 112],
+                    "is_public": False,
+                },
+                "mediafile/2": {
+                    "access_group_ids": [111],
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                },
+            }
+        )
+        response = self.request("group.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "group/111",
+            {
+                "mediafile_access_group_ids": [1, 2],
+                "mediafile_inherited_access_group_ids": [1, 2],
+            },
+        )
+        self.assert_model_exists(
+            "group/112",
+            {
+                "mediafile_access_group_ids": [1],
+                "mediafile_inherited_access_group_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "is_public": False,
+                "access_group_ids": [112],
+                "inherited_access_group_ids": [112],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "is_public": True,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
+            },
+        )
+
+    def test_delete_mediafile2(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {
+                    "group_ids": [111, 112],
+                    "is_active_in_organization_id": 1,
+                },
+                "group/111": {
+                    "meeting_id": 22,
+                    "mediafile_access_group_ids": [1, 4],
+                    "mediafile_inherited_access_group_ids": [1, 2, 3, 4],
+                },
+                "group/112": {
+                    "meeting_id": 22,
+                    "mediafile_access_group_ids": [4],
+                    "mediafile_inherited_access_group_ids": [],
+                },
+                "mediafile/1": {
+                    "access_group_ids": [111],
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                    "child_ids": [2],
+                    "is_directory": True,
+                },
+                "mediafile/2": {
+                    "parent_id": 1,
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                    "child_ids": [3, 4],
+                    "is_directory": True,
+                },
+                "mediafile/3": {
+                    "parent_id": 2,
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                },
+                "mediafile/4": {
+                    "parent_id": 2,
+                    "access_group_ids": [111, 112],
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                },
+            }
+        )
+        response = self.request("group.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "group/111",
+            {
+                "mediafile_access_group_ids": [1, 4],
+                "mediafile_inherited_access_group_ids": [1, 2, 3, 4],
+            },
+        )
+        self.assert_model_exists(
+            "group/112",
+            {
+                "mediafile_access_group_ids": [4],
+                "mediafile_inherited_access_group_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "is_public": True,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "is_public": True,
+                "access_group_ids": None,
+                "inherited_access_group_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/3",
+            {
+                "is_public": True,
+                "access_group_ids": None,
+                "inherited_access_group_ids": [],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/4",
+            {
+                "is_public": False,
+                "access_group_ids": [112],
+                "inherited_access_group_ids": [112],
+            },
+        )
+
+    def test_delete_mediafile3(self) -> None:
+        self.set_models(
+            {
+                "meeting/22": {
+                    "group_ids": [111, 112],
+                    "is_active_in_organization_id": 1,
+                },
+                "group/111": {
+                    "meeting_id": 22,
+                    "mediafile_access_group_ids": [1, 2],
+                    "mediafile_inherited_access_group_ids": [1, 2],
+                },
+                "group/112": {
+                    "meeting_id": 22,
+                    "mediafile_access_group_ids": [2],
+                    "mediafile_inherited_access_group_ids": [],
+                },
+                "mediafile/1": {
+                    "access_group_ids": [111],
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                    "child_ids": [2],
+                    "is_directory": True,
+                },
+                "mediafile/2": {
+                    "parent_id": 1,
+                    "access_group_ids": [111, 112],
+                    "inherited_access_group_ids": [111],
+                    "is_public": False,
+                },
+            }
+        )
+        response = self.request_multi("group.delete", [{"id": 111}, {"id": 112}])
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "group/111",
+            {
+                "mediafile_access_group_ids": [1, 2],
+                "mediafile_inherited_access_group_ids": [1, 2],
+            },
+        )
+        self.assert_model_deleted(
+            "group/112",
+            {
+                "mediafile_access_group_ids": [2],
+                "mediafile_inherited_access_group_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "is_public": True,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
+                "is_directory": True,
+            },
+        )
+        self.assert_model_exists(
+            "mediafile/2",
+            {
+                "is_public": True,
+                "access_group_ids": [],
+                "inherited_access_group_ids": [],
+            },
+        )
