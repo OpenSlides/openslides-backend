@@ -55,8 +55,6 @@ def make_span(name, attributes=None):
 
     #tracer = trace.get_tracer(__name__)
     tracer = trace.get_tracer_provider().get_tracer(__name__)
-    span = tracer.start_as_current_span(name)
-    if attributes is not None:
-        span.set_attributes(attributes)
+    span = tracer.start_as_current_span(name, attributes=attributes)
 
     return span
