@@ -66,10 +66,8 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
-        print("PRE OTEL INIT")
         otel_instrument_requests()
         otel_init("backend")
-        print("POST OTEL INIT")
         return create_wsgi_application(logging_module, self.view_name)
 
 

@@ -48,7 +48,6 @@ with make_span("foo") as span:
         ...
 ```
 """
-
 def make_span(name, attributes=None):
     if not is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
         return nullcontext()
