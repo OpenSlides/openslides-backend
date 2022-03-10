@@ -43,8 +43,6 @@ if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
 
     RequestsInstrumentor().instrument()
 
-otel_instrument_requests()
-
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
     Standalone application class for Gunicorn. It prepares Gunicorn for using

@@ -48,7 +48,8 @@ services:
             - postgresql
     writer:
         build:
-            context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            #context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"
+            context: ../../openslides-datastore-service
             args:
                 MODULE: "writer"
                 PORT: "9011"
