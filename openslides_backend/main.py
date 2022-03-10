@@ -25,8 +25,6 @@ DEFAULT_ADDRESSES = {
     "PresenterView": "0.0.0.0:9003",
 }
 
-otel_instrument_requests()
-
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
     Standalone application class for Gunicorn. It prepares Gunicorn for using
@@ -68,7 +66,10 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
+        print("PRE OTEL INIT")
+        otel_instrument_requests()
         otel_init("backend")
+        print("POST OTEL INIT")
         return create_wsgi_application(logging_module, self.view_name)
 
 
