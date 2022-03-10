@@ -95,7 +95,7 @@ class BaseView(View):
             predicate=lambda attr: inspect.ismethod(attr)
             and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
-        with make_span("base view") as span:
+        with make_span("base view"):
             for _, func in functions:
                 route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
                 for route_options in route_options_list:
