@@ -78,7 +78,7 @@ class CheckMediafileId(BasePresenter):
         return {"ok": False}
 
     def check_permissions(
-        self, mediafile: Dict[str, Any], owner_collection: str, owner_id_int: int
+        self, mediafile: Dict[str, Any], owner_collection: str, owner_id: int
     ) -> None:
         # Try to get the meeting id.
         if owner_collection == "organization":
@@ -87,15 +87,15 @@ class CheckMediafileId(BasePresenter):
             return
         assert owner_collection == "meeting"
 
-        if not owner_id_int:
+        if not owner_id:
             raise PermissionDenied("You are not allowed to see this mediafile.")
 
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), owner_id_int),
+            FullQualifiedId(Collection("meeting"), owner_id),
             ["enable_anonymous", "user_ids", "committee_id"],
         )
         # The user is admin of the meeting.
-        if is_admin(self.datastore, self.user_id, owner_id_int):
+        if is_admin(self.datastore, self.user_id, owner_id):
             return
 
         # The user can see the meeting and (used_as_logo_$_in_meeting_id
@@ -110,7 +110,7 @@ class CheckMediafileId(BasePresenter):
         # and there exists a mediafile/projection_ids with
         # projection/current_projector_id set
         if has_perm(
-            self.datastore, self.user_id, Permissions.Projector.CAN_SEE, owner_id_int
+            self.datastore, self.user_id, Permissions.Projector.CAN_SEE, owner_id
         ):
             for projection_id in mediafile.get("projection_ids", []):
                 projection = self.datastore.get(
@@ -123,7 +123,7 @@ class CheckMediafileId(BasePresenter):
         #  - mediafile/is_public is true, or
         #   - The user has groups in common with mediafile/inherited_access_group_ids
         if has_perm(
-            self.datastore, self.user_id, Permissions.Mediafile.CAN_SEE, owner_id_int
+            self.datastore, self.user_id, Permissions.Mediafile.CAN_SEE, owner_id
         ):
             if mediafile.get("is_public"):
                 return
@@ -132,9 +132,9 @@ class CheckMediafileId(BasePresenter):
             )
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), self.user_id),
-                [f"group_${owner_id_int}_ids"],
+                [f"group_${owner_id}_ids"],
             )
-            user_groups = set(user.get(f"group_${owner_id_int}_ids", []))
+            user_groups = set(user.get(f"group_${owner_id}_ids", []))
             if inherited_access_group_ids & user_groups:
                 return
         raise PermissionDenied("You are not allowed to see this mediafile.")
