@@ -25,6 +25,7 @@ DEFAULT_ADDRESSES = {
     "PresenterView": "0.0.0.0:9003",
 }
 
+
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     """
     Standalone application class for Gunicorn. It prepares Gunicorn for using

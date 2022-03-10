@@ -12,7 +12,6 @@ from ...shared.otel import make_span
 from ..http_exceptions import MethodNotAllowed, NotFound
 from ..request import Request
 
-
 ROUTE_OPTIONS_ATTR = "__route_options"
 
 RouteFunction = Callable[[Any, Request], Tuple[ResponseBody, Optional[str]]]
