@@ -88,14 +88,16 @@ class BaseView(View):
             predicate=lambda attr: inspect.ismethod(attr)
             and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
-        with make_span("base view") as span:
+        with make_span("base view"):
             for _, func in functions:
                 route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
                 for route_options in route_options_list:
                     if route_options["path"].match(request.environ["RAW_URI"]):
                         # Check request method
                         if request.method != route_options["method"]:
-                            raise MethodNotAllowed(valid_methods=[route_options["method"]])
+                            raise MethodNotAllowed(
+                                valid_methods=[route_options["method"]]
+                            )
                         self.logger.debug(f"Request method is {request.method}.")
 
                         if route_options["json"]:
