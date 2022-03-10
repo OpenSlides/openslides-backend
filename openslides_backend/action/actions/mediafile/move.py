@@ -78,6 +78,8 @@ class MediafileMoveAction(
                         f"Moving item {id_} to one of its children is not possible."
                     )
         for id_ in ids:
+            if id_ not in db_instances:
+                raise ActionException(f"Id {id_} not in db_instances.")
             instance: Dict[str, Any] = {
                 "id": id_,
                 "parent_id": parent_id,
