@@ -2,7 +2,7 @@ import base64
 import mimetypes
 from io import BytesIO
 from time import time
-from typing import Any, Dict, TypedDict
+from typing import Any, Dict, List, TypedDict
 
 from PyPDF2 import PdfFileReader
 from PyPDF2.utils import PdfReadError
@@ -11,14 +11,15 @@ from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
-from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
+from ....shared.filters import And, FilterOperator
+from ....shared.patterns import KEYSEPARATOR, FullQualifiedId
+from ...action import original_instances
+from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from ..list_of_speakers.create import ListOfSpeakersCreate
-from ..list_of_speakers.list_of_speakers_creation import (
-    CreateActionWithListOfSpeakersMixin,
-)
+from ...util.typing import ActionData
+from .delete import MediafileDelete
+from .mixins import MediafileMixin
 
 PDFInformation = TypedDict(
     "PDFInformation",
@@ -31,46 +32,81 @@ PDFInformation = TypedDict(
 
 
 @register_action("mediafile.upload")
-class MediafileUploadAction(
-    CreateActionWithDependencies,
-    CreateActionWithListOfSpeakersMixin,
-):
+class MediafileUploadAction(MediafileMixin, CreateAction):
     """
     Action to upload a mediafile.
     """
 
     model = Mediafile()
     schema = DefaultSchema(Mediafile()).get_create_schema(
-        required_properties=["title", "meeting_id", "filename"],
-        optional_properties=["access_group_ids", "parent_id"],
+        required_properties=["title", "owner_id", "filename"],
+        optional_properties=["token", "access_group_ids", "parent_id"],
         additional_required_fields={"file": {"type": "string"}},
     )
     permission = Permissions.Mediafile.CAN_MANAGE
 
-    dependencies = [ListOfSpeakersCreate]
+    @original_instances
+    def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        tokens: List[Any] = []
+        for instance in action_data:
+            collection, _ = self.get_owner_data(instance)
+            if collection != "organization":
+                continue
+            tokens.append(instance.get("token"))
+            results = self.datastore.filter(
+                self.model.collection,
+                And(
+                    FilterOperator("token", "=", instance["token"]),
+                    FilterOperator(
+                        "owner_id", "=", "organization" + KEYSEPARATOR + "1"
+                    ),
+                ),
+                ["id"],
+            )
+            if len(results) == 0:
+                continue
+            elif len(results) == 1:
+                id = next(iter(results))
+                self.execute_other_action(MediafileDelete, [{"id": id}])
+            else:
+                text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance["token"]}".'
+                self.logger.error(text)
+                raise ActionException(text)
+        if len(tokens) != len(set(tokens)):
+            raise ActionException(
+                "It is not permitted to use the same token twice in a request."
+            )
+        return action_data
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         instance["create_timestamp"] = round(time())
-        instance["mimetype"] = mimetypes.guess_type(instance["filename"])[0]
+        filename_ = instance.get("filename", "")
+        file_ = instance.pop("file")
+        instance["mimetype"] = mimetypes.guess_type(filename_)[0]
         if instance["mimetype"] is None:
-            raise ActionException(f"Cannot guess mimetype for {instance['filename']}.")
-        decoded_file = base64.b64decode(instance["file"])
+            raise ActionException(f"Cannot guess mimetype for {filename_}.")
+        decoded_file = base64.b64decode(file_)
         instance["filesize"] = len(decoded_file)
+        id_ = instance["id"]
+        mimetype_ = instance["mimetype"]
         if instance["mimetype"] == "application/pdf":
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
+        collection, _ = self.get_owner_data(instance)
+        if collection == "meeting":
+            instance = self.update_access_fields(instance)
+        self.media.upload_mediafile(file_, id_, mimetype_)
+        return instance
 
+    def update_access_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         if instance.get("parent_id"):
             parent = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["parent_id"]),
                 [
-                    "is_directory",
                     "is_public",
                     "inherited_access_group_ids",
                 ],
             )
-            if parent.get("is_directory") is not True:
-                raise ActionException("Cannot have a non-directory parent.")
-
             (
                 instance["is_public"],
                 instance["inherited_access_group_ids"],
@@ -82,10 +118,6 @@ class MediafileUploadAction(
         else:
             instance["is_public"] = not bool(instance.get("access_group_ids"))
             instance["inherited_access_group_ids"] = instance.get("access_group_ids")
-        file_ = instance.pop("file")
-        id_ = instance["id"]
-        mimetype_ = instance["mimetype"]
-        self.media.upload_mediafile(file_, id_, mimetype_)
         return instance
 
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:

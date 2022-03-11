@@ -1,3 +1,4 @@
+import mimetypes
 from typing import Any, Dict
 
 import fastjsonschema
@@ -10,8 +11,12 @@ from ..permissions.permission_helper import (
     is_admin,
 )
 from ..permissions.permissions import Permissions
-from ..shared.exceptions import PermissionDenied
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.exceptions import (
+    AnonymousNotAllowed,
+    DatastoreException,
+    PermissionDenied,
+)
+from ..shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -38,39 +43,59 @@ class CheckMediafileId(BasePresenter):
     schema = check_mediafile_id_schema
 
     def get_result(self) -> Any:
-        mediafile = self.datastore.get(
-            FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
-            mapped_fields=["filename", "is_directory"],
-        )
-
-        if not mediafile or mediafile.get("is_directory"):
+        try:
+            mediafile = self.datastore.get(
+                FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
+                mapped_fields=[
+                    "filename",
+                    "is_directory",
+                    "owner_id",
+                    "token",
+                    "mimetype",
+                    "used_as_logo_$_in_meeting_id",
+                    "used_as_font_$_in_meeting_id",
+                    "projection_ids",
+                    "is_public",
+                    "inherited_access_group_ids",
+                ],
+            )
+        except DatastoreException:
             return {"ok": False}
-        self.check_permissions()
+        if not mediafile.get("owner_id") or mediafile.get("is_directory"):
+            return {"ok": False}
+        collection, id_ = mediafile["owner_id"].split(KEYSEPARATOR)
+        self.check_permissions(mediafile, collection, int(id_))
+        filename = mediafile.get("filename")
+        if collection == "organization" and mediafile.get("token"):
+            if not mediafile.get("mimetype"):
+                return {"ok": False}
+            extension = mimetypes.guess_extension(mediafile["mimetype"])
+            if extension is None:
+                return {"ok": False}
+            filename = mediafile["token"] + extension
+        if filename:
+            return {"ok": True, "filename": filename}
+        return {"ok": False}
 
-        return {"ok": True, "filename": mediafile["filename"]}
+    def check_permissions(
+        self, mediafile: Dict[str, Any], owner_collection: str, owner_id: int
+    ) -> None:
+        # Try to get the meeting id.
+        if owner_collection == "organization":
+            if not mediafile.get("token"):
+                self.assert_not_anonymous()
+            return
+        assert owner_collection == "meeting"
 
-    def check_permissions(self) -> None:
-        mediafile = self.datastore.get(
-            FullQualifiedId(Mediafile.collection, self.data["mediafile_id"]),
-            [
-                "meeting_id",
-                "used_as_logo_$_in_meeting_id",
-                "used_as_font_$_in_meeting_id",
-                "projection_ids",
-                "is_public",
-                "inherited_access_group_ids",
-            ],
-        )
-        meeting_id = mediafile.get("meeting_id")
-        if not meeting_id:
+        if not owner_id:
             raise PermissionDenied("You are not allowed to see this mediafile.")
 
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id),
+            FullQualifiedId(Collection("meeting"), owner_id),
             ["enable_anonymous", "user_ids", "committee_id"],
         )
         # The user is admin of the meeting.
-        if is_admin(self.datastore, self.user_id, meeting_id):
+        if is_admin(self.datastore, self.user_id, owner_id):
             return
 
         # The user can see the meeting and (used_as_logo_$_in_meeting_id
@@ -85,7 +110,7 @@ class CheckMediafileId(BasePresenter):
         # and there exists a mediafile/projection_ids with
         # projection/current_projector_id set
         if has_perm(
-            self.datastore, self.user_id, Permissions.Projector.CAN_SEE, meeting_id
+            self.datastore, self.user_id, Permissions.Projector.CAN_SEE, owner_id
         ):
             for projection_id in mediafile.get("projection_ids", []):
                 projection = self.datastore.get(
@@ -98,7 +123,7 @@ class CheckMediafileId(BasePresenter):
         #  - mediafile/is_public is true, or
         #   - The user has groups in common with mediafile/inherited_access_group_ids
         if has_perm(
-            self.datastore, self.user_id, Permissions.Mediafile.CAN_SEE, meeting_id
+            self.datastore, self.user_id, Permissions.Mediafile.CAN_SEE, owner_id
         ):
             if mediafile.get("is_public"):
                 return
@@ -107,9 +132,9 @@ class CheckMediafileId(BasePresenter):
             )
             user = self.datastore.get(
                 FullQualifiedId(Collection("user"), self.user_id),
-                [f"group_${meeting_id}_ids"],
+                [f"group_${owner_id}_ids"],
             )
-            user_groups = set(user.get(f"group_${meeting_id}_ids", []))
+            user_groups = set(user.get(f"group_${owner_id}_ids", []))
             if inherited_access_group_ids & user_groups:
                 return
         raise PermissionDenied("You are not allowed to see this mediafile.")
@@ -129,3 +154,10 @@ class CheckMediafileId(BasePresenter):
             ):
                 return True
         return False
+
+    def assert_not_anonymous(self) -> None:
+        """
+        Checks if the request user is the Anonymous and raises an error if it is.
+        """
+        if self.services.authentication().is_anonymous(self.user_id):
+            raise AnonymousNotAllowed("check_mediafile_id")

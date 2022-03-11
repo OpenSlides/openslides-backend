@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "b10a1ebbea21786811cf77104fe0e43b"
+MODELS_YML_CHECKSUM = "976e14d12583e4b97074dae5099315f8"
 
 
 class Organization(Model):
@@ -46,9 +46,6 @@ class Organization(Model):
     template_meeting_ids = fields.RelationListField(
         to={Collection("meeting"): "template_for_organization_id"}
     )
-    resource_ids = fields.RelationListField(
-        to={Collection("resource"): "organization_id"}
-    )
     organization_tag_ids = fields.RelationListField(
         to={Collection("organization_tag"): "organization_id"}
     )
@@ -56,6 +53,9 @@ class Organization(Model):
         to={Collection("theme"): "theme_for_organization_id"}, required=True
     )
     theme_ids = fields.RelationListField(to={Collection("theme"): "organization_id"})
+    mediafile_ids = fields.RelationListField(
+        to={Collection("mediafile"): "owner_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
     users_email_subject = fields.CharField(default="OpenSlides access data")
@@ -208,19 +208,6 @@ class User(Model):
         constraints={
             "description": "Calculated. All ids from group_$_ids as integers."
         },
-    )
-
-
-class Resource(Model):
-    collection = Collection("resource")
-    verbose_name = "resource"
-
-    id = fields.IntegerField()
-    token = fields.CharField()
-    filesize = fields.IntegerField()
-    mimetype = fields.CharField()
-    organization_id = fields.OrganizationField(
-        to={Collection("organization"): "resource_ids"}, required=True
     )
 
 
@@ -614,7 +601,7 @@ class Meeting(Model):
         to={Collection("group"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     mediafile_ids = fields.RelationListField(
-        to={Collection("mediafile"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={Collection("mediafile"): "owner_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_ids = fields.RelationListField(
         to={Collection("motion"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
@@ -1699,39 +1686,41 @@ class Mediafile(Model):
             "description": "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
         },
     )
+    token = fields.CharField()
     inherited_access_group_ids = fields.RelationListField(
         to={Collection("group"): "mediafile_inherited_access_group_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
     )
     access_group_ids = fields.RelationListField(
-        to={Collection("group"): "mediafile_access_group_ids"},
-        equal_fields="meeting_id",
+        to={Collection("group"): "mediafile_access_group_ids"}
     )
     parent_id = fields.RelationField(
-        to={Collection("mediafile"): "child_ids"}, equal_fields="meeting_id"
+        to={Collection("mediafile"): "child_ids"}, equal_fields="owner_id"
     )
     child_ids = fields.RelationListField(
-        to={Collection("mediafile"): "parent_id"}, equal_fields="meeting_id"
+        to={Collection("mediafile"): "parent_id"}, equal_fields="owner_id"
     )
     list_of_speakers_id = fields.RelationField(
         to={Collection("list_of_speakers"): "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
-        equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={Collection("projection"): "content_object_id"}
     )
     attachment_ids = fields.GenericRelationListField(
         to={
             Collection("motion"): "attachment_ids",
             Collection("topic"): "attachment_ids",
             Collection("assignment"): "attachment_ids",
-        },
-        equal_fields="meeting_id",
+        }
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "mediafile_ids"}, required=True
+    owner_id = fields.GenericRelationField(
+        to={
+            Collection("organization"): "mediafile_ids",
+            Collection("meeting"): "mediafile_ids",
+        },
+        required=True,
     )
     used_as_logo__in_meeting_id = fields.TemplateRelationField(
         index=13,

@@ -301,7 +301,7 @@ class MeetingImport(BaseActionTestCase):
         file_content = base64.b64encode(b"testtesttest").decode()
         return {
             "id": obj_id,
-            "meeting_id": 1,
+            "owner_id": "meeting/1",
             "blob": file_content,
             "title": "A.txt",
             "is_directory": False,

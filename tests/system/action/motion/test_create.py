@@ -74,7 +74,8 @@ class MotionCreateActionTest(BaseActionTestCase):
                 "motion_category/124": {"name": "name_wbtlHQro", "meeting_id": 1},
                 "motion_block/78": {"title": "title_kXTvKvjc", "meeting_id": 1},
                 "tag/56": {"name": "name_56", "meeting_id": 1},
-                "mediafile/8": {"meeting_id": 1},
+                "mediafile/8": {"owner_id": "meeting/1"},
+                "meeting/1": {"mediafile_ids": [8]},
             }
         )
 

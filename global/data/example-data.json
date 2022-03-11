@@ -17,13 +17,11 @@
             ],
             "limit_of_meetings": 0,
             "limit_of_users": 0,
-            "resource_ids": [
-                1
-            ],
             "organization_tag_ids": [
                 1
             ],
             "theme_id": 1,
+	    "mediafile_ids": [],
             "theme_ids": [
                 1,
                 2,
@@ -280,15 +278,6 @@
             "meeting_ids": [
                 1
             ]
-        }
-    },
-    "resource": {
-        "1": {
-            "id": 1,
-            "token": "web_header",
-            "filesize": 1462,
-            "mimetype": "image/png",
-            "organization_id": 1
         }
     },
     "theme": {
@@ -2413,6 +2402,7 @@
         "1": {
             "id": 1,
             "title": "logos",
+            "token": null,
             "is_directory": true,
 	    "is_public": false,
             "create_timestamp": 1584513763,
@@ -2425,7 +2415,7 @@
                 3
             ],
             "list_of_speakers_id": 16,
-            "meeting_id": 1
+            "owner_id": "meeting/1"
         }
     },
     "projector": {

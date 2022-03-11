@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,9 +8,9 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileMoveActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
-            "mediafile/7": {"meeting_id": 1, "is_directory": True},
-            "mediafile/8": {"meeting_id": 1, "is_directory": True},
+        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+            "mediafile/7": {"owner_id": "meeting/1", "is_directory": True},
+            "mediafile/8": {"owner_id": "meeting/1", "is_directory": True},
         }
 
     def test_move_parent_none(self) -> None:
@@ -19,32 +22,33 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "mediafile/7": {
                     "title": "title_7",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [8, 9],
                 },
                 "mediafile/8": {
                     "title": "title_8",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": 7,
                     "child_ids": [],
                 },
                 "mediafile/9": {
                     "title": "title_9",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": 7,
                     "child_ids": [10],
                 },
                 "mediafile/10": {
                     "title": "title_10",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": 9,
                     "child_ids": [],
                 },
             }
         )
         response = self.request(
-            "mediafile.move", {"meeting_id": 222, "ids": [8, 9], "parent_id": None}
+            "mediafile.move",
+            {"owner_id": "meeting/222", "ids": [8, 9], "parent_id": None},
         )
         self.assert_status_code(response, 200)
         mediafile_7 = self.get_model("mediafile/7")
@@ -71,7 +75,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "mediafile/7": {
                     "title": "title_7",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [],
                     "is_directory": True,
@@ -80,20 +84,20 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "mediafile/8": {
                     "title": "title_8",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [],
                 },
                 "mediafile/9": {
                     "title": "title_9",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [],
                 },
             }
         )
         response = self.request(
-            "mediafile.move", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
+            "mediafile.move", {"owner_id": "meeting/222", "ids": [8, 9], "parent_id": 7}
         )
         self.assert_status_code(response, 200)
         mediafile_7 = self.get_model("mediafile/7")
@@ -119,44 +123,44 @@ class MediafileMoveActionTest(BaseActionTestCase):
                 },
                 "mediafile/7": {
                     "title": "title_7",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [],
                     "is_directory": False,
                 },
                 "mediafile/8": {
                     "title": "title_8",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [],
                 },
                 "mediafile/9": {
                     "title": "title_9",
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "parent_id": None,
                     "child_ids": [],
                 },
             }
         )
         response = self.request(
-            "mediafile.move", {"meeting_id": 222, "ids": [8, 9], "parent_id": 7}
+            "mediafile.move", {"owner_id": "meeting/222", "ids": [8, 9], "parent_id": 7}
         )
         self.assert_status_code(response, 400)
-        self.assertIn("New parent is not a directory.", response.json["message"])
+        self.assertIn("Parent is not a directory.", response.json["message"])
 
     def test_move_multiple_action_data_items(self) -> None:
         self.set_models(
             {
                 "meeting/222": {"is_active_in_organization_id": 1},
-                "mediafile/7": {"meeting_id": 222, "is_directory": True},
-                "mediafile/8": {"meeting_id": 222, "is_directory": True},
+                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
+                "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
             }
         )
         response = self.request_multi(
             "mediafile.move",
             [
-                {"meeting_id": 222, "ids": [8], "parent_id": 7},
-                {"meeting_id": 222, "ids": [7], "parent_id": 8},
+                {"owner_id": "meeting/222", "ids": [8], "parent_id": 7},
+                {"owner_id": "meeting/222", "ids": [7], "parent_id": 8},
             ],
         )
         self.assert_status_code(response, 400)
@@ -165,24 +169,41 @@ class MediafileMoveActionTest(BaseActionTestCase):
         mediafile_8 = self.get_model("mediafile/8")
         assert mediafile_8.get("parent_id") is None
 
+    def test_move_owner_mismatch(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "mediafile/7": {"owner_id": "meeting/222", "is_directory": True},
+                "mediafile/8": {"owner_id": "meeting/222", "is_directory": True},
+            }
+        )
+        response = self.request_multi(
+            "mediafile.move",
+            [
+                {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+            ],
+        )
+        self.assert_status_code(response, 400)
+        assert "Owner and parent don't match." in response.json["message"]
+
     def test_move_circle(self) -> None:
         self.set_models(
             {
                 "meeting/222": {"is_active_in_organization_id": 1},
                 "mediafile/7": {
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "is_directory": True,
                     "child_ids": [8],
                 },
                 "mediafile/8": {
-                    "meeting_id": 222,
+                    "owner_id": "meeting/222",
                     "is_directory": True,
                     "parent_id": 7,
                 },
             }
         )
         response = self.request(
-            "mediafile.move", {"meeting_id": 222, "ids": [7], "parent_id": 8}
+            "mediafile.move", {"owner_id": "meeting/222", "ids": [7], "parent_id": 8}
         )
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -194,13 +215,32 @@ class MediafileMoveActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_model,
             "mediafile.move",
-            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+            {"owner_id": "meeting/1", "ids": [8], "parent_id": 7},
         )
 
     def test_move_permissions(self) -> None:
         self.base_permission_test(
             self.permission_test_model,
             "mediafile.move",
-            {"meeting_id": 1, "ids": [8], "parent_id": 7},
+            {"owner_id": "meeting/1", "ids": [8], "parent_id": 7},
             Permissions.Mediafile.CAN_MANAGE,
+        )
+
+    def test_move_no_permissions_orga(self) -> None:
+        self.permission_test_model["mediafile/7"]["owner_id"] = "organization/1"
+        self.permission_test_model["mediafile/8"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.move",
+            {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+        )
+
+    def test_move_permissions_orga(self) -> None:
+        self.permission_test_model["mediafile/7"]["owner_id"] = "organization/1"
+        self.permission_test_model["mediafile/8"]["owner_id"] = "organization/1"
+        self.base_permission_test(
+            self.permission_test_model,
+            "mediafile.move",
+            {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )
