@@ -1,5 +1,5 @@
 from enum import Enum, auto
-from typing import Any
+from typing import Any, Dict
 
 DEV_PASSWORD = "openslides"
 
@@ -57,16 +57,24 @@ class Environment:
             if env is not None:
                 self.vars[k] = env
 
-        # Extend the vars attribute with the lower case properties for the service URLs.
-        for service in ("datastore_reader", "datastore_writer", "media", "vote"):
-            key = service + "_url"
-            self.vars[key] = self.get_endpoint(service.upper())
-
     def __getattr__(self, attr: str) -> str:
         value = self.vars.get(attr)
         if value is None:
             raise AttributeError(f"Environment variable {attr} not found")
         return value
+
+    def is_dev_mode(self) -> bool:
+        return is_truthy(self.OPENSLIDES_DEVELOPMENT)
+
+    def get_loglevel(self) -> str:
+        lvl = self.OPENSLIDES_LOGLEVEL.upper()
+        if lvl not in Loglevel.__members__:
+            raise ValueError(f"Invalid OPENSLIDES_LOGLEVEL: {lvl}")
+        if lvl == Loglevel.NOTSET.name:
+            if self.is_dev_mode():
+                return Loglevel.DEBUG.name
+            return Loglevel.INFO.name
+        return lvl
 
     def get_address(self, view: str) -> str:
         if view == "ActionView":
@@ -75,15 +83,13 @@ class Environment:
             return f"0.0.0.0:{self.PRESENTER_PORT}"
         raise ValueError(f"Invalid view {view}")
 
-    def get_loglevel(self) -> str:
-        lvl = self.OPENSLIDES_LOGLEVEL.upper()
-        if lvl not in Loglevel.__members__:
-            raise ValueError(f"Invalid OPENSLIDES_LOGLEVEL: {lvl}")
-        if lvl == Loglevel.NOTSET.name:
-            if is_truthy(self.OPENSLIDES_DEVELOPMENT):
-                return Loglevel.DEBUG.name
-            return Loglevel.INFO.name
-        return lvl
+    def get_service_url(self) -> Dict[str, str]:
+        service_url = {}
+        # Extend the vars attribute with the lower case properties for the service URLs.
+        for service in ("datastore_reader", "datastore_writer", "media", "vote"):
+            key = service + "_url"
+            service_url[key] = self.get_endpoint(service.upper())
+        return service_url
 
     def get_endpoint(self, service: str) -> str:
         parts = {}

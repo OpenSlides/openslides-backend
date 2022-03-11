@@ -9,7 +9,7 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
-from .shared.env import Environment, is_truthy
+from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
 
@@ -51,7 +51,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
             "timeout": int(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT),
             "loglevel": self.env.get_loglevel().lower(),
-            "reload": is_truthy(self.env.OPENSLIDES_DEVELOPMENT),
+            "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
         }
         for key, value in options.items():
@@ -127,7 +127,7 @@ def main() -> None:  # pragma: no cover
     elif component == "presenter":
         start_presenter_server(env)
     elif component == "all":
-        if is_truthy(env.OPENSLIDES_DEVELOPMENT):
+        if env.is_dev_mode():
             start_them_all(env)
             sys.exit(0)
         print(

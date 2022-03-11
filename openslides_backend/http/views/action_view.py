@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 from ...action.action_handler import ActionHandler
 from ...migration_handler import assert_migration_index
 from ...migration_handler.migration_handler import MigrationHandler
-from ...shared.env import DEV_PASSWORD, is_truthy
+from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import ServerError
 from ...shared.interfaces.wsgi import ResponseBody
 from ..http_exceptions import Unauthorized
@@ -34,7 +34,7 @@ class ActionView(BaseView):
         self.services.vote().set_authentication(request.headers, request.cookies)
 
         # Handle request.
-        handler = ActionHandler(self.config, self.services, self.logging)
+        handler = ActionHandler(self.env, self.services, self.logging)
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handler.handle_request(request.json, user_id, is_atomic)
 
@@ -50,7 +50,7 @@ class ActionView(BaseView):
         assert_migration_index()
         self.check_internal_auth_password(request)
 
-        handler = ActionHandler(self.config, self.services, self.logging)
+        handler = ActionHandler(self.env, self.services, self.logging)
         response = handler.handle_request(request.json, -1, internal=True)
         self.logger.debug("Internal action request finished successfully.")
         return response, None
@@ -59,7 +59,7 @@ class ActionView(BaseView):
     def migrations_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         self.logger.debug("Start executing migrations request.")
         self.check_internal_auth_password(request)
-        handler = MigrationHandler(self.config, self.services, self.logging)
+        handler = MigrationHandler(self.env, self.services, self.logging)
         response = handler.handle_request(request.json)
         self.logger.debug("Migrations request finished successfully.")
         return {"success": True, **response}, None
@@ -70,10 +70,10 @@ class ActionView(BaseView):
 
     def check_internal_auth_password(self, request: Request) -> None:
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
-        if is_truthy(self.config["OPENSLIDES_DEVELOPMENT"]):
+        if self.env.is_dev_mode():
             secret_password = DEV_PASSWORD
         else:
-            filename = self.config["INTERNAL_AUTH_PASSWORD_FILE"]
+            filename = self.env.INTERNAL_AUTH_PASSWORD_FILE
             if not filename:
                 raise ServerError("Missing INTERNAL_AUTH_PASSWORD_FILE.")
             with open(filename) as file_:

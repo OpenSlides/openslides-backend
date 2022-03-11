@@ -10,7 +10,7 @@ class GeneralPresenterTester(TestCase):
     # TODO: more unit tests, e.g. with right key etc.
     def setUp(self) -> None:
         self.presenter_handler = PresenterHandler(
-            config=MagicMock(),
+            env=MagicMock(),
             logging=MagicMock(),
             services=MagicMock(),
         )

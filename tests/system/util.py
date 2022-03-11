@@ -57,7 +57,7 @@ def create_presenter_test_application() -> WSGIApplication:
 def create_test_application(view: Type[View]) -> WSGIApplication:
     env = Environment(os.environ)
     services = OpenSlidesBackendServices(
-        config=env.vars,
+        config=env.get_service_url(),
         logging=MagicMock(),
     )
     services.vote = providers.Singleton(
@@ -72,7 +72,7 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
 
     # Create WSGI application instance. Inject logging module, view class and services container.
     application_factory = OpenSlidesBackendWSGI(
-        config=env.vars, logging=MagicMock(), view=view, services=services
+        env=env, logging=MagicMock(), view=view, services=services
     )
     application = application_factory.setup()
 

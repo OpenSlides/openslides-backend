@@ -35,14 +35,14 @@ class OpenSlidesBackendWSGI(containers.DeclarativeContainer):
     Container for dependency injection into OpenSlidesBackendWSGIApplication.
     """
 
-    config = providers.Configuration("config")
+    env = providers.Object(0)
     logging = providers.Object(0)
     view = providers.Object(0)
     services = providers.DependenciesContainer()
 
     setup = providers.Factory(
         OpenSlidesBackendWSGIApplication,
-        config=config,
+        env=env,
         logging=logging,
         view=view,
         services=services,
@@ -69,13 +69,13 @@ def create_wsgi_application(
 
     # Setup services
     services = OpenSlidesBackendServices(
-        config=env.vars,
+        config=env.get_service_url(),
         logging=logging,
     )
 
     # Create WSGI application instance. Inject logging module, view class and services container.
     application_factory = OpenSlidesBackendWSGI(
-        config=env.vars,
+        env=env,
         logging=logging,
         view=view,
         services=services,

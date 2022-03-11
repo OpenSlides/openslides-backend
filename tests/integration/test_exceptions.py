@@ -14,7 +14,7 @@ from ..util import Client
 
 def create_test_application(view: Type[View]) -> WSGIApplication:
     application_factory = OpenSlidesBackendWSGI(
-        config=Environment(os.environ).vars,
+        env=Environment(os.environ),
         logging=MagicMock(),
         view=view,
         services=MagicMock(),

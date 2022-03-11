@@ -24,8 +24,8 @@ class OpenSlidesBackendWSGIApplication:
     During initialization we bind injected dependencies to the instance.
     """
 
-    def __init__(self, config: Any, logging: Any, view: Any, services: Any) -> None:
-        self.config = config
+    def __init__(self, env: Any, logging: Any, view: Any, services: Any) -> None:
+        self.env = env
         self.logging = logging
         self.logger = logging.getLogger(__name__)
         self.logger.debug("Initialize OpenSlides Backend WSGI application.")
@@ -39,11 +39,11 @@ class OpenSlidesBackendWSGIApplication:
         applications themselves.
         """
         # Dispatch view and return response.
-        view_instance = self.view(self.config, self.logging, self.services)
+        view_instance = self.view(self.env, self.logging, self.services)
         try:
             response_body, access_token = view_instance.dispatch(request)
         except ViewException as exception:
-            env_var = self.config["OPENSLIDES_BACKEND_RAISE_4XX"]
+            env_var = self.env.OPENSLIDES_BACKEND_RAISE_4XX
             if is_truthy(env_var):
                 raise exception
             if exception.status_code == 400:
