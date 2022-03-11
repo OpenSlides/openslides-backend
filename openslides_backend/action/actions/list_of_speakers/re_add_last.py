@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import ListOfSpeakers, Speaker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,9 +27,13 @@ class ListOfSpeakersReAddLastAction(UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # Fetch all speakers.
         list_of_speakers_id = instance["id"]
+        meeting_id = self.get_meeting_id(instance)
         speakers = self.datastore.filter(
             self.model.collection,
-            FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+            And(
+                FilterOperator("list_of_speakers_id", "=", list_of_speakers_id),
+                FilterOperator("meeting_id", "=", meeting_id),
+            ),
             mapped_fields=["end_time", "user_id", "weight", "point_of_order"],
         )
         if not speakers:

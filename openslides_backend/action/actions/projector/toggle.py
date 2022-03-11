@@ -61,6 +61,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
                         "content_object_id", "=", instance["content_object_id"]
                     ),
                     FilterOperator("stable", "=", stable),
+                    FilterOperator("meeting_id", "=", meeting_id),
                 )
                 if instance.get("type"):
                     filter_ = And(

@@ -54,6 +54,7 @@ class PersonalNoteCreateActionTest(BaseActionTestCase):
                     "note": "blablabla",
                     "user_id": 1,
                     "content_object_id": "motion/23",
+                    "meeting_id": 110,
                 },
             }
         )
