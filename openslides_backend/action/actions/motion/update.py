@@ -5,8 +5,8 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.filters import FilterOperator
 from ....shared.patterns import (
     KEYSEPARATOR,
     POSITIVE_NUMBER_REGEX,
@@ -108,17 +108,18 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         possible_rerids = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
             instance["recommendation_extension"]
         )
+        motion_ids = []
         for fqid_str in possible_rerids:
             collection, id_ = fqid_str.split(KEYSEPARATOR)
             if collection != "motion":
                 raise ActionException(f"Found {fqid_str} but only motion is allowed.")
-            exists = self.datastore.exists(
-                collection=Collection(collection),
-                filter=FilterOperator("id", "=", int(id_)),
-            )
-            if exists:
+            motion_ids.append(int(id_))
+        gm_request = GetManyRequest(Collection("motion"), motion_ids, ["id"])
+        gm_result = self.datastore.get_many([gm_request]).get(Collection("motion"), {})
+        for motion_id in motion_ids:
+            if motion_id in gm_result:
                 recommendation_extension_reference_ids.append(
-                    FullQualifiedId(Collection(collection), id_)
+                    FullQualifiedId(Collection("motion"), motion_id)
                 )
         instance[
             "recommendation_extension_reference_ids"
