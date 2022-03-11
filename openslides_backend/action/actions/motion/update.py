@@ -116,11 +116,10 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             motion_ids.append(int(id_))
         gm_request = GetManyRequest(Collection("motion"), motion_ids, ["id"])
         gm_result = self.datastore.get_many([gm_request]).get(Collection("motion"), {})
-        for motion_id in motion_ids:
-            if motion_id in gm_result:
-                recommendation_extension_reference_ids.append(
-                    FullQualifiedId(Collection("motion"), motion_id)
-                )
+        for motion_id in gm_result:
+            recommendation_extension_reference_ids.append(
+                FullQualifiedId(Collection("motion"), motion_id)
+            )
         instance[
             "recommendation_extension_reference_ids"
         ] = recommendation_extension_reference_ids
