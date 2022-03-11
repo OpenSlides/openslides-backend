@@ -1,7 +1,7 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
 
-from ....models.helper import calculate_inherited_groups_helper
+from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Group
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -102,8 +102,6 @@ class GroupDeleteAction(DeleteAction):
     def check_recursive(
         self, id_: int, db_mediafiles: Dict[int, Any]
     ) -> Iterable[WriteRequest]:
-        parent_is_public: Optional[bool] = None
-        parent_inherited_access_group_ids: Optional[List[int]] = []
         coll_mediafile = Collection("mediafile")
         fqid = FullQualifiedId(coll_mediafile, id_)
 
@@ -117,22 +115,14 @@ class GroupDeleteAction(DeleteAction):
                 "child_ids",
             ],
         )
-        if parent_id := mediafile.get("parent_id"):
-            parent_mediafile = self.datastore.get(
-                FullQualifiedId(coll_mediafile, parent_id),
-                ["is_public", "inherited_from_group_ids"],
-            )
-            parent_is_public = cast(bool, parent_mediafile.get("is_public"))
-            parent_inherited_access_group_ids = cast(
-                List, parent_mediafile.get("inherited_access_group_ids")
-            )
+
         (
             calc_is_public,
             calc_inherited_access_group_ids,
-        ) = calculate_inherited_groups_helper(
+        ) = calculate_inherited_groups_helper_with_parent_id(
+            self.datastore,
             mediafile.get("access_group_ids"),
-            parent_is_public,
-            parent_inherited_access_group_ids,
+            mediafile.get("parent_id"),
         )
         self.datastore.apply_changed_model(
             fqid,

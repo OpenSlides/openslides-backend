@@ -1,4 +1,4 @@
-from ....models.helper import calculate_inherited_groups_helper
+from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
@@ -34,24 +34,14 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
             mediafile = self.datastore.get(
                 FullQualifiedId(self.model.collection, instance["id"]), ["parent_id"]
             )
-            if mediafile.get("parent_id"):
-                parent = self.datastore.get(
-                    FullQualifiedId(self.model.collection, mediafile["parent_id"]),
-                    ["is_public", "inherited_access_group_ids"],
-                )
-
-                (
-                    instance["is_public"],
-                    instance["inherited_access_group_ids"],
-                ) = calculate_inherited_groups_helper(
-                    instance["access_group_ids"],
-                    parent.get("is_public"),
-                    parent.get("inherited_access_group_ids"),
-                )
-            else:
-                instance["inherited_access_group_ids"] = instance["access_group_ids"]
-                instance["is_public"] = not bool(instance["inherited_access_group_ids"])
-
+            (
+                instance["is_public"],
+                instance["inherited_access_group_ids"],
+            ) = calculate_inherited_groups_helper_with_parent_id(
+                self.datastore,
+                instance.get("access_group_ids"),
+                mediafile.get("parent_id"),
+            )
             yield instance
 
             # Handle children

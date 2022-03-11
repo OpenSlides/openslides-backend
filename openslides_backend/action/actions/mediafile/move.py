@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from ....models.helper import calculate_inherited_groups_helper
+from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -86,24 +86,14 @@ class MediafileMoveAction(
                 "owner_id": owner_id,
             }
             access_group_ids = list(db_instances[id_].get("access_group_ids", []))
-            if parent_id:
-                parent = self.datastore.get(
-                    FullQualifiedId(self.model.collection, parent_id),
-                    ["is_public", "inherited_access_group_ids"],
-                )
-
-                (
-                    instance["is_public"],
-                    instance["inherited_access_group_ids"],
-                ) = calculate_inherited_groups_helper(
-                    access_group_ids,
-                    parent.get("is_public"),
-                    parent.get("inherited_access_group_ids"),
-                )
-            else:
-                instance["inherited_access_group_ids"] = access_group_ids
-                instance["is_public"] = not bool(instance["inherited_access_group_ids"])
-
+            (
+                instance["is_public"],
+                instance["inherited_access_group_ids"],
+            ) = calculate_inherited_groups_helper_with_parent_id(
+                self.datastore,
+                access_group_ids,
+                instance.get("parent_id"),
+            )
             yield instance
 
             # Handle children
