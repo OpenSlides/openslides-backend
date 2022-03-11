@@ -346,6 +346,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         information: str,
         fields: Optional[Dict[str, Any]] = None,
         list_fields: Optional[ListFields] = None,
+        migration_index: Optional[int] = None,
     ) -> WriteRequest:
         """
         Helper function to create a WriteRequest.
@@ -364,6 +365,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             information={fqid: [information]},
             user_id=self.user_id,
             locked_fields={},
+            migration_index=migration_index,
         )
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
@@ -627,6 +629,7 @@ def merge_write_requests(
     events: List[Event] = []
     information: Dict[FullQualifiedId, List[str]] = {}
     user_id: Optional[int] = None
+    migration_index = None
     for element in write_requests:
         events.extend(element.events)
         for fqid, info_text in element.information.items():
@@ -641,11 +644,24 @@ def merge_write_requests(
                 raise ValueError(
                     "You can not merge two write request elements of different users."
                 )
+
+        if element.migration_index:
+            if migration_index is None:
+                migration_index = element.migration_index
+            else:
+                if migration_index != element.migration_index:
+                    raise ValueError(
+                        "You can not merge two write request elements of different migration indices."
+                    )
     if events:
         if user_id is None:
             raise ValueError("At least one of the given user ids must not be None.")
         return WriteRequest(
-            events=events, information=information, user_id=user_id, locked_fields={}
+            events=events,
+            information=information,
+            user_id=user_id,
+            locked_fields={},
+            migration_index=migration_index,
         )
     else:
         return None

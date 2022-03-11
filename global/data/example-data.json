@@ -1,5 +1,5 @@
 {
-    "_migration_index": -1,
+    "_migration_index": 21,
     "organization": {
         "1": {
             "id": 1,
@@ -277,6 +277,9 @@
             ],
             "meeting_ids": [
                 1
+            ],
+            "committee_ids": [
+                1
             ]
         }
     },
@@ -330,7 +333,8 @@
             "default_meeting_id": 1,
             "user_ids": [
                 1,
-                2
+                2,
+                3
             ],
             "user_$_management_level": ["can_manage"],
             "user_$can_manage_management_level": [1],

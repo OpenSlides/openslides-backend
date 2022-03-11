@@ -2,6 +2,8 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 
 from datastore.shared.util import DeletedModelsBehaviour
 
+from migrations import get_backend_migration_index
+
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException
@@ -56,6 +58,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
 
+        self.check_migration_index(instance)
+
         # check datavalidation
         checker = Checker(data=data, mode="all")
         try:
@@ -75,6 +79,27 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         ):
             raise ActionException("Datastore is not empty.")
 
+    def check_migration_index(self, instance: Dict[str, Any]) -> None:
+        data_migration_index = instance["data"].get("_migration_index")
+        if data_migration_index is None:
+            raise ActionException(
+                "Data must have a valid migration index in `_migration_index`."
+            )
+        if data_migration_index < 1:
+            raise ActionException(
+                f"Data must have a valid migration index >= 1, bus has {data_migration_index}."
+            )
+
+        backend_migration_index = get_backend_migration_index()
+        if backend_migration_index < data_migration_index:
+            raise ActionException(
+                f"Migration indices do not match: Data has {data_migration_index} and the backend has {backend_migration_index}"
+            )
+        self.data_migration_index = data_migration_index
+        self.migration_needed = False
+        if backend_migration_index > data_migration_index:
+            self.migration_needed = True
+
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["data"]
         write_requests = []
@@ -87,6 +112,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
                         fqid,
                         "initial import",
                         entry,
+                        migration_index=self.data_migration_index,
                     )
                 )
         return write_requests

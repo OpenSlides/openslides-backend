@@ -934,6 +934,7 @@ class ListOfSpeakers(Model):
     id = fields.IntegerField()
     closed = fields.BooleanField(default=False)
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -999,6 +1000,7 @@ class Topic(Model):
     title = fields.CharField(required=True)
     text = fields.HTMLPermissiveField()
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1048,6 +1050,7 @@ class Motion(Model):
         },
     )
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1217,6 +1220,7 @@ class MotionCommentSection(Model):
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1250,6 +1254,7 @@ class MotionCategory(Model):
         read_only=True, constraints={"description": "Calculated field."}
     )
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1277,6 +1282,7 @@ class MotionBlock(Model):
     title = fields.CharField(required=True)
     internal = fields.BooleanField()
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1402,6 +1408,7 @@ class MotionWorkflow(Model):
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1440,6 +1447,7 @@ class MotionStatuteParagraph(Model):
     text = fields.HTMLStrictField()
     weight = fields.IntegerField(default=10000)
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1492,6 +1500,7 @@ class Poll(Model):
     votescast = fields.DecimalField()
     entitled_users_at_stop = fields.JSONField()
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1601,6 +1610,7 @@ class Assignment(Model):
     default_poll_description = fields.TextField()
     number_poll_candidates = fields.BooleanField()
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."
@@ -1682,6 +1692,7 @@ class Mediafile(Model):
     pdf_information = fields.JSONField()
     create_timestamp = fields.TimestampField()
     is_public = fields.BooleanField(
+        required=True,
         read_only=True,
         constraints={
             "description": "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
@@ -1758,6 +1769,7 @@ class Projector(Model):
     show_logo = fields.BooleanField(default=True)
     show_clock = fields.BooleanField(default=True)
     sequential_number = fields.IntegerField(
+        required=True,
         read_only=True,
         constraints={
             "description": "The (positive) serial number of this motion. This number is auto-generated and read-only."

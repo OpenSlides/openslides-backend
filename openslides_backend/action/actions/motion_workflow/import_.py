@@ -4,7 +4,7 @@ from typing import Any, Dict, List
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ...generics.create import CreateAction
+from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..motion_state.create import MotionStateCreateAction
@@ -12,7 +12,7 @@ from ..motion_state.update import MotionStateUpdateAction
 
 
 @register_action("motion_workflow.import")
-class MotionWorkflowImport(CreateAction):
+class MotionWorkflowImport(SequentialNumbersMixin):
     """
     Action to import a motion workflow.
     """
@@ -58,6 +58,7 @@ class MotionWorkflowImport(CreateAction):
     permission = Permissions.Motion.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
         first_state_name = instance.pop("first_state_name", "")
         states = instance.pop("states", [])
         self.apply_instance(instance)
