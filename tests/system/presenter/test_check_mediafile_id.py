@@ -1,13 +1,17 @@
 from openslides_backend.permissions.permissions import Permissions
 
-from .base import BasePresenterTestCase
+from .base import PRESENTER_URL, BasePresenterTestCase
 
 
 class TestCheckMediafileId(BasePresenterTestCase):
     def test_simple(self) -> None:
         self.create_model(
             "mediafile/1",
-            {"filename": "the filename", "is_directory": False, "meeting_id": 1},
+            {
+                "filename": "the filename",
+                "is_directory": False,
+                "owner_id": "meeting/1",
+            },
         )
         self.create_model("meeting/1")
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
@@ -24,12 +28,17 @@ class TestCheckMediafileId(BasePresenterTestCase):
 
     def test_non_existent(self) -> None:
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
-        self.assertEqual(status_code, 400)
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": False})
 
     def test_request_without_token(self) -> None:
         self.create_model(
             "mediafile/1",
-            {"filename": "the filename", "is_directory": False, "meeting_id": 1},
+            {
+                "filename": "the filename",
+                "is_directory": False,
+                "owner_id": "meeting/1",
+            },
         )
         self.create_model("meeting/1")
         self.client.headers.clear()
@@ -40,7 +49,12 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_no_permissions(self) -> None:
         self.set_models(
             {
-                "mediafile/1": {"filename": "the filename", "is_directory": False},
+                "meeting/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                    "filename": "the filename",
+                    "is_directory": False,
+                },
                 "user/1": {"organization_management_level": None},
             }
         )
@@ -53,7 +67,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                 },
                 "meeting/1": {"admin_group_id": 2},
                 "group/2": {"user_ids": [1]},
@@ -69,7 +83,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "used_as_logo_$_in_meeting_id": ["test"],
                     "used_as_logo_$test_in_meeting_id": 1,
                 },
@@ -86,7 +100,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "used_as_font_$_in_meeting_id": ["test"],
                     "used_as_font_$test_in_meeting_id": 1,
                 },
@@ -103,7 +117,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "projection_ids": [1],
                 },
                 "meeting/1": {"default_group_id": 2},
@@ -125,7 +139,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "is_public": True,
                 },
                 "meeting/1": {"default_group_id": 2},
@@ -145,7 +159,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
                 "mediafile/1": {
                     "filename": "the filename",
                     "is_directory": False,
-                    "meeting_id": 1,
+                    "owner_id": "meeting/1",
                     "inherited_access_group_ids": [2],
                 },
                 "meeting/1": {"default_group_id": 2},
@@ -158,3 +172,76 @@ class TestCheckMediafileId(BasePresenterTestCase):
         )
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
+
+    def test_simple_organization(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "owner_id": "organization/1",
+                    "token": "web_logo",
+                    "mimetype": "text/plain",
+                },
+            }
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": True, "filename": "web_logo.txt"})
+
+    def test_organization_without_token(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "filename": "the filename",
+                    "owner_id": "organization/1",
+                    "mimetype": "text/plain",
+                },
+            }
+        )
+        status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
+        self.assertEqual(status_code, 200)
+        self.assertEqual(data, {"ok": True, "filename": "the filename"})
+
+    def test_anonymous_organization(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "owner_id": "organization/1",
+                    "mimetype": "text/plain",
+                },
+            }
+        )
+
+        response = self.anon_client.post(
+            PRESENTER_URL,
+            json=[{"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}],
+        )
+        status_code = response.status_code
+        self.assertEqual(status_code, 403)
+
+    def test_anonymous_organization_with_token(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"mediafile_ids": [1]},
+                "mediafile/1": {
+                    "is_directory": False,
+                    "owner_id": "organization/1",
+                    "token": "web_logo",
+                    "mimetype": "text/plain",
+                },
+            }
+        )
+
+        response = self.anon_client.post(
+            PRESENTER_URL,
+            json=[{"presenter": "check_mediafile_id", "data": {"mediafile_id": 1}}],
+        )
+        status_code = response.status_code
+        self.assertEqual(status_code, 200)
+        data = response.json[0]
+        self.assertEqual(data, {"ok": True, "filename": "web_logo.txt"})

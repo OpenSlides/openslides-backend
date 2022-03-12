@@ -120,7 +120,11 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         self.set_models(
             {
                 **self.test_models,
-                "speaker/42": {"user_id": 7, "list_of_speakers_id": 23},
+                "speaker/42": {
+                    "user_id": 7,
+                    "list_of_speakers_id": 23,
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(
@@ -185,7 +189,7 @@ class SpeakerCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'speaker/list_of_speakers_id', 'speaker/weight'",
+            "Datastore service sends HTTP 400. The following locks were broken: 'speaker/list_of_speakers_id', 'speaker/meeting_id', 'speaker/weight'",
             response.json["message"],
         )
 

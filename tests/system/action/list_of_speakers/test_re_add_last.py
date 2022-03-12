@@ -19,17 +19,20 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                 "user_id": 42,
                 "begin_time": 1000,
                 "end_time": 2000,
+                "meeting_id": 1,
             },
             "speaker/223": {
                 "list_of_speakers_id": 111,
                 "user_id": 43,
                 "begin_time": 3000,
                 "end_time": 4000,
+                "meeting_id": 1,
             },
             "speaker/224": {
                 "list_of_speakers_id": 111,
                 "user_id": 44,
                 "begin_time": 5000,
+                "meeting_id": 1,
             },
         }
 
@@ -53,17 +56,20 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "user_id": 42,
                     "begin_time": 1000,
                     "end_time": 2000,
+                    "meeting_id": 222,
                 },
                 "speaker/223": {
                     "list_of_speakers_id": 111,
                     "user_id": 43,
                     "begin_time": 3000,
                     "end_time": 4000,
+                    "meeting_id": 222,
                 },
                 "speaker/224": {
                     "list_of_speakers_id": 111,
                     "user_id": 44,
                     "begin_time": 5000,
+                    "meeting_id": 222,
                 },
             }
         )
@@ -98,12 +104,14 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "user_id": 42,
                     "begin_time": 1000,
                     "end_time": 2000,
+                    "meeting_id": 222,
                 },
                 "speaker/223": {
                     "list_of_speakers_id": 111,
                     "user_id": 43,
                     "begin_time": 3000,
                     "end_time": 4000,
+                    "meeting_id": 222,
                 },
             }
         )
@@ -156,6 +164,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "list_of_speakers_id": 111,
                     "user_id": 42,
                     "begin_time": 3000,
+                    "meeting_id": 222,
                 },
             }
         )
@@ -187,6 +196,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "begin_time": 3000,
                     "end_time": 4000,
                     "point_of_order": True,
+                    "meeting_id": 222,
                 },
             }
         )
@@ -218,8 +228,13 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "user_id": 42,
                     "begin_time": 3000,
                     "end_time": 4000,
+                    "meeting_id": 222,
                 },
-                "speaker/224": {"list_of_speakers_id": 111, "user_id": 42},
+                "speaker/224": {
+                    "list_of_speakers_id": 111,
+                    "user_id": 42,
+                    "meeting_id": 222,
+                },
             }
         )
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
@@ -249,11 +264,13 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
                     "user_id": 42,
                     "begin_time": 3000,
                     "end_time": 4000,
+                    "meeting_id": 222,
                 },
                 "speaker/224": {
                     "list_of_speakers_id": 111,
                     "user_id": 42,
                     "point_of_order": True,
+                    "meeting_id": 222,
                 },
             }
         )

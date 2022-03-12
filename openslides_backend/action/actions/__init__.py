@@ -35,7 +35,6 @@ def prepare_actions_map() -> None:
         projector,
         projector_countdown,
         projector_message,
-        resource,
         speaker,
         tag,
         theme,

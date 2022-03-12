@@ -12,6 +12,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
     export = {}
+
     # fetch meeting
     meeting = datastore.get(
         FullQualifiedId(Collection("meeting"), meeting_id), [], use_changed_models=False
@@ -19,6 +20,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
     export["meeting"] = add_empty_fields(
         remove_meta_fields(transfer_keys({meeting_id: meeting})), Collection("meeting")
     )
+
     # fetch related models
     relation_fields = list(get_relation_fields())
     get_many_requests = [
@@ -43,23 +45,6 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
     return export
 
 
-def get_relation_fields() -> Iterable[RelationListField]:
-    for field in Meeting().get_relation_fields():
-        if (
-            isinstance(field, RelationListField)
-            and field.on_delete == OnDelete.CASCADE
-            and field.get_own_field_name().endswith("_ids")
-        ):
-            yield field
-
-
-def transfer_keys(res: Dict[int, Any]) -> Dict[str, Any]:
-    new_dict = {}
-    for key in res:
-        new_dict[str(key)] = res[key]
-    return new_dict
-
-
 def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
     dict_without_meta_fields = {}
     for key in res:
@@ -81,3 +66,20 @@ def add_empty_fields(res: Dict[str, Any], collection: Collection) -> Dict[str, A
             if field not in res[key]:
                 res[key][field] = None
     return res
+
+
+def get_relation_fields() -> Iterable[RelationListField]:
+    for field in Meeting().get_relation_fields():
+        if (
+            isinstance(field, RelationListField)
+            and field.on_delete == OnDelete.CASCADE
+            and field.get_own_field_name().endswith("_ids")
+        ):
+            yield field
+
+
+def transfer_keys(res: Dict[int, Any]) -> Dict[str, Any]:
+    new_dict = {}
+    for key in res:
+        new_dict[str(key)] = res[key]
+    return new_dict

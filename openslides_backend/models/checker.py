@@ -215,7 +215,6 @@ class Checker:
             self.allowed_collections = [
                 "organization",
                 "user",
-                "resource",
                 "organization_tag",
                 "theme",
                 "committee",

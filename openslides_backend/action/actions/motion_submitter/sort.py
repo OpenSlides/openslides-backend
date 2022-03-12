@@ -1,6 +1,6 @@
 from ....models.models import Motion, MotionSubmitter
 from ....permissions.permissions import Permissions
-from ....shared.filters import FilterOperator
+from ....shared.filters import And, FilterOperator
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -27,7 +27,11 @@ class MotionSubmitterSort(LinearSortMixin, SingularActionMixin, UpdateAction):
         action_data = super().get_updated_instances(action_data)
         # Action data is an iterable with exactly one item
         instance = next(iter(action_data))
+        meeting_id = self.get_meeting_id(instance)
         yield from self.sort_linear(
             instance["motion_submitter_ids"],
-            FilterOperator("motion_id", "=", instance["motion_id"]),
+            And(
+                FilterOperator("motion_id", "=", instance["motion_id"]),
+                FilterOperator("meeting_id", "=", meeting_id),
+            ),
         )

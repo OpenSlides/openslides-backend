@@ -43,6 +43,7 @@ class PersonalNoteCreateAction(
             FilterOperator(
                 "content_object_id", "=", str(instance["content_object_id"])
             ),
+            FilterOperator("meeting_id", "=", instance["meeting_id"]),
         )
         exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
         if exists:
