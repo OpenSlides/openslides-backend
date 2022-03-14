@@ -718,9 +718,6 @@ meeting:
   jitsi_room_password:
     type: string
     restriction_mode: B
-  enable_chat:
-    type: boolean
-    restriction_mode: B
 
   # System
   template_for_organization_id:

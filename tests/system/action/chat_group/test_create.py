@@ -7,7 +7,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(
@@ -21,21 +21,8 @@ class ChatGroupCreate(BaseActionTestCase):
     def test_create_chat_not_enabled(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_chat": True},
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
-        response = self.request(
-            "chat_group.create", {"name": "redekreis2", "meeting_id": 1}
-        )
-        self.assert_status_code(response, 400)
-        assert "Chat is not enabled." in response.json["message"]
-
-    def test_create_chat_not_enabled_in_organization(self) -> None:
-        self.set_models(
-            {
                 "organization/1": {"enable_chat": False},
-                "meeting/1": {"is_active_in_organization_id": 1, "enable_chat": True},
+                "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request(
@@ -48,7 +35,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {"meeting_id": 1},
                 "group/2": {"meeting_id": 1},
             }
@@ -78,7 +65,6 @@ class ChatGroupCreate(BaseActionTestCase):
             {
                 "organization/1": {"enable_chat": True},
                 "meeting/1": {
-                    "enable_chat": True,
                     "chat_group_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
@@ -99,7 +85,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "meeting/2": {},
                 "group/1": {"meeting_id": 1},
                 "group/2": {"meeting_id": 2},
@@ -124,7 +110,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.base_permission_test(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True},
+                "meeting/1": {"name": "test1"},
             },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
@@ -134,7 +120,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.base_permission_test(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True},
+                "meeting/1": {"name": "test"},
             },
             "chat_group.create",
             {"name": "redekreis1", "meeting_id": 1},
@@ -145,7 +131,7 @@ class ChatGroupCreate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "chat_group/21": {"meeting_id": 1, "name": "test"},
             }
         )
@@ -163,8 +149,8 @@ class ChatGroupCreate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True, "active_meeting_ids": [1, 2]},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
-                "meeting/2": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/2": {"is_active_in_organization_id": 1},
                 "chat_group/21": {"meeting_id": 1, "name": "test"},
             }
         )

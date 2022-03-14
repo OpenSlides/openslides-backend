@@ -55,7 +55,6 @@ class MeetingImport(BaseActionTestCase):
                         "applause_max_amount": 3,
                         "applause_timeout": 6,
                         "applause_particle_image_url": "test",
-                        "enable_chat": True,
                         "export_csv_encoding": "utf-8",
                         "export_csv_separator": ",",
                         "export_pdf_pagenumber_alignment": "center",
