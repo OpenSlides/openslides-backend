@@ -1,12 +1,12 @@
 import time
 from typing import Any, Dict
 
-from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .mixins import MediafileMixin
 
 

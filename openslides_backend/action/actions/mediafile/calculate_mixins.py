@@ -1,7 +1,8 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ....models.helper import calculate_inherited_groups_helper
 from ....services.datastore.commands import GetManyRequest
+from ....services.datastore.interface import DatastoreService
 from ....shared.patterns import Collection, FullQualifiedId
 from ...action import BaseAction
 from ...util.typing import ActionData
@@ -57,3 +58,22 @@ class MediafileCalculatedFieldsMixin(BaseAction):
                         new_instance["is_public"],
                         new_instance["inherited_access_group_ids"],
                     )
+
+
+def calculate_inherited_groups_helper_with_parent_id(
+    datastore: DatastoreService,
+    access_group_ids: Optional[List[int]],
+    parent_id: Optional[int],
+) -> Tuple[bool, Optional[List[int]]]:
+    if parent_id:
+        parent = datastore.get(
+            FullQualifiedId(Collection("mediafile"), parent_id),
+            ["is_public", "inherited_access_group_ids"],
+        )
+        return calculate_inherited_groups_helper(
+            access_group_ids,
+            parent.get("is_public"),
+            parent.get("inherited_access_group_ids"),
+        )
+    else:
+        return (not bool(access_group_ids), access_group_ids)

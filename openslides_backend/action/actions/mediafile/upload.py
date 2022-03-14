@@ -7,7 +7,6 @@ from typing import Any, Dict, List, TypedDict
 from PyPDF2 import PdfFileReader
 from PyPDF2.utils import PdfReadError
 
-from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -18,6 +17,7 @@ from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .delete import MediafileDelete
 from .mixins import MediafileMixin
 

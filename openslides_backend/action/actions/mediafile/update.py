@@ -1,4 +1,3 @@
-from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.patterns import FullQualifiedId
@@ -6,7 +5,10 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .calculate_mixins import MediafileCalculatedFieldsMixin
+from .calculate_mixins import (
+    MediafileCalculatedFieldsMixin,
+    calculate_inherited_groups_helper_with_parent_id,
+)
 from .mixins import MediafileMixin
 
 

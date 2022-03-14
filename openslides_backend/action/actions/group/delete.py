@@ -1,7 +1,6 @@
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
 
-from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Group
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -11,6 +10,9 @@ from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ..mediafile.calculate_mixins import (
+    calculate_inherited_groups_helper_with_parent_id,
+)
 
 
 @register_action("group.delete")

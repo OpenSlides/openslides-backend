@@ -1,6 +1,5 @@
 from typing import Any, Dict, List, Optional
 
-from ....models.helper import calculate_inherited_groups_helper_with_parent_id
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
@@ -12,7 +11,10 @@ from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-from .calculate_mixins import MediafileCalculatedFieldsMixin
+from .calculate_mixins import (
+    MediafileCalculatedFieldsMixin,
+    calculate_inherited_groups_helper_with_parent_id,
+)
 from .mixins import MediafileMixin
 
 
