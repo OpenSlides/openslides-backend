@@ -2654,11 +2654,17 @@ poll:
   min_votes_amount:
     type: number
     default: 1
+    minimum: 1
     restriction_mode: A
   max_votes_amount:
     type: number
     default: 1
+    minimum: 1
     restriction_mode: A
+  max_votes_per_option:
+    type: number
+    default: 1
+    minimum: 1
   global_yes:
     type: boolean
     default: false
