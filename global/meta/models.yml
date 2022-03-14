@@ -2665,6 +2665,7 @@ poll:
     type: number
     default: 1
     minimum: 1
+    restriction_mode: A
   global_yes:
     type: boolean
     default: false
