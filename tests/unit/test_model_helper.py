@@ -35,5 +35,5 @@ class ModelHelper(TestCase):
             self.assertEqual(
                 calculate_inherited_groups_helper(entry[0], entry[1], entry[2]),
                 (entry[3], entry[4]),
-                f"{entry[0]} {entry[1]} {entry[2]} | {entry[3]} {entry[4]}"
+                f"{entry[0]} {entry[1]} {entry[2]} | {entry[3]} {entry[4]}",
             )
