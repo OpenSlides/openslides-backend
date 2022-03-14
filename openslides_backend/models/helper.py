@@ -13,7 +13,10 @@ def calculate_inherited_groups_helper(
             id_ for id_ in access_group_ids if id_ in parent_inherited_access_group_ids
         ]
     elif access_group_ids:
-        inherited_access_group_ids = access_group_ids
+        if parent_is_public is False:
+            inherited_access_group_ids = []
+        else:
+            inherited_access_group_ids = access_group_ids
     elif parent_inherited_access_group_ids:
         inherited_access_group_ids = parent_inherited_access_group_ids
     else:
