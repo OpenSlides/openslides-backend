@@ -362,7 +362,6 @@
             "applause_show_level": false,
             "applause_timeout": 5,
             "enable_anonymous": false,
-            "enable_chat": true,
             "projector_countdown_default_time": 60,
             "projector_countdown_warning_time": 0,
             "export_csv_encoding": "utf-8",

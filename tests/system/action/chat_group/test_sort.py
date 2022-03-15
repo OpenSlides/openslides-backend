@@ -7,7 +7,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_models = {
             "organization/1": {"enable_chat": True},
-            "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+            "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/31": {
                 "meeting_id": 1,
                 "name": "name_loisueb",
@@ -24,7 +24,6 @@ class ChatGroupSortActionTest(BaseActionTestCase):
                 "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
-                    "enable_chat": True,
                     "is_active_in_organization_id": 1,
                 },
                 "chat_group/31": {
@@ -50,36 +49,9 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_not_enabled(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_chat": True},
-                "meeting/222": {
-                    "name": "name_SNLGsvIV",
-                    "enable_chat": False,
-                    "is_active_in_organization_id": 1,
-                },
-                "chat_group/31": {
-                    "meeting_id": 222,
-                    "name": "name_loisueb",
-                },
-                "chat_group/32": {
-                    "meeting_id": 222,
-                    "name": "name_blanumop",
-                },
-            }
-        )
-        response = self.request(
-            "chat_group.sort",
-            {"meeting_id": 222, "chat_group_ids": [32, 31]},
-        )
-        self.assert_status_code(response, 400)
-        assert "Chat is not enabled." in response.json["message"]
-
-    def test_sort_not_enabled_in_organization(self) -> None:
-        self.set_models(
-            {
                 "organization/1": {"enable_chat": False},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
-                    "enable_chat": True,
                     "is_active_in_organization_id": 1,
                 },
                 "chat_group/31": {
@@ -101,7 +73,6 @@ class ChatGroupSortActionTest(BaseActionTestCase):
                 "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
-                    "enable_chat": True,
                     "is_active_in_organization_id": 1,
                 },
                 "chat_group/31": {
@@ -123,7 +94,6 @@ class ChatGroupSortActionTest(BaseActionTestCase):
                 "organization/1": {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
-                    "enable_chat": True,
                     "is_active_in_organization_id": 1,
                 },
                 "chat_group/31": {
