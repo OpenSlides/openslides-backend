@@ -324,7 +324,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         model = self.get_model("mediafile/1")
         assert model.get("title") == "title_UoOFrRU3INADQbay"
         assert model.get("access_group_ids") is None
-        assert model.get("inherited_access_group_ids") is None
+        assert model.get("inherited_access_group_ids") == []
         assert model.get("is_directory") is True
         assert model.get("is_public") is True
 
