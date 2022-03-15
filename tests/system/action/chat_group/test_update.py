@@ -9,7 +9,7 @@ class ChatGroupUpdate(BaseActionTestCase):
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
             "organization/1": {"enable_chat": True},
-            "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+            "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/1": {
                 "meeting_id": 1,
                 "name": "redekreis1",
@@ -39,13 +39,6 @@ class ChatGroupUpdate(BaseActionTestCase):
         self.assert_model_exists("group/3", {"write_chat_group_ids": [1]})
 
     def test_update_not_enabled(self) -> None:
-        self.test_models["meeting/1"]["enable_chat"] = False
-        self.set_models(self.test_models)
-        response = self.request("chat_group.update", {"id": 1, "name": "test"})
-        self.assert_status_code(response, 400)
-        assert "Chat is not enabled." in response.json["message"]
-
-    def test_update_not_enabled_in_organization(self) -> None:
         self.test_models["organization/1"]["enable_chat"] = False
         self.set_models(self.test_models)
         response = self.request("chat_group.update", {"id": 1, "name": "test"})
@@ -56,7 +49,7 @@ class ChatGroupUpdate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "meeting/2": {"is_active_in_organization_id": 1},
                 "chat_group/1": {
                     "meeting_id": 1,
@@ -92,7 +85,7 @@ class ChatGroupUpdate(BaseActionTestCase):
         self.set_models(
             {
                 "organization/1": {"enable_chat": True},
-                "meeting/1": {"enable_chat": True, "is_active_in_organization_id": 1},
+                "meeting/1": {"is_active_in_organization_id": 1},
                 "chat_group/1": {
                     "meeting_id": 1,
                     "name": "redekreis1",

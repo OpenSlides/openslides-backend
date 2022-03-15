@@ -146,7 +146,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             "jitsi_domain",
             "jitsi_room_name",
             "jitsi_room_password",
-            "enable_chat",
             "enable_anonymous",
             "custom_translations",
             "present_user_ids",
@@ -250,7 +249,6 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
                     "jitsi_domain",
                     "jitsi_room_name",
                     "jitsi_room_password",
-                    "enable_chat",
                 ]
             ]
         ):

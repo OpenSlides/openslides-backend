@@ -1,13 +1,12 @@
 import time
 from typing import Any, Dict
 
-from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
-from ....shared.patterns import FullQualifiedId
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .mixins import MediafileMixin
 
 
@@ -34,23 +33,12 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
         instance["create_timestamp"] = round(time.time())
         collection, id_ = self.get_owner_data(instance)
         if collection == "meeting":
-            if instance.get("parent_id") is not None:
-                parent = self.datastore.get(
-                    FullQualifiedId(self.model.collection, instance["parent_id"]),
-                    ["is_public", "inherited_access_group_ids"],
-                )
-
-                (
-                    instance["is_public"],
-                    instance["inherited_access_group_ids"],
-                ) = calculate_inherited_groups_helper(
-                    instance.get("access_group_ids"),
-                    parent.get("is_public"),
-                    parent.get("inherited_access_group_ids"),
-                )
-            else:
-                instance["inherited_access_group_ids"] = instance.get(
-                    "access_group_ids"
-                )
-                instance["is_public"] = not bool(instance["inherited_access_group_ids"])
+            (
+                instance["is_public"],
+                instance["inherited_access_group_ids"],
+            ) = calculate_inherited_groups_helper_with_parent_id(
+                self.datastore,
+                instance.get("access_group_ids"),
+                instance.get("parent_id"),
+            )
         return instance

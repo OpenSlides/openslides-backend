@@ -7,17 +7,17 @@ from typing import Any, Dict, List, TypedDict
 from PyPDF2 import PdfFileReader
 from PyPDF2.utils import PdfReadError
 
-from ....models.helper import calculate_inherited_groups_helper
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import KEYSEPARATOR, FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR
 from ...action import original_instances
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
+from .calculate_mixins import calculate_inherited_groups_helper_with_parent_id
 from .delete import MediafileDelete
 from .mixins import MediafileMixin
 
@@ -94,30 +94,15 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             instance["pdf_information"] = self.get_pdf_information(decoded_file)
         collection, _ = self.get_owner_data(instance)
         if collection == "meeting":
-            instance = self.update_access_fields(instance)
-        self.media.upload_mediafile(file_, id_, mimetype_)
-        return instance
-
-    def update_access_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        if instance.get("parent_id"):
-            parent = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["parent_id"]),
-                [
-                    "is_public",
-                    "inherited_access_group_ids",
-                ],
-            )
             (
                 instance["is_public"],
                 instance["inherited_access_group_ids"],
-            ) = calculate_inherited_groups_helper(
+            ) = calculate_inherited_groups_helper_with_parent_id(
+                self.datastore,
                 instance.get("access_group_ids"),
-                parent.get("is_public"),
-                parent.get("inherited_access_group_ids"),
+                instance.get("parent_id"),
             )
-        else:
-            instance["is_public"] = not bool(instance.get("access_group_ids"))
-            instance["inherited_access_group_ids"] = instance.get("access_group_ids")
+        self.media.upload_mediafile(file_, id_, mimetype_)
         return instance
 
     def get_pdf_information(self, file_bytes: bytes) -> PDFInformation:

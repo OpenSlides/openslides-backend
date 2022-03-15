@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "4dee27009a2280230f9bdd79726980c3"
+MODELS_YML_CHECKSUM = "8a423e4d77542de8be386cc5c708f2d9"
 
 
 class Organization(Model):
@@ -348,7 +348,6 @@ class Meeting(Model):
     jitsi_domain = fields.CharField()
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()
-    enable_chat = fields.BooleanField()
     template_for_organization_id = fields.RelationField(
         to={Collection("organization"): "template_meeting_ids"}
     )

@@ -10,17 +10,12 @@ ONE_ORGANIZATION_ID = 1
 
 class ChatEnabledMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        meeting_id = self.get_meeting_id(instance)
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id),
-            ["enable_chat"],
-        )
         organization = self.datastore.get(
             FullQualifiedId(Collection("organization"), ONE_ORGANIZATION_ID),
             ["enable_chat"],
         )
 
-        if not meeting.get("enable_chat") or not organization.get("enable_chat"):
+        if not organization.get("enable_chat"):
             raise ActionException("Chat is not enabled.")
         return instance
 
