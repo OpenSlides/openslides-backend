@@ -70,10 +70,11 @@ def calculate_inherited_groups_helper_with_parent_id(
             FullQualifiedId(Collection("mediafile"), parent_id),
             ["is_public", "inherited_access_group_ids"],
         )
-        return calculate_inherited_groups_helper(
-            access_group_ids,
-            parent.get("is_public"),
-            parent.get("inherited_access_group_ids"),
-        )
     else:
-        return (not bool(access_group_ids), access_group_ids)
+        parent = {}
+
+    return calculate_inherited_groups_helper(
+        access_group_ids,
+        parent.get("is_public"),
+        parent.get("inherited_access_group_ids"),
+    )
