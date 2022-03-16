@@ -6,6 +6,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Set,
     Tuple,
     Type,
     Union,
@@ -397,9 +398,50 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
             write_request.events = []
-            for event_type in (EventType.Create, EventType.Update, EventType.Delete):
-                write_request.events.extend(events_by_type[event_type])
+            write_request.events.extend(events_by_type[EventType.Create])
+            write_request.events.extend(
+                self.merge_update_events(events_by_type[EventType.Update])
+            )
+            write_request.events.extend(events_by_type[EventType.Delete])
         return write_request
+
+    def merge_update_events(self, update_events: List[Event]) -> List[Event]:
+        """
+        Merge update events with same fqid, if possible.
+        This is optimation to reduce the amount of update events.
+        """
+        # categories the events by fqid
+        events_by_fqid = defaultdict(list)
+        for event in update_events:
+            events_by_fqid[event["fqid"]].append(event)
+
+        # Create the new update events list
+        result: List[Event] = []
+        for fqid in events_by_fqid:
+            result.extend(self.merge_update_events_helper(events_by_fqid[fqid]))
+
+        return result
+
+    def merge_update_events_helper(self, events: List[Event]) -> List[Event]:
+        if len(events) < 2:
+            return events
+        result: List[Event] = []
+        pivot_event = events[0]
+        for event in events[1:]:
+            if not event.get("list_fields") and not self.get_event_fields_set(
+                pivot_event
+            ).intersection(self.get_event_fields_set(event)):
+                new_fields_dict = pivot_event.get("fields") or {}
+                new_fields_dict.update(event.get("fields") or {})
+                pivot_event["fields"] = new_fields_dict
+            else:
+                result.append(event)
+        result.insert(0, pivot_event)
+        return result
+
+    def get_event_fields_set(self, event: Event) -> Set[str]:
+        fields = event.get("fields") or {}
+        return set(fields.keys())
 
     def apply_event(self, event: Event) -> None:
         """
