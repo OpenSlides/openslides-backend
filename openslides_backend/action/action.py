@@ -6,7 +6,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    Set,
     Tuple,
     Type,
     Union,
@@ -407,15 +406,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     def merge_update_events(self, update_events: List[Event]) -> List[Event]:
         """
-        Merge update events with same fqid, if possible.
         This is optimation to reduce the amount of update events.
         """
-        # categories the events by fqid
         events_by_fqid = defaultdict(list)
         for event in update_events:
             events_by_fqid[event["fqid"]].append(event)
 
-        # Create the new update events list
         result: List[Event] = []
         for fqid in events_by_fqid:
             result.extend(self.merge_update_events_helper(events_by_fqid[fqid]))
@@ -426,22 +422,22 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if len(events) < 2:
             return events
         result: List[Event] = []
-        pivot_event = events[0]
-        for event in events[1:]:
-            if not event.get("list_fields") and not self.get_event_fields_set(
-                pivot_event
-            ).intersection(self.get_event_fields_set(event)):
-                new_fields_dict = pivot_event.get("fields") or {}
-                new_fields_dict.update(event.get("fields") or {})
-                pivot_event["fields"] = new_fields_dict
+        trailing_index: Optional[int] = None
+        count = 0
+        for event in events[::-1]:
+            if not event.get("list_fields"):
+                if trailing_index is None:
+                    trailing_index = count + 1
+                    result.insert(0, event)
+                else:
+                    new_fields_dict = event.get("fields") or {}
+                    new_fields_dict.update(result[-trailing_index]["fields"] or {})
+                    result[-trailing_index]["fields"] = new_fields_dict
             else:
-                result.append(event)
-        result.insert(0, pivot_event)
-        return result
+                count += 1
+                result.insert(0, event)
 
-    def get_event_fields_set(self, event: Event) -> Set[str]:
-        fields = event.get("fields") or {}
-        return set(fields.keys())
+        return result
 
     def apply_event(self, event: Event) -> None:
         """
