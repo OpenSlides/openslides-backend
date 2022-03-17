@@ -95,18 +95,19 @@ class StopControl(CountdownControl, Action):
                     option_id = int(option_id_str)
 
                     vote_value = value
+                    vote_weighted = vote_weight  # use new variable vote_weighted because pollmethod=Y/N does not imply anymore that only one loop is done (see max_votes_per_option)
                     if poll["pollmethod"] in ("Y", "N"):
                         if value == 0:
                             continue
                         vote_value = poll["pollmethod"]
-                        vote_weight *= value
+                        vote_weighted *= value
 
-                    option_results[option_id][vote_value] += vote_weight
+                    option_results[option_id][vote_value] += vote_weighted
                     action_data.append(
                         {
                             "value": vote_value,
                             "option_id": option_id,
-                            "weight": str(vote_weight),
+                            "weight": str(vote_weighted),
                             **vote_template,
                         }
                     )

@@ -78,6 +78,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
+                    "max_votes_per_option": 1,
                 },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
@@ -169,6 +170,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 10,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -231,6 +233,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -302,6 +305,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -338,6 +342,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 1,
                     "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -374,6 +379,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "state": Poll.STATE_STARTED,
                     "min_votes_amount": 2,
                     "max_votes_amount": 2,
+                    "max_votes_per_option": 1,
                 },
                 "user/1": {
                     "is_present_in_meeting_ids": [113],
@@ -718,6 +724,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "max_votes_per_option": 1,
                 },
                 "meeting/113": {"users_enable_vote_weight": True},
             }
@@ -762,6 +769,7 @@ class PollVoteTest(BaseVoteTestCase):
                     "meeting_id": 113,
                     "entitled_group_ids": [1],
                     "state": Poll.STATE_STARTED,
+                    "max_votes_per_option": 1,
                 },
                 "meeting/113": {"users_enable_vote_weight": False},
             }
@@ -861,6 +869,7 @@ class VotePollNamedYNA(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1049,6 +1058,7 @@ class VotePollNamedY(VotePollBaseTestClass):
                 "global_abstain": True,
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1253,6 +1263,116 @@ class VotePollNamedY(VotePollBaseTestClass):
         self.assert_model_not_exists("vote/1")
 
 
+class VotePollYMaxVotesPerOption(VotePollBaseTestClass):
+    def create_poll(self) -> None:
+        self.create_model(
+            "poll/1",
+            {
+                "content_object_id": "assignment/1",
+                "title": "test_title_Zrvh146QAASDfVeidq7t6iSDwZk",
+                "pollmethod": "Y",
+                "type": Poll.TYPE_NAMED,
+                "state": Poll.STATE_CREATED,
+                "meeting_id": 113,
+                "option_ids": [1, 2],
+                "entitled_group_ids": [1],
+                "votesinvalid": "0.000000",
+                "global_yes": False,
+                "global_no": False,
+                "global_abstain": False,
+                "min_votes_amount": 1,
+                "max_votes_amount": 5,
+                "max_votes_per_option": 3,
+            },
+        )
+
+    def test_vote(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": 2, "2": 3}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("vote/1")
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("votesvalid"), "1.000000")
+        self.assertEqual(poll.get("votesinvalid"), "0.000000")
+        self.assertEqual(poll.get("votescast"), "1.000000")
+        self.assertIn(1, poll.get("voted_ids", []))
+        option1 = self.get_model("option/1")
+        option2 = self.get_model("option/2")
+        self.assertEqual(option1.get("yes"), "2.000000")
+        self.assertEqual(option1.get("no"), "0.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "3.000000")
+        self.assertEqual(option2.get("no"), "0.000000")
+        self.assertEqual(option2.get("abstain"), "0.000000")
+
+    def test_change_vote(self) -> None:
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": 1, "2": 3}, "id": 1, "user_id": 1},
+            stop_poll_after_vote=False,
+        )
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": 2, "2": 0}, "id": 1, "user_id": 1},
+            start_poll_before_vote=False,
+        )
+        self.assert_status_code(response, 400)
+        option1 = self.get_model("option/1")
+        option2 = self.get_model("option/2")
+        self.assertEqual(option1.get("yes"), "1.000000")
+        self.assertEqual(option1.get("no"), "0.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "3.000000")
+        self.assertEqual(option2.get("no"), "0.000000")
+        self.assertEqual(option2.get("abstain"), "0.000000")
+
+    def test_vote_weight(self) -> None:
+        self.update_model("user/1", {"default_vote_weight": "3.000000"})
+        self.update_model("meeting/113", {"users_enable_vote_weight": True})
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": 1, "2": 3}, "id": 1, "user_id": 1},
+        )
+        self.assert_status_code(response, 200)
+        option1 = self.get_model("option/1")
+        option2 = self.get_model("option/2")
+        self.assertEqual(option1.get("yes"), "3.000000")
+        self.assertEqual(option1.get("no"), "0.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "9.000000")
+        self.assertEqual(option2.get("no"), "0.000000")
+        self.assertEqual(option2.get("abstain"), "0.000000")
+
+    def test_vote_change_weight(self) -> None:
+        self.update_model("user/1", {"default_vote_weight": "3.000000"})
+        self.update_model("meeting/113", {"users_enable_vote_weight": True})
+        self.start_poll()
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": 2, "2": 0}, "id": 1, "user_id": 1},
+            stop_poll_after_vote=False,
+        )
+        response = self.request(
+            "poll.vote",
+            {"value": {"1": 0, "2": 3}, "id": 1, "user_id": 1},
+            start_poll_before_vote=False,
+        )
+        self.assert_status_code(response, 400)
+        option1 = self.get_model("option/1")
+        option2 = self.get_model("option/2")
+        self.assertEqual(option1.get("yes"), "6.000000")
+        self.assertEqual(option1.get("no"), "0.000000")
+        self.assertEqual(option1.get("abstain"), "0.000000")
+        self.assertEqual(option2.get("yes"), "0.000000")
+        self.assertEqual(option2.get("no"), "0.000000")
+        self.assertEqual(option2.get("abstain"), "0.000000")
+
+
 class VotePollNamedN(VotePollBaseTestClass):
     def create_poll(self) -> None:
         self.create_model(
@@ -1272,6 +1392,7 @@ class VotePollNamedN(VotePollBaseTestClass):
                 "global_abstain": True,
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1474,6 +1595,7 @@ class VotePollPseudoanonymousYNA(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1636,6 +1758,7 @@ class VotePollPseudoanonymousY(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             },
         )
 
@@ -1786,6 +1909,7 @@ class VotePollPseudoAnonymousN(VotePollBaseTestClass):
                 "votesinvalid": "0.000000",
                 "min_votes_amount": 1,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
             },
         )
 

@@ -35,6 +35,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
                 "backend": "long",
             },
         )
@@ -52,6 +53,7 @@ class CreatePoll(BaseActionTestCase):
         assert poll.get("is_pseudoanonymized") is False
         assert poll.get("min_votes_amount") == 5
         assert poll.get("max_votes_amount") == 10
+        assert poll.get("max_votes_per_option") == 1
         assert poll.get("backend") == "long"
         assert poll.get("sequential_number") == 1
         assert "options" not in poll
@@ -80,6 +82,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
                 "publish_immediately": True,
             },
         )
@@ -113,6 +116,7 @@ class CreatePoll(BaseActionTestCase):
                 "onehundred_percent_base": "Y",
                 "min_votes_amount": 5,
                 "max_votes_amount": 10,
+                "max_votes_per_option": 1,
                 "publish_immediately": True,
             },
         )
@@ -828,3 +832,26 @@ class CreatePoll(BaseActionTestCase):
                 "content_object_id": "topic/1",
             },
         )
+
+    def test_non_negative_max_votes_per_option(self) -> None:
+        response = self.request(
+            "poll.create",
+            {
+                "title": "test",
+                "type": "analog",
+                "content_object_id": "assignment/1",
+                "pollmethod": "Y",
+                "options": [{"text": "test2", "Y": "10.000000"}],
+                "meeting_id": 1,
+                "global_yes": True,
+                "global_no": True,
+                "global_abstain": True,
+                "onehundred_percent_base": "Y",
+                "min_votes_amount": 5,
+                "max_votes_amount": 10,
+                "max_votes_per_option": -1,
+                "backend": "long",
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("poll/1")

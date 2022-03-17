@@ -26,6 +26,9 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "meeting_id": 1,
                     "option_ids": [1, 2],
                     "entitled_group_ids": [1],
+                    "min_votes_amount": 1,
+                    "max_votes_amount": 1,
+                    "max_votes_per_option": 1,
                 },
                 "option/1": {"meeting_id": 1, "poll_id": 1},
                 "option/2": {"meeting_id": 1, "poll_id": 1},
@@ -47,6 +50,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "type": "analog",
                 "min_votes_amount": 1,
                 "max_votes_amount": 1,
+                "max_votes_per_option": 1,
                 "global_yes": False,
                 "global_no": True,
                 "global_abstain": True,
@@ -63,6 +67,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "pollmethod": "Y",
                 "min_votes_amount": 1,
                 "max_votes_amount": 1,
+                "max_votes_per_option": 1,
                 "global_yes": False,
                 "global_no": True,
                 "global_abstain": True,
@@ -73,6 +78,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert poll.get("pollmethod") == "Y"
         assert poll.get("min_votes_amount") == 1
         assert poll.get("max_votes_amount") == 1
+        assert poll.get("max_votes_per_option") == 1
         assert poll.get("global_yes") is False
         assert poll.get("global_no") is True
         assert poll.get("global_abstain") is True
@@ -200,6 +206,25 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("type"), Poll.TYPE_NAMED)
 
+    def test_update_max_votes_per_option(self) -> None:
+        response = self.request(
+            "poll.update",
+            {"max_votes_per_option": 5, "id": 1},
+        )
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("max_votes_per_option"), 5)
+
+    def test_update_negative_fields(self) -> None:
+        for field in ("max_votes_per_option", "max_votes_amount", "min_votes_amount"):
+            response = self.request(
+                "poll.update",
+                {field: -3, "id": 1},
+            )
+            self.assert_status_code(response, 400)
+            poll = self.get_model("poll/1")
+            self.assertEqual(poll.get(field), 1)
+
     def test_update_100_percent_base(self) -> None:
         response = self.request(
             "poll.update",
@@ -228,6 +253,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                 "global_yes": True,
                 "global_no": True,
                 "global_abstain": False,
+                "max_votes_per_option": 2,
             },
         )
         self.assert_status_code(response, 200)
@@ -237,6 +263,17 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assertTrue(poll.get("global_yes"))
         self.assertTrue(poll.get("global_no"))
         self.assertFalse(poll.get("global_abstain"))
+        self.assertEqual(poll.get("max_votes_per_option"), 2)
+
+    def test_update_max_votes_per_option_state_not_created(self) -> None:
+        self.update_model("poll/1", {"state": Poll.STATE_STARTED})
+        response = self.request(
+            "poll.update",
+            {"max_votes_per_option": 3, "id": 1},
+        )
+        self.assert_status_code(response, 400)
+        poll = self.get_model("poll/1")
+        self.assertEqual(poll.get("max_votes_per_option"), 1)
 
     def test_update_100_percent_base_state_not_created(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_STARTED})
