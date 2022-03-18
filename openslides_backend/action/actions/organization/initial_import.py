@@ -121,7 +121,8 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         Add Migration Index to the one and only write request
         """
         write_request = super().process_write_requests()
-        write_request.migration_index = self.data_migration_index
+        if write_request:
+            write_request.migration_index = self.data_migration_index
         return write_request
 
     def create_action_result_element(

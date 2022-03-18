@@ -68,7 +68,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
                 "is_directory": None,
             },
         )
-        assert mediafile.get("create_timestamp") >= start_time
+        assert mediafile.get("create_timestamp", 0) >= start_time
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_create_cannot_guess_mimetype(self) -> None:
