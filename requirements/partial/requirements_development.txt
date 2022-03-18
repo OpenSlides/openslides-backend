@@ -4,6 +4,7 @@ flake8==4.0.1
 mypy==0.941
 pytest==7.1.1
 pytest-cov==3.0.0
+pytest-profiling==1.7.0
 pyyaml==6.0
 pip-check==2.7
 autoflake==1.4

@@ -1,11 +1,10 @@
-from time import time
+import cProfile
 from typing import Any, Dict
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
 from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
-from tests.system.util import performance
 
 
 class PollStopActionTest(BaseActionTestCase):
@@ -196,7 +195,7 @@ class PollStopActionTest(BaseActionTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    @performance
+    # @performance
     def test_stop_performance(self) -> None:
         USER_COUNT = 100
         user_ids = list(range(2, USER_COUNT + 2))
@@ -223,6 +222,7 @@ class PollStopActionTest(BaseActionTestCase):
                     "user_ids": user_ids,
                     "group_ids": [3],
                     "is_active_in_organization_id": 1,
+                    "name": "test",
                 },
             }
         )
@@ -233,10 +233,17 @@ class PollStopActionTest(BaseActionTestCase):
             self.assert_status_code(response, 200)
         self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
 
-        start = time()
-        response = self.request("poll.stop", {"id": 1})
-        diff = time() - start
-        print("Time: %.2fs" % diff)
-        self.assert_status_code(response, 200)
+        def request_helper() -> Any:
+            return self.request("poll.stop", {"id": 1})
+
+        cProfile.runctx(
+            "request_helper()",
+            globals(),
+            locals(),
+            filename="test_stop_performance.prof",
+        )
+
+        # response = request_helper()
+        # self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids

@@ -1,0 +1,156 @@
+from collections import defaultdict
+from typing import Dict, List, Tuple, Set
+from copy import deepcopy
+
+from datastore.shared.util import DeletedModelsBehaviour
+
+from ...shared.exceptions import DatastoreException
+from ...shared.interfaces.env import Env
+from ...shared.interfaces.logging import LoggingModule
+from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.typing import ModelMap
+from .adapter import DatastoreAdapter
+from .commands import GetManyRequest
+from .interface import Engine, LockResult, PartialModel
+
+MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
+
+
+class CacheDatastoreAdapter(DatastoreAdapter):
+    cached_models: ModelMap
+    cached_missing_fields: Dict[FullQualifiedId, Set[str]]
+
+    def __init__(self, engine: Engine, logging: LoggingModule, env: Env) -> None:
+        super().__init__(engine, logging, env)
+        self.cached_models = defaultdict(dict)
+        self.cached_missing_fields = defaultdict(set)
+
+    def get(
+        self,
+        fqid: FullQualifiedId,
+        mapped_fields: List[str],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: LockResult = True,
+    ) -> PartialModel:
+        if position or get_deleted_models != DeletedModelsBehaviour.NO_DELETED:
+            return super().get(
+                fqid,
+                mapped_fields,
+                position,
+                get_deleted_models,
+                lock_result,
+            )
+        # print(self.cached_models.get(FullQualifiedId(Collection("user"), 111), "empty"))
+        # breakpoint()
+
+        mapped_fields_per_fqid = {fqid: mapped_fields}
+        # fetch results from changed models
+        results, missing_fields_per_fqid = self._get_many_from_cached_models(
+            mapped_fields_per_fqid
+        )
+        cached_model = results[fqid.collection][fqid.id]
+        if not missing_fields_per_fqid:
+            # nothing to do, we've got the full model
+            return cached_model
+
+        print(f"Missing fields for {fqid}: {missing_fields_per_fqid[fqid]}")
+        result = super().get(
+            fqid, missing_fields_per_fqid[fqid], lock_result=lock_result
+        )
+        if lock_result:
+            for field in missing_fields_per_fqid[fqid]:
+                if field in result:
+                    self.cached_models[fqid][field] = result[field]
+                else:
+                    self.cached_missing_fields[fqid].add(field)
+        result.update(cached_model)
+        return result
+
+    def get_many(
+        self,
+        get_many_requests: List[GetManyRequest],
+        position: int = None,
+        get_deleted_models: DeletedModelsBehaviour = DeletedModelsBehaviour.NO_DELETED,
+        lock_result: bool = True,
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
+        if position or get_deleted_models != DeletedModelsBehaviour.NO_DELETED:
+            return super().get_many(
+                get_many_requests,
+                position,
+                get_deleted_models,
+                lock_result,
+            )
+        # print(self.cached_models.get(FullQualifiedId(Collection("user"), 111), "empty"))
+        # breakpoint()
+
+        mapped_fields_per_fqid = defaultdict(list)
+        for request in get_many_requests:
+            if not request.mapped_fields:
+                raise DatastoreException("No mapped fields given")
+            for id in request.ids:
+                fqid = FullQualifiedId(request.collection, id)
+                mapped_fields_per_fqid[fqid].extend(list(request.mapped_fields))
+        # fetch results from changed models
+        results, missing_fields_per_fqid = self._get_many_from_cached_models(
+            mapped_fields_per_fqid
+        )
+        # breakpoint()
+        # fetch missing fields in the cached_models from the db and merge into the results
+        if missing_fields_per_fqid:
+            print(f"Missing fields for get_many: {missing_fields_per_fqid}")
+            missing_results = self._fetch_missing_fields_from_datastore_for_cache(
+                missing_fields_per_fqid, lock_result
+            )
+            for collection, models in missing_results.items():
+                for id, model in models.items():
+                    results[collection][id].update(model)
+                    if lock_result:
+                        fqid = FullQualifiedId(collection, id)
+                        for field in missing_fields_per_fqid[fqid]:
+                            if field in model:
+                                self.cached_models[fqid][field] = model[field]
+                            else:
+                                self.cached_missing_fields[fqid].add(field)
+        return results
+
+    def _get_many_from_cached_models(
+        self,
+        mapped_fields_per_fqid: MappedFieldsPerFqid,
+    ) -> Tuple[Dict[Collection, Dict[int, PartialModel]], MappedFieldsPerFqid]:
+        """
+        Returns a dictionary of the cached models for the given collections together with all
+        missing fields.
+        """
+        results: Dict[Collection, Dict[int, PartialModel]] = defaultdict(
+            lambda: defaultdict(dict)
+        )
+        missing_fields_per_fqid: MappedFieldsPerFqid = defaultdict(list)
+        for fqid, mapped_fields in mapped_fields_per_fqid.items():
+            if fqid in self.cached_models:
+                if mapped_fields:
+                    for field in mapped_fields:
+                        if field in self.cached_models[fqid]:
+                            results[fqid.collection][fqid.id][
+                                field
+                            ] = self.cached_models[fqid][field]
+                        elif field not in self.cached_missing_fields[fqid]:
+                            missing_fields_per_fqid[fqid].append(field)
+                else:
+                    results[fqid.collection][fqid.id] = self.cached_models[fqid]
+                    missing_fields_per_fqid[fqid] = []
+            elif fqid in self.cached_missing_fields:
+                missing_fields_per_fqid[fqid] = [field for field in mapped_fields if field not in self.cached_missing_fields[fqid]]
+            else:
+                missing_fields_per_fqid[fqid] = mapped_fields
+        return (deepcopy(results), missing_fields_per_fqid)
+
+    def _fetch_missing_fields_from_datastore_for_cache(
+        self, missing_fields_per_fqid: MappedFieldsPerFqid, lock_result: bool
+    ) -> Dict[Collection, Dict[int, PartialModel]]:
+        get_many_requests = [
+            GetManyRequest(fqid.collection, [fqid.id], fields)
+            for fqid, fields in missing_fields_per_fqid.items()
+        ]
+        results = super().get_many(get_many_requests, lock_result=lock_result)
+        return results
