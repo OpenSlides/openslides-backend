@@ -159,7 +159,6 @@ class GroupDeleteAction(DeleteAction):
         information: str,
         fields: Optional[Dict[str, Any]] = None,
         list_fields: Optional[ListFields] = None,
-        migration_index: Optional[int] = None,
     ) -> WriteRequest:
         """
         Building write requests by hand, but with eliminating the meta-* fields
@@ -170,6 +169,4 @@ class GroupDeleteAction(DeleteAction):
                 for k, v in fields.items()
                 if k != "id" and not k.startswith("meta_")
             }
-        return super().build_write_request(
-            type, fqid, information, fields, list_fields, migration_index
-        )
+        return super().build_write_request(type, fqid, information, fields, list_fields)

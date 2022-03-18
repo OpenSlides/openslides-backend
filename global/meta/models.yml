@@ -3003,6 +3003,7 @@ mediafile:
     type: boolean
     description: "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
     read_only: true
+    required: true
     restriction_mode: A
   token:
     type: string

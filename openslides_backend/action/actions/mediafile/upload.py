@@ -102,6 +102,8 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                 instance.get("access_group_ids"),
                 instance.get("parent_id"),
             )
+        else:
+            instance["is_public"] = True
         self.media.upload_mediafile(file_, id_, mimetype_)
         return instance
 

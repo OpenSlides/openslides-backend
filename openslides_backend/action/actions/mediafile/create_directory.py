@@ -41,4 +41,6 @@ class MediafileCreateDirectory(MediafileMixin, CreateAction):
                 instance.get("access_group_ids"),
                 instance.get("parent_id"),
             )
+        else:
+            instance["is_public"] = True
         return instance
