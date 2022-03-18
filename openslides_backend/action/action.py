@@ -414,13 +414,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
         result: List[Event] = []
         for fqid in events_by_fqid:
-            result.extend(self.merge_update_events_helper(events_by_fqid[fqid]))
+            result.extend(self.merge_update_events_for_fqid(events_by_fqid[fqid]))
 
         return result
 
-    def merge_update_events_helper(self, events: List[Event]) -> List[Event]:
-        if len(events) < 2:
-            return events
+    def merge_update_events_for_fqid(self, events: List[Event]) -> List[Event]:
         result: List[Event] = []
         trailing_index: Optional[int] = None
         count = 0
