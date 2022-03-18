@@ -397,9 +397,45 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
             write_request.events = []
-            for event_type in (EventType.Create, EventType.Update, EventType.Delete):
-                write_request.events.extend(events_by_type[event_type])
+            write_request.events.extend(events_by_type[EventType.Create])
+            write_request.events.extend(
+                self.merge_update_events(events_by_type[EventType.Update])
+            )
+            write_request.events.extend(events_by_type[EventType.Delete])
         return write_request
+
+    def merge_update_events(self, update_events: List[Event]) -> List[Event]:
+        """
+        This is optimation to reduce the amount of update events.
+        """
+        events_by_fqid = defaultdict(list)
+        for event in update_events:
+            events_by_fqid[event["fqid"]].append(event)
+
+        result: List[Event] = []
+        for fqid in events_by_fqid:
+            result.extend(self.merge_update_events_for_fqid(events_by_fqid[fqid]))
+
+        return result
+
+    def merge_update_events_for_fqid(self, events: List[Event]) -> List[Event]:
+        result: List[Event] = []
+        trailing_index: Optional[int] = None
+        count = 0
+        for event in events[::-1]:
+            if not event.get("list_fields"):
+                if trailing_index is None:
+                    trailing_index = count + 1
+                    result.insert(0, event)
+                else:
+                    new_fields_dict = event.get("fields") or {}
+                    new_fields_dict.update(result[-trailing_index]["fields"] or {})
+                    result[-trailing_index]["fields"] = new_fields_dict
+            else:
+                count += 1
+                result.insert(0, event)
+
+        return result
 
     def apply_event(self, event: Event) -> None:
         """

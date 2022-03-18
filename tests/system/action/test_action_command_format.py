@@ -96,7 +96,7 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         action_handler = self.get_action_handler()
         write_requests, _ = action_handler.parse_actions(payload)
         self.assertEqual(len(write_requests), 1)
-        self.assertEqual(len(write_requests[0].events), 4)
+        self.assertEqual(len(write_requests[0].events), 3)
         self.assertCountEqual(
             write_requests[0].locked_fields.keys(),
             [
@@ -110,11 +110,9 @@ class GeneralActionCommandFormat(BaseActionTestCase):
         self.assertEqual(write_requests[0].events[0]["type"], "create")
         self.assertEqual(write_requests[0].events[1]["type"], "create")
         self.assertEqual(write_requests[0].events[2]["type"], "update")
-        self.assertEqual(write_requests[0].events[3]["type"], "update")
         self.assertEqual(str(write_requests[0].events[0]["fqid"]), "group/1")
         self.assertEqual(str(write_requests[0].events[1]["fqid"]), "group/2")
         self.assertEqual(str(write_requests[0].events[2]["fqid"]), "meeting/1")
-        self.assertEqual(str(write_requests[0].events[3]["fqid"]), "meeting/1")
 
     def test_create_2_actions(self) -> None:
         self.create_model(
