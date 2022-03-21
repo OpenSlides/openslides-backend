@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"name": "meeting_1", "is_active_in_organization_id": 1},
             "group/7": {"name": "group_LxAHErRs", "user_ids": [], "meeting_id": 1},
             "mediafile/111": {"title": "title_srtgb123", "owner_id": "meeting/1"},
@@ -515,8 +515,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_access_group_with_orga_owner(self) -> None:
-        self.permission_test_model["mediafile/111"]["owner_id"] = "organization/1"
-        self.set_models(self.permission_test_model)
+        self.permission_test_models["mediafile/111"]["owner_id"] = "organization/1"
+        self.set_models(self.permission_test_models)
         response = self.request(
             "mediafile.update", {"id": 111, "access_group_ids": [7]}
         )
@@ -527,8 +527,8 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_access_group_different_owner(self) -> None:
-        self.permission_test_model["group/7"]["meeting_id"] = 2
-        self.set_models(self.permission_test_model)
+        self.permission_test_models["group/7"]["meeting_id"] = 2
+        self.set_models(self.permission_test_models)
         response = self.request(
             "mediafile.update",
             {"id": 111, "access_group_ids": [7]},
@@ -537,7 +537,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         assert "Owner and access groups don't match." in response.json["message"]
 
     def test_update_token_payload_check_orga_owner(self) -> None:
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         response = self.request(
             "mediafile.update",
             {"id": 111, "token": "test"},
@@ -605,31 +605,31 @@ class MediafileUpdateActionTest(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee", "access_group_ids": [7]},
             Permissions.Mediafile.CAN_MANAGE,
         )
 
     def test_update_no_permissions_orga_owner(self) -> None:
-        self.permission_test_model["mediafile/111"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/111"]["owner_id"] = "organization/1"
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee"},
         )
 
     def test_update_permissions_orga_owner(self) -> None:
-        self.permission_test_model["mediafile/111"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/111"]["owner_id"] = "organization/1"
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.update",
             {"id": 111, "title": "title_Xcdfgee"},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,

@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSetSupportSelfActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion/1": {
                 "title": "motion_1",
                 "meeting_id": 1,
@@ -186,14 +188,14 @@ class MotionSetSupportSelfActionTest(BaseActionTestCase):
 
     def test_set_support_self_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion.set_support_self",
             {"motion_id": 1, "support": True},
         )
 
     def test_set_support_self_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion.set_support_self",
             {"motion_id": 1, "support": True},
             Permissions.Motion.CAN_SUPPORT,

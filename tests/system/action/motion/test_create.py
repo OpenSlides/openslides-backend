@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion_workflow/12": {
                 "name": "name_workflow1",
                 "first_state_id": 34,
@@ -297,7 +299,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert submitter_2.get("weight") == 2
 
     def test_create_missing_origin_id(self) -> None:
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.create_meeting()
         response = self.request(
             "motion.create",
@@ -315,7 +317,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_amendment(self) -> None:
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "meeting/1": {
@@ -348,7 +350,7 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def test_create_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion.create",
             {
                 "title": "test_Xcdfgee",
@@ -360,7 +362,7 @@ class MotionCreateActionTest(BaseActionTestCase):
 
     def test_create_permission_simple_fields(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion.create",
             {
                 "title": "test_Xcdfgee",
@@ -377,7 +379,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         response = self.request(
             "motion.create",
             {
@@ -399,7 +401,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(
             3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE]
         )
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         response = self.request(
             "motion.create",
             {
@@ -418,7 +420,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_models({"motion/3": {"meeting_id": 1}})
         response = self.request(
             "motion.create",
@@ -444,7 +446,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(
             3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
         )
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "motion/3": {"meeting_id": 1, "category_id": 56, "block_id": 57},
@@ -480,7 +482,7 @@ class MotionCreateActionTest(BaseActionTestCase):
                 Permissions.Motion.CAN_MANAGE,
             ],
         )
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "motion/3": {
@@ -517,7 +519,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(
             3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
         )
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},
@@ -547,7 +549,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.set_group_permissions(
             3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_CREATE_AMENDMENTS]
         )
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_models(
             {
                 "motion/3": {"meeting_id": 1, "category_id": 12, "block_id": 13},

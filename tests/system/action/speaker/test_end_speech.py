@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class SpeakerEndSpeachTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {
                 "list_of_speakers_couple_countdown": True,
                 "list_of_speakers_countdown_id": 11,
@@ -154,12 +156,12 @@ class SpeakerEndSpeachTester(BaseActionTestCase):
 
     def test_end_speech_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model, "speaker.end_speech", {"id": 890}
+            self.permission_test_models, "speaker.end_speech", {"id": 890}
         )
 
     def test_end_speech_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "speaker.end_speech",
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,

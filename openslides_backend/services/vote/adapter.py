@@ -51,7 +51,9 @@ class VoteAdapter(VoteService):
             )
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
 
-    def set_authentication(self, access_token: str, refresh_id: str) -> None:
+    def set_authentication(
+        self, access_token: Optional[str], refresh_id: Optional[str]
+    ) -> None:
         self.access_token = access_token
         self.refresh_id = refresh_id
 

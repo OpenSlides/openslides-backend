@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class TopicDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "topic/111": {"title": "title_srtgb123", "meeting_id": 1}
         }
 
@@ -105,12 +107,12 @@ class TopicDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model, "topic.delete", {"id": 111}
+            self.permission_test_models, "topic.delete", {"id": 111}
         )
 
     def test_delete_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "topic.delete",
             {"id": 111},
             Permissions.AgendaItem.CAN_MANAGE,

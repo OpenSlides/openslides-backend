@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionChangeRecommendationActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion/25": {
                 "title": "title_pheK0Ja3ai",
                 "statute_paragraph_id": None,
@@ -87,7 +89,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_update_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_change_recommendation.update",
             {
                 "id": 111,
@@ -97,7 +99,7 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_change_recommendation.update",
             {
                 "id": 111,

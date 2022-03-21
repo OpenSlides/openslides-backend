@@ -179,7 +179,9 @@ class BaseActionTestCase(BaseSystemTestCase):
         Create a user with the given username, groups and organization management level.
         """
         partitioned_groups = self._fetch_groups(group_ids)
-        id = self.datastore.reserve_id(Collection("user"))
+        id = 1
+        while f"user/{id}" in self.created_fqids:
+            id += 1
         self.set_models(
             {
                 f"user/{id}": self._get_user_data(
@@ -304,7 +306,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def base_permission_test(
         self,
-        models: Dict[str, Any],
+        models: Dict[str, Dict[str, Any]],
         action: str,
         action_data: Dict[str, Any],
         permission: Optional[Union[Permission, OrganizationManagementLevel]] = None,

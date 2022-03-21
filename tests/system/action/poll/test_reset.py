@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class PollResetActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "poll/1": {
                 "state": "started",
                 "option_ids": [1],
@@ -86,11 +88,11 @@ class PollResetActionTest(BaseActionTestCase):
         assert option_2.get("abstain") == "0.000000"
 
     def test_reset_no_permissions(self) -> None:
-        self.base_permission_test(self.permission_test_model, "poll.reset", {"id": 1})
+        self.base_permission_test(self.permission_test_models, "poll.reset", {"id": 1})
 
     def test_reset_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "poll.reset",
             {"id": 1},
             Permissions.Poll.CAN_MANAGE,

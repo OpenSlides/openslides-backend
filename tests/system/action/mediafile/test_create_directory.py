@@ -8,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileCreateDirectoryActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "group/7": {
                 "name": "group_LxAHErRs",
                 "user_ids": [],
@@ -442,7 +442,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/1",
@@ -453,7 +453,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.create_directory",
             {
                 "owner_id": "meeting/1",
@@ -465,7 +465,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_no_permissions_orga_owner(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.create_directory",
             {
                 "owner_id": "organization/1",
@@ -475,7 +475,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
 
     def test_create_directory_permissions_orga_owner(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.create_directory",
             {
                 "owner_id": "organization/1",

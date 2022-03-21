@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion_workflow/110": {
                 "name": "name_Ycefgee",
                 "state_ids": [111],
@@ -141,14 +143,14 @@ class MotionStateActionTest(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_state.update",
             {"id": 111, "name": "name_Xcdfgee"},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_state.update",
             {"id": 111, "name": "name_Xcdfgee"},
             Permissions.Motion.CAN_MANAGE,

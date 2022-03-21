@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class TopicUpdateTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"name": "test", "is_active_in_organization_id": 1},
             "topic/1": {"title": "test", "meeting_id": 1},
         }
@@ -71,14 +73,14 @@ class TopicUpdateTest(BaseActionTestCase):
 
     def test_update_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "topic.update",
             {"id": 1, "title": "test2", "text": "text"},
         )
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "topic.update",
             {"id": 1, "title": "test2", "text": "text"},
             Permissions.AgendaItem.CAN_MANAGE,

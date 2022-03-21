@@ -101,7 +101,9 @@ class TestWSGIWithMigrations(BaseActionTestCase):
 
     @patch("migrations.get_backend_migration_index")
     def test_request_missing_migrations(self, gbmi: Any) -> None:
-        write_request = self.get_create_request("topic/1", {"title": "dummy"})
+        write_request = self.get_write_request(
+            self.get_create_events("topic/1", {"title": "dummy"})
+        )
         write_request.migration_index = 5
         with self.datastore.get_database_context():
             self.datastore.write(write_request)
@@ -118,7 +120,9 @@ class TestWSGIWithMigrations(BaseActionTestCase):
 
     @patch("migrations.get_backend_migration_index")
     def test_request_misconfigured_migrations(self, gbmi: Any) -> None:
-        write_request = self.get_create_request("topic/1", {"title": "dummy"})
+        write_request = self.get_write_request(
+            self.get_create_events("topic/1", {"title": "dummy"})
+        )
         write_request.migration_index = 6
         with self.datastore.get_database_context():
             self.datastore.write(write_request)

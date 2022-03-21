@@ -33,8 +33,8 @@ class ActionView(BaseView):
         )
         # Set Headers and Cookies in services.
         self.services.vote().set_authentication(
-            request.headers[AUTHENTICATION_HEADER],
-            request.cookies[COOKIE_NAME],
+            request.headers.get(AUTHENTICATION_HEADER),
+            request.cookies.get(COOKIE_NAME),
         )
 
         # Handle request.

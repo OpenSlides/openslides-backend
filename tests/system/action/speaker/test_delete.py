@@ -9,7 +9,7 @@ DEFAULT_PASSWORD = "password"
 class SpeakerDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"speaker_ids": [890], "is_active_in_organization_id": 1},
             "user/7": {
                 "username": "test_username1",
@@ -80,12 +80,12 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model, "speaker.delete", {"id": 890}
+            self.permission_test_models, "speaker.delete", {"id": 890}
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "speaker.delete",
             {"id": 890},
             Permissions.ListOfSpeakers.CAN_MANAGE,
@@ -94,7 +94,7 @@ class SpeakerDeleteActionTest(BaseActionTestCase):
     def test_delete_self(self) -> None:
         self.create_meeting()
         self.user_id = 7
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
         response = self.request("speaker.delete", {"id": 890})

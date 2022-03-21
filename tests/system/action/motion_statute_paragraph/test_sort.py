@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStatuteParagraphSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion_statute_paragraph/31": {
                 "meeting_id": 1,
                 "title": "title_loisueb",
@@ -93,14 +95,14 @@ class MotionStatuteParagraphSortActionTest(BaseActionTestCase):
 
     def test_sort_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_statute_paragraph.sort",
             {"meeting_id": 1, "statute_paragraph_ids": [32, 31]},
         )
 
     def test_sort_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_statute_paragraph.sort",
             {"meeting_id": 1, "statute_paragraph_ids": [32, 31]},
             Permissions.Motion.CAN_MANAGE,

@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionSubmitterDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {
                 "motion_submitter_ids": [111],
                 "is_active_in_organization_id": 1,
@@ -53,14 +55,14 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_submitter.delete",
             {"id": 111},
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_submitter.delete",
             {"id": 111},
             Permissions.Motion.CAN_MANAGE_METADATA,

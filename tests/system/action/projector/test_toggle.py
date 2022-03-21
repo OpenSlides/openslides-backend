@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorToggle(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "projector/23": {"meeting_id": 1, "current_projection_ids": []},
             "poll/788": {"meeting_id": 1},
         }
@@ -112,14 +114,14 @@ class ProjectorToggle(BaseActionTestCase):
 
     def test_toggle_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "projector.toggle",
             {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
         )
 
     def test_toggle_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "projector.toggle",
             {"ids": [23], "content_object_id": "poll/788", "meeting_id": 1},
             Permissions.Projector.CAN_MANAGE,

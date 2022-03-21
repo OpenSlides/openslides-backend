@@ -1,3 +1,6 @@
+from time import time
+from typing import Any, Dict
+
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
@@ -8,7 +11,7 @@ from tests.system.util import performance
 class PollStopActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models = {
+        self.test_models: Dict[str, Dict[str, Any]] = {
             "poll/1": {"state": Poll.STATE_STARTED, "meeting_id": 1},
             "meeting/1": {"is_active_in_organization_id": 1},
         }
@@ -229,12 +232,11 @@ class PollStopActionTest(BaseActionTestCase):
             response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
             self.assert_status_code(response, 200)
         self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
-        from time import time
 
         start = time()
         response = self.request("poll.stop", {"id": 1})
-        end = time() - start
-        print("Time: %.2fs" % end)
+        diff = time() - start
+        print("Time: %.2fs" % diff)
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids

@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCommentSectionActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion_comment_section/111": {
                 "name": "name_srtgb123",
                 "meeting_id": 1,
@@ -59,14 +61,14 @@ class MotionCommentSectionActionTest(BaseActionTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_comment_section.delete",
             {"id": 111},
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_comment_section.delete",
             {"id": 111},
             Permissions.Motion.CAN_MANAGE,

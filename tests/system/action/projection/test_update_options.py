@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectionUpdateOptions(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.test_models = {
+        self.test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"name": "bla", "is_active_in_organization_id": 1},
             "projector/23": {"meeting_id": 1, "current_projection_ids": [33]},
             "projection/33": {"meeting_id": 1, "current_projector_id": 23},

@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -14,7 +16,7 @@ class ProjectorMessageUpdate(BaseActionTestCase):
                 "projector_message/2": {"meeting_id": 2, "message": "test1"},
             }
         )
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "projector_message/2": {"meeting_id": 1, "message": "test1"},
         }
 
@@ -38,14 +40,14 @@ class ProjectorMessageUpdate(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "projector_message.update",
             {"id": 2, "message": "geredegerede"},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "projector_message.update",
             {"id": 2, "message": "geredegerede"},
             Permissions.Projector.CAN_MANAGE,
