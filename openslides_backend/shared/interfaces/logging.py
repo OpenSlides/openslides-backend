@@ -21,6 +21,9 @@ class Logger(Protocol):  # pragma: no cover
     def critical(self, message: str) -> None:
         ...
 
+    def exception(self, message: Exception) -> None:
+        ...
+
 
 class LoggingModule(Protocol):  # pragma: no cover
     """

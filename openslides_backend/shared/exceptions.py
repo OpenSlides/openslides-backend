@@ -20,8 +20,12 @@ class BackendBaseException(Exception):
 class ViewException(BackendBaseException):
     status_code: int
 
+    def __init__(self, message: str, additional_json: Dict[str, Any] = {}) -> None:
+        super().__init__(message)
+        self.additional_json = additional_json
+
     def get_json(self) -> Dict[str, Any]:
-        return {"success": False, "message": self.message}
+        return {**self.additional_json, "success": False, "message": self.message}
 
 
 class View400Exception(ViewException):
@@ -55,7 +59,9 @@ class ProtectedModelsException(ActionException):
         self, own_fqid: FullQualifiedId, protected_fqids: List[FullQualifiedId]
     ) -> None:
         self.fqids = protected_fqids
-        self.message = f"You can not delete {own_fqid} because you have to delete the following related models first: {protected_fqids}"
+        super().__init__(
+            f"You can not delete {own_fqid} because you have to delete the following related models first: {protected_fqids}"
+        )
 
 
 class RequiredFieldsException(ActionException):
@@ -63,7 +69,9 @@ class RequiredFieldsException(ActionException):
 
     def __init__(self, fqid_str: str, required_fields: List[str]) -> None:
         self.required_fields = required_fields
-        self.message = f"{fqid_str}: You try to set following required fields to an empty value: {required_fields}"
+        super().__init__(
+            f"{fqid_str}: You try to set following required fields to an empty value: {required_fields}"
+        )
 
 
 class PresenterException(View400Exception):
@@ -108,7 +116,7 @@ class ServerError(ViewException):
 
 class AnonymousNotAllowed(PermissionDenied):
     def __init__(self, action_name: str) -> None:
-        self.message = f"Anonymous is not allowed to execute {action_name}"
+        super().__init__(f"Anonymous is not allowed to execute {action_name}")
 
 
 AnyPermission = Union[Permission, OrganizationManagementLevel, CommitteeManagementLevel]
@@ -129,3 +137,4 @@ class MissingPermission(PermissionDenied):
             )
         else:
             self.message = f"Missing {permissions.get_verbose_type()}: {permissions}"
+        super().__init__(self.message)
