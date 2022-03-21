@@ -60,7 +60,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         self.assert_status_code(response, 400)
         print(response.json)
         assert (
-            "organization/1/theme_id: Type error: Type is not RelationField(to={Collection('theme'): 'theme_for_organization_id'}, is_list_field=False, on_delete=<OnDelete.SET_NULL: 'SET_NULL'>, required=True, constraints={}, equal_fields=[])"
+            "organization/1/theme_id: Type error: Type is not RelationField(to={Collection('theme'): 'theme_for_organization_id'}, is_list_field=False, on_delete=OnDelete.SET_NULL, required=True, constraints={}, equal_fields=[])"
             in response.json["message"]
         )
 
