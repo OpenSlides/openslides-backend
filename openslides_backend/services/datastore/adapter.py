@@ -336,7 +336,7 @@ class DatastoreAdapter(BaseDatastoreService):
         fields = []
         filter_visitor(filter, lambda fo: fields.append(fo.field))
         if "meeting_id" not in fields:
-            self.logger.warning(
+            self.logger.debug(
                 "Locking a collection field with a filter which does not contain meeting_id!"
             )
         if additional_field:
