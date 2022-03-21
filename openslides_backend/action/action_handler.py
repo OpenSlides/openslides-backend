@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 import fastjsonschema
 
-from . import actions  # noqa
 from ..shared.env import is_dev_mode
 from ..shared.exceptions import (
     ActionException,
@@ -17,6 +16,7 @@ from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.otel import make_span
 from ..shared.schema import schema_version
+from . import actions  # noqa
 from .relations.relation_manager import RelationManager
 from .util.action_type import ActionType
 from .util.actions_map import actions_map

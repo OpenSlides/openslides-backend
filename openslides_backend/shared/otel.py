@@ -1,5 +1,5 @@
-import os
 from contextlib import nullcontext
+from typing import Any, Dict
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -7,20 +7,19 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from typing import Any, Dict
 
-from .env import is_truthy
+from .env import get_otel_url, is_otel_enabled
 
 
 def init(service_name: str) -> None:
     """
     Initializes the opentelemetry components and connection to the otel collector.
     """
-    if not is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+    if not is_otel_enabled():
         return
 
     span_exporter = OTLPSpanExporter(
-        endpoint=f"http://collector:4317",
+        endpoint=get_otel_url(),
         insecure=True
         # optional
         # credentials=ChannelCredentials(credentials),
@@ -53,7 +52,7 @@ def make_span(name: str, attributes: Dict[str, str] = None) -> Any:
             ...
     ```
     """
-    if not is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
+    if not is_otel_enabled():
         return nullcontext()
 
     tracer = trace.get_tracer_provider().get_tracer(__name__)
