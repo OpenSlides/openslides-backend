@@ -20,17 +20,13 @@ class DeleteAction(Action):
         """
         Takes care of on_delete handling.
         """
-        # TODO: Check if instance exists in DB and is not deleted. Ensure that meta_deleted field is added to locked_fields.
-
         # Update instance (by default this does nothing)
         instance = self.update_instance(instance)
 
         # Fetch db instance with all relevant fields
         this_fqid = FullQualifiedId(self.model.collection, instance["id"])
         relevant_fields = [
-            field.get_own_field_name()
-            for field in self.model.get_relation_fields()
-            if field.on_delete != OnDelete.SET_NULL
+            field.get_own_field_name() for field in self.model.get_relation_fields()
         ] + ["meta_deleted"]
         db_instance = self.datastore.get(
             fqid=this_fqid,
@@ -43,7 +39,8 @@ class DeleteAction(Action):
                 structured_fields += list(
                     self.get_all_structured_fields(field, db_instance)
                 )
-        db_instance.update(self.datastore.get(this_fqid, structured_fields))
+        if structured_fields:
+            db_instance.update(self.datastore.get(this_fqid, structured_fields))
 
         # Update instance and set relation fields to None.
         # Gather all delete actions with action data and also all models to be deleted

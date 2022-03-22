@@ -93,6 +93,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "group_ids": [base, base + 1, base + 2],
                     "default_group_id": base,
                     "admin_group_id": base + 1,
+                    "motions_default_workflow_id": base,
                     "committee_id": committee_id,
                     "is_active_in_organization_id": 1,
                 },
@@ -107,6 +108,17 @@ class BaseActionTestCase(BaseSystemTestCase):
                 f"group/{base+2}": {
                     "meeting_id": base,
                 },
+                f"motion_workflow/{base}": {
+                    "meeting_id": base,
+                    "default_workflow_meeting_id": base,
+                    "state_ids": [base],
+                    "first_state_id": base,
+                },
+                f"motion_state/{base}": {
+                    "meeting_id": base,
+                    "workflow_id": base,
+                    "first_state_of_workflow_id": base,
+                },
                 f"committee/{committee_id}": {
                     "organization_id": 1,
                     "name": f"Commitee{committee_id}",
@@ -115,6 +127,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 "organization/1": {
                     "limit_of_meetings": 0,
                     "active_meeting_ids": [base],
+                    "enable_electronic_voting": True,
                 },
             }
         )
