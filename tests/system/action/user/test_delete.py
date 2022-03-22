@@ -139,6 +139,91 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         )
         self.assert_model_exists("motion/50", {"submitter_ids": []})
 
+    def test_delete_with_template_field_set_null(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "active_meeting_ids": [1],
+                    "enable_electronic_voting": True,
+                },
+                "meeting/1": {
+                    "group_ids": [1],
+                    "default_group_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/1": {
+                    "meeting_id": 1,
+                    "default_group_for_meeting_id": 1,
+                    "user_ids": [2],
+                },
+                "user/2": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "poll_voted_$_ids": ["1"],
+                    "poll_voted_$1_ids": [1],
+                },
+                "poll/1": {
+                    "meeting_id": 1,
+                    "voted_ids": [2],
+                },
+            }
+        )
+        response = self.request("user.delete", {"id": 2})
+        self.assert_status_code(response, 200)
+
+        self.assert_model_deleted("user/2")
+        self.assert_model_exists("poll/1", {"voted_ids": []})
+        self.assert_model_exists("group/1", {"user_ids": []})
+
+    def test_delete_with_multiple_template_fields(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {
+                    "active_meeting_ids": [1],
+                    "enable_electronic_voting": True,
+                },
+                "meeting/1": {
+                    "group_ids": [1],
+                    "default_group_id": 1,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/1": {
+                    "meeting_id": 1,
+                    "default_group_for_meeting_id": 1,
+                    "user_ids": [2],
+                },
+                "user/2": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "poll_voted_$_ids": ["1"],
+                    "poll_voted_$1_ids": [1],
+                    "submitted_motion_$_ids": ["1"],
+                    "submitted_motion_$1_ids": [1],
+                },
+                "poll/1": {
+                    "meeting_id": 1,
+                    "voted_ids": [2],
+                },
+                "motion_submitter/1": {
+                    "user_id": 2,
+                    "motion_id": 1,
+                    "meeting_id": 1,
+                },
+                "motion/1": {
+                    "meeting_id": 1,
+                    "submitter_ids": [1],
+                },
+            }
+        )
+        response = self.request("user.delete", {"id": 2})
+        self.assert_status_code(response, 200)
+
+        self.assert_model_deleted("user/2")
+        self.assert_model_exists("poll/1", {"voted_ids": []})
+        self.assert_model_exists("group/1", {"user_ids": []})
+        self.assert_model_deleted("motion_submitter/1")
+        self.assert_model_exists("motion/1", {"submitter_ids": []})
+
     def test_delete_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Meeting)

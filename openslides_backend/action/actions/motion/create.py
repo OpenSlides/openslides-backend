@@ -20,7 +20,6 @@ class MotionCreate(MotionCreateBase):
 
     schema = DefaultSchema(Motion()).get_create_schema(
         optional_properties=[
-            "title",
             "number",
             "state_extension",
             "sort_parent_id",
