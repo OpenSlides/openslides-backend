@@ -63,6 +63,7 @@ class DatastoreAdapter(BaseDatastoreService):
                 payload = json.loads(content)
             except JSONDecodeError:
                 error_message = "Bad response from datastore service. Body does not contain valid JSON."
+                self.logger.debug(error_message + f" Received: {str(content)}")
                 raise DatastoreException(error_message)
         else:
             payload = None
