@@ -8,7 +8,7 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from .env import get_otel_url, is_otel_enabled
+from .env import is_otel_enabled
 
 
 def init(service_name: str) -> None:
@@ -19,7 +19,6 @@ def init(service_name: str) -> None:
         return
 
     span_exporter = OTLPSpanExporter(
-        endpoint=get_otel_url(),
         insecure=True
         # optional
         # credentials=ChannelCredentials(credentials),

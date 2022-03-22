@@ -98,10 +98,6 @@ def is_otel_enabled() -> bool:
     return is_truthy(otel_enabled)
 
 
-def get_otel_url() -> str:
-    return os.environ.get(OPENTELEMETRY_URL, "http://collector:4317")
-
-
 def get_internal_auth_password() -> str:
     if is_dev_mode():
         return DEV_PASSWORD
