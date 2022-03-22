@@ -70,7 +70,7 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug(f"Get response with status code {status_code}: {payload}")
         if status_code >= 400:
             raise_datastore_error(
-                payload, f"Datastore service sends HTTP {status_code}."
+                payload, f"Datastore service sends HTTP {status_code}.", self.logger
             )
         return payload
 

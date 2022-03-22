@@ -6,13 +6,14 @@ from datastore.shared.postgresql_backend import DatabaseError
 from datastore.shared.util import DatastoreException as ReaderDatastoreException
 
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
+from ...shared.interfaces.logging import Logger
 
 
 def handle_datastore_errors(func: Callable) -> Callable:
     @wraps(func)
-    def wrapper(*args, **kwargs):  # type: ignore
+    def wrapper(self, *args, **kwargs):  # type: ignore
         try:
-            return func(*args, **kwargs)
+            return func(self, *args, **kwargs)
         # the noqas are required because of a pyflakes bug: https://github.com/PyCQA/pyflakes/issues/643
         except (ReaderDatastoreException, DatabaseError) as e:  # noqa: F841
 
@@ -20,13 +21,15 @@ def handle_datastore_errors(func: Callable) -> Callable:
                 raise e  # noqa: F821
 
             error, _ = handle_internal_errors(reraise)()
-            raise_datastore_error(error)
+            raise_datastore_error(error, logger=self.logger)
 
     return wrapper
 
 
 def raise_datastore_error(
-    error: Optional[Dict[str, Any]], error_message_prefix: str = ""
+    error: Optional[Dict[str, Any]],
+    error_message_prefix: str = "",
+    logger: Optional[Logger] = None,
 ) -> None:
     error_message = error_message_prefix
     additional_error_message = error.get("error") if isinstance(error, dict) else None
@@ -36,14 +39,16 @@ def raise_datastore_error(
             broken_locks = (
                 "'" + "', '".join(sorted(additional_error_message.get("keys"))) + "'"
             )
-            raise DatastoreLockedException(
-                " ".join(
-                    (
-                        error_message,
-                        f"The following locks were broken: {broken_locks}",
+            if logger:
+                logger.debug(
+                    " ".join(
+                        (
+                            error_message,
+                            f"The following locks were broken: {broken_locks}",
+                        )
                     )
                 )
-            )
+            raise DatastoreLockedException("Datastore Error")
         elif type_verbose == "MODEL_DOES_NOT_EXIST":
             error_message = " ".join(
                 (
@@ -51,6 +56,11 @@ def raise_datastore_error(
                     f"Model '{additional_error_message.get('fqid')}' does not exist.",
                 )
             )
+            if logger:
+                logger.debug(error_message)
+            raise DatastoreException(error_message)
         else:
             error_message = " ".join((error_message, str(additional_error_message)))
-    raise DatastoreException(error_message)
+    if logger:
+        logger.debug(error_message)
+    raise DatastoreException("Datastore Error")
