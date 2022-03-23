@@ -3,6 +3,7 @@ services:
   backend:
     environment:
       - OPENTELEMETRY_ENABLED=1
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://collector:4317
   reader:
     environment:
       - OPENTELEMETRY_ENABLED=1
