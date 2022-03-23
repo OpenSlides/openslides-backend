@@ -46,7 +46,6 @@ class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], "restart")
 
-        # start the vote service
         self.vote_service.start(instance["id"])
 
         return instance
