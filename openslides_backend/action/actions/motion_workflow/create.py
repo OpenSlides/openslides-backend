@@ -83,7 +83,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "workflow_id": instance["id"],
             },
             {
-                "name": "not_decided",
+                "name": "not decided",
                 "recommendation_label": "No decision",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",

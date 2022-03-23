@@ -70,7 +70,7 @@ class MotionWorkflowSystemTest(BaseActionTestCase):
         )
         self.assert_model_exists(
             "motion_state/4",
-            {"name": "not_decided", "weight": 4, "previous_state_ids": [1]},
+            {"name": "not decided", "weight": 4, "previous_state_ids": [1]},
         )
 
     def test_create_no_permissions(self) -> None:
