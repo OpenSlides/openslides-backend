@@ -104,7 +104,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
             "motion_state/3", {"name": "rejected", "previous_state_ids": [1]}
         )
         self.assert_model_exists(
-            "motion_state/4", {"name": "not_decided", "previous_state_ids": [1]}
+            "motion_state/4", {"name": "not decided", "previous_state_ids": [1]}
         )
         self.assert_model_exists(
             "motion_workflow/2",
