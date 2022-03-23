@@ -5,6 +5,7 @@ from datastore.shared.flask_frontend import handle_internal_errors
 from datastore.shared.postgresql_backend import DatabaseError
 from datastore.shared.util import DatastoreException as ReaderDatastoreException
 
+from ...shared.env import is_dev_mode
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
 from ...shared.interfaces.logging import Logger
 
@@ -39,16 +40,17 @@ def raise_datastore_error(
             broken_locks = (
                 "'" + "', '".join(sorted(additional_error_message.get("keys"))) + "'"
             )
-            if logger:
-                logger.debug(
-                    " ".join(
-                        (
-                            error_message,
-                            f"The following locks were broken: {broken_locks}",
-                        )
-                    )
+            error_message = " ".join(
+                (
+                    error_message,
+                    f"The following locks were broken: {broken_locks}",
                 )
-            raise DatastoreLockedException("Datastore Error")
+            )
+            if logger:
+                logger.debug(error_message)
+            if not is_dev_mode():
+                error_message = "Datastore Error"
+            raise DatastoreLockedException(error_message)
         elif type_verbose == "MODEL_DOES_NOT_EXIST":
             error_message = " ".join(
                 (
@@ -56,11 +58,10 @@ def raise_datastore_error(
                     f"Model '{additional_error_message.get('fqid')}' does not exist.",
                 )
             )
-            if logger:
-                logger.debug(error_message)
-            raise DatastoreException(error_message)
         else:
             error_message = " ".join((error_message, str(additional_error_message)))
     if logger:
         logger.debug(error_message)
-    raise DatastoreException("Datastore Error")
+    if not is_dev_mode():
+        error_message = "Datastore Error"
+    raise DatastoreException(error_message)
