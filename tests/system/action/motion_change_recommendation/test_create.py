@@ -195,7 +195,11 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
     def test_create_change_recommendation_min_overlap_1(self) -> None:
         self.create_change_recommendation(1, 5)
         response = self.cr_request(5, 10)
-        self.assert_status_code(response, 200)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The recommendation collides with an existing one",
+            response.json["message"],
+        )
 
     def test_create_change_recommendation_min_overlap_2(self) -> None:
         self.create_change_recommendation(5, 10)
@@ -210,3 +214,12 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(1, 5, motion_id=42)
         response = self.cr_request(1, 5)
         self.assert_status_code(response, 200)
+
+    def test_create_change_recommendation_collide_check(self) -> None:
+        self.create_change_recommendation(2, 5)
+        response = self.cr_request(1, 2)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The recommendation collides with an existing one",
+            response.json["message"],
+        )
