@@ -39,7 +39,7 @@ class MigrationHandler(BaseHandler):
     migrate_thread_exception: Optional[MigrationException] = None
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
-        super().__init__(services, logging)
+        super().__init__(env, services, logging)
         self.migration_wrapper = MigrationWrapper(False, self.logger.info)
 
     def handle_request(self, payload: Dict[str, Any]) -> Dict[str, Any]:
