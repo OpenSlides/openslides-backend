@@ -10,6 +10,7 @@ from migrations import MigrationWrapper
 
 from ..shared.exceptions import View400Exception
 from ..shared.handlers.base_handler import BaseHandler
+from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 
@@ -37,7 +38,7 @@ class MigrationHandler(BaseHandler):
     migrate_thread_stream_can_be_closed: bool = False
     migrate_thread_exception: Optional[MigrationException] = None
 
-    def __init__(self, services: Services, logging: LoggingModule) -> None:
+    def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(services, logging)
         self.migration_wrapper = MigrationWrapper(False, self.logger.info)
 
