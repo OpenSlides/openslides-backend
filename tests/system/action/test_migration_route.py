@@ -13,7 +13,7 @@ from openslides_backend.migration_handler.migration_handler import (
     MigrationHandler,
     MigrationState,
 )
-from openslides_backend.shared.env import DEV_PASSWORD, INTERNAL_AUTH_PASSWORD_FILE
+from openslides_backend.shared.env import DEV_PASSWORD
 from tests.system.util import get_route_path
 from tests.util import Response
 
@@ -21,13 +21,12 @@ from .base import BaseActionTestCase
 from .util import get_internal_auth_header
 
 
-class TestMigrationRoute(BaseActionTestCase):
+class BaseMigrationRouteTest(BaseActionTestCase):
     """
     Uses the anonymous client to call the migration route.
     """
 
     def setUp(self) -> None:
-        super().setUp()
         MigrationHandler.migration_running = False
         MigrationHandler.migrate_thread_exception = None
         if MigrationHandler.migrate_thread_stream:
@@ -35,7 +34,11 @@ class TestMigrationRoute(BaseActionTestCase):
         self.secret_file = NamedTemporaryFile()
         self.secret_file.write(DEV_PASSWORD.encode("ascii"))
         self.secret_file.seek(0)
-        os.environ[INTERNAL_AUTH_PASSWORD_FILE] = self.secret_file.name
+        self.set_environ()
+        super().setUp()
+
+    def set_environ(self) -> None:
+        os.environ["INTERNAL_AUTH_PASSWORD_FILE"] = self.secret_file.name
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -56,6 +59,8 @@ class TestMigrationRoute(BaseActionTestCase):
             headers=headers,
         )
 
+
+class TestMigrationRoute(BaseMigrationRouteTest):
     def test_migrate_mismatching_passwords(self) -> None:
         response = self.migration_request("migrate", "wrong_pw")
         self.assert_status_code(response, 401)
@@ -63,13 +68,6 @@ class TestMigrationRoute(BaseActionTestCase):
     def test_migrate_no_password_in_request(self) -> None:
         response = self.migration_request("migrate", None)
         self.assert_status_code(response, 401)
-
-    @patch("openslides_backend.shared.env.is_dev_mode")
-    def test_migrate_no_password_on_server(self, is_dev_mode: Mock) -> None:
-        is_dev_mode.return_value = False
-        del os.environ[INTERNAL_AUTH_PASSWORD_FILE]
-        response = self.migration_request("migrate")
-        self.assert_status_code(response, 500)
 
     def test_migrate_success(self) -> None:
         response = self.migration_request("migrate")
@@ -184,3 +182,17 @@ class TestMigrationRoute(BaseActionTestCase):
         assert response.json["status"] == MigrationState.MIGRATION_REQUIRED
         assert response.json["output"] == "start\n"
         assert response.json["exception"] == "test"
+
+
+class TestMigrationRoute2(BaseMigrationRouteTest):
+    def set_environ(self) -> None:
+        os.environ["INTERNAL_AUTH_PASSWORD_FILE"] = ""
+
+    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
+    def test_migrate_no_password_on_server(self, is_dev_mode: Mock) -> None:
+        is_dev_mode.return_value = False
+        response = self.migration_request("migrate")
+        self.assert_status_code(response, 500)
+        self.assertEqual(
+            response.json.get("message"), "Missing INTERNAL_AUTH_PASSWORD_FILE."
+        )

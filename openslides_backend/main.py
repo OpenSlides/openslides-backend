@@ -9,7 +9,7 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
-from .shared.env import is_dev_mode
+from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
 
@@ -17,11 +17,6 @@ register_services()
 
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".
-
-DEFAULT_ADDRESSES = {
-    "ActionView": "0.0.0.0:9002",
-    "PresenterView": "0.0.0.0:9003",
-}
 
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
@@ -31,28 +26,32 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
     with action component or with presenter component.
     """
 
-    def __init__(self, view_name: str, *args: Any, **kwargs: Any) -> None:
-        # Setup global loglevel.
-        if is_dev_mode():
-            logging.basicConfig(level=logging.DEBUG)
+    def __init__(
+        self, view_name: str, env: Environment, *args: Any, **kwargs: Any
+    ) -> None:
+        self.env = env
+
+        logging.basicConfig(level=self.env.get_loglevel())
         logger = logging.getLogger(__name__)
+
         self.view_name = view_name
         if self.view_name not in ("ActionView", "PresenterView"):
             raise ValueError(
                 f"View name has to be ActionView or PresenterView, not {self.view_name}."
             )
         logger.debug(f"Create gunicorn application for {self.view_name}.")
+        logger.debug(f"Using environment: {self.env.vars}")
 
         super().__init__(*args, **kwargs)
 
     def load_config(self) -> None:
-        dev_mode = is_dev_mode()
         options = {
-            "bind": DEFAULT_ADDRESSES[self.view_name],
+            "bind": self.env.get_address(self.view_name),
+            "workers": int(self.env.OPENSLIDES_BACKEND_NUM_WORKERS),
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
-            "timeout": int(os.environ.get("OPENSLIDES_BACKEND_WORKER_TIMEOUT", "30")),
-            "loglevel": "debug" if dev_mode else "info",
-            "reload": dev_mode,
+            "timeout": int(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT),
+            "loglevel": self.env.get_loglevel().lower(),
+            "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
         }
         for key, value in options.items():
@@ -65,24 +64,26 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
-        return create_wsgi_application(logging_module, self.view_name)
+        return create_wsgi_application(logging_module, self.view_name, self.env)
 
 
-def start_action_server() -> None:  # pragma: no cover
-    OpenSlidesBackendGunicornApplication(view_name="ActionView").run()
+def start_action_server(env: Environment) -> None:  # pragma: no cover
+    OpenSlidesBackendGunicornApplication(view_name="ActionView", env=env).run()
 
 
-def start_presenter_server() -> None:  # pragma: no cover
-    OpenSlidesBackendGunicornApplication(view_name="PresenterView").run()
+def start_presenter_server(env: Environment) -> None:  # pragma: no cover
+    OpenSlidesBackendGunicornApplication(view_name="PresenterView", env=env).run()
 
 
-def start_them_all() -> None:  # pragma: no cover
+def start_them_all(env: Environment) -> None:  # pragma: no cover
     print(
         f"Start all components in child processes. Parent process id is {os.getpid()}."
     )
     processes = {
-        "action": multiprocessing.Process(target=start_action_server),
-        "presenter": multiprocessing.Process(target=start_presenter_server),
+        "action": multiprocessing.Process(target=start_action_server, args=(env,)),
+        "presenter": multiprocessing.Process(
+            target=start_presenter_server, args=(env,)
+        ),
     }
     for process in processes.values():
         process.start()
@@ -119,13 +120,22 @@ def start_them_all() -> None:  # pragma: no cover
 
 
 def main() -> None:  # pragma: no cover
-    component = os.environ.get("OPENSLIDES_BACKEND_COMPONENT", "all")
+    env = Environment(os.environ)
+    component = env.OPENSLIDES_BACKEND_COMPONENT
     if component == "action":
-        start_action_server()
+        start_action_server(env)
     elif component == "presenter":
-        start_presenter_server()
+        start_presenter_server(env)
     elif component == "all":
-        start_them_all()
+        if env.is_dev_mode():
+            start_them_all(env)
+            sys.exit(0)
+        print(
+            f"Error: OPENSLIDES_BACKEND_COMPONENT must not be {component} in production mode (see OPENSLIDES_DEVELOPMENT).",
+            file=sys.stderr,
+        )
+        sys.stderr.flush()
+        sys.exit(1)
     else:
         print(
             f"Error: OPENSLIDES_BACKEND_COMPONENT must not be {component}.",

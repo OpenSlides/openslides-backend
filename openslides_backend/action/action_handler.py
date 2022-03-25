@@ -3,13 +3,13 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 import fastjsonschema
 
-from ..shared.env import is_dev_mode
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
     View400Exception,
 )
 from ..shared.handlers.base_handler import BaseHandler
+from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
@@ -68,8 +68,8 @@ class ActionHandler(BaseHandler):
 
     on_success: List[Callable[[], None]]
 
-    def __init__(self, services: Services, logging: LoggingModule) -> None:
-        super().__init__(services, logging)
+    def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
+        super().__init__(env, services, logging)
         self.on_success = []
 
     @classmethod
@@ -206,7 +206,8 @@ class ActionHandler(BaseHandler):
         action_name = action_payload_element["action"]
         ActionClass = actions_map.get(action_name)
         if ActionClass is None or (
-            ActionClass.action_type == ActionType.BACKEND_INTERNAL and not is_dev_mode()
+            ActionClass.action_type == ActionType.BACKEND_INTERNAL
+            and not self.env.is_dev_mode()
         ):
             raise View400Exception(f"Action {action_name} does not exist.")
         if not relation_manager:

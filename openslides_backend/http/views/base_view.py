@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
+from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.services import Services
 from ...shared.interfaces.wsgi import Headers, ResponseBody, View
@@ -63,8 +64,9 @@ class BaseView(View):
 
     routes: Dict[Pattern, Callable[[Request], Tuple[ResponseBody, Optional[str]]]]
 
-    def __init__(self, logging: LoggingModule, services: Services) -> None:
+    def __init__(self, env: Env, logging: LoggingModule, services: Services) -> None:
         self.services = services
+        self.env = env
         self.logging = logging
         self.logger = logging.getLogger(__name__)
         self.routes = {}

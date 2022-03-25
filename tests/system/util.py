@@ -1,16 +1,17 @@
 import copy
+import os
 from typing import Any, Dict, Type
 from unittest.mock import MagicMock, Mock
 
 from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
-from openslides_backend.environment import get_environment
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
+from openslides_backend.shared.env import Environment
 from openslides_backend.shared.exceptions import MediaServiceException
 from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
@@ -54,9 +55,9 @@ def create_presenter_test_application() -> WSGIApplication:
 
 
 def create_test_application(view: Type[View]) -> WSGIApplication:
-    environment = get_environment()
+    env = Environment(os.environ)
     services = OpenSlidesBackendServices(
-        config=environment,
+        config=env.get_service_url(),
         logging=MagicMock(),
     )
     services.vote = providers.Singleton(
@@ -71,7 +72,7 @@ def create_test_application(view: Type[View]) -> WSGIApplication:
 
     # Create WSGI application instance. Inject logging module, view class and services container.
     application_factory = OpenSlidesBackendWSGI(
-        logging=MagicMock(), view=view, services=services
+        env=env, logging=MagicMock(), view=view, services=services
     )
     application = application_factory.setup()
 

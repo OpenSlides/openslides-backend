@@ -1,3 +1,4 @@
+from ..interfaces.env import Env
 from ..interfaces.logging import LoggingModule
 from ..interfaces.services import Services
 
@@ -7,7 +8,8 @@ class BaseHandler:
     Base class for handlers
     """
 
-    def __init__(self, services: Services, logging: LoggingModule) -> None:
+    def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
+        self.env = env
         self.services = services
         self.logging = logging
         self.logger = logging.getLogger(__name__)
