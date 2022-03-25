@@ -124,7 +124,7 @@ class TestInternalActionsProd(BaseInternalActionsTest):
         self.assert_model_not_exists("user/2")
 
     @patch("openslides_backend.shared.env.Environment.is_dev_mode")
-    def test_internal_try_access_backend_internal_action(
+    def test_internal_try_access_backend_common_action(
         self, is_dev_mode: MagicMock
     ) -> None:
         is_dev_mode.return_value = False
@@ -133,3 +133,16 @@ class TestInternalActionsProd(BaseInternalActionsTest):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2")
+
+    @patch("openslides_backend.shared.env.Environment.is_dev_mode")
+    def test_internal_try_access_backend_internal_action(
+        self, is_dev_mode: MagicMock
+    ) -> None:
+        is_dev_mode.return_value = False
+        response = self.internal_request(
+            "option.create",
+            {"meeting_id": 1, "text": "test"},
+            self.internal_auth_password,
+        )
+        self.assert_status_code(response, 400)
+        self.assert_model_not_exists("option/1")
