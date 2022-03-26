@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "8a423e4d77542de8be386cc5c708f2d9"
+MODELS_YML_CHECKSUM = "a6e87ed49762614d98f173927af5ac02"
 
 
 class Organization(Model):
@@ -379,7 +379,7 @@ class Meeting(Model):
     export_csv_encoding = fields.CharField(
         default="utf-8", constraints={"enum": ["utf-8", "iso-8859-15"]}
     )
-    export_csv_separator = fields.CharField(default=",")
+    export_csv_separator = fields.CharField(default=";")
     export_pdf_pagenumber_alignment = fields.CharField(
         default="center", constraints={"enum": ["left", "right", "center"]}
     )
@@ -402,7 +402,7 @@ class Meeting(Model):
     agenda_new_items_default_visibility = fields.CharField(
         default="internal", constraints={"enum": ["common", "internal", "hidden"]}
     )
-    agenda_show_internal_items_on_projector = fields.BooleanField(default=True)
+    agenda_show_internal_items_on_projector = fields.BooleanField(default=False)
     list_of_speakers_amount_last_on_projector = fields.IntegerField(
         default=0, constraints={"minimum": -1}
     )

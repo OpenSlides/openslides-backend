@@ -825,7 +825,7 @@ meeting:
     restriction_mode: B
   export_csv_separator:
     type: string
-    default: ","
+    default: ";"
     restriction_mode: B
   export_pdf_pagenumber_alignment:
     type: string
@@ -890,7 +890,7 @@ meeting:
     restriction_mode: B
   agenda_show_internal_items_on_projector:
     type: boolean
-    default: True
+    default: False
     restriction_mode: B
 
   # List of speakers
