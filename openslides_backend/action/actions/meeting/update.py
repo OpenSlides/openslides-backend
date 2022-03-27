@@ -125,6 +125,7 @@ meeting_settings_keys = [
     "assignment_poll_ballot_paper_selection",
     "assignment_poll_ballot_paper_number",
     "assignment_poll_add_candidates_to_list_of_speakers",
+    "assignment_poll_enable_max_votes_per_option",
     "assignment_poll_sort_poll_result_by_votes",
     "assignment_poll_default_type",
     "assignment_poll_default_method",

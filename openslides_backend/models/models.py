@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "a6e87ed49762614d98f173927af5ac02"
+MODELS_YML_CHECKSUM = "55734f89dd1785cd1aca35cd158e6a24"
 
 
 class Organization(Model):
@@ -535,6 +535,7 @@ class Meeting(Model):
     assignment_poll_add_candidates_to_list_of_speakers = fields.BooleanField(
         default=False
     )
+    assignment_poll_enable_max_votes_per_option = fields.BooleanField(default=False)
     assignment_poll_sort_poll_result_by_votes = fields.BooleanField(default=True)
     assignment_poll_default_type = fields.CharField(default="pseudoanonymous")
     assignment_poll_default_method = fields.CharField(default="Y")

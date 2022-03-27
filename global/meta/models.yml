@@ -1226,6 +1226,10 @@ meeting:
     type: boolean
     default: False
     restriction_mode: B
+  assignment_poll_enable_max_votes_per_option:
+    type: boolean
+    default: False
+    restriction_mode: B
   assignment_poll_sort_poll_result_by_votes:
     type: boolean
     default: True

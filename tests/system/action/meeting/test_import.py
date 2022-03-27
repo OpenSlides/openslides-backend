@@ -126,6 +126,7 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "assignment_poll_ballot_paper_number": 8,
                         "assignment_poll_add_candidates_to_list_of_speakers": True,
+                        "assignment_poll_enable_max_votes_per_option": False,
                         "assignment_poll_sort_poll_result_by_votes": True,
                         "assignment_poll_default_type": "pseudoanonymous",
                         "assignment_poll_default_method": "votes",
