@@ -224,6 +224,65 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
         self.assert_model_deleted("motion_submitter/1")
         self.assert_model_exists("motion/1", {"submitter_ids": []})
 
+    def test_delete_with_delegation_to(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "u111",
+                    "vote_delegated_$_to_id": ["1"],
+                    "vote_delegated_$1_to_id": 112,
+                },
+                "user/112": {
+                    "username": "u112",
+                    "vote_delegations_$_from_ids": ["1"],
+                    "vote_delegations_$1_from_ids": [111],
+                },
+                "meeting/1": {},
+            }
+        )
+        response = self.request("user.delete", {"id": 111})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "user/111",
+            {"vote_delegated_$1_to_id": 112, "vote_delegated_$_to_id": ["1"]},
+        )
+        self.assert_model_exists(
+            "user/112",
+            {"vote_delegations_$1_from_ids": [], "vote_delegations_$_from_ids": []},
+        )
+
+    def test_delete_with_delegation_from(self) -> None:
+        self.set_models(
+            {
+                "user/111": {
+                    "username": "u111",
+                    "vote_delegated_$_to_id": ["1"],
+                    "vote_delegated_$1_to_id": 112,
+                },
+                "user/112": {
+                    "username": "u112",
+                    "vote_delegations_$_from_ids": ["1"],
+                    "vote_delegations_$1_from_ids": [111],
+                },
+                "meeting/1": {},
+            }
+        )
+        response = self.request("user.delete", {"id": 112})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111",
+            {"vote_delegated_$_to_id": []},
+        )
+        self.assert_model_deleted(
+            "user/112",
+            {
+                "vote_delegations_$1_from_ids": [111],
+                "vote_delegations_$_from_ids": ["1"],
+            },
+        )
+
     def test_delete_scope_meeting_no_permission(self) -> None:
         self.setup_admin_scope_permissions(None)
         self.setup_scoped_user(UserScope.Meeting)
