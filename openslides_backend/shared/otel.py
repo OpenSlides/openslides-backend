@@ -8,14 +8,14 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from .env import is_otel_enabled
+from .interfaces.env import Env
 
 
-def init(service_name: str) -> None:
+def init(env: Env, service_name: str) -> None:
     """
     Initializes the opentelemetry components and connection to the otel collector.
     """
-    if not is_otel_enabled():
+    if not env.is_otel_enabled():
         return
 
     span_exporter = OTLPSpanExporter(
@@ -36,7 +36,7 @@ def instrument_requests() -> None:
     RequestsInstrumentor().instrument()
 
 
-def make_span(name: str, attributes: Dict[str, str] = None) -> Any:
+def make_span(env: Env, name: str, attributes: Dict[str, str] = None) -> Any:
     """
     Returns a new child span to the currently active span.
     If OPENTELEMETRY_ENABLED is not truthy a nullcontext will be returned instead.
@@ -51,7 +51,7 @@ def make_span(name: str, attributes: Dict[str, str] = None) -> Any:
             ...
     ```
     """
-    if not is_otel_enabled():
+    if not env.is_otel_enabled():
         return nullcontext()
 
     tracer = trace.get_tracer_provider().get_tracer(__name__)

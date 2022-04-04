@@ -3,7 +3,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar
 
 import fastjsonschema
 
-from ..shared.env import is_dev_mode
 from ..shared.exceptions import (
     ActionException,
     DatastoreLockedException,
@@ -104,13 +103,13 @@ class ActionHandler(BaseHandler):
         self.user_id = user_id
         self.internal = internal
 
-        with make_span("verify payload"):
+        with make_span(self.env, "verify payload"):
             try:
                 payload_schema(payload)
             except fastjsonschema.JsonSchemaException as exception:
                 raise ActionException(exception.message)
 
-        with make_span("write requests..."):
+        with make_span(self.env, "write requests..."):
             results: ActionsResponseResults = []
             if atomic:
                 results = self.execute_write_requests(self.parse_actions, payload)
@@ -132,7 +131,7 @@ class ActionHandler(BaseHandler):
                         results.append(error)
                     self.datastore.reset()
 
-        with make_span("finish action"):
+        with make_span(self.env, "finish action"):
             # execute cleanup methods
             for on_success in self.on_success:
                 on_success()

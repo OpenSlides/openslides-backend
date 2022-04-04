@@ -2,7 +2,6 @@ import inspect
 import re
 from typing import Any, Callable, Dict, List, Optional, Pattern, Tuple, Union
 
-from opentelemetry import trace
 from werkzeug.exceptions import BadRequest as WerkzeugBadRequest
 
 from ...shared.exceptions import View400Exception
@@ -57,10 +56,6 @@ def route(
     return wrapper
 
 
-if is_truthy(os.environ.get("OPENTELEMETRY_ENABLED", "false")):
-    tracer = trace.get_tracer(__name__)
-
-
 class BaseView(View):
     """
     Base class for views of this service.
@@ -95,7 +90,7 @@ class BaseView(View):
             predicate=lambda attr: inspect.ismethod(attr)
             and hasattr(attr, ROUTE_OPTIONS_ATTR),
         )
-        with make_span("base view"):
+        with make_span(self.env, "base view"):
             for _, func in functions:
                 route_options_list = getattr(func, ROUTE_OPTIONS_ATTR)
                 for route_options in route_options_list:

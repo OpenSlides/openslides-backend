@@ -2,8 +2,6 @@ from enum import Enum, auto
 from typing import Any, Dict
 
 DEV_PASSWORD = "openslides"
-OPENTELEMETRY_ENABLED = "OPENTELEMETRY_ENABLED"
-OPENTELEMETRY_URL = "OPENTELEMETRY_URL"
 
 
 class Loglevel(Enum):
@@ -46,6 +44,7 @@ class Environment:
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
         "OPENSLIDES_DEVELOPMENT": "false",
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
+        "OPENTELEMETRY_ENABLED": "false",
         "PRESENTER_PORT": "9003",
         "VOTE_HOST": "vote",
         "VOTE_PATH": "/internal/vote",
@@ -67,6 +66,9 @@ class Environment:
 
     def is_dev_mode(self) -> bool:
         return is_truthy(self.OPENSLIDES_DEVELOPMENT)
+
+    def is_otel_enabled(self) -> bool:
+        return is_truthy(self.OPENTELEMETRY_ENABLED)
 
     def get_loglevel(self) -> str:
         lvl = self.OPENSLIDES_LOGLEVEL.upper()
@@ -93,17 +95,9 @@ class Environment:
             service_url[key] = self.get_endpoint(service.upper())
         return service_url
 
-def is_otel_enabled() -> bool:
-    otel_enabled = os.environ.get(OPENTELEMETRY_ENABLED, "false")
-    return is_truthy(otel_enabled)
-
-
-def get_internal_auth_password() -> str:
-    if is_dev_mode():
-        return DEV_PASSWORD
-    filename = os.environ.get(INTERNAL_AUTH_PASSWORD_FILE)
-    if filename:
-        with open(filename) as file_:
-            return file_.read()
-    else:
-        raise ServerError("No internal auth password specified.")
+    def get_endpoint(self, service: str) -> str:
+        parts = {}
+        for suffix in ("PROTOCOL", "HOST", "PORT", "PATH"):
+            name = "_".join((service, suffix))
+            parts[suffix] = self.vars[name]
+        return f"{parts['PROTOCOL']}://{parts['HOST']}:{parts['PORT']}{parts['PATH']}"
