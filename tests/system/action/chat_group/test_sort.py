@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class ChatGroupSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "organization/1": {"enable_chat": True},
             "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/31": {

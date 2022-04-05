@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"speaker_ids": [1], "is_active_in_organization_id": 1},
             "list_of_speakers/111": {
                 "closed": False,
@@ -49,14 +51,14 @@ class ListOfSpeakersDeleteAllSpeakersActionTester(BaseActionTestCase):
 
     def test_delete_all_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "list_of_speakers.delete_all_speakers",
             {"id": 111},
         )
 
     def test_delete_all_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "list_of_speakers.delete_all_speakers",
             {"id": 111},
             Permissions.ListOfSpeakers.CAN_MANAGE,

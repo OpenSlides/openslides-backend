@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "user/42": {"username": "test_username42", "speaker_$222_ids": [222]},
             "user/43": {"username": "test_username43", "speaker_$222_ids": [223]},
             "user/44": {"username": "test_username43", "speaker_$222_ids": [224]},
@@ -279,14 +281,14 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
 
     def test_re_add_last_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "list_of_speakers.re_add_last",
             {"id": 111},
         )
 
     def test_re_add_last_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "list_of_speakers.re_add_last",
             {"id": 111},
             Permissions.ListOfSpeakers.CAN_MANAGE,

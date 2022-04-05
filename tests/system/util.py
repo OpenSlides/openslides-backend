@@ -1,8 +1,9 @@
 import copy
 import os
-from typing import Any, Dict, Type
+from typing import Any, Callable, Dict, Type
 from unittest.mock import MagicMock, Mock
 
+import pytest
 from dependency_injector import providers
 from requests.models import Response as RequestsResponse
 
@@ -11,7 +12,7 @@ from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFun
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
-from openslides_backend.shared.env import Environment
+from openslides_backend.shared.env import Environment, is_truthy
 from openslides_backend.shared.exceptions import MediaServiceException
 from openslides_backend.shared.interfaces.wsgi import Headers, View, WSGIApplication
 from openslides_backend.wsgi import OpenSlidesBackendServices, OpenSlidesBackendWSGI
@@ -92,3 +93,10 @@ def get_route_path(route_function: RouteFunction, name: str = "") -> str:
         if route_options["raw_path"].endswith(name):
             return route_options["raw_path"]
     raise ValueError(f"Route {name} does not exist")
+
+
+def performance(func: Callable) -> Callable:
+    return pytest.mark.skipif(
+        not is_truthy(os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "")),
+        reason="Performance tests are disabled.",
+    )(func)

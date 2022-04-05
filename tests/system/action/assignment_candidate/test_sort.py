@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class AssignmentCandidateSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "assignment/222": {"title": "title_SNLGsvIV", "meeting_id": 1},
             "user/233": {"username": "username_233"},
             "user/234": {"username": "username_234"},
@@ -105,14 +107,14 @@ class AssignmentCandidateSortActionTest(BaseActionTestCase):
 
     def test_create_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "assignment_candidate.sort",
             {"assignment_id": 222, "candidate_ids": [32, 31]},
         )
 
     def test_create_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "assignment_candidate.sort",
             {"assignment_id": 222, "candidate_ids": [32, 31]},
             Permissions.Assignment.CAN_MANAGE,

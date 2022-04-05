@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class ProjectorUpdate(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "projector/111": {"name": "name_srtgb123", "meeting_id": 1},
         }
 
@@ -260,7 +262,7 @@ class ProjectorUpdate(BaseActionTestCase):
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "projector.update",
             {
                 "id": 111,
@@ -271,7 +273,7 @@ class ProjectorUpdate(BaseActionTestCase):
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "projector.update",
             {
                 "id": 111,

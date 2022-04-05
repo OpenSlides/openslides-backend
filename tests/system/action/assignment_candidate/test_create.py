@@ -9,7 +9,7 @@ DEFAULT_PASSWORD = "password"
 class AssignmentCandidateCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "user/110": {
                 "username": "test_Xcdfgee",
                 "is_active": True,
@@ -101,7 +101,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         response = self.request(
             "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
         )
@@ -120,7 +120,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
                 Permissions.Assignment.CAN_MANAGE,
             ],
         )
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         response = self.request(
             "assignment_candidate.create", {"assignment_id": 111, "user_id": 110}
         )
@@ -129,7 +129,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
     def test_create_both_permissions_self(self) -> None:
         self.create_meeting()
         self.user_id = 110
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(
             3,
@@ -147,7 +147,7 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
     def test_create_no_permissions_self(self) -> None:
         self.create_meeting()
         self.user_id = 110
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.login(self.user_id)
         response = self.request(
@@ -157,10 +157,10 @@ class AssignmentCandidateCreateActionTest(BaseActionTestCase):
         assert "Missing Permission: assignment.can_manage" in response.json["message"]
 
     def test_create_permissions_no_voting_self(self) -> None:
-        self.permission_test_model["assignment/111"]["phase"] = "search"
+        self.permission_test_models["assignment/111"]["phase"] = "search"
         self.create_meeting()
         self.user_id = 110
-        self.set_models(self.permission_test_model)
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(
             3,

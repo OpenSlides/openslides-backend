@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 from ...action.action_handler import ActionHandler
 from ...migration_handler import assert_migration_index
 from ...migration_handler.migration_handler import MigrationHandler
+from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import ServerError
 from ...shared.interfaces.wsgi import ResponseBody
@@ -31,7 +32,10 @@ class ActionView(BaseView):
             request.headers, request.cookies
         )
         # Set Headers and Cookies in services.
-        self.services.vote().set_authentication(request.headers, request.cookies)
+        self.services.vote().set_authentication(
+            request.headers.get(AUTHENTICATION_HEADER),
+            request.cookies.get(COOKIE_NAME),
+        )
 
         # Handle request.
         handler = ActionHandler(self.env, self.services, self.logging)

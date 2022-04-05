@@ -1,14 +1,13 @@
-from typing import Any, Dict, cast
-from unittest.mock import MagicMock
+import json
+from typing import Any, Callable, Optional, TypedDict, cast
 
-import requests
-from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
+from authlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse
 from werkzeug.wrappers import Response as BaseResponse
 
 from openslides_backend.shared.exceptions import AuthenticationException
-from openslides_backend.shared.interfaces.wsgi import Headers, WSGIApplication
+from openslides_backend.shared.interfaces.wsgi import WSGIApplication
 from openslides_backend.shared.patterns import (
     KEYSEPARATOR,
     Collection,
@@ -34,37 +33,57 @@ class Response(ResponseWrapper, TestResponse):
     """
 
 
+class AuthData(TypedDict, total=False):
+    """
+    TypedDict for the authentication data. access_token must be inserted into the headers and the
+    refresh_id as a cookie.
+    """
+
+    access_token: str
+    refresh_id: str
+
+
 class Client(WerkzeugClient):
     application: WSGIApplication
 
     def __init__(
-        self, application: WSGIApplication, username: str = None, password: str = None
+        self,
+        application: WSGIApplication,
+        on_auth_data_changed: Optional[Callable[[AuthData], None]] = None,
     ):
         super().__init__(application, ResponseWrapper)
         self.application = application
-        self.headers = Headers()
-        self.cookies: Dict[str, str] = {}
-        if username and password is not None:
-            self.login(username, password)
+        self.auth_data: AuthData = {}
+        self.on_auth_data_changed = on_auth_data_changed
 
     def login(self, username: str, password: str) -> None:
-        auth_endpoint = self.application.services.authentication().auth_handler.http_handler.get_endpoint(
-            MagicMock()
-        )
-        url = f"{auth_endpoint}/system/auth/login"
+        handler = self.application.services.authentication().auth_handler.http_handler
         try:
-            response = requests.post(
-                url, json={"username": username, "password": password}
+            response = handler.send_request(
+                "login",
+                payload=json.dumps({"username": username, "password": password}),
+                headers={"Content-Type": "application/json"},
             )
-        except requests.exceptions.ConnectionError as e:
-            raise AuthenticationException(
-                f"Cannot reach the authentication service on {url}. Error: {e}"
-            )
+        except AuthenticateException as e:
+            raise AuthenticationException(str(e))
         assert response.status_code == 200
         # save access token and refresh id for subsequent requests
-        self.set_cookie("localhost", COOKIE_NAME, response.cookies.get(COOKIE_NAME))
-        self.cookies = {COOKIE_NAME: response.cookies.get(COOKIE_NAME)}
-        self.headers[AUTHENTICATION_HEADER] = response.headers[AUTHENTICATION_HEADER]
+        self.update_auth_data(
+            {
+                "access_token": response.headers.get(AUTHENTICATION_HEADER),
+                "refresh_id": response.cookies.get(COOKIE_NAME),
+            }
+        )
+
+    def update_auth_data(self, auth_data: AuthData) -> None:
+        """
+        (Partially) updates the auth_data.
+        """
+        self.auth_data.update(auth_data)
+        if "refresh_id" in self.auth_data:
+            self.set_cookie("localhost", COOKIE_NAME, self.auth_data["refresh_id"])
+        if self.on_auth_data_changed:
+            self.on_auth_data_changed(self.auth_data)
 
     def get(self, *args: Any, **kwargs: Any) -> Response:
         """
@@ -74,11 +93,18 @@ class Client(WerkzeugClient):
 
     def post(self, *args: Any, **kwargs: Any) -> Response:
         """
-        Overwrite the return type since it's actually our Response type. Also add headers.
+        Overwrite the return type since it's actually our Response type. Also add headers and update
+        the access_token from the response.
         """
-        kw_headers = kwargs.pop("headers", {})
-        headers = {**self.headers, **kw_headers}
-        return cast(Response, super().post(*args, headers=headers, **kwargs))
+        headers = kwargs.pop("headers", {})
+        if "access_token" in self.auth_data:
+            headers[AUTHENTICATION_HEADER] = self.auth_data["access_token"]
+        response = cast(Response, super().post(*args, headers=headers, **kwargs))
+        if AUTHENTICATION_HEADER in response.headers:
+            self.update_auth_data(
+                {"access_token": response.headers[AUTHENTICATION_HEADER]}
+            )
+        return response
 
 
 def get_fqid(value: str) -> FullQualifiedId:

@@ -7,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model: Dict[str, Dict[str, Any]] = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {"motion_ids": [111], "is_active_in_organization_id": 1},
             "motion/111": {
                 "title": "title_srtgb123",
@@ -74,14 +74,14 @@ class MotionDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion.delete",
             {"id": 111},
         )
 
     def test_delete_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion.delete",
             {"id": 111},
             Permissions.Motion.CAN_MANAGE,
@@ -91,8 +91,8 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
-        self.permission_test_model["motion_submitter/12"]["user_id"] = self.user_id
-        self.set_models(self.permission_test_model)
+        self.permission_test_models["motion_submitter/12"]["user_id"] = self.user_id
+        self.set_models(self.permission_test_models)
         self.set_user_groups(self.user_id, [3])
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)

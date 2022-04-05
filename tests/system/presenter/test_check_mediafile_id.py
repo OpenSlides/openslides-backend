@@ -41,7 +41,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
             },
         )
         self.create_model("meeting/1")
-        self.client.headers.clear()
+        self.client.auth_data.pop("access_token", None)
         status_code, data = self.request("check_mediafile_id", {"mediafile_id": 1})
         self.assertEqual(status_code, 200)
         self.assertEqual(data, {"ok": True, "filename": "the filename"})

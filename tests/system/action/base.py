@@ -179,24 +179,14 @@ class BaseActionTestCase(BaseSystemTestCase):
         Create a user with the given username, groups and organization management level.
         """
         partitioned_groups = self._fetch_groups(group_ids)
-        id = self.datastore.reserve_id(Collection("user"))
+        id = 1
+        while f"user/{id}" in self.created_fqids:
+            id += 1
         self.set_models(
             {
-                f"user/{id}": {
-                    "username": username,
-                    "organization_management_level": organization_management_level,
-                    "is_active": True,
-                    "default_password": DEFAULT_PASSWORD,
-                    "password": self.auth.hash(DEFAULT_PASSWORD),
-                    "group_$_ids": list(
-                        str(meeting_id) for meeting_id in partitioned_groups.keys()
-                    ),
-                    "meeting_ids": list(partitioned_groups.keys()),
-                    **{
-                        f"group_${meeting_id}_ids": [group["id"] for group in groups]
-                        for meeting_id, groups in partitioned_groups.items()
-                    },
-                },
+                f"user/{id}": self._get_user_data(
+                    username, partitioned_groups, organization_management_level
+                ),
                 **{
                     f"group/{group['id']}": {
                         "user_ids": list(set(group.get("user_ids", []) + [id]))
@@ -207,6 +197,28 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
         return id
+
+    def _get_user_data(
+        self,
+        username: str,
+        partitioned_groups: Dict[int, List[Dict[str, Any]]] = {},
+        organization_management_level: Optional[OrganizationManagementLevel] = None,
+    ) -> Dict[str, Any]:
+        return {
+            "username": username,
+            "organization_management_level": organization_management_level,
+            "is_active": True,
+            "default_password": DEFAULT_PASSWORD,
+            "password": self.auth.hash(DEFAULT_PASSWORD),
+            "group_$_ids": list(
+                str(meeting_id) for meeting_id in partitioned_groups.keys()
+            ),
+            "meeting_ids": list(partitioned_groups.keys()),
+            **{
+                f"group_${meeting_id}_ids": [group["id"] for group in groups]
+                for meeting_id, groups in partitioned_groups.items()
+            },
+        }
 
     def create_user_for_meeting(self, meeting_id: int) -> int:
         meeting = self.get_model(f"meeting/{meeting_id}")
@@ -271,15 +283,6 @@ class BaseActionTestCase(BaseSystemTestCase):
             }
         )
 
-    def login(self, user_id: int) -> None:
-        """
-        Login the given user by fetching the default password from the datastore.
-        """
-        user = self.get_model(f"user/{user_id}")
-        assert user.get("default_password")
-        self.client.login(user["username"], user["default_password"])
-        self.vote_service.set_authentication(self.client.headers, self.client.cookies)
-
     @with_database_context
     def _fetch_groups(self, group_ids: List[int]) -> Dict[int, List[Dict[str, Any]]]:
         """
@@ -303,7 +306,7 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     def base_permission_test(
         self,
-        models: Dict[str, Any],
+        models: Dict[str, Dict[str, Any]],
         action: str,
         action_data: Dict[str, Any],
         permission: Optional[Union[Permission, OrganizationManagementLevel]] = None,

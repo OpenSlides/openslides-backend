@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileUnsetLogoActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {
                 "name": "name_meeting1",
                 "logo_$place_id": 17,
@@ -85,14 +87,14 @@ class MediafileUnsetLogoActionTest(BaseActionTestCase):
 
     def test_unset_logo_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "meeting.unset_logo",
             {"id": 1, "place": "web_header"},
         )
 
     def test_unset_logo_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "meeting.unset_logo",
             {"id": 1, "place": "web_header"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,

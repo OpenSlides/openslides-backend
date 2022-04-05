@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionCategorySystemTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion/89": {"meeting_id": 1},
             "motion_category/111": {
                 "name": "name_srtgb123",
@@ -91,7 +93,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_update_no_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_category.update",
             {
                 "id": 111,
@@ -101,7 +103,7 @@ class MotionCategorySystemTest(BaseActionTestCase):
 
     def test_update_permission(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "motion_category.update",
             {
                 "id": 111,

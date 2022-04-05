@@ -6,7 +6,6 @@ from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from ...shared.exceptions import VoteServiceException
 from ...shared.interfaces.logging import LoggingModule
-from ...shared.interfaces.wsgi import Headers
 from .interface import VoteService
 
 
@@ -33,7 +32,7 @@ class VoteAdapter(VoteService):
     def make_request(
         self, endpoint: str, payload: Optional[Dict[str, Any]] = None
     ) -> Any:
-        if not self.access_token or not self.cookie:
+        if not self.access_token or not self.refresh_id:
             raise VoteServiceException("You must be logged in to vote")
         payload_json = json.dumps(payload, separators=(",", ":")) if payload else None
         try:
@@ -44,7 +43,7 @@ class VoteAdapter(VoteService):
                     "Content-Type": "application/json",
                     AUTHENTICATION_HEADER: self.access_token,
                 },
-                cookies={COOKIE_NAME: self.cookie},
+                cookies={COOKIE_NAME: self.refresh_id},
             )
         except requests.exceptions.ConnectionError as e:
             self.logger.error(
@@ -52,9 +51,11 @@ class VoteAdapter(VoteService):
             )
             raise VoteServiceException(f"Cannot reach the vote service on {endpoint}.")
 
-    def set_authentication(self, headers: Headers, cookies: Dict) -> None:
-        self.access_token = headers.get(AUTHENTICATION_HEADER, None)
-        self.cookie = cookies.get(COOKIE_NAME, "")
+    def set_authentication(
+        self, access_token: Optional[str], refresh_id: Optional[str]
+    ) -> None:
+        self.access_token = access_token
+        self.refresh_id = refresh_id
 
     def start(self, id: int) -> None:
         endpoint = self.get_endpoint("create", id)

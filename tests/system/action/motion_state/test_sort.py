@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -5,7 +7,7 @@ from tests.system.action.base import BaseActionTestCase
 class MotionStateSort(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "organization/1": {"active_meeting_ids": [1]},
             "meeting/1": {
                 "motion_state_ids": [1, 2, 3],

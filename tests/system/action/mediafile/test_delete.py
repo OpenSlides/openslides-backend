@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
@@ -6,7 +8,7 @@ from tests.system.action.base import BaseActionTestCase
 class MediafileDeleteActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_model = {
+        self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "meeting/1": {
                 "logo_$place_id": 222,
                 "logo_$_id": ["place"],
@@ -187,31 +189,31 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.delete",
             {"id": 222},
         )
 
     def test_delete_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.delete",
             {"id": 222},
             Permissions.Mediafile.CAN_MANAGE,
         )
 
     def test_delete_orga_no_permissions(self) -> None:
-        self.permission_test_model["mediafile/222"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/222"]["owner_id"] = "organization/1"
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.delete",
             {"id": 222},
         )
 
     def test_delete_orga_permission(self) -> None:
-        self.permission_test_model["mediafile/222"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/222"]["owner_id"] = "organization/1"
         self.base_permission_test(
-            self.permission_test_model,
+            self.permission_test_models,
             "mediafile.delete",
             {"id": 222},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
