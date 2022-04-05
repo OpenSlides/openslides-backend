@@ -4,9 +4,9 @@ from typing import Optional, Tuple
 from ...action.action_handler import ActionHandler
 from ...migration_handler import assert_migration_index
 from ...migration_handler.migration_handler import MigrationHandler
+from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import ServerError
-from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.interfaces.wsgi import ResponseBody
 from ..http_exceptions import Unauthorized
 from ..request import Request
