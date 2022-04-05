@@ -8,7 +8,9 @@ pyyaml==6.0
 pip-check==2.7
 autoflake==1.4
 debugpy==1.5.1
-aiosmtpd==1.4.2
+
+# fork of aiosmtpd for python 3.10
+git+https://github.com/foutrelis/aiosmtpd.git@e3321f474c0d8f63a17186a6e727f490d943f624
 
 # typing
 types-PyYAML==6.0.5
