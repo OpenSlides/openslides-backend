@@ -5,8 +5,8 @@ from datastore.shared.flask_frontend import handle_internal_errors
 from datastore.shared.postgresql_backend import DatabaseError
 from datastore.shared.util import DatastoreException as ReaderDatastoreException
 
-from ...shared.env import is_dev_mode
 from ...shared.exceptions import DatastoreException, DatastoreLockedException
+from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import Logger
 
 
@@ -22,7 +22,7 @@ def handle_datastore_errors(func: Callable) -> Callable:
                 raise e  # noqa: F821
 
             error, _ = handle_internal_errors(reraise)()
-            raise_datastore_error(error, logger=self.logger)
+            raise_datastore_error(error, logger=self.logger, env=self.env)
 
     return wrapper
 
@@ -31,6 +31,7 @@ def raise_datastore_error(
     error: Optional[Dict[str, Any]],
     error_message_prefix: str = "",
     logger: Optional[Logger] = None,
+    env: Env = None,
 ) -> None:
     error_message = error_message_prefix
     additional_error_message = error.get("error") if isinstance(error, dict) else None
@@ -48,7 +49,7 @@ def raise_datastore_error(
             )
             if logger:
                 logger.debug(error_message)
-            if not is_dev_mode():
+            if env and not env.is_dev_mode():
                 error_message = "Datastore Error"
             raise DatastoreLockedException(error_message)
         elif type_verbose == "MODEL_DOES_NOT_EXIST":
@@ -62,6 +63,6 @@ def raise_datastore_error(
             error_message = " ".join((error_message, str(additional_error_message)))
     if logger:
         logger.debug(error_message)
-    if not is_dev_mode():
+    if env and not env.is_dev_mode():
         error_message = "Datastore Error"
     raise DatastoreException(error_message)
