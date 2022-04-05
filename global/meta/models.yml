@@ -1824,6 +1824,7 @@ list_of_speakers:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   content_object_id:
@@ -1920,6 +1921,7 @@ topic:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   attachment_ids:
@@ -1979,6 +1981,7 @@ motion:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
   title:
     type: string
@@ -2241,6 +2244,7 @@ motion_comment_section:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   comment_ids:
@@ -2289,6 +2293,7 @@ motion_category:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   parent_id:
@@ -2328,6 +2333,7 @@ motion_block:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   motion_ids:
@@ -2537,6 +2543,7 @@ motion_workflow:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   state_ids:
@@ -2591,6 +2598,7 @@ motion_statute_paragraph:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   motion_ids:
@@ -2714,6 +2722,7 @@ poll:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
   content_object_id:
     type: generic-relation
@@ -2883,6 +2892,7 @@ assignment:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   candidate_ids:
@@ -2993,6 +3003,7 @@ mediafile:
     type: boolean
     description: "Calculated field. inherited_access_group_ids == [] can have two causes: cancelling access groups (=> is_public := false) or no access groups at all (=> is_public := true)"
     read_only: true
+    required: true
     restriction_mode: A
   token:
     type: string
@@ -3139,6 +3150,7 @@ projector:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
     read_only: true
+    required: true
     restriction_mode: A
 
   current_projection_ids:

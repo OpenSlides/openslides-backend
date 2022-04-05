@@ -27,6 +27,19 @@ class OrganizationInitialImport(BaseActionTestCase):
                     f"{collection}/{id_}", request_data["data"][collection][id_]
                 )
 
+    def test_initial_import_with_example_data_file(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": get_initial_data_file("global/data/example-data.json")}
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 200)
+        for collection in request_data["data"]:
+            if collection == "_migration_index":
+                continue
+            for id_ in request_data["data"][collection]:
+                self.assert_model_exists(
+                    f"{collection}/{id_}", request_data["data"][collection][id_]
+                )
+
     def test_initial_import_wrong_field(self) -> None:
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
@@ -127,6 +140,50 @@ class OrganizationInitialImport(BaseActionTestCase):
                     f"{collection}/{id_}", initial_data["data"][collection][id_]
                 )
 
+    def test_initial_import_without_MI(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": {"1": 1}}
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Data must have a valid migration index in `_migration_index`.",
+            response.json["message"],
+        )
+
+    def test_initial_import_with_MI_to_small(self) -> None:
+        self.datastore.truncate_db()
+        request_data = {"data": {"_migration_index": -1}}
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Data must have a valid migration index >= 1, but has",
+            response.json["message"],
+        )
+
+    def test_initial_import_MI_greater_backend_MI(self) -> None:
+        self.datastore.truncate_db()
+        backend_migration_index = get_backend_migration_index()
+        request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
+        request_data["data"]["_migration_index"] = backend_migration_index - 1
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 200)
+        self.assertIn(
+            "Data imported, but must be migrated!",
+            response.json["results"][0][0]["message"],
+        )
+        self.assertTrue(response.json["results"][0][0]["migration_needed"])
+
+    def test_initial_import_MI_lower_backend_MI(self) -> None:
+        self.datastore.truncate_db()
+        backend_migration_index = get_backend_migration_index()
+        request_data = {"data": {"_migration_index": backend_migration_index + 1}}
+        response = self.request("organization.initial_import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Migration indices do not match: Data has",
+            response.json["message"],
+        )
+
     def test_play_with_migrations(self) -> None:
         """
         - Loads the initial_data.json into memory
@@ -144,6 +201,12 @@ class OrganizationInitialImport(BaseActionTestCase):
 
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)
+        self.assertIn(
+            "Data imported, Migration Index set to",
+            response.json["results"][0][0]["message"],
+        )
+        self.assertFalse(response.json["results"][0][0]["migration_needed"])
+        assert_migration_index()
 
         handler = MigrationWrapper(verbose=True)
         handler.execute_command("finalize")

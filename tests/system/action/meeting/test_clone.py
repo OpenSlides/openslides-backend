@@ -58,6 +58,7 @@ class MeetingClone(BaseActionTestCase):
                 "default_statute_amendment_workflow_meeting_id": 1,
                 "default_workflow_meeting_id": 1,
                 "state_ids": [1],
+                "sequential_number": 1,
             },
             "motion_state/1": {
                 "css_class": "lightblue",
@@ -69,6 +70,7 @@ class MeetingClone(BaseActionTestCase):
                 "first_state_of_workflow_id": 1,
             },
             "projector/1": {
+                "sequential_number": 1,
                 "meeting_id": 1,
                 "used_as_reference_projector_meeting_id": 1,
                 "name": "Default projector",

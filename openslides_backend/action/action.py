@@ -641,11 +641,15 @@ def merge_write_requests(
                 raise ValueError(
                     "You can not merge two write request elements of different users."
                 )
+
     if events:
         if user_id is None:
             raise ValueError("At least one of the given user ids must not be None.")
         return WriteRequest(
-            events=events, information=information, user_id=user_id, locked_fields={}
+            events=events,
+            information=information,
+            user_id=user_id,
+            locked_fields={},
         )
     else:
         return None

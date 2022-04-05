@@ -56,14 +56,19 @@ class MediafileUploadActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        mediafile = self.get_model("mediafile/1")
-        assert mediafile.get("title") == "title_xXRGTLAJ"
-        assert mediafile.get("owner_id") == "organization/1"
-        assert mediafile.get("file") is None
-        assert mediafile.get("mimetype") == "text/plain"
-        assert mediafile.get("filesize") == 12
-        assert mediafile.get("create_timestamp") >= start_time
-        assert not mediafile.get("is_directory")
+        mediafile = self.assert_model_exists(
+            "mediafile/1",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": "organization/1",
+                "file": None,
+                "mimetype": "text/plain",
+                "filesize": 12,
+                "is_public": True,
+                "is_directory": None,
+            },
+        )
+        assert mediafile.get("create_timestamp", 0) >= start_time
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_create_cannot_guess_mimetype(self) -> None:

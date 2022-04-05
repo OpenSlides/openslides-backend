@@ -122,3 +122,57 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
         response = self.request("committee.delete", {"id": self.COMMITTEE_ID})
         self.assert_status_code(response, 200)
         self.assert_model_deleted(self.COMMITTEE_FQID)
+
+    def test_delete_2_committees_with_forwarding(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {"committee_ids": [1, 2]},
+                "user/20": {
+                    "committee_ids": [1, 2],
+                    "committee_$_management_level": ["can_manage"],
+                    "committee_$can_manage_management_level": [1, 2],
+                },
+                "committee/1": {
+                    "organization_id": 1,
+                    "user_ids": [20],
+                    "user_$_management_level": ["can_manage"],
+                    "user_$can_manage_management_level": [20],
+                    "forward_to_committee_ids": [2],
+                },
+                "committee/2": {
+                    "organization_id": 1,
+                    "user_ids": [20],
+                    "user_$_management_level": ["can_manage"],
+                    "user_$can_manage_management_level": [20],
+                    "receive_forwardings_from_committee_ids": [1],
+                },
+            }
+        )
+        response = self.request_multi("committee.delete", [{"id": 1}, {"id": 2}])
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted(
+            "committee/1",
+            {
+                "user_$_management_level": ["can_manage"],
+                "user_$can_manage_management_level": [20],
+                "forward_to_committee_ids": [2],
+                "user_ids": [20],
+            },
+        )
+        self.assert_model_deleted(
+            "committee/2",
+            {
+                "user_$_management_level": ["can_manage"],
+                "user_$can_manage_management_level": [20],
+                "receive_forwardings_from_committee_ids": [],
+                "user_ids": [20],
+            },
+        )
+        self.assert_model_exists(
+            "user/20",
+            {
+                "committee_$can_manage_management_level": [],
+                "committee_$_management_level": [],
+                "committee_ids": [],
+            },
+        )

@@ -46,6 +46,31 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         assert model.get("inherited_access_group_ids") == [7]
         assert model.get("is_public") is False
 
+    def test_create_directory_organization_correct(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {},
+            }
+        )
+        response = self.request(
+            "mediafile.create_directory",
+            {
+                "owner_id": "organization/1",
+                "title": "title_Xcdfgee",
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "mediafile/1",
+            {
+                "title": "title_Xcdfgee",
+                "access_group_ids": None,
+                "is_directory": True,
+                "inherited_access_group_ids": None,
+                "is_public": True,
+            },
+        )
+
     def test_create_directory_parent(self) -> None:
         self.set_models(
             {
