@@ -134,8 +134,10 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         }
         if self.backend_migration_index > self.data_migration_index:
             result["message"] = "Data imported, but must be migrated!"
+            result["migration_needed"] = True
         else:
             result[
                 "message"
             ] = f"Data imported, Migration Index set to {self.backend_migration_index}"
+            result["migration_needed"]: False
         return result

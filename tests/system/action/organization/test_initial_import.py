@@ -171,6 +171,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             "Data imported, but must be migrated!",
             response.json["results"][0][0]["message"],
         )
+        self.assertTrue(response.json["results"][0][0]["migration_needed"])
 
     def test_initial_import_MI_lower_backend_MI(self) -> None:
         self.datastore.truncate_db()
@@ -204,6 +205,7 @@ class OrganizationInitialImport(BaseActionTestCase):
             "Data imported, Migration Index set to",
             response.json["results"][0][0]["message"],
         )
+        self.assertFalse(response.json["results"][0][0]["migration_needed"])
         assert_migration_index()
 
         handler = MigrationWrapper(verbose=True)
