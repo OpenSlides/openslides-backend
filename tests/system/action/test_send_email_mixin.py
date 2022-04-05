@@ -25,7 +25,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
     def test_send_ssl_tls(self) -> None:
         EmailSettings.connection_security = "SSL/TLS"
         EmailSettings.accept_self_signed_certificate = True
-        EmailSettings.port = 465
+        EmailSettings.port = 993
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
@@ -49,7 +49,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
     def test_send_starttls(self) -> None:
         EmailSettings.connection_security = "STARTTLS"
         EmailSettings.accept_self_signed_certificate = True
-        EmailSettings.port = 587
+        EmailSettings.port = 143
 
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
@@ -100,7 +100,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
     def test_authentication_ssl_tls(self) -> None:
         EmailSettings.connection_security = "SSL/TLS"
         EmailSettings.accept_self_signed_certificate = True
-        EmailSettings.port = 465
+        EmailSettings.port = 993
         EmailSettings.user = self.sender
         EmailSettings.password = self.password
 
@@ -121,7 +121,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
     def test_authentication_starttls(self) -> None:
         EmailSettings.connection_security = "STARTTLS"
         EmailSettings.accept_self_signed_certificate = True
-        EmailSettings.port = 587
+        EmailSettings.port = 143
         EmailSettings.user = self.sender
         EmailSettings.password = self.password
 
@@ -298,7 +298,7 @@ class SendMailWithSmtpServer(BaseActionTestCase):
 
     def test_self_signed_not_accepted(self) -> None:
         EmailSettings.connection_security = "STARTTLS"
-        EmailSettings.port = 587
+        EmailSettings.port = 143
         EmailSettings.accept_self_signed_certificate = False
 
         with AiosmtpdServerManager(AIOHandler()):
