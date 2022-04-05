@@ -119,7 +119,7 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
             if self.is_new(fqid):
                 # if the model is new, we know it does not exist in the datastore and can directly throw
                 # an exception or return an empty result
-                raise_datastore_error({"error": {"fqid": fqid}})
+                raise_datastore_error({"error": {"fqid": fqid}}, logger=self.logger)
             else:
                 result = super().get(
                     fqid,
