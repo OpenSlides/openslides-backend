@@ -7,7 +7,7 @@ from openslides_backend.shared.filters import And, FilterOperator, Not, Or
 
 
 def test_sql_to_filter_code_simple() -> None:
-    ds = ExtendedDatastoreAdapter(MagicMock(), MagicMock())
+    ds = ExtendedDatastoreAdapter(MagicMock(), MagicMock(), MagicMock())
     with patch("openslides_backend.services.datastore.extended_adapter.eval") as mock:
         ds._filter_changed_models(MagicMock(), FilterOperator("test", "=", 1), [])
     assert (
@@ -17,7 +17,7 @@ def test_sql_to_filter_code_simple() -> None:
 
 
 def test_sql_to_filter_code_complex() -> None:
-    ds = ExtendedDatastoreAdapter(MagicMock(), MagicMock())
+    ds = ExtendedDatastoreAdapter(MagicMock(), MagicMock(), MagicMock())
     operator = FilterOperator("test", "=", 1)
     _filter = Or(operator, And(operator, Not(operator)))
     with patch("openslides_backend.services.datastore.extended_adapter.eval") as mock:

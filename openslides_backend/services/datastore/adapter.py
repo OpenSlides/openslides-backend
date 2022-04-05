@@ -22,6 +22,7 @@ from ...shared.interfaces.collection_field_lock import (
     CollectionFieldLock,
     CollectionFieldLockWithFilter,
 )
+from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
@@ -45,11 +46,12 @@ class DatastoreAdapter(BaseDatastoreService):
     # The key of this dictionary is a stringified FullQualifiedId or FullQualifiedField or CollectionField
     locked_fields: Dict[str, CollectionFieldLock]
 
-    def __init__(self, engine: Engine, logging: LoggingModule) -> None:
+    def __init__(self, engine: Engine, logging: LoggingModule, env: Env) -> None:
         self.logger = logging.getLogger(__name__)
         self.engine = engine
         self.reader = injector.get(Reader)
         self.locked_fields = {}
+        self.env = env
 
     def retrieve(self, command: commands.Command) -> Any:
         """
@@ -70,7 +72,10 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug(f"Get response with status code {status_code}: {payload}")
         if status_code >= 400:
             raise_datastore_error(
-                payload, f"Datastore service sends HTTP {status_code}.", self.logger
+                payload,
+                f"Datastore service sends HTTP {status_code}.",
+                self.logger,
+                self.env,
             )
         return payload
 

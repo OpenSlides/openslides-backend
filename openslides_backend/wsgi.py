@@ -21,12 +21,13 @@ class OpenSlidesBackendServices(containers.DeclarativeContainer):
 
     config = providers.Configuration("config")
     logging = providers.Object(0)
+    env = providers.Object(0)
     authentication = providers.Singleton(AuthenticationHTTPAdapter, logging)
     media = providers.Singleton(MediaServiceAdapter, config.media_url, logging)
     engine = providers.Singleton(
         HTTPEngine, config.datastore_reader_url, config.datastore_writer_url, logging
     )
-    datastore = providers.Factory(ExtendedDatastoreAdapter, engine, logging)
+    datastore = providers.Factory(ExtendedDatastoreAdapter, engine, logging, env)
     vote = providers.Singleton(VoteAdapter, config.vote_url, logging)
 
 
@@ -71,6 +72,7 @@ def create_wsgi_application(
     services = OpenSlidesBackendServices(
         config=env.get_service_url(),
         logging=logging,
+        env=env,
     )
 
     # Create WSGI application instance. Inject logging module, view class and services container.

@@ -9,6 +9,7 @@ from datastore.shared.util import DeletedModelsBehaviour
 
 from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator
+from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import DeletedModel, ModelMap
@@ -60,8 +61,8 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
 
     changed_models: ModelMap
 
-    def __init__(self, engine: Engine, logging: LoggingModule) -> None:
-        super().__init__(engine, logging)
+    def __init__(self, engine: Engine, logging: LoggingModule, env: Env) -> None:
+        super().__init__(engine, logging, env)
         self.changed_models = defaultdict(dict)
 
     def apply_changed_model(
@@ -119,7 +120,9 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
             if self.is_new(fqid):
                 # if the model is new, we know it does not exist in the datastore and can directly throw
                 # an exception or return an empty result
-                raise_datastore_error({"error": {"fqid": fqid}}, logger=self.logger)
+                raise_datastore_error(
+                    {"error": {"fqid": fqid}}, logger=self.logger, env=self.env
+                )
             else:
                 result = super().get(
                     fqid,
