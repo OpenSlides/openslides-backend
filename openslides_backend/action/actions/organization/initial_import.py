@@ -139,5 +139,5 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             result[
                 "message"
             ] = f"Data imported, Migration Index set to {self.backend_migration_index}"
-            result["migration_needed"]: False
+            result["migration_needed"] = False
         return result
