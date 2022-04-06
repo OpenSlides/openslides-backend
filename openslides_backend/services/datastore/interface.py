@@ -133,7 +133,7 @@ class BaseDatastoreService(Protocol):
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         ...
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = True) -> None:
         ...
 
 

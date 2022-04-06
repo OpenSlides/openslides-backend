@@ -445,5 +445,5 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = True) -> None:
         self.locked_fields = {}

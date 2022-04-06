@@ -322,9 +322,10 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     def is_new(self, fqid: FullQualifiedId) -> bool:
         return self.changed_models.get(fqid, {}).get("meta_new") is True
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = True) -> None:
         super().reset()
-        self.changed_models.clear()
+        if hard:
+            self.changed_models.clear()
 
     def _filter_changed_models(
         self,
