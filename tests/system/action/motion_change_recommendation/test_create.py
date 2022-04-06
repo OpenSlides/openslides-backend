@@ -214,12 +214,3 @@ class MotionChangeRecommendationLineValidationTest(BaseActionTestCase):
         self.create_change_recommendation(1, 5, motion_id=42)
         response = self.cr_request(1, 5)
         self.assert_status_code(response, 200)
-
-    def test_create_change_recommendation_collide_check(self) -> None:
-        self.create_change_recommendation(2, 5)
-        response = self.cr_request(1, 2)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "The recommendation collides with an existing one",
-            response.json["message"],
-        )
