@@ -66,25 +66,10 @@ class EmailMixin:
 
     @staticmethod
     def get_ssl_default_context() -> ssl.SSLContext:
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         if EmailSettings.accept_self_signed_certificate:
-            ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
             ctx.check_hostname = False
             ctx.verify_mode = ssl.VerifyMode.CERT_NONE
-        else:
-            ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-            """
-            check_hostname:True
-            hostname_checks_common_name:True
-            maximum_version:<TLSVersion.MAXIMUM_SUPPORTED: -1>
-            minimum_version:<TLSVersion.TLSv1_2: 771>
-            protocol:<_SSLMethod.PROTOCOL_TLS_CLIENT: 16>
-            security_level:2
-            verify_flags:<VerifyFlags.VERIFY_X509_TRUSTED_FIRST: 32768>
-            verify_mode:<VerifyMode.CERT_REQUIRED: 2>
-            """
-            ciphers = [cipher["name"] for cipher in ctx.get_ciphers()]
-            ciphers.append("AES256-GCM-SHA384")
-            ctx.set_ciphers(",".join(ciphers))
         return ctx
 
     @staticmethod
