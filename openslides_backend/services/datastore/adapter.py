@@ -437,8 +437,6 @@ class DatastoreAdapter(BaseDatastoreService):
             f"Write request: {write_requests}"
         )
         self.retrieve(command)
-        # from json import loads
-        # WriteHandler().write(loads(command.data))
 
     def truncate_db(self) -> None:
         command = commands.TruncateDb()

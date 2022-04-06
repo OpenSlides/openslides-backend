@@ -26,6 +26,9 @@ PartialModel = Dict[str, Any]
 LockResult = Union[bool, List[str]]
 
 
+MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
+
+
 class BaseDatastoreService(Protocol):
     """
     Datastore defines the interface to the datastore.

@@ -16,13 +16,10 @@ from ...shared.typing import DeletedModel, ModelMap
 from .cache_adapter import CacheDatastoreAdapter
 from .commands import GetManyRequest
 from .handle_datastore_errors import raise_datastore_error
-from .interface import Engine, LockResult, PartialModel
+from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
 
 MODEL_FIELD_SQL = "data->>%s"
 COMPARISON_VALUE_SQL = "%s::text"
-
-
-MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
 
 
 class ExtendedDatastoreAdapter(CacheDatastoreAdapter):

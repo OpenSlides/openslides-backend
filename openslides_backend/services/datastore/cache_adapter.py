@@ -10,9 +10,7 @@ from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import ModelMap
 from .adapter import DatastoreAdapter
 from .commands import GetManyRequest
-from .interface import Engine, LockResult, PartialModel
-
-MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
+from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
 
 
 class CacheDatastoreAdapter(DatastoreAdapter):

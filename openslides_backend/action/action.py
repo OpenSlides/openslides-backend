@@ -256,7 +256,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
             identifier = "id"
             if self.permission_id:
                 identifier = self.permission_id
-            # breakpoint()
             db_instance = self.datastore.get(
                 FullQualifiedId(model.collection, instance[identifier]),
                 ["meeting_id"],

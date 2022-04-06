@@ -5,6 +5,7 @@ from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
 from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
+from tests.system.util import performance
 
 
 class PollStopActionTest(BaseActionTestCase):
@@ -195,7 +196,7 @@ class PollStopActionTest(BaseActionTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    # @performance
+    @performance
     def test_stop_performance(self) -> None:
         USER_COUNT = 100
         user_ids = list(range(2, USER_COUNT + 2))
