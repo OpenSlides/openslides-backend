@@ -403,17 +403,23 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
         Returns a dictionary of the changed models for the given collections together with all
         missing fields.
         """
-        results: Dict[Collection, Dict[int, PartialModel]] = defaultdict(dict)
+        results: Dict[Collection, Dict[int, PartialModel]] = defaultdict(
+            lambda: defaultdict(dict)
+        )
         missing_fields_per_fqid: MappedFieldsPerFqid = defaultdict(list)
         for fqid, mapped_fields in mapped_fields_per_fqid.items():
             if fqid in self.changed_models:
-                for field in mapped_fields:
-                    if field in self.changed_models[fqid]:
-                        results[fqid.collection].setdefault(fqid.id, {})[
-                            field
-                        ] = self.changed_models[fqid][field]
-                    else:
-                        missing_fields_per_fqid[fqid].append(field)
+                if mapped_fields:
+                    for field in mapped_fields:
+                        if field in self.changed_models[fqid]:
+                            results[fqid.collection][fqid.id][
+                                field
+                            ] = self.changed_models[fqid][field]
+                        else:
+                            missing_fields_per_fqid[fqid].append(field)
+                else:
+                    results[fqid.collection][fqid.id] = self.changed_models[fqid]
+                    missing_fields_per_fqid[fqid] = []
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
         return (results, missing_fields_per_fqid)

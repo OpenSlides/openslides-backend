@@ -20,7 +20,10 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     ) -> Dict[str, Any]:
         if fqid.id in self.mock_datastore_content.get(fqid.collection, {}):
             model = self.mock_datastore_content[fqid.collection][fqid.id]
-            return {field: model[field] for field in mapped_fields}
+            if mapped_fields:
+                return {field: model[field] for field in mapped_fields}
+            else:
+                return model
         else:
             raise DatastoreException("mock_db: model does not exist")
 
@@ -101,3 +104,14 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             )
         self.db_method_mock.assert_called()
         self.add_get_many_mock.assert_not_called()
+
+    def test_get_empty_mapped_fields_and_changed_models(self) -> None:
+        self.set_additional_models(
+            {
+                "test/1": {"id": 1, "changed": 3},
+            }
+        )
+        result = self.adapter.get(FullQualifiedId(self.collection, 1), [])
+        assert result == {"id": 1, "f": 1, "unused": 2, "changed": 3}
+        self.db_method_mock.assert_called()
+        self.add_get_many_mock.assert_called()
