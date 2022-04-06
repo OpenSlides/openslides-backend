@@ -107,6 +107,7 @@ class AiosmtpdServerManager:
                 EmailSettings.port,
                 server_hostname="127.0.0.1",
                 require_starttls=True,
+                #ssl_context= ssl_context,
                 tls_context=ssl_context,
                 **auth_kwargs,  # type: ignore
             )
