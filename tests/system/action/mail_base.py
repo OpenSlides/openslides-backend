@@ -99,16 +99,18 @@ class AiosmtpdServerManager:
                 **auth_kwargs,  # type: ignore
             )
         elif EmailSettings.connection_security == ConnectionSecurity.STARTTLS:
-            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-            ssl_context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            #ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            #ssl_context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
             ssl_context.load_cert_chain("cert.pem", "key.pem")
-            ssl_context.verify_mode = ssl.VerifyMode.CERT_NONE
+            #ssl_context.verify_mode = ssl.VerifyMode.CERT_NONE
             self.controller = Controller(
                 self.handler,
                 EmailSettings.host,
                 EmailSettings.port,
                 server_hostname="127.0.0.1",
                 require_starttls=True,
+                #ssl_context= ssl_context,
                 tls_context=ssl_context,
                 **auth_kwargs,  # type: ignore
             )
