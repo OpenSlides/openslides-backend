@@ -1,11 +1,12 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 
 from ....models.models import Poll
-from ....shared.exceptions import ActionException
+from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from ..projector_countdown.mixins import CountdownControl
 from .mixins import PollPermissionMixin
 
@@ -49,3 +50,13 @@ class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
         self.vote_service.start(instance["id"])
 
         return instance
+
+    def get_on_failure(self, action_data: ActionData) -> Callable[[], None]:
+        def on_failure() -> None:
+            for instance in action_data:
+                try:
+                    self.vote_service.clear(instance["id"])
+                except VoteServiceException as e:
+                    self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
+
+        return on_failure

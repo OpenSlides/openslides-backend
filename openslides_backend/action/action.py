@@ -625,6 +625,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
         after the result was successfully written to the DS.
         """
 
+    def get_on_failure(self, action_data: ActionData) -> Callable[[], None]:
+        """
+        Can be overridden by actions to return a cleanup method to execute
+        after an error appeared in an action.
+        """
+
 
 def merge_write_requests(
     write_requests: Iterable[WriteRequest],
