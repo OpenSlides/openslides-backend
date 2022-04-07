@@ -1736,7 +1736,6 @@
             "show_recommendation_extension_field": false,
             "allow_submitter_edit": false,
             "allow_create_poll": false,
-            "allow_support": false,
             "meeting_id": 1
         },
         "7": {
