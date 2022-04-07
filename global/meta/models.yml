@@ -2486,6 +2486,14 @@ motion_state:
     type: boolean
     default: false
     restriction_mode: A
+  allow_motion_forwarding:
+    type: boolean
+    default: false
+    restriction_mode: A
+  set_created_timestamp:
+    type: boolean
+    default: false
+    restriction_mode: A
 
   next_state_ids:
     type: relation-list

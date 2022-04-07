@@ -4,14 +4,15 @@ from ....models.models import MotionState
 from ....permissions.permissions import Permissions
 from ....services.datastore.interface import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .mixins import SetCreatedTimestampMixin
 
 
 @register_action("motion_state.update")
-class MotionStateUpdateAction(UpdateAction):
+class MotionStateUpdateAction(SetCreatedTimestampMixin, UpdateAction):
     """
     Update action: check next_state_ids and previous_state_ids
     """
@@ -41,6 +42,8 @@ class MotionStateUpdateAction(UpdateAction):
         """
         Check workflow_id of this state, next states and previous states.
         """
+        instance = super().update_instance(instance)
+
         state_ids = [instance["id"]]
         state_ids.extend(instance.get("next_state_ids", []))
         state_ids.extend(instance.get("previous_state_ids", []))
@@ -56,5 +59,13 @@ class MotionStateUpdateAction(UpdateAction):
                 raise ActionException(
                     f"Cannot update: found states from different workflows ({workflow_id}, {state['workflow_id']})"
                 )
+
+        assert workflow_id is not None
+        workflow = self.datastore.get(
+            FullQualifiedId(Collection("motion_workflow"), workflow_id), ["state_ids"]
+        )
+        self.handle_old_set_created_timestamp(
+            instance, workflow.get("state_ids", []), MotionStateUpdateAction
+        )
 
         return instance
