@@ -51,7 +51,8 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["last_modified"] = round(time.time())
+        timestamp = round(time.time())
+        instance["last_modified"] = timestamp
         if (
             instance.get("text")
             or instance.get("amendment_paragraph_$")
@@ -83,7 +84,8 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")
             motion = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["state_id"]
+                FullQualifiedId(self.model.collection, instance["id"]),
+                ["state_id", "created"],
             )
             state = self.datastore.get(
                 FullQualifiedId(Collection("motion_state"), motion["state_id"]),
@@ -96,9 +98,18 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
+                first_state = self.datastore.get(
+                    FullQualifiedId(Collection("motion_state"), instance["state_id"]),
+                    ["set_created_timestamp"],
+                )
+                if not motion.get("created") and first_state.get(
+                    "set_created_timestamp"
+                ):
+                    instance["created"] = timestamp
 
         if instance.get("recommendation_extension"):
             self.set_recommendation_extension_reference_ids(instance)
+
         return instance
 
     def set_recommendation_extension_reference_ids(

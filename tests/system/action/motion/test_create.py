@@ -28,7 +28,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 222},
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_created_timestamp": True,
+                },
             }
         )
         response = self.request(
@@ -150,7 +154,11 @@ class MotionCreateActionTest(BaseActionTestCase):
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 222},
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 222,
+                    "set_created_timestamp": True,
+                },
                 "user/1": {"meeting_ids": [222]},
             }
         )
@@ -166,6 +174,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         motion = self.get_model("motion/1")
         assert motion.get("state_id") == 34
+        assert motion.get("created")
 
     def test_create_workflow_id_from_meeting(self) -> None:
         self.set_models(
