@@ -25,7 +25,11 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "first_state_id": 34,
                 "state_ids": [34],
             },
-            "motion_state/34": {"name": "name_state34", "meeting_id": 2},
+            "motion_state/34": {
+                "name": "name_state34",
+                "meeting_id": 2,
+                "allow_motion_forwarding": True,
+            },
             "motion/12": {
                 "title": "title_FcnPUXJB",
                 "meeting_id": 1,
@@ -120,7 +124,11 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 2},
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 2,
+                    "allow_motion_forwarding": True,
+                },
                 "motion/6": {
                     "title": "title_FcnPUXJB layer 1",
                     "meeting_id": 1,
@@ -229,7 +237,11 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 1},
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 1,
+                    "allow_motion_forwarding": True,
+                },
             }
         )
         response = self.request(
@@ -243,6 +255,21 @@ class MotionCreateForwarded(BaseActionTestCase):
         )
         self.assert_status_code(response, 403)
         assert "Amendments cannot be forwarded." in response.json["message"]
+
+    def test_create_forwarded_not_allowed_by_state(self) -> None:
+        self.test_model["motion_state/34"]["allow_motion_forwarding"] = False
+        self.set_models(self.test_model)
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "State doesn't allow to forward motion." in response.json["message"]
 
     def test_no_permissions(self) -> None:
         self.create_meeting()
