@@ -1,6 +1,12 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+from datastore.migrations import BaseEvent, CreateEvent
+from datastore.shared.util import collection_and_id_from_fqid
+
+from migrations import get_backend_migration_index
+from migrations.migrate import MigrationWrapper
 
 from ....models.base import model_registry
 from ....models.checker import Checker, CheckException
@@ -30,6 +36,9 @@ from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixin import LimitOfUserMixin
 
+OS3_EXPORT_MIGRATIONINDEX = 1
+ONE_ORGANIZATION = 1
+
 
 @register_action("meeting.import")
 class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
@@ -55,6 +64,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         self.index = 0
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
+        # self.update_meeting_and_users(instance)
+        # instance = self.migrate_data(instance)
         self.validate_instance(instance)
         try:
             self.check_permissions(instance)
@@ -117,8 +128,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                     "Motion all_origin_ids and all_derived_motion_ids should be empty."
                 )
 
-        organization_id = self.check_limit_of_meetings(instance["committee_id"])
-        self.update_meeting_and_users(instance, organization_id)
+        self.check_limit_of_meetings()
+        self.update_meeting_and_users(instance)
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
@@ -151,14 +162,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             used_usernames.add(entry["username"])
 
     def check_limit_of_meetings(
-        self, committee_id: int, text: str = "import", text2: str = "active "
-    ) -> int:
-        committee = self.datastore.get(
-            FullQualifiedId(Collection("committee"), committee_id), ["organization_id"]
-        )
-        organization_id = committee.get("organization_id", 0)
+        self, text: str = "import", text2: str = "active "
+    ) -> None:
         organization = self.datastore.get(
-            FullQualifiedId(Collection("organization"), organization_id),
+            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
             ["active_meeting_ids", "limit_of_meetings"],
         )
         if (
@@ -167,17 +174,14 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             raise ActionException(
                 f"You cannot {text} an {text2}meeting, because you reached your limit of {limit_of_meetings} active meetings."
             )
-        return organization_id
 
-    def update_meeting_and_users(
-        self, instance: Dict[str, Any], organization_id: int
-    ) -> None:
+    def update_meeting_and_users(self, instance: Dict[str, Any]) -> None:
         # update committee_id and is_active_in_organization_id
         json_data = instance["meeting"]
         self.get_meeting_from_json(json_data)["committee_id"] = instance["committee_id"]
         self.get_meeting_from_json(json_data)[
             "is_active_in_organization_id"
-        ] = organization_id
+        ] = ONE_ORGANIZATION
 
         # generate passwords
         for entry in json_data["user"].values():
@@ -354,7 +358,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             replaced_id = self.replace_map["mediafile"][id_]
             self.media.upload_mediafile(blob, replaced_id, mimetype)
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def create_write_requests(
+        self, instance: Dict[str, Any], pure_create_requests: bool = False
+    ) -> Iterable[WriteRequest]:
         json_data = instance["meeting"]
         meeting_id = self.get_meeting_from_json(json_data)["id"]
         write_requests = []
@@ -369,14 +375,14 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                         entry,
                     )
                 )
+        if pure_create_requests:
+            return write_requests
+
         # add meeting to committee/meeting_ids
         write_requests.append(
             self.build_write_request(
                 EventType.Update,
-                FullQualifiedId(
-                    Collection("committee"),
-                    self.get_meeting_from_json(json_data)["committee_id"],
-                ),
+                FullQualifiedId(Collection("committee"), instance["committee_id"]),
                 f"import meeting {meeting_id}",
                 None,
                 {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
@@ -430,3 +436,77 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             instance["committee_id"],
         ):
             raise MissingPermission(CommitteeManagementLevel.CAN_MANAGE)
+
+    def create_import_create_events(
+        self, instance: Dict[str, Any]
+    ) -> Iterable[CreateEvent]:
+        json_data = instance["meeting"]
+        import_create_events = []
+        for collection in json_data:
+            for entry in json_data[collection].values():
+                # Necessary to remove None-values in event
+                for k, v in list(entry.items()):
+                    if v is None:
+                        entry.pop(k)
+                fqid = FullQualifiedId(Collection(collection), entry["id"])
+                import_create_events.append(CreateEvent(str(fqid), entry))
+        return import_create_events
+
+    def migrate_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        If no migration index is given in instance data, the instance-MI
+        is set to the fixed MI from OS3-Meeting-Export.
+        The target MI is the backend MI.
+        """
+        start_migration_index = (
+            instance.get("migration_index", OS3_EXPORT_MIGRATIONINDEX)
+            or OS3_EXPORT_MIGRATIONINDEX
+        )
+        if start_migration_index < 0:
+            return instance
+        backend_migration_index = get_backend_migration_index()
+        if backend_migration_index > start_migration_index:
+            handler = MigrationWrapper(
+                verbose=True,
+                memory_only=True,
+                start_migration_index=start_migration_index,
+            )
+            organization = self.datastore.get(
+                FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+                [
+                    "committee_ids",
+                    "active_meeting_ids",
+                    "archived_meeting_ids",
+                    "template_meeting_ids",
+                    "resource_ids",
+                    "organization_tag_ids",
+                ],
+            )
+            committee = self.datastore.get(
+                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                ["meeting_ids"],
+            )
+            models = {
+                f"organization/{ONE_ORGANIZATION}": organization,
+                f"committee/{instance['committee_id']}": committee,
+            }
+            handler.set_additional_data(
+                self.create_import_create_events(instance), models
+            )
+            handler.execute_command("finalize")
+            migrated_events = handler.get_import_create_events()
+            instance = self.create_instance_from_migrated_events(
+                instance, migrated_events
+            )
+        return instance
+
+    def create_instance_from_migrated_events(
+        self, instance: Dict[str, Any], migrated_events: List[BaseEvent]
+    ) -> Dict[str, Any]:
+        data = defaultdict(dict)
+        for event in migrated_events:
+            collection, id_ = collection_and_id_from_fqid(event.fqid)
+            if event.type == CreateEvent.type:
+                data[collection].update({str(id_): event.data})
+        instance["meeting"] = data
+        return instance
