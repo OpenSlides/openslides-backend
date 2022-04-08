@@ -34,6 +34,8 @@ class MotionStateUpdateAction(SetCreatedTimestampMixin, UpdateAction):
             "show_recommendation_extension_field",
             "next_state_ids",
             "previous_state_ids",
+            "set_created_timestamp",
+            "allow_motion_forwarding",
         ]
     )
     permission = Permissions.Motion.CAN_MANAGE
