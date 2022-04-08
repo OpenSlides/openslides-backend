@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "f3027fa969367f5b537116da6e8f5be7"
+MODELS_YML_CHECKSUM = "9c15d433155f43a293168609f29a6d49"
 
 
 class Organization(Model):
@@ -1370,8 +1370,8 @@ class MotionState(Model):
         constraints={"enum": ["do_not_merge", "undefined", "do_merge"]},
     )
     show_recommendation_extension_field = fields.BooleanField(default=False)
-    allow_motion_forwarding = fields.BooleanField(default=False)
-    set_created_timestamp = fields.BooleanField(default=False)
+    allow_motion_forwarding = fields.BooleanField()
+    set_created_timestamp = fields.BooleanField()
     next_state_ids = fields.RelationListField(
         to={Collection("motion_state"): "previous_state_ids"},
         equal_fields=["meeting_id", "workflow_id"],

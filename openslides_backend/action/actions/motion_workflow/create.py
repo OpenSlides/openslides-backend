@@ -35,6 +35,8 @@ class MotionWorkflowCreateAction(SequentialNumbersMixin, CreateActionWithDepende
                 "weight": 1,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
+                "set_created_timestamp": True,
+                "allow_motion_forwarding": True,
             }
         ]
 
@@ -67,6 +69,8 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "allow_support": True,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
+                "set_created_timestamp": True,
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "accepted",
@@ -74,6 +78,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "css_class": "green",
                 "merge_amendment_into_final": "do_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "rejected",
@@ -81,6 +86,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "css_class": "red",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "not decided",
@@ -88,6 +94,7 @@ class MotionWorkflowCreateSimpleWorkflowAction(SequentialNumbersMixin, CreateAct
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
         ]
 
@@ -137,18 +144,22 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "set_number": False,
                 "workflow_id": instance["id"],
                 "first_state_of_workflow_id": instance["id"],
+                "set_created_timestamp": True,
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "submitted",
                 "allow_support": True,
                 "workflow_id": instance["id"],
                 "set_number": False,
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "permitted",
                 "allow_create_poll": True,
                 "workflow_id": instance["id"],
                 "recommendation_label": "Permission",
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "accepted",
@@ -156,6 +167,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "css_class": "green",
                 "merge_amendment_into_final": "do_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "rejected",
@@ -163,12 +175,14 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "css_class": "red",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "withdrawn",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "adjourned",
@@ -176,6 +190,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "not concerned",
@@ -183,6 +198,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "referred to committee",
@@ -190,12 +206,14 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "needs review",
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
             {
                 "name": "rejected (not authorized)",
@@ -203,6 +221,7 @@ class MotionWorkflowCreateComplexWorkflowAction(SequentialNumbersMixin, CreateAc
                 "css_class": "grey",
                 "merge_amendment_into_final": "do_not_merge",
                 "workflow_id": instance["id"],
+                "allow_motion_forwarding": True,
             },
         ]
 
