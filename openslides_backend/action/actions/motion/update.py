@@ -98,14 +98,15 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
-                first_state = self.datastore.get(
-                    FullQualifiedId(Collection("motion_state"), instance["state_id"]),
-                    ["set_created_timestamp"],
-                )
-                if not motion.get("created") and first_state.get(
-                    "set_created_timestamp"
-                ):
-                    instance["created"] = timestamp
+                if not motion.get("created"):
+                    first_state = self.datastore.get(
+                        FullQualifiedId(
+                            Collection("motion_state"), instance["state_id"]
+                        ),
+                        ["set_created_timestamp"],
+                    )
+                    if first_state.get("set_created_timestamp"):
+                        instance["created"] = timestamp
 
         if instance.get("recommendation_extension"):
             self.set_recommendation_extension_reference_ids(instance)

@@ -28,7 +28,6 @@ class MotionCreateForwarded(BaseActionTestCase):
             "motion_state/34": {
                 "name": "name_state34",
                 "meeting_id": 2,
-                "allow_motion_forwarding": True,
             },
             "motion/12": {
                 "title": "title_FcnPUXJB",
@@ -127,7 +126,6 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 2,
-                    "allow_motion_forwarding": True,
                 },
                 "motion/6": {
                     "title": "title_FcnPUXJB layer 1",
@@ -240,7 +238,6 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 1,
-                    "allow_motion_forwarding": True,
                 },
             }
         )

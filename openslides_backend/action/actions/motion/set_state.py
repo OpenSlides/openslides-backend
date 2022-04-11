@@ -67,12 +67,13 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         )
         timestamp = round(time.time())
         instance["last_modified"] = timestamp
-        state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), instance["state_id"]),
-            ["set_created_timestamp"],
-        )
-        if not motion.get("created") and state.get("set_created_timestamp"):
-            instance["created"] = timestamp
+        if not motion.get("created"):
+            state = self.datastore.get(
+                FullQualifiedId(Collection("motion_state"), instance["state_id"]),
+                ["set_created_timestamp"],
+            )
+            if state.get("set_created_timestamp"):
+                instance["created"] = timestamp
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
