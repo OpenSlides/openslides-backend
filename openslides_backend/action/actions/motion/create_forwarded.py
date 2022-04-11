@@ -33,7 +33,6 @@ class MotionCreateForwarded(MotionCreateBase):
         )
         self.set_state_from_workflow(instance, meeting)
         self.check_for_origin_id(instance)
-        self.check_state_allow_forwarding(instance)
         self.create_submitters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
@@ -125,14 +124,3 @@ class MotionCreateForwarded(MotionCreateBase):
             )
         if action_data:
             self.execute_other_action(MotionUpdateAllDerivedMotionIds, action_data)
-
-    def check_state_allow_forwarding(self, instance: Dict[str, Any]) -> None:
-        origin = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["origin_id"]), ["state_id"]
-        )
-        state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), origin["state_id"]),
-            ["allow_motion_forwarding"],
-        )
-        if not state.get("allow_motion_forwarding"):
-            raise ActionException("State doesn't allow to forward motion.")
