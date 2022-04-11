@@ -64,5 +64,13 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             motion.get("number"),
             motion.get("number_value"),
         )
-        instance["last_modified"] = round(time.time())
+        timestamp = round(time.time())
+        instance["last_modified"] = timestamp
+        state = self.datastore.get(
+            FullQualifiedId(Collection("motion_state"), instance["state_id"]),
+            ["set_created_timestamp"],
+        )
+        instance["created"] = None
+        if state.get("set_created_timestamp"):
+            instance["created"] = timestamp
         return instance
