@@ -315,7 +315,7 @@ class Attribute(Node):
         if self.to:
             properties += self.to.get_properties()
         if self.on_delete:
-            assert self.on_delete in [mode.value for mode in OnDelete]
+            assert self.on_delete in [mode for mode in OnDelete]
             properties += f"on_delete=fields.OnDelete.{self.on_delete}, "
         if self.required:
             properties += "required=True, "

@@ -78,40 +78,38 @@ class AiosmtpdServerManager:
                 "authenticator": authenticator,
             }
 
-        if EmailSettings.connection_security in [
-            ConnectionSecurity.STARTTLS,
-            ConnectionSecurity.SSLTLS,
-        ]:
-            ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
             ssl_context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
             ssl_context.load_cert_chain("cert.pem", "key.pem")
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.VerifyMode.CERT_NONE
-            if EmailSettings.connection_security == ConnectionSecurity.SSLTLS:
-                # This is a hack: The aiosmtpd library does not issue AUTH in EHLO, if not starttls is used.
-                # For other methods (SSL/TLS and NONE) setting auth_require_tls allows AUTH. The intention is to
-                # allow AUTH before TLS (which is ok for NONE), but a hack for SSL/TLS since we have an
-                # encrypted connection
-                if self.auth:
-                    auth_kwargs["auth_require_tls"] = False
-                self.controller = Controller(
-                    self.handler,
-                    EmailSettings.host,
-                    EmailSettings.port,
-                    server_hostname="127.0.0.1",
-                    ssl_context=ssl_context,
-                    **auth_kwargs,  # type: ignore
-                )
-            else:
-                self.controller = Controller(
-                    self.handler,
-                    EmailSettings.host,
-                    EmailSettings.port,
-                    server_hostname="127.0.0.1",
-                    require_starttls=True,
-                    tls_context=ssl_context,
-                    **auth_kwargs,  # type: ignore
-                )
+
+            # This is a hack: The aiosmtpd library does not issue AUTH in EHLO, if not starttls is used.
+            # For other methods (SSL/TLS and NONE) setting auth_require_tls allows AUTH. The intention is to
+            # allow AUTH before TLS (which is ok for NONE), but a hack for SSL/TLS since we have an
+            # encrypted connection
+            if self.auth:
+                auth_kwargs["auth_require_tls"] = False
+            self.controller = Controller(
+                self.handler,
+                EmailSettings.host,
+                EmailSettings.port,
+                server_hostname="127.0.0.1",
+                ssl_context=ssl_context,
+                **auth_kwargs,  # type: ignore
+            )
+        elif EmailSettings.connection_security == ConnectionSecurity.STARTTLS:
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_context.load_default_certs(purpose=ssl.Purpose.SERVER_AUTH)
+            ssl_context.load_cert_chain("cert.pem", "key.pem")
+            self.controller = Controller(
+                self.handler,
+                EmailSettings.host,
+                EmailSettings.port,
+                server_hostname="127.0.0.1",
+                require_starttls=True,
+                tls_context=ssl_context,
+                **auth_kwargs,  # type: ignore
+            )
         else:
             if self.auth:
                 auth_kwargs["auth_require_tls"] = False

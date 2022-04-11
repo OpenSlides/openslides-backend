@@ -1,17 +1,19 @@
 black==22.3.0
 isort==5.10.1
 flake8==4.0.1
-mypy==0.910
-pytest==6.2.5
+mypy==0.941
+pytest==7.1.1
 pytest-cov==3.0.0
 pyyaml==6.0
 pip-check==2.7
 autoflake==1.4
 debugpy==1.5.1
-aiosmtpd==1.4.2
+
+# fork of aiosmtpd for python 3.10
+git+https://github.com/foutrelis/aiosmtpd.git@e3321f474c0d8f63a17186a6e727f490d943f624
 
 # typing
-types-PyYAML==6.0.1
-types-bleach==4.1.1
-types-requests==2.26.1
-types-simplejson==3.17.2
+types-PyYAML==6.0.5
+types-bleach==4.1.5
+types-requests==2.27.14
+types-simplejson==3.17.4

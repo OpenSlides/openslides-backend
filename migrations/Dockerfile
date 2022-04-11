@@ -1,4 +1,4 @@
-FROM python:3.8.5-slim-buster
+FROM python:3.10.3-slim-buster
 
 RUN apt-get update && apt-get install --yes bash-completion vim postgresql-client redis-tools wait-for-it gcc libc-dev libpq-dev curl git
 

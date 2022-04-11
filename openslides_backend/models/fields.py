@@ -1,8 +1,8 @@
 import re
 from decimal import Decimal
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union, cast
 
-from ..shared.enum import Enum
 from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, string_to_fqid
 from ..shared.schema import (
     decimal_schema,
@@ -23,7 +23,7 @@ from ..shared.util import (
 )
 
 
-class OnDelete(Enum):
+class OnDelete(str, Enum):
     PROTECT = "PROTECT"
     CASCADE = "CASCADE"
     SET_NULL = "SET_NULL"

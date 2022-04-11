@@ -66,10 +66,11 @@ class EmailMixin:
 
     @staticmethod
     def get_ssl_default_context() -> ssl.SSLContext:
+        ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
         if EmailSettings.accept_self_signed_certificate:
-            return ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        else:
-            return ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.VerifyMode.CERT_NONE
+        return ctx
 
     @staticmethod
     @contextmanager

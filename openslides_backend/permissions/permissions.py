@@ -8,35 +8,35 @@ from .base_classes import Permission
 PERMISSION_YML_CHECKSUM = "8a908837830f08606d9580f7b0bfa388"
 
 
-class _AgendaItem(Permission, Enum):
+class _AgendaItem(str, Permission, Enum):
     CAN_MANAGE = "agenda_item.can_manage"
     CAN_SEE = "agenda_item.can_see"
     CAN_SEE_INTERNAL = "agenda_item.can_see_internal"
 
 
-class _Assignment(Permission, Enum):
+class _Assignment(str, Permission, Enum):
     CAN_MANAGE = "assignment.can_manage"
     CAN_NOMINATE_OTHER = "assignment.can_nominate_other"
     CAN_NOMINATE_SELF = "assignment.can_nominate_self"
     CAN_SEE = "assignment.can_see"
 
 
-class _Chat(Permission, Enum):
+class _Chat(str, Permission, Enum):
     CAN_MANAGE = "chat.can_manage"
 
 
-class _ListOfSpeakers(Permission, Enum):
+class _ListOfSpeakers(str, Permission, Enum):
     CAN_BE_SPEAKER = "list_of_speakers.can_be_speaker"
     CAN_MANAGE = "list_of_speakers.can_manage"
     CAN_SEE = "list_of_speakers.can_see"
 
 
-class _Mediafile(Permission, Enum):
+class _Mediafile(str, Permission, Enum):
     CAN_MANAGE = "mediafile.can_manage"
     CAN_SEE = "mediafile.can_see"
 
 
-class _Meeting(Permission, Enum):
+class _Meeting(str, Permission, Enum):
     CAN_MANAGE_LOGOS_AND_FONTS = "meeting.can_manage_logos_and_fonts"
     CAN_MANAGE_SETTINGS = "meeting.can_manage_settings"
     CAN_SEE_AUTOPILOT = "meeting.can_see_autopilot"
@@ -45,7 +45,7 @@ class _Meeting(Permission, Enum):
     CAN_SEE_LIVESTREAM = "meeting.can_see_livestream"
 
 
-class _Motion(Permission, Enum):
+class _Motion(str, Permission, Enum):
     CAN_CREATE = "motion.can_create"
     CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
     CAN_FORWARD_INTO_THIS_MEETING = "motion.can_forward_into_this_meeting"
@@ -57,20 +57,20 @@ class _Motion(Permission, Enum):
     CAN_SUPPORT = "motion.can_support"
 
 
-class _Poll(Permission, Enum):
+class _Poll(str, Permission, Enum):
     CAN_MANAGE = "poll.can_manage"
 
 
-class _Projector(Permission, Enum):
+class _Projector(str, Permission, Enum):
     CAN_MANAGE = "projector.can_manage"
     CAN_SEE = "projector.can_see"
 
 
-class _Tag(Permission, Enum):
+class _Tag(str, Permission, Enum):
     CAN_MANAGE = "tag.can_manage"
 
 
-class _User(Permission, Enum):
+class _User(str, Permission, Enum):
     CAN_MANAGE = "user.can_manage"
     CAN_MANAGE_PRESENCE = "user.can_manage_presence"
     CAN_SEE = "user.can_see"

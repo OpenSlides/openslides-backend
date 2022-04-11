@@ -12,7 +12,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
-        assert "Datastore is not empty." in response.json["message"]
+        self.assertIn("Datastore is not empty.", response.json["message"])
 
     def test_initial_import_with_initial_data_file(self) -> None:
         self.datastore.truncate_db()
@@ -46,9 +46,9 @@ class OrganizationInitialImport(BaseActionTestCase):
         request_data["data"]["organization"]["1"]["test_field"] = "test"
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
-        assert (
-            "organization/1: Invalid fields test_field (value: test)"
-            in response.json["message"]
+        self.assertIn(
+            "organization/1: Invalid fields test_field (value: test)",
+            response.json["message"],
         )
 
     def test_initial_import_wrong_type(self) -> None:
@@ -59,9 +59,13 @@ class OrganizationInitialImport(BaseActionTestCase):
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         print(response.json)
-        assert (
-            "organization/1/theme_id: Type error: Type is not RelationField(to={Collection('theme'): 'theme_for_organization_id'}, is_list_field=False, on_delete=<OnDelete.SET_NULL: 'SET_NULL'>, required=True, constraints={}, equal_fields=[])"
-            in response.json["message"]
+        self.assertIn(
+            "organization/1/theme_id: Type error: Type is not RelationField(to={Collection('theme'): 'theme_for_organization_id'}, is_list_field=False, on_delete=SET_NULL, required=True, constraints={}, equal_fields=[])",
+            response.json["message"],
+        )
+        self.assertIn(
+            "organization/1/theme_id: Relation Error:  points to theme/test/theme_for_organization_id, but the reverse relation for it is corrupt",
+            response.json["message"],
         )
 
     def test_initial_import_wrong_relation(self) -> None:
@@ -70,13 +74,13 @@ class OrganizationInitialImport(BaseActionTestCase):
         request_data["data"]["organization"]["1"]["theme_id"] = 666
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
-        assert (
-            "Relation Error:  points to theme/666/theme_for_organization_id, but the reverse relation for it is corrupt"
-            in response.json["message"]
+        self.assertIn(
+            "Relation Error:  points to theme/666/theme_for_organization_id, but the reverse relation for it is corrupt",
+            response.json["message"],
         )
-        assert (
-            "Relation Error:  points to organization/1/theme_id, but the reverse relation for it is corrupt"
-            in response.json["message"]
+        self.assertIn(
+            "Relation Error:  points to organization/1/theme_id, but the reverse relation for it is corrupt",
+            response.json["message"],
         )
 
     def test_inital_import_missing_required(self) -> None:
@@ -85,7 +89,9 @@ class OrganizationInitialImport(BaseActionTestCase):
         del request_data["data"]["organization"]["1"]["theme_id"]
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
-        assert "organization/1: Missing fields theme_id" in response.json["message"]
+        self.assertIn(
+            "organization/1: Missing fields theme_id", response.json["message"]
+        )
 
     def test_initial_import_negative_default_vote_weight(self) -> None:
         self.datastore.truncate_db()

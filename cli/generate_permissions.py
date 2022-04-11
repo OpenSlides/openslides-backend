@@ -26,9 +26,9 @@ FILE_TEMPLATE = dedent(
     """\
     # Code generated. DO NOT EDIT.
 
+    from enum import Enum
     from typing import Dict, List
 
-    from openslides_backend.shared.enum import Enum
     from .base_classes import Permission
 
     PERMISSION_YML_CHECKSUM = "{}"
@@ -85,7 +85,7 @@ def main() -> None:
                     all_parents[pair[0]] += [pair[1]]
 
         for collection, permissions in all_permissions.items():
-            dest.write(f"\nclass _{collection}(Permission, Enum):\n")
+            dest.write(f"\nclass _{collection}(str, Permission, Enum):\n")
             for permission in sorted(permissions):
                 _, perm_str = get_permission_parts(permission)
                 dest.write(f"    {perm_str} = '{permission}'\n")
