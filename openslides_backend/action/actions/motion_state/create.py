@@ -11,14 +11,10 @@ from ...mixins.create_action_with_inferred_meeting import (
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-from .mixins import SetCreatedTimestampMixin
-from .update import MotionStateUpdateAction
 
 
 @register_action("motion_state.create")
-class MotionStateCreateAction(
-    WeightMixin, SetCreatedTimestampMixin, CreateActionWithInferredMeeting
-):
+class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
     """
     Action to create motion states
     """
@@ -57,7 +53,7 @@ class MotionStateCreateAction(
             )
         workflow = self.datastore.get(
             FullQualifiedId(Collection("motion_workflow"), instance["workflow_id"]),
-            ["id", "first_state_id", "state_ids", "meeting_id"],
+            ["id", "first_state_id", "meeting_id"],
         )
         if first_state_of_workflow_id:
             if (wf_first_state_id := workflow.get("first_state_id")) and instance[
@@ -75,7 +71,4 @@ class MotionStateCreateAction(
             )
             instance["weight"] = self.get_weight(filter)
 
-        self.handle_old_set_created_timestamp(
-            instance, workflow.get("state_ids", []), MotionStateUpdateAction
-        )
         return instance
