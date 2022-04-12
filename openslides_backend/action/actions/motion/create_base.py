@@ -69,7 +69,12 @@ class MotionCreateBase(
 
     def set_created_last_modified_and_number(self, instance: Dict[str, Any]) -> None:
         timestamp = round(time.time())
-        instance["created"] = timestamp
+        state = self.datastore.get(
+            FullQualifiedId(Collection("motion_state"), instance["state_id"]),
+            ["set_created_timestamp"],
+        )
+        if state.get("set_created_timestamp"):
+            instance["created"] = timestamp
         instance["last_modified"] = timestamp
         self.set_number(
             instance,

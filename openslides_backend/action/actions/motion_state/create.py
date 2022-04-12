@@ -35,6 +35,8 @@ class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
             "merge_amendment_into_final",
             "show_recommendation_extension_field",
             "first_state_of_workflow_id",
+            "allow_motion_forwarding",
+            "set_created_timestamp",
         ],
     )
     permission = Permissions.Motion.CAN_MANAGE
@@ -68,4 +70,5 @@ class MotionStateCreateAction(WeightMixin, CreateActionWithInferredMeeting):
                 FilterOperator("workflow_id", "=", workflow["id"]),
             )
             instance["weight"] = self.get_weight(filter)
+
         return instance

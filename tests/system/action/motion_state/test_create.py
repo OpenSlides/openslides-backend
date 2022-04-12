@@ -25,7 +25,13 @@ class MotionStateActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "motion_state.create", {"name": "test_Xcdfgee", "workflow_id": 42}
+            "motion_state.create",
+            {
+                "name": "test_Xcdfgee",
+                "workflow_id": 42,
+                "allow_motion_forwarding": True,
+                "set_created_timestamp": True,
+            },
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists("motion_state/1")
@@ -34,6 +40,8 @@ class MotionStateActionTest(BaseActionTestCase):
         assert model.get("restrictions") == []
         assert model.get("merge_amendment_into_final") == "undefined"
         assert model.get("css_class") == "lightblue"
+        assert model.get("allow_motion_forwarding") is True
+        assert model.get("set_created_timestamp") is True
 
     def test_create_as_new_first_state(self) -> None:
         self.set_models(

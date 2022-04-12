@@ -25,7 +25,10 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "first_state_id": 34,
                 "state_ids": [34],
             },
-            "motion_state/34": {"name": "name_state34", "meeting_id": 2},
+            "motion_state/34": {
+                "name": "name_state34",
+                "meeting_id": 2,
+            },
             "motion/12": {
                 "title": "title_FcnPUXJB",
                 "meeting_id": 1,
@@ -120,7 +123,10 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 2},
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 2,
+                },
                 "motion/6": {
                     "title": "title_FcnPUXJB layer 1",
                     "meeting_id": 1,
@@ -229,7 +235,10 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "first_state_id": 34,
                     "state_ids": [34],
                 },
-                "motion_state/34": {"name": "name_state34", "meeting_id": 1},
+                "motion_state/34": {
+                    "name": "name_state34",
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request(

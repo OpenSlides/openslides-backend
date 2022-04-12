@@ -33,6 +33,8 @@ class MotionStateUpdateAction(UpdateAction):
             "show_recommendation_extension_field",
             "next_state_ids",
             "previous_state_ids",
+            "set_created_timestamp",
+            "allow_motion_forwarding",
         ]
     )
     permission = Permissions.Motion.CAN_MANAGE
@@ -41,6 +43,8 @@ class MotionStateUpdateAction(UpdateAction):
         """
         Check workflow_id of this state, next states and previous states.
         """
+        instance = super().update_instance(instance)
+
         state_ids = [instance["id"]]
         state_ids.extend(instance.get("next_state_ids", []))
         state_ids.extend(instance.get("previous_state_ids", []))

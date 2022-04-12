@@ -54,6 +54,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
                     "motion_ids": [],
                     "next_state_ids": [77],
                     "previous_state_ids": [],
+                    "set_created_timestamp": True,
                 },
                 "motion_state/77": {
                     "meeting_id": 222,
@@ -77,6 +78,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         assert model.get("state_id") == 76
         assert model.get("number_value") == 23
         assert model.get("last_modified", 0) >= check_time
+        assert model.get("created", 0) >= check_time
 
     def test_set_state_correct_next_state(self) -> None:
         self.set_models(
@@ -91,6 +93,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
                     "motion_ids": [],
                     "next_state_ids": [],
                     "previous_state_ids": [77],
+                    "set_created_timestamp": True,
                 },
                 "motion_state/77": {
                     "meeting_id": 222,
@@ -113,6 +116,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("state_id") == 76
         assert model.get("number") == "A021"
+        assert model.get("created")
 
     def test_set_state_wrong_not_in_next_or_previous(self) -> None:
         self.set_models(
