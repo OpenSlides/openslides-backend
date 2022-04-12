@@ -1,3 +1,4 @@
+import time
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -33,10 +34,12 @@ class MotionCreateForwarded(MotionCreateBase):
         )
         self.set_state_from_workflow(instance, meeting)
         self.check_for_origin_id(instance)
+        self.check_state_allow_forwarding(instance)
         self.create_submitters(instance)
         self.set_sequential_number(instance)
         self.set_created_last_modified_and_number(instance)
         self.calculate_all_origin_ids_and_all_derived_motion_ids(instance)
+        instance["forwarded"] = round(time.time())
         return instance
 
     def check_for_origin_id(self, instance: Dict[str, Any]) -> None:
@@ -67,17 +70,11 @@ class MotionCreateForwarded(MotionCreateBase):
                 )
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        perm = Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING
-        if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-            msg = f"You are not allowed to perform action {self.name}."
-            msg += f" Missing permission: {perm}"
-            raise PermissionDenied(msg)
-
         origin = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["origin_id"]),
             ["meeting_id"],
         )
-        perm_origin = Permissions.Motion.CAN_MANAGE
+        perm_origin = Permissions.Motion.CAN_FORWARD
         if not has_perm(
             self.datastore, self.user_id, perm_origin, origin["meeting_id"]
         ):
@@ -124,3 +121,14 @@ class MotionCreateForwarded(MotionCreateBase):
             )
         if action_data:
             self.execute_other_action(MotionUpdateAllDerivedMotionIds, action_data)
+
+    def check_state_allow_forwarding(self, instance: Dict[str, Any]) -> None:
+        origin = self.datastore.get(
+            FullQualifiedId(self.model.collection, instance["origin_id"]), ["state_id"]
+        )
+        state = self.datastore.get(
+            FullQualifiedId(Collection("motion_state"), origin["state_id"]),
+            ["allow_motion_forwarding"],
+        )
+        if not state.get("allow_motion_forwarding"):
+            raise ActionException("State doesn't allow to forward motion.")

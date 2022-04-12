@@ -28,6 +28,7 @@ class MotionCreateForwarded(BaseActionTestCase):
             "motion_state/34": {
                 "name": "name_state34",
                 "meeting_id": 2,
+                "allow_motion_forwarding": True,
             },
             "motion/12": {
                 "title": "title_FcnPUXJB",
@@ -53,7 +54,7 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
+        model = self.assert_model_exists(
             "motion/13",
             {
                 "title": "test_Xcdfgee",
@@ -63,6 +64,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "all_origin_ids": [12],
             },
         )
+        assert model.get("forwarded")
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
@@ -126,6 +128,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "motion_state/34": {
                     "name": "name_state34",
                     "meeting_id": 2,
+                    "allow_motion_forwarding": True,
                 },
                 "motion/6": {
                     "title": "title_FcnPUXJB layer 1",
@@ -253,6 +256,21 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_status_code(response, 403)
         assert "Amendments cannot be forwarded." in response.json["message"]
 
+    def test_create_forwarded_not_allowed_by_state(self) -> None:
+        self.test_model["motion_state/34"]["allow_motion_forwarding"] = False
+        self.set_models(self.test_model)
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "State doesn't allow to forward motion." in response.json["message"]
+
     def test_no_permissions(self) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
@@ -270,10 +288,7 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert (
-            "Missing permission: motion.can_forward_into_this_meeting"
-            in response.json["message"]
-        )
+        assert "Missing permission: motion.can_forward" in response.json["message"]
 
     def test_permissions(self) -> None:
         self.create_meeting()
@@ -283,9 +298,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3, 4])
         self.set_models(self.test_model)
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE])
-        self.set_group_permissions(
-            4, [Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING]
-        )
+        self.set_group_permissions(4, [Permissions.Motion.CAN_FORWARD])
         response = self.request(
             "motion.create_forwarded",
             {
@@ -296,26 +309,3 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-
-    def test_no_permission_can_manage(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_models({"group/4": {"meeting_id": 2}})
-        self.set_user_groups(self.user_id, [3, 4])
-        self.set_models(self.test_model)
-        self.set_group_permissions(3, [])
-        self.set_group_permissions(
-            4, [Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING]
-        )
-        response = self.request(
-            "motion.create_forwarded",
-            {
-                "title": "test_Xcdfgee",
-                "meeting_id": 2,
-                "origin_id": 12,
-                "text": "test",
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "Missing permission: motion.can_manage" in response.json["message"]

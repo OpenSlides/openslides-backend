@@ -5,7 +5,7 @@ from typing import Dict, List
 
 from .base_classes import Permission
 
-PERMISSION_YML_CHECKSUM = "8a908837830f08606d9580f7b0bfa388"
+PERMISSION_YML_CHECKSUM = "8b461a28b723790de132bdea315d4a21"
 
 
 class _AgendaItem(str, Permission, Enum):
@@ -48,7 +48,7 @@ class _Meeting(str, Permission, Enum):
 class _Motion(str, Permission, Enum):
     CAN_CREATE = "motion.can_create"
     CAN_CREATE_AMENDMENTS = "motion.can_create_amendments"
-    CAN_FORWARD_INTO_THIS_MEETING = "motion.can_forward_into_this_meeting"
+    CAN_FORWARD = "motion.can_forward"
     CAN_MANAGE = "motion.can_manage"
     CAN_MANAGE_METADATA = "motion.can_manage_metadata"
     CAN_MANAGE_POLLS = "motion.can_manage_polls"
@@ -121,16 +121,17 @@ permission_parents: Dict[Permission, List[Permission]] = {
         _Motion.CAN_MANAGE_METADATA,
         _Motion.CAN_MANAGE_POLLS,
         _Motion.CAN_SEE_INTERNAL,
-        _Motion.CAN_FORWARD_INTO_THIS_MEETING,
+        _Motion.CAN_CREATE,
         _Motion.CAN_CREATE_AMENDMENTS,
+        _Motion.CAN_FORWARD,
         _Motion.CAN_SUPPORT,
     ],
     _Motion.CAN_MANAGE_METADATA: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE_POLLS: [_Motion.CAN_MANAGE],
     _Motion.CAN_SEE_INTERNAL: [_Motion.CAN_MANAGE],
-    _Motion.CAN_FORWARD_INTO_THIS_MEETING: [_Motion.CAN_CREATE],
     _Motion.CAN_CREATE: [_Motion.CAN_MANAGE],
     _Motion.CAN_CREATE_AMENDMENTS: [_Motion.CAN_MANAGE],
+    _Motion.CAN_FORWARD: [_Motion.CAN_MANAGE],
     _Motion.CAN_MANAGE: [],
     _Motion.CAN_SUPPORT: [],
     _Poll.CAN_MANAGE: [],

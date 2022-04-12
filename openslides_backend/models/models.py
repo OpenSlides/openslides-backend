@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "bc967d20ea3aed8a4af05612dc024d4a"
+MODELS_YML_CHECKSUM = "951bfd6e1847dc69f902dea549c6f17b"
 
 
 class Organization(Model):
@@ -784,7 +784,7 @@ class Group(Model):
                 "meeting.can_see_livestream",
                 "motion.can_create",
                 "motion.can_create_amendments",
-                "motion.can_forward_into_this_meeting",
+                "motion.can_forward",
                 "motion.can_manage",
                 "motion.can_manage_metadata",
                 "motion.can_manage_polls",
@@ -1085,6 +1085,7 @@ class Motion(Model):
     created = fields.TimestampField(read_only=True)
     last_modified = fields.TimestampField(read_only=True)
     start_line_number = fields.IntegerField(constraints={"minimum": 1})
+    forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
         to={Collection("motion"): "amendment_ids"}, equal_fields="meeting_id"
     )
