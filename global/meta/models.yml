@@ -2054,7 +2054,7 @@ motion:
   forwarded:
     type: timestamp
     read_only: true
-    restriction_mode: C
+    restriction_mode: B
 
   lead_motion_id:
     type: relation
