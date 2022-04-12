@@ -40,20 +40,33 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
         )
         polls = result[Collection("poll")].values()
         meeting_ids = list({poll["meeting_id"] for poll in polls})
-        self.datastore.get_many(
-            [
-                GetManyRequest(
-                    Collection("meeting"),
-                    meeting_ids,
-                    [
-                        "is_active_in_organization_id",
-                        "name",
-                        "poll_couple_countdown",
-                        "poll_countdown_id",
-                        "users_enable_vote_weight",
-                        "vote_ids",
-                    ],
+        requests = [
+            GetManyRequest(
+                Collection("meeting"),
+                meeting_ids,
+                [
+                    "is_active_in_organization_id",
+                    "name",
+                    "poll_couple_countdown",
+                    "poll_countdown_id",
+                    "users_enable_vote_weight",
+                    "vote_ids",
+                ],
+            ),
+            GetManyRequest(
+                Collection("group"),
+                list(
+                    {
+                        group_id
+                        for poll in polls
+                        for group_id in poll.get("entitled_group_ids", [])
+                    }
                 ),
+                ["user_ids"],
+            ),
+        ]
+        if self.user_id:
+            requests.append(
                 GetManyRequest(
                     Collection("user"),
                     [self.user_id],
@@ -61,20 +74,9 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                         "organization_management_level",
                         *[f"group_${meeting_id}_ids" for meeting_id in meeting_ids],
                     ],
-                ),
-                GetManyRequest(
-                    Collection("group"),
-                    list(
-                        {
-                            group_id
-                            for poll in polls
-                            for group_id in poll.get("entitled_group_ids", [])
-                        }
-                    ),
-                    ["user_ids"],
-                ),
-            ]
-        )
+                )
+            )
+        self.datastore.get_many(requests)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(

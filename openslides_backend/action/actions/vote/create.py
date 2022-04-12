@@ -68,9 +68,10 @@ class VoteCreate(CreateActionWithInferredMeeting):
                             user_id
                             for instance in action_data
                             for user_id in (
-                                instance["user_id"],
-                                instance["delegated_user_id"],
+                                instance.get("user_id"),
+                                instance.get("delegated_user_id"),
                             )
+                            if user_id is not None
                         }
                     ),
                     fields,
