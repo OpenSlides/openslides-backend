@@ -1,7 +1,8 @@
 import copy
+import cProfile
 import os
-from typing import Any, Callable, Dict, Type
-from unittest.mock import MagicMock, Mock
+from typing import Any, Callable, Dict, List, Type
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from dependency_injector import providers
@@ -9,6 +10,7 @@ from requests.models import Response as RequestsResponse
 
 from openslides_backend.http.views import ActionView, PresenterView
 from openslides_backend.http.views.base_view import ROUTE_OPTIONS_ATTR, RouteFunction
+from openslides_backend.services.datastore.adapter import DatastoreAdapter
 from openslides_backend.services.media.interface import MediaService
 from openslides_backend.services.vote.adapter import VoteAdapter
 from openslides_backend.services.vote.interface import VoteService
@@ -100,3 +102,56 @@ def performance(func: Callable) -> Callable:
         not is_truthy(os.environ.get("OPENSLIDES_PERFORMANCE_TESTS", "")),
         reason="Performance tests are disabled.",
     )(func)
+
+
+class Profiler:
+    """Helper class to profile a block of code. Use as context manager and provide filename to save
+    the output to."""
+
+    def __init__(self, filename: str) -> None:
+        self.filename = filename
+
+    def __enter__(self) -> None:
+        self.profiler = cProfile.Profile()
+        self.profiler.enable()
+
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        self.profiler.disable()
+        self.profiler.dump_stats(self.filename)
+
+
+class CountDatastoreCalls:
+    """Helper class to track the amount of datastore calls (= cache misses). Use as context manager
+    and access the result via the `count` property."""
+
+    def __init__(self, verbose: bool = False) -> None:
+        self.verbose = verbose
+
+    def __enter__(self) -> "CountDatastoreCalls":
+        self.patcher: List[Any] = []
+        self.mocks: List[Mock] = []
+        for method in ("get", "get_many"):
+            self.mock_datastore_method(method)
+        return self
+
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        for patcher in self.patcher:
+            patcher.stop()
+
+    def mock_datastore_method(self, method: str) -> None:
+        orig_method = getattr(DatastoreAdapter, method)
+
+        def mock_method(inner_self: DatastoreAdapter, *args: Any, **kwargs: Any) -> Any:
+            if self.verbose:
+                print(args, kwargs)
+            return orig_method(inner_self, *args, **kwargs)
+
+        patcher = patch.object(DatastoreAdapter, method, autospec=True)
+        mock = patcher.start()
+        mock.side_effect = mock_method
+        self.mocks.append(mock)
+        self.patcher.append(patcher)
+
+    @property
+    def calls(self) -> int:
+        return sum(mock.call_count for mock in self.mocks)

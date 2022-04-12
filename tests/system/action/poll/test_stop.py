@@ -1,11 +1,10 @@
-import cProfile
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
 from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
-from tests.system.util import performance
+from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 
 class PollStopActionTest(BaseActionTestCase):
@@ -196,10 +195,8 @@ class PollStopActionTest(BaseActionTestCase):
             Permissions.Poll.CAN_MANAGE,
         )
 
-    @performance
-    def test_stop_performance(self) -> None:
-        USER_COUNT = 100
-        user_ids = list(range(2, USER_COUNT + 2))
+    def prepare_users_and_poll(self, user_count: int) -> List[int]:
+        user_ids = list(range(2, user_count + 2))
         self.set_models(
             {
                 "poll/1": {
@@ -233,18 +230,27 @@ class PollStopActionTest(BaseActionTestCase):
             response = self.vote_service.vote({"id": 1, "value": {"1": "Y"}})
             self.assert_status_code(response, 200)
         self.client.login(ADMIN_USERNAME, ADMIN_PASSWORD)
+        return user_ids
 
-        def request_helper() -> Any:
-            return self.request("poll.stop", {"id": 1})
+    def test_stop_datastore_calls(self) -> None:
+        user_ids = self.prepare_users_and_poll(3)
 
-        cProfile.runctx(
-            "request_helper()",
-            globals(),
-            locals(),
-            filename="test_stop_performance.prof",
-        )
+        with CountDatastoreCalls() as counter:
+            response = self.request("poll.stop", {"id": 1})
 
-        # response = request_helper()
-        # self.assert_status_code(response, 200)
+        self.assert_status_code(response, 200)
+        poll = self.get_model("poll/1")
+        assert poll["voted_ids"] == user_ids
+        # always 4 calls, independent of user count
+        assert counter.calls == 4
+
+    @performance
+    def test_stop_performance(self) -> None:
+        user_ids = self.prepare_users_and_poll(100)
+
+        with Profiler("test_stop_performance.prof"):
+            response = self.request("poll.stop", {"id": 1})
+
+        self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll["voted_ids"] == user_ids

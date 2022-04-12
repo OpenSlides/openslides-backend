@@ -40,7 +40,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
             )
 
         mapped_fields_per_fqid = {fqid: mapped_fields}
-        # fetch results from changed models
+        # fetch results from cached models
         results, missing_fields_per_fqid = self._get_many_from_cached_models(
             mapped_fields_per_fqid
         )

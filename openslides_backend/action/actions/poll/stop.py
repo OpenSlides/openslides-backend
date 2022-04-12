@@ -21,24 +21,11 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
     schema = DefaultSchema(Poll()).get_update_schema()
 
     def prefetch(self, action_data: ActionData) -> None:
-        self.datastore.get_many(
+        result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("meeting"),
-                    [1],
-                    [
-                        "is_active_in_organization_id",
-                        "name",
-                        "poll_couple_countdown",
-                        "poll_countdown_id",
-                        "users_enable_vote_weight",
-                        "vote_ids",
-                    ],
-                ),
-                GetManyRequest(Collection("group"), [3], ["user_ids"]),
-                GetManyRequest(
                     Collection("poll"),
-                    [1],
+                    list({instance["id"] for instance in action_data}),
                     [
                         "content_object_id",
                         "meeting_id",
@@ -49,23 +36,42 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                         "entitled_group_ids",
                     ],
                 ),
-                GetManyRequest(Collection("option"), [1], ["meeting_id", "vote_ids"]),
+            ]
+        )
+        polls = result[Collection("poll")].values()
+        meeting_ids = list({poll["meeting_id"] for poll in polls})
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    Collection("meeting"),
+                    meeting_ids,
+                    [
+                        "is_active_in_organization_id",
+                        "name",
+                        "poll_couple_countdown",
+                        "poll_countdown_id",
+                        "users_enable_vote_weight",
+                        "vote_ids",
+                    ],
+                ),
                 GetManyRequest(
                     Collection("user"),
-                    list(range(1, 102)),
+                    [self.user_id],
                     [
-                        "group_$1_ids",
                         "organization_management_level",
-                        "vote_$_ids",
-                        "vote_$1_ids",
-                        "vote_delegated_vote_$_ids",
-                        "vote_delegated_vote_$1_ids",
-                        "poll_voted_$_ids",
-                        "poll_voted_$1_ids",
-                        "is_present_in_meeting_ids",
-                        "vote_delegated_$_to_id",
-                        "vote_delegated_$1_to_id",
+                        *[f"group_${meeting_id}_ids" for meeting_id in meeting_ids],
                     ],
+                ),
+                GetManyRequest(
+                    Collection("group"),
+                    list(
+                        {
+                            group_id
+                            for poll in polls
+                            for group_id in poll.get("entitled_group_ids", [])
+                        }
+                    ),
+                    ["user_ids"],
                 ),
             ]
         )

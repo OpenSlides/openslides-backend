@@ -184,7 +184,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         Checks permission by requesting permission service or using internal check.
         """
-        # switch between internal and external permission service
         if self.permission:
             if type(self.permission) == OrganizationManagementLevel:
                 if has_organization_management_level(
