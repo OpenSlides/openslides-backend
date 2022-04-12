@@ -70,7 +70,6 @@ class GetForwardingMeetings(BasePresenter):
 
             meeting_result = []
             for meeting_id2 in forward_to_committee.get("meeting_ids", []):
-                # XXX
                 meeting2 = self.datastore.get(
                     FullQualifiedId(Collection("meeting"), meeting_id2),
                     ["name", "is_active_in_organization_id"],

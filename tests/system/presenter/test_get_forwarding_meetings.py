@@ -141,9 +141,18 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 {
                     "id": 3,
                     "name": "com3",
-                    "meetings": [{"id": 2, "name": "meeting2"}],
+                    "meetings": [
+                        {"id": 2, "name": "meeting2"},
+                        {"id": 3, "name": "meeting3"},
+                    ],
                     "default_meeting_id": 3,
-                }
+                },
+                {
+                    "id": 4,
+                    "name": "com4",
+                    "meetings": [{"id": 4, "name": "meeting4"}],
+                    "default_meeting_id": None,
+                },
             ],
         )
 
