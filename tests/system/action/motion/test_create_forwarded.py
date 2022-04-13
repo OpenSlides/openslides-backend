@@ -51,6 +51,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "meeting_id": 2,
                 "origin_id": 12,
                 "text": "test",
+                "reason": "reason_jLvcgAMx",
             },
         )
         self.assert_status_code(response, 200)
@@ -62,6 +63,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "origin_id": 12,
                 "all_derived_motion_ids": [],
                 "all_origin_ids": [12],
+                "reason": "reason_jLvcgAMx",
             },
         )
         assert model.get("forwarded")
