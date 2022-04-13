@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 
 from datastore.migrations import BaseEvent, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid
@@ -20,7 +20,10 @@ from ....models.fields import (
     RelationListField,
 )
 from ....models.models import Meeting
-from ....permissions.management_levels import CommitteeManagementLevel
+from ....permissions.management_levels import (
+    CommitteeManagementLevel,
+    OrganizationManagementLevel,
+)
 from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
@@ -64,6 +67,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         self.index = 0
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
+        if self.name == "meeting.import":
+            self.check_not_allowed_fields(instance)
         # self.update_meeting_and_users(instance)
         # instance = self.migrate_data(instance)
         self.validate_instance(instance)
@@ -79,6 +84,23 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         result = [self.create_action_result_element(instance)]
         return (final_write_request, result)
 
+    def check_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
+        json_data = instance["meeting"]
+        for user in json_data.get("user", {}).values():
+            if (
+                OrganizationManagementLevel(
+                    user.get("organization_management_level", "no_right")
+                )
+                > OrganizationManagementLevel.NO_RIGHT
+            ):
+                raise ActionException(
+                    "Imported user may not have OrganizationManagementLevel rights!"
+                )
+            if user.get("committee_$_management_level"):
+                raise ActionException(
+                    "Imported user may not have CommitteeManagementLevel rights!"
+                )
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]
 
@@ -91,7 +113,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             [
                 key
                 for key in meeting_json.get("user", [])
-                if meeting_json["user"][key]["is_active"]
+                if meeting_json["user"][key].get("is_active")
             ]
         )
         self.check_limit_of_user(active_user_in_json)
@@ -134,6 +156,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
         self.replace_fields(instance)
+        meeting_json = instance["meeting"]
         self.update_admin_group(meeting_json)
         self.upload_mediadata()
         return instance
@@ -142,11 +165,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         used_usernames = set()
         for entry in json_data.get("user", {}).values():
             is_username_unique = False
-            template_username = entry["username"]
+            template_username = entry["username"].replace(" ", "")
             count = 1
             while not is_username_unique:
                 if entry["username"] in used_usernames:
-                    entry["username"] = template_username + " " + str(count)
+                    entry["username"] = template_username + str(count)
                     count += 1
                     continue
                 result = self.datastore.filter(
@@ -155,7 +178,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                     ["id"],
                 )
                 if result:
-                    entry["username"] = template_username + " " + str(count)
+                    entry["username"] = template_username + str(count)
                     count += 1
                     continue
                 is_username_unique = True
@@ -343,15 +366,18 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 entry[new_field] = tmp
 
     def update_admin_group(self, data_json: Dict[str, Any]) -> None:
-        admin_group_id = self.get_meeting_from_json(data_json)["admin_group_id"]
-        for entry in data_json["group"].values():
-            if entry["id"] == admin_group_id:
-                if entry["user_ids"]:
-                    entry["user_ids"].insert(0, self.user_id)
-                else:
-                    entry["user_ids"] = [self.user_id]
-
-        self.get_meeting_from_json(data_json)["user_ids"].insert(0, self.user_id)
+        meeting = self.get_meeting_from_json(data_json)
+        admin_group_id = meeting.get("admin_group_id")
+        group = data_json.get("group", {}).get(str(admin_group_id))
+        if not group:
+            raise ActionException(
+                "Imported meeting has no AdminGroup to assign to request user"
+            )
+        if group.get("user_ids"):
+            group["user_ids"].insert(0, self.user_id)
+        else:
+            group["user_ids"] = [self.user_id]
+        self.new_group_for_request_user = admin_group_id
 
     def upload_mediadata(self) -> None:
         for blob, id_, mimetype in self.mediadata:
@@ -361,8 +387,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
     def create_write_requests(
         self, instance: Dict[str, Any], pure_create_requests: bool = False
     ) -> Iterable[WriteRequest]:
+        """be carefull, this method is also used by meeting.clone action"""
         json_data = instance["meeting"]
-        meeting_id = self.get_meeting_from_json(json_data)["id"]
+        meeting = self.get_meeting_from_json(json_data)
+        meeting_id = meeting["id"]
         write_requests = []
         for collection in json_data:
             for entry in json_data[collection].values():
@@ -382,14 +410,15 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         write_requests.append(
             self.build_write_request(
                 EventType.Update,
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                FullQualifiedId(Collection("committee"), meeting["committee_id"]),
                 f"import meeting {meeting_id}",
                 None,
                 {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
             )
         )
+
         # add meeting to organization/active_meeting_ids if not archived
-        if self.get_meeting_from_json(json_data).get("is_active_in_organization_id"):
+        if meeting.get("is_active_in_organization_id"):
             write_requests.append(
                 self.build_write_request(
                     EventType.Update,
@@ -400,9 +429,42 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 )
             )
 
+        self.append_extra_write_requests(write_requests, instance["meeting"])
+
         # handle the calc fields.
         write_requests.extend(list(self.handle_calculated_fields(instance)))
         return write_requests
+
+    def append_extra_write_requests(
+        self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
+    ) -> None:
+        meeting = self.get_meeting_from_json(json_data)
+        meeting_id = meeting["id"]
+
+        # add request user to admin group of imported meeting.
+        # Request user is added to group in meeting to organization/active_meeting_ids if not archived
+        if (
+            meeting.get("is_active_in_organization_id")
+            and hasattr(self, "new_group_for_request_user")
+            and self.new_group_for_request_user
+        ):
+            write_requests.append(
+                self.build_write_request(
+                    EventType.Update,
+                    FullQualifiedId(Collection("user"), self.user_id),
+                    f"import meeting {meeting_id}",
+                    None,
+                    {
+                        "add": {
+                            "group_$_ids": [str(meeting_id)],
+                            f"group_${meeting_id}_ids": [
+                                self.new_group_for_request_user
+                            ],
+                        },
+                        "remove": {},
+                    },
+                )
+            )
 
     def handle_calculated_fields(
         self, instance: Dict[str, Any]
@@ -494,7 +556,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 self.create_import_create_events(instance), models
             )
             handler.execute_command("finalize")
-            migrated_events = handler.get_import_create_events()
+            migrated_events = cast(List[Any], handler.get_import_create_events())
             instance = self.create_instance_from_migrated_events(
                 instance, migrated_events
             )
@@ -503,7 +565,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
     def create_instance_from_migrated_events(
         self, instance: Dict[str, Any], migrated_events: List[BaseEvent]
     ) -> Dict[str, Any]:
-        data = defaultdict(dict)
+        data: Dict[str, Dict] = defaultdict(dict)
         for event in migrated_events:
             collection, id_ = collection_and_id_from_fqid(event.fqid)
             if event.type == CreateEvent.type:
