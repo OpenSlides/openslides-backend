@@ -36,21 +36,11 @@ class MotionChangeRecommendationCreateAction(
         exists = self.datastore.exists(
             self.model.collection,
             And(
-                # adding meeting id for improved query speed
                 FilterOperator("meeting_id", "=", instance["meeting_id"]),
                 FilterOperator("motion_id", "=", instance["motion_id"]),
-                Not(
-                    And(
-                        FilterOperator("line_from", "<", line_from),
-                        FilterOperator("line_to", "<=", line_from),
-                    )
-                ),
-                Not(
-                    And(
-                        FilterOperator("line_from", ">=", line_to),
-                        FilterOperator("line_to", ">", line_to),
-                    )
-                ),
+                # line_from <= line_to
+                Not(FilterOperator("line_to", "<", line_from)),
+                Not(FilterOperator("line_from", ">", line_to)),
             ),
         )
         if exists:
