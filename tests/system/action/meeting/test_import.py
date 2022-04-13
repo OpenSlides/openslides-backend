@@ -596,7 +596,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
         meeting2 = self.assert_model_exists("meeting/2")
-        self.assertCountEqual(meeting2.get("user_ids"), [1, 2])
+        self.assertCountEqual(meeting2["user_ids"], [1, 2])
 
     def test_check_usernames_1(self) -> None:
         self.set_models(
@@ -915,7 +915,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
         meeting2 = self.assert_model_exists("meeting/2")
-        self.assertCountEqual(meeting2.get("user_ids"), [1, 2])
+        self.assertCountEqual(meeting2["user_ids"], [1, 2])
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
 
     def test_motion_recommendation_extension(self) -> None:
@@ -1075,9 +1075,9 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
         meeting = self.assert_model_exists("meeting/2")
-        self.assertCountEqual(meeting.get("user_ids"), [1, 2])
+        self.assertCountEqual(meeting["user_ids"], [1, 2])
         group2 = self.assert_model_exists("group/2")
-        self.assertCountEqual(group2.get("user_ids"), [1, 2])
+        self.assertCountEqual(group2["user_ids"], [1, 2])
 
     def test_motion_all_derived_motion_ids(self) -> None:
         request_data = self.create_request_data(
