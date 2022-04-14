@@ -23,6 +23,7 @@ updatable_fields = [
     "end_time",
     "location",
     "organization_tag_ids",
+    "name",
 ]
 
 
@@ -51,10 +52,16 @@ class MeetingClone(MeetingImport):
             self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
 
         # pre update the meeting
+        name_set = False
         for field in updatable_fields:
             if field in instance:
+                if field == "name":
+                    name_set = True
                 value = instance.pop(field)
                 self.get_meeting_from_json(meeting_json)[field] = value
+        if not name_set:
+            meeting = self.get_meeting_from_json(instance["meeting"])
+            meeting["name"] = meeting.get("name", "") + " - Copy"
 
         # reset mediafile/attachment_ids to [] if None.
         for mediafile_id in instance["meeting"].get("mediafile", []):
@@ -96,7 +103,6 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        self.add_meeting_title_suffix(instance)
         return instance
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
@@ -118,10 +124,6 @@ class MeetingClone(MeetingImport):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
                 )
-
-    def add_meeting_title_suffix(self, instance: Dict[str, Any]) -> None:
-        meeting = self.get_meeting_from_json(instance["meeting"])
-        meeting["name"] = meeting.get("name", "") + " - Copy"
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         write_requests = list(super().create_write_requests(instance))
