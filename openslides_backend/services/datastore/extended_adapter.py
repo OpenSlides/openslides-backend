@@ -13,19 +13,16 @@ from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.patterns import Collection, FullQualifiedId
 from ...shared.typing import DeletedModel, ModelMap
-from .adapter import DatastoreAdapter
+from .cache_adapter import CacheDatastoreAdapter
 from .commands import GetManyRequest
 from .handle_datastore_errors import raise_datastore_error
-from .interface import Engine, LockResult, PartialModel
+from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
 
 MODEL_FIELD_SQL = "data->>%s"
 COMPARISON_VALUE_SQL = "%s::text"
 
 
-MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
-
-
-class ExtendedDatastoreAdapter(DatastoreAdapter):
+class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     """
     Subclass of the datastore adapter to extend the functions with the usage of the changed_models.
 
@@ -322,9 +319,10 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
     def is_new(self, fqid: FullQualifiedId) -> bool:
         return self.changed_models.get(fqid, {}).get("meta_new") is True
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = True) -> None:
         super().reset()
-        self.changed_models.clear()
+        if hard:
+            self.changed_models.clear()
 
     def _filter_changed_models(
         self,
@@ -479,7 +477,5 @@ class ExtendedDatastoreAdapter(DatastoreAdapter):
             GetManyRequest(fqid.collection, [fqid.id], fields)
             for fqid, fields in missing_fields_per_fqid.items()
         ]
-        results = super().get_many(
-            get_many_requests, None, DeletedModelsBehaviour.ALL_MODELS, lock_result
-        )
+        results = super().get_many(get_many_requests, lock_result=lock_result)
         return results

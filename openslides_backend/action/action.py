@@ -126,6 +126,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         self.user_id = user_id
         self.index = 0
+
+        # prefetch as much data as possible
+        self.prefetch(action_data)
+
         for instance in action_data:
             self.validate_instance(instance)
             self.check_for_archived_meeting(instance)
@@ -171,11 +175,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
         return (final_write_request, self.results)
 
+    def prefetch(self, action_data: ActionData) -> None:
+        """
+        Implement in subclasses to prefetch data for the action.
+        """
+
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         """
         Checks permission by requesting permission service or using internal check.
         """
-        # switch between internal and external permission service
         if self.permission:
             if type(self.permission) == OrganizationManagementLevel:
                 if has_organization_management_level(

@@ -26,6 +26,9 @@ PartialModel = Dict[str, Any]
 LockResult = Union[bool, List[str]]
 
 
+MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
+
+
 class BaseDatastoreService(Protocol):
     """
     Datastore defines the interface to the datastore.
@@ -133,7 +136,7 @@ class BaseDatastoreService(Protocol):
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         ...
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = True) -> None:
         ...
 
 

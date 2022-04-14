@@ -85,7 +85,7 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
         return value.
         """
         patcher = patch(
-            f"openslides_backend.services.datastore.adapter.DatastoreAdapter.{method_name}",
+            f"openslides_backend.services.datastore.cache_adapter.CacheDatastoreAdapter.{method_name}",
         )
         mock = patcher.start()
         self.addCleanup(patcher.stop)

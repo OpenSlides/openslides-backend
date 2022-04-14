@@ -2,9 +2,11 @@ from collections import defaultdict
 from typing import Any, ContextManager, Dict, List, Optional, Sequence, Set, Union
 
 import simplejson as json
-from datastore.reader.core import AggregateRequest, FilterRequest, GetAllRequest
-from datastore.reader.core import GetManyRequest as FullGetManyRequest
 from datastore.reader.core import (
+    AggregateRequest,
+    FilterRequest,
+    GetAllRequest,
+    GetManyRequest,
     GetManyRequestPart,
     GetRequest,
     HistoryInformationRequest,
@@ -34,6 +36,8 @@ from ...shared.patterns import (
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
 from .interface import BaseDatastoreService, Engine, LockResult, PartialModel
+
+MappedFieldsPerFqid = Dict[FullQualifiedId, List[str]]
 
 
 class DatastoreAdapter(BaseDatastoreService):
@@ -137,7 +141,7 @@ class DatastoreAdapter(BaseDatastoreService):
             )
             for gmr in get_many_requests
         ]
-        request = FullGetManyRequest(request_parts, [], position, get_deleted_models)
+        request = GetManyRequest(request_parts, [], position, get_deleted_models)
         self.logger.debug(
             f"Start GET_MANY request to datastore with the following data: {request}"
         )
@@ -439,5 +443,5 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
 
-    def reset(self) -> None:
+    def reset(self, hard: bool = True) -> None:
         self.locked_fields = {}

@@ -38,6 +38,15 @@ class GetManyRequest:
             and self.mapped_fields == other.mapped_fields
         )
 
+    def __repr__(self) -> str:
+        return str(
+            {
+                "collection": self.collection,
+                "ids": self.ids,
+                "mapped_fields": list(self.mapped_fields),
+            }
+        )
+
 
 CommandData = Dict[str, Union[str, int, List[str]]]
 
