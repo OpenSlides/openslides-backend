@@ -846,22 +846,27 @@ meeting:
   export_pdf_line_height:
     type: float
     default: 1.25
+    minimum: 1.0
     restriction_mode: B
   export_pdf_page_margin_left:
     type: number
     default: 75
+    minimum: 0
     restriction_mode: B
   export_pdf_page_margin_top:
     type: number
     default: 90
+    minimum: 0
     restriction_mode: B
   export_pdf_page_margin_right:
     type: number
     default: 75
+    minimum: 0
     restriction_mode: B
   export_pdf_page_margin_bottom:
     type: number
     default: 50
+    minimum: 0
     restriction_mode: B
   export_pdf_pagesize:
     type: string

@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "fd8ec9bbe7de2b9e65bcf8c02caf34b0"
+MODELS_YML_CHECKSUM = "fca5433e77d1216699925459cc4d3df0"
 
 
 class Organization(Model):
@@ -386,11 +386,21 @@ class Meeting(Model):
     export_pdf_fontsize = fields.IntegerField(
         default=10, constraints={"enum": [10, 11, 12]}
     )
-    export_pdf_line_height = fields.FloatField(default=1.25)
-    export_pdf_page_margin_left = fields.IntegerField(default=75)
-    export_pdf_page_margin_top = fields.IntegerField(default=90)
-    export_pdf_page_margin_right = fields.IntegerField(default=75)
-    export_pdf_page_margin_bottom = fields.IntegerField(default=50)
+    export_pdf_line_height = fields.FloatField(
+        default=1.25, constraints={"minimum": 1.0}
+    )
+    export_pdf_page_margin_left = fields.IntegerField(
+        default=75, constraints={"minimum": 0}
+    )
+    export_pdf_page_margin_top = fields.IntegerField(
+        default=90, constraints={"minimum": 0}
+    )
+    export_pdf_page_margin_right = fields.IntegerField(
+        default=75, constraints={"minimum": 0}
+    )
+    export_pdf_page_margin_bottom = fields.IntegerField(
+        default=50, constraints={"minimum": 0}
+    )
     export_pdf_pagesize = fields.CharField(
         default="A4", constraints={"enum": ["A4", "A5"]}
     )
