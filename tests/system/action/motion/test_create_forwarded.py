@@ -18,6 +18,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "motions_default_workflow_id": 12,
                 "committee_id": 52,
                 "is_active_in_organization_id": 1,
+                "default_group_id": 112,
+                "group_ids": [112],
             },
             "user/1": {"meeting_ids": [1, 2]},
             "motion_workflow/12": {
@@ -40,6 +42,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "name": "name_auSwgfJC",
                 "forward_to_committee_ids": [52],
             },
+            "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
         }
 
     def test_correct_origin_id_set(self) -> None:
@@ -67,6 +70,78 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         assert model.get("forwarded")
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "Committee User",
+                "is_physical_person": False,
+                "is_active": False,
+                "group_$_ids": ["2"],
+                "group_$2_ids": [112],
+                "forwarding_committee_ids": [53],
+            },
+        )
+        self.assert_model_exists("group/112", {"user_ids": [2]})
+        self.assert_model_exists("committee/53", {"forwarding_user_id": 2})
+        self.assert_model_exists(
+            "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
+        )
+
+    def test_correct_existing_forward_user(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "Committee User",
+                    "is_physical_person": False,
+                    "is_active": False,
+                    "group_$_ids": ["2"],
+                    "group_$2_ids": [113],
+                    "forwarding_committee_ids": [53],
+                },
+                "group/113": {"name": "HPMHcWhk", "meeting_id": 2, "user_ids": [2]},
+                "meeting/2": {"group_ids": [112, 113]},
+                "committee/53": {"forwarding_user_id": 2},
+            }
+        )
+
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+                "reason": "reason_jLvcgAMx",
+            },
+        )
+        self.assert_status_code(response, 200)
+        model = self.assert_model_exists(
+            "motion/13",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "all_derived_motion_ids": [],
+                "all_origin_ids": [12],
+                "reason": "reason_jLvcgAMx",
+            },
+        )
+        assert model.get("forwarded")
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "Committee User",
+                "is_physical_person": False,
+                "is_active": False,
+                "group_$_ids": ["2"],
+                "group_$2_ids": [113, 112],
+                "forwarding_committee_ids": [53],
+            },
+        )
+        self.assert_model_exists("group/112", {"user_ids": [2]})
+        self.assert_model_exists("group/113", {"user_ids": [2]})
+        self.assert_model_exists("committee/53", {"forwarding_user_id": 2})
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
@@ -120,6 +195,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "motions_default_workflow_id": 12,
                     "committee_id": 52,
                     "is_active_in_organization_id": 1,
+                    "default_group_id": 112,
+                    "group_ids": [112],
                 },
                 "user/1": {"meeting_ids": [1, 2]},
                 "motion_workflow/12": {
@@ -172,6 +249,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "name": "name_auSwgfJC",
                     "forward_to_committee_ids": [52],
                 },
+                "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
             }
         )
         response = self.request(

@@ -187,6 +187,9 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         """
         self.assert_not_anonymous()
 
+        if "forwarding_committee_ids" in instance:
+            raise PermissionDenied("forwarding_committee_ids is not allowed.")
+
         permstore = PermissionVarStore(self.datastore, self.user_id)
         if permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
             return

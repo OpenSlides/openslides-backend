@@ -282,6 +282,12 @@ user:
       to: committee/user_$_management_level
     restriction_mode: E
 
+  # for the motion forwarding
+  forwarding_committee_ids:
+    type: relation-list
+    to: committee/forwarding_user_id
+    restriction_mode: F
+
   # Meeting specific personal data
   comment_$:
     type: template
@@ -648,6 +654,10 @@ committee:
   receive_forwardings_from_committee_ids:
     type: relation-list
     to: committee/forward_to_committee_ids
+    restriction_mode: B
+  forwarding_user_id:
+    type: relation
+    to: user/forwarding_committee_ids
     restriction_mode: B
   organization_tag_ids:
     type: relation-list

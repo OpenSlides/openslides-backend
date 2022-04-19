@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "67525abd5a9d1afa289b91eb56f555b4"
+MODELS_YML_CHECKSUM = "3bd2a0c798de61345aa070fab69e5e6d"
 
 
 class Organization(Model):
@@ -107,6 +107,9 @@ class User(Model):
         index=10,
         to={Collection("committee"): "user_$_management_level"},
         replacement_enum=["can_manage"],
+    )
+    forwarding_committee_ids = fields.RelationListField(
+        to={Collection("committee"): "forwarding_user_id"}
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
@@ -313,6 +316,9 @@ class Committee(Model):
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
         to={Collection("committee"): "forward_to_committee_ids"}
+    )
+    forwarding_user_id = fields.RelationField(
+        to={Collection("user"): "forwarding_committee_ids"}
     )
     organization_tag_ids = fields.RelationListField(
         to={Collection("organization_tag"): "tagged_ids"}
