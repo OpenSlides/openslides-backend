@@ -73,7 +73,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "Committee User",
+                "username": "name_auSwgfJC",
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": ["2"],
@@ -92,7 +92,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.set_models(
             {
                 "user/2": {
-                    "username": "Committee User",
+                    "username": "name_EeKbwxpa",
                     "is_physical_person": False,
                     "is_active": False,
                     "group_$_ids": ["2"],
@@ -131,7 +131,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "Committee User",
+                "username": "name_EeKbwxpa",
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": ["2"],

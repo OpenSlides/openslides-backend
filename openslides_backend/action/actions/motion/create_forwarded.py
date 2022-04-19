@@ -66,7 +66,7 @@ class MotionCreateForwarded(MotionCreateBase):
                 self.execute_other_action(UserUpdate, user_update_payload)
         else:
             committee_user_create_payload = {
-                "username": "Committee User",
+                "username": committee.get("name", "Committee User"),
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": {
@@ -107,7 +107,7 @@ class MotionCreateForwarded(MotionCreateBase):
             FullQualifiedId(
                 Collection("committee"), forwarded_from_meeting["committee_id"]
             ),
-            ["id", "forward_to_committee_ids", "forwarding_user_id"],
+            ["id", "name", "forward_to_committee_ids", "forwarding_user_id"],
         )
         if meeting["committee_id"] not in committee.get("forward_to_committee_ids", []):
             raise ActionException(
