@@ -2,7 +2,7 @@ import pkgutil
 import sys
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import Any, Dict, Iterable, List, Optional, Type, cast
+from typing import Any, Dict, List, Type, cast
 
 from datastore.migrations import (
     BaseEvent,
@@ -12,7 +12,9 @@ from datastore.migrations import (
     PrintFunction,
     setup,
 )
-from datastore.migrations.core.migration_handler import MigrationHandlerImplementationMemory
+from datastore.migrations.core.migration_handler import (
+    MigrationHandlerImplementationMemory,
+)
 from datastore.shared.typing import Fqid, Model
 
 
@@ -36,7 +38,9 @@ class MigrationWrapper:
         migrations = MigrationWrapper.load_migrations()
         self.handler = setup(verbose, print_fn, memory_only)
         if start_migration_index:
-            cast(MigrationHandlerImplementationMemory, self.handler).start_migration_index = start_migration_index
+            cast(
+                MigrationHandlerImplementationMemory, self.handler
+            ).start_migration_index = start_migration_index
         self.handler.register_migrations(*migrations)
 
     @staticmethod
@@ -89,15 +93,17 @@ class MigrationWrapper:
 
     def set_additional_data(
         self,
-        import_create_events: Optional[Iterable[BaseEvent]],
+        import_create_events: List[CreateEvent],
         models: Dict[Fqid, Model],
     ) -> None:
-        self.handler = cast(MigrationHandlerImplementationMemory, self.handler)
-        self.handler.import_create_events = import_create_events
-        self.handler.imported_models = models
+        cast(
+            MigrationHandlerImplementationMemory, self.handler
+        ).migrater.set_additional_data(import_create_events, models)
 
-    def get_import_create_events(self) -> Optional[Iterable[CreateEvent]]:
-        return cast(MigrationHandlerImplementationMemory, self.handler).import_create_events
+    def get_migrated_create_events(self) -> List[BaseEvent]:
+        return cast(
+            MigrationHandlerImplementationMemory, self.handler
+        ).migrater.get_migrated_create_events()
 
 
 def get_parser() -> ArgumentParser:

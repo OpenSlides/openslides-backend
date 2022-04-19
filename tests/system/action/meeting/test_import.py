@@ -484,7 +484,12 @@ class MeetingImport(BaseActionTestCase):
 
     def test_no_meeting_collection(self) -> None:
         response = self.request(
-            "meeting.import", {"migration_index": current_migration_index, "committee_id": 1, "meeting": {"meeting": {}}}
+            "meeting.import",
+            {
+                "migration_index": current_migration_index,
+                "committee_id": 1,
+                "meeting": {"meeting": {}},
+            },
         )
         self.assert_status_code(response, 400)
         assert (

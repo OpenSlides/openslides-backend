@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from datastore.migrations import BaseEvent, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid
@@ -51,7 +51,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_default_schema(
         required_properties=["committee_id"],
-        additional_required_fields={"meeting": {"type": "object"}, "migration_index": {"type": "number"}},
+        additional_required_fields={
+            "meeting": {"type": "object"},
+            "migration_index": {"type": "number"},
+        },
         title="Import meeting",
         description="Import a meeting into the committee.",
     )
@@ -520,7 +523,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
 
     def create_import_create_events(
         self, instance: Dict[str, Any]
-    ) -> Iterable[CreateEvent]:
+    ) -> List[CreateEvent]:
         json_data = instance["meeting"]
         import_create_events = []
         for collection in json_data:
@@ -580,9 +583,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 self.create_import_create_events(instance), models
             )
             migration_wrapper.execute_command("finalize")
-            migrated_events = cast(
-                List[Any], migration_wrapper.get_import_create_events()
-            )
+            migrated_events = migration_wrapper.get_migrated_create_events()
             instance = self.create_instance_from_migrated_events(
                 instance, migrated_events
             )
@@ -599,6 +600,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             elif event.fqid.split("/")[0] in ("organization", "committee", "user"):
                 continue
             else:
-                raise ActionException(f"ActionType {event.type} for {event.fqid} not implemented!")
+                raise ActionException(
+                    f"ActionType {event.type} for {event.fqid} not implemented!"
+                )
         instance["meeting"] = data
         return instance
