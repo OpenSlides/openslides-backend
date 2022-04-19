@@ -850,22 +850,22 @@ meeting:
     restriction_mode: B
   export_pdf_page_margin_left:
     type: number
-    default: 75
+    default: 20
     minimum: 0
     restriction_mode: B
   export_pdf_page_margin_top:
     type: number
-    default: 90
+    default: 25
     minimum: 0
     restriction_mode: B
   export_pdf_page_margin_right:
     type: number
-    default: 75
+    default: 20
     minimum: 0
     restriction_mode: B
   export_pdf_page_margin_bottom:
     type: number
-    default: 50
+    default: 20
     minimum: 0
     restriction_mode: B
   export_pdf_pagesize:

@@ -11,9 +11,9 @@ class Migration(AddFieldsMigration):
     defaults = {
         "meeting": {
             "export_pdf_line_height": 1.25,
-            "export_pdf_page_margin_left": 75,
-            "export_pdf_page_margin_top": 90,
-            "export_pdf_page_margin_right": 75,
-            "export_pdf_page_margin_bottom": 50,
+            "export_pdf_page_margin_left": 20,
+            "export_pdf_page_margin_top": 25,
+            "export_pdf_page_margin_right": 20,
+            "export_pdf_page_margin_bottom": 20,
         }
     }
