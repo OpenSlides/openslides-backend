@@ -2,8 +2,11 @@ import base64
 import time
 from typing import Any, Dict, List, cast
 
+from migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from tests.system.action.base import BaseActionTestCase
+
+current_migration_index = get_backend_migration_index()
 
 
 class MeetingImport(BaseActionTestCase):
@@ -25,7 +28,9 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+
         data: Dict[str, Any] = {
+            "migration_index": current_migration_index,
             "committee_id": 1,
             "meeting": {
                 "meeting": {
@@ -479,7 +484,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_no_meeting_collection(self) -> None:
         response = self.request(
-            "meeting.import", {"committee_id": 1, "meeting": {"meeting": {}}}
+            "meeting.import", {"migration_index": current_migration_index, "committee_id": 1, "meeting": {"meeting": {}}}
         )
         self.assert_status_code(response, 400)
         assert (
@@ -490,6 +495,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request(
             "meeting.import",
             {
+                "migration_index": current_migration_index,
                 "committee_id": 1,
                 "meeting": {"meeting": {"1": {"id": 1}, "2": {"id": 2}}},
             },
@@ -1241,99 +1247,6 @@ class MeetingImport(BaseActionTestCase):
             == response.json["message"]
         )
 
-    def test_committee_delete(self) -> None:
-        self.set_models(
-            {
-                "user/10": {"username": "user10"},
-            }
-        )
-        response = self.request(
-            "committee.create",
-            {
-                "name": "C2",
-                "user_$_management_level": {"can_manage": [1]},
-                "organization_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-        response = self.request(
-            "committee.create",
-            {
-                "name": "C3",
-                "user_$_management_level": {"can_manage": [1]},
-                "organization_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-        response = self.request(
-            "committee.create",
-            {
-                "name": "C4",
-                "user_$_management_level": {"can_manage": [1]},
-                "organization_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-        response = self.request(
-            "committee.create",
-            {
-                "name": "C5",
-                "user_$_management_level": {"can_manage": [1]},
-                "organization_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-
-        response = self.request("committee.delete", {"id": 3})
-        self.assert_status_code(response, 200)
-        response = self.request("committee.delete", {"id": 4})
-        self.assert_status_code(response, 200)
-
-        response = self.request(
-            "committee.create",
-            {
-                "name": "C6",
-                "user_$_management_level": {"can_manage": [1, 10]},
-                "organization_id": 1,
-            },
-        )
-        self.assert_status_code(response, 200)
-
-        self.assert_model_exists("organization/1", {"committee_ids": [1, 2, 5, 6]})
-        self.assert_model_exists(
-            "user/1",
-            {
-                "committee_ids": [2, 5, 6],
-                "committee_$can_manage_management_level": [2, 5, 6],
-            },
-        )
-        self.assert_model_exists(
-            "user/10",
-            {
-                "committee_ids": [6],
-                "committee_$can_manage_management_level": [6],
-                "committee_$_management_level": ["can_manage"],
-            },
-        )
-        self.assert_model_exists(
-            "committee/1", {"user_$can_manage_management_level": None}
-        )
-        self.assert_model_exists(
-            "committee/2", {"user_$can_manage_management_level": [1]}
-        )
-        self.assert_model_deleted(
-            "committee/3", {"user_$can_manage_management_level": [1]}
-        )
-        self.assert_model_deleted(
-            "committee/4", {"user_$can_manage_management_level": [1]}
-        )
-        self.assert_model_exists(
-            "committee/5", {"user_$can_manage_management_level": [1]}
-        )
-        self.assert_model_exists(
-            "committee/6", {"user_$can_manage_management_level": [1, 10]}
-        )
-
     def test_check_forbidden_organization_management_right(self) -> None:
         request_data = self.create_request_data(
             {
@@ -1385,3 +1298,49 @@ class MeetingImport(BaseActionTestCase):
             "Imported meeting has no AdminGroup to assign to request user",
             response.json["message"],
         )
+
+    def test_without_migration_index(self) -> None:
+        data = self.create_request_data({})
+        del data["migration_index"]
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The data must have a valid migration index, but 'None' is not valid!",
+            response.json["message"],
+        )
+
+    def test_with_negative_migration_index(self) -> None:
+        data = self.create_request_data({})
+        data["migration_index"] = -1
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The data must have a valid migration index, but '-1' is not valid!",
+            response.json["message"],
+        )
+
+    def test_with_migration_index_to_high(self) -> None:
+        data = self.create_request_data({})
+        data["migration_index"] = 12345678
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            f"Your data migration index '12345678' is higher than the migration index of this backend '{current_migration_index}'! Please, update your backend!",
+            response.json["message"],
+        )
+
+    def test_all_migrations(self) -> None:
+        data = self.create_request_data({})
+        data["migration_index"] = 1
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
+        meeting = self.assert_model_exists("meeting/2")
+        self.assertCountEqual(meeting["user_ids"], [1, 2])
+        group2 = self.assert_model_exists("group/2")
+        self.assertCountEqual(group2["user_ids"], [1, 2])
+        committee1 = self.get_model("committee/1")
+        self.assertCountEqual(committee1["user_ids"], [1, 2])
+        self.assertCountEqual(committee1["meeting_ids"], [1, 2])
+        self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
+        self.assert_model_exists("projector/2", {"sequential_number": 1})

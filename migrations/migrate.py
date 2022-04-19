@@ -2,7 +2,7 @@ import pkgutil
 import sys
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import Any, Dict, Iterable, List, Optional, Type, cast
 
 from datastore.migrations import (
     BaseEvent,
@@ -12,6 +12,7 @@ from datastore.migrations import (
     PrintFunction,
     setup,
 )
+from datastore.migrations.core.migration_handler import MigrationHandlerImplementationMemory
 from datastore.shared.typing import Fqid, Model
 
 
@@ -35,7 +36,7 @@ class MigrationWrapper:
         migrations = MigrationWrapper.load_migrations()
         self.handler = setup(verbose, print_fn, memory_only)
         if start_migration_index:
-            self.handler.start_migration_index = start_migration_index
+            cast(MigrationHandlerImplementationMemory, self.handler).start_migration_index = start_migration_index
         self.handler.register_migrations(*migrations)
 
     @staticmethod
@@ -91,11 +92,12 @@ class MigrationWrapper:
         import_create_events: Optional[Iterable[BaseEvent]],
         models: Dict[Fqid, Model],
     ) -> None:
+        self.handler = cast(MigrationHandlerImplementationMemory, self.handler)
         self.handler.import_create_events = import_create_events
         self.handler.imported_models = models
 
     def get_import_create_events(self) -> Optional[Iterable[CreateEvent]]:
-        return self.handler.import_create_events
+        return cast(MigrationHandlerImplementationMemory, self.handler).import_create_events
 
 
 def get_parser() -> ArgumentParser:

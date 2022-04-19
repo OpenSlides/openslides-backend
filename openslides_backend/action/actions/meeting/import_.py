@@ -39,7 +39,6 @@ from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixin import LimitOfUserMixin
 
-OS3_EXPORT_MIGRATIONINDEX = 1
 ONE_ORGANIZATION = 1
 
 
@@ -52,7 +51,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_default_schema(
         required_properties=["committee_id"],
-        additional_required_fields={"meeting": {"type": "object"}},
+        additional_required_fields={"meeting": {"type": "object"}, "migration_index": {"type": "number"}},
         title="Import meeting",
         description="Import a meeting into the committee.",
     )
@@ -67,10 +66,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         self.index = 0
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
+
         if self.name == "meeting.import":
+            self.check_one_meeting(instance)
             self.check_not_allowed_fields(instance)
-        # self.update_meeting_and_users(instance)
-        # instance = self.migrate_data(instance)
+            self.set_committee_and_orga_relation(instance)
+            instance = self.migrate_data(instance)
+            self.unset_committee_and_orga_relation(instance)
         self.validate_instance(instance)
         try:
             self.check_permissions(instance)
@@ -83,6 +85,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         final_write_request = self.process_write_requests()
         result = [self.create_action_result_element(instance)]
         return (final_write_request, result)
+
+    def check_one_meeting(self, instance: Dict[str, Any]) -> None:
+        meeting_json = instance.get("meeting", {})
+        if not len(meeting_json.get("meeting", {}).values()) == 1:
+            raise ActionException("Need exact one meeting in meeting collection.")
 
     def check_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting"]
@@ -103,11 +110,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]
-
-        # checks if the meeting is correct
-        if not len(meeting_json.get("meeting", {}).values()) == 1:
-            raise ActionException("Need exact one meeting in meeting collection.")
-
         self.check_usernames_and_generate_new_ones(meeting_json)
         active_user_in_json = len(
             [
@@ -198,23 +200,34 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 f"You cannot {text} an {text2}meeting, because you reached your limit of {limit_of_meetings} active meetings."
             )
 
+    def set_committee_and_orga_relation(self, instance: Dict[str, Any]) -> None:
+        json_data = instance["meeting"]
+        meeting = self.get_meeting_from_json(json_data)
+        meeting["committee_id"] = instance["committee_id"]
+        meeting["is_active_in_organization_id"] = ONE_ORGANIZATION
+
+    def unset_committee_and_orga_relation(self, instance: Dict[str, Any]) -> None:
+        json_data = instance["meeting"]
+        meeting = self.get_meeting_from_json(json_data)
+        meeting["committee_id"] = None
+        meeting["is_active_in_organization_id"] = None
+
     def update_meeting_and_users(self, instance: Dict[str, Any]) -> None:
         # update committee_id and is_active_in_organization_id
         json_data = instance["meeting"]
-        self.get_meeting_from_json(json_data)["committee_id"] = instance["committee_id"]
-        self.get_meeting_from_json(json_data)[
-            "is_active_in_organization_id"
-        ] = ONE_ORGANIZATION
+        meeting = self.get_meeting_from_json(json_data)
+        meeting["committee_id"] = instance["committee_id"]
+        meeting["is_active_in_organization_id"] = ONE_ORGANIZATION
 
         # generate passwords
         for entry in json_data["user"].values():
             entry["password"] = self.auth.hash(get_random_string(10))
 
         # set enable_anonymous
-        self.get_meeting_from_json(json_data)["enable_anonymous"] = False
+        meeting["enable_anonymous"] = False
 
         # set imported_at
-        self.get_meeting_from_json(json_data)["imported_at"] = round(time.time())
+        meeting["imported_at"] = round(time.time())
 
     def get_meeting_from_json(self, json_data: Any) -> Any:
         """
@@ -240,10 +253,15 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         new_json_data = {}
         for collection in json_data:
             new_collection = {}
+            coll_class = Collection(collection)
             for entry in json_data[collection].values():
                 for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field)
                 new_collection[str(entry["id"])] = entry
+                entry["meta_new"] = True
+                self.datastore.apply_changed_model(
+                    FullQualifiedId(coll_class, entry["id"]), entry
+                )
             new_json_data[collection] = new_collection
         instance["meeting"] = new_json_data
 
@@ -394,6 +412,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         write_requests = []
         for collection in json_data:
             for entry in json_data[collection].values():
+                entry.pop("meta_new", None)
                 fqid = FullQualifiedId(Collection(collection), entry["id"])
                 write_requests.append(
                     self.build_write_request(
@@ -516,19 +535,24 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
 
     def migrate_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
-        If no migration index is given in instance data, the instance-MI
-        is set to the fixed MI from OS3-Meeting-Export.
-        The target MI is the backend MI.
+        1. Method checks instance for valid migration_index
+        2. convert the instance json-data to datastore create events
+        3. do the migrations
+        4. get the migrated events from migration wrapper
+        5. Convert only create events back to json-data
         """
-        start_migration_index = (
-            instance.get("migration_index", OS3_EXPORT_MIGRATIONINDEX)
-            or OS3_EXPORT_MIGRATIONINDEX
-        )
-        if start_migration_index < 0:
-            return instance
+        start_migration_index = instance.get("migration_index")
+        if not start_migration_index or start_migration_index < 0:
+            raise ActionException(
+                f"The data must have a valid migration index, but '{start_migration_index}' is not valid!"
+            )
         backend_migration_index = get_backend_migration_index()
+        if backend_migration_index < start_migration_index:
+            raise ActionException(
+                f"Your data migration index '{start_migration_index}' is higher than the migration index of this backend '{backend_migration_index}'! Please, update your backend!"
+            )
         if backend_migration_index > start_migration_index:
-            handler = MigrationWrapper(
+            migration_wrapper = MigrationWrapper(
                 verbose=True,
                 memory_only=True,
                 start_migration_index=start_migration_index,
@@ -552,11 +576,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 f"organization/{ONE_ORGANIZATION}": organization,
                 f"committee/{instance['committee_id']}": committee,
             }
-            handler.set_additional_data(
+            migration_wrapper.set_additional_data(
                 self.create_import_create_events(instance), models
             )
-            handler.execute_command("finalize")
-            migrated_events = cast(List[Any], handler.get_import_create_events())
+            migration_wrapper.execute_command("finalize")
+            migrated_events = cast(
+                List[Any], migration_wrapper.get_import_create_events()
+            )
             instance = self.create_instance_from_migrated_events(
                 instance, migrated_events
             )
@@ -570,5 +596,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             collection, id_ = collection_and_id_from_fqid(event.fqid)
             if event.type == CreateEvent.type:
                 data[collection].update({str(id_): event.data})
+            elif event.fqid.split("/")[0] in ("organization", "committee", "user"):
+                continue
+            else:
+                raise ActionException(f"ActionType {event.type} for {event.fqid} not implemented!")
         instance["meeting"] = data
         return instance
