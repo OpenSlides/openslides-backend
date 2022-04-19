@@ -156,12 +156,6 @@ class MeetingClone(MeetingImport):
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
                 )
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
-        write_requests = list(super().create_write_requests(instance))
-        self.append_extra_write_requests(write_requests, instance["meeting"])
-        write_requests.extend(list(self.handle_calculated_fields(instance)))
-        return write_requests
-
     def append_extra_write_requests(
         self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
     ) -> None:
