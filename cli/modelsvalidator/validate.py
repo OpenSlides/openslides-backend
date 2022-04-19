@@ -181,6 +181,10 @@ class Checker:
             valid_attributes.append("minimum")
             if not isinstance(field.get("minimum", 0), int):
                 self.errors.append(f"'minimum' for {collectionfield} is not a number.")
+        if type == "float":
+            valid_attributes.append("minimum")
+            if not isinstance(field.get("minimum", 0), (int, float)):
+                self.errors.append(f"'minimum' for {collectionfield} is not a number.")
         if type == "decimal(6)":
             valid_attributes.append("minimum")
         if type == "string":
