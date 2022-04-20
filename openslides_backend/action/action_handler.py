@@ -67,12 +67,10 @@ class ActionHandler(BaseHandler):
     MAX_RETRY = 3
 
     on_success: List[Callable[[], None]]
-    on_failure: List[Callable[[], None]]
 
     def __init__(self, env: Env, services: Services, logging: LoggingModule) -> None:
         super().__init__(env, services, logging)
         self.on_success = []
-        self.on_failure = []
 
     @classmethod
     def get_health_info(cls) -> Iterable[Tuple[str, Dict[str, Any]]]:
@@ -133,8 +131,6 @@ class ActionHandler(BaseHandler):
         # execute cleanup methods
         for on_success in self.on_success:
             on_success()
-        for on_failure in self.on_failure:
-            on_failure()
 
         # Return action result
         self.logger.debug("Request was successful. Send response now.")
@@ -249,6 +245,7 @@ class ActionHandler(BaseHandler):
             # -1: error which cannot be directly associated with a single action data
             if action.index > -1:
                 exception.action_data_error_index = action.index
-            if on_failure := action.get_on_failure(action_data):
-                self.on_failure.append(on_failure)
+            on_failure = action.get_on_failure(action_data)
+            if on_failure:
+                on_failure()
             raise exception
