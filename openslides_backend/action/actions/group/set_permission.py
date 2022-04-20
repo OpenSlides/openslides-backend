@@ -30,13 +30,14 @@ class GroupSetPermissionAction(UpdateAction):
         group = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]), ["permissions"]
         )
-        if set_ is True and permission not in group["permissions"]:
-            instance["permissions"] = group["permissions"]
+        group_permissions = group.get("permissions") or []
+        if set_ is True and permission not in group_permissions:
+            instance["permissions"] = group_permissions
             instance["permissions"].append(permission)
             instance["permissions"] = filter_surplus_permissions(
                 instance["permissions"]
             )
-        elif set_ is False and permission in group["permissions"]:
-            instance["permissions"] = group["permissions"]
+        elif set_ is False and permission in group_permissions:
+            instance["permissions"] = group_permissions
             instance["permissions"].remove(permission)
         return instance
