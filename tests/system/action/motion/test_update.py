@@ -54,6 +54,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
                 "reason": "reason_ukWqADfE",
                 "modified_final_version": "mfv_ilVvBsUi",
                 "amendment_paragraph_$": {3: "<html>test</html>"},
+                "start_line_number": 13,
             },
         )
         self.assert_status_code(response, 200)
@@ -65,6 +66,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("modified_final_version") == "mfv_ilVvBsUi"
         assert model.get("amendment_paragraph_$3") == "&lt;html&gt;test&lt;/html&gt;"
         assert model.get("amendment_paragraph_$") == ["3"]
+        assert model.get("start_line_number") == 13
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
