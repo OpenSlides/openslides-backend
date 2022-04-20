@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "9c15d433155f43a293168609f29a6d49"
+MODELS_YML_CHECKSUM = "bc967d20ea3aed8a4af05612dc024d4a"
 
 
 class Organization(Model):
@@ -385,6 +385,21 @@ class Meeting(Model):
     )
     export_pdf_fontsize = fields.IntegerField(
         default=10, constraints={"enum": [10, 11, 12]}
+    )
+    export_pdf_line_height = fields.FloatField(
+        default=1.25, constraints={"minimum": 1.0}
+    )
+    export_pdf_page_margin_left = fields.IntegerField(
+        default=20, constraints={"minimum": 0}
+    )
+    export_pdf_page_margin_top = fields.IntegerField(
+        default=25, constraints={"minimum": 0}
+    )
+    export_pdf_page_margin_right = fields.IntegerField(
+        default=20, constraints={"minimum": 0}
+    )
+    export_pdf_page_margin_bottom = fields.IntegerField(
+        default=20, constraints={"minimum": 0}
     )
     export_pdf_pagesize = fields.CharField(
         default="A4", constraints={"enum": ["A4", "A5"]}
@@ -1069,6 +1084,7 @@ class Motion(Model):
     sort_weight = fields.IntegerField(default=10000)
     created = fields.TimestampField(read_only=True)
     last_modified = fields.TimestampField(read_only=True)
+    start_line_number = fields.IntegerField(constraints={"minimum": 1})
     lead_motion_id = fields.RelationField(
         to={Collection("motion"): "amendment_ids"}, equal_fields="meeting_id"
     )
