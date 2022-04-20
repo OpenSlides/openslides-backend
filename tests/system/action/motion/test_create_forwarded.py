@@ -67,9 +67,17 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "all_derived_motion_ids": [],
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
+                "submitter_ids": [1],
             },
         )
         assert model.get("forwarded")
+        self.assert_model_exists(
+            "motion_submitter/1",
+            {
+                "user_id": 2,
+                "motion_id": 13,
+            },
+        )
         self.assert_model_exists(
             "user/2",
             {
@@ -79,6 +87,8 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "group_$_ids": ["2"],
                 "group_$2_ids": [112],
                 "forwarding_committee_ids": [53],
+                "submitted_motion_$_ids": ["2"],
+                "submitted_motion_$2_ids": [1],
             },
         )
         self.assert_model_exists("group/112", {"user_ids": [2]})
