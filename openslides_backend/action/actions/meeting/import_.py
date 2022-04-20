@@ -53,7 +53,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         required_properties=["committee_id"],
         additional_required_fields={
             "meeting": {"type": "object"},
-            "migration_index": {"type": "number"},
         },
         title="Import meeting",
         description="Import a meeting into the committee.",
@@ -544,7 +543,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         4. get the migrated events from migration wrapper
         5. Convert only create events back to json-data
         """
-        start_migration_index = instance.get("migration_index")
+        start_migration_index = instance.get("meeting", {}).pop(
+            "_migration_index", None
+        )
         if not start_migration_index or start_migration_index < 0:
             raise ActionException(
                 f"The data must have a valid migration index, but '{start_migration_index}' is not valid!"

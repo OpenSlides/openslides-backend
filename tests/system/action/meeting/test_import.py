@@ -30,9 +30,9 @@ class MeetingImport(BaseActionTestCase):
     def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
 
         data: Dict[str, Any] = {
-            "migration_index": current_migration_index,
             "committee_id": 1,
             "meeting": {
+                "_migration_index": current_migration_index,
                 "meeting": {
                     "1": {
                         "id": 1,
@@ -486,9 +486,11 @@ class MeetingImport(BaseActionTestCase):
         response = self.request(
             "meeting.import",
             {
-                "migration_index": current_migration_index,
                 "committee_id": 1,
-                "meeting": {"meeting": {}},
+                "meeting": {
+                    "meeting": {},
+                    "_migration_index": current_migration_index,
+                },
             },
         )
         self.assert_status_code(response, 400)
@@ -500,9 +502,11 @@ class MeetingImport(BaseActionTestCase):
         response = self.request(
             "meeting.import",
             {
-                "migration_index": current_migration_index,
                 "committee_id": 1,
-                "meeting": {"meeting": {"1": {"id": 1}, "2": {"id": 2}}},
+                "meeting": {
+                    "meeting": {"1": {"id": 1}, "2": {"id": 2}},
+                    "_migration_index": current_migration_index,
+                },
             },
         )
         self.assert_status_code(response, 400)
@@ -1306,7 +1310,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_without_migration_index(self) -> None:
         data = self.create_request_data({})
-        del data["migration_index"]
+        del data["meeting"]["_migration_index"]
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -1316,7 +1320,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_with_negative_migration_index(self) -> None:
         data = self.create_request_data({})
-        data["migration_index"] = -1
+        data["meeting"]["_migration_index"] = -1
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -1326,7 +1330,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_with_migration_index_to_high(self) -> None:
         data = self.create_request_data({})
-        data["migration_index"] = 12345678
+        data["meeting"]["_migration_index"] = 12345678
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -1336,7 +1340,7 @@ class MeetingImport(BaseActionTestCase):
 
     def test_all_migrations(self) -> None:
         data = self.create_request_data({})
-        data["migration_index"] = 1
+        data["meeting"]["_migration_index"] = 1
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
