@@ -2,8 +2,8 @@ from typing import Any, Callable, Dict
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
-from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.exceptions import ActionException, VoteServiceException
+from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
