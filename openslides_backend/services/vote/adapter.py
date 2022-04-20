@@ -58,7 +58,7 @@ class VoteAdapter(VoteService):
         self.refresh_id = refresh_id
 
     def start(self, id: int) -> None:
-        endpoint = self.get_endpoint("create", id)
+        endpoint = self.get_endpoint("start", id)
         self.retrieve(endpoint)
 
     def stop(self, id: int) -> Dict[str, Any]:

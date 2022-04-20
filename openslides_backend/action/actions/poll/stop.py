@@ -2,7 +2,7 @@ from typing import Any, Callable, Dict
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException
+from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -94,6 +94,9 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         def on_success() -> None:
             for instance in action_data:
-                self.vote_service.clear(instance["id"])
+                try:
+                    self.vote_service.clear(instance["id"])
+                except VoteServiceException as e:
+                    self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
 
         return on_success

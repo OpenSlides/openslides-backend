@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict
 
 from ....models.models import Poll
-from ....shared.exceptions import ActionException
+from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -21,6 +21,7 @@ class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
     schema = DefaultSchema(Poll()).get_update_schema()
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+
         poll = self.datastore.get(
             FullQualifiedId(self.model.collection, instance["id"]),
             ["state", "meeting_id", "type"],
@@ -45,11 +46,17 @@ class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
         )
         if meeting.get("poll_couple_countdown") and meeting.get("poll_countdown_id"):
             self.control_countdown(meeting["poll_countdown_id"], "restart")
+
+        self.vote_service.start(instance["id"])
+
         return instance
 
-    def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
-        def on_success() -> None:
+    def get_on_failure(self, action_data: ActionData) -> Callable[[], None]:
+        def on_failure() -> None:
             for instance in action_data:
-                self.vote_service.start(instance["id"])
+                try:
+                    self.vote_service.clear(instance["id"])
+                except VoteServiceException as e:
+                    self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
 
-        return on_success
+        return on_failure
