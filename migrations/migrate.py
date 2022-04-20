@@ -33,14 +33,9 @@ class MigrationWrapper:
         verbose: bool = False,
         print_fn: PrintFunction = print,
         memory_only: bool = False,
-        start_migration_index: int = 0,
     ) -> None:
         migrations = MigrationWrapper.load_migrations()
         self.handler = setup(verbose, print_fn, memory_only)
-        if start_migration_index:
-            cast(
-                MigrationHandlerImplementationMemory, self.handler
-            ).start_migration_index = start_migration_index
         self.handler.register_migrations(*migrations)
 
     @staticmethod
@@ -95,15 +90,18 @@ class MigrationWrapper:
         self,
         import_create_events: List[CreateEvent],
         models: Dict[Fqid, Model],
+        start_migration_index: int,
     ) -> None:
         cast(
             MigrationHandlerImplementationMemory, self.handler
-        ).migrater.set_additional_data(import_create_events, models)
+        ).migrater.set_additional_data(
+            import_create_events, models, start_migration_index
+        )
 
-    def get_migrated_create_events(self) -> List[BaseEvent]:
+    def get_migrated_events(self) -> List[BaseEvent]:
         return cast(
             MigrationHandlerImplementationMemory, self.handler
-        ).migrater.get_migrated_create_events()
+        ).migrater.get_migrated_events()
 
 
 def get_parser() -> ArgumentParser:

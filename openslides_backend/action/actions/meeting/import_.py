@@ -558,7 +558,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             migration_wrapper = MigrationWrapper(
                 verbose=True,
                 memory_only=True,
-                start_migration_index=start_migration_index,
             )
             organization = self.datastore.get(
                 FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
@@ -580,10 +579,12 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
                 f"committee/{instance['committee_id']}": committee,
             }
             migration_wrapper.set_additional_data(
-                self.create_import_create_events(instance), models
+                self.create_import_create_events(instance),
+                models,
+                start_migration_index,
             )
             migration_wrapper.execute_command("finalize")
-            migrated_events = migration_wrapper.get_migrated_create_events()
+            migrated_events = migration_wrapper.get_migrated_events()
             instance = self.create_instance_from_migrated_events(
                 instance, migrated_events
             )
