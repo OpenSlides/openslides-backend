@@ -843,6 +843,31 @@ meeting:
       - 12
     default: 10
     restriction_mode: B
+  export_pdf_line_height:
+    type: float
+    default: 1.25
+    minimum: 1.0
+    restriction_mode: B
+  export_pdf_page_margin_left:
+    type: number
+    default: 20
+    minimum: 0
+    restriction_mode: B
+  export_pdf_page_margin_top:
+    type: number
+    default: 25
+    minimum: 0
+    restriction_mode: B
+  export_pdf_page_margin_right:
+    type: number
+    default: 20
+    minimum: 0
+    restriction_mode: B
+  export_pdf_page_margin_bottom:
+    type: number
+    default: 20
+    minimum: 0
+    restriction_mode: B
   export_pdf_pagesize:
     type: string
     enum:

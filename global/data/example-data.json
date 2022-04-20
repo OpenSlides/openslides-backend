@@ -1,5 +1,5 @@
 {
-    "_migration_index": 21,
+    "_migration_index": 26,
     "organization": {
         "1": {
             "id": 1,
@@ -372,6 +372,11 @@
             "export_csv_separator": ";",
             "export_pdf_pagenumber_alignment": "center",
             "export_pdf_fontsize": 10,
+            "export_pdf_line_height": 1.25,
+            "export_pdf_page_margin_left": 20,
+            "export_pdf_page_margin_top": 25,
+            "export_pdf_page_margin_right": 20,
+            "export_pdf_page_margin_bottom": 20,
             "export_pdf_pagesize": "A4",
             "agenda_enable_numbering": true,
             "agenda_numeral_system": "arabic",
