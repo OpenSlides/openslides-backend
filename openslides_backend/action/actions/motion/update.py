@@ -38,6 +38,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             "modified_final_version",
             "state_extension",
             "recommendation_extension",
+            "start_line_number",
             "category_id",
             "block_id",
             "supporter_ids",
@@ -157,6 +158,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 "origin",
                 "supporters_id",
                 "recommendation_extension",
+                "start_line_number",
             ]
 
         # check for self submitter and whitelist

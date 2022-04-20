@@ -2022,6 +2022,9 @@ motion:
     type: timestamp
     read_only: true
     restriction_mode: C
+  start_line_number:
+    type: number
+    restriction_mode: A
 
   lead_motion_id:
     type: relation
