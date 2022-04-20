@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Ty
 
 import fastjsonschema
 
+from migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
     BaseRelationField,
@@ -248,16 +249,28 @@ class Checker:
         self.generate_template_prefixes()
 
     def check_migration_index(self) -> None:
-        if "_migration_index" in self.data:
-            migration_index = self.data.pop("_migration_index")
-            if (
-                not isinstance(migration_index, int)
-                or migration_index < -1
-                or migration_index == 0
-            ):
-                self.errors.append(
-                    f"The migration index is not -1 or >=1, but {migration_index}."
-                )
+        if "_migration_index" not in self.data:
+            self.errors.append("No migration index given.")
+        migration_index = self.data.pop("_migration_index")
+        if (
+            not isinstance(migration_index, int)
+            or migration_index < -1
+            or migration_index == 0
+        ):
+            self.errors.append(
+                f"The migration index is not -1 or >=1, but {migration_index}."
+            )
+            return
+        backend_mi = get_backend_migration_index()
+        if migration_index > backend_mi:
+            self.errors.append(
+                f"The given migration index ({migration_index}) is higher than the backend ({backend_mi})."
+            )
+            return
+        if self.mode != "external" and migration_index < backend_mi:
+            self.errors.append(
+                f"The given migration index ({migration_index}) is lower than the backend ({backend_mi})."
+            )
 
     def get_fields(self, collection: str) -> Iterable[Field]:
         return self.models[collection]().get_fields()

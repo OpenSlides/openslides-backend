@@ -92,7 +92,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def check_one_meeting(self, instance: Dict[str, Any]) -> None:
         meeting_json = instance.get("meeting", {})
         if not len(meeting_json.get("meeting", {}).values()) == 1:
-            raise ActionException("Need exact one meeting in meeting collection.")
+            raise ActionException("Need exactly one meeting in meeting collection.")
 
     def check_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting"]
