@@ -176,6 +176,66 @@ class MeetingClone(BaseActionTestCase):
             },
         )
 
+    def test_clone_user_ids_and_admin_ids(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "user/13": {"username": "new_admin_user"},
+                "user/14": {"username": "new_default_group_user_1"},
+                "user/15": {"username": "new_default_group_user_2"},
+                "user/16": {"username": "new_default_group_user_3"},
+            }
+        )
+
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "user_ids": [14, 15, 16],
+                "admin_ids": [13],
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "meeting/2",
+            {
+                "user_ids": [16, 13, 14, 15],
+            },
+        )
+        self.assert_model_exists("group/2", {"user_ids": [13, 16, 15, 14]})
+        self.assert_model_exists(
+            "user/13",
+            {
+                "username": "new_admin_user",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "user/14",
+            {
+                "username": "new_default_group_user_1",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "user/15",
+            {
+                "username": "new_default_group_user_2",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "user/16",
+            {
+                "username": "new_default_group_user_3",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+            },
+        )
+
     def test_clone_with_personal_note(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["personal_note_ids"] = [1]

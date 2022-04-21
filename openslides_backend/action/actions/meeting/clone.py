@@ -10,6 +10,7 @@ from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ....shared.schema import id_list_schema
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .export_helper import export_meeting
@@ -36,11 +37,17 @@ class MeetingClone(MeetingImport):
     schema = DefaultSchema(Meeting()).get_default_schema(
         optional_properties=updatable_fields,
         additional_required_fields={"meeting_id": {"type": "integer"}},
+        additional_optional_fields={
+            "user_ids": id_list_schema,
+            "admin_ids": id_list_schema,
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
+        additional_user_ids = instance.pop("user_ids", None)
+        additional_admin_ids = instance.pop("admin_ids", None)
 
         # checks if the meeting is correct
         if not len(meeting_json.get("meeting", {}).keys()) == 1:
@@ -103,6 +110,32 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
+        # update default and admin group of the cloned meeting
+        if additional_user_ids:
+            default_group_id = self.get_meeting_from_json(instance["meeting"])[
+                "default_group_id"
+            ]
+            for entry in instance["meeting"]["group"].values():
+                if entry["id"] == default_group_id:
+                    for id_ in additional_user_ids:
+                        if entry["user_ids"]:
+                            if id_ not in entry["user_ids"]:
+                                entry["user_ids"].insert(0, id_)
+                        else:
+                            entry["user_ids"] = [id_]
+
+        if additional_admin_ids:
+            admin_group_id = self.get_meeting_from_json(instance["meeting"])[
+                "admin_group_id"
+            ]
+            for entry in instance["meeting"]["group"].values():
+                if entry["id"] == admin_group_id:
+                    for id_ in additional_admin_ids:
+                        if entry["user_ids"]:
+                            if id_ not in entry["user_ids"]:
+                                entry["user_ids"].insert(0, id_)
+                        else:
+                            entry["user_ids"] = [id_]
         return instance
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
