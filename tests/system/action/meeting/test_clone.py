@@ -20,8 +20,8 @@ class MeetingClone(BaseActionTestCase):
             "meeting/1": {
                 "committee_id": 1,
                 "name": "Test",
-                "admin_group_id": 1,
                 "default_group_id": 1,
+                "admin_group_id": 2,
                 "motions_default_amendment_workflow_id": 1,
                 "motions_default_statute_amendment_workflow_id": 1,
                 "motions_default_workflow_id": 1,
@@ -29,7 +29,7 @@ class MeetingClone(BaseActionTestCase):
                 "projector_countdown_default_time": 60,
                 "projector_countdown_warning_time": 5,
                 "projector_ids": [1],
-                "group_ids": [1],
+                "group_ids": [1, 2],
                 "motion_state_ids": [1],
                 "motion_workflow_ids": [1],
                 "logo_$_id": None,
@@ -45,10 +45,15 @@ class MeetingClone(BaseActionTestCase):
             },
             "group/1": {
                 "meeting_id": 1,
-                "name": "testgroup",
+                "name": "default group",
+                "weight": 1,
+                "default_group_for_meeting_id": 1,
+            },
+            "group/2": {
+                "meeting_id": 1,
+                "name": "admin group",
                 "weight": 1,
                 "admin_group_for_meeting_id": 1,
-                "default_group_for_meeting_id": 1,
             },
             "motion_workflow/1": {
                 "meeting_id": 1,
@@ -95,8 +100,8 @@ class MeetingClone(BaseActionTestCase):
             {
                 "committee_id": 1,
                 "name": "Test - Copy",
-                "admin_group_id": 2,
-                "default_group_id": 2,
+                "default_group_id": 3,
+                "admin_group_id": 4,
                 "motions_default_amendment_workflow_id": 2,
                 "motions_default_statute_amendment_workflow_id": 2,
                 "motions_default_workflow_id": 2,
@@ -104,7 +109,7 @@ class MeetingClone(BaseActionTestCase):
                 "projector_countdown_default_time": 60,
                 "projector_countdown_warning_time": 5,
                 "projector_ids": [2],
-                "group_ids": [2],
+                "group_ids": [3, 4],
                 "motion_state_ids": [2],
                 "motion_workflow_ids": [2],
                 "logo_$_id": None,
@@ -139,7 +144,7 @@ class MeetingClone(BaseActionTestCase):
             {
                 "group_$_ids": ["1", "2"],
                 "group_$1_ids": [1],
-                "group_$2_ids": [2],
+                "group_$2_ids": [3],
                 "meeting_ids": [1, 2],
             },
         )
@@ -181,9 +186,22 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(
             {
                 "user/13": {"username": "new_admin_user"},
-                "user/14": {"username": "new_default_group_user_1"},
-                "user/15": {"username": "new_default_group_user_2"},
-                "user/16": {"username": "new_default_group_user_3"},
+                "user/14": {"username": "new_default_group_user"},
+                "user/15": {
+                    "username": "new_and_old_default_group_user",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "user/16": {
+                    "username": "new_default_group_old_admin_user",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [2],
+                    "meeting_ids": [1],
+                },
+                "group/1": {"user_ids": [15]},
+                "group/2": {"user_ids": [16]},
+                "meeting/1": {"user_ids": [15, 16]},
             }
         )
 
@@ -196,43 +214,48 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "meeting/2",
-            {
-                "user_ids": [16, 13, 14, 15],
-            },
-        )
-        self.assert_model_exists("group/2", {"user_ids": [13, 16, 15, 14]})
+        meeting2 = self.assert_model_exists("meeting/2")
+        self.assertCountEqual(meeting2["user_ids"], [13, 14, 15, 16])
+        group3 = self.assert_model_exists("group/3")
+        self.assertCountEqual(group3["user_ids"], [14, 15, 16])
+        group4 = self.assert_model_exists("group/4")
+        self.assertCountEqual(group4["user_ids"], [13, 16])
         self.assert_model_exists(
             "user/13",
             {
                 "username": "new_admin_user",
                 "group_$_ids": ["2"],
-                "group_$2_ids": [2],
+                "group_$2_ids": [4],
+                "meeting_ids": [2],
             },
         )
         self.assert_model_exists(
             "user/14",
             {
-                "username": "new_default_group_user_1",
+                "username": "new_default_group_user",
                 "group_$_ids": ["2"],
-                "group_$2_ids": [2],
+                "group_$2_ids": [3],
+                "meeting_ids": [2],
             },
         )
         self.assert_model_exists(
             "user/15",
             {
-                "username": "new_default_group_user_2",
-                "group_$_ids": ["2"],
-                "group_$2_ids": [2],
+                "username": "new_and_old_default_group_user",
+                "group_$_ids": ["1", "2"],
+                "group_$1_ids": [1],
+                "group_$2_ids": [3],
+                "meeting_ids": [1, 2],
             },
         )
         self.assert_model_exists(
             "user/16",
             {
-                "username": "new_default_group_user_3",
-                "group_$_ids": ["2"],
-                "group_$2_ids": [2],
+                "username": "new_default_group_old_admin_user",
+                "group_$_ids": ["1", "2"],
+                "group_$1_ids": [2],
+                "group_$2_ids": [3, 4],
+                "meeting_ids": [1, 2],
             },
         )
 

@@ -110,33 +110,32 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        # update default and admin group of the cloned meeting
         if additional_user_ids:
-            default_group_id = self.get_meeting_from_json(instance["meeting"])[
+            default_group_id = self.get_meeting_from_json(instance["meeting"]).get(
                 "default_group_id"
-            ]
-            for entry in instance["meeting"]["group"].values():
-                if entry["id"] == default_group_id:
-                    for id_ in additional_user_ids:
-                        if entry["user_ids"]:
-                            if id_ not in entry["user_ids"]:
-                                entry["user_ids"].insert(0, id_)
-                        else:
-                            entry["user_ids"] = [id_]
+            )
+            self._update_default_and_admin_group(
+                default_group_id, instance, additional_user_ids
+            )
 
         if additional_admin_ids:
-            admin_group_id = self.get_meeting_from_json(instance["meeting"])[
+            admin_group_id = self.get_meeting_from_json(instance["meeting"]).get(
                 "admin_group_id"
-            ]
-            for entry in instance["meeting"]["group"].values():
-                if entry["id"] == admin_group_id:
-                    for id_ in additional_admin_ids:
-                        if entry["user_ids"]:
-                            if id_ not in entry["user_ids"]:
-                                entry["user_ids"].insert(0, id_)
-                        else:
-                            entry["user_ids"] = [id_]
+            )
+            self._update_default_and_admin_group(
+                admin_group_id, instance, additional_admin_ids
+            )
         return instance
+
+    @staticmethod
+    def _update_default_and_admin_group(
+        group_id: int, instance: Dict[str, Any], additional_user_ids: List[int]
+    ) -> None:
+        for entry in instance["meeting"].get("group", {}).values():
+            if entry["id"] == group_id:
+                user_ids = set(entry.get("user_ids", set()))
+                user_ids.update(additional_user_ids)
+                entry["user_ids"] = list(user_ids)
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
