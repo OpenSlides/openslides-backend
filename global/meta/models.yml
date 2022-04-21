@@ -282,6 +282,12 @@ user:
       to: committee/user_$_management_level
     restriction_mode: E
 
+  # for the motion forwarding
+  forwarding_committee_ids:
+    type: relation-list
+    to: committee/forwarding_user_id
+    restriction_mode: F
+
   # Meeting specific personal data
   comment_$:
     type: template
@@ -648,6 +654,10 @@ committee:
   receive_forwardings_from_committee_ids:
     type: relation-list
     to: committee/forward_to_committee_ids
+    restriction_mode: B
+  forwarding_user_id:
+    type: relation
+    to: user/forwarding_committee_ids
     restriction_mode: B
   organization_tag_ids:
     type: relation-list
@@ -1602,7 +1612,7 @@ group:
         - meeting.can_see_livestream
         - motion.can_create
         - motion.can_create_amendments
-        - motion.can_forward_into_this_meeting
+        - motion.can_forward
         - motion.can_manage
         - motion.can_manage_metadata
         - motion.can_manage_polls
@@ -2051,6 +2061,10 @@ motion:
     type: number
     restriction_mode: A
     minimum: 1
+  forwarded:
+    type: timestamp
+    read_only: true
+    restriction_mode: B
 
   lead_motion_id:
     type: relation

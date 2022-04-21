@@ -70,13 +70,6 @@ class GetForwardingMeetings(BasePresenter):
 
             meeting_result = []
             for meeting_id2 in forward_to_committee.get("meeting_ids", []):
-                if not has_perm(
-                    self.datastore,
-                    self.user_id,
-                    Permissions.Motion.CAN_FORWARD_INTO_THIS_MEETING,
-                    meeting_id2,
-                ):
-                    continue
                 meeting2 = self.datastore.get(
                     FullQualifiedId(Collection("meeting"), meeting_id2),
                     ["name", "is_active_in_organization_id"],

@@ -980,6 +980,18 @@ class UserCreateActionTest(BaseActionTestCase):
         user = self.get_model("user/2")
         assert "default_vote_weight" not in user
 
+    def test_create_forwarding_committee_ids_not_allowed(self) -> None:
+        self.set_models({"meeting/1": {"is_active_in_organization_id": 1}})
+        response = self.request(
+            "user.create",
+            {
+                "username": "test_Xcdfgee",
+                "forwarding_committee_ids": [],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "forwarding_committee_ids is not allowed." in response.json["message"]
+
     def test_create_negative_vote_weight(self) -> None:
         self.set_models(
             {
@@ -1000,60 +1012,7 @@ class UserCreateActionTest(BaseActionTestCase):
             response.json["message"],
         )
 
-    # Mein test
-    # def test_mein_test_variante1(self) -> None:
-    #     self.set_models(
-    #         {
-    #             "committee/1": {"name": "C1", "meeting_ids": [1]},
-    #             "committee/2": {"name": "C2", "meeting_ids": [2]},
-    #             "meeting/1": {"committee_id": 1, "is_active_in_organization_id": 1},
-    #             "meeting/2": {"committee_id": 2, "is_active_in_organization_id": 1},
-    #             "user/222": {"meeting_ids": [1]},
-    #             "group/11": {"meeting_id": 1},
-    #             "group/22": {"meeting_id": 2},
-    #         }
-    #     )
-    #     response = self.request(
-    #         "user.create",
-    #         {
-    #             "username": "test_Xcdfgee",
-    #             "group_$_ids": {1: [11]},
-    #             # "committee_$_management_level": {
-    #             #     1: CommitteeManagementLevel.CAN_MANAGE,
-    #             #     2: None,
-    #             # },
-    #             # Beide Seiten NUmmer: [Recht]
-    #             "committee1_$_management_level": {
-    #                 1: [CommitteeManagementLevel.CAN_MANAGE,],
-    #                 2: None,
-    #             },
-    #             # Im user Committee_id: [Rechte], im committee Recht: [user_ids]
-    #             #"committee3_$_management_level": {
-    #             #    1: [CommitteeManagementLevel.CAN_MANAGE,],
-    #             #    2: None,
-    #             #},
-
-    #         },
-    #     )
-    #     self.assert_status_code(response, 200)
-    #     user = self.get_model("user/223")
-    #     self.assertCountEqual(user.get("committee2_$_management_level"), [CommitteeManagementLevel.CAN_MANAGE])
-    #     self.assertCountEqual(user.get(f"committee2_${CommitteeManagementLevel.CAN_MANAGE}_management_level"), [1, 2])
-    #     # assert user.get("committee_ids") == [1, 2]
-    #     # assert user.get("group_$1_ids") == [11]
-    #     # assert user.get("group_$2_ids") == [22]
-    #     # self.assertCountEqual(user.get("group_$_ids", []), ["1", "2"])
-    #     # self.assertCountEqual(user.get("meeting_ids", []), [1, 2])
-    #     # group1 = self.get_model("group/11")
-    #     # assert group1.get("user_ids") == [223]
-    #     # group2 = self.get_model("group/22")
-    #     # assert group2.get("user_ids") == [223]
-    #     # meeting = self.get_model("meeting/1")
-    #     # assert meeting.get("user_ids") == [223]
-    #     # meeting = self.get_model("meeting/2")
-    #     # assert meeting.get("user_ids") == [223]
-
-    def test_variant2(self) -> None:
+    def test_create_variant(self) -> None:
         """
         The replacement on both sides user and committe is the committee_management_level,
         the ids are the user_ids and on user-side the committee_ids.

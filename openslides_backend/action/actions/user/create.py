@@ -53,6 +53,7 @@ class UserCreate(
             "about_me_$",
             "vote_weight_$",
             "is_demo_user",
+            "forwarding_committee_ids",
         ],
     )
 

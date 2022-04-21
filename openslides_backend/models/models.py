@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "bc967d20ea3aed8a4af05612dc024d4a"
+MODELS_YML_CHECKSUM = "3bd2a0c798de61345aa070fab69e5e6d"
 
 
 class Organization(Model):
@@ -107,6 +107,9 @@ class User(Model):
         index=10,
         to={Collection("committee"): "user_$_management_level"},
         replacement_enum=["can_manage"],
+    )
+    forwarding_committee_ids = fields.RelationListField(
+        to={Collection("committee"): "forwarding_user_id"}
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
@@ -313,6 +316,9 @@ class Committee(Model):
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
         to={Collection("committee"): "forward_to_committee_ids"}
+    )
+    forwarding_user_id = fields.RelationField(
+        to={Collection("user"): "forwarding_committee_ids"}
     )
     organization_tag_ids = fields.RelationListField(
         to={Collection("organization_tag"): "tagged_ids"}
@@ -784,7 +790,7 @@ class Group(Model):
                 "meeting.can_see_livestream",
                 "motion.can_create",
                 "motion.can_create_amendments",
-                "motion.can_forward_into_this_meeting",
+                "motion.can_forward",
                 "motion.can_manage",
                 "motion.can_manage_metadata",
                 "motion.can_manage_polls",
@@ -1085,6 +1091,7 @@ class Motion(Model):
     created = fields.TimestampField(read_only=True)
     last_modified = fields.TimestampField(read_only=True)
     start_line_number = fields.IntegerField(constraints={"minimum": 1})
+    forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
         to={Collection("motion"): "amendment_ids"}, equal_fields="meeting_id"
     )
