@@ -297,6 +297,7 @@ class MeetingImport(BaseActionTestCase):
             "sort_weight": 10000,
             "created": 1584512346,
             "last_modified": 1584512346,
+            "start_line_number": 1,
             **data,
         }
 

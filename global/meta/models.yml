@@ -2061,6 +2061,7 @@ motion:
     type: number
     restriction_mode: A
     minimum: 1
+    default: 1
   forwarded:
     type: timestamp
     read_only: true

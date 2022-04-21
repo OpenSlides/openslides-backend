@@ -4,7 +4,7 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "3bd2a0c798de61345aa070fab69e5e6d"
+MODELS_YML_CHECKSUM = "ec258767b95e3f6ba6545a85d3d4fb93"
 
 
 class Organization(Model):
@@ -1090,7 +1090,7 @@ class Motion(Model):
     sort_weight = fields.IntegerField(default=10000)
     created = fields.TimestampField(read_only=True)
     last_modified = fields.TimestampField(read_only=True)
-    start_line_number = fields.IntegerField(constraints={"minimum": 1})
+    start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
         to={Collection("motion"): "amendment_ids"}, equal_fields="meeting_id"
