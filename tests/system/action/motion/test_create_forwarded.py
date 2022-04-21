@@ -72,6 +72,7 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "all_origin_ids": [12],
                 "reason": "reason_jLvcgAMx",
                 "submitter_ids": [1],
+                "state_id": 34,
             },
         )
         assert model.get("forwarded")
