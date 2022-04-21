@@ -30,12 +30,16 @@ class MotionCreateForwarded(BaseActionTestCase):
             "motion_state/34": {
                 "name": "name_state34",
                 "meeting_id": 2,
+            },
+            "motion_state/30": {
+                "name": "name_UVEKGkwf",
+                "meeting_id": 1,
                 "allow_motion_forwarding": True,
             },
             "motion/12": {
                 "title": "title_FcnPUXJB",
                 "meeting_id": 1,
-                "state_id": 34,
+                "state_id": 30,
             },
             "committee/52": {"name": "name_EeKbwxpa"},
             "committee/53": {
@@ -347,7 +351,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         assert "Amendments cannot be forwarded." in response.json["message"]
 
     def test_create_forwarded_not_allowed_by_state(self) -> None:
-        self.test_model["motion_state/34"]["allow_motion_forwarding"] = False
+        self.test_model["motion_state/30"]["allow_motion_forwarding"] = False
         self.set_models(self.test_model)
         response = self.request(
             "motion.create_forwarded",
