@@ -133,7 +133,7 @@ class MeetingClone(MeetingImport):
     ) -> None:
         for entry in instance["meeting"].get("group", {}).values():
             if entry["id"] == group_id:
-                user_ids = set(entry.get("user_ids", set()))
+                user_ids = set(entry.get("user_ids", set()) or set())
                 user_ids.update(additional_user_ids)
                 entry["user_ids"] = list(user_ids)
 
