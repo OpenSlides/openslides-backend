@@ -10,6 +10,7 @@ from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ....shared.schema import id_list_schema
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .export_helper import export_meeting
@@ -36,11 +37,17 @@ class MeetingClone(MeetingImport):
     schema = DefaultSchema(Meeting()).get_default_schema(
         optional_properties=updatable_fields,
         additional_required_fields={"meeting_id": {"type": "integer"}},
+        additional_optional_fields={
+            "user_ids": id_list_schema,
+            "admin_ids": id_list_schema,
+        },
     )
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
+        additional_user_ids = instance.pop("user_ids", None)
+        additional_admin_ids = instance.pop("admin_ids", None)
 
         # checks if the meeting is correct
         if not len(meeting_json.get("meeting", {}).keys()) == 1:
@@ -103,7 +110,32 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
+        if additional_user_ids:
+            default_group_id = self.get_meeting_from_json(instance["meeting"]).get(
+                "default_group_id"
+            )
+            self._update_default_and_admin_group(
+                default_group_id, instance, additional_user_ids
+            )
+
+        if additional_admin_ids:
+            admin_group_id = self.get_meeting_from_json(instance["meeting"]).get(
+                "admin_group_id"
+            )
+            self._update_default_and_admin_group(
+                admin_group_id, instance, additional_admin_ids
+            )
         return instance
+
+    @staticmethod
+    def _update_default_and_admin_group(
+        group_id: int, instance: Dict[str, Any], additional_user_ids: List[int]
+    ) -> None:
+        for entry in instance["meeting"].get("group", {}).values():
+            if entry["id"] == group_id:
+                user_ids = set(entry.get("user_ids", set()) or set())
+                user_ids.update(additional_user_ids)
+                entry["user_ids"] = list(user_ids)
 
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
