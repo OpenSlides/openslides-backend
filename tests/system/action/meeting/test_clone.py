@@ -275,7 +275,10 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Datastore service sends HTTP 400. Model 'user/13' does not exist.", response.json["message"])
+        self.assertIn(
+            "Datastore service sends HTTP 400. Model 'user/13' does not exist.",
+            response.json["message"],
+        )
 
     def test_clone_missing_user_id_in_additional_users(self) -> None:
         self.set_models(self.test_models)
@@ -288,7 +291,10 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        self.assertIn("Datastore service sends HTTP 400. Model 'user/13' does not exist.", response.json["message"])
+        self.assertIn(
+            "Datastore service sends HTTP 400. Model 'user/13' does not exist.",
+            response.json["message"],
+        )
 
     def test_clone_with_personal_note(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
