@@ -2,8 +2,6 @@ from typing import Any
 
 import fastjsonschema
 
-from migrations import get_backend_migration_index
-
 from ..action.actions.meeting.export_helper import export_meeting
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
@@ -43,5 +41,4 @@ class Export(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
         export_data = export_meeting(self.datastore, self.data["meeting_id"])
-        export_data["_migration_index"] = get_backend_migration_index()
         return export_data

@@ -2,6 +2,8 @@ from typing import Any, Dict, Iterable
 
 from datastore.shared.util import is_reserved_field
 
+from migrations import get_backend_migration_index
+
 from ....models.base import model_registry
 from ....models.fields import OnDelete, RelationListField
 from ....models.models import Meeting
@@ -11,7 +13,7 @@ from ....shared.patterns import Collection, FullQualifiedId
 
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
-    export = {}
+    export: Dict[str, Any] = {}
 
     # fetch meeting
     meeting = datastore.get(
@@ -20,6 +22,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
     export["meeting"] = add_empty_fields(
         remove_meta_fields(transfer_keys({meeting_id: meeting})), Collection("meeting")
     )
+    export["_migration_index"] = get_backend_migration_index()
 
     # fetch related models
     relation_fields = list(get_relation_fields())

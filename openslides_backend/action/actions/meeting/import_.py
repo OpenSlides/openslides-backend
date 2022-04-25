@@ -67,7 +67,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self.index = 0
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
-        instance = self.action_specific_in_perform(instance)
+        instance = self.preprocess_data(instance)
         self.validate_instance(instance)
         try:
             self.check_permissions(instance)
@@ -81,7 +81,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         result = [self.create_action_result_element(instance)]
         return (final_write_request, result)
 
-    def action_specific_in_perform(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         self.check_one_meeting(instance)
         self.check_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
@@ -240,7 +240,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def create_replace_map(self, json_data: Dict[str, Any]) -> None:
         replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
         for collection in json_data:
-            if not json_data[collection]:
+            if collection.startswith("_") or not json_data[collection]:
                 continue
             new_ids = self.datastore.reserve_ids(
                 Collection(collection), len(json_data[collection])
@@ -253,6 +253,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         json_data = instance["meeting"]
         new_json_data = {}
         for collection in json_data:
+            if collection.startswith("_"):
+                continue
             new_collection = {}
             coll_class = Collection(collection)
             for entry in json_data[collection].values():
@@ -272,7 +274,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         entry: Dict[str, Any],
         field: str,
     ) -> None:
-
         model_field = model_registry[Collection(collection)]().try_get_field(field)
         if model_field is None:
             raise ActionException(f"{collection}/{field} is not allowed.")
@@ -588,6 +589,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             instance = self.create_instance_from_migrated_events(
                 instance, migrated_events
             )
+        instance["meeting"]["_migration_index"] = backend_migration_index
         return instance
 
     def create_instance_from_migrated_events(
