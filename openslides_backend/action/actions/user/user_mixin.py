@@ -13,6 +13,35 @@ from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 ONE_ORGANIZATION = 1
 
 
+class UsernameMixin(Action):
+    def generate_usernames(self, usernames: List[str]) -> List[str]:
+        """
+        Generate unique usernames in parallel to a given list of usernames
+        """
+        used_usernames: List[str] = []
+        for username in usernames:
+            template_username = username.replace(" ", "")
+            username = template_username
+            count = 0
+            while True:
+                if username in used_usernames:
+                    count += 1
+                    username = template_username + str(count)
+                    continue
+                result = self.datastore.filter(
+                    Collection("user"),
+                    FilterOperator("username", "=", username),
+                    ["id"],
+                )
+                if result:
+                    count += 1
+                    username = template_username + str(count)
+                    continue
+                break
+            used_usernames.append(username)
+        return used_usernames
+
+
 class LimitOfUserMixin(Action):
     def check_limit_of_user(self, number: int) -> None:
         organization = self.datastore.get(

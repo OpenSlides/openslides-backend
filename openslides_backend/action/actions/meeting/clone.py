@@ -43,6 +43,9 @@ class MeetingClone(MeetingImport):
         },
     )
 
+    def action_specific_in_perform(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        return instance
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json

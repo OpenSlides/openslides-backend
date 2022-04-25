@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from datastore.migrations import BaseEvent, CreateEvent
-from datastore.shared.util import collection_and_id_from_fqid
+from datastore.shared.util import collection_and_id_from_fqid, collection_from_fqid
 
 from migrations import get_backend_migration_index
 from migrations.migrate import MigrationWrapper
@@ -26,24 +26,23 @@ from ....permissions.management_levels import (
 )
 from ....permissions.permission_helper import has_committee_management_level
 from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
-from ...action import Action, RelationUpdates
+from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
-from ..user.user_mixin import LimitOfUserMixin
+from ..user.user_mixin import LimitOfUserMixin, UsernameMixin
 
 ONE_ORGANIZATION = 1
 
 
 @register_action("meeting.import")
-class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
+class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     """
     Action to import a meeting.
     """
@@ -68,13 +67,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         self.index = 0
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
-
-        if self.name == "meeting.import":
-            self.check_one_meeting(instance)
-            self.check_not_allowed_fields(instance)
-            self.set_committee_and_orga_relation(instance)
-            instance = self.migrate_data(instance)
-            self.unset_committee_and_orga_relation(instance)
+        instance = self.action_specific_in_perform(instance)
         self.validate_instance(instance)
         try:
             self.check_permissions(instance)
@@ -87,6 +80,14 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         final_write_request = self.process_write_requests()
         result = [self.create_action_result_element(instance)]
         return (final_write_request, result)
+
+    def action_specific_in_perform(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        self.check_one_meeting(instance)
+        self.check_not_allowed_fields(instance)
+        self.set_committee_and_orga_relation(instance)
+        instance = self.migrate_data(instance)
+        self.unset_committee_and_orga_relation(instance)
+        return instance
 
     def check_one_meeting(self, instance: Dict[str, Any]) -> None:
         meeting_json = instance.get("meeting", {})
@@ -166,27 +167,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
         return instance
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
-        used_usernames = set()
-        for entry in json_data.get("user", {}).values():
-            is_username_unique = False
-            template_username = entry["username"].replace(" ", "")
-            count = 1
-            while not is_username_unique:
-                if entry["username"] in used_usernames:
-                    entry["username"] = template_username + str(count)
-                    count += 1
-                    continue
-                result = self.datastore.filter(
-                    Collection("user"),
-                    FilterOperator("username", "=", entry["username"]),
-                    ["id"],
-                )
-                if result:
-                    entry["username"] = template_username + str(count)
-                    count += 1
-                    continue
-                is_username_unique = True
-            used_usernames.add(entry["username"])
+        usernames: List[str] = [
+            entry["username"] for entry in json_data.get("user", {}).values()
+        ]
+        new_usernames = self.generate_usernames(usernames)
+
+        for entry, username in zip(json_data.get("user", {}).values(), new_usernames):
+            entry["username"] = username
 
     def check_limit_of_meetings(
         self, text: str = "import", text2: str = "active "
@@ -599,7 +586,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, Action):
             collection, id_ = collection_and_id_from_fqid(event.fqid)
             if event.type == CreateEvent.type:
                 data[collection].update({str(id_): event.data})
-            elif event.fqid.split("/")[0] in ("organization", "committee", "user"):
+            elif collection_from_fqid(event.fqid) in (
+                "organization",
+                "committee",
+                "user",
+            ):
                 continue
             else:
                 raise ActionException(
