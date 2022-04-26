@@ -383,7 +383,9 @@ class Checker:
 
         return errors
 
-    def fix_missing_default_values(self, model: Dict[str, Any], collection: str, fieldnames: Set[str]) -> Set[str]:
+    def fix_missing_default_values(
+        self, model: Dict[str, Any], collection: str, fieldnames: Set[str]
+    ) -> Set[str]:
         remaining_fields = set()
         for fieldname in fieldnames:
             field = getattr(self.models[collection], fieldname)
