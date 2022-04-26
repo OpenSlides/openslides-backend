@@ -286,7 +286,7 @@ user:
   forwarding_committee_ids:
     type: relation-list
     to: committee/forwarding_user_id
-    restriction_mode: F
+    restriction_mode: E
 
   # Meeting specific personal data
   comment_$:
@@ -1394,7 +1394,7 @@ meeting:
     type: relation-list
     to: motion/meeting_id
     on_delete: CASCADE
-    restriction_mode: B
+    restriction_mode: A
   motion_comment_section_ids:
     type: relation-list
     to: motion_comment_section/meeting_id
