@@ -142,7 +142,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 )
 
         # check datavalidation
-        checker = Checker(data=meeting_json, mode="external")
+        checker = Checker(data=meeting_json, mode="external", repair=True)
         try:
             checker.run_check()
         except CheckException as ce:

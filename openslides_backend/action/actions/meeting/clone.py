@@ -82,7 +82,7 @@ class MeetingClone(MeetingImport):
                 instance["meeting"]["mediafile"][mediafile_id]["attachment_ids"] = []
 
         # check datavalidation
-        checker = Checker(data=meeting_json, mode="internal")
+        checker = Checker(data=meeting_json, mode="internal", repair=True)
         try:
             checker.run_check()
         except CheckException as ce:

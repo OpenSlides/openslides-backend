@@ -153,7 +153,7 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "assignment_poll_ballot_paper_number": 8,
                         "assignment_poll_add_candidates_to_list_of_speakers": True,
-                        "assignment_poll_enable_max_votes_per_option": False,
+                        "assignment_poll_enable_max_votes_per_option": None,
                         "assignment_poll_sort_poll_result_by_votes": True,
                         "assignment_poll_default_type": "pseudoanonymous",
                         "assignment_poll_default_method": "votes",
@@ -1344,7 +1344,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
-        meeting = self.assert_model_exists("meeting/2")
+        meeting = self.assert_model_exists("meeting/2", {"assignment_poll_enable_max_votes_per_option": False})  # checker repair
         self.assertCountEqual(meeting["user_ids"], [1, 2])
         group2 = self.assert_model_exists("group/2")
         self.assertCountEqual(group2["user_ids"], [1, 2])
