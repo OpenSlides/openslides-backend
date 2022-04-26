@@ -2,9 +2,20 @@ import pkgutil
 import sys
 from argparse import ArgumentParser
 from importlib import import_module
-from typing import Any, List, Type
+from typing import Any, Dict, List, Type, cast
 
-from datastore.migrations import BaseMigration, MigrationException, PrintFunction, setup
+from datastore.migrations import (
+    BaseEvent,
+    BaseMigration,
+    CreateEvent,
+    MigrationException,
+    PrintFunction,
+    setup,
+)
+from datastore.migrations.core.migration_handler import (
+    MigrationHandlerImplementationMemory,
+)
+from datastore.shared.typing import Fqid, Model
 
 
 class BadMigrationModule(MigrationException):
@@ -17,9 +28,14 @@ class InvalidMigrationCommand(MigrationException):
 
 
 class MigrationWrapper:
-    def __init__(self, verbose: bool = False, print_fn: PrintFunction = print) -> None:
+    def __init__(
+        self,
+        verbose: bool = False,
+        print_fn: PrintFunction = print,
+        memory_only: bool = False,
+    ) -> None:
         migrations = MigrationWrapper.load_migrations()
-        self.handler = setup(verbose, print_fn)
+        self.handler = setup(verbose, print_fn, memory_only)
         self.handler.register_migrations(*migrations)
 
     @staticmethod
@@ -69,6 +85,23 @@ class MigrationWrapper:
             return self.handler.get_stats()
         else:
             raise InvalidMigrationCommand(command)
+
+    def set_additional_data(
+        self,
+        import_create_events: List[CreateEvent],
+        models: Dict[Fqid, Model],
+        start_migration_index: int,
+    ) -> None:
+        cast(
+            MigrationHandlerImplementationMemory, self.handler
+        ).migrater.set_additional_data(
+            import_create_events, models, start_migration_index
+        )
+
+    def get_migrated_events(self) -> List[BaseEvent]:
+        return cast(
+            MigrationHandlerImplementationMemory, self.handler
+        ).migrater.get_migrated_events()
 
 
 def get_parser() -> ArgumentParser:

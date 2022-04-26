@@ -2,8 +2,11 @@ import base64
 import time
 from typing import Any, Dict, List, cast
 
+from migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
 from tests.system.action.base import BaseActionTestCase
+
+current_migration_index = get_backend_migration_index()
 
 
 class MeetingImport(BaseActionTestCase):
@@ -11,17 +14,25 @@ class MeetingImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {"active_meeting_ids": [1]},
-                "committee/1": {"organization_id": 1},
-                "meeting/1": {},
-                "motion/1": {},
+                "organization/1": {"active_meeting_ids": [1], "committee_ids": [1]},
+                "committee/1": {"organization_id": 1, "meeting_ids": [1]},
+                "meeting/1": {"committee_id": 1, "group_ids": [1]},
+                "group/1": {"meeting_id": 1},
+                "projector/1": {"meeting_id": 1},
+                "motion/1": {
+                    "meeting_id": 1,
+                    "sequential_number": 26,
+                    "number_value": 31,
+                },
             }
         )
 
     def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
+
         data: Dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
+                "_migration_index": current_migration_index,
                 "meeting": {
                     "1": {
                         "id": 1,
@@ -36,7 +47,11 @@ class MeetingImport(BaseActionTestCase):
                         "projector_countdown_warning_time": 60,
                         "reference_projector_id": 1,
                         "user_ids": [1],
+                        "imported_at": None,
+                        "custom_translations": None,
+                        "template_for_organization_id": None,
                         "enable_anonymous": False,
+                        "location": "",
                         "start_time": 10,
                         "end_time": 10,
                         "welcome_title": "Welcome to OpenSlides",
@@ -44,6 +59,8 @@ class MeetingImport(BaseActionTestCase):
                         "conference_show": False,
                         "conference_auto_connect": False,
                         "conference_los_restriction": False,
+                        "conference_stream_url": "",
+                        "conference_stream_poster_url": "",
                         "conference_open_microphone": True,
                         "conference_open_video": True,
                         "conference_auto_connect_next_speakers": 1,
@@ -116,6 +133,7 @@ class MeetingImport(BaseActionTestCase):
                         "motion_poll_ballot_paper_number": 8,
                         "motion_poll_default_type": "pseudoanonymous",
                         "motion_poll_default_100_percent_base": "YNA",
+                        "motion_poll_default_group_ids": [],
                         "motion_poll_default_backend": "fast",
                         "users_sort_by": "first_name",
                         "users_enable_presence_view": True,
@@ -123,7 +141,11 @@ class MeetingImport(BaseActionTestCase):
                         "users_allow_self_set_present": True,
                         "users_pdf_welcometitle": "Welcome to OpenSlides",
                         "users_pdf_welcometext": "[Place for your welcome and help text.]",
+                        "users_pdf_wlan_ssid": "",
+                        "users_pdf_wlan_password": "",
+                        "users_pdf_wlan_encryption": "",
                         "users_email_sender": "noreply@yourdomain.com",
+                        "users_email_replyto": "",
                         "users_email_subject": "OpenSlides access data",
                         "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
                         "assignments_export_title": "Elections",
@@ -131,11 +153,12 @@ class MeetingImport(BaseActionTestCase):
                         "assignment_poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "assignment_poll_ballot_paper_number": 8,
                         "assignment_poll_add_candidates_to_list_of_speakers": True,
-                        "assignment_poll_enable_max_votes_per_option": False,
+                        "assignment_poll_enable_max_votes_per_option": None,
                         "assignment_poll_sort_poll_result_by_votes": True,
                         "assignment_poll_default_type": "pseudoanonymous",
                         "assignment_poll_default_method": "votes",
                         "assignment_poll_default_100_percent_base": "valid",
+                        "assignment_poll_default_group_ids": [],
                         "assignment_poll_default_backend": "fast",
                         "poll_ballot_paper_selection": "CUSTOM_NUMBER",
                         "poll_ballot_paper_number": 8,
@@ -143,13 +166,48 @@ class MeetingImport(BaseActionTestCase):
                         "poll_default_type": "pseudoanonymous",
                         "poll_default_method": "votes",
                         "poll_default_100_percent_base": "valid",
+                        "poll_default_group_ids": [],
                         "poll_default_backend": "fast",
                         "poll_couple_countdown": True,
                         "projector_ids": [1],
+                        "all_projection_ids": [],
+                        "projector_message_ids": [],
+                        "projector_countdown_ids": [],
+                        "tag_ids": [],
+                        "agenda_item_ids": [],
+                        "list_of_speakers_ids": [],
+                        "speaker_ids": [],
+                        "topic_ids": [],
                         "group_ids": [1],
+                        "mediafile_ids": [],
+                        "motion_ids": [],
+                        "motion_submitter_ids": [],
+                        "motion_comment_section_ids": [],
+                        "motion_comment_ids": [],
                         "motion_state_ids": [1],
+                        "motion_category_ids": [],
+                        "motion_block_ids": [],
                         "motion_workflow_ids": [1],
+                        "motion_statute_paragraph_ids": [],
+                        "motion_change_recommendation_ids": [],
+                        "poll_ids": [],
+                        "option_ids": [],
+                        "vote_ids": [],
+                        "assignment_ids": [],
+                        "assignment_candidate_ids": [],
+                        "personal_note_ids": [],
+                        "chat_group_ids": [],
+                        "chat_message_ids": [],
+                        "logo_$_id": [],
+                        "font_$_id": [],
                         "committee_id": None,
+                        "is_active_in_organization_id": None,
+                        "is_archived_in_organization_id": None,
+                        "default_meeting_for_committee_id": None,
+                        "organization_tag_ids": [],
+                        "present_user_ids": [],
+                        "list_of_speakers_countdown_id": None,
+                        "poll_countdown_id": None,
                         "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
                         **{
                             f"default_projector_${name}_id": 1
@@ -158,6 +216,7 @@ class MeetingImport(BaseActionTestCase):
                                 Meeting.default_projector__id.replacement_enum,
                             )
                         },
+                        "projection_ids": [],
                     }
                 },
                 "user": {
@@ -166,6 +225,7 @@ class MeetingImport(BaseActionTestCase):
                         {
                             "group_$_ids": ["1"],
                             "group_$1_ids": [1],
+                            "is_active": True,
                         },
                     ),
                 },
@@ -200,6 +260,8 @@ class MeetingImport(BaseActionTestCase):
                         "workflow_id": 1,
                         "name": "test",
                         "weight": 1,
+                        "recommendation_label": None,
+                        "restrictions": [],
                         "allow_support": True,
                         "allow_create_poll": True,
                         "allow_submitter_edit": True,
@@ -207,9 +269,12 @@ class MeetingImport(BaseActionTestCase):
                         "show_state_extension_field": False,
                         "merge_amendment_into_final": "undefined",
                         "show_recommendation_extension_field": False,
+                        "next_state_ids": [],
+                        "previous_state_ids": [],
+                        "motion_ids": [],
+                        "motion_recommendation_ids": [],
                         "workflow_id": 1,
                         "first_state_of_workflow_id": 1,
-                        "restrictions": [],
                     }
                 },
                 "projector": {
@@ -234,6 +299,9 @@ class MeetingImport(BaseActionTestCase):
                         "show_title": True,
                         "show_logo": True,
                         "show_clock": True,
+                        "current_projection_ids": [],
+                        "preview_projection_ids": [],
+                        "history_projection_ids": [],
                         "used_as_default_$_in_meeting_id": Meeting.default_projector__id.replacement_enum,
                         **{
                             f"used_as_default_${name}_in_meeting_id": 1
@@ -253,21 +321,88 @@ class MeetingImport(BaseActionTestCase):
             else:
                 data["meeting"][collection].update(models)
 
+        needed_collections = (
+            "user",
+            "meeting",
+            "group",
+            "personal_note",
+            "tag",
+            "agenda_item",
+            "list_of_speakers",
+            "speaker",
+            "topic",
+            "motion",
+            "motion_submitter",
+            "motion_comment",
+            "motion_comment_section",
+            "motion_category",
+            "motion_block",
+            "motion_change_recommendation",
+            "motion_state",
+            "motion_workflow",
+            "motion_statute_paragraph",
+            "poll",
+            "option",
+            "vote",
+            "assignment",
+            "assignment_candidate",
+            "mediafile",
+            "projector",
+            "projection",
+            "projector_message",
+            "projector_countdown",
+            "chat_group",
+            "chat_message",
+        )
+        for collection in needed_collections:
+            if collection not in data["meeting"].keys():
+                data["meeting"][collection] = {}
+
         return data
 
     def get_user_data(self, obj_id: int, data: Dict[str, Any] = {}) -> Dict[str, Any]:
         return {
             "id": obj_id,
+            "password": "",
             "username": "test",
+            "group_$_ids": [],
+            "committee_ids": [],
+            "committee_$_management_level": [],
+            "vote_weight_$": [],
+            "title": "",
+            "pronoun": "",
+            "first_name": "",
             "last_name": "Administrator",
             "is_active": True,
             "is_physical_person": True,
             "default_password": "admin",
             "can_change_own_password": True,
             "gender": "male",
+            "email": "",
+            "default_number": "",
+            "default_structure_level": "",
             "default_vote_weight": "1.000000",
+            "last_email_send": None,
             "is_demo_user": False,
-            "organization_management_level": "superadmin",
+            "organization_management_level": None,
+            "is_present_in_meeting_ids": [],
+            "comment_$": [],
+            "number_$": [],
+            "structure_level_$": [],
+            "about_me_$": [],
+            "speaker_$_ids": [],
+            "personal_note_$_ids": [],
+            "supported_motion_$_ids": [],
+            "submitted_motion_$_ids": [],
+            "assignment_candidate_$_ids": [],
+            "poll_voted_$_ids": [],
+            "option_$_ids": [],
+            "vote_$_ids": [],
+            "projection_$_ids": [],
+            "vote_delegated_vote_$_ids": [],
+            "vote_delegated_$_to_id": [],
+            "vote_delegations_$_from_ids": [],
+            "chat_message_$_ids": [],
             "meeting_ids": [1],
             **data,
         }
@@ -278,6 +413,20 @@ class MeetingImport(BaseActionTestCase):
             "meeting_id": 1,
             "name": "testgroup",
             "weight": obj_id,
+            "user_ids": [],
+            "admin_group_for_meeting_id": None,
+            "default_group_for_meeting_id": None,
+            "permissions": [],
+            "mediafile_access_group_ids": [],
+            "mediafile_inherited_access_group_ids": [],
+            "read_comment_section_ids": [],
+            "write_comment_section_ids": [],
+            "read_chat_group_ids": [],
+            "write_chat_group_ids": [],
+            "poll_ids": [],
+            "used_as_motion_poll_default_id": None,
+            "used_as_assignment_poll_default_id": None,
+            "used_as_poll_default_id": None,
             **data,
         }
 
@@ -292,8 +441,12 @@ class MeetingImport(BaseActionTestCase):
             "number_value": 1,
             "sequential_number": 2,
             "text": "<p>l&ouml;mk</p>",
+            "amendment_paragraph_$": [],
+            "modified_final_version": "",
+            "reason": "",
             "category_weight": 10000,
             "state_extension": "<p>regeer</p>",
+            "recommendation_extension": None,
             "sort_weight": 10000,
             "created": 1584512346,
             "last_modified": 1584512346,
@@ -319,12 +472,26 @@ class MeetingImport(BaseActionTestCase):
             "is_public": True,
             "access_group_ids": [],
             "inherited_access_group_ids": [],
+            "parent_id": None,
+            "child_ids": [],
+            "list_of_speakers_id": None,
+            "projection_ids": [],
+            "attachment_ids": [],
+            "used_as_logo_$_in_meeting_id": [],
+            "used_as_font_$_in_meeting_id": [],
             **data,
         }
 
     def test_no_meeting_collection(self) -> None:
         response = self.request(
-            "meeting.import", {"committee_id": 1, "meeting": {"meeting": {}}}
+            "meeting.import",
+            {
+                "committee_id": 1,
+                "meeting": {
+                    "meeting": {},
+                    "_migration_index": current_migration_index,
+                },
+            },
         )
         self.assert_status_code(response, 400)
         assert (
@@ -336,7 +503,10 @@ class MeetingImport(BaseActionTestCase):
             "meeting.import",
             {
                 "committee_id": 1,
-                "meeting": {"meeting": {"1": {"id": 1}, "2": {"id": 2}}},
+                "meeting": {
+                    "meeting": {"1": {"id": 1}, "2": {"id": 2}},
+                    "_migration_index": current_migration_index,
+                },
             },
         )
         self.assert_status_code(response, 400)
@@ -380,6 +550,8 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": "motion/1",
                         "closed": False,
                         "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
                     }
                 },
                 "tag": {
@@ -404,7 +576,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         end = round(time.time()) + 1
         self.assert_status_code(response, 200)
-        self.assert_model_exists(
+        meeting_2 = self.assert_model_exists(
             "meeting/2",
             {
                 "name": "Test",
@@ -414,20 +586,23 @@ class MeetingImport(BaseActionTestCase):
                 "is_active_in_organization_id": 1,
             },
         )
-        meeting_2 = self.get_model("meeting/2")
         assert start <= meeting_2.get("imported_at", 0) <= end
-        self.assert_model_exists(
-            "user/2", {"username": "test", "group_$2_ids": [1], "group_$_ids": ["2"]}
+        user_2 = self.assert_model_exists(
+            "user/2", {"username": "test", "group_$2_ids": [2], "group_$_ids": ["2"]}
         )
-        user_2 = self.get_model("user/2")
         assert user_2.get("password", "")
-        self.assert_model_exists("projector/1", {"meeting_id": 2})
-        self.assert_model_exists("group/1", {"user_ids": [1, 2]})
-        self.assert_model_exists("personal_note/1", {"content_object_id": "motion/2"})
+        self.assert_model_exists("projector/2", {"meeting_id": 2})
+        self.assert_model_exists("group/2", {"user_ids": [1, 2]})
+        self.assert_model_exists(
+            "personal_note/1",
+            {"content_object_id": "motion/2", "user_id": 2, "meeting_id": 2},
+        )
         self.assert_model_exists(
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
         )
-        self.assert_model_exists("committee/1", {"meeting_ids": [2]})
+        committee_1 = self.get_model("committee/1")
+        self.assertCountEqual(committee_1.get("meeting_ids"), [1, 2])
+        self.assertCountEqual(committee_1.get("user_ids"), [1, 2])
         self.assert_model_exists("organization/1", {"active_meeting_ids": [1, 2]})
 
     def test_check_calc_fields(self) -> None:
@@ -435,27 +610,86 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
-        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
+        meeting2 = self.assert_model_exists("meeting/2")
+        self.assertCountEqual(meeting2["user_ids"], [1, 2])
 
-    def test_check_usernames(self) -> None:
+    def test_check_usernames_1(self) -> None:
         self.set_models(
             {
                 "user/1": {"username": "admin"},
             }
         )
-        request_data = self.create_request_data({})
-        request_data["meeting"]["user"]["1"] = self.get_user_data(
-            1,
+        request_data = self.create_request_data(
             {
-                "username": "admin",
-                "group_$_ids": ["1"],
-                "group_$1_ids": [1],
-            },
+                "user": {
+                    "1": self.get_user_data(
+                        1,
+                        {
+                            "username": "admin",
+                            "group_$_ids": ["1"],
+                            "group_$1_ids": [1],
+                        },
+                    ),
+                },
+            }
         )
+        self.assert_model_exists("user/1", {"username": "admin"})
 
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "admin 1"})
+
+        organization = self.assert_model_exists("organization/1")
+        self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
+
+        committee1 = self.assert_model_exists(
+            "committee/1",
+        )
+        self.assertCountEqual(committee1["user_ids"], [1, 2])
+        self.assertCountEqual(committee1["meeting_ids"], [1, 2])
+
+        imported_meeting = self.assert_model_exists(
+            "meeting/2",
+            {
+                "group_ids": [2],
+                "committee_id": 1,
+                "projector_ids": [2],
+                "admin_group_id": 2,
+                "default_group_id": 2,
+                "motion_state_ids": [1],
+                "motion_workflow_ids": [1],
+                "is_active_in_organization_id": 1,
+            },
+        )
+        self.assertCountEqual(imported_meeting["user_ids"], [1, 2])
+
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "admin",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+                "meeting_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "admin1",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+                "meeting_ids": [2],
+                "committee_ids": [1],
+            },
+        )
+        self.assert_model_exists(
+            "group/2",
+            {
+                "user_ids": [1, 2],
+                "meeting_id": 2,
+                "admin_group_for_meeting_id": 2,
+                "default_group_for_meeting_id": 2,
+            },
+        )
 
     def test_check_usernames_2(self) -> None:
         self.set_models(
@@ -475,14 +709,24 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["user"]["2"] = self.get_user_data(
             2,
             {
-                "username": "admin 1",
+                "username": "admin1",
             },
         )
 
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "admin 1"})
-        self.assert_model_exists("user/3", {"username": "admin 1 1"})
+        self.assert_model_exists(
+            "user/1",
+            {
+                "username": "admin",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+                "meeting_ids": [2],
+            },
+        )
+        self.assert_model_exists("user/2", {"username": "admin1"})
+        self.assert_model_exists("user/3", {"username": "admin11"})
+        self.assert_model_exists("group/2", {"user_ids": [1, 2], "meeting_id": 2})
 
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})
@@ -537,6 +781,8 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": "motion/1",
                         "closed": False,
                         "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
                     }
                 },
                 "tag": {
@@ -563,9 +809,9 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/3", {"username": "test 1", "group_$3_ids": [2], "group_$_ids": ["3"]}
+            "user/3", {"username": "test1", "group_$3_ids": [3], "group_$_ids": ["3"]}
         )
-        self.assert_model_exists(
+        meeting_3 = self.assert_model_exists(
             "meeting/3",
             {
                 "name": "Test",
@@ -574,15 +820,18 @@ class MeetingImport(BaseActionTestCase):
                 "enable_anonymous": False,
             },
         )
-        meeting_2 = self.get_model("meeting/3")
-        assert start <= meeting_2.get("imported_at", 0) <= start + 300
-        self.assert_model_exists("projector/2", {"meeting_id": 3})
-        self.assert_model_exists("group/2", {"user_ids": [1, 3]})
-        self.assert_model_exists("personal_note/2", {"content_object_id": "motion/3"})
+        assert start <= meeting_3.get("imported_at", 0) <= start + 300
+        self.assert_model_exists("projector/3", {"meeting_id": 3})
+        self.assert_model_exists("group/3", {"user_ids": [1, 3]})
         self.assert_model_exists(
-            "tag/2", {"tagged_ids": ["motion/3"], "name": "testag"}
+            "personal_note/2", {"content_object_id": "motion/3", "meeting_id": 3}
         )
-        self.assert_model_exists("committee/1", {"meeting_ids": [2, 3]})
+        self.assert_model_exists(
+            "tag/2", {"tagged_ids": ["motion/3"], "name": "testag", "meeting_id": 3}
+        )
+        committee_1 = self.get_model("committee/1")
+        self.assertCountEqual(committee_1.get("user_ids"), [1, 2, 3])
+        self.assertCountEqual(committee_1.get("meeting_ids"), [1, 2, 3])
 
     def test_no_permission(self) -> None:
         self.set_models(
@@ -680,12 +929,8 @@ class MeetingImport(BaseActionTestCase):
         # User/1 is in user_ids, because calling user is added
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
-
-    def test_user_meeting_ids(self) -> None:
-        # Calculated field.
-        response = self.request("meeting.import", self.create_request_data({}))
-        self.assert_status_code(response, 200)
+        meeting2 = self.assert_model_exists("meeting/2")
+        self.assertCountEqual(meeting2["user_ids"], [1, 2])
         self.assert_model_exists("user/2", {"meeting_ids": [2]})
 
     def test_motion_recommendation_extension(self) -> None:
@@ -710,6 +955,8 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": "motion/1",
                         "closed": False,
                         "sequential_number": 1,
+                        "speaker_ids": [],
+                        "projection_ids": [],
                     },
                     "2": {
                         "id": 2,
@@ -717,6 +964,8 @@ class MeetingImport(BaseActionTestCase):
                         "content_object_id": "motion/2",
                         "closed": False,
                         "sequential_number": 2,
+                        "speaker_ids": [],
+                        "projection_ids": [],
                     },
                 },
             }
@@ -839,8 +1088,11 @@ class MeetingImport(BaseActionTestCase):
     def test_request_user_in_admin_group(self) -> None:
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"user_ids": [1, 2]})
-        self.assert_model_exists("group/1", {"user_ids": [1, 2]})
+        self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
+        meeting = self.assert_model_exists("meeting/2")
+        self.assertCountEqual(meeting["user_ids"], [1, 2])
+        group2 = self.assert_model_exists("group/2")
+        self.assertCountEqual(group2["user_ids"], [1, 2])
 
     def test_motion_all_derived_motion_ids(self) -> None:
         request_data = self.create_request_data(
@@ -947,7 +1199,7 @@ class MeetingImport(BaseActionTestCase):
                         {
                             "foobar": "test this",
                         },
-                    )
+                    ),
                 }
             }
         )
@@ -1003,3 +1255,103 @@ class MeetingImport(BaseActionTestCase):
             "The number of active users cannot exceed the limit of users."
             == response.json["message"]
         )
+
+    def test_check_forbidden_organization_management_right(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "1": {
+                        "organization_management_level": "superadmin",
+                    }
+                },
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Imported user may not have OrganizationManagementLevel rights!",
+            response.json["message"],
+        )
+
+    def test_check_forbidden_committee_management_right(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "1": {
+                        "committee_$_management_level": ["can_manage"],
+                        "committee_$can_manage_management_level": [1],
+                    }
+                },
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Imported user may not have CommitteeManagementLevel rights!",
+            response.json["message"],
+        )
+
+    def test_check_missing_admin_group_in_meeting(self) -> None:
+        self.set_models(
+            {
+                "user/1": {"username": "admin"},
+            }
+        )
+        request_data = self.create_request_data({})
+        request_data["meeting"]["meeting"]["1"]["admin_group_id"] = None
+        request_data["meeting"]["group"]["1"]["admin_group_for_meeting_id"] = None
+
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "Imported meeting has no AdminGroup to assign to request user",
+            response.json["message"],
+        )
+
+    def test_without_migration_index(self) -> None:
+        data = self.create_request_data({})
+        del data["meeting"]["_migration_index"]
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The data must have a valid migration index, but 'None' is not valid!",
+            response.json["message"],
+        )
+
+    def test_with_negative_migration_index(self) -> None:
+        data = self.create_request_data({})
+        data["meeting"]["_migration_index"] = -1
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "The data must have a valid migration index, but '-1' is not valid!",
+            response.json["message"],
+        )
+
+    def test_with_migration_index_to_high(self) -> None:
+        data = self.create_request_data({})
+        data["meeting"]["_migration_index"] = 12345678
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            f"Your data migration index '12345678' is higher than the migration index of this backend '{current_migration_index}'! Please, update your backend!",
+            response.json["message"],
+        )
+
+    def test_all_migrations(self) -> None:
+        data = self.create_request_data({})
+        data["meeting"]["_migration_index"] = 1
+        response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
+        meeting = self.assert_model_exists(
+            "meeting/2", {"assignment_poll_enable_max_votes_per_option": False}
+        )  # checker repair
+        self.assertCountEqual(meeting["user_ids"], [1, 2])
+        group2 = self.assert_model_exists("group/2")
+        self.assertCountEqual(group2["user_ids"], [1, 2])
+        committee1 = self.get_model("committee/1")
+        self.assertCountEqual(committee1["user_ids"], [1, 2])
+        self.assertCountEqual(committee1["meeting_ids"], [1, 2])
+        self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
+        self.assert_model_exists("projector/2", {"sequential_number": 1})

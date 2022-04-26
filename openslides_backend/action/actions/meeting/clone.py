@@ -1,6 +1,6 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
 from ....models.checker import Checker, CheckException
 from ....models.models import Meeting
@@ -43,6 +43,9 @@ class MeetingClone(MeetingImport):
         },
     )
 
+    def action_specific_in_perform(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        return instance
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
@@ -79,7 +82,7 @@ class MeetingClone(MeetingImport):
                 instance["meeting"]["mediafile"][mediafile_id]["attachment_ids"] = []
 
         # check datavalidation
-        checker = Checker(data=meeting_json, mode="internal")
+        checker = Checker(data=meeting_json, mode="internal", repair=True)
         try:
             checker.run_check()
         except CheckException as ce:
@@ -97,7 +100,6 @@ class MeetingClone(MeetingImport):
 
         # check limit of meetings
         self.check_limit_of_meetings(
-            self.get_meeting_from_json(meeting_json)["committee_id"],
             text="clone",
             text2="",
         )
@@ -156,12 +158,6 @@ class MeetingClone(MeetingImport):
                 self.media.duplicate_mediafile(
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
                 )
-
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
-        write_requests = list(super().create_write_requests(instance))
-        self.append_extra_write_requests(write_requests, instance["meeting"])
-        write_requests.extend(list(self.handle_calculated_fields(instance)))
-        return write_requests
 
     def append_extra_write_requests(
         self, write_requests: List[WriteRequest], json_data: Dict[str, Any]

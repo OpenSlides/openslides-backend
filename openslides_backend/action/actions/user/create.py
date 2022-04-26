@@ -2,14 +2,12 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
-from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordCreateMixin
-from .user_mixin import LimitOfUserMixin, UserMixin
+from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
 
 
 @register_action("user.create")
@@ -19,6 +17,7 @@ class UserCreate(
     CreateUpdatePermissionsMixin,
     PasswordCreateMixin,
     LimitOfUserMixin,
+    UsernameMixin,
 ):
     """
     Action to create a user.
@@ -76,23 +75,6 @@ class UserCreate(
         return super().update_instance(instance)
 
     def generate_username(self, instance: Dict[str, Any]) -> str:
-        count = 0
-
-        while True:
-            new_username = instance.get("first_name", "") + instance.get(
-                "last_name", ""
-            )
-            if count > 0:
-                new_username += str(count)
-            new_username = new_username.replace(" ", "")
-
-            result = self.datastore.filter(
-                Collection("user"),
-                FilterOperator("username", "=", new_username),
-                ["id"],
-            )
-            if result:
-                count += 1
-            else:
-                break
-        return new_username
+        return self.generate_usernames(
+            [instance.get("first_name", "") + instance.get("last_name", "")]
+        )[0]

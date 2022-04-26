@@ -148,6 +148,7 @@ class Checker:
         self,
         data: Dict[str, Dict[str, Any]],
         mode: str = "all",
+        repair: bool = False,
     ) -> None:
         """
         The checker checks the data without access to datastore.
@@ -168,11 +169,15 @@ class Checker:
             in data, because they exist in same database.
         all: All collections are valid and has to be in the data
 
+        Repair:
+            New feature, which sets missing fields with default value automatically.
+
         Not all collections must be given and missing fields are ignore, but
         required fields and fields with a default value must be present.
         """
         self.data = data
         self.mode = mode
+        self.repair = repair
 
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
@@ -356,9 +361,12 @@ class Checker:
 
         errors = False
         if diff := required_or_default_collection_fields - model_fields:
-            error = f"{collection}/{model['id']}: Missing fields {', '.join(diff)}"
-            self.errors.append(error)
-            errors = True
+            if self.repair:
+                diff = self.fix_missing_default_values(model, collection, diff)
+            if diff:
+                error = f"{collection}/{model['id']}: Missing fields {', '.join(diff)}"
+                self.errors.append(error)
+                errors = True
         if diff := model_fields - all_collection_fields:
             error = f"{collection}/{model['id']}: Invalid fields {', '.join(f'{field} (value: {model[field]})' for field in diff)}"
             self.errors.append(error)
@@ -374,6 +382,18 @@ class Checker:
                     errors = True
 
         return errors
+
+    def fix_missing_default_values(
+        self, model: Dict[str, Any], collection: str, fieldnames: Set[str]
+    ) -> Set[str]:
+        remaining_fields = set()
+        for fieldname in fieldnames:
+            field = getattr(self.models[collection], fieldname)
+            if field.default is not None:
+                model[fieldname] = field.default
+            else:
+                remaining_fields.add(fieldname)
+        return remaining_fields
 
     def check_template_fields(self, model: Dict[str, Any], collection: str) -> bool:
         """
