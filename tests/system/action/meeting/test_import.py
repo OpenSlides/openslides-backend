@@ -1095,6 +1095,11 @@ class MeetingImport(BaseActionTestCase):
         self.assertCountEqual(group2["user_ids"], [1, 2])
 
     def test_motion_all_derived_motion_ids(self) -> None:
+        """
+        repair and fields_to_remove delete the motion forwarding fields
+        (all_)origin_id and (all_)derived_motion_ids. Otherwise the meeting
+        couldn't be imported with relations to other meeting.
+        """
         request_data = self.create_request_data(
             {
                 "motion": {
@@ -1124,10 +1129,16 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["meeting"]["1"]["list_of_speakers_ids"] = [1]
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        assert (
-            "Motion all_origin_ids and all_derived_motion_ids should be empty."
-            in response.json["message"]
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "motion/2",
+            {
+                "meeting_id": 2,
+                "origin_id": None,
+                "derived_motion_ids": None,
+                "all_origin_id": None,
+                "all_derived_motion_ids": None,
+            },
         )
 
     def test_motion_all_origin_ids(self) -> None:

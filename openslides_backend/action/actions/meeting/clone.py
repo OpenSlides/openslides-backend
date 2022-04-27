@@ -44,6 +44,12 @@ class MeetingClone(MeetingImport):
     )
 
     def action_specific_in_perform(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Temporarely, because meeting.clone has _model and _collection attributes
+        """
+        underscore_keys = tuple(key for key in instance.keys() if key[0] == "_")
+        [instance.pop(key) for key in underscore_keys]
+
         return instance
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -82,18 +88,24 @@ class MeetingClone(MeetingImport):
                 instance["meeting"]["mediafile"][mediafile_id]["attachment_ids"] = []
 
         # check datavalidation
-        checker = Checker(data=meeting_json, mode="internal", repair=True)
+        checker = Checker(
+            data=meeting_json,
+            mode="internal",
+            repair=True,
+            fields_to_remove={
+                "motion": [
+                    "origin_id",
+                    "derived_motion_ids",
+                    "all_origin_id",
+                    "all_derived_motion_ids",
+                ]
+            },
+        )
         try:
             checker.run_check()
         except CheckException as ce:
             raise ActionException(str(ce))
         self.allowed_collections = checker.allowed_collections
-
-        for entry in meeting_json.get("motion", {}).values():
-            if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
-                raise ActionException(
-                    "Motion all_origin_ids and all_derived_motion_ids should be empty."
-                )
 
         # set active
         self.get_meeting_from_json(meeting_json)["is_active_in_organization_id"] = 1
