@@ -107,12 +107,6 @@ class MeetingClone(MeetingImport):
             raise ActionException(str(ce))
         self.allowed_collections = checker.allowed_collections
 
-        for entry in meeting_json.get("motion", {}).values():
-            if entry.get("all_origin_ids") or entry.get("all_derived_motion_ids"):
-                raise ActionException(
-                    "Motion all_origin_ids and all_derived_motion_ids should be empty."
-                )
-
         # set active
         self.get_meeting_from_json(meeting_json)["is_active_in_organization_id"] = 1
 
