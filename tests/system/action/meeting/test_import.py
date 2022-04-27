@@ -1130,7 +1130,16 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["motion_state"]["1"]["motion_ids"] = [1]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("motion/2", {"meeting_id": 2, "origin_id": None, "derived_motion_ids": None, "all_origin_id": None, "all_derived_motion_ids": None})
+        self.assert_model_exists(
+            "motion/2",
+            {
+                "meeting_id": 2,
+                "origin_id": None,
+                "derived_motion_ids": None,
+                "all_origin_id": None,
+                "all_derived_motion_ids": None,
+            },
+        )
 
     def test_motion_all_origin_ids(self) -> None:
         request_data = self.create_request_data(

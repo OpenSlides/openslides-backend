@@ -802,8 +802,12 @@ class MeetingClone(BaseActionTestCase):
         )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/3", {"motion_ids": [3], "name": "Test - Copy"})
-        self.assert_model_exists("motion/3", {"meeting_id": 3, "origin_id": None, "derived_motion_ids": None})
+        self.assert_model_exists(
+            "meeting/3", {"motion_ids": [3], "name": "Test - Copy"}
+        )
+        self.assert_model_exists(
+            "motion/3", {"meeting_id": 3, "origin_id": None, "derived_motion_ids": None}
+        )
 
     def test_clone_with_underscore_attributes(self) -> None:
         self.set_models(self.test_models)
