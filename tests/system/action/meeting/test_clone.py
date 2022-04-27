@@ -761,3 +761,54 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
+
+    def test_clone_with_forwarded_motion(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "committee/1": {"organization_id": 1, "meeting_ids": [1, 2]},
+                "meeting/1": {"motion_ids": [1], "list_of_speakers_ids": [1]},
+                "meeting/2": {
+                    "name": "forward target",
+                    "motion_ids": [2],
+                    "is_active_in_organization_id": 1,
+                },
+                "motion/1": {
+                    "meeting_id": 1,
+                    "derived_motion_ids": [2],
+                    "all_derived_motion_ids": [2],
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 1,
+                    "title": "motion1",
+                    "state_id": 1,
+                },
+                "motion/2": {
+                    "meeting_id": 2,
+                    "origin_id": 1,
+                    "all_origin_ids": [1],
+                    "sequential_number": 1,
+                    "list_of_speakers_id": 2,
+                    "title": "motion1 forwarded",
+                    "state_id": 2,
+                },
+                "list_of_speakers/1": {
+                    "sequential_number": 1,
+                    "content_object_id": "motion/1",
+                    "closed": False,
+                    "meeting_id": 1,
+                },
+                "motion_state/1": {"motion_ids": [1]},
+            }
+        )
+        response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/3", {"motion_ids": [3], "name": "Test - Copy"})
+        self.assert_model_exists("motion/3", {"meeting_id": 3, "origin_id": None, "derived_motion_ids": None})
+
+    def test_clone_with_underscore_attributes(self) -> None:
+        self.set_models(self.test_models)
+
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "_collection": "testtest"}
+        )
+        self.assert_status_code(response, 200)

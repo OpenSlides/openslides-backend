@@ -149,6 +149,7 @@ class Checker:
         data: Dict[str, Dict[str, Any]],
         mode: str = "all",
         repair: bool = False,
+        fields_to_remove: Dict[str, List] = {},
     ) -> None:
         """
         The checker checks the data without access to datastore.
@@ -172,12 +173,19 @@ class Checker:
         Repair:
             New feature, which sets missing fields with default value automatically.
 
+        fields_to_remove:
+            A dict with collection as key and a list of fieldnames to remove from instance.
+            Works only with repair set.
+            First use case: meeting.clone and meeting.import need to remove the fields
+            origin_id and derived_motion_id, because they in the copy they are not forwarded.
+
         Not all collections must be given and missing fields are ignore, but
         required fields and fields with a default value must be present.
         """
         self.data = data
         self.mode = mode
         self.repair = repair
+        self.fields_to_remove = fields_to_remove
 
         self.models: Dict[str, Type["Model"]] = {
             collection.collection: model_registry[collection]
@@ -333,6 +341,9 @@ class Checker:
             raise CheckException(err)
 
     def check_model(self, collection: str, model: Dict[str, Any]) -> None:
+        if self.repair and collection in self.fields_to_remove:
+            [model.pop(field, None) for field in self.fields_to_remove[collection]]
+
         errors = self.check_normal_fields(model, collection)
 
         if not errors:
