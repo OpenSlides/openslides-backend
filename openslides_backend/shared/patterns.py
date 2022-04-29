@@ -32,9 +32,10 @@ class Collection:
         return f"Collection({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Collection):
-            return NotImplemented
-        return self.collection == other.collection
+        try:
+            return self.collection == other.collection  # type: ignore
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -59,9 +60,13 @@ class FullQualifiedId:
         return f"FullQualifiedId({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, FullQualifiedId):
-            return NotImplemented
-        return self.collection == other.collection and self.id == other.id
+        try:
+            return (
+                self.collection.collection == other.collection.collection  # type: ignore
+                and self.id == other.id  # type: ignore
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -85,13 +90,14 @@ class FullQualifiedField:
         return f"FullQualifiedField({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, FullQualifiedField):
-            return NotImplemented
-        return (
-            self.collection == other.collection
-            and self.id == other.id
-            and self.field == other.field
-        )
+        try:
+            return (
+                self.collection == other.collection  # type: ignore
+                and self.id == other.id  # type: ignore
+                and self.field == other.field  # type: ignore
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -118,9 +124,13 @@ class CollectionField:
         return f"CollectionField({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CollectionField):
-            return NotImplemented
-        return self.collection == other.collection and self.field == other.field
+        try:
+            return (
+                self.collection.collection == other.collection.collection  # type: ignore
+                and self.field == other.field  # type: ignore
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
