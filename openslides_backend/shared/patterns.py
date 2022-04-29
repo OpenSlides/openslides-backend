@@ -173,10 +173,10 @@ def transform_to_fqids(
 
     fqid_list = []
     for id in id_list:
-        if isinstance(id, str):
-            fqid_list.append(string_to_fqid(id))
-        elif isinstance(id, int):
+        if isinstance(id, int):
             fqid_list.append(FullQualifiedId(collection, id))
+        elif isinstance(id, str):
+            fqid_list.append(string_to_fqid(id))
         else:
             assert isinstance(id, FullQualifiedId)
             fqid_list.append(id)
