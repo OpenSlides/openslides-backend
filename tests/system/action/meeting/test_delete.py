@@ -144,9 +144,11 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         for i in range(3):
             user = self.get_model(f"user/{i+1}")
             for field in User().get_fields():
-                if isinstance(
-                    field, BaseTemplateField
-                ) and field.replacement_collection == Collection("meeting"):
+                if (
+                    isinstance(field, BaseTemplateField)
+                    and field.replacement_collection
+                    and field.replacement_collection == Collection("meeting")
+                ):
                     assert user.get(field.get_template_field_name()) in ([], None)
                     val = user.get(field.get_structured_field_name(1))
                     if isinstance(field, BaseRelationField) and field.is_list_field:
