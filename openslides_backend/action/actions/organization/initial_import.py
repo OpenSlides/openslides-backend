@@ -60,14 +60,14 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             data = get_initial_data_file(INITIAL_DATA_FILE)
             instance["data"] = data
 
-        self.check_migration_index(instance)
-
         # check datavalidation
-        checker = Checker(data=data, mode="all")
+        checker = Checker(data=data, mode="all", migration_mode="permissive")
         try:
             checker.run_check()
         except CheckException as ce:
             raise ActionException(str(ce))
+
+        self.data_migration_index = data["_migration_index"]
 
         return instance
 
@@ -81,27 +81,12 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         ):
             raise ActionException("Datastore is not empty.")
 
-    def check_migration_index(self, instance: Dict[str, Any]) -> None:
-        self.data_migration_index = instance["data"].get("_migration_index")
-        self.backend_migration_index = get_backend_migration_index()
-        if self.data_migration_index is None:
-            raise ActionException(
-                "Data must have a valid migration index in `_migration_index`."
-            )
-        if self.data_migration_index < 1:
-            raise ActionException(
-                f"Data must have a valid migration index >= 1, but has {self.data_migration_index}."
-            )
-
-        if self.backend_migration_index < self.data_migration_index:
-            raise ActionException(
-                f"Migration indices do not match: Data has {self.data_migration_index} and the backend has {self.backend_migration_index}"
-            )
-
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
         json_data = instance["data"]
         write_requests = []
         for collection in json_data:
+            if collection.startswith("_"):
+                continue
             for entry in json_data[collection].values():
                 fqid = FullQualifiedId(Collection(collection), entry["id"])
                 write_requests.append(
@@ -128,16 +113,17 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def create_action_result_element(
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
+        backend_migration_index = get_backend_migration_index()
         result = {
             "data_migration_index": self.data_migration_index,
-            "backend_migration_index": self.backend_migration_index,
+            "backend_migration_index": backend_migration_index,
         }
-        if self.backend_migration_index > self.data_migration_index:
+        if backend_migration_index > self.data_migration_index:
             result["message"] = "Data imported, but must be migrated!"
             result["migration_needed"] = True
         else:
             result[
                 "message"
-            ] = f"Data imported, Migration Index set to {self.backend_migration_index}"
+            ] = f"Data imported, Migration Index set to {backend_migration_index}"
             result["migration_needed"] = False
         return result

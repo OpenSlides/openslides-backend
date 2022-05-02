@@ -148,11 +148,11 @@ class OrganizationInitialImport(BaseActionTestCase):
 
     def test_initial_import_without_MI(self) -> None:
         self.datastore.truncate_db()
-        request_data = {"data": {"1": 1}}
+        request_data = {"data": {"f": 1}}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Data must have a valid migration index in `_migration_index`.",
+            "JSON does not match schema: data must contain ['_migration_index'] properties",
             response.json["message"],
         )
 
@@ -162,7 +162,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Data must have a valid migration index >= 1, but has",
+            "JSON does not match schema: data._migration_index must be bigger than or equal to 1",
             response.json["message"],
         )
 
@@ -186,7 +186,7 @@ class OrganizationInitialImport(BaseActionTestCase):
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Migration indices do not match: Data has",
+            " is higher than the backend ",
             response.json["message"],
         )
 
@@ -201,9 +201,6 @@ class OrganizationInitialImport(BaseActionTestCase):
 
         self.datastore.truncate_db()
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
-        data_migration_index = request_data["data"]["_migration_index"]
-        backend_migration_index = get_backend_migration_index()
-        assert data_migration_index == backend_migration_index
 
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 200)

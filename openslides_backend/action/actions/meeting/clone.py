@@ -1,5 +1,4 @@
 import time
-from collections import defaultdict
 from typing import Any, Dict, List
 
 from ....models.checker import Checker, CheckException
@@ -43,13 +42,12 @@ class MeetingClone(MeetingImport):
         },
     )
 
-    def action_specific_in_perform(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+    def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Temporarely, because meeting.clone has _model and _collection attributes
         """
         underscore_keys = tuple(key for key in instance.keys() if key[0] == "_")
         [instance.pop(key) for key in underscore_keys]
-
         return instance
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -59,8 +57,7 @@ class MeetingClone(MeetingImport):
         additional_admin_ids = instance.pop("admin_ids", None)
 
         # checks if the meeting is correct
-        if not len(meeting_json.get("meeting", {}).keys()) == 1:
-            raise ActionException("Need exact one meeting in meeting collection.")
+        self.check_one_meeting(instance)
 
         if (
             committee_id := instance.get("committee_id")
@@ -150,18 +147,6 @@ class MeetingClone(MeetingImport):
                 user_ids = set(entry.get("user_ids", set()) or set())
                 user_ids.update(additional_user_ids)
                 entry["user_ids"] = list(user_ids)
-
-    def create_replace_map(self, json_data: Dict[str, Any]) -> None:
-        replace_map: Dict[str, Dict[int, int]] = defaultdict(dict)
-        for collection in json_data:
-            if not json_data[collection]:
-                continue
-            new_ids = self.datastore.reserve_ids(
-                Collection(collection), len(json_data[collection])
-            )
-            for entry, new_id in zip(json_data[collection].values(), new_ids):
-                replace_map[collection][entry["id"]] = new_id
-        self.replace_map = replace_map
 
     def duplicate_mediafiles(self, json_data: Dict[str, Any]) -> None:
         for mediafile_id in json_data["mediafile"]:

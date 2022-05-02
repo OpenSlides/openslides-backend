@@ -28,7 +28,6 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def create_request_data(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
-
         data: Dict[str, Any] = {
             "committee_id": 1,
             "meeting": {
@@ -495,7 +494,8 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Need exact one meeting in meeting collection." in response.json["message"]
+            "Need exactly one meeting in meeting collection."
+            in response.json["message"]
         )
 
     def test_too_many_meeting_collections(self) -> None:
@@ -511,7 +511,8 @@ class MeetingImport(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Need exact one meeting in meeting collection." in response.json["message"]
+            "Need exactly one meeting in meeting collection."
+            in response.json["message"]
         )
 
     def test_include_organization(self) -> None:

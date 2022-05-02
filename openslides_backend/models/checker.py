@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Ty
 
 import fastjsonschema
 
+from migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
     BaseRelationField,
@@ -36,8 +37,11 @@ SCHEMA = fastjsonschema.compile(
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Schema for initial and example data.",
         "type": "object",
+        "properties": {
+            "_migration_index": {"type": "integer", "minimum": 1},
+        },
         "patternProperties": {
-            "^[a-z_]+$": {
+            "^[a-z][a-z_]*$": {
                 "type": "object",
                 "patternProperties": {
                     "^[1-9][0-9]*$": {
@@ -48,8 +52,9 @@ SCHEMA = fastjsonschema.compile(
                     }
                 },
                 "additionalProperties": False,
-            }
+            },
         },
+        "required": ["_migration_index"],
         "additionalProperties": False,
     }
 )
@@ -148,6 +153,7 @@ class Checker:
         self,
         data: Dict[str, Dict[str, Any]],
         mode: str = "all",
+        migration_mode: str = "strict",
         repair: bool = False,
         fields_to_remove: Dict[str, List] = {},
     ) -> None:
@@ -170,8 +176,11 @@ class Checker:
             in data, because they exist in same database.
         all: All collections are valid and has to be in the data
 
-        Repair:
-            New feature, which sets missing fields with default value automatically.
+        Repair: Set missing fields with default value automatically.
+
+        migration_mode:
+        strict: only allow the current backend migration index
+        permissive: also allow a lower migration index
 
         fields_to_remove:
             A dict with collection as key and a list of fieldnames to remove from instance.
@@ -184,13 +193,9 @@ class Checker:
         """
         self.data = data
         self.mode = mode
+        self.migration_mode = migration_mode
         self.repair = repair
         self.fields_to_remove = fields_to_remove
-
-        self.models: Dict[str, Type["Model"]] = {
-            collection.collection: model_registry[collection]
-            for collection in model_registry
-        }
 
         meeting_collections = [
             "meeting",
@@ -240,27 +245,31 @@ class Checker:
 
         self.errors: List[str] = []
 
-        self.check_migration_index()
-
         self.template_prefixes: Dict[
             str, Dict[str, Tuple[str, int, int]]
         ] = defaultdict(dict)
         self.generate_template_prefixes()
 
     def check_migration_index(self) -> None:
-        if "_migration_index" in self.data:
-            migration_index = self.data.pop("_migration_index")
-            if (
-                not isinstance(migration_index, int)
-                or migration_index < -1
-                or migration_index == 0
-            ):
-                self.errors.append(
-                    f"The migration index is not -1 or >=1, but {migration_index}."
-                )
+        # Unfortunately, TypedDict does not support any kind of generic or pattern property to
+        # distinguish between the MI and the collections, so we have to cast the field here
+        migration_index = cast(int, self.data["_migration_index"])
+        backend_mi = get_backend_migration_index()
+        if migration_index > backend_mi:
+            self.errors.append(
+                f"The given migration index ({migration_index}) is higher than the backend ({backend_mi})."
+            )
+        elif self.migration_mode == "strict" and migration_index < backend_mi:
+            self.errors.append(
+                f"The given migration index ({migration_index}) is lower than the backend ({backend_mi})."
+            )
+
+    def get_model(self, collection: str) -> Model:
+        ModelClass = model_registry[Collection(collection)]
+        return ModelClass()
 
     def get_fields(self, collection: str) -> Iterable[Field]:
-        return self.models[collection]().get_fields()
+        return self.get_model(collection).get_fields()
 
     def generate_template_prefixes(self) -> None:
         for collection in self.allowed_collections:
@@ -314,8 +323,11 @@ class Checker:
 
     def run_check(self) -> None:
         self.check_json()
+        self.check_migration_index()
         self.check_collections()
         for collection, models in self.data.items():
+            if collection.startswith("_"):
+                continue
             for id_, model in models.items():
                 if model["id"] != int(id_):
                     self.errors.append(
@@ -333,7 +345,11 @@ class Checker:
             raise CheckException(f"JSON does not match schema: {str(e)}")
 
     def check_collections(self) -> None:
-        c1 = set(self.data.keys())
+        c1 = set(
+            collection
+            for collection in self.data.keys()
+            if not collection.startswith("_")
+        )
         c2 = set(self.allowed_collections)
         err = "Collections in file do not match with models.py."
         if c1 - c2:
@@ -361,12 +377,11 @@ class Checker:
             if self.is_normal_field(x) or self.is_template_field(x)
         )
         all_collection_fields = set(
-            field.get_own_field_name()
-            for field in self.models[collection]().get_fields()
+            field.get_own_field_name() for field in self.get_fields(collection)
         )
         required_or_default_collection_fields = set(
             field.get_own_field_name()
-            for field in self.models[collection]().get_fields()
+            for field in self.get_fields(collection)
             if field.required or field.default is not None
         )
 
@@ -383,7 +398,7 @@ class Checker:
             self.errors.append(error)
             errors = True
 
-        for field in self.models[collection]().get_fields():
+        for field in self.get_fields(collection):
             if (fieldname := field.get_own_field_name()) in model_fields:
                 try:
                     field.validate(model[fieldname], model)
@@ -399,7 +414,7 @@ class Checker:
     ) -> Set[str]:
         remaining_fields = set()
         for fieldname in fieldnames:
-            field = getattr(self.models[collection], fieldname)
+            field = self.get_model(collection).get_field(fieldname)
             if field.default is not None:
                 model[fieldname] = field.default
             else:
@@ -529,7 +544,7 @@ class Checker:
         if self.is_structured_field(field):
             field, _ = self.to_template_field(collection, field)
 
-        field_type = self.models[collection]().get_field(field)
+        field_type = self.get_model(collection).get_field(field)
         return field_type
 
     def get_enum_from_collection_field(
@@ -538,7 +553,7 @@ class Checker:
         if self.is_structured_field(field):
             field, _ = self.to_template_field(collection, field)
 
-        field_type = self.models[collection]().get_field(field)
+        field_type = self.get_model(collection).get_field(field)
         return field_type.constraints.get("enum")
 
     def check_relations(self, model: Dict[str, Any], collection: str) -> None:
@@ -683,7 +698,9 @@ class Checker:
         if self.is_structured_field(field):
             field, _ = self.to_template_field(collection, field)
 
-        field_type = cast(BaseRelationField, self.models[collection]().get_field(field))
+        field_type = cast(
+            BaseRelationField, self.get_model(collection).get_field(field)
+        )
         return (
             field_type.get_target_collection().collection,
             field_type.to.get(field_type.get_target_collection()),
@@ -802,8 +819,7 @@ class Checker:
                 f"Collectionfield {collectionfield} has an invalid collection"
             )
         if field not in [
-            field.get_own_field_name()
-            for field in self.models[collection]().get_fields()
+            field.get_own_field_name() for field in self.get_fields(collection)
         ]:
             raise CheckException(
                 f"Collectionfield {collectionfield} has an invalid field"
@@ -814,7 +830,7 @@ class Checker:
         self, collection: str, field: str, foreign_collection: str
     ) -> str:
         """Returns all reverse relations as collectionfields"""
-        to = cast(BaseRelationField, self.models[collection]().get_field(field)).to
+        to = cast(BaseRelationField, self.get_model(collection).get_field(field)).to
         if isinstance(to, dict):
             if Collection(foreign_collection) not in to.keys():
                 raise CheckException(
