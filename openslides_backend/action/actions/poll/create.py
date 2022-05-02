@@ -160,7 +160,11 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
 
         # set votescast, votesvalid, votesinvalid defaults
         for field in ("votescast", "votesvalid", "votesinvalid"):
-            instance[field] = instance.get(field, "0.000000")
+            instance[field] = (
+                self.parse_vote_value(instance, field)
+                if instance["type"] == Poll.TYPE_ANALOG
+                else instance.get(field, "0.000000")
+            )
 
         # calculate is_pseudoanonymized
         instance["is_pseudoanonymized"] = instance["type"] == Poll.TYPE_PSEUDOANONYMOUS
