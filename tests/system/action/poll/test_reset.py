@@ -1,15 +1,18 @@
 from typing import Any, Dict
 
+from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
-from tests.system.action.base import BaseActionTestCase
+from tests.system.util import CountDatastoreCalls, Profiler, performance
+
+from .poll_test_mixin import PollTestMixin
 
 
-class PollResetActionTest(BaseActionTestCase):
+class PollResetActionTest(PollTestMixin):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "poll/1": {
-                "state": "started",
+                "state": Poll.STATE_STARTED,
                 "option_ids": [1],
                 "global_option_id": 2,
                 "meeting_id": 1,
@@ -133,3 +136,30 @@ class PollResetActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         response = self.vote_service.vote({"id": 1, "value": {"1": 1}})
         self.assert_status_code(response, 200)
+
+    def test_reset_datastore_calls(self) -> None:
+        self.prepare_users_and_poll(3)
+
+        with CountDatastoreCalls() as counter:
+            response = self.request("poll.reset", {"id": 1})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1", {"voted_ids": [], "state": Poll.STATE_CREATED}
+        )
+        assert counter.calls == 2
+
+    @performance
+    def test_reset_performance(self) -> None:
+        self.prepare_users_and_poll(100)
+        response = self.request("poll.stop", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.datastore.reset(hard=True)
+
+        with Profiler("test_reset_performance.prof"):
+            response = self.request("poll.reset", {"id": 1})
+
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1", {"voted_ids": [], "state": Poll.STATE_CREATED}
+        )

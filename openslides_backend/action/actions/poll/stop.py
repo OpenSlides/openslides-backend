@@ -36,7 +36,8 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                         "entitled_group_ids",
                     ],
                 ),
-            ]
+            ],
+            use_changed_models=False,
         )
         polls = result[Collection("poll")].values()
         meeting_ids = list({poll["meeting_id"] for poll in polls})
@@ -76,7 +77,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                     ],
                 )
             )
-        self.datastore.get_many(requests)
+        self.datastore.get_many(requests, use_changed_models=False)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(
