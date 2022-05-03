@@ -1,10 +1,9 @@
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
-from tests.system.action.base import DEFAULT_PASSWORD, BaseActionTestCase
-from tests.system.base import ADMIN_PASSWORD, ADMIN_USERNAME
 from tests.system.util import CountDatastoreCalls, Profiler, performance
+
 from .poll_test_mixin import PollTestMixin
 
 
