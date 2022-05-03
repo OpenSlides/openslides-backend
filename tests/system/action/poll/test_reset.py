@@ -147,7 +147,7 @@ class PollResetActionTest(PollTestMixin):
         self.assert_model_exists(
             "poll/1", {"voted_ids": [], "state": Poll.STATE_CREATED}
         )
-        assert counter.calls == 2
+        assert counter.calls == 3
 
     @performance
     def test_reset_performance(self) -> None:
