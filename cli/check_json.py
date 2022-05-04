@@ -1,5 +1,6 @@
-import json
 import sys
+
+import simplejson as json
 
 from openslides_backend.models.checker import Checker, CheckException
 

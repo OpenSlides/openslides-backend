@@ -1,8 +1,8 @@
-import json
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Set, Type, cast
 from unittest import TestCase
 
+import simplejson as json
 from datastore.shared.util import DeletedModelsBehaviour
 from fastjsonschema import validate
 from fastjsonschema.exceptions import JsonSchemaException

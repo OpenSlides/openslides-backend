@@ -1,6 +1,6 @@
-import json
 from typing import Any, Dict, List, Optional, Text, Tuple
 
+import simplejson as json
 from werkzeug.exceptions import BadRequest as BaseBadRequest
 from werkzeug.exceptions import Forbidden as BaseForbidden
 from werkzeug.exceptions import HTTPException as BaseHTTPException
