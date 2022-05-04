@@ -41,7 +41,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
         polls = result[Collection("poll")].values()
         meeting_ids = list({poll["meeting_id"] for poll in polls})
         group_ids = list(
-            {group_id for poll in polls for group_id in poll["entitled_group_ids"]}
+            {group_id for poll in polls for group_id in poll.get("entitled_group_ids", ())}
         )
         option_ids = [
             option_id
