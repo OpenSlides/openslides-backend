@@ -33,7 +33,7 @@ class Collection:
 
     def __eq__(self, other: object) -> bool:
         try:
-            return self.collection == other.collection  # type: ignore
+            return self.collection == cast(Collection, other).collection
         except Exception as e:
             raise NotImplementedError(e)
 
