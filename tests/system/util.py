@@ -1,7 +1,8 @@
+from collections import defaultdict
 import copy
 import cProfile
 import os
-from typing import Any, Callable, Dict, List, Type
+from typing import Any, Callable, Dict, List, Tuple, Type
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -126,6 +127,7 @@ class CountDatastoreCalls:
 
     def __init__(self, verbose: bool = False) -> None:
         self.verbose = verbose
+        self.calls_detail: List = []
 
     def __enter__(self) -> "CountDatastoreCalls":
         self.patcher: List[Any] = []
@@ -142,6 +144,12 @@ class CountDatastoreCalls:
         orig_method = getattr(DatastoreAdapter, method)
 
         def mock_method(inner_self: DatastoreAdapter, *args: Any, **kwargs: Any) -> Any:
+            if orig_method.__name__ == "get_many":
+                self.calls_detail.append((orig_method.__name__, {f"{entry.collection}/{entry.ids}": entry.mapped_fields for entry in args[0]}, kwargs.get("lock_result", "undefined")))
+            elif orig_method.__name__ == "get":
+                self.calls_detail.append((orig_method.__name__, {args[0]: args[1]}, kwargs.get("lock_result", "undefined")))
+            else:
+                self.calls_detail.append((orig_method.__name__, "NotImplemented"))
             if self.verbose:
                 print(args, kwargs)
             return orig_method(inner_self, *args, **kwargs)
