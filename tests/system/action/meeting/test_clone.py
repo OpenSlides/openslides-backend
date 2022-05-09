@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from openslides_backend.models.models import AgendaItem, Meeting, Projector
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from tests.system.action.base import BaseActionTestCase
+from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 
 class MeetingClone(BaseActionTestCase):
@@ -815,4 +816,42 @@ class MeetingClone(BaseActionTestCase):
         response = self.request(
             "meeting.clone", {"meeting_id": 1, "_collection": "testtest"}
         )
+        self.assert_status_code(response, 200)
+
+    def prepare_datastore_performance_test(self) -> None:
+        self.set_models(
+            {
+                "organization/1": {},
+                "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
+                "user/2": {"committee_ids": [1]},
+                "user/3": {"committee_ids": [1]},
+            }
+        )
+        self.execute_action_internally(
+            "meeting.create",
+            {
+                "committee_id": 1,
+                "name": "meeting",
+                "description": "",
+                "location": "",
+                "start_time": 1633039200,
+                "end_time": 1633039200,
+                "user_ids": [2, 3],
+                "admin_ids": [],
+                "organization_tag_ids": [],
+            },
+        )
+
+    def test_clone_datastore_calls(self) -> None:
+        self.prepare_datastore_performance_test()
+        with CountDatastoreCalls() as counter:
+            response = self.request("meeting.clone", {"meeting_id": 1})
+        self.assert_status_code(response, 200)
+        assert counter.calls == 10
+
+    @performance
+    def test_clone_performance(self) -> None:
+        self.prepare_datastore_performance_test()
+        with Profiler("test_meeting_clone_performance.prof"):
+            response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)

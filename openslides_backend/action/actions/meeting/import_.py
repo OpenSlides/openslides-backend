@@ -7,12 +7,9 @@ from datastore.shared.util import collection_and_id_from_fqid, collection_from_f
 
 from migrations import get_backend_migration_index
 from migrations.migrate import MigrationWrapper
-
-from openslides_backend.models.models import User
-
-from ....models.base import model_registry
-from ....models.checker import Checker, CheckException
-from ....models.fields import (
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.checker import Checker, CheckException
+from openslides_backend.models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
     BaseTemplateField,
@@ -21,17 +18,20 @@ from ....models.fields import (
     RelationField,
     RelationListField,
 )
-from ....models.models import Meeting
-from ....permissions.management_levels import (
+from openslides_backend.models.models import Meeting, User
+from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ....permissions.permission_helper import has_committee_management_level
-from ....services.datastore.interface import GetManyRequest
-from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.interfaces.event import EventType
-from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from openslides_backend.permissions.permission_helper import (
+    has_committee_management_level,
+)
+from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.shared.exceptions import ActionException, MissingPermission
+from openslides_backend.shared.interfaces.event import EventType
+from openslides_backend.shared.interfaces.write_request import WriteRequest
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
@@ -117,47 +117,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 GetManyRequest(
                     Collection("user"),
                     [self.user_id],
-                    [
-                        "group_$_ids", "committee_ids", *cml_fields
-                    ],
+                    ["group_$_ids", "committee_ids", *cml_fields],
                 ),
             )
         self.datastore.get_many(requests, use_changed_models=False)
-        """ 
-        vor Optimierung:
-        0 und werden für die Migration gelesen und zur Verfügung gestellt, dann aber weggeworfen
-        0:get, T->False, organization/1:['committee_ids', 'active_meeting_ids', 'archived_meeting_ids', 'template_meeting_ids', 'resource_ids', 'organization_tag_ids', 'meta_position']
-        1:get, T->False, committee/1: ['meeting_ids', 'meta_position']}
-        
-        2 für Permission Abfragen des Requesters
-        2:get, False, user/1: ['organization_management_level', 'committee_$can_manage_management_level']}
-      
-        3 limit of users check
-        3:get, T->False, organization/1: ['limit_of_users', 'meta_position']
-
-        4 liit of meetings check
-        4:get, T->False, organization/1: ['limit_of_meetings', 'meta_position']
-
-        nicht gezählt:get, True committee/1: [meeting_ids] wg. cache
-        nicht gezählt: organization/1: active_meeting_ids relationhandling
-
-        5 relation handling, wird wohl admin des meetings 2
-        5:get, True, user/1: ['group_$2_ids', 'meta_position']
-
-        6 relationhandling, meeting zur Gruppe
-        6:get_many, True, user/1: {'group_$_ids', 'meta_position'}
-
-        nicht gezählt: get, TTrue, user/1 [group_$_ids] calculated fields 
-
-        7: calculated fields
-        7:get, True, user/1: ['committee_ids', 'committee_$can_manag...ment_level', 'meta_position']
-
-
-        prefetch muss:
-        orga/1: active_meeting_ids, archived_meeting_ids
-        committee/1: meeting_ids
-        user/1 Request: group_$_ids, 'committee_ids', 'committee_$can_manag...ment_level'
-        """
 
     def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         self.check_one_meeting(instance)
@@ -272,6 +235,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
             ["active_meeting_ids", "limit_of_meetings"],
             lock_result=False,
+            use_changed_models=False,
         )
         if (
             limit_of_meetings := organization.get("limit_of_meetings", 0)

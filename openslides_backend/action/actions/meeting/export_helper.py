@@ -4,7 +4,6 @@ from datastore.shared.util import is_reserved_field
 
 from migrations import get_backend_migration_index
 
-from ....models.base import model_registry
 from ....models.fields import OnDelete, RelationListField
 from ....models.models import Meeting
 from ....services.datastore.commands import GetManyRequest
@@ -17,11 +16,12 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
 
     # fetch meeting
     meeting = datastore.get(
-        FullQualifiedId(Collection("meeting"), meeting_id), [], use_changed_models=False
+        FullQualifiedId(Collection("meeting"), meeting_id),
+        [],
+        lock_result=False,
+        use_changed_models=False,
     )
-    export["meeting"] = add_empty_fields(
-        remove_meta_fields(transfer_keys({meeting_id: meeting})), Collection("meeting")
-    )
+    export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
     export["_migration_index"] = get_backend_migration_index()
 
     # fetch related models
@@ -32,15 +32,17 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         if (ids := meeting.get(field.get_own_field_name()))
     ]
     if get_many_requests:
-        results = datastore.get_many(get_many_requests, use_changed_models=False)
+        results = datastore.get_many(
+            get_many_requests, lock_result=False, use_changed_models=False
+        )
     else:
         results = {}
 
     for field in relation_fields:
         collection = field.get_target_collection()
         if collection in results:
-            export[str(collection)] = add_empty_fields(
-                remove_meta_fields(transfer_keys(results[collection])), collection
+            export[str(collection)] = remove_meta_fields(
+                transfer_keys(results[collection])
             )
         else:
             export[str(collection)] = {}
@@ -57,18 +59,6 @@ def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
                 new_entry[fieldname] = res[key][fieldname]
         dict_without_meta_fields[str(key)] = new_entry
     return dict_without_meta_fields
-
-
-def add_empty_fields(res: Dict[str, Any], collection: Collection) -> Dict[str, Any]:
-    fields = set(
-        field.get_own_field_name()
-        for field in model_registry[collection]().get_fields()
-    )
-    for key in res:
-        for field in fields:
-            if field not in res[key]:
-                res[key][field] = None
-    return res
 
 
 def get_relation_fields() -> Iterable[RelationListField]:
