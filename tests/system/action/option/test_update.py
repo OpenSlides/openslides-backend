@@ -7,20 +7,8 @@ from tests.system.action.base import BaseActionTestCase
 class OptionUpdateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "poll/65": {
-                "type": "analog",
-                "state": "created",
-                "pollmethod": "YNA",
-                "meeting_id": 1,
-                "option_ids": [57],
-            },
+        self.vote_models: Dict[str, Dict[str, Any]] = {
             "option/57": {
-                "yes": "0.000000",
-                "no": "0.000000",
-                "abstain": "0.000000",
-                "meeting_id": 1,
-                "poll_id": 65,
                 "vote_ids": [22],
             },
             "vote/22": {
@@ -30,37 +18,30 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 "option_id": 57,
             },
         }
-
-    def test_update(self) -> None:
         self.set_models(
             {
-                "meeting/110": {
-                    "name": "meeting_110",
+                "meeting/1": {
                     "is_active_in_organization_id": 1,
                 },
                 "poll/65": {
                     "type": "analog",
                     "state": "created",
                     "pollmethod": "YNA",
-                    "meeting_id": 110,
+                    "meeting_id": 1,
                     "option_ids": [57],
                 },
                 "option/57": {
                     "yes": "0.000000",
                     "no": "0.000000",
                     "abstain": "0.000000",
-                    "meeting_id": 110,
+                    "meeting_id": 1,
                     "poll_id": 65,
-                    "vote_ids": [22],
-                },
-                "vote/22": {
-                    "value": "Y",
-                    "weight": "0.000000",
-                    "meeting_id": 110,
-                    "option_id": 57,
                 },
             }
         )
+
+    def test_update(self) -> None:
+        self.set_models(self.vote_models)
         response = self.request(
             "option.update",
             {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
@@ -86,28 +67,6 @@ class OptionUpdateActionTest(BaseActionTestCase):
         assert poll.get("state") == "finished"
 
     def test_update_Y(self) -> None:
-        self.set_models(
-            {
-                "meeting/110": {
-                    "name": "meeting_110",
-                    "is_active_in_organization_id": 1,
-                },
-                "poll/65": {
-                    "type": "analog",
-                    "pollmethod": "Y",
-                    "meeting_id": 110,
-                    "option_ids": [57],
-                    "state": "created",
-                },
-                "option/57": {
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
-                    "meeting_id": 110,
-                    "poll_id": 65,
-                },
-            }
-        )
         response = self.request(
             "option.update",
             {
@@ -121,34 +80,12 @@ class OptionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         option = self.get_model("option/57")
         assert option.get("yes") == "1.000000"
-        assert option.get("no") == "0.000000"
-        assert option.get("abstain") == "0.000000"
+        assert option.get("no") == "2.000000"
+        assert option.get("abstain") == "3.000000"
         poll = self.get_model("poll/65")
         assert poll.get("state") == "published"
 
     def test_update_default_values(self) -> None:
-        self.set_models(
-            {
-                "meeting/110": {
-                    "name": "meeting_110",
-                    "is_active_in_organization_id": 1,
-                },
-                "poll/65": {
-                    "type": "analog",
-                    "pollmethod": "YN",
-                    "meeting_id": 110,
-                    "option_ids": [57],
-                    "state": "created",
-                },
-                "option/57": {
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
-                    "meeting_id": 110,
-                    "poll_id": 65,
-                },
-            }
-        )
         response = self.request(
             "option.update",
             {
@@ -160,54 +97,80 @@ class OptionUpdateActionTest(BaseActionTestCase):
         option = self.get_model("option/57")
         assert option.get("yes") == "1.000000"
         assert option.get("no") == "-2.000000"
-        assert option.get("abstain") == "0.000000"
+        assert option.get("abstain") == "-2.000000"
+
+    def test_update_invaid_keys(self) -> None:
+        self.set_models(
+            {
+                "poll/65": {
+                    "pollmethod": "YN",
+                },
+            }
+        )
+        response = self.request(
+            "option.update",
+            {
+                "id": 57,
+                "A": "1.000000",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Pollmethod YN does not support abstain votes" in response.json["message"]
+        )
 
     def test_update_global_option(self) -> None:
         self.set_models(
             {
-                "meeting/110": {
-                    "name": "meeting_110",
-                    "is_active_in_organization_id": 1,
-                },
                 "poll/65": {
-                    "type": "analog",
                     "pollmethod": "Y",
-                    "meeting_id": 110,
                     "global_option_id": 57,
                     "global_yes": True,
                     "global_no": True,
                     "global_abstain": True,
-                    "state": "created",
                 },
                 "option/57": {
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
-                    "meeting_id": 110,
                     "used_as_global_option_in_poll_id": 65,
                 },
             }
         )
         response = self.request(
             "option.update",
-            {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
+            {"id": 57, "Y": "1.000000", "N": "2.000000"},
         )
         self.assert_status_code(response, 200)
         option = self.get_model("option/57")
         assert option.get("yes") == "1.000000"
         assert option.get("no") == "2.000000"
-        assert option.get("abstain") == "3.000000"
+        assert option.get("abstain") == "-2.000000"
+
+    def test_update_global_option_invalid(self) -> None:
+        self.set_models(
+            {
+                "option/57": {
+                    "used_as_global_option_in_poll_id": 65,
+                },
+            }
+        )
+        response = self.request(
+            "option.update",
+            {"id": 57, "Y": "1.000000"},
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Global yes votes are not allowed for this poll" in response.json["message"]
+        )
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.vote_models,
             "option.update",
             {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
         )
 
     def test_update_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.vote_models,
             "option.update",
             {"id": 57, "Y": "1.000000", "N": "2.000000", "A": "3.000000"},
             Permissions.Poll.CAN_MANAGE,
@@ -216,27 +179,16 @@ class OptionUpdateActionTest(BaseActionTestCase):
     def test_update_together_with_poll(self) -> None:
         self.set_models(
             {
-                "meeting/110": {"is_active_in_organization_id": 1},
-                "poll/6": {
-                    "type": "analog",
-                    "state": "created",
+                "poll/65": {
                     "pollmethod": "YN",
-                    "meeting_id": 110,
-                    "option_ids": [14, 15],
+                    "option_ids": [57, 58],
                 },
-                "option/14": {
+                "option/58": {
                     "yes": "0.000000",
                     "no": "0.000000",
                     "abstain": "0.000000",
-                    "meeting_id": 110,
-                    "poll_id": 6,
-                },
-                "option/15": {
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
-                    "meeting_id": 110,
-                    "poll_id": 6,
+                    "meeting_id": 1,
+                    "poll_id": 65,
                 },
             }
         )
@@ -246,7 +198,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                     "action": "poll.update",
                     "data": [
                         {
-                            "id": 6,
+                            "id": 65,
                             "onehundred_percent_base": "valid",
                             "pollmethod": "YNA",
                             "title": "Ballot",
@@ -256,8 +208,8 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 {
                     "action": "option.update",
                     "data": [
-                        {"id": 14, "Y": "1.000000", "A": "3.000000", "N": "2.000000"},
-                        {"id": 15, "Y": "4.000000", "N": "-1.000000"},
+                        {"id": 57, "Y": "1.000000", "A": "3.000000", "N": "2.000000"},
+                        {"id": 58, "Y": "4.000000", "N": "-1.000000"},
                     ],
                 },
             ]
@@ -265,32 +217,13 @@ class OptionUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_update_together_with_poll_2(self) -> None:
-        self.set_models(
-            {
-                "meeting/110": {"is_active_in_organization_id": 1},
-                "poll/13": {
-                    "type": "analog",
-                    "state": "created",
-                    "pollmethod": "YN",
-                    "meeting_id": 110,
-                    "option_ids": [30],
-                },
-                "option/30": {
-                    "yes": "0.000000",
-                    "no": "0.000000",
-                    "abstain": "0.000000",
-                    "meeting_id": 110,
-                    "poll_id": 13,
-                },
-            }
-        )
         response = self.request_json(
             [
                 {
                     "action": "poll.update",
                     "data": [
                         {
-                            "id": 13,
+                            "id": 65,
                             "max_votes_amount": 1,
                             "max_votes_per_option": 1,
                             "min_votes_amount": 1,
@@ -306,7 +239,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 {
                     "action": "option.update",
                     "data": [
-                        {"id": 30, "Y": "10.000000", "A": "10.000000", "N": "10.000000"}
+                        {"id": 57, "Y": "10.000000", "A": "10.000000", "N": "10.000000"}
                     ],
                 },
             ]
