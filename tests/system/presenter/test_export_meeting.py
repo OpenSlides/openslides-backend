@@ -78,6 +78,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "name": "exported_meeting",
                     "user_ids": [1],
                     "group_ids": [11],
+                    "present_user_ids": [1],
                 },
                 "user/1": {
                     "group_$_ids": ["1"],
@@ -86,6 +87,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "comment_$1": "blablabla",
                     "number_$": ["1"],
                     "number_$1": "spamspamspam",
+                    "is_present_in_meeting_ids": [1],
                 },
                 "group/11": {
                     "name": "group_in_meeting_1",

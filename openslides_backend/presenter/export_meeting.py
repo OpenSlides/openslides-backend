@@ -50,12 +50,17 @@ class Export(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
         export_data = export_meeting(self.datastore, self.data["meeting_id"])
-        self.exclude_organization_tags(export_data)
+        self.exclude_organization_tags_and_default_meeting_for_committee(export_data)
         self.add_users(export_data, self.data["meeting_id"])
         return export_data
 
-    def exclude_organization_tags(self, export_data: Dict[str, Any]) -> None:
+    def exclude_organization_tags_and_default_meeting_for_committee(
+        self, export_data: Dict[str, Any]
+    ) -> None:
         self.get_meeting_from_json(export_data)["organization_tag_ids"] = None
+        self.get_meeting_from_json(export_data)[
+            "default_meeting_for_committee_id"
+        ] = None
 
     def add_users(self, export_data: Dict[str, Any], meeting_id: int) -> None:
         user_ids = self.get_meeting_from_json(export_data)["user_ids"]
@@ -84,6 +89,7 @@ class Export(BasePresenter):
                 "last_email_send",
                 "is_demo_user",
                 "organization_management_level",
+                "is_present_in_meeting_ids",
             ],
         )
         users: Any = self.datastore.get_many([gmr])[Collection("user")]
@@ -120,7 +126,11 @@ class Export(BasePresenter):
                             str(meeting_id)
                         ]
             users[user_key]["meeting_ids"] = [meeting_id]
-            users[user_key]["is_present_in_meeting_ids"] = [meeting_id]
+
+            if meeting_id in (users[user_key].get("is_present_in_meeting_ids") or []):
+                users[user_key]["is_present_in_meeting_ids"] = [meeting_id]
+            else:
+                users[user_key]["is_present_in_meeting_ids"] = None
 
         export_data["user"] = users
 
