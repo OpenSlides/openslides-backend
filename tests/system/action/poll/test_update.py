@@ -118,7 +118,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         poll = self.get_model("poll/1")
         self.assertEqual(poll.get("title"), "test_title_Aishohh1ohd0aiSut7gi")
 
-    def test_prevent_updateing_content_object(self) -> None:
+    def test_prevent_updating_content_object(self) -> None:
         self.create_model(
             "assignment/2",
             {"title": "test_title_phohdah8quukooHeetuz", "open_posts": 1},
@@ -330,6 +330,22 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == Poll.STATE_PUBLISHED
+
+    def test_default_vote_values(self) -> None:
+        self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})
+        response = self.request(
+            "poll.update",
+            {"id": 1, "votescast": "1.000000"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "poll/1",
+            {
+                "votescast": "1.000000",
+                "votesvalid": "-2.000000",
+                "votesinvalid": "-2.000000",
+            },
+        )
 
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(

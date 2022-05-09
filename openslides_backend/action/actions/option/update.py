@@ -126,16 +126,11 @@ class OptionUpdateAction(UpdateAction):
         self, instance: Dict[str, Any], poll: Dict[str, Any]
     ) -> None:
         data = self._get_data(instance)
-
         if poll.get("type") == "analog":
-            if poll.get("pollmethod") == "N":
-                instance["no"] = data.get("no", "0.000000")
-            else:
-                instance["yes"] = data.get("yes", "0.000000")
-                if poll.get("pollmethod") in ("YN", "YNA"):
-                    instance["no"] = data.get("no", "0.000000")
-                if poll.get("pollmethod") == "YNA":
-                    instance["abstain"] = data.get("abstain", "0.000000")
+            pollmethod = poll["pollmethod"]
+            for key in ("yes", "no", "abstain"):
+                if key[0].upper() in pollmethod:
+                    instance[key] = data.get(key, "-2.000000")
 
     def _handle_global_option_data(
         self, instance: Dict[str, Any], poll: Dict[str, Any]

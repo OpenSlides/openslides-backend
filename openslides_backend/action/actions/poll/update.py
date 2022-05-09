@@ -104,6 +104,12 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
         ):
             instance["state"] = Poll.STATE_PUBLISHED
 
+        # set votescast, votesvalid, votesinvalid defaults
+        if poll["type"] == Poll.TYPE_ANALOG:
+            for field in ("votescast", "votesvalid", "votesinvalid"):
+                if field not in instance:
+                    instance[field] = "-2.000000"
+
         return instance
 
     def check_100_percent_base(self, instance: Dict[str, Any]) -> None:

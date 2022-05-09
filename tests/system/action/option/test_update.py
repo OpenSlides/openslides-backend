@@ -126,6 +126,42 @@ class OptionUpdateActionTest(BaseActionTestCase):
         poll = self.get_model("poll/65")
         assert poll.get("state") == "published"
 
+    def test_update_default_values(self) -> None:
+        self.set_models(
+            {
+                "meeting/110": {
+                    "name": "meeting_110",
+                    "is_active_in_organization_id": 1,
+                },
+                "poll/65": {
+                    "type": "analog",
+                    "pollmethod": "YN",
+                    "meeting_id": 110,
+                    "option_ids": [57],
+                    "state": "created",
+                },
+                "option/57": {
+                    "yes": "0.000000",
+                    "no": "0.000000",
+                    "abstain": "0.000000",
+                    "meeting_id": 110,
+                    "poll_id": 65,
+                },
+            }
+        )
+        response = self.request(
+            "option.update",
+            {
+                "id": 57,
+                "Y": "1.000000",
+            },
+        )
+        self.assert_status_code(response, 200)
+        option = self.get_model("option/57")
+        assert option.get("yes") == "1.000000"
+        assert option.get("no") == "-2.000000"
+        assert option.get("abstain") == "0.000000"
+
     def test_update_global_option(self) -> None:
         self.set_models(
             {
