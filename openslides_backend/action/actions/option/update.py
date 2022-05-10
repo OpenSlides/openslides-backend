@@ -121,13 +121,13 @@ class OptionUpdateAction(UpdateAction):
     def _handle_poll_option_data(
         self, instance: Dict[str, Any], poll: Dict[str, Any]
     ) -> None:
-        data = self._get_data(instance)
         if poll.get("type") == "analog":
+            data = self._get_data(instance)
             pollmethod = poll["pollmethod"]
             for letter, key in option_keys_map.items():
                 if letter in pollmethod:
                     instance[key] = data.get(key, "-2.000000")
-                else:
+                elif data.get(key):
                     raise ActionException(
                         f"Pollmethod {pollmethod} does not support {key} votes"
                     )
