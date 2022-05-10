@@ -14,7 +14,7 @@ from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PermissionDenied
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import Collection
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -66,6 +66,24 @@ class Export(BasePresenter):
         user_ids = self.get_meeting_from_json(export_data)["user_ids"]
         if not user_ids:
             return
+        fields = []
+        for field in User().get_fields():
+            if isinstance(
+                field,
+                (
+                    TemplateCharField,
+                    TemplateHTMLStrictField,
+                    TemplateDecimalField,
+                    TemplateRelationListField,
+                ),
+            ):
+                fields.append(
+                    (
+                        field.get_structured_field_name(meeting_id),
+                        field.get_template_field_name(),
+                    )
+                )
+
         gmr = GetManyRequest(
             Collection("user"),
             user_ids,
@@ -90,14 +108,13 @@ class Export(BasePresenter):
                 "is_demo_user",
                 "organization_management_level",
                 "is_present_in_meeting_ids",
-            ],
+            ]
+            + [field_pair[0] for field_pair in fields],
         )
         users: Any = self.datastore.get_many([gmr])[Collection("user")]
-        # change keys to strings
-        users = {str(key): value for key, value in users.items()}
-        # remove meta_* keys
+        # change keys to strings and remove meta_* keys
         users = {
-            key: {
+            str(key): {
                 key_inner: value_inner
                 for key_inner, value_inner in value.items()
                 if not key_inner.startswith("meta_")
@@ -106,27 +123,11 @@ class Export(BasePresenter):
         }
 
         for user_key in users:
-            for field in User().get_fields():
-                if isinstance(
-                    field,
-                    (
-                        TemplateCharField,
-                        TemplateHTMLStrictField,
-                        TemplateDecimalField,
-                        TemplateRelationListField,
-                    ),
-                ):
-                    field_name = field.get_structured_field_name(meeting_id)
-                    user = self.datastore.get(
-                        FullQualifiedId(Collection("user"), int(user_key)), [field_name]
-                    )
-                    if user.get(field_name):
-                        users[user_key][field_name] = user.get(field_name)
-                        users[user_key][field.get_template_field_name()] = [
-                            str(meeting_id)
-                        ]
+            for field_name, field_template_name in fields:
+                if users[user_key].get(field_name):
+                    users[user_key][field_name] = users[user_key].get(field_name)
+                    users[user_key][field_template_name] = [str(meeting_id)]
             users[user_key]["meeting_ids"] = [meeting_id]
-
             if meeting_id in (users[user_key].get("is_present_in_meeting_ids") or []):
                 users[user_key]["is_present_in_meeting_ids"] = [meeting_id]
             else:
