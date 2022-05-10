@@ -93,7 +93,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 },
                 "option/57": {
                     "abstain": None,
-                }
+                },
             }
         )
         response = self.request(
