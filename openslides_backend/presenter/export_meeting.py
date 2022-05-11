@@ -111,7 +111,9 @@ class Export(BasePresenter):
             ]
             + [field_pair[0] for field_pair in fields],
         )
-        users: Any = self.datastore.get_many([gmr])[Collection("user")]
+        users = self.datastore.get_many(
+            [gmr], lock_result=False, use_changed_models=False
+        )[Collection("user")]
         # remove meta_* keys
         users = {
             key: {
@@ -122,16 +124,15 @@ class Export(BasePresenter):
             for key, value in users.items()
         }
 
-        for user_key in users:
+        for user in users.values():
             for field_name, field_template_name in fields:
-                if users[user_key].get(field_name):
-                    users[user_key][field_name] = users[user_key].get(field_name)
-                    users[user_key][field_template_name] = [str(meeting_id)]
-            users[user_key]["meeting_ids"] = [meeting_id]
-            if meeting_id in (users[user_key].get("is_present_in_meeting_ids") or []):
-                users[user_key]["is_present_in_meeting_ids"] = [meeting_id]
+                if user.get(field_name):
+                    user[field_template_name] = [str(meeting_id)]
+            user["meeting_ids"] = [meeting_id]
+            if meeting_id in (user.get("is_present_in_meeting_ids") or []):
+                user["is_present_in_meeting_ids"] = [meeting_id]
             else:
-                users[user_key]["is_present_in_meeting_ids"] = None
+                user["is_present_in_meeting_ids"] = None
 
         export_data["user"] = users
 
