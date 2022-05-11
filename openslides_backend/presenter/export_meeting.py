@@ -114,15 +114,6 @@ class Export(BasePresenter):
         users = self.datastore.get_many(
             [gmr], lock_result=False, use_changed_models=False
         )[Collection("user")]
-        # remove meta_* keys
-        users = {
-            key: {
-                key_inner: value_inner
-                for key_inner, value_inner in value.items()
-                if not key_inner.startswith("meta_")
-            }
-            for key, value in users.items()
-        }
 
         for user in users.values():
             for field_name, field_template_name in fields:
