@@ -132,7 +132,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
         for entry in meeting_json.get("motion", {}).values():
             to_remove = set()
-            for paragraph in entry.get("amendment_paragraph_$", []):
+            for paragraph in entry.get("amendment_paragraph_$") or []:
                 if (entry.get(fname := "amendment_paragraph_$" + paragraph)) is None:
                     to_remove.add(paragraph)
                     entry.pop(fname, None)
