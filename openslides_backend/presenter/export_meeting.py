@@ -63,7 +63,7 @@ class Export(BasePresenter):
         ] = None
 
     def add_users(self, export_data: Dict[str, Any], meeting_id: int) -> None:
-        user_ids = self.get_meeting_from_json(export_data)["user_ids"]
+        user_ids = self.get_meeting_from_json(export_data).get("user_ids")
         if not user_ids:
             return
         fields = []
