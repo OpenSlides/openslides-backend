@@ -62,8 +62,9 @@ class FullQualifiedId:
     def __eq__(self, other: object) -> bool:
         try:
             return (
-                self.collection.collection == other.collection.collection  # type: ignore
-                and self.id == other.id  # type: ignore
+                self.collection.collection
+                == cast("FullQualifiedId", other).collection.collection
+                and self.id == cast("FullQualifiedId", other).id
             )
         except Exception as e:
             raise NotImplementedError(e)
