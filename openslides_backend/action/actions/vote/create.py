@@ -38,7 +38,8 @@ class VoteCreate(CreateActionWithInferredMeeting):
                     list({instance["option_id"] for instance in action_data}),
                     ["meeting_id", "vote_ids"],
                 ),
-            ]
+            ],
+            use_changed_models=False,
         )
         fields = [
             "is_present_in_meeting_ids",
@@ -76,5 +77,6 @@ class VoteCreate(CreateActionWithInferredMeeting):
                     ),
                     fields,
                 ),
-            ]
+            ],
+            use_changed_models=False,
         )

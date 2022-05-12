@@ -4,7 +4,9 @@ from typing import Any, Dict, List, cast
 
 from migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
+from openslides_backend.shared.util import get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
+from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 current_migration_index = get_backend_migration_index()
 
@@ -1353,8 +1355,11 @@ class MeetingImport(BaseActionTestCase):
     def test_all_migrations(self) -> None:
         data = self.create_request_data({})
         data["meeting"]["_migration_index"] = 1
-        response = self.request("meeting.import", data)
+
+        with CountDatastoreCalls(verbose=True) as counter:
+            response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)
+        assert counter.calls == 6
         self.assert_model_exists("user/1", {"group_$_ids": ["2"], "group_$2_ids": [2]})
         meeting = self.assert_model_exists(
             "meeting/2", {"assignment_poll_enable_max_votes_per_option": False}
@@ -1367,3 +1372,12 @@ class MeetingImport(BaseActionTestCase):
         self.assertCountEqual(committee1["meeting_ids"], [1, 2])
         self.assert_model_exists("motion_workflow/1", {"sequential_number": 1})
         self.assert_model_exists("projector/2", {"sequential_number": 1})
+
+    @performance
+    def test_big_file(self) -> None:
+        data = {}
+        data["meeting"] = get_initial_data_file("global/data/put_your_file.json")
+        data["committee_id"] = 1
+        with Profiler("test_meeting_import_performance.prof"):
+            response = self.request("meeting.import", data)
+        self.assert_status_code(response, 200)

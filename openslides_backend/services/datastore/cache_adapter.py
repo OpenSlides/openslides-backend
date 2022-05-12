@@ -77,7 +77,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
             for id in request.ids:
                 fqid = FullQualifiedId(request.collection, id)
                 mapped_fields_per_fqid[fqid].extend(list(request.mapped_fields or []))
-        # fetch results from changed models
+        # fetch results from cached models
         results, missing_fields_per_fqid = self._get_many_from_cached_models(
             mapped_fields_per_fqid
         )
@@ -124,11 +124,15 @@ class CacheDatastoreAdapter(DatastoreAdapter):
                 else:
                     missing_fields_per_fqid[fqid] = []
             elif fqid in self.cached_missing_fields:
-                missing_fields_per_fqid[fqid] = [
+                remaining_missing_fields = [
                     field
                     for field in mapped_fields
                     if field not in self.cached_missing_fields[fqid]
                 ]
+                if remaining_missing_fields:
+                    missing_fields_per_fqid[fqid] = remaining_missing_fields
+                else:
+                    results[fqid.collection][fqid.id] = dict()
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
         return (results, missing_fields_per_fqid)

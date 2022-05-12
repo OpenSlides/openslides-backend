@@ -1,8 +1,8 @@
-import json
 import re
 import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
+import simplejson as json
 import yaml
 from datastore.shared.util.key_types import (
     collection_regex,

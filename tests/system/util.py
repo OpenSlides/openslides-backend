@@ -143,7 +143,7 @@ class CountDatastoreCalls:
 
         def mock_method(inner_self: DatastoreAdapter, *args: Any, **kwargs: Any) -> Any:
             if self.verbose:
-                print(args, kwargs)
+                print(orig_method.__name__, args, kwargs)
             return orig_method(inner_self, *args, **kwargs)
 
         patcher = patch.object(DatastoreAdapter, method, autospec=True)

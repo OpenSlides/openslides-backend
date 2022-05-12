@@ -1,7 +1,7 @@
-import json
 from typing import Any, Dict, Optional
 
 import requests
+import simplejson as json
 from authlib import AUTHENTICATION_HEADER, COOKIE_NAME
 
 from ...shared.exceptions import VoteServiceException

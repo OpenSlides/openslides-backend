@@ -1,6 +1,6 @@
-import json
 from typing import Any, Callable, Optional, TypedDict, cast
 
+import simplejson as json
 from authlib import AUTHENTICATION_HEADER, COOKIE_NAME, AuthenticateException
 from werkzeug.test import Client as WerkzeugClient
 from werkzeug.test import TestResponse

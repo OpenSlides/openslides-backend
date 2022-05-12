@@ -47,6 +47,7 @@ class LimitOfUserMixin(Action):
         organization = self.datastore.get(
             FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
             ["limit_of_users"],
+            lock_result=False,
         )
         if limit_of_users := organization.get("limit_of_users"):
             filter_ = FilterOperator("is_active", "=", True)

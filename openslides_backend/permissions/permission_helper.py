@@ -118,6 +118,8 @@ def has_committee_management_level(
         user = datastore.get(
             FullQualifiedId(Collection("user"), user_id),
             ["organization_management_level", *cml_fields],
+            lock_result=False,
+            use_changed_models=False,
         )
         if user.get("organization_management_level") in (
             OrganizationManagementLevel.SUPERADMIN,

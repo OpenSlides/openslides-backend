@@ -1,19 +1,24 @@
 import time
 from typing import Any, Dict, List
 
-from ....models.checker import Checker, CheckException
-from ....models.models import Meeting
-from ....permissions.management_levels import CommitteeManagementLevel
-from ....permissions.permission_helper import has_committee_management_level
-from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.interfaces.event import EventType
-from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
-from ....shared.schema import id_list_schema
+from openslides_backend.models.checker import Checker, CheckException
+from openslides_backend.models.models import Meeting
+from openslides_backend.permissions.management_levels import CommitteeManagementLevel
+from openslides_backend.permissions.permission_helper import (
+    has_committee_management_level,
+)
+from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.shared.exceptions import ActionException, PermissionDenied
+from openslides_backend.shared.interfaces.event import EventType
+from openslides_backend.shared.interfaces.write_request import WriteRequest
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from openslides_backend.shared.schema import id_list_schema
+
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from ...util.typing import ActionData
 from .export_helper import export_meeting
-from .import_ import MeetingImport
+from .import_ import ONE_ORGANIZATION, MeetingImport
 
 updatable_fields = [
     "committee_id",
@@ -42,6 +47,23 @@ class MeetingClone(MeetingImport):
         },
     )
 
+    def prefetch(self, action_data: ActionData) -> None:
+        self.datastore.get_many(
+            [
+                GetManyRequest(
+                    Collection("meeting"),
+                    list({instance["meeting_id"] for instance in action_data}),
+                    ["committee_id"],
+                ),
+                GetManyRequest(
+                    Collection("organization"),
+                    [ONE_ORGANIZATION],
+                    ["active_meeting_ids", "archived_meeting_ids", "limit_of_meetings"],
+                ),
+            ],
+            use_changed_models=False,
+        )
+
     def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
         Temporarely, because meeting.clone has _model and _collection attributes
@@ -58,11 +80,12 @@ class MeetingClone(MeetingImport):
 
         # checks if the meeting is correct
         self.check_one_meeting(instance)
+        meeting = self.get_meeting_from_json(meeting_json)
 
-        if (
-            committee_id := instance.get("committee_id")
-        ) and committee_id != self.get_meeting_from_json(meeting_json)["committee_id"]:
-            self.get_meeting_from_json(meeting_json)["committee_id"] = committee_id
+        if (committee_id := instance.get("committee_id")) and committee_id != meeting[
+            "committee_id"
+        ]:
+            meeting["committee_id"] = committee_id
 
         # pre update the meeting
         name_set = False
@@ -71,9 +94,8 @@ class MeetingClone(MeetingImport):
                 if field == "name":
                     name_set = True
                 value = instance.pop(field)
-                self.get_meeting_from_json(meeting_json)[field] = value
+                meeting[field] = value
         if not name_set:
-            meeting = self.get_meeting_from_json(instance["meeting"])
             meeting["name"] = meeting.get("name", "") + " - Copy"
 
         # reset mediafile/attachment_ids to [] if None.
@@ -105,7 +127,7 @@ class MeetingClone(MeetingImport):
         self.allowed_collections = checker.allowed_collections
 
         # set active
-        self.get_meeting_from_json(meeting_json)["is_active_in_organization_id"] = 1
+        meeting["is_active_in_organization_id"] = 1
 
         # check limit of meetings
         self.check_limit_of_meetings(
@@ -114,7 +136,7 @@ class MeetingClone(MeetingImport):
         )
 
         # set imported_at
-        self.get_meeting_from_json(meeting_json)["imported_at"] = round(time.time())
+        meeting["imported_at"] = round(time.time())
 
         # replace ids in the meeting_json
         self.create_replace_map(meeting_json)
@@ -313,6 +335,8 @@ class MeetingClone(MeetingImport):
             meeting = self.datastore.get(
                 FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
                 ["committee_id"],
+                lock_result=False,
+                use_changed_models=False,
             )
             committee_id = meeting["committee_id"]
         if not has_committee_management_level(

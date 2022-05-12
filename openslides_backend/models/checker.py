@@ -714,7 +714,7 @@ class Checker:
         if collection != "mediafile":
             return
 
-        access_group_ids = model["access_group_ids"]
+        access_group_ids = model.get("access_group_ids")
         parent_is_public = None
         parent_inherited_access_group_ids = None
         if model.get("parent_id"):
@@ -731,7 +731,7 @@ class Checker:
                 f"{collection}/{model['id']}: is_public is wrong. {is_public} != {model['is_public']}"
             )
         if set(inherited_access_group_ids) != set(
-            model["inherited_access_group_ids"] or []
+            model.get("inherited_access_group_ids") or []
         ):
             self.errors.append(
                 f"{collection}/{model['id']}: inherited_access_group_ids is wrong"

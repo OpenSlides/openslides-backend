@@ -1,16 +1,15 @@
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
 
 from datastore.migrations import BaseEvent, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid, collection_from_fqid
 
 from migrations import get_backend_migration_index
 from migrations.migrate import MigrationWrapper
-
-from ....models.base import model_registry
-from ....models.checker import Checker, CheckException
-from ....models.fields import (
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.checker import Checker, CheckException
+from openslides_backend.models.fields import (
     BaseGenericRelationField,
     BaseRelationField,
     BaseTemplateField,
@@ -19,16 +18,20 @@ from ....models.fields import (
     RelationField,
     RelationListField,
 )
-from ....models.models import Meeting
-from ....permissions.management_levels import (
+from openslides_backend.models.models import Meeting, User
+from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
-from ....permissions.permission_helper import has_committee_management_level
-from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.interfaces.event import EventType
-from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from openslides_backend.permissions.permission_helper import (
+    has_committee_management_level,
+)
+from openslides_backend.services.datastore.interface import GetManyRequest
+from openslides_backend.shared.exceptions import ActionException, MissingPermission
+from openslides_backend.shared.interfaces.event import EventType
+from openslides_backend.shared.interfaces.write_request import WriteRequest
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
@@ -65,6 +68,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         """
         self.user_id = user_id
         self.index = 0
+
+        # prefetch as much data as possible
+        self.prefetch(action_data)
+
         action_data = self.get_updated_instances(action_data)
         instance = next(iter(action_data))
         instance = self.preprocess_data(instance)
@@ -80,6 +87,40 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         final_write_request = self.process_write_requests()
         result = [self.create_action_result_element(instance)]
         return (final_write_request, result)
+
+    def prefetch(self, action_data: ActionData) -> None:
+        requests = [
+            GetManyRequest(
+                Collection("organization"),
+                [ONE_ORGANIZATION],
+                [
+                    "active_meeting_ids",
+                    "archived_meeting_ids",
+                ],
+            ),
+            GetManyRequest(
+                Collection("committee"),
+                list({instance["committee_id"] for instance in action_data}),
+                [
+                    "meeting_ids",
+                ],
+            ),
+        ]
+        if self.user_id:
+            cml_fields = [
+                f"committee_${management_level}_management_level"
+                for management_level in cast(
+                    List[str], User.committee__management_level.replacement_enum
+                )
+            ]
+            requests.append(
+                GetManyRequest(
+                    Collection("user"),
+                    [self.user_id],
+                    ["group_$_ids", "committee_ids", *cml_fields],
+                ),
+            )
+        self.datastore.get_many(requests, use_changed_models=False)
 
     def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         self.check_one_meeting(instance)
@@ -193,6 +234,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         organization = self.datastore.get(
             FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
             ["active_meeting_ids", "limit_of_meetings"],
+            lock_result=False,
+            use_changed_models=False,
         )
         if (
             limit_of_meetings := organization.get("limit_of_meetings", 0)
@@ -570,10 +613,12 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                     "resource_ids",
                     "organization_tag_ids",
                 ],
+                lock_result=False,
             )
             committee = self.datastore.get(
                 FullQualifiedId(Collection("committee"), instance["committee_id"]),
                 ["meeting_ids"],
+                lock_result=False,
             )
             models = {
                 f"organization/{ONE_ORGANIZATION}": organization,

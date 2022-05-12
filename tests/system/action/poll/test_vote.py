@@ -1,7 +1,7 @@
-import json
 from typing import Any, Dict
 
 import requests
+import simplejson as json
 
 from openslides_backend.models.models import Poll
 from tests.system.action.base import BaseActionTestCase

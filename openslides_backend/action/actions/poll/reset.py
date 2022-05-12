@@ -21,6 +21,49 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
 
+    def prefetch(self, action_data: ActionData) -> None:
+        result = self.datastore.get_many(
+            [
+                GetManyRequest(
+                    Collection("poll"),
+                    list({instance["id"] for instance in action_data}),
+                    [
+                        "content_object_id",
+                        "meeting_id",
+                        "type",
+                        "voted_ids",
+                        "option_ids",
+                        "global_option_id",
+                    ],
+                ),
+            ],
+            use_changed_models=False,
+        )
+        polls = result[Collection("poll")].values()
+        meeting_ids = list({poll["meeting_id"] for poll in polls})
+        option_ids = [
+            option_id
+            for poll in polls
+            if poll.get("option_ids")
+            for option_id in poll["option_ids"]
+        ]
+        requests = [
+            GetManyRequest(
+                Collection("meeting"),
+                meeting_ids,
+                [
+                    "is_active_in_organization_id",
+                    "name",
+                ],
+            ),
+            GetManyRequest(
+                Collection("option"),
+                option_ids,
+                ["vote_ids"],
+            ),
+        ]
+        self.datastore.get_many(requests, use_changed_models=False)
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance["state"] = Poll.STATE_CREATED
         self.delete_all_votes(instance["id"])
@@ -58,7 +101,9 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         get_many_request = GetManyRequest(
             Collection("option"), option_ids, ["vote_ids"]
         )
-        gm_result = self.datastore.get_many([get_many_request])
+        gm_result = self.datastore.get_many(
+            [get_many_request], use_changed_models=False
+        )
         options: Dict[int, Dict[str, Any]] = gm_result.get(Collection("option"), {})
 
         return options

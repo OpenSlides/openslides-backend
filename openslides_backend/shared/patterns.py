@@ -32,9 +32,10 @@ class Collection:
         return f"Collection({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Collection):
-            return NotImplemented
-        return self.collection == other.collection
+        try:
+            return self.collection == cast(Collection, other).collection
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -59,9 +60,14 @@ class FullQualifiedId:
         return f"FullQualifiedId({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, FullQualifiedId):
-            return NotImplemented
-        return self.collection == other.collection and self.id == other.id
+        try:
+            return (
+                self.collection.collection
+                == cast("FullQualifiedId", other).collection.collection
+                and self.id == cast("FullQualifiedId", other).id
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -85,13 +91,14 @@ class FullQualifiedField:
         return f"FullQualifiedField({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, FullQualifiedField):
-            return NotImplemented
-        return (
-            self.collection == other.collection
-            and self.id == other.id
-            and self.field == other.field
-        )
+        try:
+            return (
+                self.collection == cast("FullQualifiedField", other).collection
+                and self.id == cast("FullQualifiedField", other).id
+                and self.field == cast("FullQualifiedField", other).field
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -118,9 +125,14 @@ class CollectionField:
         return f"CollectionField({repr(str(self))})"
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CollectionField):
-            return NotImplemented
-        return self.collection == other.collection and self.field == other.field
+        try:
+            return (
+                self.collection.collection
+                == cast("FullQualifiedField", other).collection.collection
+                and self.field == cast("FullQualifiedField", other).field
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
 
     def __hash__(self) -> int:
         return hash(str(self))
@@ -163,10 +175,10 @@ def transform_to_fqids(
 
     fqid_list = []
     for id in id_list:
-        if isinstance(id, str):
-            fqid_list.append(string_to_fqid(id))
-        elif isinstance(id, int):
+        if isinstance(id, int):
             fqid_list.append(FullQualifiedId(collection, id))
+        elif isinstance(id, str):
+            fqid_list.append(string_to_fqid(id))
         else:
             assert isinstance(id, FullQualifiedId)
             fqid_list.append(id)
