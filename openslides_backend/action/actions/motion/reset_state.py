@@ -34,6 +34,7 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
                 "category_id",
                 "number",
                 "number_value",
+                "created",
             ],
         )
         if not motion.get("state_id"):
@@ -70,7 +71,6 @@ class MotionResetStateAction(UpdateAction, SetNumberMixin):
             FullQualifiedId(Collection("motion_state"), instance["state_id"]),
             ["set_created_timestamp"],
         )
-        instance["created"] = None
-        if state.get("set_created_timestamp"):
+        if not motion.get("created") and state.get("set_created_timestamp"):
             instance["created"] = timestamp
         return instance
