@@ -93,9 +93,9 @@ class FullQualifiedField:
     def __eq__(self, other: object) -> bool:
         try:
             return (
-                self.collection == other.collection  # type: ignore
-                and self.id == other.id  # type: ignore
-                and self.field == other.field  # type: ignore
+                self.collection == cast("FullQualifiedField", other).collection
+                and self.id == cast("FullQualifiedField", other).id
+                and self.field == cast("FullQualifiedField", other).field
             )
         except Exception as e:
             raise NotImplementedError(e)
@@ -127,8 +127,9 @@ class CollectionField:
     def __eq__(self, other: object) -> bool:
         try:
             return (
-                self.collection.collection == other.collection.collection  # type: ignore
-                and self.field == other.field  # type: ignore
+                self.collection.collection
+                == cast("FullQualifiedField", other).collection.collection
+                and self.field == cast("FullQualifiedField", other).field
             )
         except Exception as e:
             raise NotImplementedError(e)
