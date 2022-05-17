@@ -808,11 +808,14 @@ class MeetingImport(BaseActionTestCase):
 
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "test"})
+        self.assert_model_exists(
+            "user/2", {"username": "test", "group_$2_ids": [2], "group_$_ids": ["2"]}
+        )
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/3", {"username": "test1", "group_$3_ids": [3], "group_$_ids": ["3"]}
+            "user/2",
+            {"username": "test", "group_$3_ids": [3], "group_$_ids": ["2", "3"]},
         )
         meeting_3 = self.assert_model_exists(
             "meeting/3",
@@ -1269,6 +1272,34 @@ class MeetingImport(BaseActionTestCase):
             "The number of active users cannot exceed the limit of users."
             == response.json["message"]
         )
+
+    def test_merge_users(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "username_test",
+                    "first_name": None,
+                    "last_name": None,
+                    "email": "test@example.de",
+                }
+            }
+        )
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "12": {
+                        "id": 12,
+                        "username": "username_test",
+                        "first_name": None,
+                        "last_name": None,
+                        "email": "test@example.de",
+                    }
+                },
+            }
+        )
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        assert False
 
     def test_check_forbidden_organization_management_right(self) -> None:
         request_data = self.create_request_data(

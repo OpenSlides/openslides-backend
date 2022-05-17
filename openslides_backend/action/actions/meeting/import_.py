@@ -154,6 +154,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]
+        self.generate_merge_user_map(meeting_json)
         self.check_usernames_and_generate_new_ones(meeting_json)
         active_user_in_json = len(
             [
@@ -219,13 +220,47 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self.upload_mediadata()
         return instance
 
+    def empty_if_none(self, value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        return value
+
+    def transfer_data_to_dict(self, data: Any) -> Dict[Tuple[str, str, str, str], int]:
+        dict_ = {}
+        for key in data:
+            dict_[
+                (
+                    self.empty_if_none(data[key].get("username")),
+                    self.empty_if_none(data[key].get("first_name")),
+                    self.empty_if_none(data[key].get("last_name")),
+                    self.empty_if_none(data[key].get("email")),
+                )
+            ] = int(key)
+        return dict_
+
+    def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:
+        all_users = self.datastore.get_all(
+            Collection("user"),
+            ["username", "first_name", "last_name", "email"],
+            lock_result=False,
+        )
+        all_users_dict = self.transfer_data_to_dict(all_users)
+        meeting_users_dict = self.transfer_data_to_dict(json_data.get("user", {}))
+        self.merge_user_map = {}
+        for key in meeting_users_dict:
+            if all_users_dict.get(key) is not None:
+                self.merge_user_map[meeting_users_dict[key]] = all_users_dict[key]
+
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
-        usernames: List[str] = [
-            entry["username"] for entry in json_data.get("user", {}).values()
+        user_entries = [
+            entry
+            for entry in json_data.get("user", {}).values()
+            if int(entry["id"]) not in self.merge_user_map
         ]
+        usernames: List[str] = [entry["username"] for entry in user_entries]
         new_usernames = self.generate_usernames(usernames)
 
-        for entry, username in zip(json_data.get("user", {}).values(), new_usernames):
+        for entry, username in zip(user_entries, new_usernames):
             entry["username"] = username
 
     def check_limit_of_meetings(
@@ -265,7 +300,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
         # generate passwords
         for entry in json_data["user"].values():
-            entry["password"] = self.auth.hash(get_random_string(10))
+            if entry["id"] not in self.merge_user_map:
+                entry["password"] = self.auth.hash(get_random_string(10))
 
         # set enable_anonymous
         meeting["enable_anonymous"] = False
@@ -285,11 +321,23 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         for collection in json_data:
             if collection.startswith("_") or not json_data[collection]:
                 continue
-            new_ids = self.datastore.reserve_ids(
-                Collection(collection), len(json_data[collection])
-            )
-            for entry, new_id in zip(json_data[collection].values(), new_ids):
-                replace_map[collection][entry["id"]] = new_id
+            collection_entries = [
+                entry
+                for entry in json_data[collection].values()
+                if entry["id"] not in self.merge_user_map or collection != "user"
+            ]
+            if collection_entries:
+                new_ids = self.datastore.reserve_ids(
+                    Collection(collection), len(collection_entries)
+                )
+                for entry, new_id in zip(collection_entries, new_ids):
+                    replace_map[collection][entry["id"]] = new_id
+            if collection == "user":
+                for entry in json_data[collection].values():
+                    if entry["id"] in self.merge_user_map:
+                        replace_map[collection][entry["id"]] = self.merge_user_map[
+                            entry["id"]
+                        ]
         self.replace_map = replace_map
 
     def replace_fields(self, instance: Dict[str, Any]) -> None:
@@ -301,10 +349,12 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             new_collection = {}
             coll_class = Collection(collection)
             for entry in json_data[collection].values():
+                old_entry_id = entry["id"]
                 for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field)
                 new_collection[str(entry["id"])] = entry
-                entry["meta_new"] = True
+                if collection != "user" or old_entry_id not in self.merge_user_map:
+                    entry["meta_new"] = True
                 self.datastore.apply_changed_model(
                     FullQualifiedId(coll_class, entry["id"]), entry
                 )
@@ -457,11 +507,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         write_requests = []
         for collection in json_data:
             for entry in json_data[collection].values():
-                entry.pop("meta_new", None)
+                meta_new = entry.pop("meta_new", None)
                 fqid = FullQualifiedId(Collection(collection), entry["id"])
                 write_requests.append(
                     self.build_write_request(
-                        EventType.Create,
+                        EventType.Create if meta_new else EventType.Update,
                         fqid,
                         f"import meeting {meeting_id}",
                         entry,
