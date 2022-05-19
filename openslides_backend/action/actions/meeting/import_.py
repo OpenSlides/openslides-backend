@@ -225,18 +225,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             return ""
         return value
 
-    def transfer_data_to_dict(self, data: Any) -> Dict[Tuple[str, str, str, str], int]:
-        dict_ = {}
-        for key in data:
-            dict_[
-                (
-                    self.empty_if_none(data[key].get("username")),
-                    self.empty_if_none(data[key].get("first_name")),
-                    self.empty_if_none(data[key].get("last_name")),
-                    self.empty_if_none(data[key].get("email")),
-                )
-            ] = int(key)
-        return dict_
+    def get_user_key(self, user_values: Dict[str, Any]) -> Tuple[str, str, str, str]:
+        return (
+            self.empty_if_none(user_values.get("username")),
+            self.empty_if_none(user_values.get("first_name")),
+            self.empty_if_none(user_values.get("last_name")),
+            self.empty_if_none(user_values.get("email")),
+        )
 
     def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:
         all_users = self.datastore.get_all(
@@ -244,12 +239,15 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ["username", "first_name", "last_name", "email"],
             lock_result=False,
         )
-        all_users_dict = self.transfer_data_to_dict(all_users)
-        meeting_users_dict = self.transfer_data_to_dict(json_data.get("user", {}))
-        self.merge_user_map = {}
-        for key in meeting_users_dict:
-            if all_users_dict.get(key) is not None:
-                self.merge_user_map[meeting_users_dict[key]] = all_users_dict[key]
+        all_users_dict = {
+            self.get_user_key(values): int(key) for key, values in all_users.items()
+        }
+
+        self.merge_user_map = {
+            int(key): all_users_dict[self.get_user_key(values)]
+            for key, values in json_data.get("user", {}).items()
+            if all_users_dict.get(self.get_user_key(values)) is not None
+        }
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
         user_entries = [
