@@ -1293,7 +1293,14 @@ class MeetingImport(BaseActionTestCase):
                         "first_name": None,
                         "last_name": None,
                         "email": "test@example.de",
-                    }
+                    },
+                    "13": {
+                        "id": 13,
+                        "username": "test_new_user",
+                        "first_name": None,
+                        "last_name": None,
+                        "email": "test_new@example.de",
+                    },
                 },
             }
         )
