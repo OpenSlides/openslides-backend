@@ -13,26 +13,29 @@ from .base import BasePresenterTestCase
 class TestSearchUsersByNameEmail(BasePresenterTestCase):
     def setUp(self) -> None:
         super().setUp()
+        self.user2 = {
+            "username": "user2",
+            "email": "user2@test.de",
+            "first_name": "first2",
+            "last_name": "last2",
+        }
+        self.user3 = {
+            "username": "user3",
+            "email": "userX@test.de",
+            "first_name": "first3",
+            "last_name": "last3",
+        }
+        self.user4 = {
+            "username": "user4",
+            "email": "userX@test.de",
+            "first_name": "first4",
+            "last_name": "last4",
+        }
         self.set_models(
             {
-                "user/2": {
-                    "username": "user2",
-                    "email": "user2@test.de",
-                    "first_name": "first2",
-                    "last_name": "last2",
-                },
-                "user/3": {
-                    "username": "user3",
-                    "email": "userX@test.de",
-                    "first_name": "first3",
-                    "last_name": "last3",
-                },
-                "user/4": {
-                    "username": "user4",
-                    "email": "userX@test.de",
-                    "first_name": "first4",
-                    "last_name": "last4",
-                },
+                "user/2": self.user2,
+                "user/3": self.user3,
+                "user/4": self.user4,
             }
         )
 
@@ -59,57 +62,18 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         self.assertEqual(status_code, 200)
         self.assertCountEqual(
             data["user2/"],
-            [
-                {
-                    "id": 2,
-                    "first_name": "first2",
-                    "last_name": "last2",
-                    "email": "user2@test.de",
-                }
-            ],
+            [self.user2],
         )
         self.assertCountEqual(
             data["/userX@test.de"],
-            [
-                {
-                    "id": 3,
-                    "first_name": "first3",
-                    "last_name": "last3",
-                    "email": "userX@test.de",
-                },
-                {
-                    "id": 4,
-                    "first_name": "first4",
-                    "last_name": "last4",
-                    "email": "userX@test.de",
-                },
-            ],
+            [self.user3, self.user4],
         )
         self.assertCountEqual(
             data["user2/userX@test.de"],
-            [
-                {
-                    "id": 2,
-                    "first_name": "first2",
-                    "last_name": "last2",
-                    "email": "user2@test.de",
-                },
-                {
-                    "id": 3,
-                    "first_name": "first3",
-                    "last_name": "last3",
-                    "email": "userX@test.de",
-                },
-                {
-                    "id": 4,
-                    "first_name": "first4",
-                    "last_name": "last4",
-                    "email": "userX@test.de",
-                },
-            ],
+            [self.user2, self.user3, self.user4],
         )
 
-    def test_search_ignore_case_for_email(self) -> None:
+    def test_search_ignore_case(self) -> None:
         status_code, data = self.request(
             "search_users_by_name_or_email",
             {
@@ -119,20 +83,20 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
                     {
                         "email": "User2@test.de",
                     },
+                    {
+                        "username": "USER2",
+                    },
                 ],
             },
         )
         self.assertEqual(status_code, 200)
         self.assertCountEqual(
             data["/User2@test.de"],
-            [
-                {
-                    "id": 2,
-                    "first_name": "first2",
-                    "last_name": "last2",
-                    "email": "user2@test.de",
-                }
-            ],
+            [self.user2],
+        )
+        self.assertCountEqual(
+            data["USER2/"],
+            [self.user2],
         )
 
     def test_search_wrong_permission_type(self) -> None:
