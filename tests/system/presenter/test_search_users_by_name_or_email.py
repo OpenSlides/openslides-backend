@@ -109,6 +109,32 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             ],
         )
 
+    def test_search_ignore_case_for_email(self) -> None:
+        status_code, data = self.request(
+            "search_users_by_name_or_email",
+            {
+                "permission_type": UserScope.Meeting.value,
+                "permission_id": 1,
+                "search": [
+                    {
+                        "email": "User2@test.de",
+                    },
+                ],
+            },
+        )
+        self.assertEqual(status_code, 200)
+        self.assertCountEqual(
+            data["/User2@test.de"],
+            [
+                {
+                    "id": 2,
+                    "first_name": "first2",
+                    "last_name": "last2",
+                    "email": "user2@test.de",
+                }
+            ],
+        )
+
     def test_search_wrong_permission_type(self) -> None:
         status_code, data = self.request(
             "search_users_by_name_or_email",

@@ -71,12 +71,12 @@ class SearchUsersByNameEmail(BasePresenter):
             if username and email:
                 filter_ = Or(
                     FilterOperator("username", "=", username),
-                    FilterOperator("email", "=", email),
+                    FilterOperator("email", "~=", email),
                 )
             elif username:
                 filter_ = FilterOperator("username", "=", username)
             elif email:
-                filter_ = FilterOperator("email", "=", email)
+                filter_ = FilterOperator("email", "~=", email)
             else:
                 continue
             instances = self.datastore.filter(

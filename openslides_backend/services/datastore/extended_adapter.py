@@ -343,7 +343,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         # transform query into valid python code
         filter_code = sql_query.lower().replace("null", "None").replace(" = ", " == ")
         # regex for all FilterOperators which were translated by the SqlQueryHelper
-        regex = f"{MODEL_FIELD_SQL} (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|None)"
+        regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)) (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|None)"
         matches = re.findall(regex, filter_code)
         # this will hold all items from arguments, but correctly formatted for python and enhanced with validity checks
         formatted_args = []
@@ -363,7 +363,10 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 formatted_args.append(f'model.get("{arguments[i]}")')
             i += 1
             # if comparison happens with a value, append it as well
-            if match[1] == COMPARISON_VALUE_SQL:
+            if (
+                match[1] == COMPARISON_VALUE_SQL
+                or match[1] == f"lower({COMPARISON_VALUE_SQL})"
+            ):
                 formatted_args.append(repr(arguments[i]))
                 i += 1
         # replace SQL placeholders and SQL specific code with the formatted python snippets
@@ -371,6 +374,11 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
             COMPARISON_VALUE_SQL, "{}"
         )
         filter_code = filter_code.format(*formatted_args)
+
+        # needed for generated code since postgres uses it
+        def lower(s: str) -> str:
+            return s.lower()
+
         # run eval with the generated code
         filter_code = (
             "{model['id']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if fqid.collection == collection and ("
