@@ -8,6 +8,5 @@ services:
         volumes:
             - ../../openslides-datastore-service/:/datastore-service
         environment:
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
             - PYTHONPATH=/app:/datastore-service
             - MYPYPATH=/app:/datastore-service

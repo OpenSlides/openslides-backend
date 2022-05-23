@@ -13,7 +13,6 @@ services:
         environment:
             - DATASTORE_READER_HOST=reader
             - DATASTORE_WRITER_HOST=writer
-            - DATASTORE_ENABLE_DEV_ENVIRONMENT=1
             - PYTHONPATH=/app:/datastore-service
             - MYPYPATH=/app:/datastore-service
         depends_on:
