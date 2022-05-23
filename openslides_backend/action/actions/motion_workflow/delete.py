@@ -37,12 +37,20 @@ class MotionWorkflowDeleteAction(DeleteAction):
                     "motion_workflow_ids",
                 ],
             )
-            if instance["id"] in (
-                meeting.get("motions_default_workflow_id"),
-                meeting.get("motions_default_amendment_workflow_id"),
-                meeting.get("motions_default_statute_amendment_workflow_id"),
+            if instance["id"] == meeting.get("motions_default_workflow_id"):
+                raise ActionException(
+                    "You cannot delete the workflow as long as it is selected as default workflow for new motions in the settings. Please set another workflow as default in the settings and try to delete the workflow again."
+                )
+            if instance["id"] == meeting.get("motions_default_amendment_workflow_id"):
+                raise ActionException(
+                    "You cannot delete the workflow as long as it is selected as default workflow for new amendments in the settings. Please set another workflow as default in the settings and try to delete the workflow again."
+                )
+            if instance["id"] == meeting.get(
+                "motions_default_statute_amendment_workflow_id"
             ):
-                raise ActionException("Cannot delete a default workflow.")
+                raise ActionException(
+                    "You cannot delete the workflow as long as it is selected as default workflow for new statute amendments in the settings. Please set another workflow as default in the settings and try to delete the workflow again."
+                )
 
             workflow_ids = cast(List[int], meeting.get("motion_workflow_ids"))
             if len(workflow_ids) == 1:
