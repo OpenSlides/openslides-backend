@@ -28,6 +28,7 @@ from openslides_backend.permissions.permission_helper import (
 )
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, MissingPermission
+from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
@@ -230,19 +231,28 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         )
 
     def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:
-        all_users = self.datastore.get_all(
+        filter_ = Or(
+            *[
+                FilterOperator("username", "=", entry["username"])
+                for entry in json_data.get("user", {}).values()
+            ]
+        )
+
+        filtered_users = self.datastore.filter(
             Collection("user"),
+            filter_,
             ["username", "first_name", "last_name", "email"],
             lock_result=False,
         )
-        all_users_dict = {
-            self.get_user_key(values): int(key) for key, values in all_users.items()
+        filtered_users_dict = {
+            self.get_user_key(values): int(key)
+            for key, values in filtered_users.items()
         }
 
         self.merge_user_map = {
-            int(key): all_users_dict[self.get_user_key(values)]
+            int(key): filtered_users_dict[self.get_user_key(values)]
             for key, values in json_data.get("user", {}).items()
-            if all_users_dict.get(self.get_user_key(values)) is not None
+            if filtered_users_dict.get(self.get_user_key(values)) is not None
         }
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
