@@ -14,28 +14,37 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.user2 = {
-            "username": "user2",
+            "id": 2,
             "email": "user2@test.de",
             "first_name": "first2",
             "last_name": "last2",
         }
         self.user3 = {
-            "username": "user3",
+            "id": 3,
             "email": "userX@test.de",
             "first_name": "first3",
             "last_name": "last3",
         }
         self.user4 = {
-            "username": "user4",
+            "id": 4,
             "email": "userX@test.de",
             "first_name": "first4",
             "last_name": "last4",
         }
         self.set_models(
             {
-                "user/2": self.user2,
-                "user/3": self.user3,
-                "user/4": self.user4,
+                "user/2": {
+                    **self.user2,
+                    "username": "user2",
+                },
+                "user/3": {
+                    **self.user3,
+                    "username": "user3",
+                },
+                "user/4": {
+                    **self.user4,
+                    "username": "user4",
+                },
             }
         )
 
