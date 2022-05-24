@@ -95,9 +95,8 @@ services:
         ports:
             - "9013:9013"
         environment:
-            - OPENSLIDES_DEVELOPMENT=true
+            - OPENSLIDES_DEVELOPMENT=1
             - VOTE_HOST=vote
-            - VOTE_PORT=9013
             - DATASTORE_READER_HOST=reader
             - MESSAGING=redis
             - MESSAGE_BUS_HOST=redis
