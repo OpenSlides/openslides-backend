@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
+from ....shared.patterns import to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -38,14 +38,11 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
         action_data = super().get_updated_instances(action_data)
         for instance in action_data:
             meeting_id = instance["meeting_id"]
-            fqid_content_object = string_to_fqid(instance["content_object_id"])
+            fqid_content_object = instance["content_object_id"]
             assert_belongs_to_meeting(
                 self.datastore,
                 [fqid_content_object]
-                + [
-                    FullQualifiedId(Collection("projector"), id)
-                    for id in instance["ids"]
-                ],
+                + [to_fqid("projector", id) for id in instance["ids"]],
                 meeting_id,
             )
 
@@ -80,7 +77,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
             FilterOperator("type", "=", instance.get("type")),
         )
         result = self.datastore.filter(
-            Collection("projection"),
+            "projection",
             filter_,
             ["id", "current_projector_id", "stable", "meeting_id"],
         )
@@ -102,7 +99,7 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                             result[projection_id]["current_projector_id"],
                         ),
                     )
-                    weight = self.get_weight(filter_, Collection("projection"))
+                    weight = self.get_weight(filter_, "projection")
                     action_data = [
                         {
                             "id": int(projection_id),
@@ -122,14 +119,12 @@ class ProjectorProject(WeightMixin, SingularActionMixin, UpdateAction):
                 FilterOperator("current_projector_id", "=", projector_id),
                 FilterOperator("stable", "=", False),
             )
-            projections = self.datastore.filter(
-                Collection("projection"), filter_, ["id"]
-            )
+            projections = self.datastore.filter("projection", filter_, ["id"])
             filter_ = And(
                 FilterOperator("meeting_id", "=", instance["meeting_id"]),
                 FilterOperator("history_projector_id", "=", projector_id),
             )
-            weight = self.get_weight(filter_, Collection("projection"))
+            weight = self.get_weight(filter_, "projection")
             self.execute_other_action(
                 ProjectionUpdate,
                 [

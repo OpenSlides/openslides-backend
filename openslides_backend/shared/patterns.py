@@ -1,5 +1,5 @@
 import re
-from typing import List, Optional, Sequence, Union, cast
+from typing import List, NewType, Optional, Sequence, Union, cast
 
 KEYSEPARATOR = "/"
 DECIMAL_PATTERN = r"^-?(\d|[1-9]\d+)\.\d{6}$"
@@ -11,140 +11,34 @@ POSITIVE_NUMBER_REGEX = rf"^(0|{ID_REGEX_PART})$"
 
 ID_PATTERN = re.compile(ID_REGEX)
 
+FullQualifiedId_REGEX = KEYSEPARATOR.join(
+    ("^[a-z]([a-z_]*[a-z])?", f"{ID_REGEX_PART}$")
+)
 
 Identifier = Union[int, str, "FullQualifiedId"]
 IdentifierList = Union[List[int], List[str], List["FullQualifiedId"]]
 
 
-class Collection:
-    """
-    The first part of a full qualified field (also known as "key"), e. g.
-    motion_change_recommendation.
-    """
+_Collection = NewType("_Collection", str)
+_FullQualifiedId = NewType("_FullQualifiedId", str)
+_FullQualifiedField = NewType("_FullQualifiedField", str)
 
-    def __init__(self, collection: str) -> None:
-        self.collection = collection
-
-    def __str__(self) -> str:
-        return self.collection
-
-    def __repr__(self) -> str:
-        return f"Collection({repr(str(self))})"
-
-    def __eq__(self, other: object) -> bool:
-        try:
-            return self.collection == cast(Collection, other).collection
-        except Exception as e:
-            raise NotImplementedError(e)
-
-    def __hash__(self) -> int:
-        return hash(str(self))
+Collection = Union[str, _Collection]  # "meeting"
+FullQualifiedId = Union[str, _FullQualifiedId]  # meeting/5
+FullQualifiedField = Union[str, _FullQualifiedField]  # meeting/5/name
 
 
-class FullQualifiedId:
-    """
-    Part of a full qualified field (also known as "key"),
-    e. g. motion_change_recommendation/42
-    """
-
-    REGEX = KEYSEPARATOR.join(("^[a-z]([a-z_]*[a-z])?", f"{ID_REGEX_PART}$"))
-
-    def __init__(self, collection: Collection, id: int) -> None:
-        self.collection = collection
-        self.id = id
-
-    def __str__(self) -> str:
-        return KEYSEPARATOR.join((str(self.collection), str(self.id)))
-
-    def __repr__(self) -> str:
-        return f"FullQualifiedId({repr(str(self))})"
-
-    def __eq__(self, other: object) -> bool:
-        try:
-            return (
-                self.collection.collection
-                == cast("FullQualifiedId", other).collection.collection
-                and self.id == cast("FullQualifiedId", other).id
-            )
-        except Exception as e:
-            raise NotImplementedError(e)
-
-    def __hash__(self) -> int:
-        return hash(str(self))
+# methods for FullQualifiedId
+def to_fqid(collection: Union[str, Collection], id: Union[int, str]) -> FullQualifiedId:
+    return cast(FullQualifiedId, f"{collection}{KEYSEPARATOR}{id}")
 
 
-class FullQualifiedField:
-    """
-    The key used in the key-value store i. e. the datastore, e. g.
-    motion_change_recommendation/42/text
-    """
-
-    def __init__(self, collection: Collection, id: int, field: str) -> None:
-        self.collection = collection
-        self.id = id
-        self.field = field
-
-    def __str__(self) -> str:
-        return KEYSEPARATOR.join((str(self.collection), str(self.id), self.field))
-
-    def __repr__(self) -> str:
-        return f"FullQualifiedField({repr(str(self))})"
-
-    def __eq__(self, other: object) -> bool:
-        try:
-            return (
-                self.collection == cast("FullQualifiedField", other).collection
-                and self.id == cast("FullQualifiedField", other).id
-                and self.field == cast("FullQualifiedField", other).field
-            )
-        except Exception as e:
-            raise NotImplementedError(e)
-
-    def __hash__(self) -> int:
-        return hash(str(self))
-
-    @property
-    def fqid(self) -> FullQualifiedId:
-        return FullQualifiedId(collection=self.collection, id=self.id)
+def fqid_id(fqid: FullQualifiedId) -> int:
+    return int(fqid.split(KEYSEPARATOR)[1])
 
 
-class CollectionField:
-    """
-    The key used in the key-value store i. e. the datastore, e. g.
-    motion/sequential_number
-    """
-
-    def __init__(self, collection: Collection, field: str) -> None:
-        self.collection = collection
-        self.field = field
-
-    def __str__(self) -> str:
-        return KEYSEPARATOR.join((str(self.collection), self.field))
-
-    def __repr__(self) -> str:
-        return f"CollectionField({repr(str(self))})"
-
-    def __eq__(self, other: object) -> bool:
-        try:
-            return (
-                self.collection.collection
-                == cast("FullQualifiedField", other).collection.collection
-                and self.field == cast("FullQualifiedField", other).field
-            )
-        except Exception as e:
-            raise NotImplementedError(e)
-
-    def __hash__(self) -> int:
-        return hash(str(self))
-
-
-def string_to_fqid(fqid: str) -> FullQualifiedId:
-    """
-    Converts an FQId as a string to a FullQualifiedId object.
-    Assumes the string is a valid FQId.
-    """
-    collection, id = fqid.split(KEYSEPARATOR)
-    return FullQualifiedId(Collection(collection), int(id))
+def fqid_collection(fqid: FullQualifiedId) -> str:
+    return fqid.split(KEYSEPARATOR)[0]
 
 
 def transform_to_fqids(
@@ -176,16 +70,62 @@ def transform_to_fqids(
     fqid_list = []
     for id in id_list:
         if isinstance(id, int):
-            fqid_list.append(FullQualifiedId(collection, id))
-        elif isinstance(id, str):
-            fqid_list.append(string_to_fqid(id))
+            fqid_list.append(to_fqid(collection, id))
         else:
-            assert isinstance(id, FullQualifiedId)
-            fqid_list.append(id)
+            fqid_list.append(cast(FullQualifiedId, id))
     return fqid_list
 
 
-def to_fqid(fqid: Union[str, FullQualifiedId]) -> FullQualifiedId:
-    if isinstance(fqid, FullQualifiedId):
-        return fqid
-    return string_to_fqid(fqid)
+# methods for FullQualifiedField
+def to_fqfield(
+    collection: Union[str, Collection], id: Union[int, str], field: str
+) -> FullQualifiedField:
+    return cast(
+        FullQualifiedField, f"{collection}{KEYSEPARATOR}{id}{KEYSEPARATOR}{field}"
+    )
+
+
+def fqfield_fqid(fqfield: FullQualifiedField) -> FullQualifiedId:
+    collection, id_, _ = str(fqfield).split(KEYSEPARATOR)
+    return cast(FullQualifiedId, f"{collection}{KEYSEPARATOR}{id_}")
+
+
+def fqfield_collection(fqfield: FullQualifiedField) -> Collection:
+    return cast(Collection, str(fqfield).split(KEYSEPARATOR)[0])
+
+
+def fqfield_id(fqfield: FullQualifiedField) -> int:
+    return int(str(fqfield).split(KEYSEPARATOR)[1])
+
+
+def fqfield_field(fqfield: FullQualifiedField) -> str:
+    return str(fqfield).split(KEYSEPARATOR)[2]
+
+
+class CollectionField:
+    """
+    The key used in the key-value store i. e. the datastore, e. g.
+    motion/sequential_number
+    """
+
+    def __init__(self, collection: Collection, field: str) -> None:
+        self.collection = collection
+        self.field = field
+
+    def __str__(self) -> str:
+        return KEYSEPARATOR.join((str(self.collection), self.field))
+
+    def __repr__(self) -> str:
+        return f"CollectionField({repr(str(self))})"
+
+    def __eq__(self, other: object) -> bool:
+        try:
+            return (
+                self.collection == cast("CollectionField", other).collection
+                and self.field == cast("CollectionField", other).field
+            )
+        except Exception as e:
+            raise NotImplementedError(e)
+
+    def __hash__(self) -> int:
+        return hash(str(self))

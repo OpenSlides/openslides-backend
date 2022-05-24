@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Group
 from ....permissions.permission_helper import filter_surplus_permissions
 from ....permissions.permissions import Permissions
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -28,7 +28,8 @@ class GroupSetPermissionAction(UpdateAction):
         set_ = instance.pop("set")
         permission = instance.pop("permission")
         group = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["permissions"]
+            to_fqid(self.model.collection, instance["id"]),
+            ["permissions"],
         )
         group_permissions = group.get("permissions") or []
         if set_ is True and permission not in group_permissions:

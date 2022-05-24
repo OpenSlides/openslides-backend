@@ -63,6 +63,7 @@ ALLOWED_STYLES = [
 
 INITIAL_DATA_FILE = "global/data/initial-data.json"
 EXAMPLE_DATA_FILE = "global/data/example-data.json"
+ONE_ORGANIZATION = 1
 
 
 def validate_html(

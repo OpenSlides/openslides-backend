@@ -5,7 +5,7 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
-from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR, to_fqid
 from ...action import Action
 
 
@@ -24,7 +24,7 @@ class MediafileMixin(Action):
         if not parent_id:
             try:
                 mediafile = self.datastore.get(
-                    FullQualifiedId(self.model.collection, instance["id"]),
+                    to_fqid(self.model.collection, instance["id"]),
                     ["parent_id"],
                 )
                 parent_id = mediafile.get("parent_id")
@@ -82,7 +82,8 @@ class MediafileMixin(Action):
         owner_id = instance.get("owner_id")
         if not owner_id:
             mediafile = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["owner_id"]
+                to_fqid(self.model.collection, instance["id"]),
+                ["owner_id"],
             )
             owner_id = mediafile["owner_id"]
         collection, id_ = str(owner_id).split(KEYSEPARATOR)
@@ -93,7 +94,7 @@ class MediafileMixin(Action):
     ) -> None:
         if parent_id:
             parent = self.datastore.get(
-                FullQualifiedId(self.model.collection, parent_id),
+                to_fqid(self.model.collection, parent_id),
                 ["is_directory", "owner_id"],
             )
             if not parent.get("is_directory"):
@@ -115,7 +116,8 @@ class MediafileMixin(Action):
             if results:
                 if parent_id:
                     parent = self.datastore.get(
-                        FullQualifiedId(self.model.collection, parent_id), ["title"]
+                        to_fqid(self.model.collection, parent_id),
+                        ["title"],
                     )
                     parent_title = parent.get("title", "")
                     raise ActionException(
@@ -130,11 +132,9 @@ class MediafileMixin(Action):
         self, access_group_ids: Optional[List[int]], meeting_id: int
     ) -> None:
         if access_group_ids:
-            gm_request = GetManyRequest(
-                Collection("group"), access_group_ids, ["meeting_id"]
-            )
+            gm_request = GetManyRequest("group", access_group_ids, ["meeting_id"])
             gm_result = self.datastore.get_many([gm_request])
-            groups = gm_result.get(Collection("group"), {}).values()
+            groups = gm_result.get("group", {}).values()
             for group in groups:
                 if group.get("meeting_id") != meeting_id:
                     raise ActionException("Owner and access groups don't match.")

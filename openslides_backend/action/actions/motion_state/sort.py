@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import MotionState
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...mixins.linear_sort_mixin import LinearSortMixin
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -40,7 +40,7 @@ class MotionStateSort(LinearSortMixin, SingularActionMixin, UpdateAction):
 
     def get_meeting_id(self, instance: Dict[str, Any]) -> int:
         workflow = self.datastore.get(
-            FullQualifiedId(Collection("motion_workflow"), instance["workflow_id"]),
+            to_fqid("motion_workflow", instance["workflow_id"]),
             ["meeting_id"],
         )
         return workflow["meeting_id"]

@@ -141,7 +141,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN
                 },
-                "organization/3": {
+                "organization/1": {
                     "name": "aBuwxoYU",
                     "description": "XrHbAWiF",
                     "active_meeting_ids": [1, 2],
@@ -151,7 +151,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         response = self.request(
             "organization.update",
             {
-                "id": 3,
+                "id": 1,
                 "reset_password_verbose_errors": True,
                 "enable_electronic_voting": True,
                 "limit_of_meetings": 2,
@@ -161,13 +161,13 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "organization/3",
+            "organization/1",
             {"limit_of_meetings": 2, "limit_of_users": 1, "url": "test"},
         )
 
     def test_update_too_many_active_meetings(self) -> None:
         self.create_model(
-            "organization/3",
+            "organization/1",
             {
                 "name": "aBuwxoYU",
                 "description": "XrHbAWiF",
@@ -177,13 +177,13 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         response = self.request(
             "organization.update",
             {
-                "id": 3,
+                "id": 1,
                 "limit_of_meetings": 2,
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Organization 3 has 3 active meetings. You cannot set the limit lower.",
+            "Organization 1 has 3 active meetings. You cannot set the limit lower.",
             response.json["message"],
         )
 

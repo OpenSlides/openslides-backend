@@ -8,13 +8,12 @@ from openslides_backend.action.generics.delete import DeleteAction
 from openslides_backend.action.generics.update import UpdateAction
 from openslides_backend.action.util.register import register_action_set
 from openslides_backend.models.base import Model
-from openslides_backend.shared.patterns import Collection
 
 dummy_schema: Dict = {}
 
 
 class DummyModelVcioluoffl(Model):
-    collection = Collection("dummy_model_vcioluoffl")
+    collection = "dummy_model_vcioluoffl"
 
 
 @register_action_set("dummy_model_vcioluoffl")

@@ -3,7 +3,7 @@ from typing import Any, Dict, Optional
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...action import Action
 
 
@@ -18,7 +18,7 @@ class CheckSpeechState(Action):
         if meeting_id is None:
             meeting_id = instance["meeting_id"]
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id),
+            to_fqid("meeting", meeting_id),
             [
                 "list_of_speakers_can_set_contribution_self",
                 "list_of_speakers_enable_pro_contra_speech",

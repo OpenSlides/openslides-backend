@@ -10,7 +10,7 @@ from ....permissions.permission_helper import (
     has_organization_management_level,
 )
 from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -45,9 +45,7 @@ class CommitteeUpdateAction(CommitteeCommonCreateUpdateMixin, UpdateAction):
         return instance
 
     def check_meeting_in_committee(self, meeting_id: int, committee_id: int) -> None:
-        meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id), ["committee_id"]
-        )
+        meeting = self.datastore.get(to_fqid("meeting", meeting_id), ["committee_id"])
         if meeting.get("committee_id") != committee_id:
             raise ActionException(
                 f"Meeting {meeting_id} does not belong to committee {committee_id}"

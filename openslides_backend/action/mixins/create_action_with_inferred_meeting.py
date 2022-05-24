@@ -1,4 +1,4 @@
-from typing import Any, Dict, Type
+from typing import Any, Dict, Type, cast
 
 from ...models.fields import BaseGenericRelationField, BaseRelationField
 from ...shared.exceptions import ActionException
@@ -25,10 +25,10 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
         assert isinstance(field, BaseRelationField)
         id = instance[self.relation_field_for_meeting]
         if isinstance(field, BaseGenericRelationField):
-            fqid = to_fqid(id)
+            fqid = cast(FullQualifiedId, id)
         else:
             assert len(field.to) == 1
-            fqid = FullQualifiedId(field.get_target_collection(), id)
+            fqid = to_fqid(field.get_target_collection(), id)
         # Fetch meeting_id
         related_model = self.datastore.get(
             fqid,

@@ -1,9 +1,9 @@
-from typing import Any
+from typing import Any, cast
 
 import fastjsonschema
 
 from ..shared.filters import FilterOperator
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import FullQualifiedId
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -19,7 +19,6 @@ number_of_users_schema = fastjsonschema.compile(
         "additionalProperties": False,
     }
 )
-ONE_ORGANIZATION = 1
 
 
 @register_presenter("number_of_users")
@@ -32,14 +31,14 @@ class NumberOfUsers(BasePresenter):
 
     def get_result(self) -> Any:
         organization = self.datastore.get(
-            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+            cast(FullQualifiedId, "organization/1"),
             ["limit_of_users"],
         )
         limit_of_users = organization.get("limit_of_users")
         if limit_of_users == 0:
             return {"possible": True}
         filter_ = FilterOperator("is_active", "=", True)
-        count_of_users = self.datastore.count(Collection("user"), filter_)
+        count_of_users = self.datastore.count("user", filter_)
         if (
             count_of_users + self.data["number_of_users_to_add_or_activate"]
             > limit_of_users

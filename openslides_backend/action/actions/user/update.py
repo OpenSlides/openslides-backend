@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import User
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -53,7 +53,7 @@ class UserUpdate(
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         user = self.datastore.get(
-            FullQualifiedId(Collection("user"), instance["id"]),
+            to_fqid("user", instance["id"]),
             mapped_fields=[
                 "is_active",
             ],

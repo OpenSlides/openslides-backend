@@ -35,9 +35,10 @@ from openslides_backend.shared.exceptions import ActionException, MissingPermiss
 from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, to_fqid
 
 from ....shared.interfaces.event import ListFields
+from ....shared.util import ONE_ORGANIZATION
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
@@ -46,8 +47,6 @@ from ...util.register import register_action
 from ...util.typing import ActionData, ActionResultElement, ActionResults
 from ..motion.update import RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN
 from ..user.user_mixin import LimitOfUserMixin, UsernameMixin
-
-ONE_ORGANIZATION = 1
 
 
 @register_action("meeting.import")
@@ -97,7 +96,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def prefetch(self, action_data: ActionData) -> None:
         requests = [
             GetManyRequest(
-                Collection("organization"),
+                "organization",
                 [ONE_ORGANIZATION],
                 [
                     "active_meeting_ids",
@@ -105,7 +104,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 ],
             ),
             GetManyRequest(
-                Collection("committee"),
+                "committee",
                 list({instance["committee_id"] for instance in action_data}),
                 [
                     "meeting_ids",
@@ -121,7 +120,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ]
             requests.append(
                 GetManyRequest(
-                    Collection("user"),
+                    "user",
                     [self.user_id],
                     ["group_$_ids", "committee_ids", *cml_fields],
                 ),
@@ -283,7 +282,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self, text: str = "import", text2: str = "active "
     ) -> None:
         organization = self.datastore.get(
-            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+            to_fqid("organization", ONE_ORGANIZATION),
             ["active_meeting_ids", "limit_of_meetings"],
             lock_result=False,
             use_changed_models=False,
@@ -339,7 +338,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 continue
             if collection != "user":
                 new_ids = self.datastore.reserve_ids(
-                    Collection(collection), len(json_data[collection])
+                    collection, len(json_data[collection])
                 )
                 for entry, new_id in zip(json_data[collection].values(), new_ids):
                     replace_map[collection][entry["id"]] = new_id
@@ -365,7 +364,6 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             if collection.startswith("_"):
                 continue
             new_collection = {}
-            coll_class = Collection(collection)
             for entry in json_data[collection].values():
                 old_entry_id = entry["id"]
                 for field in list(entry.keys()):
@@ -374,7 +372,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 if collection != "user" or old_entry_id not in self.merge_user_map:
                     entry["meta_new"] = True
                 self.datastore.apply_changed_model(
-                    FullQualifiedId(coll_class, entry["id"]), entry
+                    to_fqid(collection, entry["id"]), entry
                 )
             new_json_data[collection] = new_collection
         instance["meeting"] = new_json_data
@@ -385,7 +383,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         entry: Dict[str, Any],
         field: str,
     ) -> None:
-        model_field = model_registry[Collection(collection)]().try_get_field(field)
+        model_field = model_registry[cast(Collection, collection)]().try_get_field(
+            field
+        )
         if model_field is None:
             raise ActionException(f"{collection}/{field} is not allowed.")
         if isinstance(model_field, BaseRelationField):
@@ -399,7 +399,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                     item.split(KEYSEPARATOR)[0] for item in content_list if item
                 ]
             else:
-                target_collections = [k.collection for k in model_field.to.keys()]
+                target_collections = list(model_field.to.keys())
             if all(c not in self.allowed_collections for c in target_collections):
                 return
         if field == "id":
@@ -438,11 +438,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 and model_field.replacement_collection
             ):
                 entry[field] = [
-                    str(
-                        self.replace_map[model_field.replacement_collection.collection][
-                            int(id_)
-                        ]
-                    )
+                    str(self.replace_map[model_field.replacement_collection][int(id_)])
                     for id_ in entry[field]
                 ]
             elif (
@@ -452,11 +448,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ):
                 pass
             elif isinstance(model_field, RelationField):
-                target_collection = model_field.get_target_collection().collection
+                target_collection = model_field.get_target_collection()
                 if entry[field]:
                     entry[field] = self.replace_map[target_collection][entry[field]]
             elif isinstance(model_field, RelationListField):
-                target_collection = model_field.get_target_collection().collection
+                target_collection = model_field.get_target_collection()
                 entry[field] = [
                     self.replace_map[target_collection][id_]
                     for id_ in entry.get(field) or []
@@ -482,9 +478,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             ):
                 replacement = model_field.get_replacement(field)
                 id_ = int(replacement)
-                new_id_ = self.replace_map[
-                    model_field.replacement_collection.collection
-                ][id_]
+                new_id_ = self.replace_map[model_field.replacement_collection][id_]
                 new_field = model_field.get_structured_field_name(new_id_)
                 tmp = entry[field]
                 del entry[field]
@@ -522,7 +516,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             for entry in json_data[collection].values():
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
-                    fqid = FullQualifiedId(Collection(collection), entry["id"])
+                    fqid = to_fqid(collection, entry["id"])
                     write_requests.append(
                         self.build_write_request(
                             EventType.Create,
@@ -583,7 +577,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         write_requests.append(
             self.build_write_request(
                 EventType.Update,
-                FullQualifiedId(Collection("committee"), meeting["committee_id"]),
+                to_fqid("committee", meeting["committee_id"]),
                 f"import meeting {meeting_id}",
                 None,
                 {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
@@ -595,7 +589,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             write_requests.append(
                 self.build_write_request(
                     EventType.Update,
-                    FullQualifiedId(Collection("organization"), 1),
+                    "organization/1",
                     f"import meeting {meeting_id}",
                     None,
                     {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
@@ -624,7 +618,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             write_requests.append(
                 self.build_write_request(
                     EventType.Update,
-                    FullQualifiedId(Collection("user"), self.user_id),
+                    to_fqid("user", self.user_id),
                     f"import meeting {meeting_id}",
                     None,
                     {
@@ -646,7 +640,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         relations: RelationUpdates = {}
         for collection in json_data:
             for entry in json_data[collection].values():
-                model = model_registry[Collection(collection)]()
+                model = model_registry[cast(Collection, collection)]()
                 relations.update(
                     self.relation_manager.get_relation_updates(
                         model,
@@ -689,7 +683,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 for k, v in list(entry.items()):
                     if v is None:
                         entry.pop(k)
-                fqid = FullQualifiedId(Collection(collection), entry["id"])
+                fqid = to_fqid(collection, entry["id"])
                 import_create_events.append(CreateEvent(str(fqid), entry))
         return import_create_events
 
@@ -719,7 +713,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 memory_only=True,
             )
             organization = self.datastore.get(
-                FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+                "organization/1",
                 [
                     "committee_ids",
                     "active_meeting_ids",
@@ -731,7 +725,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 lock_result=False,
             )
             committee = self.datastore.get(
-                FullQualifiedId(Collection("committee"), instance["committee_id"]),
+                to_fqid("committee", instance["committee_id"]),
                 ["meeting_ids"],
                 lock_result=False,
             )

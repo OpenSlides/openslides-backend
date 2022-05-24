@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ....models.models import Option, Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ....shared.schema import decimal_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -96,13 +96,13 @@ class OptionUpdateAction(UpdateAction):
         self, option_id: int
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         option = self.datastore.get(
-            FullQualifiedId(self.model.collection, option_id),
+            to_fqid(self.model.collection, option_id),
             ["poll_id", "used_as_global_option_in_poll_id", "vote_ids", "meeting_id"],
         )
         return (
             option,
             self.datastore.get(
-                FullQualifiedId(Collection("poll"), option["poll_id"]),
+                to_fqid("poll", option["poll_id"]),
                 [
                     "id",
                     "state",
@@ -153,9 +153,9 @@ class OptionUpdateAction(UpdateAction):
         }
 
     def _fetch_votes(self, vote_ids: List[int]) -> Dict[int, Dict[str, Any]]:
-        get_many_request = GetManyRequest(Collection("vote"), vote_ids, ["value"])
+        get_many_request = GetManyRequest("vote", vote_ids, ["value"])
         gm_result = self.datastore.get_many([get_many_request])
-        votes = gm_result.get(Collection("vote"), {})
+        votes = gm_result.get("vote", {})
         return votes
 
     def _get_vote_id(

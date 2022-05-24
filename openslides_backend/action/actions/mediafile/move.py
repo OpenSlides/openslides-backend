@@ -4,7 +4,7 @@ from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -66,13 +66,14 @@ class MediafileMoveAction(
             # Calculate the ancesters of parent
             ancesters = [parent_id]
             grandparent = self.datastore.get(
-                FullQualifiedId(self.model.collection, parent_id), ["parent_id"]
+                to_fqid(self.model.collection, parent_id), ["parent_id"]
             )
             while grandparent.get("parent_id") is not None:
                 gp_parent_id = grandparent["parent_id"]
                 ancesters.append(gp_parent_id)
                 grandparent = self.datastore.get(
-                    FullQualifiedId(self.model.collection, gp_parent_id), ["parent_id"]
+                    to_fqid(self.model.collection, gp_parent_id),
+                    ["parent_id"],
                 )
             for id_ in ids:
                 if id_ in ancesters:

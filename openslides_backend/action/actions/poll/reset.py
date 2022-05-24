@@ -2,7 +2,7 @@ from typing import Any, Callable, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -25,7 +25,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("poll"),
+                    "poll",
                     list({instance["id"] for instance in action_data}),
                     [
                         "content_object_id",
@@ -39,7 +39,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
             ],
             use_changed_models=False,
         )
-        polls = result[Collection("poll")].values()
+        polls = result["poll"].values()
         meeting_ids = list({poll["meeting_id"] for poll in polls})
         option_ids = [
             option_id
@@ -49,7 +49,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         ]
         requests = [
             GetManyRequest(
-                Collection("meeting"),
+                "meeting",
                 meeting_ids,
                 [
                     "is_active_in_organization_id",
@@ -57,7 +57,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
                 ],
             ),
             GetManyRequest(
-                Collection("option"),
+                "option",
                 option_ids,
                 ["vote_ids"],
             ),
@@ -68,7 +68,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         instance["state"] = Poll.STATE_CREATED
         self.delete_all_votes(instance["id"])
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["type"]
+            to_fqid(self.model.collection, instance["id"]), ["type"]
         )
         instance["is_pseudoanonymized"] = poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS
         instance["voted_ids"] = []
@@ -89,7 +89,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, poll_id),
+            to_fqid(self.model.collection, poll_id),
             ["option_ids", "global_option_id"],
         )
         option_ids = poll.get("option_ids", [])
@@ -98,13 +98,11 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         return option_ids
 
     def _get_options(self, option_ids: List[int]) -> Dict[int, Dict[str, Any]]:
-        get_many_request = GetManyRequest(
-            Collection("option"), option_ids, ["vote_ids"]
-        )
+        get_many_request = GetManyRequest("option", option_ids, ["vote_ids"])
         gm_result = self.datastore.get_many(
             [get_many_request], use_changed_models=False
         )
-        options: Dict[int, Dict[str, Any]] = gm_result.get(Collection("option"), {})
+        options: Dict[int, Dict[str, Any]] = gm_result.get("option", {})
 
         return options
 

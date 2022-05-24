@@ -14,7 +14,6 @@ from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PermissionDenied
-from ..shared.patterns import Collection
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -85,7 +84,7 @@ class Export(BasePresenter):
                 )
 
         gmr = GetManyRequest(
-            Collection("user"),
+            "user",
             user_ids,
             [
                 "id",
@@ -113,7 +112,7 @@ class Export(BasePresenter):
         )
         users = self.datastore.get_many(
             [gmr], lock_result=False, use_changed_models=False
-        )[Collection("user")]
+        )["user"]
 
         for user in users.values():
             for field_name, field_template_name in fields:

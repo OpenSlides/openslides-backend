@@ -2,13 +2,12 @@
 
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.shared.patterns import Collection
 
 MODELS_YML_CHECKSUM = "3fd01ad6a70c3946ff894b9d319c02a8"
 
 
 class Organization(Model):
-    collection = Collection("organization")
+    collection = "organization"
     verbose_name = "organization"
 
     id = fields.IntegerField()
@@ -34,27 +33,25 @@ class Organization(Model):
             "minimum": 0,
         },
     )
-    committee_ids = fields.RelationListField(
-        to={Collection("committee"): "organization_id"}
-    )
+    committee_ids = fields.RelationListField(to={"committee": "organization_id"})
     active_meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "is_active_in_organization_id"}
+        to={"meeting": "is_active_in_organization_id"}
     )
     archived_meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "is_archived_in_organization_id"}
+        to={"meeting": "is_archived_in_organization_id"}
     )
     template_meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "template_for_organization_id"}
+        to={"meeting": "template_for_organization_id"}
     )
     organization_tag_ids = fields.RelationListField(
-        to={Collection("organization_tag"): "organization_id"}
+        to={"organization_tag": "organization_id"}
     )
     theme_id = fields.RelationField(
-        to={Collection("theme"): "theme_for_organization_id"}, required=True
+        to={"theme": "theme_for_organization_id"}, required=True
     )
-    theme_ids = fields.RelationListField(to={Collection("theme"): "organization_id"})
+    theme_ids = fields.RelationListField(to={"theme": "organization_id"})
     mediafile_ids = fields.RelationListField(
-        to={Collection("mediafile"): "owner_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"mediafile": "owner_id"}, on_delete=fields.OnDelete.CASCADE
     )
     users_email_sender = fields.CharField(default="OpenSlides")
     users_email_replyto = fields.CharField()
@@ -66,7 +63,7 @@ class Organization(Model):
 
 
 class User(Model):
-    collection = Collection("user")
+    collection = "user"
     verbose_name = "user"
 
     id = fields.IntegerField()
@@ -96,115 +93,115 @@ class User(Model):
         }
     )
     is_present_in_meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "present_user_ids"}
+        to={"meeting": "present_user_ids"}
     )
     committee_ids = fields.RelationListField(
-        to={Collection("committee"): "user_ids"},
+        to={"committee": "user_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
     )
     committee__management_level = fields.TemplateRelationListField(
         index=10,
-        to={Collection("committee"): "user_$_management_level"},
+        to={"committee": "user_$_management_level"},
         replacement_enum=["can_manage"],
     )
     forwarding_committee_ids = fields.RelationListField(
-        to={Collection("committee"): "forwarding_user_id"}
+        to={"committee": "forwarding_user_id"}
     )
     comment_ = fields.TemplateHTMLStrictField(
         index=8,
-        replacement_collection=Collection("meeting"),
+        replacement_collection="meeting",
     )
     number_ = fields.TemplateCharField(
         index=7,
-        replacement_collection=Collection("meeting"),
+        replacement_collection="meeting",
     )
     structure_level_ = fields.TemplateCharField(
         index=16,
-        replacement_collection=Collection("meeting"),
+        replacement_collection="meeting",
     )
     about_me_ = fields.TemplateHTMLStrictField(
         index=9,
-        replacement_collection=Collection("meeting"),
+        replacement_collection="meeting",
     )
     vote_weight_ = fields.TemplateDecimalField(
         index=12,
-        replacement_collection=Collection("meeting"),
+        replacement_collection="meeting",
         constraints={"minimum": 0},
     )
     group__ids = fields.TemplateRelationListField(
         index=6,
-        replacement_collection=Collection("meeting"),
-        to={Collection("group"): "user_ids"},
+        replacement_collection="meeting",
+        to={"group": "user_ids"},
     )
     speaker__ids = fields.TemplateRelationListField(
         index=8,
-        replacement_collection=Collection("meeting"),
-        to={Collection("speaker"): "user_id"},
+        replacement_collection="meeting",
+        to={"speaker": "user_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
     personal_note__ids = fields.TemplateRelationListField(
         index=14,
-        replacement_collection=Collection("meeting"),
-        to={Collection("personal_note"): "user_id"},
+        replacement_collection="meeting",
+        to={"personal_note": "user_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
     supported_motion__ids = fields.TemplateRelationListField(
         index=17,
-        replacement_collection=Collection("meeting"),
-        to={Collection("motion"): "supporter_ids"},
+        replacement_collection="meeting",
+        to={"motion": "supporter_ids"},
     )
     submitted_motion__ids = fields.TemplateRelationListField(
         index=17,
-        replacement_collection=Collection("meeting"),
-        to={Collection("motion_submitter"): "user_id"},
+        replacement_collection="meeting",
+        to={"motion_submitter": "user_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
     poll_voted__ids = fields.TemplateRelationListField(
         index=11,
-        replacement_collection=Collection("meeting"),
-        to={Collection("poll"): "voted_ids"},
+        replacement_collection="meeting",
+        to={"poll": "voted_ids"},
     )
     option__ids = fields.TemplateRelationListField(
         index=7,
-        replacement_collection=Collection("meeting"),
-        to={Collection("option"): "content_object_id"},
+        replacement_collection="meeting",
+        to={"option": "content_object_id"},
     )
     vote__ids = fields.TemplateRelationListField(
         index=5,
-        replacement_collection=Collection("meeting"),
-        to={Collection("vote"): "user_id"},
+        replacement_collection="meeting",
+        to={"vote": "user_id"},
     )
     vote_delegated_vote__ids = fields.TemplateRelationListField(
         index=20,
-        replacement_collection=Collection("meeting"),
-        to={Collection("vote"): "delegated_user_id"},
+        replacement_collection="meeting",
+        to={"vote": "delegated_user_id"},
     )
     assignment_candidate__ids = fields.TemplateRelationListField(
         index=21,
-        replacement_collection=Collection("meeting"),
-        to={Collection("assignment_candidate"): "user_id"},
+        replacement_collection="meeting",
+        to={"assignment_candidate": "user_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
     projection__ids = fields.TemplateRelationListField(
         index=11,
-        replacement_collection=Collection("meeting"),
-        to={Collection("projection"): "content_object_id"},
+        replacement_collection="meeting",
+        to={"projection": "content_object_id"},
     )
     vote_delegated__to_id = fields.TemplateRelationField(
         index=15,
-        replacement_collection=Collection("meeting"),
-        to={Collection("user"): "vote_delegations_$_from_ids"},
+        replacement_collection="meeting",
+        to={"user": "vote_delegations_$_from_ids"},
     )
     vote_delegations__from_ids = fields.TemplateRelationListField(
         index=17,
-        replacement_collection=Collection("meeting"),
-        to={Collection("user"): "vote_delegated_$_to_id"},
+        replacement_collection="meeting",
+        to={"user": "vote_delegated_$_to_id"},
     )
     chat_message__ids = fields.TemplateRelationListField(
         index=13,
-        replacement_collection=Collection("meeting"),
-        to={Collection("chat_message"): "user_id"},
+        replacement_collection="meeting",
+        to={"chat_message": "user_id"},
     )
     meeting_ids = fields.NumberArrayField(
         read_only=True,
@@ -215,25 +212,22 @@ class User(Model):
 
 
 class OrganizationTag(Model):
-    collection = Collection("organization_tag")
+    collection = "organization_tag"
     verbose_name = "organization tag"
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     color = fields.ColorField(required=True)
     tagged_ids = fields.GenericRelationListField(
-        to={
-            Collection("committee"): "organization_tag_ids",
-            Collection("meeting"): "organization_tag_ids",
-        }
+        to={"committee": "organization_tag_ids", "meeting": "organization_tag_ids"}
     )
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "organization_tag_ids"}, required=True
+        to={"organization": "organization_tag_ids"}, required=True
     )
 
 
 class Theme(Model):
-    collection = Collection("theme")
+    collection = "theme"
     verbose_name = "theme"
 
     id = fields.IntegerField(required=True)
@@ -280,56 +274,52 @@ class Theme(Model):
     warn_a200 = fields.ColorField()
     warn_a400 = fields.ColorField()
     warn_a700 = fields.ColorField()
-    theme_for_organization_id = fields.RelationField(
-        to={Collection("organization"): "theme_id"}
-    )
+    theme_for_organization_id = fields.RelationField(to={"organization": "theme_id"})
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "theme_ids"}, required=True
+        to={"organization": "theme_ids"}, required=True
     )
 
 
 class Committee(Model):
-    collection = Collection("committee")
+    collection = "committee"
     verbose_name = "committee"
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     description = fields.HTMLStrictField()
     meeting_ids = fields.RelationListField(
-        to={Collection("meeting"): "committee_id"}, on_delete=fields.OnDelete.PROTECT
+        to={"meeting": "committee_id"}, on_delete=fields.OnDelete.PROTECT
     )
     default_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "default_meeting_for_committee_id"}
+        to={"meeting": "default_meeting_for_committee_id"}
     )
     user_ids = fields.RelationListField(
-        to={Collection("user"): "committee_ids"},
+        to={"user": "committee_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
     )
     user__management_level = fields.TemplateRelationListField(
         index=5,
-        to={Collection("user"): "committee_$_management_level"},
+        to={"user": "committee_$_management_level"},
         replacement_enum=["can_manage"],
     )
     forward_to_committee_ids = fields.RelationListField(
-        to={Collection("committee"): "receive_forwardings_from_committee_ids"}
+        to={"committee": "receive_forwardings_from_committee_ids"}
     )
     receive_forwardings_from_committee_ids = fields.RelationListField(
-        to={Collection("committee"): "forward_to_committee_ids"}
+        to={"committee": "forward_to_committee_ids"}
     )
-    forwarding_user_id = fields.RelationField(
-        to={Collection("user"): "forwarding_committee_ids"}
-    )
+    forwarding_user_id = fields.RelationField(to={"user": "forwarding_committee_ids"})
     organization_tag_ids = fields.RelationListField(
-        to={Collection("organization_tag"): "tagged_ids"}
+        to={"organization_tag": "tagged_ids"}
     )
     organization_id = fields.OrganizationField(
-        to={Collection("organization"): "committee_ids"}, required=True
+        to={"organization": "committee_ids"}, required=True
     )
 
 
 class Meeting(Model):
-    collection = Collection("meeting")
+    collection = "meeting"
     verbose_name = "meeting"
 
     id = fields.IntegerField()
@@ -337,11 +327,11 @@ class Meeting(Model):
     welcome_text = fields.HTMLPermissiveField(default="Space for your welcome text.")
     name = fields.CharField(default="OpenSlides", constraints={"maxLength": 100})
     is_active_in_organization_id = fields.RelationField(
-        to={Collection("organization"): "active_meeting_ids"},
+        to={"organization": "active_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
     )
     is_archived_in_organization_id = fields.RelationField(
-        to={Collection("organization"): "archived_meeting_ids"},
+        to={"organization": "archived_meeting_ids"},
         constraints={"description": "Backrelation and boolean flag at once"},
     )
     description = fields.CharField(
@@ -355,7 +345,7 @@ class Meeting(Model):
     jitsi_room_name = fields.CharField()
     jitsi_room_password = fields.CharField()
     template_for_organization_id = fields.RelationField(
-        to={Collection("organization"): "template_meeting_ids"}
+        to={"organization": "template_meeting_ids"}
     )
     enable_anonymous = fields.BooleanField(default=False)
     custom_translations = fields.JSONField()
@@ -442,18 +432,13 @@ class Meeting(Model):
     list_of_speakers_speaker_note_for_everyone = fields.BooleanField(default=True)
     list_of_speakers_initially_closed = fields.BooleanField(default=False)
     motions_default_workflow_id = fields.RelationField(
-        to={Collection("motion_workflow"): "default_workflow_meeting_id"}, required=True
+        to={"motion_workflow": "default_workflow_meeting_id"}, required=True
     )
     motions_default_amendment_workflow_id = fields.RelationField(
-        to={Collection("motion_workflow"): "default_amendment_workflow_meeting_id"},
-        required=True,
+        to={"motion_workflow": "default_amendment_workflow_meeting_id"}, required=True
     )
     motions_default_statute_amendment_workflow_id = fields.RelationField(
-        to={
-            Collection(
-                "motion_workflow"
-            ): "default_statute_amendment_workflow_meeting_id"
-        },
+        to={"motion_workflow": "default_statute_amendment_workflow_meeting_id"},
         required=True,
     )
     motions_preamble = fields.TextField(default="The assembly may decide:")
@@ -513,7 +498,7 @@ class Meeting(Model):
     motion_poll_default_type = fields.CharField(default="pseudoanonymous")
     motion_poll_default_100_percent_base = fields.CharField(default="YNA")
     motion_poll_default_group_ids = fields.RelationListField(
-        to={Collection("group"): "used_as_motion_poll_default_id"}
+        to={"group": "used_as_motion_poll_default_id"}
     )
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
@@ -562,7 +547,7 @@ class Meeting(Model):
     assignment_poll_default_method = fields.CharField(default="Y")
     assignment_poll_default_100_percent_base = fields.CharField(default="valid")
     assignment_poll_default_group_ids = fields.RelationListField(
-        to={Collection("group"): "used_as_assignment_poll_default_id"}
+        to={"group": "used_as_assignment_poll_default_id"}
     )
     assignment_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
@@ -582,130 +567,117 @@ class Meeting(Model):
     poll_default_method = fields.CharField()
     poll_default_100_percent_base = fields.CharField(default="YNA")
     poll_default_group_ids = fields.RelationListField(
-        to={Collection("group"): "used_as_poll_default_id"}
+        to={"group": "used_as_poll_default_id"}
     )
     poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
     poll_couple_countdown = fields.BooleanField(default=True)
     projector_ids = fields.RelationListField(
-        to={Collection("projector"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"projector": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     all_projection_ids = fields.RelationListField(
-        to={Collection("projection"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"projection": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     projector_message_ids = fields.RelationListField(
-        to={Collection("projector_message"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"projector_message": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     projector_countdown_ids = fields.RelationListField(
-        to={Collection("projector_countdown"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"projector_countdown": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     tag_ids = fields.RelationListField(
-        to={Collection("tag"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"tag": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     agenda_item_ids = fields.RelationListField(
-        to={Collection("agenda_item"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"agenda_item": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     list_of_speakers_ids = fields.RelationListField(
-        to={Collection("list_of_speakers"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"list_of_speakers": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     speaker_ids = fields.RelationListField(
-        to={Collection("speaker"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"speaker": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     topic_ids = fields.RelationListField(
-        to={Collection("topic"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"topic": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     group_ids = fields.RelationListField(
-        to={Collection("group"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"group": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     mediafile_ids = fields.RelationListField(
-        to={Collection("mediafile"): "owner_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"mediafile": "owner_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_ids = fields.RelationListField(
-        to={Collection("motion"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"motion": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_comment_section_ids = fields.RelationListField(
-        to={Collection("motion_comment_section"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"motion_comment_section": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_category_ids = fields.RelationListField(
-        to={Collection("motion_category"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"motion_category": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_block_ids = fields.RelationListField(
-        to={Collection("motion_block"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"motion_block": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_workflow_ids = fields.RelationListField(
-        to={Collection("motion_workflow"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"motion_workflow": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_statute_paragraph_ids = fields.RelationListField(
-        to={Collection("motion_statute_paragraph"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"motion_statute_paragraph": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_comment_ids = fields.RelationListField(
-        to={Collection("motion_comment"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"motion_comment": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_submitter_ids = fields.RelationListField(
-        to={Collection("motion_submitter"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"motion_submitter": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     motion_change_recommendation_ids = fields.RelationListField(
-        to={Collection("motion_change_recommendation"): "meeting_id"},
+        to={"motion_change_recommendation": "meeting_id"},
         on_delete=fields.OnDelete.CASCADE,
     )
     motion_state_ids = fields.RelationListField(
-        to={Collection("motion_state"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"motion_state": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     poll_ids = fields.RelationListField(
-        to={Collection("poll"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"poll": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     option_ids = fields.RelationListField(
-        to={Collection("option"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"option": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     vote_ids = fields.RelationListField(
-        to={Collection("vote"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"vote": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     assignment_ids = fields.RelationListField(
-        to={Collection("assignment"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"assignment": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     assignment_candidate_ids = fields.RelationListField(
-        to={Collection("assignment_candidate"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"assignment_candidate": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     personal_note_ids = fields.RelationListField(
-        to={Collection("personal_note"): "meeting_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"personal_note": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     chat_group_ids = fields.RelationListField(
-        to={Collection("chat_group"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"chat_group": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     chat_message_ids = fields.RelationListField(
-        to={Collection("chat_message"): "meeting_id"}, on_delete=fields.OnDelete.CASCADE
+        to={"chat_message": "meeting_id"}, on_delete=fields.OnDelete.CASCADE
     )
     logo__id = fields.TemplateRelationField(
         index=5,
-        to={Collection("mediafile"): "used_as_logo_$_in_meeting_id"},
+        to={"mediafile": "used_as_logo_$_in_meeting_id"},
     )
     font__id = fields.TemplateRelationField(
         index=5,
-        to={Collection("mediafile"): "used_as_font_$_in_meeting_id"},
+        to={"mediafile": "used_as_font_$_in_meeting_id"},
     )
-    committee_id = fields.RelationField(
-        to={Collection("committee"): "meeting_ids"}, required=True
-    )
+    committee_id = fields.RelationField(to={"committee": "meeting_ids"}, required=True)
     default_meeting_for_committee_id = fields.RelationField(
-        to={Collection("committee"): "default_meeting_id"}
+        to={"committee": "default_meeting_id"}
     )
     organization_tag_ids = fields.RelationListField(
-        to={Collection("organization_tag"): "tagged_ids"}
+        to={"organization_tag": "tagged_ids"}
     )
     present_user_ids = fields.RelationListField(
-        to={Collection("user"): "is_present_in_meeting_ids"}
+        to={"user": "is_present_in_meeting_ids"}
     )
     user_ids = fields.NumberArrayField(
         read_only=True,
@@ -714,22 +686,17 @@ class Meeting(Model):
         },
     )
     reference_projector_id = fields.RelationField(
-        to={Collection("projector"): "used_as_reference_projector_meeting_id"},
-        required=True,
+        to={"projector": "used_as_reference_projector_meeting_id"}, required=True
     )
     list_of_speakers_countdown_id = fields.RelationField(
-        to={
-            Collection(
-                "projector_countdown"
-            ): "used_as_list_of_speakers_countdown_meeting_id"
-        }
+        to={"projector_countdown": "used_as_list_of_speakers_countdown_meeting_id"}
     )
     poll_countdown_id = fields.RelationField(
-        to={Collection("projector_countdown"): "used_as_poll_countdown_meeting_id"}
+        to={"projector_countdown": "used_as_poll_countdown_meeting_id"}
     )
     default_projector__id = fields.TemplateRelationField(
         index=18,
-        to={Collection("projector"): "used_as_default_$_in_meeting_id"},
+        to={"projector": "used_as_default_$_in_meeting_id"},
         required=True,
         replacement_enum=[
             "agenda_all_items",
@@ -749,19 +716,15 @@ class Meeting(Model):
             "poll",
         ],
     )
-    projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}
-    )
+    projection_ids = fields.RelationListField(to={"projection": "content_object_id"})
     default_group_id = fields.RelationField(
-        to={Collection("group"): "default_group_for_meeting_id"}, required=True
+        to={"group": "default_group_for_meeting_id"}, required=True
     )
-    admin_group_id = fields.RelationField(
-        to={Collection("group"): "admin_group_for_meeting_id"}
-    )
+    admin_group_id = fields.RelationField(to={"group": "admin_group_for_meeting_id"})
 
 
 class Group(Model):
-    collection = Collection("group")
+    collection = "group"
     verbose_name = "group"
 
     id = fields.IntegerField()
@@ -808,93 +771,84 @@ class Group(Model):
         }
     )
     weight = fields.IntegerField()
-    user_ids = fields.RelationListField(to={Collection("user"): "group_$_ids"})
+    user_ids = fields.RelationListField(to={"user": "group_$_ids"})
     default_group_for_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "default_group_id"},
-        on_delete=fields.OnDelete.PROTECT,
+        to={"meeting": "default_group_id"}, on_delete=fields.OnDelete.PROTECT
     )
     admin_group_for_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "admin_group_id"}, on_delete=fields.OnDelete.PROTECT
+        to={"meeting": "admin_group_id"}, on_delete=fields.OnDelete.PROTECT
     )
     mediafile_access_group_ids = fields.RelationListField(
-        to={Collection("mediafile"): "access_group_ids"}, equal_fields="meeting_id"
+        to={"mediafile": "access_group_ids"}, equal_fields="meeting_id"
     )
     mediafile_inherited_access_group_ids = fields.RelationListField(
-        to={Collection("mediafile"): "inherited_access_group_ids"},
+        to={"mediafile": "inherited_access_group_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
     )
     read_comment_section_ids = fields.RelationListField(
-        to={Collection("motion_comment_section"): "read_group_ids"},
-        equal_fields="meeting_id",
+        to={"motion_comment_section": "read_group_ids"}, equal_fields="meeting_id"
     )
     write_comment_section_ids = fields.RelationListField(
-        to={Collection("motion_comment_section"): "write_group_ids"},
-        equal_fields="meeting_id",
+        to={"motion_comment_section": "write_group_ids"}, equal_fields="meeting_id"
     )
     read_chat_group_ids = fields.RelationListField(
-        to={Collection("chat_group"): "read_group_ids"}, equal_fields="meeting_id"
+        to={"chat_group": "read_group_ids"}, equal_fields="meeting_id"
     )
     write_chat_group_ids = fields.RelationListField(
-        to={Collection("chat_group"): "write_group_ids"}, equal_fields="meeting_id"
+        to={"chat_group": "write_group_ids"}, equal_fields="meeting_id"
     )
     poll_ids = fields.RelationListField(
-        to={Collection("poll"): "entitled_group_ids"}, equal_fields="meeting_id"
+        to={"poll": "entitled_group_ids"}, equal_fields="meeting_id"
     )
     used_as_motion_poll_default_id = fields.RelationField(
-        to={Collection("meeting"): "motion_poll_default_group_ids"}
+        to={"meeting": "motion_poll_default_group_ids"}
     )
     used_as_assignment_poll_default_id = fields.RelationField(
-        to={Collection("meeting"): "assignment_poll_default_group_ids"}
+        to={"meeting": "assignment_poll_default_group_ids"}
     )
     used_as_poll_default_id = fields.RelationField(
-        to={Collection("meeting"): "poll_default_group_ids"}
+        to={"meeting": "poll_default_group_ids"}
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "group_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "group_ids"}, required=True)
 
 
 class PersonalNote(Model):
-    collection = Collection("personal_note")
+    collection = "personal_note"
     verbose_name = "personal note"
 
     id = fields.IntegerField()
     note = fields.HTMLStrictField()
     star = fields.BooleanField()
-    user_id = fields.RelationField(
-        to={Collection("user"): "personal_note_$_ids"}, required=True
-    )
+    user_id = fields.RelationField(to={"user": "personal_note_$_ids"}, required=True)
     content_object_id = fields.GenericRelationField(
-        to={Collection("motion"): "personal_note_ids"}, equal_fields="meeting_id"
+        to={"motion": "personal_note_ids"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "personal_note_ids"}, required=True
+        to={"meeting": "personal_note_ids"}, required=True
     )
 
 
 class Tag(Model):
-    collection = Collection("tag")
+    collection = "tag"
     verbose_name = "tag"
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     tagged_ids = fields.GenericRelationListField(
         to={
-            Collection("agenda_item"): "tag_ids",
-            Collection("assignment"): "tag_ids",
-            Collection("motion"): "tag_ids",
-            Collection("topic"): "tag_ids",
+            "agenda_item": "tag_ids",
+            "assignment": "tag_ids",
+            "motion": "tag_ids",
+            "topic": "tag_ids",
         },
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "tag_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "tag_ids"}, required=True)
 
 
 class AgendaItem(Model):
-    collection = Collection("agenda_item")
+    collection = "agenda_item"
     verbose_name = "agenda item"
 
     id = fields.IntegerField()
@@ -919,29 +873,27 @@ class AgendaItem(Model):
     weight = fields.IntegerField(default=10000)
     content_object_id = fields.GenericRelationField(
         to={
-            Collection("motion"): "agenda_item_id",
-            Collection("motion_block"): "agenda_item_id",
-            Collection("assignment"): "agenda_item_id",
-            Collection("topic"): "agenda_item_id",
+            "motion": "agenda_item_id",
+            "motion_block": "agenda_item_id",
+            "assignment": "agenda_item_id",
+            "topic": "agenda_item_id",
         },
         required=True,
         equal_fields="meeting_id",
     )
     parent_id = fields.RelationField(
-        to={Collection("agenda_item"): "child_ids"}, equal_fields="meeting_id"
+        to={"agenda_item": "child_ids"}, equal_fields="meeting_id"
     )
     child_ids = fields.RelationListField(
-        to={Collection("agenda_item"): "parent_id"}, equal_fields="meeting_id"
+        to={"agenda_item": "parent_id"}, equal_fields="meeting_id"
     )
     tag_ids = fields.RelationListField(
-        to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
+        to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "agenda_item_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "agenda_item_ids"}, required=True)
 
     AGENDA_ITEM = "common"
     INTERNAL_ITEM = "internal"
@@ -949,7 +901,7 @@ class AgendaItem(Model):
 
 
 class ListOfSpeakers(Model):
-    collection = Collection("list_of_speakers")
+    collection = "list_of_speakers"
     verbose_name = "list of speakers"
 
     id = fields.IntegerField()
@@ -963,30 +915,30 @@ class ListOfSpeakers(Model):
     )
     content_object_id = fields.GenericRelationField(
         to={
-            Collection("motion"): "list_of_speakers_id",
-            Collection("motion_block"): "list_of_speakers_id",
-            Collection("assignment"): "list_of_speakers_id",
-            Collection("topic"): "list_of_speakers_id",
-            Collection("mediafile"): "list_of_speakers_id",
+            "motion": "list_of_speakers_id",
+            "motion_block": "list_of_speakers_id",
+            "assignment": "list_of_speakers_id",
+            "topic": "list_of_speakers_id",
+            "mediafile": "list_of_speakers_id",
         },
         required=True,
         equal_fields="meeting_id",
     )
     speaker_ids = fields.RelationListField(
-        to={Collection("speaker"): "list_of_speakers_id"},
+        to={"speaker": "list_of_speakers_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "list_of_speakers_ids"}, required=True
+        to={"meeting": "list_of_speakers_ids"}, required=True
     )
 
 
 class Speaker(Model):
-    collection = Collection("speaker")
+    collection = "speaker"
     verbose_name = "speaker"
 
     id = fields.IntegerField()
@@ -999,22 +951,16 @@ class Speaker(Model):
     note = fields.CharField(constraints={"maxLength": 250})
     point_of_order = fields.BooleanField()
     list_of_speakers_id = fields.RelationField(
-        to={Collection("list_of_speakers"): "speaker_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"list_of_speakers": "speaker_ids"}, required=True, equal_fields="meeting_id"
     )
     user_id = fields.RelationField(
-        to={Collection("user"): "speaker_$_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"user": "speaker_$_ids"}, required=True, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "speaker_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "speaker_ids"}, required=True)
 
 
 class Topic(Model):
-    collection = Collection("topic")
+    collection = "topic"
     verbose_name = "topic"
 
     id = fields.IntegerField()
@@ -1028,38 +974,36 @@ class Topic(Model):
         },
     )
     attachment_ids = fields.RelationListField(
-        to={Collection("mediafile"): "attachment_ids"}, equal_fields="meeting_id"
+        to={"mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     agenda_item_id = fields.RelationField(
-        to={Collection("agenda_item"): "content_object_id"},
+        to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
-        to={Collection("list_of_speakers"): "content_object_id"},
+        to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
         equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
-        to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
+        to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
     poll_ids = fields.RelationListField(
-        to={Collection("poll"): "content_object_id"},
+        to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "topic_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "topic_ids"}, required=True)
 
 
 class Motion(Model):
-    collection = Collection("motion")
+    collection = "motion"
     verbose_name = "motion"
 
     id = fields.IntegerField()
@@ -1093,150 +1037,134 @@ class Motion(Model):
     start_line_number = fields.IntegerField(default=1, constraints={"minimum": 1})
     forwarded = fields.TimestampField(read_only=True)
     lead_motion_id = fields.RelationField(
-        to={Collection("motion"): "amendment_ids"}, equal_fields="meeting_id"
+        to={"motion": "amendment_ids"}, equal_fields="meeting_id"
     )
     amendment_ids = fields.RelationListField(
-        to={Collection("motion"): "lead_motion_id"}, equal_fields="meeting_id"
+        to={"motion": "lead_motion_id"}, equal_fields="meeting_id"
     )
     sort_parent_id = fields.RelationField(
-        to={Collection("motion"): "sort_child_ids"}, equal_fields="meeting_id"
+        to={"motion": "sort_child_ids"}, equal_fields="meeting_id"
     )
     sort_child_ids = fields.RelationListField(
-        to={Collection("motion"): "sort_parent_id"}, equal_fields="meeting_id"
+        to={"motion": "sort_parent_id"}, equal_fields="meeting_id"
     )
-    origin_id = fields.RelationField(to={Collection("motion"): "derived_motion_ids"})
-    derived_motion_ids = fields.RelationListField(
-        to={Collection("motion"): "origin_id"}
-    )
+    origin_id = fields.RelationField(to={"motion": "derived_motion_ids"})
+    derived_motion_ids = fields.RelationListField(to={"motion": "origin_id"})
     all_origin_ids = fields.NumberArrayField()
     all_derived_motion_ids = fields.NumberArrayField()
     state_id = fields.RelationField(
-        to={Collection("motion_state"): "motion_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"motion_state": "motion_ids"}, required=True, equal_fields="meeting_id"
     )
     recommendation_id = fields.RelationField(
-        to={Collection("motion_state"): "motion_recommendation_ids"},
-        equal_fields="meeting_id",
+        to={"motion_state": "motion_recommendation_ids"}, equal_fields="meeting_id"
     )
     recommendation_extension_reference_ids = fields.GenericRelationListField(
-        to={Collection("motion"): "referenced_in_motion_recommendation_extension_ids"},
+        to={"motion": "referenced_in_motion_recommendation_extension_ids"},
         equal_fields="meeting_id",
     )
     referenced_in_motion_recommendation_extension_ids = fields.RelationListField(
-        to={Collection("motion"): "recommendation_extension_reference_ids"},
+        to={"motion": "recommendation_extension_reference_ids"},
         equal_fields="meeting_id",
     )
     category_id = fields.RelationField(
-        to={Collection("motion_category"): "motion_ids"}, equal_fields="meeting_id"
+        to={"motion_category": "motion_ids"}, equal_fields="meeting_id"
     )
     block_id = fields.RelationField(
-        to={Collection("motion_block"): "motion_ids"}, equal_fields="meeting_id"
+        to={"motion_block": "motion_ids"}, equal_fields="meeting_id"
     )
     submitter_ids = fields.RelationListField(
-        to={Collection("motion_submitter"): "motion_id"},
+        to={"motion_submitter": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    supporter_ids = fields.RelationListField(
-        to={Collection("user"): "supported_motion_$_ids"}
-    )
+    supporter_ids = fields.RelationListField(to={"user": "supported_motion_$_ids"})
     poll_ids = fields.RelationListField(
-        to={Collection("poll"): "content_object_id"},
+        to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
-        to={Collection("option"): "content_object_id"},
+        to={"option": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     change_recommendation_ids = fields.RelationListField(
-        to={Collection("motion_change_recommendation"): "motion_id"},
+        to={"motion_change_recommendation": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     statute_paragraph_id = fields.RelationField(
-        to={Collection("motion_statute_paragraph"): "motion_ids"},
-        equal_fields="meeting_id",
+        to={"motion_statute_paragraph": "motion_ids"}, equal_fields="meeting_id"
     )
     comment_ids = fields.RelationListField(
-        to={Collection("motion_comment"): "motion_id"},
+        to={"motion_comment": "motion_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     agenda_item_id = fields.RelationField(
-        to={Collection("agenda_item"): "content_object_id"},
+        to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
-        to={Collection("list_of_speakers"): "content_object_id"},
+        to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
         equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
-        to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
+        to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
     attachment_ids = fields.RelationListField(
-        to={Collection("mediafile"): "attachment_ids"}, equal_fields="meeting_id"
+        to={"mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
     personal_note_ids = fields.RelationListField(
-        to={Collection("personal_note"): "content_object_id"},
+        to={"personal_note": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "motion_ids"}, required=True)
 
 
 class MotionSubmitter(Model):
-    collection = Collection("motion_submitter")
+    collection = "motion_submitter"
     verbose_name = "motion submitter"
 
     id = fields.IntegerField()
     weight = fields.IntegerField()
-    user_id = fields.RelationField(
-        to={Collection("user"): "submitted_motion_$_ids"}, required=True
-    )
+    user_id = fields.RelationField(to={"user": "submitted_motion_$_ids"}, required=True)
     motion_id = fields.RelationField(
-        to={Collection("motion"): "submitter_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"motion": "submitter_ids"}, required=True, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_submitter_ids"}, required=True
+        to={"meeting": "motion_submitter_ids"}, required=True
     )
 
 
 class MotionComment(Model):
-    collection = Collection("motion_comment")
+    collection = "motion_comment"
     verbose_name = "motion comment"
 
     id = fields.IntegerField()
     comment = fields.HTMLStrictField()
     motion_id = fields.RelationField(
-        to={Collection("motion"): "comment_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"motion": "comment_ids"}, required=True, equal_fields="meeting_id"
     )
     section_id = fields.RelationField(
-        to={Collection("motion_comment_section"): "comment_ids"},
+        to={"motion_comment_section": "comment_ids"},
         required=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_comment_ids"}, required=True
+        to={"meeting": "motion_comment_ids"}, required=True
     )
 
 
 class MotionCommentSection(Model):
-    collection = Collection("motion_comment_section")
+    collection = "motion_comment_section"
     verbose_name = "motion comment section"
 
     id = fields.IntegerField()
@@ -1250,23 +1178,23 @@ class MotionCommentSection(Model):
         },
     )
     comment_ids = fields.RelationListField(
-        to={Collection("motion_comment"): "section_id"},
+        to={"motion_comment": "section_id"},
         on_delete=fields.OnDelete.PROTECT,
         equal_fields="meeting_id",
     )
     read_group_ids = fields.RelationListField(
-        to={Collection("group"): "read_comment_section_ids"}, equal_fields="meeting_id"
+        to={"group": "read_comment_section_ids"}, equal_fields="meeting_id"
     )
     write_group_ids = fields.RelationListField(
-        to={Collection("group"): "write_comment_section_ids"}, equal_fields="meeting_id"
+        to={"group": "write_comment_section_ids"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_comment_section_ids"}, required=True
+        to={"meeting": "motion_comment_section_ids"}, required=True
     )
 
 
 class MotionCategory(Model):
-    collection = Collection("motion_category")
+    collection = "motion_category"
     verbose_name = "motion category"
 
     id = fields.IntegerField()
@@ -1284,21 +1212,21 @@ class MotionCategory(Model):
         },
     )
     parent_id = fields.RelationField(
-        to={Collection("motion_category"): "child_ids"}, equal_fields="meeting_id"
+        to={"motion_category": "child_ids"}, equal_fields="meeting_id"
     )
     child_ids = fields.RelationListField(
-        to={Collection("motion_category"): "parent_id"}, equal_fields="meeting_id"
+        to={"motion_category": "parent_id"}, equal_fields="meeting_id"
     )
     motion_ids = fields.RelationListField(
-        to={Collection("motion"): "category_id"}, equal_fields="meeting_id"
+        to={"motion": "category_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_category_ids"}, required=True
+        to={"meeting": "motion_category_ids"}, required=True
     )
 
 
 class MotionBlock(Model):
-    collection = Collection("motion_block")
+    collection = "motion_block"
     verbose_name = "motion block"
 
     id = fields.IntegerField()
@@ -1312,29 +1240,27 @@ class MotionBlock(Model):
         },
     )
     motion_ids = fields.RelationListField(
-        to={Collection("motion"): "block_id"}, equal_fields="meeting_id"
+        to={"motion": "block_id"}, equal_fields="meeting_id"
     )
     agenda_item_id = fields.RelationField(
-        to={Collection("agenda_item"): "content_object_id"},
+        to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
-        to={Collection("list_of_speakers"): "content_object_id"},
+        to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_block_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "motion_block_ids"}, required=True)
 
 
 class MotionChangeRecommendation(Model):
-    collection = Collection("motion_change_recommendation")
+    collection = "motion_change_recommendation"
     verbose_name = "motion change recommendation"
 
     id = fields.IntegerField()
@@ -1350,17 +1276,17 @@ class MotionChangeRecommendation(Model):
     text = fields.HTMLStrictField()
     creation_time = fields.TimestampField(read_only=True)
     motion_id = fields.RelationField(
-        to={Collection("motion"): "change_recommendation_ids"},
+        to={"motion": "change_recommendation_ids"},
         required=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_change_recommendation_ids"}, required=True
+        to={"meeting": "motion_change_recommendation_ids"}, required=True
     )
 
 
 class MotionState(Model):
-    collection = Collection("motion_state")
+    collection = "motion_state"
     verbose_name = "motion state"
 
     id = fields.IntegerField()
@@ -1396,38 +1322,34 @@ class MotionState(Model):
     allow_motion_forwarding = fields.BooleanField()
     set_created_timestamp = fields.BooleanField()
     next_state_ids = fields.RelationListField(
-        to={Collection("motion_state"): "previous_state_ids"},
+        to={"motion_state": "previous_state_ids"},
         equal_fields=["meeting_id", "workflow_id"],
     )
     previous_state_ids = fields.RelationListField(
-        to={Collection("motion_state"): "next_state_ids"},
+        to={"motion_state": "next_state_ids"},
         equal_fields=["meeting_id", "workflow_id"],
     )
     motion_ids = fields.RelationListField(
-        to={Collection("motion"): "state_id"},
+        to={"motion": "state_id"},
         on_delete=fields.OnDelete.PROTECT,
         equal_fields="meeting_id",
     )
     motion_recommendation_ids = fields.RelationListField(
-        to={Collection("motion"): "recommendation_id"}, equal_fields="meeting_id"
+        to={"motion": "recommendation_id"}, equal_fields="meeting_id"
     )
     workflow_id = fields.RelationField(
-        to={Collection("motion_workflow"): "state_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"motion_workflow": "state_ids"}, required=True, equal_fields="meeting_id"
     )
     first_state_of_workflow_id = fields.RelationField(
-        to={Collection("motion_workflow"): "first_state_id"},
+        to={"motion_workflow": "first_state_id"},
         on_delete=fields.OnDelete.PROTECT,
         equal_fields="meeting_id",
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_state_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "motion_state_ids"}, required=True)
 
 
 class MotionWorkflow(Model):
-    collection = Collection("motion_workflow")
+    collection = "motion_workflow"
     verbose_name = "motion workflow"
 
     id = fields.IntegerField()
@@ -1440,31 +1362,31 @@ class MotionWorkflow(Model):
         },
     )
     state_ids = fields.RelationListField(
-        to={Collection("motion_state"): "workflow_id"},
+        to={"motion_state": "workflow_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     first_state_id = fields.RelationField(
-        to={Collection("motion_state"): "first_state_of_workflow_id"},
+        to={"motion_state": "first_state_of_workflow_id"},
         required=True,
         equal_fields="meeting_id",
     )
     default_workflow_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motions_default_workflow_id"}
+        to={"meeting": "motions_default_workflow_id"}
     )
     default_amendment_workflow_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motions_default_amendment_workflow_id"}
+        to={"meeting": "motions_default_amendment_workflow_id"}
     )
     default_statute_amendment_workflow_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motions_default_statute_amendment_workflow_id"}
+        to={"meeting": "motions_default_statute_amendment_workflow_id"}
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_workflow_ids"}, required=True
+        to={"meeting": "motion_workflow_ids"}, required=True
     )
 
 
 class MotionStatuteParagraph(Model):
-    collection = Collection("motion_statute_paragraph")
+    collection = "motion_statute_paragraph"
     verbose_name = "motion statute paragraph"
 
     id = fields.IntegerField()
@@ -1479,15 +1401,15 @@ class MotionStatuteParagraph(Model):
         },
     )
     motion_ids = fields.RelationListField(
-        to={Collection("motion"): "statute_paragraph_id"}, equal_fields="meeting_id"
+        to={"motion": "statute_paragraph_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "motion_statute_paragraph_ids"}, required=True
+        to={"meeting": "motion_statute_paragraph_ids"}, required=True
     )
 
 
 class Poll(Model):
-    collection = Collection("poll")
+    collection = "poll"
     verbose_name = "poll"
 
     id = fields.IntegerField()
@@ -1532,34 +1454,28 @@ class Poll(Model):
         },
     )
     content_object_id = fields.GenericRelationField(
-        to={
-            Collection("motion"): "poll_ids",
-            Collection("assignment"): "poll_ids",
-            Collection("topic"): "poll_ids",
-        },
+        to={"motion": "poll_ids", "assignment": "poll_ids", "topic": "poll_ids"},
         required=True,
         equal_fields="meeting_id",
     )
     option_ids = fields.RelationListField(
-        to={Collection("option"): "poll_id"},
+        to={"option": "poll_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     global_option_id = fields.RelationField(
-        to={Collection("option"): "used_as_global_option_in_poll_id"},
+        to={"option": "used_as_global_option_in_poll_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
-    voted_ids = fields.RelationListField(to={Collection("user"): "poll_voted_$_ids"})
+    voted_ids = fields.RelationListField(to={"user": "poll_voted_$_ids"})
     entitled_group_ids = fields.RelationListField(
-        to={Collection("group"): "poll_ids"}, equal_fields="meeting_id"
+        to={"group": "poll_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "poll_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "poll_ids"}, required=True)
 
     STATE_CREATED = "created"
     STATE_STARTED = "started"
@@ -1572,7 +1488,7 @@ class Poll(Model):
 
 
 class Option(Model):
-    collection = Collection("option")
+    collection = "option"
     verbose_name = "option"
 
     id = fields.IntegerField()
@@ -1581,28 +1497,23 @@ class Option(Model):
     yes = fields.DecimalField()
     no = fields.DecimalField()
     abstain = fields.DecimalField()
-    poll_id = fields.RelationField(
-        to={Collection("poll"): "option_ids"}, equal_fields="meeting_id"
-    )
+    poll_id = fields.RelationField(to={"poll": "option_ids"}, equal_fields="meeting_id")
     used_as_global_option_in_poll_id = fields.RelationField(
-        to={Collection("poll"): "global_option_id"}, equal_fields="meeting_id"
+        to={"poll": "global_option_id"}, equal_fields="meeting_id"
     )
     vote_ids = fields.RelationListField(
-        to={Collection("vote"): "option_id"},
+        to={"vote": "option_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     content_object_id = fields.GenericRelationField(
-        to={Collection("user"): "option_$_ids", Collection("motion"): "option_ids"},
-        equal_fields="meeting_id",
+        to={"user": "option_$_ids", "motion": "option_ids"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "option_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "option_ids"}, required=True)
 
 
 class Vote(Model):
-    collection = Collection("vote")
+    collection = "vote"
     verbose_name = "vote"
 
     id = fields.IntegerField()
@@ -1610,19 +1521,15 @@ class Vote(Model):
     value = fields.CharField()
     user_token = fields.CharField(required=True)
     option_id = fields.RelationField(
-        to={Collection("option"): "vote_ids"}, required=True, equal_fields="meeting_id"
+        to={"option": "vote_ids"}, required=True, equal_fields="meeting_id"
     )
-    user_id = fields.RelationField(to={Collection("user"): "vote_$_ids"})
-    delegated_user_id = fields.RelationField(
-        to={Collection("user"): "vote_delegated_vote_$_ids"}
-    )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "vote_ids"}, required=True
-    )
+    user_id = fields.RelationField(to={"user": "vote_$_ids"})
+    delegated_user_id = fields.RelationField(to={"user": "vote_delegated_vote_$_ids"})
+    meeting_id = fields.RelationField(to={"meeting": "vote_ids"}, required=True)
 
 
 class Assignment(Model):
-    collection = Collection("assignment")
+    collection = "assignment"
     verbose_name = "assignment"
 
     id = fields.IntegerField()
@@ -1642,61 +1549,57 @@ class Assignment(Model):
         },
     )
     candidate_ids = fields.RelationListField(
-        to={Collection("assignment_candidate"): "assignment_id"},
+        to={"assignment_candidate": "assignment_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     poll_ids = fields.RelationListField(
-        to={Collection("poll"): "content_object_id"},
+        to={"poll": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     agenda_item_id = fields.RelationField(
-        to={Collection("agenda_item"): "content_object_id"},
+        to={"agenda_item": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     list_of_speakers_id = fields.RelationField(
-        to={Collection("list_of_speakers"): "content_object_id"},
+        to={"list_of_speakers": "content_object_id"},
         on_delete=fields.OnDelete.CASCADE,
         required=True,
         equal_fields="meeting_id",
     )
     tag_ids = fields.RelationListField(
-        to={Collection("tag"): "tagged_ids"}, equal_fields="meeting_id"
+        to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
     attachment_ids = fields.RelationListField(
-        to={Collection("mediafile"): "attachment_ids"}, equal_fields="meeting_id"
+        to={"mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "assignment_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "assignment_ids"}, required=True)
 
 
 class AssignmentCandidate(Model):
-    collection = Collection("assignment_candidate")
+    collection = "assignment_candidate"
     verbose_name = "assignment candidate"
 
     id = fields.IntegerField()
     weight = fields.IntegerField(default=10000)
     assignment_id = fields.RelationField(
-        to={Collection("assignment"): "candidate_ids"},
-        required=True,
-        equal_fields="meeting_id",
+        to={"assignment": "candidate_ids"}, required=True, equal_fields="meeting_id"
     )
     user_id = fields.RelationField(
-        to={Collection("user"): "assignment_candidate_$_ids"}, required=True
+        to={"user": "assignment_candidate_$_ids"}, required=True
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "assignment_candidate_ids"}, required=True
+        to={"meeting": "assignment_candidate_ids"}, required=True
     )
 
 
 class Mediafile(Model):
-    collection = Collection("mediafile")
+    collection = "mediafile"
     verbose_name = "mediafile"
 
     id = fields.IntegerField()
@@ -1725,52 +1628,45 @@ class Mediafile(Model):
     )
     token = fields.CharField()
     inherited_access_group_ids = fields.RelationListField(
-        to={Collection("group"): "mediafile_inherited_access_group_ids"},
+        to={"group": "mediafile_inherited_access_group_ids"},
         read_only=True,
         constraints={"description": "Calculated field."},
     )
     access_group_ids = fields.RelationListField(
-        to={Collection("group"): "mediafile_access_group_ids"}
+        to={"group": "mediafile_access_group_ids"}
     )
     parent_id = fields.RelationField(
-        to={Collection("mediafile"): "child_ids"}, equal_fields="owner_id"
+        to={"mediafile": "child_ids"}, equal_fields="owner_id"
     )
     child_ids = fields.RelationListField(
-        to={Collection("mediafile"): "parent_id"}, equal_fields="owner_id"
+        to={"mediafile": "parent_id"}, equal_fields="owner_id"
     )
     list_of_speakers_id = fields.RelationField(
-        to={Collection("list_of_speakers"): "content_object_id"},
-        on_delete=fields.OnDelete.CASCADE,
+        to={"list_of_speakers": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}
-    )
+    projection_ids = fields.RelationListField(to={"projection": "content_object_id"})
     attachment_ids = fields.GenericRelationListField(
         to={
-            Collection("motion"): "attachment_ids",
-            Collection("topic"): "attachment_ids",
-            Collection("assignment"): "attachment_ids",
+            "motion": "attachment_ids",
+            "topic": "attachment_ids",
+            "assignment": "attachment_ids",
         }
     )
     owner_id = fields.GenericRelationField(
-        to={
-            Collection("organization"): "mediafile_ids",
-            Collection("meeting"): "mediafile_ids",
-        },
-        required=True,
+        to={"organization": "mediafile_ids", "meeting": "mediafile_ids"}, required=True
     )
     used_as_logo__in_meeting_id = fields.TemplateRelationField(
         index=13,
-        to={Collection("meeting"): "logo_$_id"},
+        to={"meeting": "logo_$_id"},
     )
     used_as_font__in_meeting_id = fields.TemplateRelationField(
         index=13,
-        to={Collection("meeting"): "font_$_id"},
+        to={"meeting": "font_$_id"},
     )
 
 
 class Projector(Model):
-    collection = Collection("projector")
+    collection = "projector"
     verbose_name = "projector"
 
     id = fields.IntegerField()
@@ -1801,22 +1697,22 @@ class Projector(Model):
         },
     )
     current_projection_ids = fields.RelationListField(
-        to={Collection("projection"): "current_projector_id"},
+        to={"projection": "current_projector_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     preview_projection_ids = fields.RelationListField(
-        to={Collection("projection"): "preview_projector_id"}, equal_fields="meeting_id"
+        to={"projection": "preview_projector_id"}, equal_fields="meeting_id"
     )
     history_projection_ids = fields.RelationListField(
-        to={Collection("projection"): "history_projector_id"}, equal_fields="meeting_id"
+        to={"projection": "history_projector_id"}, equal_fields="meeting_id"
     )
     used_as_reference_projector_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "reference_projector_id"}
+        to={"meeting": "reference_projector_id"}
     )
     used_as_default__in_meeting_id = fields.TemplateRelationField(
         index=16,
-        to={Collection("meeting"): "default_projector_$_id"},
+        to={"meeting": "default_projector_$_id"},
         replacement_enum=[
             "agenda_all_items",
             "topics",
@@ -1835,13 +1731,11 @@ class Projector(Model):
             "poll",
         ],
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "projector_ids"}, required=True)
 
 
 class Projection(Model):
-    collection = Collection("projection")
+    collection = "projection"
     verbose_name = "projection"
 
     id = fields.IntegerField()
@@ -1850,55 +1744,52 @@ class Projection(Model):
     weight = fields.IntegerField()
     type = fields.CharField()
     current_projector_id = fields.RelationField(
-        to={Collection("projector"): "current_projection_ids"},
-        equal_fields="meeting_id",
+        to={"projector": "current_projection_ids"}, equal_fields="meeting_id"
     )
     preview_projector_id = fields.RelationField(
-        to={Collection("projector"): "preview_projection_ids"},
-        equal_fields="meeting_id",
+        to={"projector": "preview_projection_ids"}, equal_fields="meeting_id"
     )
     history_projector_id = fields.RelationField(
-        to={Collection("projector"): "history_projection_ids"},
-        equal_fields="meeting_id",
+        to={"projector": "history_projection_ids"}, equal_fields="meeting_id"
     )
     content_object_id = fields.GenericRelationField(
         to={
-            Collection("user"): "projection_$_ids",
-            Collection("projector_countdown"): "projection_ids",
-            Collection("projector_message"): "projection_ids",
-            Collection("poll"): "projection_ids",
-            Collection("topic"): "projection_ids",
-            Collection("agenda_item"): "projection_ids",
-            Collection("assignment"): "projection_ids",
-            Collection("motion_block"): "projection_ids",
-            Collection("list_of_speakers"): "projection_ids",
-            Collection("mediafile"): "projection_ids",
-            Collection("motion"): "projection_ids",
-            Collection("meeting"): "projection_ids",
+            "user": "projection_$_ids",
+            "projector_countdown": "projection_ids",
+            "projector_message": "projection_ids",
+            "poll": "projection_ids",
+            "topic": "projection_ids",
+            "agenda_item": "projection_ids",
+            "assignment": "projection_ids",
+            "motion_block": "projection_ids",
+            "list_of_speakers": "projection_ids",
+            "mediafile": "projection_ids",
+            "motion": "projection_ids",
+            "meeting": "projection_ids",
         },
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "all_projection_ids"}, required=True
+        to={"meeting": "all_projection_ids"}, required=True
     )
 
 
 class ProjectorMessage(Model):
-    collection = Collection("projector_message")
+    collection = "projector_message"
     verbose_name = "projector message"
 
     id = fields.IntegerField()
     message = fields.HTMLStrictField()
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_message_ids"}, required=True
+        to={"meeting": "projector_message_ids"}, required=True
     )
 
 
 class ProjectorCountdown(Model):
-    collection = Collection("projector_countdown")
+    collection = "projector_countdown"
     verbose_name = "projector countdown"
 
     id = fields.IntegerField()
@@ -1908,55 +1799,49 @@ class ProjectorCountdown(Model):
     countdown_time = fields.FloatField(default=60)
     running = fields.BooleanField(default=False)
     projection_ids = fields.RelationListField(
-        to={Collection("projection"): "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"}, equal_fields="meeting_id"
     )
     used_as_list_of_speakers_countdown_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "list_of_speakers_countdown_id"}
+        to={"meeting": "list_of_speakers_countdown_id"}
     )
     used_as_poll_countdown_meeting_id = fields.RelationField(
-        to={Collection("meeting"): "poll_countdown_id"}
+        to={"meeting": "poll_countdown_id"}
     )
     meeting_id = fields.RelationField(
-        to={Collection("meeting"): "projector_countdown_ids"}, required=True
+        to={"meeting": "projector_countdown_ids"}, required=True
     )
 
 
 class ChatGroup(Model):
-    collection = Collection("chat_group")
+    collection = "chat_group"
     verbose_name = "chat group"
 
     id = fields.IntegerField()
     name = fields.CharField(required=True)
     weight = fields.IntegerField(default=10000)
     chat_message_ids = fields.RelationListField(
-        to={Collection("chat_message"): "chat_group_id"},
+        to={"chat_message": "chat_group_id"},
         on_delete=fields.OnDelete.CASCADE,
         equal_fields="meeting_id",
     )
     read_group_ids = fields.RelationListField(
-        to={Collection("group"): "read_chat_group_ids"}, equal_fields="meeting_id"
+        to={"group": "read_chat_group_ids"}, equal_fields="meeting_id"
     )
     write_group_ids = fields.RelationListField(
-        to={Collection("group"): "write_chat_group_ids"}, equal_fields="meeting_id"
+        to={"group": "write_chat_group_ids"}, equal_fields="meeting_id"
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "chat_group_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "chat_group_ids"}, required=True)
 
 
 class ChatMessage(Model):
-    collection = Collection("chat_message")
+    collection = "chat_message"
     verbose_name = "chat message"
 
     id = fields.IntegerField()
     content = fields.HTMLStrictField(required=True)
     created = fields.TimestampField(required=True)
-    user_id = fields.RelationField(
-        to={Collection("user"): "chat_message_$_ids"}, required=True
-    )
+    user_id = fields.RelationField(to={"user": "chat_message_$_ids"}, required=True)
     chat_group_id = fields.RelationField(
-        to={Collection("chat_group"): "chat_message_ids"}, required=True
+        to={"chat_group": "chat_message_ids"}, required=True
     )
-    meeting_id = fields.RelationField(
-        to={Collection("meeting"): "chat_message_ids"}, required=True
-    )
+    meeting_id = fields.RelationField(to={"meeting": "chat_message_ids"}, required=True)

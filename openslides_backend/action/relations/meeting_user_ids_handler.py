@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ...models.fields import Field
-from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ...shared.patterns import to_fqfield, to_fqid
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
 
@@ -17,7 +17,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         self, field: Field, field_name: str, instance: Dict[str, Any], action: str
     ) -> RelationUpdates:
         # Try to fetch db instance to compare if any new ids were added
-        fqid = FullQualifiedId(field.own_collection, instance["id"])
+        fqid = to_fqid(field.own_collection, instance["id"])
         db_instance = self.datastore.get(
             fqid,
             [field_name, "meeting_id"],
@@ -38,7 +38,7 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
         # check if removed_ids should actually be removed
         # cast to list to be able to alter it while iterating
         for id in list(removed_ids):
-            user_fqid = FullQualifiedId(Collection("user"), id)
+            user_fqid = to_fqid("user", id)
             if not self.datastore.is_deleted(user_fqid):
                 group_field = f"group_${meeting_id}_ids"
                 user = self.datastore.get(user_fqid, [group_field])
@@ -53,5 +53,5 @@ class MeetingUserIdsHandler(CalculatedFieldHandler):
             "add": list(added_ids),
             "remove": list(removed_ids),
         }
-        fqfield = FullQualifiedField(Collection("meeting"), meeting_id, "user_ids")
+        fqfield = to_fqfield("meeting", meeting_id, "user_ids")
         return {fqfield: relation_el}

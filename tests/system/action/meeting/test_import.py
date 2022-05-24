@@ -1591,9 +1591,10 @@ class MeetingImport(BaseActionTestCase):
 
     @performance
     def test_big_file(self) -> None:
-        data = {}
-        data["meeting"] = get_initial_data_file("global/data/put_your_file.json")
-        data["committee_id"] = 1
-        with Profiler("test_meeting_import_performance.prof"):
+        data = {
+            "meeting": get_initial_data_file("global/data/put_your_file.json"),
+            "committee_id": 1,
+        }
+        with Profiler("test_meeting_import.prof"):
             response = self.request("meeting.import", data)
         self.assert_status_code(response, 200)

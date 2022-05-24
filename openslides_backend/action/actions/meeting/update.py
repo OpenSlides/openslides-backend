@@ -13,7 +13,7 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import MissingPermission, PermissionDenied
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
 from ...util.default_schema import DefaultSchema
@@ -175,13 +175,11 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
             if (
                 reference_projector_id := instance["reference_projector_id"]
             ) and reference_projector_id:
-                meeting_check.append(
-                    FullQualifiedId(Collection("projector"), reference_projector_id)
-                )
+                meeting_check.append(to_fqid("projector", reference_projector_id))
         if "default_projector_$_id" in instance:
             meeting_check.extend(
                 [
-                    FullQualifiedId(Collection("projector"), projector_id)
+                    to_fqid("projector", projector_id)
                     for projector_id in instance["default_projector_$_id"].values()
                     if projector_id
                 ]
@@ -234,7 +232,8 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
         # group E check
         if "organization_tag_ids" in instance:
             meeting = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
+                to_fqid(self.model.collection, instance["id"]),
+                ["committee_id"],
             )
             is_manager = has_committee_management_level(
                 self.datastore,

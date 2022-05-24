@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from ...models.models import Committee
 from ...services.datastore.interface import DatastoreService, GetManyRequest
-from ..patterns import Collection, FullQualifiedId
+from ..patterns import to_fqid
 from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
 
@@ -18,7 +18,7 @@ class UserScopeMixin:
     datastore: DatastoreService
 
     def get_user_scope(
-        self, id: Optional[int] = None, instance: Optional[Dict[str, Any]] = None
+        self, id_: Optional[int] = None, instance: Optional[Dict[str, Any]] = None
     ) -> Tuple[UserScope, int]:
         """
         Returns the scope of the given user id together with the relevant scope id (either meeting, committee or organization).
@@ -36,9 +36,9 @@ class UserScopeMixin:
             committees_manager.update(
                 get_set_from_dict_from_dict(instance, "committee_$_management_level")
             )
-        if id:
+        if id_:
             user = self.datastore.get(
-                FullQualifiedId(Collection("user"), id),
+                to_fqid("user", id_),
                 ["meeting_ids", *cml_fields],
             )
             meetings.update(user.get("meeting_ids", []))
@@ -46,12 +46,12 @@ class UserScopeMixin:
         result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("meeting"),
+                    "meeting",
                     list(meetings),
                     ["committee_id", "is_active_in_organization_id"],
                 )
             ]
-        ).get(Collection("meeting"), {})
+        ).get("meeting", {})
         committees_of_meetings = set(
             meeting_data.get("committee_id")
             for _, meeting_data in result.items()

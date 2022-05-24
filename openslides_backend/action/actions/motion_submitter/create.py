@@ -6,7 +6,7 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.create import CreateAction
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeetingMixin,
@@ -45,7 +45,7 @@ class MotionSubmitterCreateAction(
         ):
             assert_belongs_to_meeting(
                 self.datastore,
-                [FullQualifiedId(Collection("user"), instance["user_id"])],
+                [to_fqid("user", instance["user_id"])],
                 meeting_id,
             )
 

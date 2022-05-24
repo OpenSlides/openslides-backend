@@ -11,7 +11,13 @@ from ...shared.exceptions import DatastoreException
 from ...shared.filters import And, Filter, FilterOperator
 from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
-from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.patterns import (
+    Collection,
+    FullQualifiedId,
+    fqid_collection,
+    fqid_id,
+    to_fqid,
+)
 from ...shared.typing import DeletedModel, ModelMap
 from .cache_adapter import CacheDatastoreAdapter
 from .commands import GetManyRequest
@@ -77,7 +83,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         else:
             self.changed_models[fqid].update(instance)
         if "id" not in self.changed_models[fqid]:
-            self.changed_models[fqid]["id"] = fqid.id
+            self.changed_models[fqid]["id"] = fqid_id(fqid)
 
     def get(
         self,
@@ -106,7 +112,9 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
             results, missing_fields_per_fqid = self._get_many_from_changed_models(
                 mapped_fields_per_fqid
             )
-            changed_model = results.get(fqid.collection, {}).get(fqid.id, {})
+            changed_model = results.get(fqid_collection(fqid), {}).get(
+                fqid_id(fqid), {}
+            )
             if not missing_fields_per_fqid:
                 # nothing to do, we've got the full mode
                 return changed_model
@@ -160,7 +168,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 if not request.mapped_fields:
                     raise DatastoreException("No mapped fields given")
                 for id in request.ids:
-                    fqid = FullQualifiedId(request.collection, id)
+                    fqid = to_fqid(request.collection, id)
                     mapped_fields_per_fqid[fqid].extend(list(request.mapped_fields))
             # fetch results from changed models
             results, missing_fields_per_fqid = self._get_many_from_changed_models(
@@ -389,11 +397,13 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
 
         # run eval with the generated code
         filter_code = (
-            "{model['id']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if fqid.collection == collection and ("
+            "{model['id']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if fqid_collection(fqid) == collection and ("
             + filter_code
             + ")}"
         )
         scope = locals()
+        scope["fqid_collection"] = fqid_collection
+        scope["fqid_id"] = fqid_id
         results = eval(filter_code, scope)
         return deepcopy(results)
 
@@ -426,13 +436,15 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 if mapped_fields:
                     for field in mapped_fields:
                         if field in self.changed_models[fqid]:
-                            results[fqid.collection][fqid.id][
+                            results[fqid_collection(fqid)][fqid_id(fqid)][
                                 field
                             ] = self.changed_models[fqid][field]
                         else:
                             missing_fields_per_fqid[fqid].append(field)
                 else:
-                    results[fqid.collection][fqid.id] = self.changed_models[fqid]
+                    results[fqid_collection(fqid)][fqid_id(fqid)] = self.changed_models[
+                        fqid
+                    ]
                     missing_fields_per_fqid[fqid] = []
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
@@ -447,7 +459,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     ) -> None:
         # create temp list of ids to be able to change the models dict in place
         for id in list(results.keys()):
-            fqid = FullQualifiedId(collection, id)
+            fqid = to_fqid(collection, id)
             if fqid in self.changed_models:
                 is_deleted = self.is_deleted(fqid)
                 if (
@@ -478,7 +490,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
             else:
                 # id only exists in new values: maybe some fields are missing and we have to fetch them
                 results[id] = model
-                fqid = FullQualifiedId(collection, id)
+                fqid = to_fqid(collection, id)
                 missing_fields = [
                     field for field in mapped_fields if field not in model
                 ]
@@ -490,7 +502,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         self, missing_fields_per_fqid: MappedFieldsPerFqid, lock_result: bool
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         get_many_requests = [
-            GetManyRequest(fqid.collection, [fqid.id], fields)
+            GetManyRequest(fqid_collection(fqid), [fqid_id(fqid)], fields)
             for fqid, fields in missing_fields_per_fqid.items()
         ]
         results = super().get_many(get_many_requests, lock_result=lock_result)

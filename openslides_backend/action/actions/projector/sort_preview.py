@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -40,7 +40,7 @@ class ProjectorSortPreview(UpdateAction):
 
     def check_preview_ids(self, instance: Dict[str, Any]) -> None:
         projector = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            to_fqid(self.model.collection, instance["id"]),
             ["preview_projection_ids"],
         )
         if set(instance["projection_ids"]) != set(

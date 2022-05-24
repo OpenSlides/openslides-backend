@@ -7,7 +7,7 @@ from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR, to_fqid
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
@@ -22,7 +22,7 @@ class PollPermissionMixin(Action):
             meeting_id = instance["meeting_id"]
         else:
             poll = self.datastore.get(
-                FullQualifiedId(Collection("poll"), instance["id"]),
+                to_fqid("poll", instance["id"]),
                 ["content_object_id", "meeting_id"],
             )
             content_object_id = poll.get("content_object_id", "")
@@ -51,7 +51,7 @@ def check_poll_or_option_perms(
 class StopControl(CountdownControl, Action):
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            to_fqid(self.model.collection, instance["id"]),
             [
                 "state",
                 "meeting_id",
@@ -62,7 +62,7 @@ class StopControl(CountdownControl, Action):
         )
         # reset countdown given by meeting
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), poll["meeting_id"]),
+            to_fqid("meeting", poll["meeting_id"]),
             [
                 "poll_couple_countdown",
                 "poll_countdown_id",
@@ -159,18 +159,16 @@ class StopControl(CountdownControl, Action):
         meeting_id = poll["meeting_id"]
 
         # get all users from the groups.
-        gmr = GetManyRequest(
-            Collection("group"), poll.get("entitled_group_ids", []), ["user_ids"]
-        )
+        gmr = GetManyRequest("group", poll.get("entitled_group_ids", []), ["user_ids"])
         gm_result = self.datastore.get_many([gmr])
-        groups = gm_result.get(Collection("group"), {}).values()
+        groups = gm_result.get("group", {}).values()
 
         for group in groups:
             user_ids = group.get("user_ids", [])
             entitled_users_ids.update(user_ids)
 
         gmr = GetManyRequest(
-            Collection("user"),
+            "user",
             list(entitled_users_ids),
             [
                 "id",
@@ -179,7 +177,7 @@ class StopControl(CountdownControl, Action):
             ],
         )
         gm_result = self.datastore.get_many([gmr])
-        users = gm_result.get(Collection("user"), {}).values()
+        users = gm_result.get("user", {}).values()
 
         for user in users:
             entitled_users.append(

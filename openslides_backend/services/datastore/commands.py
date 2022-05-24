@@ -6,7 +6,7 @@ from ...shared.filters import FilterBase as FilterInterface
 from ...shared.interfaces.collection_field_lock import CollectionFieldLock
 from ...shared.interfaces.event import Event
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId
+from ...shared.patterns import Collection
 
 
 class GetManyRequest:
@@ -136,7 +136,7 @@ class Write(Command):
 
         class WriteRequestJSONEncoder(json.JSONEncoder):
             def default(self, o):  # type: ignore
-                if isinstance(o, FullQualifiedId):
+                if isinstance(o, str):
                     return str(o)
                 if isinstance(o, FilterInterface):
                     return o.to_dict()

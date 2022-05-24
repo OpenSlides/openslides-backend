@@ -4,7 +4,7 @@ from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import MissingPermission
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -22,7 +22,7 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         motion = self.datastore.get(
-            FullQualifiedId(Collection("motion"), instance["id"]),
+            to_fqid("motion", instance["id"]),
             [
                 "state_id",
                 "submitter_ids",

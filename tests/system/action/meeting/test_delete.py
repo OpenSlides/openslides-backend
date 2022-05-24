@@ -1,6 +1,5 @@
 from openslides_backend.models.fields import BaseRelationField, BaseTemplateField
 from openslides_backend.models.models import User
-from openslides_backend.shared.patterns import Collection
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -147,7 +146,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                 if (
                     isinstance(field, BaseTemplateField)
                     and field.replacement_collection
-                    and field.replacement_collection == Collection("meeting")
+                    and field.replacement_collection == "meeting"
                 ):
                     assert user.get(field.get_template_field_name()) in ([], None)
                     val = user.get(field.get_structured_field_name(1))

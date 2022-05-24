@@ -7,7 +7,6 @@ from openslides_backend.action.util.default_schema import DefaultSchema
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.shared.exceptions import ActionException
-from openslides_backend.shared.patterns import Collection
 
 
 class FakeModel(Model):
@@ -15,7 +14,7 @@ class FakeModel(Model):
     Fake Model for testing purposes.
     """
 
-    collection = Collection("fake_model")
+    collection = "fake_model"
     verbose_name = "fake_model"
 
     id = fields.IntegerField(required=True)
@@ -24,11 +23,9 @@ class FakeModel(Model):
     text = fields.CharField(
         required=True, constraints={"description": "The text of this fake model."}
     )
-    fake_model_2_ids = fields.RelationListField(
-        to={Collection("fake_model_2"): "relation_field"}
-    )
+    fake_model_2_ids = fields.RelationListField(to={"fake_model_2": "relation_field"})
     fake_model_2_generic_ids = fields.GenericRelationListField(
-        to={Collection("fake_model_2"): "generic_relation_field"}
+        to={"fake_model_2": "generic_relation_field"}
     )
 
 
@@ -37,15 +34,15 @@ class FakeModel2(Model):
     Fake model for testing purposes. With relation field.
     """
 
-    collection = Collection("fake_model_2")
+    collection = "fake_model_2"
     verbose_name = "fake_model_2"
 
     id = fields.IntegerField(required=True)
     relation_field = fields.RelationField(
-        to={Collection("fake_model"): "fake_model_2_ids"},
+        to={"fake_model": "fake_model_2_ids"},
     )
     generic_relation_field = fields.RelationField(
-        to={Collection("fake_model"): "fake_model_2_generic_ids"},
+        to={"fake_model": "fake_model_2_generic_ids"},
     )
 
 

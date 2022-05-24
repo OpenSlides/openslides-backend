@@ -3,12 +3,10 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
+from ....shared.util import ONE_ORGANIZATION
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
-
-ONE_ORGANIZATION_ID = 1
-
 
 THEME_REQ_FIELDS = ["name", "primary_500", "accent_500", "warn_500"]
 THEME_OPT_FIELDS = [
@@ -68,5 +66,5 @@ class ThemeCreate(CreateAction, CheckForArchivedMeetingMixin):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["organization_id"] = ONE_ORGANIZATION_ID
+        instance["organization_id"] = ONE_ORGANIZATION
         return instance

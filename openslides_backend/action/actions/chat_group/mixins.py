@@ -1,17 +1,15 @@
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import FullQualifiedId
 from ...action import Action
-
-ONE_ORGANIZATION_ID = 1
 
 
 class ChatEnabledMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         organization = self.datastore.get(
-            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION_ID),
+            cast(FullQualifiedId, "organization/1"),
             ["enable_chat"],
         )
 

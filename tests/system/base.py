@@ -25,7 +25,6 @@ from tests.util import (
     Client,
     Response,
     get_collection_from_fqid,
-    get_fqid,
     get_id_from_fqid,
 )
 
@@ -157,14 +156,14 @@ class BaseSystemTestCase(TestCase):
         self.created_fqids.add(fqid)
         data["id"] = get_id_from_fqid(fqid)
         self.validate_fields(fqid, data)
-        events = [Event(type=EventType.Create, fqid=get_fqid(fqid), fields=data)]
+        events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
         if deleted:
-            events.append(Event(type=EventType.Delete, fqid=get_fqid(fqid)))
+            events.append(Event(type=EventType.Delete, fqid=fqid))
         return events
 
     def get_update_events(self, fqid: str, data: Dict[str, Any]) -> List[Event]:
         self.validate_fields(fqid, data)
-        return [Event(type=EventType.Update, fqid=get_fqid(fqid), fields=data)]
+        return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
     def get_write_request(self, events: List[Event]) -> WriteRequest:
         return WriteRequest(
@@ -213,7 +212,7 @@ class BaseSystemTestCase(TestCase):
     @with_database_context
     def get_model(self, fqid: str) -> Dict[str, Any]:
         model = self.datastore.get(
-            get_fqid(fqid),
+            fqid,
             mapped_fields=[],
             get_deleted_models=DeletedModelsBehaviour.ALL_MODELS,
             lock_result=False,
@@ -263,7 +262,7 @@ class BaseSystemTestCase(TestCase):
     @with_database_context
     def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
         db_count = self.datastore.count(
-            Collection(collection),
+            cast(Collection, collection),
             FilterOperator("meeting_id", "=", meeting_id),
             lock_result=False,
         )

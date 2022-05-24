@@ -10,7 +10,7 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ....shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from ...action import Action
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -74,7 +74,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
     def check_empty_datastore(self) -> None:
         filter_ = FilterOperator("id", ">=", 1)
         if self.datastore.exists(
-            Collection("organization"),
+            "organization",
             filter_,
             DeletedModelsBehaviour.ALL_MODELS,
             False,
@@ -88,7 +88,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             if collection.startswith("_"):
                 continue
             for entry in json_data[collection].values():
-                fqid = FullQualifiedId(Collection(collection), entry["id"])
+                fqid = to_fqid(collection, entry["id"])
                 write_requests.append(
                     self.build_write_request(
                         EventType.Create,

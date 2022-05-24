@@ -3,7 +3,7 @@ from typing import Optional
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -45,7 +45,7 @@ class AgendaItemUpdate(UpdateAction):
     ) -> ActionData:
         instances = []
         agenda_item = self.datastore.get(
-            FullQualifiedId(self.model.collection, id_), ["child_ids"]
+            to_fqid(self.model.collection, id_), ["child_ids"]
         )
         if agenda_item.get("child_ids"):
             get_many_request = GetManyRequest(
@@ -95,7 +95,7 @@ class AgendaItemUpdate(UpdateAction):
             agenda_item = agenda_items[instance["id"]]
             if agenda_item.get("parent_id"):
                 parent_ai = self.datastore.get(
-                    FullQualifiedId(self.model.collection, agenda_item["parent_id"]),
+                    to_fqid(self.model.collection, agenda_item["parent_id"]),
                     ["is_hidden", "is_internal"],
                 )
             else:

@@ -1,5 +1,4 @@
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.patterns import Collection
 
 from .base import BaseTestExtendedDatastoreAdapter
 
@@ -17,7 +16,7 @@ class TestCountExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     def test_only_db(self) -> None:
         self.set_additional_models({"test/1": {"a": 2}})
         result = self.adapter.count(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             use_changed_models=False,
         )
@@ -34,7 +33,7 @@ class TestCountExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.count(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
         )
         assert result == 2
@@ -55,7 +54,7 @@ class TestCountExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.count(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
         )
         assert result == 3
@@ -65,7 +64,7 @@ class TestCountExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
 
     def test_use_changed_models_empty(self) -> None:
         result = self.adapter.count(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
         )
         assert result == 0

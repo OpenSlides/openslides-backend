@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -42,7 +42,8 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["state", "type"]
+            to_fqid(self.model.collection, instance["id"]),
+            ["state", "type"],
         )
 
         state_change = self.check_state_change(instance, poll)
@@ -118,7 +119,8 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
             pollmethod = instance["pollmethod"]
         else:
             poll = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["pollmethod"]
+                to_fqid(self.model.collection, instance["id"]),
+                ["pollmethod"],
             )
             pollmethod = poll.get("pollmethod")
         base_check_100_percent_base(pollmethod, onehundred_percent_base)

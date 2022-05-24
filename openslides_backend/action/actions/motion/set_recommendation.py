@@ -4,7 +4,7 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -24,15 +24,13 @@ class MotionSetRecommendationAction(UpdateAction):
         """
         Check recommendation workflow_id and recommendation_label.
         """
-        motion = self.datastore.get(
-            FullQualifiedId(Collection("motion"), instance["id"]), ["state_id"]
-        )
+        motion = self.datastore.get(to_fqid("motion", instance["id"]), ["state_id"])
         current_state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), motion["state_id"]),
+            to_fqid("motion_state", motion["state_id"]),
             ["workflow_id"],
         )
         recommendation_state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), instance["recommendation_id"]),
+            to_fqid("motion_state", instance["recommendation_id"]),
             ["workflow_id", "recommendation_label"],
         )
         if current_state.get("workflow_id") != recommendation_state.get("workflow_id"):

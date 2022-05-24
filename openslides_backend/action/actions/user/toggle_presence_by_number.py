@@ -14,7 +14,7 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import And, Filter, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -46,7 +46,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         instance["id"] = self.find_user_to_number(meeting_id, number)
 
         user = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            to_fqid(self.model.collection, instance["id"]),
             ["is_present_in_meeting_ids"],
         )
         is_present = user.get("is_present_in_meeting_ids", [])
@@ -61,7 +61,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
 
     def find_user_to_number(self, meeting_id: int, number: str) -> int:
         filter_: Filter = FilterOperator(f"number_${meeting_id}", "=", number)
-        result = self.datastore.filter(Collection("user"), filter_, ["id"])
+        result = self.datastore.filter("user", filter_, ["id"])
         if len(result.keys()) == 1:
             return list(result.keys())[0]
         elif len(result.keys()) > 1:
@@ -71,7 +71,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
             FilterOperator(f"number_${meeting_id}", "=", ""),
             FilterOperator("default_number", "=", number),
         )
-        result = self.datastore.filter(Collection("user"), filter_, ["id"])
+        result = self.datastore.filter("user", filter_, ["id"])
         if len(result.keys()) == 1:
             return list(result.keys())[0]
         elif len(result.keys()) > 1:
@@ -96,7 +96,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         ):
             return
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            to_fqid("meeting", instance["meeting_id"]),
             ["committee_id"],
         )
         if has_committee_management_level(

@@ -5,7 +5,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
@@ -27,7 +27,7 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projection_id = instance.pop("id")
         projection = self.datastore.get(
-            FullQualifiedId(Collection("projection"), projection_id),
+            to_fqid("projection", projection_id),
             ["preview_projector_id"],
         )
         # check if projection is from a preview projector
@@ -35,7 +35,7 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
             raise ActionException("Projection has not a preview_projector_id.")
         projector_id = projection["preview_projector_id"]
         projector = self.datastore.get(
-            FullQualifiedId(self.model.collection, projector_id),
+            to_fqid(self.model.collection, projector_id),
             [
                 "current_projection_ids",
                 "preview_projection_ids",
@@ -47,14 +47,12 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
         current_projections = []
         if projector.get("current_projection_ids"):
             gmr = GetManyRequest(
-                Collection("projection"),
+                "projection",
                 projector["current_projection_ids"],
                 ["id", "stable"],
             )
             result = self.datastore.get_many([gmr])
-            current_projections = list(
-                result.get(Collection("projection"), {}).values()
-            )
+            current_projections = list(result.get("projection", {}).values())
         new_current_projection_ids = [
             projection["id"]
             for projection in current_projections
@@ -94,7 +92,7 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("history_projector_id", "=", projector_id),
         )
-        weight = self.get_weight(filter, Collection("projection"))
+        weight = self.get_weight(filter, "projection")
         action_data = []
         for i, projection_id in enumerate(projection_ids):
             action_data.append({"id": projection_id, "weight": weight + i})

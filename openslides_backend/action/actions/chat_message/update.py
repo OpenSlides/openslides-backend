@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import ChatMessage
 from ....shared.exceptions import PermissionDenied
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +21,7 @@ class ChatMessageUpdate(UpdateAction):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         chat_message = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["user_id"]
+            to_fqid(self.model.collection, instance["id"]), ["user_id"]
         )
         if chat_message.get("user_id") != self.user_id:
             raise PermissionDenied("You must be creator of a chat message to edit it.")

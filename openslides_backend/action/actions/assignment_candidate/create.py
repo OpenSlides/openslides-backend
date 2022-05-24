@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import AssignmentCandidate
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -28,7 +28,7 @@ class AssignmentCandidateCreate(PermissionMixin, CreateActionWithInferredMeeting
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         assignment = self.datastore.get(
-            FullQualifiedId(Collection("assignment"), instance["assignment_id"]),
+            to_fqid("assignment", instance["assignment_id"]),
             mapped_fields=["phase"],
         )
         if assignment.get("phase") == "finished":

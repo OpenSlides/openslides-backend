@@ -7,7 +7,6 @@ from datastore.shared.util import DeletedModelsBehaviour
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..shared.exceptions import MissingPermission, PresenterException
-from ..shared.patterns import Collection
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -93,7 +92,7 @@ class GetUsers(BasePresenter):
 
         return list(
             self.datastore.get_all(
-                Collection("user"),
+                "user",
                 fields,
                 DeletedModelsBehaviour.NO_DELETED,
             ).values()

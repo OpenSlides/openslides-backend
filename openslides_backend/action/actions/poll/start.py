@@ -2,7 +2,7 @@ from typing import Any, Callable, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException, VoteServiceException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -23,7 +23,7 @@ class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
 
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            to_fqid(self.model.collection, instance["id"]),
             ["state", "meeting_id", "type"],
         )
         if poll.get("type") == Poll.TYPE_ANALOG:
@@ -38,7 +38,7 @@ class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
 
         # restart projector countdown given by the meeting
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), poll["meeting_id"]),
+            to_fqid("meeting", poll["meeting_id"]),
             [
                 "poll_couple_countdown",
                 "poll_countdown_id",

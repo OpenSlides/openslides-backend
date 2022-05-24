@@ -4,7 +4,13 @@ from ...models.fields import BaseTemplateRelationField, OnDelete
 from ...shared.exceptions import ActionException, ProtectedModelsException
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import Collection, FullQualifiedId, transform_to_fqids
+from ...shared.patterns import (
+    FullQualifiedId,
+    fqid_collection,
+    fqid_id,
+    to_fqid,
+    transform_to_fqids,
+)
 from ...shared.typing import DeletedModel
 from ..action import Action
 from ..util.actions_map import actions_map
@@ -24,7 +30,7 @@ class DeleteAction(Action):
         instance = self.update_instance(instance)
 
         # Fetch db instance with all relevant fields
-        this_fqid = FullQualifiedId(self.model.collection, instance["id"])
+        this_fqid = to_fqid(self.model.collection, instance["id"])
         relevant_fields = [
             field.get_own_field_name() for field in self.model.get_relation_fields()
         ] + ["meta_deleted"]
@@ -79,15 +85,15 @@ class DeleteAction(Action):
                             # skip models that are already deleted
                             continue
                         delete_action_class = actions_map.get(
-                            f"{str(fqid.collection)}.delete"
+                            f"{fqid_collection(fqid)}.delete"
                         )
                         if not delete_action_class:
                             raise ActionException(
-                                f"Can't cascade the delete action to {str(fqid.collection)} "
+                                f"Can't cascade the delete action to {fqid_collection(fqid)} "
                                 "since no delete action was found."
                             )
                         # Assume that the delete action uses the standard action data
-                        action_data = [{"id": fqid.id}]
+                        action_data = [{"id": fqid_id(fqid)}]
                         delete_actions.append((delete_action_class, action_data))
                         self.datastore.apply_changed_model(fqid, DeletedModel())
             else:
@@ -121,7 +127,7 @@ class DeleteAction(Action):
             yield field.get_structured_field_name(replacement)
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
-        fqid = FullQualifiedId(self.model.collection, instance["id"])
+        fqid = to_fqid(self.model.collection, instance["id"])
         information = "Object deleted"
         yield self.build_write_request(EventType.Delete, fqid, information)
 
@@ -129,9 +135,7 @@ class DeleteAction(Action):
         """
         Returns whether the given meeting was deleted during this request or not.
         """
-        return self.datastore.is_deleted(
-            FullQualifiedId(Collection("meeting"), meeting_id)
-        )
+        return self.datastore.is_deleted(to_fqid("meeting", meeting_id))
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         return self.datastore.is_deleted(fqid)

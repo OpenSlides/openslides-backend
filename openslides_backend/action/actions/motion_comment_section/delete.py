@@ -4,7 +4,7 @@ from ....models.models import MotionCommentSection
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, ProtectedModelsException
-from ....shared.patterns import Collection
+from ....shared.patterns import fqid_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -24,12 +24,12 @@ class MotionCommentSectionDeleteAction(DeleteAction):
         try:
             return super().base_update_instance(instance)
         except ProtectedModelsException as e:
-            comment_ids = [fqid.id for fqid in e.fqids]
+            comment_ids = [fqid_id(fqid) for fqid in e.fqids]
             get_many_request = GetManyRequest(
-                Collection("motion_comment"), comment_ids, ["motion_id"]
+                "motion_comment", comment_ids, ["motion_id"]
             )
             gm_result = self.datastore.get_many([get_many_request])
-            comments = gm_result.get(Collection("motion_comment"), {})
+            comments = gm_result.get("motion_comment", {})
 
             motions = set(
                 f'"{instance["motion_id"]}"' for instance in comments.values()

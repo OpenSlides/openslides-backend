@@ -1,6 +1,5 @@
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
-from ....shared.patterns import Collection
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +20,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
         result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("poll"),
+                    "poll",
                     list({instance["id"] for instance in action_data}),
                     [
                         "content_object_id",
@@ -38,7 +37,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
             ],
             use_changed_models=False,
         )
-        polls = result[Collection("poll")].values()
+        polls = result["poll"].values()
         meeting_ids = list({poll["meeting_id"] for poll in polls})
         group_ids = list(
             {
@@ -55,7 +54,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
         ]
         requests = [
             GetManyRequest(
-                Collection("meeting"),
+                "meeting",
                 meeting_ids,
                 [
                     "is_active_in_organization_id",
@@ -65,7 +64,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
                 ],
             ),
             GetManyRequest(
-                Collection("option"),
+                "option",
                 option_ids,
                 [
                     "meeting_id",
@@ -79,7 +78,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
                 ],
             ),
             GetManyRequest(
-                Collection("group"),
+                "group",
                 group_ids,
                 ["poll_ids"],
             ),

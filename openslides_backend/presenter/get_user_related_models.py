@@ -16,7 +16,7 @@ from ..permissions.permissions import Permissions
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import And, FilterOperator
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import to_fqid
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -103,18 +103,16 @@ class GetUserRelatedModels(BasePresenter):
             )
         ]
         user = self.datastore.get(
-            FullQualifiedId(Collection("user"), user_id),
+            to_fqid("user", user_id),
             ["committee_ids", "committee_$_management_level", *cml_fields],
         )
         if not user.get("committee_ids"):
             return []
-        gmr = GetManyRequest(
-            Collection("committee"), user["committee_ids"], ["id", "name"]
-        )
+        gmr = GetManyRequest("committee", user["committee_ids"], ["id", "name"])
         committees = {
             committee["id"]: {"name": committee.get("name", ""), "cml": []}
             for committee in self.datastore.get_many([gmr])
-            .get(Collection("committee"), {})
+            .get("committee", {})
             .values()
         }
         for level in user.get("committee_$_management_level", []):
@@ -132,31 +130,25 @@ class GetUserRelatedModels(BasePresenter):
 
     def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
         meetings_data = []
-        user = self.datastore.get(
-            FullQualifiedId(Collection("user"), user_id), ["meeting_ids"]
-        )
+        user = self.datastore.get(to_fqid("user", user_id), ["meeting_ids"])
         if not user.get("meeting_ids"):
             return []
         gmr = GetManyRequest(
-            Collection("meeting"),
+            "meeting",
             user["meeting_ids"],
             ["id", "name", "is_active_in_organization_id"],
         )
-        meetings = (
-            self.datastore.get_many([gmr]).get(Collection("meeting"), {}).values()
-        )
+        meetings = self.datastore.get_many([gmr]).get("meeting", {}).values()
         for meeting in meetings:
             filter_ = And(
                 FilterOperator("meeting_id", "=", meeting["id"]),
                 FilterOperator("user_id", "=", user_id),
             )
-            submitter_ids = self.datastore.filter(
-                Collection("motion_submitter"), filter_, ["id"]
-            )
+            submitter_ids = self.datastore.filter("motion_submitter", filter_, ["id"])
             candidate_ids = self.datastore.filter(
-                Collection("assignment_candidate"), filter_, ["id"]
+                "assignment_candidate", filter_, ["id"]
             )
-            speaker_ids = self.datastore.filter(Collection("speaker"), filter_, ["id"])
+            speaker_ids = self.datastore.filter("speaker", filter_, ["id"])
             if submitter_ids or candidate_ids or speaker_ids:
                 meetings_data.append(
                     {

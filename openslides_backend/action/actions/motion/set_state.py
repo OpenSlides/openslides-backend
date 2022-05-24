@@ -5,7 +5,7 @@ from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,7 +27,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         Check if the state_id is from a previous or next state.
         """
         motion = self.datastore.get(
-            FullQualifiedId(Collection("motion"), instance["id"]),
+            to_fqid("motion", instance["id"]),
             [
                 "state_id",
                 "meeting_id",
@@ -42,7 +42,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         state_id = motion["state_id"]
 
         motion_state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), state_id),
+            to_fqid("motion_state", state_id),
             ["next_state_ids", "previous_state_ids"],
             lock_result=False,
         )
@@ -70,7 +70,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         instance["last_modified"] = timestamp
         if not motion.get("created"):
             state = self.datastore.get(
-                FullQualifiedId(Collection("motion_state"), instance["state_id"]),
+                to_fqid("motion_state", instance["state_id"]),
                 ["set_created_timestamp"],
                 lock_result=False,
             )
@@ -80,7 +80,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         motion = self.datastore.get(
-            FullQualifiedId(Collection("motion"), instance["id"]),
+            to_fqid("motion", instance["id"]),
             [
                 "state_id",
                 "submitter_ids",

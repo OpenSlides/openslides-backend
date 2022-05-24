@@ -6,7 +6,6 @@ from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import PermissionDenied
-from ..shared.patterns import Collection
 from ..shared.schema import required_fqid_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -57,13 +56,13 @@ class GetHistoryInformation(BasePresenter):
         response = self.datastore.get_many(
             [
                 GetManyRequest(
-                    collection=Collection("user"),
+                    collection="user",
                     ids=list(user_ids),
                     mapped_fields=["username"],
                 )
             ],
             lock_result=False,
-        )[Collection("user")]
+        )["user"]
 
         return {
             user_id: response.get(user_id, {}).get("username", "unknown user")

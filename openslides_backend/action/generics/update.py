@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable
 
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import FullQualifiedId
+from ...shared.patterns import to_fqid
 from ..action import Action
 
 
@@ -27,7 +27,7 @@ class UpdateAction(Action):
         Just prepares a write request element with update event for the given
         instance.
         """
-        fqid = FullQualifiedId(self.model.collection, instance["id"])
+        fqid = to_fqid(self.model.collection, instance["id"])
         information = "Object updated"
         fields = {
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")

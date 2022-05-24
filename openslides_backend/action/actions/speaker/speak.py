@@ -4,7 +4,7 @@ from ....models.models import Speaker
 from ....permissions.permissions import Permissions
 from ....services.datastore.interface import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -29,13 +29,11 @@ class SpeakerSpeak(CountdownControl, UpdateAction):
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
             this_speaker = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                to_fqid(self.model.collection, instance["id"]),
                 mapped_fields=["list_of_speakers_id", "meeting_id"],
             )
             list_of_speakers = self.datastore.get(
-                FullQualifiedId(
-                    Collection("list_of_speakers"), this_speaker["list_of_speakers_id"]
-                ),
+                to_fqid("list_of_speakers", this_speaker["list_of_speakers_id"]),
                 mapped_fields=["speaker_ids"],
             )
             gmr = GetManyRequest(
@@ -66,7 +64,7 @@ class SpeakerSpeak(CountdownControl, UpdateAction):
 
             # reset projector countdown
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), this_speaker["meeting_id"]),
+                to_fqid("meeting", this_speaker["meeting_id"]),
                 [
                     "list_of_speakers_couple_countdown",
                     "list_of_speakers_countdown_id",

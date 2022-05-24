@@ -2,7 +2,7 @@ from typing import List, cast
 
 from openslides_backend.models.models import Meeting
 
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.action_type import ActionType
@@ -35,7 +35,7 @@ class MeetingReplaceProjectorId(UpdateAction, GetMeetingIdFromIdMixin):
                 )
             ]
             meeting = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                to_fqid(self.model.collection, instance["id"]),
                 fields + ["reference_projector_id"],
             )
             changed = False

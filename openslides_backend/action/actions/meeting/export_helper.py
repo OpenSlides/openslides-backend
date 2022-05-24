@@ -8,7 +8,7 @@ from ....models.fields import OnDelete, RelationListField
 from ....models.models import Meeting
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
@@ -16,7 +16,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
 
     # fetch meeting
     meeting = datastore.get(
-        FullQualifiedId(Collection("meeting"), meeting_id),
+        to_fqid("meeting", meeting_id),
         [],
         lock_result=False,
         use_changed_models=False,

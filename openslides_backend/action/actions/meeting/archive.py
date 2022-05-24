@@ -10,7 +10,7 @@ from ....permissions.permission_helper import (
     has_organization_management_level,
 )
 from ....shared.exceptions import PermissionDenied
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -29,7 +29,8 @@ class MeetingArchive(UpdateAction, GetMeetingIdFromIdMixin):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         meeting = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
+            to_fqid(self.model.collection, instance["id"]),
+            ["committee_id"],
         )
 
         if not has_committee_management_level(

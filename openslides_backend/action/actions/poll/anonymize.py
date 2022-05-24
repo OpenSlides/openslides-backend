@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,9 +36,7 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
             yield instance
 
     def check_allowed(self, poll_id: int) -> None:
-        poll = self.datastore.get(
-            FullQualifiedId(Collection("poll"), poll_id), ["type", "state"]
-        )
+        poll = self.datastore.get(to_fqid("poll", poll_id), ["type", "state"])
 
         if not poll.get("state") in (Poll.STATE_FINISHED, Poll.STATE_PUBLISHED):
             raise ActionException(
@@ -49,7 +47,7 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, poll_id),
+            to_fqid(self.model.collection, poll_id),
             ["option_ids", "global_option_id"],
         )
         option_ids = poll.get("option_ids", [])
@@ -58,11 +56,9 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
         return option_ids
 
     def _get_options(self, option_ids: List[int]) -> Dict[int, Dict[str, Any]]:
-        get_many_request = GetManyRequest(
-            Collection("option"), option_ids, ["vote_ids"]
-        )
+        get_many_request = GetManyRequest("option", option_ids, ["vote_ids"])
         gm_result = self.datastore.get_many([get_many_request])
-        options: Dict[int, Dict[str, Any]] = gm_result.get(Collection("option"), {})
+        options: Dict[int, Dict[str, Any]] = gm_result.get("option", {})
         return options
 
     def _remove_user_id_from(self, vote_ids: List[int]) -> None:

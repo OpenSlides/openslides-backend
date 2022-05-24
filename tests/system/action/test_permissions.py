@@ -4,13 +4,12 @@ from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
-from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase
 
 
 class FakeModelP(Model):
-    collection = Collection("fake_model_p")
+    collection = "fake_model_p"
     verbose_name = "fake model for permissions"
     id = fields.IntegerField()
 

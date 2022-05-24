@@ -4,7 +4,7 @@ from typing import Any, Dict
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
@@ -41,7 +41,7 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
         instance["state_id"] = recommendation_id
         instance = super().update_instance(instance)
         recommendation = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), recommendation_id),
+            to_fqid("motion_state", recommendation_id),
             ["show_state_extension_field", "show_recommendation_extension_field"],
         )
         recommendation_extension = instance.pop("recommendation_extension", None)

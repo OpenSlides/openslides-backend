@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import ProjectorCountdown
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +21,7 @@ class ProjectorCountdownDelete(DeleteAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projector_countdown = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            to_fqid(self.model.collection, instance["id"]),
             [
                 "used_as_list_of_speakers_countdown_meeting_id",
                 "used_as_poll_countdown_meeting_id",

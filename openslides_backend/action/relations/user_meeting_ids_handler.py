@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ...models.fields import Field
-from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ...shared.patterns import to_fqfield, to_fqid
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
 
@@ -17,7 +17,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if field_name != "group_$_ids":
             return {}
 
-        fqid = FullQualifiedId(field.own_collection, instance["id"])
+        fqid = to_fqid(field.own_collection, instance["id"])
         db_instance = self.datastore.get(
             fqid,
             [field_name],
@@ -37,5 +37,5 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             "add": [int(x) for x in added_ids],
             "remove": [int(x) for x in removed_ids],
         }
-        fqfield = FullQualifiedField(Collection("user"), instance["id"], "meeting_ids")
+        fqfield = to_fqfield("user", instance["id"], "meeting_ids")
         return {fqfield: relation_el}

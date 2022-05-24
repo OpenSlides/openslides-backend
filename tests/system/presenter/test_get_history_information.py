@@ -1,8 +1,8 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import FullQualifiedId, string_to_fqid
+from openslides_backend.shared.patterns import FullQualifiedId
 from tests.util import get_fqid, get_id_from_fqid
 
 from .base import BasePresenterTestCase
@@ -32,12 +32,12 @@ class TestCheckMediafileId(BasePresenterTestCase):
 
     def test_simple(self) -> None:
         self.create_model_with_information(
-            "meeting/1", {}, {string_to_fqid("meeting/1"): ["Created"]}
+            "meeting/1", {}, {cast(FullQualifiedId, "meeting/1"): ["Created"]}
         )
         self.create_model_with_information(
             "motion/1",
             {"title": "the title", "meeting_id": 1},
-            {string_to_fqid("motion/1"): ["Created"]},
+            {cast(FullQualifiedId, "motion/1"): ["Created"]},
         )
         status_code, data = self.request(
             "get_history_information", {"fqid": "motion/1"}
@@ -57,12 +57,12 @@ class TestCheckMediafileId(BasePresenterTestCase):
 
     def test_unknown_user(self) -> None:
         self.create_model_with_information(
-            "meeting/1", {}, {string_to_fqid("meeting/1"): ["Created"]}
+            "meeting/1", {}, {cast(FullQualifiedId, "meeting/1"): ["Created"]}
         )
         self.create_model_with_information(
             "motion/1",
             {"title": "the title", "meeting_id": 1},
-            {string_to_fqid("motion/1"): ["Created"]},
+            {cast(FullQualifiedId, "motion/1"): ["Created"]},
             user_id=2,
         )
         status_code, data = self.request(

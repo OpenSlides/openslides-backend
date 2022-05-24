@@ -4,7 +4,7 @@ from openslides_backend.models.models import Meeting
 
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_id, to_fqid
 from ....shared.schema import id_list_schema
 from ...action import Action
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
@@ -53,11 +53,11 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             instance["template_for_organization_id"] = 1
 
         committee = self.datastore.get(
-            FullQualifiedId(Collection("committee"), instance["committee_id"]),
+            to_fqid("committee", instance["committee_id"]),
             ["user_ids", "organization_id"],
         )
         organization = self.datastore.get(
-            FullQualifiedId(Collection("organization"), committee["organization_id"]),
+            to_fqid("organization", committee["organization_id"]),
             ["limit_of_meetings", "active_meeting_ids"],
         )
         if (
@@ -143,28 +143,26 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
         ]
         action_results = self.execute_other_action(GroupCreate, action_data)
 
-        fqid_default_group = FullQualifiedId(
-            Collection("group"), action_results[0]["id"]  # type: ignore
-        )
-        fqid_admin_group = FullQualifiedId(Collection("group"), action_results[1]["id"])  # type: ignore
-        fqid_delegates_group = FullQualifiedId(Collection("group"), action_results[2]["id"])  # type: ignore
+        fqid_default_group = to_fqid("group", action_results[0]["id"])  # type: ignore
+        fqid_admin_group = to_fqid("group", action_results[1]["id"])  # type: ignore
+        fqid_delegates_group = to_fqid("group", action_results[2]["id"])  # type: ignore
         assert self.datastore.changed_models[fqid_default_group]["name"] == "Default"
         assert self.datastore.changed_models[fqid_admin_group]["name"] == "Admin"
         assert (
             self.datastore.changed_models[fqid_delegates_group]["name"] == "Delegates"
         )
 
-        instance["default_group_id"] = fqid_default_group.id
-        instance["admin_group_id"] = fqid_admin_group.id
-        instance["assignment_poll_default_group_ids"] = [fqid_delegates_group.id]
-        instance["motion_poll_default_group_ids"] = [fqid_delegates_group.id]
+        instance["default_group_id"] = fqid_id(fqid_default_group)
+        instance["admin_group_id"] = fqid_id(fqid_admin_group)
+        instance["assignment_poll_default_group_ids"] = [fqid_id(fqid_delegates_group)]
+        instance["motion_poll_default_group_ids"] = [fqid_id(fqid_delegates_group)]
 
         # Add user to admin group
         if admin_ids := instance.pop("admin_ids", []):
             action_data = [
                 {
                     "id": user_id,
-                    "group_$_ids": {str(instance["id"]): [fqid_admin_group.id]},
+                    "group_$_ids": {str(instance["id"]): [fqid_id(fqid_admin_group)]},
                 }
                 for user_id in admin_ids
             ]
@@ -175,7 +173,7 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
             action_data = [
                 {
                     "id": user_id,
-                    "group_$_ids": {str(instance["id"]): [fqid_default_group.id]},
+                    "group_$_ids": {str(instance["id"]): [fqid_id(fqid_default_group)]},
                 }
                 for user_id in user_ids
                 if user_id not in admin_ids

@@ -19,7 +19,6 @@ from openslides_backend.services.datastore.with_database_context import (
 )
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
-from openslides_backend.shared.patterns import Collection
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import Response
@@ -223,7 +222,7 @@ class BaseActionTestCase(BaseSystemTestCase):
     def create_user_for_meeting(self, meeting_id: int) -> int:
         meeting = self.get_model(f"meeting/{meeting_id}")
         if not meeting.get("default_group_id"):
-            id = self.datastore.reserve_id(Collection("group"))
+            id = self.datastore.reserve_id("group")
             self.set_models(
                 {
                     f"meeting/{meeting_id}": {
@@ -294,13 +293,15 @@ class BaseActionTestCase(BaseSystemTestCase):
         response = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("group"), group_ids, ["id", "meeting_id", "user_ids"]
+                    "group",
+                    group_ids,
+                    ["id", "meeting_id", "user_ids"],
                 )
             ],
             lock_result=False,
         )
         partitioned_groups: Dict[int, List[Dict[str, Any]]] = defaultdict(list)
-        for group in response.get(Collection("group"), {}).values():
+        for group in response.get("group", {}).values():
             partitioned_groups[group["meeting_id"]].append(group)
         return partitioned_groups
 

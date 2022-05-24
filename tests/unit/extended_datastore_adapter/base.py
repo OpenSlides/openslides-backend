@@ -19,7 +19,7 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
 
     mock_datastore_content: Dict[Collection, Dict[int, Dict[str, Any]]]
 
-    collection = Collection("test")
+    collection = "test"
 
     def setUp(self) -> None:
         self.get_many_mock = self.patch_method("get_many")

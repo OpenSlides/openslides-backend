@@ -3,7 +3,7 @@ import time
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -28,7 +28,7 @@ class SpeakerEndSpeach(CountdownControl, UpdateAction):
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
             speaker = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                to_fqid(self.model.collection, instance["id"]),
                 mapped_fields=["begin_time", "end_time", "meeting_id"],
             )
             if speaker.get("begin_time") is None or speaker.get("end_time") is not None:
@@ -39,7 +39,7 @@ class SpeakerEndSpeach(CountdownControl, UpdateAction):
 
             # reset projector_countdown
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), speaker["meeting_id"]),
+                to_fqid("meeting", speaker["meeting_id"]),
                 [
                     "list_of_speakers_couple_countdown",
                     "list_of_speakers_countdown_id",

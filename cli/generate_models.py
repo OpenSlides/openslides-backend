@@ -4,7 +4,7 @@ import string
 import sys
 from collections import ChainMap
 from textwrap import dedent, indent
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import requests
 import yaml
@@ -166,7 +166,7 @@ class Model(Node):
             """
 
             class ${class_name}(Model):
-                collection = Collection("${collection}")
+                collection = "${collection}"
                 verbose_name = "${verbose_name}"
 
             """
@@ -258,7 +258,7 @@ class Attribute(Node):
                 self.is_template = True
                 replacement_str = value.get("replacement_collection")
                 self.replacement_collection = (
-                    Collection(replacement_str) if replacement_str else None
+                    cast(Collection, replacement_str) if replacement_str else None
                 )
                 inner_value = value.get("fields")
                 assert not is_inner_attribute and inner_value
@@ -373,7 +373,7 @@ class To(Node):
             assert isinstance(value, dict)
             collections = value.get("collections")
             assert isinstance(collections, list)
-            self.to = {Collection(c): value["field"] for c in collections}
+            self.to = {cast(Collection, c): value["field"] for c in collections}
 
     def parse_collectionfield(self, collectionfield: str) -> Dict[Collection, str]:
         """
@@ -381,7 +381,7 @@ class To(Node):
         respective entry.
         """
         collection, field = collectionfield.split(KEYSEPARATOR)
-        return {Collection(collection): field}
+        return {cast(Collection, collection): field}
 
     def get_properties(self) -> str:
         return "to=" + repr(self.to) + ","

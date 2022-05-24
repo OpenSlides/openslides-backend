@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, Optional
 
 from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
-from ...shared.patterns import FullQualifiedId
+from ...shared.patterns import to_fqid
 from ..action import Action
 from ..util.typing import ActionData, ActionResultElement
 
@@ -49,7 +49,7 @@ class CreateAction(Action):
         Just prepares a write request element with create event for the given
         instance.
         """
-        fqid = FullQualifiedId(self.model.collection, instance["id"])
+        fqid = to_fqid(self.model.collection, instance["id"])
         information = "Object created"
         if "meta_new" in instance:
             del instance["meta_new"]

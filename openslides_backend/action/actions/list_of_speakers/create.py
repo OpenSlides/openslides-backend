@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import ListOfSpeakers
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import to_fqid
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -20,7 +20,7 @@ class ListOfSpeakersCreate(SequentialNumbersMixin, CreateActionWithInferredMeeti
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            to_fqid("meeting", instance["meeting_id"]),
             ["list_of_speakers_initially_closed"],
         )
         instance["closed"] = meeting.get("list_of_speakers_initially_closed", False)

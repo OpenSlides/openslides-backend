@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
-from ....shared.patterns import FullQualifiedId, string_to_fqid
+from ....shared.patterns import fqid_collection, fqid_id, to_fqid
 from ....shared.typing import DeletedModel
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -21,21 +21,20 @@ class AgendaItemDelete(DeleteAction):
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        fqid = FullQualifiedId(self.model.collection, instance["id"])
+        fqid = to_fqid(self.model.collection, instance["id"])
         agenda_item = self.datastore.get(
             fqid,
             ["content_object_id"],
         )
         if agenda_item.get("content_object_id"):
-            content_object_fqid = string_to_fqid(agenda_item["content_object_id"])
-            if (
-                content_object_fqid.collection.collection == "topic"
-                and not self.datastore.is_deleted(content_object_fqid)
-            ):
+            content_object_fqid = agenda_item["content_object_id"]
+            if fqid_collection(
+                content_object_fqid
+            ) == "topic" and not self.datastore.is_deleted(content_object_fqid):
                 self.apply_instance(DeletedModel(), fqid)
                 self.execute_other_action(
                     TopicDelete,
-                    [{"id": content_object_fqid.id}],
+                    [{"id": fqid_id(content_object_fqid)}],
                 )
                 self.apply_instance(DeletedModel(), content_object_fqid)
         return instance
