@@ -1289,7 +1289,7 @@ class MeetingImport(BaseActionTestCase):
             == response.json["message"]
         )
 
-    def test_merge_users(self) -> None:
+    def test_merge_users_check_committee_and_meeting(self) -> None:
         self.set_models(
             {
                 "user/14": {
@@ -1297,18 +1297,6 @@ class MeetingImport(BaseActionTestCase):
                     "first_name": None,
                     "last_name": None,
                     "email": "test@example.de",
-                    "personal_note_$_ids": ["1"],
-                    "personal_note_$1_ids": [1],
-                },
-                "personal_note/1": {
-                    "meeting_id": 1,
-                    "content_object_id": None,
-                    "note": "<p>Database personal note</p>",
-                    "star": False,
-                    "user_id": 12,
-                },
-                "meeting/1": {
-                    "personal_note_ids": [1],
                 },
             }
         )
@@ -1318,50 +1306,30 @@ class MeetingImport(BaseActionTestCase):
                     "12": {
                         "id": 12,
                         "username": "username_test",
-                        "first_name": None,
-                        "last_name": None,
                         "email": "test@example.de",
-                        "personal_note_$_ids": ["1"],
-                        "personal_note_$1_ids": [1],
+                        "group_$_ids": ["1"],
+                        "group_$1_ids": [1],
                     },
                     "13": {
                         "id": 13,
                         "username": "test_new_user",
-                        "first_name": None,
-                        "last_name": None,
                         "email": "test_new@example.de",
-                        "personal_note_$_ids": ["1"],
-                        "personal_note_$1_ids": [2],
-                    },
-                },
-                "personal_note": {
-                    "1": {
-                        "id": 1,
-                        "meeting_id": 1,
-                        "content_object_id": None,
-                        "note": "<p>Some content..</p>",
-                        "star": False,
-                        "user_id": 12,
-                    },
-                    "2": {
-                        "id": 2,
-                        "meeting_id": 1,
-                        "content_object_id": None,
-                        "note": "blablabla",
-                        "star": False,
-                        "user_id": 13,
+                        "group_$_ids": ["1"],
+                        "group_$1_ids": [1],
                     },
                 },
             }
         )
-        request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1, 2]
+        request_data["meeting"]["group"]["1"]["user_ids"] = [1, 12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"username": "admin"})
+        self.assert_model_exists("user/14", {"username": "username_test"})
+        self.assert_model_exists("user/15", {"username": "test"})
         self.assert_model_exists("user/16", {"username": "test_new_user"})
-        # user14 = self.assert_model_exists("user/14")
-        # user15 = self.assert_model_exists("user/15")
-        # meeting2 = self.assert_model_exists("meeting/2")
-        # committee2 = self.assert_model_exists("committee/2", {"user_ids": [14]})
+        self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
+        meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 1})
+        assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
 
     def test_merge_users_relation_field(self) -> None:
         self.set_models(

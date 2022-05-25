@@ -566,15 +566,16 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                         ):
                             list_fields["add"][field] = value
                     fqid = FullQualifiedId(Collection(collection), entry["id"])
-                    update_write_requests.append(
-                        self.build_write_request(
-                            EventType.Update,
-                            fqid,
-                            f"import meeting {meeting_id}",
-                            fields=fields,
-                            list_fields=list_fields,
+                    if fields or list_fields["add"]:
+                        update_write_requests.append(
+                            self.build_write_request(
+                                EventType.Update,
+                                fqid,
+                                f"import meeting {meeting_id}",
+                                fields=fields if fields else None,
+                                list_fields=list_fields if list_fields["add"] else None,
+                            )
                         )
-                    )
 
         if pure_create_requests:
             return write_requests
