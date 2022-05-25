@@ -1,3 +1,4 @@
+import threading
 import time
 from typing import Any, Dict
 
@@ -174,3 +175,60 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
         self.assert_status_code(response, 200)
+
+    def test_set_state_parallel(self) -> None:
+        count:int = 500
+        self.sync_event = threading.Event()
+        self.sync_event.clear()
+
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
+                },
+                "motion_state/76": {
+                    "meeting_id": 222,
+                    "name": "test0",
+                    "motion_ids": [],
+                    "next_state_ids": [77],
+                    "previous_state_ids": [],
+                    "set_created_timestamp": True,
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "name": "test1",
+                    "motion_ids": [22+i for i in range(count)],
+                    "first_state_of_workflow_id": 76,
+                    "next_state_ids": [],
+                    "previous_state_ids": [76],
+                },
+                **{
+                    f"motion/{22+i}": {
+                        "meeting_id": 222,
+                        "title": "test1",
+                        "state_id": 77,
+                        "number_value": 23+i,
+                    } for i in range(count)
+                },
+            }
+        )
+
+        threads= []
+        for i in range(count):
+            thread = threading.Thread(target=self.thread_method, kwargs={"i":i})
+            thread.start()
+            threads.append(thread)
+
+        check_time = time.time()
+        self.sync_event.set()
+        for thread in threads:
+            thread.join()
+        duration = round(time.time() - check_time, 2)
+        print(duration)
+
+    def thread_method(self, i) -> None:
+        self.sync_event.wait()
+        response = self.request("motion.set_state", {"id": 22+i, "state_id": 76})
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(f"motion/{22+i}", {"state_id": 76})
