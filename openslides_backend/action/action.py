@@ -228,6 +228,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         meeting = self.datastore.get(
             fqid,
             ["is_active_in_organization_id", "name"],
+            lock_result=False,
         )
         if not meeting.get("is_active_in_organization_id"):
             raise ActionException(
@@ -258,6 +259,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             db_instance = self.datastore.get(
                 FullQualifiedId(model.collection, instance[identifier]),
                 ["meeting_id"],
+                lock_result=False,
             )
             return db_instance["meeting_id"]
 

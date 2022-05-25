@@ -32,11 +32,14 @@ class SetNumberMixin(BaseAction):
         meeting = self.datastore.get(
             FullQualifiedId(Collection("meeting"), meeting_id),
             ["motions_number_type", "motions_number_min_digits"],
+            lock_result=False,
         )
         if meeting.get("motions_number_type") == "manually":
             return
         state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), state_id), ["set_number"]
+            FullQualifiedId(Collection("motion_state"), state_id),
+            ["set_number"],
+            lock_result=False,
         )
         if not state.get("set_number"):
             return

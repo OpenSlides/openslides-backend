@@ -22,12 +22,13 @@ def assert_belongs_to_meeting(
             instance = datastore.get(
                 fqid,
                 ["meeting_ids"],
+                lock_result=False,
                 raise_exception=False,
             )
             if meeting_id not in instance.get("meeting_ids", []):
                 errors.add(str(fqid))
         elif fqid.collection.collection == "mediafile":
-            mediafile = datastore.get(fqid, ["owner_id"])
+            mediafile = datastore.get(fqid, ["owner_id"], lock_result=False)
             collection, id_ = mediafile["owner_id"].split(KEYSEPARATOR)
             if collection == "meeting":
                 if int(id_) != meeting_id:
@@ -38,6 +39,7 @@ def assert_belongs_to_meeting(
             instance = datastore.get(
                 fqid,
                 ["meeting_id"],
+                lock_result=False,
                 raise_exception=False,
             )
             if instance.get("meeting_id") != meeting_id:
