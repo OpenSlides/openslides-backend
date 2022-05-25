@@ -162,7 +162,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         meeting_json = instance["meeting"]
         self.generate_merge_user_map(meeting_json)
         self.check_usernames_and_generate_new_ones(meeting_json)
-        active_user_in_json = len(
+        active_new_users_in_json = len(
             [
                 key
                 for key in meeting_json.get("user", [])
@@ -170,7 +170,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 and int(key) not in self.merge_user_map
             ]
         )
-        self.check_limit_of_user(active_user_in_json)
+        self.check_limit_of_user(active_new_users_in_json)
 
         # save blobs from mediafiles
         self.mediadata = []

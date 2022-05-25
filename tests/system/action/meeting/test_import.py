@@ -1258,6 +1258,22 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2")
 
+    def test_check_limit_of_users_okay_merged_user(self) -> None:
+        self.set_models({"organization/1": {"limit_of_users": 1}})
+        self.assert_model_exists(
+            "user/1",
+            {"username": "admin", "first_name": None, "last_name": None, "email": None},
+        )
+        request_data = self.create_request_data({})
+        request_data["meeting"]["user"]["1"]["username"] = "admin"
+        request_data["meeting"]["user"]["1"]["first_name"] = None
+        request_data["meeting"]["user"]["1"]["last_name"] = None
+        request_data["meeting"]["user"]["1"]["email"] = None
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"username": "admin"})
+        self.assert_model_not_exists("user/2")
+
     def test_check_hit_limit_of_users(self) -> None:
         self.set_models(
             {
