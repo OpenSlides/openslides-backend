@@ -162,8 +162,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         meeting_json = instance["meeting"]
         self.generate_merge_user_map(meeting_json)
         self.check_usernames_and_generate_new_ones(meeting_json)
-        active_user_in_json = len(meeting_json.get("user", [])) - len(
-            self.merge_user_map
+        active_user_in_json = len(
+            [
+                key
+                for key in meeting_json.get("user", [])
+                if meeting_json["user"][key].get("is_active")
+                and int(key) not in self.merge_user_map
+            ]
         )
         self.check_limit_of_user(active_user_in_json)
 
