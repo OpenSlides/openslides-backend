@@ -17,6 +17,10 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     RelationField,
     RelationListField,
+    TemplateCharField,
+    TemplateDecimalField,
+    TemplateHTMLStrictField,
+    TemplateRelationField,
 )
 from openslides_backend.models.models import Meeting, User
 from openslides_backend.permissions.management_levels import (
@@ -33,6 +37,7 @@ from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 
+from ....shared.interfaces.event import ListFields
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
@@ -399,7 +404,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 self.replace_map["user"][id_] for id_ in entry.get(field) or []
             ]
         elif collection == "user" and field == "meeting_ids":
-            entry[field] = list(self.replace_map["meeting"].values())
+            entry[field] = None
         elif collection == "motion" and field == "recommendation_extension":
             if entry[field]:
                 fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
@@ -509,20 +514,66 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         meeting = self.get_meeting_from_json(json_data)
         meeting_id = meeting["id"]
         write_requests = []
+        update_write_requests = []
         for collection in json_data:
             for entry in json_data[collection].values():
                 meta_new = entry.pop("meta_new", None)
-                fqid = FullQualifiedId(Collection(collection), entry["id"])
-                write_requests.append(
-                    self.build_write_request(
-                        EventType.Create if meta_new else EventType.Update,
-                        fqid,
-                        f"import meeting {meeting_id}",
-                        entry,
+                if meta_new:
+                    fqid = FullQualifiedId(Collection(collection), entry["id"])
+                    write_requests.append(
+                        self.build_write_request(
+                            EventType.Create,
+                            fqid,
+                            f"import meeting {meeting_id}",
+                            entry,
+                        )
                     )
-                )
+                elif (
+                    collection == "user" and entry["id"] in self.merge_user_map.values()
+                ):
+                    list_fields: ListFields = {"add": {}, "remove": {}}
+                    fields: Dict[str, Any] = {}
+                    for field, value in entry.items():
+                        model_field = model_registry[
+                            Collection(collection)
+                        ]().try_get_field(field)
+                        if (
+                            isinstance(model_field, BaseTemplateField)
+                            and model_field.replacement_collection
+                            and isinstance(model_field, RelationListField)
+                        ):
+                            list_fields["add"][field] = value
+                        elif isinstance(model_field, BaseTemplateField) and isinstance(
+                            model_field,
+                            (
+                                TemplateHTMLStrictField,
+                                TemplateCharField,
+                                TemplateDecimalField,
+                                TemplateRelationField,
+                            ),
+                        ):
+                            if model_field.is_template_field(field):
+                                list_fields["add"][field] = value
+                            else:
+                                fields[field] = value
+                        elif isinstance(
+                            model_field, (RelationListField, RelationField)
+                        ):
+                            list_fields["add"][field] = value
+                    fqid = FullQualifiedId(Collection(collection), entry["id"])
+                    update_write_requests.append(
+                        self.build_write_request(
+                            EventType.Update,
+                            fqid,
+                            f"import meeting {meeting_id}",
+                            fields=fields,
+                            list_fields=list_fields,
+                        )
+                    )
+
         if pure_create_requests:
             return write_requests
+        write_requests.extend(update_write_requests)
 
         # add meeting to committee/meeting_ids
         write_requests.append(
