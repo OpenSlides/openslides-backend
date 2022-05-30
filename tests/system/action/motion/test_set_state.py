@@ -177,7 +177,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_set_state_parallel(self) -> None:
-        count:int = 500
+        count:int = 5
         self.sync_event = threading.Event()
         self.sync_event.clear()
 
