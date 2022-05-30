@@ -228,7 +228,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         duration = round(time.time() - check_time, 2)
         print(duration)
 
-    def thread_method(self, i) -> None:
+    def thread_method(self, i: int) -> None:
         self.sync_event.wait()
         response = self.request("motion.set_state", {"id": 22 + i, "state_id": 76})
         self.assert_status_code(response, 200)
