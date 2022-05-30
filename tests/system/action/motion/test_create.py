@@ -1,5 +1,6 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
+from openslides_backend.permissions.base_classes import Permission
 from openslides_backend.permissions.permissions import Permissions
 from tests.system.action.base import BaseActionTestCase
 
@@ -382,20 +383,24 @@ class MotionCreateActionTest(BaseActionTestCase):
             Permissions.Motion.CAN_CREATE,
         )
 
-    def test_create_permission_missing_can_manage(self) -> None:
+    def setup_permission_test(
+        self, permissions: List[Permission], additional_data: Dict[str, Any] = {}
+    ) -> None:
         self.create_meeting()
         self.user_id = self.create_user("user")
         self.login(self.user_id)
         self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(3, [Permissions.Motion.CAN_CREATE])
-        self.set_models(self.permission_test_models)
+        self.set_group_permissions(3, permissions)
+        self.set_models({**self.permission_test_models, **additional_data})
+
+    def test_create_permission_missing_can_manage(self) -> None:
+        self.setup_permission_test([Permissions.Motion.CAN_CREATE])
         response = self.request(
             "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "number": "X13",
                 "meeting_id": 1,
-                "workflow_id": 12,
                 "text": "test",
             },
         )
@@ -403,25 +408,84 @@ class MotionCreateActionTest(BaseActionTestCase):
         assert "Forbidden fields: number" in response.json["message"]
 
     def test_create_permission_with_can_manage(self) -> None:
-        self.create_meeting()
-        self.user_id = self.create_user("user")
-        self.login(self.user_id)
-        self.set_user_groups(self.user_id, [3])
-        self.set_group_permissions(
-            3, [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE]
+        self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE, Permissions.Motion.CAN_MANAGE]
         )
-        self.set_models(self.permission_test_models)
         response = self.request(
             "motion.create",
             {
                 "title": "test_Xcdfgee",
                 "number": "X13",
                 "meeting_id": 1,
-                "workflow_id": 12,
                 "text": "test",
             },
         )
         self.assert_status_code(response, 200)
+
+    def test_create_permission_with_can_create_and_mediafile_can_see(self) -> None:
+        self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE, Permissions.Mediafile.CAN_SEE],
+            {
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                },
+            },
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "attachment_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 200)
+
+    def test_create_permission_with_can_create_and_not_mediafile_can_see(self) -> None:
+        self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE],
+            {
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                },
+            },
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "attachment_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert "Forbidden fields: attachment_ids" in response.json["message"]
+
+    def test_create_permission_no_double_error(self) -> None:
+        self.setup_permission_test(
+            [Permissions.Motion.CAN_CREATE],
+            {
+                "mediafile/1": {
+                    "owner_id": "meeting/1",
+                },
+            },
+        )
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 1,
+                "text": "test",
+                "attachment_ids": [1],
+            },
+        )
+        self.assert_status_code(response, 403)
+        assert (
+            response.json["message"]
+            == "You are not allowed to perform action motion.create. Forbidden fields: attachment_ids"
+        )
 
     def test_create_no_permission_amendment(self) -> None:
         self.create_meeting()
