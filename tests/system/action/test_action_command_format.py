@@ -55,8 +55,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                 "group/meeting_id",
                 "group/weight",
                 "meeting/1/group_ids",
-                "meeting/1/is_active_in_organization_id",
-                "meeting/1/name",
             ],
         )
         self.assertEqual(write_requests[0].events[0]["type"], "create")
@@ -69,8 +67,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
             [
                 "group/meeting_id",
                 "group/weight",
-                "meeting/1/is_active_in_organization_id",
-                "meeting/1/name",
             ],
         )
 
@@ -104,8 +100,6 @@ class GeneralActionCommandFormat(BaseActionTestCase):
                 "group/meeting_id",
                 "group/weight",
                 "meeting/1/group_ids",
-                "meeting/1/is_active_in_organization_id",
-                "meeting/1/name",
             ],
         )
         self.assertEqual(write_requests[0].events[0]["type"], "create")

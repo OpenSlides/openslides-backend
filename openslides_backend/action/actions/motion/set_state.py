@@ -44,6 +44,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         motion_state = self.datastore.get(
             FullQualifiedId(Collection("motion_state"), state_id),
             ["next_state_ids", "previous_state_ids"],
+            lock_result=False,
         )
         is_in_next_state_ids = instance["state_id"] in motion_state.get(
             "next_state_ids", []
@@ -71,6 +72,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
             state = self.datastore.get(
                 FullQualifiedId(Collection("motion_state"), instance["state_id"]),
                 ["set_created_timestamp"],
+                lock_result=False,
             )
             if state.get("set_created_timestamp"):
                 instance["created"] = timestamp
@@ -84,6 +86,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
                 "submitter_ids",
                 "meeting_id",
             ],
+            lock_result=False,
         )
         if has_perm(
             self.datastore,
