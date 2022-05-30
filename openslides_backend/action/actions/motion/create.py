@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Motion
+from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
@@ -103,6 +104,7 @@ class MotionCreate(MotionCreateBase):
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
+        perm: Permission
         # Check can create amendment if needed else check can_create
         if instance.get("lead_motion_id"):
             perm = Permissions.Motion.CAN_CREATE_AMENDMENTS
@@ -114,10 +116,18 @@ class MotionCreate(MotionCreateBase):
             if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
                 raise MissingPermission(perm)
 
-        # if not can manage whitelist the fields.
+        # whitelist the fields depending on the user's permissions
+        whitelist = []
+        forbidden_fields = set()
+        perm = Permissions.Mediafile.CAN_SEE
+        if has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
+            whitelist.append("attachment_ids")
+        elif "attachment_ids" in instance:
+            forbidden_fields.add("attachment_ids")
+
         perm = Permissions.Motion.CAN_MANAGE
         if not has_perm(self.datastore, self.user_id, perm, instance["meeting_id"]):
-            whitelist = [
+            whitelist += [
                 "title",
                 "text",
                 "reason",
@@ -131,12 +141,11 @@ class MotionCreate(MotionCreateBase):
             ]
             if instance.get("lead_motion_id"):
                 whitelist.remove("category_id")
-            forbidden_fields = []
             for field in instance:
                 if field not in whitelist:
-                    forbidden_fields.append(field)
+                    forbidden_fields.add(field)
 
-            if forbidden_fields:
-                msg = f"You are not allowed to perform action {self.name}. "
-                msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
-                raise PermissionDenied(msg)
+        if forbidden_fields:
+            msg = f"You are not allowed to perform action {self.name}. "
+            msg += f"Forbidden fields: {', '.join(forbidden_fields)}"
+            raise PermissionDenied(msg)
