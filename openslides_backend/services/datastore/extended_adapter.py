@@ -366,12 +366,21 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 formatted_args.append(f'model.get("{arguments[i]}")')
             i += 1
             # if comparison happens with a value, append it as well
-            if match[1] in (COMPARISON_VALUE_SQL, f"lower({COMPARISON_VALUE_SQL})", COMPARISON_VALUE_TEXT_SQL, f"lower({COMPARISON_VALUE_TEXT_SQL})"):
+            if match[1] in (
+                COMPARISON_VALUE_SQL,
+                f"lower({COMPARISON_VALUE_SQL})",
+                COMPARISON_VALUE_TEXT_SQL,
+                f"lower({COMPARISON_VALUE_TEXT_SQL})",
+            ):
                 formatted_args.append(repr(arguments[i]))
                 i += 1
         # replace SQL placeholders and SQL specific code with the formatted python snippets
-        filter_code = filter_code.replace(MODEL_FIELD_NUMERIC_REPLACE, "{}").replace(
-            COMPARISON_VALUE_TEXT_SQL, "{}").replace(MODEL_FIELD_SQL, "{}").replace(COMPARISON_VALUE_SQL, "{}")
+        filter_code = (
+            filter_code.replace(MODEL_FIELD_NUMERIC_REPLACE, "{}")
+            .replace(COMPARISON_VALUE_TEXT_SQL, "{}")
+            .replace(MODEL_FIELD_SQL, "{}")
+            .replace(COMPARISON_VALUE_SQL, "{}")
+        )
         filter_code = filter_code.format(*formatted_args)
 
         # needed for generated code since postgres uses it
