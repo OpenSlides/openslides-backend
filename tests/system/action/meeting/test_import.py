@@ -1323,6 +1323,8 @@ class MeetingImport(BaseActionTestCase):
         request_data["meeting"]["group"]["1"]["user_ids"] = [1, 12, 13]
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["number_of_imported_users"] == 3
+        assert response.json["results"][0][0]["number_of_merged_users"] == 1
         self.assert_model_exists("user/1", {"username": "admin"})
         self.assert_model_exists("user/14", {"username": "username_test"})
         self.assert_model_exists("user/15", {"username": "test"})

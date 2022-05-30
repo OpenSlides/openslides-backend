@@ -264,6 +264,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             for key, values in json_data.get("user", {}).items()
             if filtered_users_dict.get(self.get_user_key(values)) is not None
         }
+        self.number_of_imported_users = len(json_data.get("user", {}))
+        self.number_of_merged_users = len(self.merge_user_map)
 
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
         user_entries = [
@@ -663,7 +665,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         """Returns the newly created id."""
-        return {"id": self.get_meeting_from_json(instance["meeting"])["id"]}
+        result = {"id": self.get_meeting_from_json(instance["meeting"])["id"]}
+        if hasattr(self, "number_of_imported_users") and hasattr(
+            self, "number_of_merged_users"
+        ):
+            result["number_of_imported_users"] = self.number_of_imported_users
+            result["number_of_merged_users"] = self.number_of_merged_users
+        return result
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if not has_committee_management_level(
