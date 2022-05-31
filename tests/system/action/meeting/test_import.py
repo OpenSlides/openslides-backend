@@ -1325,11 +1325,16 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["number_of_imported_users"] == 3
         assert response.json["results"][0][0]["number_of_merged_users"] == 1
-        self.assert_model_exists("user/1", {"username": "admin"})
-        self.assert_model_exists("user/14", {"username": "username_test"})
-        self.assert_model_exists("user/15", {"username": "test"})
-        self.assert_model_exists("user/16", {"username": "test_new_user"})
-        self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
+        self.assert_model_exists("user/1", {"username": "admin", "meeting_ids": [2]})
+        self.assert_model_exists(
+            "user/14", {"username": "username_test", "meeting_ids": [2]}
+        )
+        self.assert_model_exists("user/15", {"username": "test", "meeting_ids": [2]})
+        self.assert_model_exists(
+            "user/16", {"username": "test_new_user", "meeting_ids": [2]}
+        )
+        committee1 = self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
+        assert sorted(committee1.get("user_ids", [])) == [1, 14, 15, 16]
         meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 1})
         assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
 
