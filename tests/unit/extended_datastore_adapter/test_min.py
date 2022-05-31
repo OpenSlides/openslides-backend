@@ -68,11 +68,17 @@ class TestMinExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         self.filter_mock.assert_called()
         self.add_filter_mock.assert_called()
 
-    def test_use_changed_models_not_comparable(self) -> None:
+    def test_use_changed_models_numeric_not_comparable(self) -> None:
+        """Only test/1 and test/3 with numeric values in a-field are accepted,
+        because filter value 2 is numeric
+        """
         self.set_additional_models(
             {
-                "test/1": {"a": 2, "weight": 2},
+                "test/1": {"a": 2, "weight": 10},
                 "test/2": {"a": "nop", "weight": 1},
+                "test/3": {"a": 12, "weight": 3},
+                "test/4": {"a": "15", "weight": 8},
+                "test/5": {"a": "3", "weight": 10},
             }
         )
         result = self.adapter.min(
@@ -80,7 +86,32 @@ class TestMinExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             FilterOperator("a", ">=", 2),
             "weight",
         )
-        assert result == 2
+        assert result == 3
+        self.db_method_mock.assert_not_called()
+        self.filter_mock.assert_called()
+        self.add_filter_mock.assert_called()
+
+    def test_use_changed_models_string_not_comparable(self) -> None:
+        """Only test/2, test/4 and test/5 with string values in a-field are accepted,
+        because filter value "2" is a string. The comparison is per string,
+        therefore test/4 is not accepted ("15" is < "2").
+        "nop" is greater than "2" and it's weight will be taken as result.
+        """
+        self.set_additional_models(
+            {
+                "test/1": {"a": 2, "weight": 10},
+                "test/2": {"a": "nop", "weight": 1},
+                "test/3": {"a": 12, "weight": 3},
+                "test/4": {"a": "15", "weight": 8},
+                "test/5": {"a": "3", "weight": 10},
+            }
+        )
+        result = self.adapter.min(
+            Collection("test"),
+            FilterOperator("a", ">=", "2"),
+            "weight",
+        )
+        assert result == 1
         self.db_method_mock.assert_not_called()
         self.filter_mock.assert_called()
         self.add_filter_mock.assert_called()
