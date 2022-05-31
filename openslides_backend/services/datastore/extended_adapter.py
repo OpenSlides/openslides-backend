@@ -19,7 +19,10 @@ from .handle_datastore_errors import raise_datastore_error
 from .interface import Engine, LockResult, MappedFieldsPerFqid, PartialModel
 
 MODEL_FIELD_SQL = "data->>%s"
-COMPARISON_VALUE_SQL = "%s::text"
+MODEL_FIELD_NUMERIC_SQL = r"\(data->%s\)::numeric"
+MODEL_FIELD_NUMERIC_REPLACE = "(data->%s)::numeric"
+COMPARISON_VALUE_TEXT_SQL = "%s::text"
+COMPARISON_VALUE_SQL = "%s"
 
 
 class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
@@ -343,7 +346,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         # transform query into valid python code
         filter_code = sql_query.lower().replace("null", "None").replace(" = ", " == ")
         # regex for all FilterOperators which were translated by the SqlQueryHelper
-        regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)) (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|None)"
+        regex = rf"(?:{MODEL_FIELD_SQL}|lower\({MODEL_FIELD_SQL}\)|{MODEL_FIELD_NUMERIC_SQL}|lower\({MODEL_FIELD_NUMERIC_SQL}\)) (<|<=|>=|>|==|!=|is|is not) ({COMPARISON_VALUE_SQL}|lower\({COMPARISON_VALUE_SQL}\)|{COMPARISON_VALUE_TEXT_SQL}|lower\({COMPARISON_VALUE_TEXT_SQL}\)|None)"
         matches = re.findall(regex, filter_code)
         # this will hold all items from arguments, but correctly formatted for python and enhanced with validity checks
         formatted_args = []
@@ -363,15 +366,20 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 formatted_args.append(f'model.get("{arguments[i]}")')
             i += 1
             # if comparison happens with a value, append it as well
-            if (
-                match[1] == COMPARISON_VALUE_SQL
-                or match[1] == f"lower({COMPARISON_VALUE_SQL})"
+            if match[1] in (
+                COMPARISON_VALUE_SQL,
+                f"lower({COMPARISON_VALUE_SQL})",
+                COMPARISON_VALUE_TEXT_SQL,
+                f"lower({COMPARISON_VALUE_TEXT_SQL})",
             ):
                 formatted_args.append(repr(arguments[i]))
                 i += 1
         # replace SQL placeholders and SQL specific code with the formatted python snippets
-        filter_code = filter_code.replace(MODEL_FIELD_SQL, "{}").replace(
-            COMPARISON_VALUE_SQL, "{}"
+        filter_code = (
+            filter_code.replace(MODEL_FIELD_NUMERIC_REPLACE, "{}")
+            .replace(COMPARISON_VALUE_TEXT_SQL, "{}")
+            .replace(MODEL_FIELD_SQL, "{}")
+            .replace(COMPARISON_VALUE_SQL, "{}")
         )
         filter_code = filter_code.format(*formatted_args)
 
