@@ -36,7 +36,9 @@ class SetNumberMixin(BaseAction):
         )
         if meeting.get("motions_number_type") == "manually":
             return
-        state = self.datastore.get(to_fqid("motion_state", state_id), ["set_number"], lock_result=False)
+        state = self.datastore.get(
+            to_fqid("motion_state", state_id), ["set_number"], lock_result=False
+        )
         if not state.get("set_number"):
             return
 

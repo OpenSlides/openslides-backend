@@ -9,7 +9,7 @@ from ...shared.interfaces.logging import LoggingModule
 from ...shared.patterns import (
     Collection,
     FullQualifiedId,
-    fqid_collection,
+    collection_from_fqid,
     fqid_id,
     to_fqid,
 )
@@ -50,7 +50,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
         results, missing_fields_per_fqid = self._get_many_from_cached_models(
             mapped_fields_per_fqid
         )
-        cached_model = results[fqid_collection(fqid)][fqid_id(fqid)]
+        cached_model = results[collection_from_fqid(fqid)][fqid_id(fqid)]
         if not missing_fields_per_fqid:
             # nothing to do, we've got the full model
             return cached_model
@@ -122,7 +122,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
                 if mapped_fields:
                     for field in mapped_fields:
                         if field in self.cached_models[fqid]:
-                            results[fqid_collection(fqid)][fqid_id(fqid)][
+                            results[collection_from_fqid(fqid)][fqid_id(fqid)][
                                 field
                             ] = self.cached_models[fqid][field]
                         elif field not in self.cached_missing_fields[fqid]:
@@ -138,7 +138,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
                 if remaining_missing_fields:
                     missing_fields_per_fqid[fqid] = remaining_missing_fields
                 else:
-                    results[fqid_collection(fqid)][fqid_id(fqid)] = dict()
+                    results[collection_from_fqid(fqid)][fqid_id(fqid)] = dict()
             else:
                 missing_fields_per_fqid[fqid] = mapped_fields
         return (results, missing_fields_per_fqid)
@@ -147,7 +147,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
         self, missing_fields_per_fqid: MappedFieldsPerFqid, lock_result: bool
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         get_many_requests = [
-            GetManyRequest(fqid_collection(fqid), [fqid_id(fqid)], fields)
+            GetManyRequest(collection_from_fqid(fqid), [fqid_id(fqid)], fields)
             for fqid, fields in missing_fields_per_fqid.items()
         ]
         results = super().get_many(get_many_requests, lock_result=lock_result)

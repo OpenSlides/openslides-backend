@@ -2,7 +2,12 @@ from typing import List, Set, Union
 
 from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import ActionException
-from ...shared.patterns import KEYSEPARATOR, FullQualifiedId, fqid_collection, fqid_id
+from ...shared.patterns import (
+    KEYSEPARATOR,
+    FullQualifiedId,
+    collection_from_fqid,
+    fqid_id,
+)
 
 
 def assert_belongs_to_meeting(
@@ -15,10 +20,10 @@ def assert_belongs_to_meeting(
 
     errors: Set[str] = set()
     for fqid in fqids:
-        if fqid_collection(fqid) == "meeting":
+        if collection_from_fqid(fqid) == "meeting":
             if fqid_id(fqid) != meeting_id:
                 errors.add(str(fqid))
-        elif fqid_collection(fqid) == "user":
+        elif collection_from_fqid(fqid) == "user":
             instance = datastore.get(
                 fqid,
                 ["meeting_ids"],
@@ -27,7 +32,7 @@ def assert_belongs_to_meeting(
             )
             if meeting_id not in instance.get("meeting_ids", []):
                 errors.add(str(fqid))
-        elif fqid_collection(fqid) == "mediafile":
+        elif collection_from_fqid(fqid) == "mediafile":
             mediafile = datastore.get(fqid, ["owner_id"], lock_result=False)
             collection, id_ = mediafile["owner_id"].split(KEYSEPARATOR)
             if collection == "meeting":

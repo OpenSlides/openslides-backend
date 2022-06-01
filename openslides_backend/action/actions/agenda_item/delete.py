@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
-from ....shared.patterns import fqid_collection, fqid_id, to_fqid
+from ....shared.patterns import collection_from_fqid, fqid_id, to_fqid
 from ....shared.typing import DeletedModel
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -28,7 +28,7 @@ class AgendaItemDelete(DeleteAction):
         )
         if agenda_item.get("content_object_id"):
             content_object_fqid = agenda_item["content_object_id"]
-            if fqid_collection(
+            if collection_from_fqid(
                 content_object_fqid
             ) == "topic" and not self.datastore.is_deleted(content_object_fqid):
                 self.apply_instance(DeletedModel(), fqid)

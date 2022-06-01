@@ -11,9 +11,14 @@ POSITIVE_NUMBER_REGEX = rf"^(0|{ID_REGEX_PART})$"
 
 ID_PATTERN = re.compile(ID_REGEX)
 
-FullQualifiedId_REGEX = KEYSEPARATOR.join(
-    ("^[a-z]([a-z_]*[a-z])?", f"{ID_REGEX_PART}$")
+COLLECTION_REGEX = r"[a-z]([a-z_]+[a-z]+)?"
+ID_REGEX = r"[1-9][0-9]*"
+FIELD_REGEX = r"[a-z][a-z0-9_]*\$?[a-z0-9_]*"
+
+COLLECTIONFIELD_PATTERN = re.compile(
+    f"^({COLLECTION_REGEX}){KEYSEPARATOR}({FIELD_REGEX})$"
 )
+FQID_REGEX = KEYSEPARATOR.join(("^[a-z]([a-z_]*[a-z])?", f"{ID_REGEX_PART}$"))
 
 Identifier = Union[int, str, "FullQualifiedId"]
 IdentifierList = Union[List[int], List[str], List["FullQualifiedId"]]
@@ -22,10 +27,12 @@ IdentifierList = Union[List[int], List[str], List["FullQualifiedId"]]
 _Collection = NewType("_Collection", str)
 _FullQualifiedId = NewType("_FullQualifiedId", str)
 _FullQualifiedField = NewType("_FullQualifiedField", str)
+_CollectionField = NewType("_CollectionField", str)
 
 Collection = Union[str, _Collection]  # "meeting"
 FullQualifiedId = Union[str, _FullQualifiedId]  # meeting/5
 FullQualifiedField = Union[str, _FullQualifiedField]  # meeting/5/name
+CollectionField = Union[str, _CollectionField]  # meeting/name
 
 
 # methods for FullQualifiedId
@@ -37,7 +44,8 @@ def fqid_id(fqid: FullQualifiedId) -> int:
     return int(fqid.split(KEYSEPARATOR)[1])
 
 
-def fqid_collection(fqid: FullQualifiedId) -> str:
+# alt: fqid_collection
+def collection_from_fqid(fqid: FullQualifiedId) -> str:
     return fqid.split(KEYSEPARATOR)[0]
 
 
@@ -102,30 +110,10 @@ def fqfield_field(fqfield: FullQualifiedField) -> str:
     return str(fqfield).split(KEYSEPARATOR)[2]
 
 
-class CollectionField:
-    """
-    The key used in the key-value store i. e. the datastore, e. g.
-    motion/sequential_number
-    """
+# methods for CollectionField
+def collectionfield_from_collection_and_field(collection: str, field: str) -> str:
+    return f"{collection}{KEYSEPARATOR}{field}"
 
-    def __init__(self, collection: Collection, field: str) -> None:
-        self.collection = collection
-        self.field = field
 
-    def __str__(self) -> str:
-        return KEYSEPARATOR.join((str(self.collection), self.field))
-
-    def __repr__(self) -> str:
-        return f"CollectionField({repr(str(self))})"
-
-    def __eq__(self, other: object) -> bool:
-        try:
-            return (
-                self.collection == cast("CollectionField", other).collection
-                and self.field == cast("CollectionField", other).field
-            )
-        except Exception as e:
-            raise NotImplementedError(e)
-
-    def __hash__(self) -> int:
-        return hash(str(self))
+def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:
+    return f"{collection_from_fqid(fqid)}{KEYSEPARATOR}{field}"

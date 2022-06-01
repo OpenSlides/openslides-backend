@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, ContextManager, Dict, List, Optional, Sequence, Set, Union, cast
+from typing import Any, ContextManager, Dict, List, Optional, Sequence, Set, Union
 
 import simplejson as json
 from datastore.reader.core import (
@@ -28,12 +28,13 @@ from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
-    KEYSEPARATOR,
+    COLLECTIONFIELD_PATTERN,
     Collection,
     CollectionField,
     FullQualifiedField,
     FullQualifiedId,
-    fqid_collection,
+    collection_from_fqid,
+    collectionfield_from_collection_and_field,
     fqid_id,
     to_fqfield,
     to_fqid,
@@ -206,8 +207,8 @@ class DatastoreAdapter(BaseDatastoreService):
                     raise DatastoreException(
                         "Response from datastore contains invalid 'meta_position'."
                     )
-                collection_field = cast(
-                    CollectionField, f"{collection}{KEYSEPARATOR}{field}"
+                collection_field = collectionfield_from_collection_and_field(
+                    collection, field
                 )
                 self.update_locked_fields(collection_field, instance_position)
         return response
@@ -359,7 +360,7 @@ class DatastoreAdapter(BaseDatastoreService):
         if additional_field:
             fields.append(additional_field)
         for field in fields:
-            cf = CollectionField(collection, field)
+            cf = collectionfield_from_collection_and_field(collection, field)
             self.update_locked_fields(cf, {"position": position, "filter": filter})
 
     def apply_deleted_models_behaviour_to_filter(
@@ -386,7 +387,7 @@ class DatastoreAdapter(BaseDatastoreService):
             for field in mapped_fields:
                 if not field.startswith("meta_"):
                     self.update_locked_fields(
-                        to_fqfield(fqid_collection(fqid), fqid_id(fqid), field),
+                        to_fqfield(collection_from_fqid(fqid), fqid_id(fqid), field),
                         position,
                     )
         else:
@@ -401,7 +402,7 @@ class DatastoreAdapter(BaseDatastoreService):
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
-        if not isinstance(lock, int) and not isinstance(key, CollectionField):
+        if not isinstance(lock, int) and not COLLECTIONFIELD_PATTERN.match(key):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"
             )

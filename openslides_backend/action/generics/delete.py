@@ -6,7 +6,7 @@ from ...shared.interfaces.event import EventType
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
     FullQualifiedId,
-    fqid_collection,
+    collection_from_fqid,
     fqid_id,
     to_fqid,
     transform_to_fqids,
@@ -85,11 +85,11 @@ class DeleteAction(Action):
                             # skip models that are already deleted
                             continue
                         delete_action_class = actions_map.get(
-                            f"{fqid_collection(fqid)}.delete"
+                            f"{collection_from_fqid(fqid)}.delete"
                         )
                         if not delete_action_class:
                             raise ActionException(
-                                f"Can't cascade the delete action to {fqid_collection(fqid)} "
+                                f"Can't cascade the delete action to {collection_from_fqid(fqid)} "
                                 "since no delete action was found."
                             )
                         # Assume that the delete action uses the standard action data

@@ -39,10 +39,10 @@ from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import (
     FullQualifiedId,
+    collection_from_fqid,
     fqfield_collection,
     fqfield_field,
     fqfield_id,
-    fqid_collection,
     to_fqid,
     transform_to_fqids,
 )
@@ -489,7 +489,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 }
 
         for fqid, v in fdict.items():
-            fqid_model: Model = model_registry[fqid_collection(fqid)]()
+            fqid_model: Model = model_registry[collection_from_fqid(fqid)]()
             type_ = v["type"]
             instance = v["fields"]
             if type_ in (EventType.Create, EventType.Update):

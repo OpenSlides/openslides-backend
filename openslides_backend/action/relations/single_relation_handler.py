@@ -23,9 +23,9 @@ from ...shared.exceptions import ActionException
 from ...shared.patterns import (
     Collection,
     FullQualifiedId,
+    collection_from_fqid,
     fqfield_collection,
     fqfield_id,
-    fqid_collection,
     fqid_id,
     to_fqfield,
     to_fqid,
@@ -194,7 +194,7 @@ class SingleRelationHandler:
         "fqid": fqid,
         "origin_modified_fqid": own_fqid,
         """
-        collection = fqid_collection(chained_field["fqid"])
+        collection = collection_from_fqid(chained_field["fqid"])
         field_name = self.get_related_name(collection)
         field = self.get_reverse_field(collection)
         instance = self.datastore.get(chained_field["fqid"], ["id", field_name])
@@ -214,7 +214,7 @@ class SingleRelationHandler:
         """
         partition = defaultdict(list)
         for fqid in fqids:
-            partition[fqid_collection(fqid)].append(fqid)
+            partition[collection_from_fqid(fqid)].append(fqid)
         return partition
 
     def get_related_name(self, collection: Collection) -> str:
@@ -324,7 +324,9 @@ class SingleRelationHandler:
                 rel_element = FieldUpdateElement(
                     type="remove", value=new_value, modified_element=own_fqid
                 )
-            fqfield = to_fqfield(fqid_collection(fqid), fqid_id(fqid), related_name)
+            fqfield = to_fqfield(
+                collection_from_fqid(fqid), fqid_id(fqid), related_name
+            )
             relations[fqfield] = rel_element
         return relations
 

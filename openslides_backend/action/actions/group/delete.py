@@ -6,7 +6,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.interfaces.event import EventType, ListFields
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import FullQualifiedId, fqid_collection, fqid_id, to_fqid
+from ....shared.patterns import FullQualifiedId, collection_from_fqid, fqid_id, to_fqid
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -64,7 +64,7 @@ class GroupDeleteAction(DeleteAction):
         write_requests = super().handle_relation_updates(instance)
         for write_request in write_requests:
             for event in write_request.events:
-                if fqid_collection(event["fqid"]) != "mediafile":
+                if collection_from_fqid(event["fqid"]) != "mediafile":
                     yield write_request
 
         # search root changed mediafiles
