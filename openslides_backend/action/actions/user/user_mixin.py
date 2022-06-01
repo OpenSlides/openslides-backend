@@ -177,15 +177,12 @@ class UserMixin(CheckForArchivedMeetingMixin):
             filter(bool, instance.get("vote_delegated_$_to_id", dict()).values())
         )
         if "vote_delegations_$_from_ids" in instance:
-            user_ids = user_ids.union(
-                set(
-                    reduce(
-                        (lambda x, y: x + y),  # type: ignore
-                        instance["vote_delegations_$_from_ids"].values(),
-                        [],
-                    )
-                )
-            )
+            for ids in instance["vote_delegations_$_from_ids"].values():
+                if isinstance(ids, list):
+                    user_ids.update(ids)
+                else:
+                    raise ActionException(f"value of vote_delegations_$_from_ids must be a list, but it is type '{type(ids)}'")
+
         if user_ids:
             get_many_request = GetManyRequest(
                 self.model.collection, list(user_ids), ["id"]

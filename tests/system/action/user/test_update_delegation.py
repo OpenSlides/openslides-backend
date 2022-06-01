@@ -699,3 +699,11 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
             "The following models do not belong to meeting 223: ['user/1']",
             response.json["message"],
         )
+
+    def test_update_vote_delegations_from_with_forbidden_None(self) -> None:
+        request_data = {"id": 2, "vote_delegations_$_from_ids": {222: None}}
+        self.setup_vote_delegation()
+        response = self.request("user.update", request_data)
+
+        self.assert_status_code(response, 400)
+        self.assertIn("value of vote_delegations_$_from_ids must be a list, but it is type '<class 'NoneType'>'", response.json["message"])
