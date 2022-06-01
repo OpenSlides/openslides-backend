@@ -106,7 +106,7 @@ class TestMinExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.min(
-            Collection("test"),
+            "test",
             FilterOperator("a", ">=", "2"),
             "weight",
         )

@@ -7,8 +7,8 @@ from openslides_backend.shared.patterns import (
     CollectionField,
     FullQualifiedField,
     FullQualifiedId,
+    collection_from_fqid,
     fqfield_fqid,
-    fqid_collection,
     fqid_id,
 )
 
@@ -89,5 +89,5 @@ class TypesTester(TestCase):
 
     def test_string_to_fqid_ok(self) -> None:
         fqid = cast(FullQualifiedId, "model/1")
-        assert fqid_collection(fqid) == "model"
+        assert collection_from_fqid(fqid) == "model"
         assert fqid_id(fqid) == 1

@@ -5,7 +5,7 @@ import pytest
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
-    fqid_collection,
+    collection_from_fqid,
     fqid_id,
     to_fqid,
 )
@@ -23,8 +23,12 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     def _get_mock(
         self, fqid: FullQualifiedId, mapped_fields: List[str], *args: Any, **kwargs: Any
     ) -> Dict[str, Any]:
-        if fqid_id(fqid) in self.mock_datastore_content.get(fqid_collection(fqid), {}):
-            model = self.mock_datastore_content[fqid_collection(fqid)][fqid_id(fqid)]
+        if fqid_id(fqid) in self.mock_datastore_content.get(
+            collection_from_fqid(fqid), {}
+        ):
+            model = self.mock_datastore_content[collection_from_fqid(fqid)][
+                fqid_id(fqid)
+            ]
             if mapped_fields:
                 return {field: model[field] for field in mapped_fields}
             else:

@@ -12,7 +12,7 @@ def test_sql_to_filter_code_simple() -> None:
         ds._filter_changed_models(MagicMock(), FilterOperator("test", "=", 1), [])
     assert (
         mock.call_args[0][0]
-        == "{model['id']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if fqid_collection(fqid) == collection and (model.get(\"test\") == 1)}"
+        == "{model['id']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if collection_from_fqid(fqid) == collection and (model.get(\"test\") == 1)}"
     )
 
 
@@ -24,5 +24,5 @@ def test_sql_to_filter_code_complex() -> None:
         ds._filter_changed_models(MagicMock(), _filter, [])
     assert (
         mock.call_args[0][0]
-        == '{model[\'id\']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if fqid_collection(fqid) == collection and ((model.get("test") == 1) or ((model.get("test") == 1) and (not (model.get("test") == 1))))}'
+        == '{model[\'id\']: {field: model[field] for field in mapped_fields if field in model} for fqid, model in self.changed_models.items() if collection_from_fqid(fqid) == collection and ((model.get("test") == 1) or ((model.get("test") == 1) and (not (model.get("test") == 1))))}'
     )
