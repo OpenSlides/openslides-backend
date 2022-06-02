@@ -1,5 +1,4 @@
 from collections import defaultdict
-from functools import reduce
 from typing import Any, Dict, List
 
 from ....action.action import Action
@@ -181,7 +180,9 @@ class UserMixin(CheckForArchivedMeetingMixin):
                 if isinstance(ids, list):
                     user_ids.update(ids)
                 else:
-                    raise ActionException(f"value of vote_delegations_$_from_ids must be a list, but it is type '{type(ids)}'")
+                    raise ActionException(
+                        f"value of vote_delegations_$_from_ids must be a list, but it is type '{type(ids)}'"
+                    )
 
         if user_ids:
             get_many_request = GetManyRequest(

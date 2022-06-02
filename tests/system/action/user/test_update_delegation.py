@@ -706,4 +706,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         response = self.request("user.update", request_data)
 
         self.assert_status_code(response, 400)
-        self.assertIn("value of vote_delegations_$_from_ids must be a list, but it is type '<class 'NoneType'>'", response.json["message"])
+        self.assertIn(
+            "value of vote_delegations_$_from_ids must be a list, but it is type '<class 'NoneType'>'",
+            response.json["message"],
+        )
