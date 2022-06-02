@@ -253,10 +253,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             filter_,
             ["username", "first_name", "last_name", "email"],
             lock_result=False,
+            use_changed_models=False,
         )
         filtered_users_dict = {
-            self.get_user_key(values): int(key)
-            for key, values in filtered_users.items()
+            self.get_user_key(values): key for key, values in filtered_users.items()
         }
 
         self.merge_user_map = {
@@ -337,23 +337,25 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         for collection in json_data:
             if collection.startswith("_") or not json_data[collection]:
                 continue
-            collection_entries = [
-                entry
-                for entry in json_data[collection].values()
-                if entry["id"] not in self.merge_user_map or collection != "user"
-            ]
-            if collection_entries:
+            if collection != "user":
                 new_ids = self.datastore.reserve_ids(
-                    Collection(collection), len(collection_entries)
+                    Collection(collection), len(json_data[collection])
                 )
-                for entry, new_id in zip(collection_entries, new_ids):
+                for entry, new_id in zip(json_data[collection].values(), new_ids):
                     replace_map[collection][entry["id"]] = new_id
-            if collection == "user":
+            else:
+                if (
+                    amount := self.number_of_imported_users
+                    - self.number_of_merged_users
+                ):
+                    new_user_ids = iter(
+                        self.datastore.reserve_ids(Collection("user"), amount)
+                    )
                 for entry in json_data[collection].values():
-                    if entry["id"] in self.merge_user_map:
-                        replace_map[collection][entry["id"]] = self.merge_user_map[
-                            entry["id"]
-                        ]
+                    if (user_id := entry["id"]) in self.merge_user_map:
+                        replace_map[collection][user_id] = self.merge_user_map[user_id]
+                    else:
+                        replace_map[collection][user_id] = next(new_user_ids)
         self.replace_map = replace_map
 
     def replace_fields(self, instance: Dict[str, Any]) -> None:
