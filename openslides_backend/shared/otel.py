@@ -19,6 +19,7 @@ def init(env: Env, service_name: str) -> None:
         return
 
     span_exporter = OTLPSpanExporter(
+        endpoint=f"http://collector:4317",
         insecure=True
         # optional
         # credentials=ChannelCredentials(credentials),

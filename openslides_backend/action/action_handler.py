@@ -100,16 +100,17 @@ class ActionHandler(BaseHandler):
         Takes payload and user id and handles this request by validating and
         parsing all actions. In the end it sends everything to the event store.
         """
-        self.user_id = user_id
-        self.internal = internal
+        with make_span(self.env, "handle request"):
+            self.user_id = user_id
+            self.internal = internal
 
-        with make_span(self.env, "verify payload"):
             try:
                 payload_schema(payload)
             except fastjsonschema.JsonSchemaException as exception:
                 raise ActionException(exception.message)
 
-        with make_span(self.env, "write requests..."):
+            # span.set_attribute("test", str(payload))
+            # span.set_attributes({"testpayload": 42})
             results: ActionsResponseResults = []
             if atomic:
                 results = self.execute_write_requests(self.parse_actions, payload)
@@ -131,7 +132,6 @@ class ActionHandler(BaseHandler):
                         results.append(error)
                     self.datastore.reset()
 
-        with make_span(self.env, "finish action"):
             # execute cleanup methods
             for on_success in self.on_success:
                 on_success()
@@ -147,19 +147,20 @@ class ActionHandler(BaseHandler):
         get_write_requests: Callable[..., Tuple[List[WriteRequest], T]],
         *args: Any,
     ) -> T:
-        retries = 0
-        while True:
-            try:
-                write_requests, data = get_write_requests(*args)
-                if write_requests:
-                    self.datastore.write(write_requests)
-                return data
-            except DatastoreLockedException as exception:
-                retries += 1
-                if retries >= self.MAX_RETRY:
-                    raise ActionException(exception.message)
-                else:
-                    self.datastore.reset()
+        with make_span(self.env, "execute write requests"):
+            retries = 0
+            while True:
+                try:
+                    write_requests, data = get_write_requests(*args)
+                    if write_requests:
+                        self.datastore.write(write_requests)
+                    return data
+                except DatastoreLockedException as exception:
+                    retries += 1
+                    if retries >= self.MAX_RETRY:
+                        raise ActionException(exception.message)
+                    else:
+                        self.datastore.reset()
 
     def parse_actions(
         self, payload: Payload
@@ -173,28 +174,29 @@ class ActionHandler(BaseHandler):
         relation_manager = RelationManager(self.datastore)
         action_name_list = []
         for i, element in enumerate(payload):
-            action_name = element["action"]
-            if (
-                actions_map.get(action_name)
-                and actions_map.get(action_name).is_singular  # type: ignore
-            ):
-                if action_name in action_name_list:
-                    exception = ActionException(
-                        f"Action {action_name} may not appear twice in one request."
-                    )
+            with make_span(self.env, f"parse action: { element['action'] }"):
+                action_name = element["action"]
+                if (
+                    actions_map.get(action_name)
+                    and actions_map.get(action_name).is_singular  # type: ignore
+                ):
+                    if action_name in action_name_list:
+                        exception = ActionException(
+                            f"Action {action_name} may not appear twice in one request."
+                        )
+                        exception.action_error_index = i
+                        raise exception
+                    else:
+                        action_name_list.append(action_name)
+                try:
+                    write_request, results = self.perform_action(element, relation_manager)
+                except ActionException as exception:
                     exception.action_error_index = i
                     raise exception
-                else:
-                    action_name_list.append(action_name)
-            try:
-                write_request, results = self.perform_action(element, relation_manager)
-            except ActionException as exception:
-                exception.action_error_index = i
-                raise exception
-
-            if write_request:
-                write_requests.append(write_request)
-            action_response_results.append(results)
+    
+                if write_request:
+                    write_requests.append(write_request)
+                action_response_results.append(results)
 
         self.logger.debug("Write request is ready.")
         return (
@@ -225,9 +227,10 @@ class ActionHandler(BaseHandler):
 
         try:
             with self.datastore.get_database_context():
-                write_request, results = action.perform(
-                    action_data, self.user_id, internal=self.internal
-                )
+                with make_span(self.env, "action.perform"):
+                    write_request, results = action.perform(
+                        action_data, self.user_id, internal=self.internal
+                    )
             if write_request:
                 action.validate_required_fields(write_request)
 

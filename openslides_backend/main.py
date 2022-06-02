@@ -56,7 +56,8 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "bind": self.env.get_address(self.view_name),
             "workers": int(self.env.OPENSLIDES_BACKEND_NUM_WORKERS),
             "worker_tmp_dir": "/dev/shm",  # See https://pythonspeed.com/articles/gunicorn-in-docker/
-            "timeout": int(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT),
+            # "timeout": int(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT),
+            "timeout": 999999,
             "loglevel": self.env.get_loglevel().lower(),
             "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
