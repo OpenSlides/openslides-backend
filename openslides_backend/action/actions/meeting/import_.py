@@ -17,6 +17,10 @@ from openslides_backend.models.fields import (
     GenericRelationListField,
     RelationField,
     RelationListField,
+    TemplateCharField,
+    TemplateDecimalField,
+    TemplateHTMLStrictField,
+    TemplateRelationField,
 )
 from openslides_backend.models.models import Meeting, User
 from openslides_backend.permissions.management_levels import (
@@ -28,10 +32,12 @@ from openslides_backend.permissions.permission_helper import (
 )
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, MissingPermission
+from openslides_backend.shared.filters import FilterOperator, Or
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
 
+from ....shared.interfaces.event import ListFields
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.crypto import get_random_string
@@ -154,15 +160,17 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]
+        self.generate_merge_user_map(meeting_json)
         self.check_usernames_and_generate_new_ones(meeting_json)
-        active_user_in_json = len(
+        active_new_users_in_json = len(
             [
                 key
                 for key in meeting_json.get("user", [])
                 if meeting_json["user"][key].get("is_active")
+                and int(key) not in self.merge_user_map
             ]
         )
-        self.check_limit_of_user(active_user_in_json)
+        self.check_limit_of_user(active_new_users_in_json)
 
         # save blobs from mediafiles
         self.mediadata = []
@@ -219,13 +227,56 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self.upload_mediadata()
         return instance
 
+    def empty_if_none(self, value: Optional[str]) -> str:
+        if value is None:
+            return ""
+        return value
+
+    def get_user_key(self, user_values: Dict[str, Any]) -> Tuple[str, str, str, str]:
+        return (
+            self.empty_if_none(user_values.get("username")),
+            self.empty_if_none(user_values.get("first_name")),
+            self.empty_if_none(user_values.get("last_name")),
+            self.empty_if_none(user_values.get("email")),
+        )
+
+    def generate_merge_user_map(self, json_data: Dict[str, Any]) -> None:
+        filter_ = Or(
+            *[
+                FilterOperator("username", "=", entry["username"])
+                for entry in json_data.get("user", {}).values()
+            ]
+        )
+
+        filtered_users = self.datastore.filter(
+            Collection("user"),
+            filter_,
+            ["username", "first_name", "last_name", "email"],
+            lock_result=False,
+            use_changed_models=False,
+        )
+        filtered_users_dict = {
+            self.get_user_key(values): key for key, values in filtered_users.items()
+        }
+
+        self.merge_user_map = {
+            int(key): filtered_users_dict[self.get_user_key(values)]
+            for key, values in json_data.get("user", {}).items()
+            if filtered_users_dict.get(self.get_user_key(values)) is not None
+        }
+        self.number_of_imported_users = len(json_data.get("user", {}))
+        self.number_of_merged_users = len(self.merge_user_map)
+
     def check_usernames_and_generate_new_ones(self, json_data: Dict[str, Any]) -> None:
-        usernames: List[str] = [
-            entry["username"] for entry in json_data.get("user", {}).values()
+        user_entries = [
+            entry
+            for entry in json_data.get("user", {}).values()
+            if int(entry["id"]) not in self.merge_user_map
         ]
+        usernames: List[str] = [entry["username"] for entry in user_entries]
         new_usernames = self.generate_usernames(usernames)
 
-        for entry, username in zip(json_data.get("user", {}).values(), new_usernames):
+        for entry, username in zip(user_entries, new_usernames):
             entry["username"] = username
 
     def check_limit_of_meetings(
@@ -265,7 +316,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
         # generate passwords
         for entry in json_data["user"].values():
-            entry["password"] = self.auth.hash(get_random_string(10))
+            if entry["id"] not in self.merge_user_map:
+                entry["password"] = self.auth.hash(get_random_string(10))
 
         # set enable_anonymous
         meeting["enable_anonymous"] = False
@@ -285,11 +337,25 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         for collection in json_data:
             if collection.startswith("_") or not json_data[collection]:
                 continue
-            new_ids = self.datastore.reserve_ids(
-                Collection(collection), len(json_data[collection])
-            )
-            for entry, new_id in zip(json_data[collection].values(), new_ids):
-                replace_map[collection][entry["id"]] = new_id
+            if collection != "user":
+                new_ids = self.datastore.reserve_ids(
+                    Collection(collection), len(json_data[collection])
+                )
+                for entry, new_id in zip(json_data[collection].values(), new_ids):
+                    replace_map[collection][entry["id"]] = new_id
+            else:
+                if (
+                    amount := self.number_of_imported_users
+                    - self.number_of_merged_users
+                ):
+                    new_user_ids = iter(
+                        self.datastore.reserve_ids(Collection("user"), amount)
+                    )
+                for entry in json_data[collection].values():
+                    if (user_id := entry["id"]) in self.merge_user_map:
+                        replace_map[collection][user_id] = self.merge_user_map[user_id]
+                    else:
+                        replace_map[collection][user_id] = next(new_user_ids)
         self.replace_map = replace_map
 
     def replace_fields(self, instance: Dict[str, Any]) -> None:
@@ -301,10 +367,12 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             new_collection = {}
             coll_class = Collection(collection)
             for entry in json_data[collection].values():
+                old_entry_id = entry["id"]
                 for field in list(entry.keys()):
                     self.replace_field_ids(collection, entry, field)
                 new_collection[str(entry["id"])] = entry
-                entry["meta_new"] = True
+                if collection != "user" or old_entry_id not in self.merge_user_map:
+                    entry["meta_new"] = True
                 self.datastore.apply_changed_model(
                     FullQualifiedId(coll_class, entry["id"]), entry
                 )
@@ -336,16 +404,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 return
         if field == "id":
             entry["id"] = self.replace_map[collection][entry["id"]]
-        elif (
-            collection == "meeting"
-            and field == "user_ids"
-            and "user" in self.allowed_collections
-        ):
-            entry[field] = [
-                self.replace_map["user"][id_] for id_ in entry.get(field) or []
-            ]
+        elif collection == "meeting" and field == "user_ids":
+            entry[field] = None
         elif collection == "user" and field == "meeting_ids":
-            entry[field] = list(self.replace_map["meeting"].values())
+            entry[field] = None
         elif collection == "motion" and field == "recommendation_extension":
             if entry[field]:
                 fqids_str = RECOMMENDATION_EXTENSION_REFERENCE_IDS_PATTERN.findall(
@@ -455,20 +517,67 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         meeting = self.get_meeting_from_json(json_data)
         meeting_id = meeting["id"]
         write_requests = []
+        update_write_requests = []
         for collection in json_data:
             for entry in json_data[collection].values():
-                entry.pop("meta_new", None)
-                fqid = FullQualifiedId(Collection(collection), entry["id"])
-                write_requests.append(
-                    self.build_write_request(
-                        EventType.Create,
-                        fqid,
-                        f"import meeting {meeting_id}",
-                        entry,
+                meta_new = entry.pop("meta_new", None)
+                if meta_new:
+                    fqid = FullQualifiedId(Collection(collection), entry["id"])
+                    write_requests.append(
+                        self.build_write_request(
+                            EventType.Create,
+                            fqid,
+                            f"import meeting {meeting_id}",
+                            entry,
+                        )
                     )
-                )
+                elif (
+                    collection == "user" and entry["id"] in self.merge_user_map.values()
+                ):
+                    list_fields: ListFields = {"add": {}, "remove": {}}
+                    fields: Dict[str, Any] = {}
+                    for field, value in entry.items():
+                        model_field = model_registry[
+                            Collection(collection)
+                        ]().try_get_field(field)
+                        if (
+                            isinstance(model_field, BaseTemplateField)
+                            and model_field.replacement_collection
+                            and isinstance(model_field, RelationListField)
+                        ):
+                            list_fields["add"][field] = value
+                        elif isinstance(model_field, BaseTemplateField) and isinstance(
+                            model_field,
+                            (
+                                TemplateHTMLStrictField,
+                                TemplateCharField,
+                                TemplateDecimalField,
+                                TemplateRelationField,
+                            ),
+                        ):
+                            if model_field.is_template_field(field):
+                                list_fields["add"][field] = value
+                            else:
+                                fields[field] = value
+                        elif isinstance(
+                            model_field, (RelationListField, RelationField)
+                        ):
+                            list_fields["add"][field] = value
+                    fqid = FullQualifiedId(Collection(collection), entry["id"])
+                    if fields or list_fields["add"]:
+                        update_write_requests.append(
+                            self.build_write_request(
+                                EventType.Update,
+                                fqid,
+                                f"import meeting {meeting_id}",
+                                fields=fields if fields else None,
+                                list_fields=list_fields if list_fields["add"] else None,
+                            )
+                        )
+
         if pure_create_requests:
             return write_requests
+        write_requests.extend(update_write_requests)
 
         # add meeting to committee/meeting_ids
         write_requests.append(
@@ -552,7 +661,13 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         self, instance: Dict[str, Any]
     ) -> Optional[ActionResultElement]:
         """Returns the newly created id."""
-        return {"id": self.get_meeting_from_json(instance["meeting"])["id"]}
+        result = {"id": self.get_meeting_from_json(instance["meeting"])["id"]}
+        if hasattr(self, "number_of_imported_users") and hasattr(
+            self, "number_of_merged_users"
+        ):
+            result["number_of_imported_users"] = self.number_of_imported_users
+            result["number_of_merged_users"] = self.number_of_merged_users
+        return result
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         if not has_committee_management_level(

@@ -808,11 +808,14 @@ class MeetingImport(BaseActionTestCase):
 
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
-        self.assert_model_exists("user/2", {"username": "test"})
+        self.assert_model_exists(
+            "user/2", {"username": "test", "group_$2_ids": [2], "group_$_ids": ["2"]}
+        )
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "user/3", {"username": "test1", "group_$3_ids": [3], "group_$_ids": ["3"]}
+            "user/2",
+            {"username": "test", "group_$3_ids": [3], "group_$_ids": ["2", "3"]},
         )
         meeting_3 = self.assert_model_exists(
             "meeting/3",
@@ -825,7 +828,7 @@ class MeetingImport(BaseActionTestCase):
         )
         assert start <= meeting_3.get("imported_at", 0) <= start + 300
         self.assert_model_exists("projector/3", {"meeting_id": 3})
-        self.assert_model_exists("group/3", {"user_ids": [1, 3]})
+        self.assert_model_exists("group/3", {"user_ids": [1, 2]})
         self.assert_model_exists(
             "personal_note/2", {"content_object_id": "motion/3", "meeting_id": 3}
         )
@@ -833,7 +836,7 @@ class MeetingImport(BaseActionTestCase):
             "tag/2", {"tagged_ids": ["motion/3"], "name": "testag", "meeting_id": 3}
         )
         committee_1 = self.get_model("committee/1")
-        self.assertCountEqual(committee_1.get("user_ids"), [1, 2, 3])
+        self.assertCountEqual(committee_1.get("user_ids"), [1, 2])
         self.assertCountEqual(committee_1.get("meeting_ids"), [1, 2, 3])
 
     def test_no_permission(self) -> None:
@@ -934,7 +937,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         meeting2 = self.assert_model_exists("meeting/2")
         self.assertCountEqual(meeting2["user_ids"], [1, 2])
-        self.assert_model_exists("user/2", {"meeting_ids": [2]})
+        self.assert_model_exists("user/2", {"username": "test", "meeting_ids": [2]})
 
     def test_motion_recommendation_extension(self) -> None:
         # Special field
@@ -1255,6 +1258,22 @@ class MeetingImport(BaseActionTestCase):
         self.assert_status_code(response, 200)
         self.assert_model_exists("user/2")
 
+    def test_check_limit_of_users_okay_merged_user(self) -> None:
+        self.set_models({"organization/1": {"limit_of_users": 1}})
+        self.assert_model_exists(
+            "user/1",
+            {"username": "admin", "first_name": None, "last_name": None, "email": None},
+        )
+        request_data = self.create_request_data({})
+        request_data["meeting"]["user"]["1"]["username"] = "admin"
+        request_data["meeting"]["user"]["1"]["first_name"] = None
+        request_data["meeting"]["user"]["1"]["last_name"] = None
+        request_data["meeting"]["user"]["1"]["email"] = None
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("user/1", {"username": "admin"})
+        self.assert_model_not_exists("user/2")
+
     def test_check_hit_limit_of_users(self) -> None:
         self.set_models(
             {
@@ -1268,6 +1287,203 @@ class MeetingImport(BaseActionTestCase):
         assert (
             "The number of active users cannot exceed the limit of users."
             == response.json["message"]
+        )
+
+    def test_merge_users_check_committee_and_meeting(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "username_test",
+                    "first_name": None,
+                    "last_name": None,
+                    "email": "test@example.de",
+                },
+            }
+        )
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "12": {
+                        "id": 12,
+                        "username": "username_test",
+                        "email": "test@example.de",
+                        "group_$_ids": ["1"],
+                        "group_$1_ids": [1],
+                    },
+                    "13": {
+                        "id": 13,
+                        "username": "test_new_user",
+                        "email": "test_new@example.de",
+                        "group_$_ids": ["1"],
+                        "group_$1_ids": [1],
+                    },
+                },
+            }
+        )
+        request_data["meeting"]["group"]["1"]["user_ids"] = [1, 12, 13]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["number_of_imported_users"] == 3
+        assert response.json["results"][0][0]["number_of_merged_users"] == 1
+        self.assert_model_exists("user/1", {"username": "admin", "meeting_ids": [2]})
+        self.assert_model_exists(
+            "user/14", {"username": "username_test", "meeting_ids": [2]}
+        )
+        self.assert_model_exists("user/15", {"username": "test", "meeting_ids": [2]})
+        self.assert_model_exists(
+            "user/16", {"username": "test_new_user", "meeting_ids": [2]}
+        )
+        committee1 = self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
+        assert sorted(committee1.get("user_ids", [])) == [1, 14, 15, 16]
+        meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 1})
+        assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
+
+    def test_merge_users_relation_field(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "username_test",
+                    "first_name": None,
+                    "last_name": None,
+                    "email": "test@example.de",
+                    "is_present_in_meeting_ids": [1],  # Relation Field
+                },
+                "meeting/1": {
+                    "present_user_ids": [14],
+                },
+            }
+        )
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "12": {
+                        "id": 12,
+                        "username": "username_test",
+                        "first_name": None,
+                        "last_name": None,
+                        "email": "test@example.de",
+                        "is_present_in_meeting_ids": [1],
+                    },
+                    "13": {
+                        "id": 13,
+                        "username": "test_new_user",
+                        "first_name": None,
+                        "last_name": None,
+                        "email": "test_new@example.de",
+                        "is_present_in_meeting_ids": [1],
+                    },
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["present_user_ids"] = [12, 13]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        user14 = self.assert_model_exists("user/14", {"username": "username_test"})
+        assert user14.get("is_present_in_meeting_ids") == [1, 2]
+        user16 = self.assert_model_exists("user/16", {"username": "test_new_user"})
+        assert user16.get("is_present_in_meeting_ids") == [2]
+        self.assert_model_exists("meeting/2", {"present_user_ids": [14, 16]})
+
+    def test_merge_users_template_fields(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "username_test",
+                    "first_name": None,
+                    "last_name": None,
+                    "email": "test@example.de",
+                    "personal_note_$_ids": ["1"],  # Template Relation List
+                    "personal_note_$1_ids": [1],
+                    "number_$": ["1"],  # Template Char (also HTML and Decimal)
+                    "number_$1": "old number test string",
+                    "vote_delegated_$_to_id": ["1"],  # Template Relation
+                    "vote_delegated_$1_to_id": 1,
+                },
+                "personal_note/1": {
+                    "meeting_id": 1,
+                    "content_object_id": None,
+                    "note": "<p>Some content..</p>",
+                    "star": False,
+                    "user_id": 12,
+                },
+                "meeting/1": {
+                    "personal_note_ids": [1],
+                },
+            }
+        )
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "12": {
+                        "id": 12,
+                        "username": "username_test",
+                        "first_name": None,
+                        "last_name": None,
+                        "email": "test@example.de",
+                        "personal_note_$_ids": ["1"],
+                        "personal_note_$1_ids": [1],
+                        "number_$": ["1"],
+                        "number_$1": "new number test string",
+                        "vote_delegated_$_to_id": ["1"],
+                        "vote_delegated_$1_to_id": 13,
+                    },
+                    "13": {
+                        "id": 13,
+                        "username": "test_new_user",
+                        "first_name": None,
+                        "last_name": None,
+                        "email": "test_new@example.de",
+                        "personal_note_$_ids": ["1"],
+                        "personal_note_$1_ids": [2],
+                        "vote_delegations_$_from_ids": ["1"],
+                        "vote_delegations_$1_from_ids": [12],
+                    },
+                },
+                "personal_note": {
+                    "1": {
+                        "id": 1,
+                        "meeting_id": 1,
+                        "content_object_id": None,
+                        "note": "<p>Some content..</p>",
+                        "star": False,
+                        "user_id": 12,
+                    },
+                    "2": {
+                        "id": 2,
+                        "meeting_id": 1,
+                        "content_object_id": None,
+                        "note": "blablabla",
+                        "star": False,
+                        "user_id": 13,
+                    },
+                },
+            }
+        )
+        request_data["meeting"]["meeting"]["1"]["personal_note_ids"] = [1, 2]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/16",
+            {
+                "username": "test_new_user",
+                "personal_note_$_ids": ["2"],
+                "personal_note_$2_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "user/14",
+            {
+                "username": "username_test",
+                "personal_note_$_ids": ["1", "2"],
+                "personal_note_$1_ids": [1],
+                "personal_note_$2_ids": [2],
+                "number_$": ["1", "2"],
+                "number_$1": "old number test string",
+                "number_$2": "new number test string",
+                "vote_delegated_$_to_id": ["1", "2"],
+                "vote_delegated_$1_to_id": 1,
+                "vote_delegated_$2_to_id": 16,
+            },
         )
 
     def test_check_forbidden_organization_management_right(self) -> None:

@@ -78,6 +78,9 @@ class MeetingClone(MeetingImport):
         additional_user_ids = instance.pop("user_ids", None)
         additional_admin_ids = instance.pop("admin_ids", None)
 
+        # needs an empty map for superclass code
+        self.merge_user_map = {}
+
         # checks if the meeting is correct
         self.check_one_meeting(instance)
         meeting = self.get_meeting_from_json(meeting_json)
