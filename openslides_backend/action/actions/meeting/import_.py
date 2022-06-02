@@ -404,14 +404,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 return
         if field == "id":
             entry["id"] = self.replace_map[collection][entry["id"]]
-        elif (
-            collection == "meeting"
-            and field == "user_ids"
-            and "user" in self.allowed_collections
-        ):
-            entry[field] = [
-                self.replace_map["user"][id_] for id_ in entry.get(field) or []
-            ]
+        elif collection == "meeting" and field == "user_ids":
+            entry[field] = None
         elif collection == "user" and field == "meeting_ids":
             entry[field] = None
         elif collection == "motion" and field == "recommendation_extension":
