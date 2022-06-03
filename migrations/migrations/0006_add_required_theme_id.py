@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from datastore.migrations import BaseEvent, BaseMigration, CreateEvent, UpdateEvent
 
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+ONE_ORGANIZATION_FQID = "organization/1"
 
 
 class Migration(BaseMigration):

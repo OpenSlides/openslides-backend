@@ -1,7 +1,7 @@
 import pytest
 from datastore.shared.util.exceptions import ModelDoesNotExist
 
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+ONE_ORGANIZATION_FQID = "organization/1"
 
 
 def test_migration(write, finalize, assert_model, read_model):

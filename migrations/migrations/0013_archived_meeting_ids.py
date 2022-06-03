@@ -12,7 +12,8 @@ from datastore.migrations import (
 )
 from datastore.shared.util import collection_and_id_from_fqid
 
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
+ONE_ORGANIZATION_FQID = "organization/1"
+ONE_ORGANIZATION_ID = 1
 
 
 class Migration(BaseMigration):

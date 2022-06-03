@@ -1,4 +1,4 @@
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+ONE_ORGANIZATION_FQID = "organization/1"
 
 
 def test_migration(write, finalize, assert_model):
