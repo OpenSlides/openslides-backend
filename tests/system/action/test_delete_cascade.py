@@ -3,72 +3,67 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase
 
 
 class FakeModelCDA(Model):
-    collection = Collection("fake_model_cd_a")
+    collection = "fake_model_cd_a"
     verbose_name = "fake model for cascade deletion a"
     id = fields.IntegerField()
 
     fake_model_cd_b = fields.RelationField(
-        to={Collection("fake_model_cd_b"): "fake_model_cd_a"},
+        to={"fake_model_cd_b": "fake_model_cd_a"},
         on_delete=fields.OnDelete.CASCADE,
     )
     fake_model_cd_c = fields.RelationField(
-        to={Collection("fake_model_cd_c"): "fake_model_cd_a"},
+        to={"fake_model_cd_c": "fake_model_cd_a"},
         on_delete=fields.OnDelete.CASCADE,
     )
     fake_model_cd_b_set_null = fields.RelationField(
-        to={Collection("fake_model_cd_b"): "fake_model_cd_a_set_null"},
+        to={"fake_model_cd_b": "fake_model_cd_a_set_null"},
         on_delete=fields.OnDelete.SET_NULL,
     )
     fake_model_cd_b_set_null_required = fields.RelationField(
-        to={Collection("fake_model_cd_b"): "fake_model_cd_a_set_null_required"},
+        to={"fake_model_cd_b": "fake_model_cd_a_set_null_required"},
         on_delete=fields.OnDelete.SET_NULL,
     )
 
 
 class FakeModelCDB(Model):
-    collection = Collection("fake_model_cd_b")
+    collection = "fake_model_cd_b"
     verbose_name = "fake model for cascade deletion b"
     id = fields.IntegerField()
 
-    fake_model_cd_a = fields.RelationField(
-        to={Collection("fake_model_cd_a"): "fake_model_cd_b"}
-    )
+    fake_model_cd_a = fields.RelationField(to={"fake_model_cd_a": "fake_model_cd_b"})
     fake_model_cd_c_protect = fields.RelationField(
-        to={Collection("fake_model_cd_c"): "fake_model_cd_b_protected"},
+        to={"fake_model_cd_c": "fake_model_cd_b_protected"},
         on_delete=fields.OnDelete.PROTECT,
     )
     fake_model_cd_c_cascade = fields.RelationField(
-        to={Collection("fake_model_cd_c"): "fake_model_cd_b_cascaded"},
+        to={"fake_model_cd_c": "fake_model_cd_b_cascaded"},
         on_delete=fields.OnDelete.CASCADE,
     )
     fake_model_cd_a_set_null = fields.RelationField(
-        to={Collection("fake_model_cd_a"): "fake_model_cd_b_set_null"},
+        to={"fake_model_cd_a": "fake_model_cd_b_set_null"},
     )
     fake_model_cd_a_set_null_required = fields.RelationField(
-        to={Collection("fake_model_cd_a"): "fake_model_cd_b_set_null_required"},
+        to={"fake_model_cd_a": "fake_model_cd_b_set_null_required"},
         required=True,
     )
 
 
 class FakeModelCDC(Model):
-    collection = Collection("fake_model_cd_c")
+    collection = "fake_model_cd_c"
     verbose_name = "fake model for cascade deletion c"
     id = fields.IntegerField()
 
-    fake_model_cd_a = fields.RelationField(
-        to={Collection("fake_model_cd_a"): "fake_model_cd_c"}
-    )
+    fake_model_cd_a = fields.RelationField(to={"fake_model_cd_a": "fake_model_cd_c"})
     fake_model_cd_b_protected = fields.RelationField(
-        to={Collection("fake_model_cd_b"): "fake_model_cd_c_protect"}
+        to={"fake_model_cd_b": "fake_model_cd_c_protect"}
     )
     fake_model_cd_b_cascaded = fields.RelationField(
-        to={Collection("fake_model_cd_b"): "fake_model_cd_c_cascade"}
+        to={"fake_model_cd_b": "fake_model_cd_c_cascade"}
     )
 
 
@@ -135,7 +130,7 @@ class TestDeleteCascade(BaseActionTestCase):
         response = self.request("fake_model_cd_b.delete", {"id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You can not delete fake_model_cd_b/1 because you have to delete the following related models first: [FullQualifiedId('fake_model_cd_c/1')]",
+            "You can not delete fake_model_cd_b/1 because you have to delete the following related models first: ['fake_model_cd_c/1']",
             response.json["message"],
         )
         self.assert_model_exists("fake_model_cd_b/1")
@@ -167,7 +162,7 @@ class TestDeleteCascade(BaseActionTestCase):
         response = self.request("fake_model_cd_a.delete", {"id": 1})
         self.assert_status_code(response, 400)
         self.assertIn(
-            "You can not delete fake_model_cd_a/1 because you have to delete the following related models first: [FullQualifiedId('fake_model_cd_c/1')]",
+            "You can not delete fake_model_cd_a/1 because you have to delete the following related models first: ['fake_model_cd_c/1']",
             response.json["message"],
         )
         self.assert_model_exists("fake_model_cd_a/1")

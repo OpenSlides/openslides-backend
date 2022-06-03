@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -17,7 +17,8 @@ class UserResetPasswordToDefaultMixin(UpdateAction, CheckForArchivedMeetingMixin
         """
         instance = super().update_instance(instance)
         user = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["default_password"]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["default_password"],
         )
         default_password = self.auth.hash(str(user.get("default_password")))
         instance["password"] = default_password

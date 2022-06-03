@@ -22,8 +22,14 @@ from ...services.datastore.interface import (
 from ...shared.exceptions import ActionException
 from ...shared.patterns import (
     Collection,
-    FullQualifiedField,
     FullQualifiedId,
+    collection_from_fqfield,
+    collection_from_fqid,
+    fqfield_from_fqid_and_field,
+    fqid_from_collection_and_id,
+    fqid_from_fqfield,
+    id_from_fqfield,
+    id_from_fqid,
     transform_to_fqids,
 )
 from .typing import FieldUpdateElement, RelationFieldUpdates
@@ -121,7 +127,7 @@ class SingleRelationHandler:
         ):
             if collection not in self.field.to:
                 raise ActionException(
-                    f"The collection '{collection.collection}' is not available for field '{self.field.own_field_name}' in collection '{self.field.own_collection.collection}'."
+                    f"The collection '{collection}' is not available for field '{self.field.own_field_name}' in collection '{self.field.own_collection}'."
                 )
 
             related_name = self.get_related_name(collection)
@@ -152,11 +158,13 @@ class SingleRelationHandler:
                 # transform fqids back to ids
                 if not isinstance(related_field, BaseGenericRelationField):
                     modified_element = rel_update["modified_element"]
-                    assert isinstance(modified_element, FullQualifiedId)
-                    rel_update["modified_element"] = modified_element.id
+                    assert type(modified_element) != int
+                    rel_update["modified_element"] = id_from_fqid(
+                        cast(FullQualifiedId, modified_element)
+                    )
 
                     fqids = cast(List[FullQualifiedId], rel_update["value"])
-                    rel_update["value"] = [fqid.id for fqid in fqids]
+                    rel_update["value"] = [id_from_fqid(fqid) for fqid in fqids]
 
                 # remove arrays in *:1 cases which we artificially added
                 current_value = cast(
@@ -187,7 +195,7 @@ class SingleRelationHandler:
         "fqid": fqid,
         "origin_modified_fqid": own_fqid,
         """
-        collection = chained_field["fqid"].collection
+        collection = collection_from_fqid(chained_field["fqid"])
         field_name = self.get_related_name(collection)
         field = self.get_reverse_field(collection)
         instance = self.datastore.get(chained_field["fqid"], ["id", field_name])
@@ -207,7 +215,7 @@ class SingleRelationHandler:
         """
         partition = defaultdict(list)
         for fqid in fqids:
-            partition[fqid.collection].append(fqid)
+            partition[collection_from_fqid(fqid)].append(fqid)
         return partition
 
     def get_related_name(self, collection: Collection) -> str:
@@ -228,7 +236,9 @@ class SingleRelationHandler:
                 if replacement is None:
                     # replacement field was not fetched from db yet
                     db_instance = self.datastore.get(
-                        fqid=FullQualifiedId(self.model.collection, self.id),
+                        fqid=fqid_from_collection_and_id(
+                            self.model.collection, self.id
+                        ),
                         mapped_fields=[replacement_field],
                         use_changed_models=False,
                     )
@@ -253,7 +263,7 @@ class SingleRelationHandler:
         # We have to compare with the current datastore state.
         # Retrieve current object from datastore
         current_obj = self.datastore.get(
-            FullQualifiedId(self.model.collection, self.id),
+            fqid_from_collection_and_id(self.model.collection, self.id),
             [self.field_name],
             use_changed_models=False,
             raise_exception=False,
@@ -290,7 +300,7 @@ class SingleRelationHandler:
         relations: RelationFieldUpdates = {}
         for fqid, rel in rels.items():
             new_value: Any  # Union[FullQualifiedId, List[FullQualifiedId]]
-            own_fqid = FullQualifiedId(collection=self.field.own_collection, id=self.id)
+            own_fqid = fqid_from_collection_and_id(self.field.own_collection, self.id)
             if fqid in add:
                 if own_fqid in rel[related_name]:
                     continue
@@ -317,7 +327,7 @@ class SingleRelationHandler:
                 rel_element = FieldUpdateElement(
                     type="remove", value=new_value, modified_element=own_fqid
                 )
-            fqfield = FullQualifiedField(fqid.collection, fqid.id, related_name)
+            fqfield = fqfield_from_fqid_and_field(fqid, related_name)
             relations[fqfield] = rel_element
         return relations
 
@@ -330,7 +340,7 @@ class SingleRelationHandler:
         if not result_structured_field:
             return {}
 
-        collection = next(iter(result_structured_field)).collection
+        collection = collection_from_fqfield(next(iter(result_structured_field)))
         related_name = self.get_related_name(collection)
         reverse_field = self.get_reverse_field(collection)
         assert isinstance(reverse_field, BaseTemplateField)
@@ -339,7 +349,7 @@ class SingleRelationHandler:
         # assert that the related name contains a valid replacement
         replacement = reverse_field.get_replacement(related_name)
 
-        ids = [fqfield.id for fqfield in result_structured_field.keys()]
+        ids = [id_from_fqfield(fqfield) for fqfield in result_structured_field.keys()]
         response = self.datastore.get_many(
             get_many_requests=[
                 GetManyRequest(collection, ids, mapped_fields=[template_field_name])
@@ -348,7 +358,9 @@ class SingleRelationHandler:
         db_rels = response.get(collection, {})
         result_template_field: RelationFieldUpdates = {}
         for fqfield, rel_update in result_structured_field.items():
-            current_value = db_rels.get(fqfield.id, {}).get(template_field_name, [])
+            current_value = db_rels.get(id_from_fqfield(fqfield), {}).get(
+                template_field_name, []
+            )
             if (self.type in ("1:1", "m:1") and rel_update["value"] is None) or (
                 self.type in ("1:m", "m:n") and rel_update["value"] == []
             ):
@@ -377,6 +389,9 @@ class SingleRelationHandler:
                 # Nothing to do, replacement already existed and still exists. Skip.
                 continue
             result_template_field[
-                FullQualifiedField(fqfield.collection, fqfield.id, template_field_name)
+                fqfield_from_fqid_and_field(
+                    fqid_from_fqfield(fqfield),
+                    template_field_name,
+                )
             ] = rel_element
         return result_template_field

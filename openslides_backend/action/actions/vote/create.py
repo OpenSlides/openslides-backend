@@ -1,6 +1,5 @@
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.datastore.commands import GetManyRequest
-from openslides_backend.shared.patterns import Collection
 
 from ....models.models import Vote
 from ...mixins.create_action_with_inferred_meeting import (
@@ -34,7 +33,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
         result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("option"),
+                    "option",
                     list({instance["option_id"] for instance in action_data}),
                     ["meeting_id", "vote_ids"],
                 ),
@@ -50,7 +49,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
             "vote_delegated_$_to_id",
             "vote_delegated_vote_$_ids",
         ]
-        for option in result[Collection("option")].values():
+        for option in result["option"].values():
             fields.extend(
                 (
                     f"group_${option['meeting_id']}_ids",
@@ -63,7 +62,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
         self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("user"),
+                    "user",
                     list(
                         {
                             user_id

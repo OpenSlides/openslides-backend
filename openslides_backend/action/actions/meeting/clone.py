@@ -11,14 +11,14 @@ from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from openslides_backend.shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema
 
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 from .export_helper import export_meeting
-from .import_ import ONE_ORGANIZATION, MeetingImport
+from .import_ import ONE_ORGANIZATION_ID, MeetingImport
 
 updatable_fields = [
     "committee_id",
@@ -51,13 +51,13 @@ class MeetingClone(MeetingImport):
         self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("meeting"),
+                    "meeting",
                     list({instance["meeting_id"] for instance in action_data}),
                     ["committee_id"],
                 ),
                 GetManyRequest(
-                    Collection("organization"),
-                    [ONE_ORGANIZATION],
+                    "organization",
+                    [ONE_ORGANIZATION_ID],
                     ["active_meeting_ids", "archived_meeting_ids", "limit_of_meetings"],
                 ),
             ],
@@ -320,7 +320,7 @@ class MeetingClone(MeetingImport):
     ) -> WriteRequest:
         return self.build_write_request(
             EventType.Update,
-            FullQualifiedId(Collection("user"), user_id),
+            fqid_from_collection_and_id("user", user_id),
             f"clone meeting {self.get_meeting_from_json(json_data)['id']}",
             list_fields={
                 "add": {
@@ -336,7 +336,7 @@ class MeetingClone(MeetingImport):
             committee_id = instance["committee_id"]
         else:
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
                 ["committee_id"],
                 lock_result=False,
                 use_changed_models=False,

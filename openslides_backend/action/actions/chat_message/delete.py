@@ -4,7 +4,7 @@ from ....models.models import ChatMessage
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +21,7 @@ class ChatMessageDelete(DeleteAction):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         chat_message = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id", "meeting_id"],
         )
         if chat_message.get("user_id") != self.user_id and not has_perm(

@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union, cast
 
-from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, string_to_fqid
+from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, FullQualifiedId
 from ..shared.schema import (
     decimal_schema,
     fqid_list_schema,
@@ -309,8 +309,6 @@ class GenericRelationField(BaseGenericRelationField):
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         assert not isinstance(value, list)
-        if value:
-            return string_to_fqid(value)
         return value
 
 
@@ -323,7 +321,7 @@ class GenericRelationListField(BaseGenericRelationField):
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         if value is not None or self.required:
             assert isinstance(value, list), "assert list-failure"
-            return [string_to_fqid(fqid) for fqid in value]
+            return [cast(FullQualifiedId, fqid) for fqid in value]
         return value
 
 

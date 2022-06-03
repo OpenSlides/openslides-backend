@@ -1,4 +1,4 @@
-from .patterns import DECIMAL_PATTERN, FullQualifiedId
+from .patterns import DECIMAL_PATTERN, FQID_REGEX
 from .typing import Schema
 
 schema_version = "http://json-schema.org/draft-07/schema#"
@@ -10,12 +10,12 @@ optional_id_schema: Schema = {"type": ["integer", "null"], "minimum": 1}
 
 required_fqid_schema: Schema = {
     "type": "string",
-    "pattern": FullQualifiedId.REGEX,
+    "pattern": FQID_REGEX,
     "minLength": 1,
 }
 optional_fqid_schema: Schema = {
     "type": ["string", "null"],
-    "pattern": FullQualifiedId.REGEX,
+    "pattern": FQID_REGEX,
     "minLength": 1,
 }
 optional_str_schema: Schema = {

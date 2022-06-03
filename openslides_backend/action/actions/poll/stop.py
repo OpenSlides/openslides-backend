@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, VoteServiceException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -24,7 +24,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
         result = self.datastore.get_many(
             [
                 GetManyRequest(
-                    Collection("poll"),
+                    "poll",
                     list({instance["id"] for instance in action_data}),
                     [
                         "content_object_id",
@@ -39,11 +39,11 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
             ],
             use_changed_models=False,
         )
-        polls = result[Collection("poll")].values()
+        polls = result["poll"].values()
         meeting_ids = list({poll["meeting_id"] for poll in polls})
         requests = [
             GetManyRequest(
-                Collection("meeting"),
+                "meeting",
                 meeting_ids,
                 [
                     "is_active_in_organization_id",
@@ -55,7 +55,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                 ],
             ),
             GetManyRequest(
-                Collection("group"),
+                "group",
                 list(
                     {
                         group_id
@@ -70,7 +70,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "meeting_id", "voted_ids"],
         )
         if poll.get("state") != Poll.STATE_STARTED:

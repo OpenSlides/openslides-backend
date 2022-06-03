@@ -11,7 +11,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, PermissionDenied
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util_dict_sets import get_set_from_dict_by_fieldlist
 from .user_scope_permission_check_mixin import UserScope, UserScopePermissionCheckMixin
 
@@ -29,7 +29,7 @@ class PermissionVarStore:
             >= CommitteeManagementLevel.CAN_MANAGE
         ]
         self.user = self.datastore.get(
-            FullQualifiedId(Collection("user"), self.user_id),
+            fqid_from_collection_and_id("user", self.user_id),
             [
                 "organization_management_level",
                 "group_$_ids",
@@ -86,13 +86,13 @@ class PermissionVarStore:
                 self.datastore.get_many(
                     [
                         GetManyRequest(
-                            Collection("committee"),
+                            "committee",
                             list(user_committees),
                             ["meeting_ids"],
                         )
                     ]
                 )
-                .get(Collection("committee"), {})
+                .get("committee", {})
                 .values()
             )
             user_meetings = reduce(
@@ -115,7 +115,7 @@ class PermissionVarStore:
         user_meetings = set()
         if meeting_ids:
             user = self.datastore.get(
-                FullQualifiedId(Collection("user"), self.user_id),
+                fqid_from_collection_and_id("user", self.user_id),
                 [f"group_${meeting_id}_ids" for meeting_id in meeting_ids],
             )
             all_groups: List[int] = []
@@ -126,13 +126,13 @@ class PermissionVarStore:
                 self.datastore.get_many(
                     [
                         GetManyRequest(
-                            Collection("group"),
+                            "group",
                             list(all_groups),
                             ["meeting_id", "permissions", "admin_group_for_meeting_id"],
                         )
                     ]
                 )
-                .get(Collection("group"), {})
+                .get("group", {})
                 .values()
             )
 
@@ -235,7 +235,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             and scope_id not in permstore.user_meetings
         ):
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), scope_id), ["committee_id"]
+                fqid_from_collection_and_id("meeting", scope_id), ["committee_id"]
             )
             raise MissingPermission(
                 {
@@ -302,7 +302,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
     ) -> None:
         if "id" in instance:
             user = self.datastore.get(
-                FullQualifiedId(Collection("user"), instance["id"]),
+                fqid_from_collection_and_id("user", instance["id"]),
                 ["organization_management_level"],
             )
             if (
@@ -369,7 +369,7 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
                 for replacement in right_list
             ]
             user = self.datastore.get(
-                FullQualifiedId(Collection("user"), instance_user_id),
+                fqid_from_collection_and_id("user", instance_user_id),
                 [*cml_fields],
             )
             committees_existing = get_set_from_dict_by_fieldlist(user, cml_fields)

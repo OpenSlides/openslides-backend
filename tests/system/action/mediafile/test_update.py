@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -515,7 +516,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_access_group_with_orga_owner(self) -> None:
-        self.permission_test_models["mediafile/111"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/111"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.set_models(self.permission_test_models)
         response = self.request(
             "mediafile.update", {"id": 111, "access_group_ids": [7]}
@@ -548,7 +549,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_token_payload_token_unique(self) -> None:
         self.set_models(
             {
-                "mediafile/7": {"token": "token_1", "owner_id": "organization/1"},
+                "mediafile/7": {"token": "token_1", "owner_id": ONE_ORGANIZATION_FQID},
                 "mediafile/8": {"token": "token_2", "owner_id": "organization/2"},
             }
         )
@@ -562,7 +563,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
     def test_update_token_payload_old_token(self) -> None:
         self.set_models(
             {
-                "mediafile/7": {"token": "token_1", "owner_id": "organization/1"},
+                "mediafile/7": {"token": "token_1", "owner_id": ONE_ORGANIZATION_FQID},
             }
         )
         response = self.request(
@@ -619,7 +620,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_no_permissions_orga_owner(self) -> None:
-        self.permission_test_models["mediafile/111"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/111"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(
             self.permission_test_models,
             "mediafile.update",
@@ -627,7 +628,7 @@ class MediafileUpdateActionTest(BaseActionTestCase):
         )
 
     def test_update_permissions_orga_owner(self) -> None:
-        self.permission_test_models["mediafile/111"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/111"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(
             self.permission_test_models,
             "mediafile.update",

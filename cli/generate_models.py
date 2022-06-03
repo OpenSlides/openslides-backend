@@ -166,7 +166,7 @@ class Model(Node):
             """
 
             class ${class_name}(Model):
-                collection = Collection("${collection}")
+                collection = "${collection}"
                 verbose_name = "${verbose_name}"
 
             """
@@ -258,7 +258,7 @@ class Attribute(Node):
                 self.is_template = True
                 replacement_str = value.get("replacement_collection")
                 self.replacement_collection = (
-                    Collection(replacement_str) if replacement_str else None
+                    replacement_str if replacement_str else None
                 )
                 inner_value = value.get("fields")
                 assert not is_inner_attribute and inner_value
@@ -373,7 +373,7 @@ class To(Node):
             assert isinstance(value, dict)
             collections = value.get("collections")
             assert isinstance(collections, list)
-            self.to = {Collection(c): value["field"] for c in collections}
+            self.to = {c: value["field"] for c in collections}
 
     def parse_collectionfield(self, collectionfield: str) -> Dict[Collection, str]:
         """
@@ -381,7 +381,7 @@ class To(Node):
         respective entry.
         """
         collection, field = collectionfield.split(KEYSEPARATOR)
-        return {Collection(collection): field}
+        return {collection: field}
 
     def get_properties(self) -> str:
         return "to=" + repr(self.to) + ","

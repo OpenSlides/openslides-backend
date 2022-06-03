@@ -4,67 +4,66 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase
 
 
 class FakeModelEFA(Model):
-    collection = Collection("fake_model_ef_a")
+    collection = "fake_model_ef_a"
     verbose_name = "fake model for equal field check a"
     id = fields.IntegerField()
 
     b_id = fields.RelationField(
-        to={Collection("fake_model_ef_b"): "meeting_id"},
+        to={"fake_model_ef_b": "meeting_id"},
     )
     c_id = fields.RelationField(
-        to={Collection("fake_model_ef_c"): "meeting_id"},
+        to={"fake_model_ef_c": "meeting_id"},
     )
 
 
 class FakeModelEFB(Model):
-    collection = Collection("fake_model_ef_b")
+    collection = "fake_model_ef_b"
     verbose_name = "fake model for equal field check b"
     id = fields.IntegerField()
 
-    meeting_id = fields.RelationField(to={Collection("fake_model_ef_a"): "b_id"})
+    meeting_id = fields.RelationField(to={"fake_model_ef_a": "b_id"})
 
     c_id = fields.RelationField(
-        to={Collection("fake_model_ef_c"): "b_id"},
+        to={"fake_model_ef_c": "b_id"},
         equal_fields="meeting_id",
     )
     c_ids = fields.RelationListField(
-        to={Collection("fake_model_ef_c"): "b_ids"},
+        to={"fake_model_ef_c": "b_ids"},
         equal_fields="meeting_id",
     )
     c_generic_id = fields.GenericRelationField(
-        to={Collection("fake_model_ef_c"): "b_generic_id"},
+        to={"fake_model_ef_c": "b_generic_id"},
         equal_fields="meeting_id",
     )
     c_generic_ids = fields.GenericRelationListField(
-        to={Collection("fake_model_ef_c"): "b_generic_ids"},
+        to={"fake_model_ef_c": "b_generic_ids"},
         equal_fields="meeting_id",
     )
 
 
 class FakeModelEFC(Model):
-    collection = Collection("fake_model_ef_c")
+    collection = "fake_model_ef_c"
     verbose_name = "fake model for equal field check c"
     id = fields.IntegerField()
 
-    meeting_id = fields.RelationField(to={Collection("fake_model_ef_a"): "c_id"})
+    meeting_id = fields.RelationField(to={"fake_model_ef_a": "c_id"})
 
     b_id = fields.RelationField(
-        to={Collection("fake_model_ef_b"): "c_id"},
+        to={"fake_model_ef_b": "c_id"},
     )
     b_ids = fields.RelationListField(
-        to={Collection("fake_model_ef_b"): "c_ids"},
+        to={"fake_model_ef_b": "c_ids"},
     )
     b_generic_id = fields.GenericRelationField(
-        to={Collection("fake_model_ef_b"): "c_generic_id"},
+        to={"fake_model_ef_b": "c_generic_id"},
     )
     b_generic_ids = fields.GenericRelationListField(
-        to={Collection("fake_model_ef_b"): "c_generic_ids"},
+        to={"fake_model_ef_b": "c_generic_ids"},
     )
 
 

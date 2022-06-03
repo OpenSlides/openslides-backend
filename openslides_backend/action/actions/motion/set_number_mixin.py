@@ -2,7 +2,7 @@ from typing import Any, Dict, Optional, Union
 
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import BaseAction
 
 
@@ -30,14 +30,14 @@ class SetNumberMixin(BaseAction):
         if existing_number:
             return
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id),
+            fqid_from_collection_and_id("meeting", meeting_id),
             ["motions_number_type", "motions_number_min_digits"],
             lock_result=False,
         )
         if meeting.get("motions_number_type") == "manually":
             return
         state = self.datastore.get(
-            FullQualifiedId(Collection("motion_state"), state_id),
+            fqid_from_collection_and_id("motion_state", state_id),
             ["set_number"],
             lock_result=False,
         )
@@ -69,20 +69,20 @@ class SetNumberMixin(BaseAction):
         self, meeting_id: int, lead_motion_id: Optional[int], category_id: Optional[int]
     ) -> str:
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id),
+            fqid_from_collection_and_id("meeting", meeting_id),
             ["motions_number_with_blank", "motions_amendments_prefix"],
         )
         blank = " " if meeting.get("motions_number_with_blank") else ""
         if lead_motion_id:
             lead_motion = self.datastore.get(
-                FullQualifiedId(Collection("motion"), lead_motion_id), ["number"]
+                fqid_from_collection_and_id("motion", lead_motion_id), ["number"]
             )
             prefix = f"{lead_motion.get('number', '')}{blank}{meeting.get('motions_amendments_prefix', '')}"
         elif not category_id:
             prefix = ""
         else:
             category = self.datastore.get(
-                FullQualifiedId(Collection("motion_category"), category_id), ["prefix"]
+                fqid_from_collection_and_id("motion_category", category_id), ["prefix"]
             )
             if category.get("prefix"):
                 prefix = f"{category['prefix']}{blank}"
@@ -101,7 +101,7 @@ class SetNumberMixin(BaseAction):
             return existing_number_value
 
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id), ["motions_number_type"]
+            fqid_from_collection_and_id("meeting", meeting_id), ["motions_number_type"]
         )
         if lead_motion_id:
             filter: Union[And, FilterOperator] = FilterOperator(
@@ -117,7 +117,7 @@ class SetNumberMixin(BaseAction):
                 FilterOperator("meeting_id", "=", meeting_id),
                 FilterOperator("lead_motion_id", "=", None),
             )
-        max_result = self.datastore.max(Collection("motion"), filter, "number_value")
+        max_result = self.datastore.max("motion", filter, "number_value")
         max_result = 1 if max_result is None else max_result + 1
         return max_result
 
@@ -127,5 +127,5 @@ class SetNumberMixin(BaseAction):
             FilterOperator("number", "=", number),
             FilterOperator("id", "!=", own_id),
         )
-        exists = self.datastore.exists(collection=Collection("motion"), filter=filter)
+        exists = self.datastore.exists(collection="motion", filter=filter)
         return not exists

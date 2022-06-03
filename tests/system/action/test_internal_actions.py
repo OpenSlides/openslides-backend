@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from openslides_backend.http.views.action_view import ActionView
 from openslides_backend.shared.env import DEV_PASSWORD
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.util import get_route_path
 from tests.util import Response
 
@@ -68,7 +69,7 @@ class TestInternalActionsDev(BaseInternalActionsTest):
         self.datastore.truncate_db()
         response = self.internal_request("organization.initial_import", {"data": {}})
         self.assert_status_code(response, 200)
-        self.assert_model_exists("organization/1")
+        self.assert_model_exists(ONE_ORGANIZATION_FQID)
         self.assert_model_exists("user/1", {"username": "superadmin"})
 
     def test_internal_mismatching_passwords(self) -> None:

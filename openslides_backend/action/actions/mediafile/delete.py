@@ -2,7 +2,7 @@ from typing import List
 
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,12 +27,12 @@ class MediafileDelete(MediafileMixin, DeleteAction):
     def get_tree_ids(self, id_: int) -> List[int]:
         tree_ids = [id_]
         node = self.datastore.get(
-            FullQualifiedId(Collection("mediafile"), id_), ["child_ids"]
+            fqid_from_collection_and_id("mediafile", id_), ["child_ids"]
         )
         if node.get("child_ids"):
             for child_id in node["child_ids"]:
                 if not self.is_deleted(
-                    FullQualifiedId(Collection("mediafile"), child_id)
+                    fqid_from_collection_and_id("mediafile", child_id)
                 ):
                     tree_ids.extend(self.get_tree_ids(child_id))
         return tree_ids

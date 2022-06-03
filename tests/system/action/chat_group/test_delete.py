@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,7 +9,7 @@ class ChatGroupDelete(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "organization/1": {"enable_chat": True},
+            ONE_ORGANIZATION_FQID: {"enable_chat": True},
             "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/1": {"meeting_id": 1, "name": "redekreis1"},
         }
@@ -20,7 +21,7 @@ class ChatGroupDelete(BaseActionTestCase):
         self.assert_model_deleted("chat_group/1")
 
     def test_delete_not_enabled(self) -> None:
-        self.test_models["organization/1"]["enable_chat"] = False
+        self.test_models[ONE_ORGANIZATION_FQID]["enable_chat"] = False
         self.set_models(self.test_models)
         response = self.request("chat_group.delete", {"id": 1})
         self.assert_status_code(response, 400)

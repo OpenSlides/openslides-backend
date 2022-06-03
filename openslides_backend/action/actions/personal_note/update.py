@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import PersonalNote
 from ....shared.exceptions import PermissionDenied
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -24,7 +24,7 @@ class PersonalNoteUpdateAction(UpdateAction, PermissionMixin):
         meeting_id = self.get_meeting_id(instance)
         self.check_anonymous_and_user_in_meeting(meeting_id)
         personal_note = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id"],
         )
         if self.user_id != personal_note.get("user_id"):

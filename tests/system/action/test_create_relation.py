@@ -17,7 +17,7 @@ from .base import BaseActionTestCase
 
 
 class FakeModelCRA(Model):
-    collection = Collection("fake_model_cr_a")
+    collection: Collection = "fake_model_cr_a"
     verbose_name = "fake model for simple field creation"
     id = fields.IntegerField()
 
@@ -26,38 +26,38 @@ class FakeModelCRA(Model):
 
 
 class FakeModelCRB(Model):
-    collection = Collection("fake_model_cr_b")
+    collection: Collection = "fake_model_cr_b"
     verbose_name = "fake model for create relation b"
     id = fields.IntegerField()
 
     name = fields.CharField()
     fake_model_cr_c_id = fields.RelationField(
-        to={Collection("fake_model_cr_c"): "fake_model_cr_b_id"}, required=True
+        to={"fake_model_cr_c": "fake_model_cr_b_id"}, required=True
     )
 
 
 class FakeModelCRC(Model):
-    collection = Collection("fake_model_cr_c")
+    collection: Collection = "fake_model_cr_c"
     verbose_name = "fake model for create relation c"
     id = fields.IntegerField()
 
     name = fields.CharField()
     fake_model_cr_b_id = fields.RelationField(
-        to={Collection("fake_model_cr_b"): "fake_model_cr_c_id"}, required=True
+        to={"fake_model_cr_b": "fake_model_cr_c_id"}, required=True
     )
     fake_model_cr_d_id = fields.RelationField(
-        to={Collection("fake_model_cr_d"): "fake_model_cr_c_ids"},
+        to={"fake_model_cr_d": "fake_model_cr_c_ids"},
     )
 
 
 class FakeModelCRD(Model):
-    collection = Collection("fake_model_cr_d")
+    collection: Collection = "fake_model_cr_d"
     verbose_name = "fake model for create relation d"
     id = fields.IntegerField()
 
     name = fields.CharField()
     fake_model_cr_c_ids = fields.RelationListField(
-        to={Collection("fake_model_cr_c"): "fake_model_cr_d_id"}, required=True
+        to={"fake_model_cr_c": "fake_model_cr_d_id"}, required=True
     )
 
 

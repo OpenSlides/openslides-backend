@@ -2,7 +2,6 @@ from ....models.models import Motion
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -45,24 +44,22 @@ class MotionSetSupportSelfAction(UpdateAction):
             if not motions[key]["state_id"] in state_ids:
                 state_ids.append(motions[key]["state_id"])
         gm_request_meeting = GetManyRequest(
-            Collection("meeting"), meeting_ids, ["motions_supporters_min_amount"]
+            "meeting", meeting_ids, ["motions_supporters_min_amount"]
         )
-        gm_request_state = GetManyRequest(
-            Collection("motion_state"), state_ids, ["allow_support"]
-        )
+        gm_request_state = GetManyRequest("motion_state", state_ids, ["allow_support"])
         gm_result = self.datastore.get_many([gm_request_meeting, gm_request_state])
         for instance in action_data:
             motion = motions.get(instance["motion_id"], {})
             meeting_id = motion.get("meeting_id")
             if meeting_id is None:
                 raise ActionException("Motion is missing meeting_id.")
-            meeting = gm_result.get(Collection("meeting"), {}).get(meeting_id, {})
+            meeting = gm_result.get("meeting", {}).get(meeting_id, {})
             if meeting.get("motions_supporters_min_amount") == 0:
                 raise ActionException("Motion supporters system deactivated.")
             state_id = motion.get("state_id")
             if state_id is None:
                 raise ActionException("Motion is missing state_id.")
-            state = gm_result.get(Collection("motion_state"), {}).get(state_id, {})
+            state = gm_result.get("motion_state", {}).get(state_id, {})
 
             if state.get("allow_support") is False:
                 raise ActionException("The state does not allow support.")

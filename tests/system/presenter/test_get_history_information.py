@@ -2,8 +2,7 @@ from typing import Any, Dict, List
 
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import FullQualifiedId, string_to_fqid
-from tests.util import get_fqid, get_id_from_fqid
+from openslides_backend.shared.patterns import FullQualifiedId, id_from_fqid
 
 from .base import BasePresenterTestCase
 
@@ -16,10 +15,10 @@ class TestCheckMediafileId(BasePresenterTestCase):
         information: Dict[FullQualifiedId, List[str]],
         user_id: int = 1,
     ) -> None:
-        data["id"] = get_id_from_fqid(fqid)
+        data["id"] = id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         request = WriteRequest(
-            events=[Event(type=EventType.Create, fqid=get_fqid(fqid), fields=data)],
+            events=[Event(type=EventType.Create, fqid=fqid, fields=data)],
             information=information,
             user_id=user_id,
             locked_fields={},
@@ -31,13 +30,11 @@ class TestCheckMediafileId(BasePresenterTestCase):
             del position["timestamp"]
 
     def test_simple(self) -> None:
-        self.create_model_with_information(
-            "meeting/1", {}, {string_to_fqid("meeting/1"): ["Created"]}
-        )
+        self.create_model_with_information("meeting/1", {}, {"meeting/1": ["Created"]})
         self.create_model_with_information(
             "motion/1",
             {"title": "the title", "meeting_id": 1},
-            {string_to_fqid("motion/1"): ["Created"]},
+            {"motion/1": ["Created"]},
         )
         status_code, data = self.request(
             "get_history_information", {"fqid": "motion/1"}
@@ -56,13 +53,11 @@ class TestCheckMediafileId(BasePresenterTestCase):
         )
 
     def test_unknown_user(self) -> None:
-        self.create_model_with_information(
-            "meeting/1", {}, {string_to_fqid("meeting/1"): ["Created"]}
-        )
+        self.create_model_with_information("meeting/1", {}, {"meeting/1": ["Created"]})
         self.create_model_with_information(
             "motion/1",
             {"title": "the title", "meeting_id": 1},
-            {string_to_fqid("motion/1"): ["Created"]},
+            {"motion/1": ["Created"]},
             user_id=2,
         )
         status_code, data = self.request(

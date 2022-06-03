@@ -1,6 +1,7 @@
 from time import time
 
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.mail_base import (
     AIOHandler,
@@ -16,7 +17,7 @@ class UserForgetPassword(BaseActionTestCase):
 
     def test_forget_password_send_mail_correct(self) -> None:
         self.set_models(
-            {"organization/1": {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
+            {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
         start_time = int(time())
         handler = AIOHandler()
@@ -31,7 +32,7 @@ class UserForgetPassword(BaseActionTestCase):
     def test_forget_password_two_users_with_email(self) -> None:
         self.set_models(
             {
-                "organization/1": {"url": "https://openslides.example.com"},
+                ONE_ORGANIZATION_FQID: {"url": "https://openslides.example.com"},
                 "user/1": {"email": "test@ntvtn.de"},
                 "user/2": {"email": "test@ntvtn.de", "username": "test2"},
                 "user/3": {"email": "user@ntvtn.de", "username": "test3"},
@@ -65,7 +66,7 @@ class UserForgetPassword(BaseActionTestCase):
         assert "https://openslides.example.com" in handler.emails[1]["data"]
 
     def test_forget_password_no_user_found(self) -> None:
-        self.set_models({"organization/1": {"url": None}})
+        self.set_models({ONE_ORGANIZATION_FQID: {"url": None}})
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request("user.forget_password", {"email": "info@ntvtn.de"})
@@ -91,7 +92,7 @@ class UserForgetPassword(BaseActionTestCase):
         EmailSettings.user = "sender@example.com"
 
         self.set_models(
-            {"organization/1": {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
+            {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
         )
 
         handler = AIOHandler()

@@ -150,6 +150,6 @@ class Model(metaclass=ModelMetaClass):
                     or not model_field.replacement_enum  # type: ignore
                 ):
                     raise NotImplementedError(
-                        f"{self.collection.collection}.{model_field.own_field_name}"
+                        f"{self.collection}.{model_field.own_field_name}"
                     )
                 yield model_field

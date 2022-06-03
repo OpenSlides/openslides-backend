@@ -3,10 +3,11 @@ from time import time
 from typing import Any, Dict
 from urllib.parse import quote
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailMixin, EmailSettings
 from ...util.default_schema import DefaultSchema
@@ -20,7 +21,6 @@ Please open the following link and choose a new password:
 
 For completeness your username: {username}"""
 PW_FORGET_EMAIL_SUBJECT = "Reset your OpenSlides password"
-ONE_ORGANIZATION = 1
 
 
 class format_dict(defaultdict):
@@ -59,9 +59,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                 self.model.collection, filter_, ["id", "username"]
             )
 
-            organization = self.datastore.get(
-                FullQualifiedId(Collection("organization"), ONE_ORGANIZATION), ["url"]
-            )
+            organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["url"])
             url = organization.get("url", "")
 
             # try to send the mails.

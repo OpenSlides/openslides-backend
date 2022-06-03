@@ -28,10 +28,14 @@ from ...shared.interfaces.env import Env
 from ...shared.interfaces.logging import LoggingModule
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
+    COLLECTIONFIELD_PATTERN,
     Collection,
     CollectionField,
     FullQualifiedField,
     FullQualifiedId,
+    collectionfield_from_collection_and_field,
+    fqfield_from_fqid_and_field,
+    fqid_from_collection_and_id,
 )
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
@@ -149,20 +153,20 @@ class DatastoreAdapter(BaseDatastoreService):
         result: Dict[Collection, Dict[int, PartialModel]] = defaultdict(dict)
         for get_many_request in get_many_requests:
             collection = get_many_request.collection
-            if collection.collection not in response:
+            if collection not in response:
                 continue
 
             for instance_id in get_many_request.ids:
-                if instance_id not in response[collection.collection]:
+                if instance_id not in response[collection]:
                     continue
-                value = response[collection.collection][instance_id]
+                value = response[collection][instance_id]
                 if lock_result:
                     instance_position = value.get("meta_position")
                     if not isinstance(instance_position, int):
                         raise DatastoreException(
                             "Response from datastore contains invalid 'meta_position'."
                         )
-                    fqid = FullQualifiedId(collection, instance_id)
+                    fqid = fqid_from_collection_and_id(collection, instance_id)
                     self.update_locked_fields_from_mapped_fields(
                         fqid, instance_position, get_many_request.mapped_fields
                     )
@@ -201,7 +205,9 @@ class DatastoreAdapter(BaseDatastoreService):
                     raise DatastoreException(
                         "Response from datastore contains invalid 'meta_position'."
                     )
-                collection_field = CollectionField(collection, field)
+                collection_field = collectionfield_from_collection_and_field(
+                    collection, field
+                )
                 self.update_locked_fields(collection_field, instance_position)
         return response
 
@@ -352,7 +358,7 @@ class DatastoreAdapter(BaseDatastoreService):
         if additional_field:
             fields.append(additional_field)
         for field in fields:
-            cf = CollectionField(collection, field)
+            cf = collectionfield_from_collection_and_field(collection, field)
             self.update_locked_fields(cf, {"position": position, "filter": filter})
 
     def apply_deleted_models_behaviour_to_filter(
@@ -379,7 +385,8 @@ class DatastoreAdapter(BaseDatastoreService):
             for field in mapped_fields:
                 if not field.startswith("meta_"):
                     self.update_locked_fields(
-                        FullQualifiedField(fqid.collection, fqid.id, field), position
+                        fqfield_from_fqid_and_field(fqid, field),
+                        position,
                     )
         else:
             self.update_locked_fields(fqid, position)
@@ -393,7 +400,7 @@ class DatastoreAdapter(BaseDatastoreService):
         Updates the locked_fields map by adding the new value for the given FQId or
         FQField. To work properly in case of retry/reread we have to accept the new value always.
         """
-        if not isinstance(lock, int) and not isinstance(key, CollectionField):
+        if not isinstance(lock, int) and not COLLECTIONFIELD_PATTERN.match(key):
             raise DatastoreException(
                 "You can only lock collection fields with a filter"
             )

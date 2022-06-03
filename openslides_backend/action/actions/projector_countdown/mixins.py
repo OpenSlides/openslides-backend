@@ -1,6 +1,6 @@
 import time
 
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from .update import ProjectorCountdownUpdate
 
@@ -8,10 +8,7 @@ from .update import ProjectorCountdownUpdate
 class CountdownControl(UpdateAction):
     def control_countdown(self, countdown_id: int, action: str) -> None:
         countdown = self.datastore.get(
-            FullQualifiedId(
-                Collection("projector_countdown"),
-                countdown_id,
-            ),
+            fqid_from_collection_and_id("projector_countdown", countdown_id),
             ["default_time"],
         )
         if action == "reset":

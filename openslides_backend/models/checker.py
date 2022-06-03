@@ -30,7 +30,7 @@ from openslides_backend.models.fields import (
 )
 from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
-from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
+from openslides_backend.shared.patterns import KEYSEPARATOR
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -265,7 +265,7 @@ class Checker:
             )
 
     def get_model(self, collection: str) -> Model:
-        ModelClass = model_registry[Collection(collection)]
+        ModelClass = model_registry[collection]
         return ModelClass()
 
     def get_fields(self, collection: str) -> Iterable[Field]:
@@ -454,9 +454,7 @@ class Checker:
                 continue
             replacement_collection = None
             if template_field.replacement_collection:
-                replacement_collection = (
-                    template_field.replacement_collection.collection
-                )
+                replacement_collection = template_field.replacement_collection
 
             for replacement in replacements:
                 structured_field = self.make_structured(template_field, replacement)
@@ -702,7 +700,7 @@ class Checker:
             BaseRelationField, self.get_model(collection).get_field(field)
         )
         return (
-            field_type.get_target_collection().collection,
+            field_type.get_target_collection(),
             field_type.to.get(field_type.get_target_collection()),
         )
 
@@ -767,7 +765,7 @@ class Checker:
                     BaseTemplateField, foreign_field_type
                 ).replacement_collection
                 if replacement_collection:
-                    replacement = model.get(f"{replacement_collection.collection}_id")
+                    replacement = model.get(f"{replacement_collection}_id")
                 if not replacement:
                     self.errors.append(
                         f"{basemsg} points to {foreign_collection}/{foreign_id}/{foreign_field},"
@@ -832,12 +830,12 @@ class Checker:
         """Returns all reverse relations as collectionfields"""
         to = cast(BaseRelationField, self.get_model(collection).get_field(field)).to
         if isinstance(to, dict):
-            if Collection(foreign_collection) not in to.keys():
+            if foreign_collection not in to.keys():
                 raise CheckException(
                     f"The collection {foreign_collection} is not supported "
                     "as a reverse relation in {collection}/{field}"
                 )
-            return to[Collection(foreign_collection)]
+            return to[foreign_collection]
 
         for cf in to:
             c, f = self.split_collectionfield(cf.collection)

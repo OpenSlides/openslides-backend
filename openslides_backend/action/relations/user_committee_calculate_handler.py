@@ -4,7 +4,10 @@ from openslides_backend.models.models import User
 from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ...models.fields import Field
-from ...shared.patterns import Collection, FullQualifiedField, FullQualifiedId
+from ...shared.patterns import (
+    fqfield_from_collection_and_id_and_field,
+    fqid_from_collection_and_id,
+)
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
 
@@ -25,13 +28,13 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             "committee_$%s_management_level",
         )
         if (
-            field.own_collection.collection != "user"
+            field.own_collection != "user"
             or field_name not in ["group_$_ids", *cml_fields]
             or ("group_$_ids" in instance and field_name != "group_$_ids")
         ):
             return {}
         user_id = instance["id"]
-        fqid = FullQualifiedId(field.own_collection, instance["id"])
+        fqid = fqid_from_collection_and_id(field.own_collection, instance["id"])
         db_user = self.datastore.get(
             fqid,
             ["committee_ids", "group_$_ids", *cml_fields],
@@ -47,7 +50,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             meeting_ids = list(map(int, instance.get("group_$_ids", []))) or []
         else:
             meeting_ids = list(map(int, db_user.get("group_$_ids", []))) or []
-        meeting_collection = Collection("meeting")
+        meeting_collection = "meeting"
         committee_ids: Set[int] = set(
             map(
                 lambda x: x.get("committee_id", 0),
@@ -70,7 +73,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
             for meeting_id in meeting_ids
             if (
                 committee_id := self.datastore.changed_models.get(
-                    FullQualifiedId(meeting_collection, meeting_id), {}
+                    fqid_from_collection_and_id("meeting", meeting_id), {}
                 ).get("committee_id")
             )
         )
@@ -83,8 +86,8 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
 
         relation_update: RelationUpdates = {}
         if not action == "user.delete":
-            fqfield_user = FullQualifiedField(
-                Collection("user"), user_id, "committee_ids"
+            fqfield_user = fqfield_from_collection_and_id_and_field(
+                "user", user_id, "committee_ids"
             )
             relation_el: ListUpdateElement = {
                 "type": "list_update",
@@ -95,10 +98,9 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
 
         def add_relation(add: bool, set_: Set[int]) -> None:
             for committee_id in set_:
-                fqfield_committee = FullQualifiedField(
-                    Collection("committee"), committee_id, "user_ids"
+                fqfield_committee = fqfield_from_collection_and_id_and_field(
+                    "committee", committee_id, "user_ids"
                 )
-
                 relation_update[fqfield_committee] = {
                     "type": "list_update",
                     "add": [user_id] if add else cast(List[int], []),

@@ -5,6 +5,7 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -12,7 +13,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def basic_test(self, datapart: Dict[str, Any]) -> Dict[str, Any]:
         self.set_models(
             {
-                "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                },
                 "committee/1": {
                     "name": "test_committee",
                     "user_ids": [2],
@@ -70,7 +74,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
                 },
             },
         )
-        self.assert_model_exists("organization/1", {"active_meeting_ids": [1]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1]})
         self.assert_model_exists("group/2", {"name": "Default"})
         self.assert_model_exists("group/3", {"name": "Admin"})
         self.assert_model_exists("group/4", {"name": "Delegates"})
@@ -235,7 +239,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_multiple_users(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_meetings": 0, "active_meeting_ids": []},
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 0,
+                    "active_meeting_ids": [],
+                },
                 "committee/1": {"organization_id": 1},
                 "user/2": {},
                 "user/3": {},
@@ -274,7 +281,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_set_as_template(self) -> None:
         meeting = self.basic_test({"set_as_template": True})
         assert meeting.get("template_for_organization_id") == 1
-        self.assert_model_exists("organization/1", {"template_meeting_ids": [1]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
 
     def test_create_no_permissions(self) -> None:
         self.set_models(
@@ -352,7 +359,10 @@ class MeetingCreateActionTest(BaseActionTestCase):
     def test_create_limit_of_meetings_reached(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_meetings": 1, "active_meeting_ids": [1]},
+                ONE_ORGANIZATION_FQID: {
+                    "limit_of_meetings": 1,
+                    "active_meeting_ids": [1],
+                },
                 "committee/1": {"organization_id": 1},
             }
         )

@@ -1,3 +1,4 @@
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,7 +9,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                "organization/1": {"committee_ids": [self.COMMITTEE_ID]},
+                ONE_ORGANIZATION_FQID: {"committee_ids": [self.COMMITTEE_ID]},
                 "user/20": {"committee_ids": [self.COMMITTEE_ID]},
                 "user/21": {
                     "committee_ids": [self.COMMITTEE_ID],
@@ -41,7 +42,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
                 "committee/3": {"forward_to_committee_ids": [1], "organization_id": 1},
                 "meeting/1": {"user_ids": [20]},
                 "user/20": {"meeting_ids": [1]},
-                "organization/1": {"committee_ids": [1, 2, 3]},
+                ONE_ORGANIZATION_FQID: {"committee_ids": [1, 2, 3]},
                 "organization_tag/12": {
                     "tagged_ids": ["committee/1"],
                     "organization_id": 1,
@@ -69,7 +70,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
             "user/21",
             {"committee_ids": [], "committee_$can_manage_management_level": []},
         )
-        organization1 = self.get_model("organization/1")
+        organization1 = self.get_model(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization1["committee_ids"], [2, 3])
         self.assert_model_exists("organization_tag/12", {"tagged_ids": []})
         self.assert_model_exists(
@@ -126,7 +127,7 @@ class CommitteeDeleteActionTest(BaseActionTestCase):
     def test_delete_2_committees_with_forwarding(self) -> None:
         self.set_models(
             {
-                "organization/1": {"committee_ids": [1, 2]},
+                ONE_ORGANIZATION_FQID: {"committee_ids": [1, 2]},
                 "user/20": {
                     "committee_ids": [1, 2],
                     "committee_$_management_level": ["can_manage"],

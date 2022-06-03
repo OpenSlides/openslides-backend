@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import MotionComment
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ...action_set import ActionSet
 from ...generics.delete import DeleteAction
@@ -24,21 +24,21 @@ class PermissionMixin(Action):
             section_id = instance["section_id"]
         else:
             comment = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["section_id"],
             )
             section_id = comment["section_id"]
         section = self.datastore.get(
-            FullQualifiedId(Collection("motion_comment_section"), section_id),
+            fqid_from_collection_and_id("motion_comment_section", section_id),
             ["write_group_ids", "meeting_id"],
         )
         meeting_id = section["meeting_id"]
         user = self.datastore.get(
-            FullQualifiedId(Collection("user"), self.user_id),
+            fqid_from_collection_and_id("user", self.user_id),
             [f"group_${meeting_id}_ids"],
         )
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), meeting_id), ["admin_group_id"]
+            fqid_from_collection_and_id("meeting", meeting_id), ["admin_group_id"]
         )
 
         allowed_groups = set(section.get("write_group_ids", []))

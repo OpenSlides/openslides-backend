@@ -4,8 +4,6 @@ from openslides_backend.action.action import merge_write_requests
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 
-from ..util import get_fqid
-
 
 class ActionBaseTester(TestCase):
     """
@@ -17,13 +15,11 @@ class ActionBaseTester(TestCase):
             events=[
                 {
                     "type": EventType.Create,
-                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fqid": "collection_Chebie1jie/42",
                     "fields": {"field_aeXahloPh1": "test_value_lah8chiiLi"},
                 }
             ],
-            information={
-                get_fqid("collection_Chebie1jie/42"): ["Information text laPu7iepei"]
-            },
+            information={"collection_Chebie1jie/42": ["Information text laPu7iepei"]},
             user_id=1,
             locked_fields={},
         )
@@ -31,13 +27,11 @@ class ActionBaseTester(TestCase):
             events=[
                 {
                     "type": EventType.Delete,
-                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fqid": "collection_Chebie1jie/42",
                     "fields": {"field_ade8neipaiG": "test_value_zeeto6Aine"},
                 }
             ],
-            information={
-                get_fqid("collection_Chebie1jie/42"): ["Information text eesh7thouY"]
-            },
+            information={"collection_Chebie1jie/42": ["Information text eesh7thouY"]},
             user_id=1,
             locked_fields={},
         )
@@ -48,17 +42,17 @@ class ActionBaseTester(TestCase):
             events=[
                 {
                     "type": EventType.Create,
-                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fqid": "collection_Chebie1jie/42",
                     "fields": {"field_aeXahloPh1": "test_value_lah8chiiLi"},
                 },
                 {
                     "type": EventType.Delete,
-                    "fqid": get_fqid("collection_Chebie1jie/42"),
+                    "fqid": "collection_Chebie1jie/42",
                     "fields": {"field_ade8neipaiG": "test_value_zeeto6Aine"},
                 },
             ],
             information={
-                get_fqid("collection_Chebie1jie/42"): [
+                "collection_Chebie1jie/42": [
                     "Information text laPu7iepei",
                     "Information text eesh7thouY",
                 ]

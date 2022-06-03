@@ -6,7 +6,6 @@ from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import FilterOperator
-from ..shared.patterns import Collection
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -45,4 +44,4 @@ class GetActiveUsersAmount(BasePresenter):
 
     def get_amount(self) -> int:
         filter_ = FilterOperator("is_active", "=", True)
-        return self.datastore.count(Collection("user"), filter_)
+        return self.datastore.count("user", filter_)

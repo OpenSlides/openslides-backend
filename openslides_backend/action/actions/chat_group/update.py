@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import ChatGroup
 from ....permissions.permissions import Permissions
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -25,7 +25,8 @@ class ChatGroupUpdate(ChatEnabledMixin, CheckUniqueNameMixin, UpdateAction):
         instance = super().update_instance(instance)
         if "name" in instance:
             chat_group = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]), ["name"]
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                ["name"],
             )
             if instance["name"] != chat_group.get("name"):
                 self.check_name_unique(instance)

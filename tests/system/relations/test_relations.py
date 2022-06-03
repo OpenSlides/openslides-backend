@@ -1,5 +1,3 @@
-from tests.util import get_fqfield
-
 from ..action.base import BaseActionTestCase
 from .setup import FakeModelA, SingleRelationHandlerWithContext
 
@@ -15,7 +13,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_oo"): {
+            "fake_model_b/2/fake_model_a_oo": {
                 "type": "add",
                 "value": 1,
                 "modified_element": 1,
@@ -39,7 +37,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_oo"): {
+            "fake_model_b/3/fake_model_a_oo": {
                 "type": "add",
                 "value": 1,
                 "modified_element": 1,
@@ -62,7 +60,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_oo"): {
+            "fake_model_b/2/fake_model_a_oo": {
                 "type": "remove",
                 "value": None,
                 "modified_element": 1,
@@ -80,7 +78,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_mo"): {
+            "fake_model_b/2/fake_model_a_mo": {
                 "type": "add",
                 "value": [1],
                 "modified_element": 1,
@@ -104,7 +102,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_mo"): {
+            "fake_model_b/3/fake_model_a_mo": {
                 "type": "add",
                 "value": [1, 2],
                 "modified_element": 2,
@@ -127,7 +125,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_mo"): {
+            "fake_model_b/2/fake_model_a_mo": {
                 "type": "remove",
                 "value": [],
                 "modified_element": 1,
@@ -145,7 +143,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_mm"): {
+            "fake_model_b/2/fake_model_a_mm": {
                 "type": "add",
                 "value": [1],
                 "modified_element": 1,
@@ -169,7 +167,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_mm"): {
+            "fake_model_b/3/fake_model_a_mm": {
                 "type": "add",
                 "value": [1, 2],
                 "modified_element": 2,
@@ -192,7 +190,7 @@ class RelationHandlerTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_mm"): {
+            "fake_model_b/2/fake_model_a_mm": {
                 "type": "remove",
                 "value": [],
                 "modified_element": 1,

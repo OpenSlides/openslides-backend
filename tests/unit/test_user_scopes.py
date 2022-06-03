@@ -7,7 +7,6 @@ from openslides_backend.action.actions.user.user_scope_permission_check_mixin im
 )
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.shared.mixins.user_scope_mixin import UserScope
-from openslides_backend.shared.patterns import Collection
 
 
 class UserScopeTest(TestCase):
@@ -23,7 +22,7 @@ class UserScopeTest(TestCase):
 
     def set_meeting_committees(self, ids: List[int]) -> None:
         return_val = {
-            Collection("meeting"): {
+            "meeting": {
                 i + 1: {"committee_id": id, "is_active_in_organization_id": 1}
                 for i, id in enumerate(ids)
             }

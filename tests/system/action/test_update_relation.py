@@ -3,34 +3,34 @@ from openslides_backend.action.util.action_type import ActionType
 from openslides_backend.action.util.register import register_action
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
-from openslides_backend.shared.patterns import Collection
 
 from .base import BaseActionTestCase
 
 
 class FakeModelURA(Model):
-    collection = Collection("fake_model_ur_a")
+    collection = "fake_model_ur_a"
     verbose_name = "fake model for cascade update a"
     id = fields.IntegerField()
 
     fake_model_ur_b_id = fields.RelationField(
-        to={Collection("fake_model_ur_b"): "fake_model_ur_a_id"},
+        to={"fake_model_ur_b": "fake_model_ur_a_id"},
     )
     fake_model_ur_b_required_id = fields.RelationField(
-        to={Collection("fake_model_ur_b"): "fake_model_ur_a_required_id"},
+        to={"fake_model_ur_b": "fake_model_ur_a_required_id"},
     )
 
 
 class FakeModelURB(Model):
-    collection = Collection("fake_model_ur_b")
+    collection = "fake_model_ur_b"
     verbose_name = "fake model for cascade update b"
     id = fields.IntegerField()
 
     fake_model_ur_a_id = fields.RelationField(
-        to={Collection("fake_model_ur_a"): "fake_model_ur_b_id"},
+        to={"fake_model_ur_a": "fake_model_ur_b_id"},
     )
     fake_model_ur_a_required_id = fields.RelationField(
-        to={Collection("fake_model_ur_a"): "fake_model_ur_b_required_id"}, required=True
+        to={"fake_model_ur_a": "fake_model_ur_b_required_id"},
+        required=True,
     )
 
 

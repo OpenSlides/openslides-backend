@@ -1,4 +1,5 @@
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 from .scope_permissions_mixin import ScopePermissionsTestMixin, UserScope
@@ -142,7 +143,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def test_delete_with_template_field_set_null(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                     "enable_electronic_voting": True,
                 },
@@ -178,7 +179,7 @@ class UserDeleteActionTest(ScopePermissionsTestMixin, BaseActionTestCase):
     def test_delete_with_multiple_template_fields(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                     "enable_electronic_voting": True,
                 },

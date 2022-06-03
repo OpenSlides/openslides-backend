@@ -1,7 +1,6 @@
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
@@ -36,7 +35,7 @@ class ProjectorAddToPreview(WeightMixin, UpdateAction):
                     FilterOperator("preview_projector_id", "=", projector_id),
                     FilterOperator("meeting_id", "=", instance["meeting_id"]),
                 )
-                weight = self.get_weight(filter, Collection("projection"))
+                weight = self.get_weight(filter, "projection")
                 data = {
                     "meeting_id": instance["meeting_id"],
                     "preview_projector_id": projector_id,

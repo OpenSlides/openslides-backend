@@ -1,5 +1,4 @@
 from openslides_backend.shared.filters import FilterOperator
-from openslides_backend.shared.patterns import Collection
 
 from .base import BaseTestExtendedDatastoreAdapter
 
@@ -15,7 +14,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     def test_only_db(self) -> None:
         self.set_additional_models({"test/1": {"a": 2, "weight": 100}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
             use_changed_models=False,
@@ -28,7 +27,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     def test_use_changed_models(self) -> None:
         self.set_additional_models({"test/1": {"a": 2, "weight": 1}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )
@@ -40,7 +39,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     def test_use_changed_models_none(self) -> None:
         self.set_additional_models({"test/1": {"a": 2}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )
@@ -59,7 +58,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )
@@ -76,7 +75,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", ">=", 2),
             "weight",
         )
@@ -91,7 +90,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         }
         self.set_additional_models({"test/1": {"a": 2}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )
@@ -106,7 +105,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         }
         self.set_additional_models({"test/1": {"a": 2}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )
@@ -121,7 +120,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         }
         self.set_additional_models({"test/1": {"a": 2, "weight": 100}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )
@@ -136,7 +135,7 @@ class TestMaxExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         }
         self.set_additional_models({"test/1": {"a": 2, "weight": 50}})
         result = self.adapter.max(
-            Collection("test"),
+            "test",
             FilterOperator("a", "=", 2),
             "weight",
         )

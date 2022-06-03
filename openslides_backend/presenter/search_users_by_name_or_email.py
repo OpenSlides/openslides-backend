@@ -15,7 +15,7 @@ from ..permissions.permission_helper import (
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import MissingPermission, PresenterException
 from ..shared.filters import Filter, FilterOperator, Or
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -80,7 +80,9 @@ class SearchUsersByNameEmail(BasePresenter):
             else:
                 continue
             instances = self.datastore.filter(
-                Collection("user"), filter_, ["id", "first_name", "last_name", "email"]
+                "user",
+                filter_,
+                ["id", "first_name", "last_name", "email"],
             )
 
             result[f"{username}/{email}"] = [
@@ -116,7 +118,7 @@ class SearchUsersByNameEmail(BasePresenter):
             return
         else:
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), permission_id),
+                fqid_from_collection_and_id("meeting", permission_id),
                 ["committee_id"],
             )
             if (committee_id := meeting.get("committee_id", 0)) < 1:

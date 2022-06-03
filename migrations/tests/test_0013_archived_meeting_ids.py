@@ -1,3 +1,6 @@
+ONE_ORGANIZATION_FQID = "organization/1"
+
+
 def test_migration(write, finalize, assert_model):
     write(
         {
@@ -7,7 +10,7 @@ def test_migration(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
     )
@@ -21,7 +24,7 @@ def test_migration(write, finalize, assert_model):
     finalize("0013_archived_meeting_ids")
 
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"meta_deleted": False, "meta_position": 1, "active_meeting_ids": [1]},
         position=1,
     )
@@ -52,7 +55,7 @@ def test_one_created_archived_meeting(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {},
         },
     )
@@ -75,7 +78,7 @@ def test_one_created_archived_meeting(write, finalize, assert_model):
     )
     finalize("0013_archived_meeting_ids")
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 1},
         position=1,
     )
@@ -90,7 +93,7 @@ def test_one_created_archived_meeting(write, finalize, assert_model):
         position=1,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"archived_meeting_ids": [], "meta_deleted": False, "meta_position": 2},
         position=2,
     )
@@ -115,7 +118,7 @@ def test_update_meeting(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
     )
@@ -127,7 +130,7 @@ def test_update_meeting(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": None},
         },
     )
@@ -139,7 +142,7 @@ def test_update_meeting(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
     )
@@ -152,7 +155,7 @@ def test_update_meeting(write, finalize, assert_model):
         position=1,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"active_meeting_ids": [1], "meta_deleted": False, "meta_position": 1},
         position=1,
     )
@@ -167,7 +170,7 @@ def test_update_meeting(write, finalize, assert_model):
         position=2,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 2},
         position=2,
     )
@@ -182,7 +185,7 @@ def test_update_meeting(write, finalize, assert_model):
         position=3,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "active_meeting_ids": [1],
             "archived_meeting_ids": [],
@@ -202,7 +205,7 @@ def test_create_delete_in_one_position(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {},
         },
         {
@@ -214,7 +217,7 @@ def test_create_delete_in_one_position(write, finalize, assert_model):
 
     finalize("0013_archived_meeting_ids")
     assert_model(
-        "organization/1", {"meta_deleted": False, "meta_position": 1}, position=1
+        ONE_ORGANIZATION_FQID, {"meta_deleted": False, "meta_position": 1}, position=1
     )
 
 
@@ -227,7 +230,7 @@ def test_single_restore(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {},
         },
         {
@@ -245,7 +248,7 @@ def test_single_restore(write, finalize, assert_model):
     )
     finalize("0013_archived_meeting_ids")
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 2},
         position=2,
     )
@@ -270,7 +273,7 @@ def test_create_and_update_in_one_position(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
         {
@@ -280,14 +283,14 @@ def test_create_and_update_in_one_position(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": None},
         },
     )
 
     finalize("0013_archived_meeting_ids")
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"archived_meeting_ids": [1], "meta_deleted": False, "meta_position": 1},
         position=1,
     )
@@ -312,7 +315,7 @@ def test_two_updates_in_a_position(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
     )
@@ -324,7 +327,7 @@ def test_two_updates_in_a_position(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
         {
@@ -334,14 +337,14 @@ def test_two_updates_in_a_position(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
     )
 
     finalize("0013_archived_meeting_ids")
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "archived_meeting_ids": [1],
             "active_meeting_ids": [],
@@ -371,7 +374,7 @@ def test_create_and_two_updates(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
         {
@@ -381,7 +384,7 @@ def test_create_and_two_updates(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
         {
@@ -391,14 +394,14 @@ def test_create_and_two_updates(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
     )
     finalize("0013_archived_meeting_ids")
 
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "archived_meeting_ids": [1],
             "active_meeting_ids": [],
@@ -429,7 +432,7 @@ def test_delete_fields_1(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
         {
@@ -439,13 +442,13 @@ def test_delete_fields_1(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
     )
     finalize("0013_archived_meeting_ids")
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "archived_meeting_ids": [1],
             "active_meeting_ids": [],
@@ -474,7 +477,7 @@ def test_delete_fields_2(write, finalize, assert_model):
         },
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
     )
@@ -486,7 +489,7 @@ def test_delete_fields_2(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": [1]},
         },
         {
@@ -496,7 +499,7 @@ def test_delete_fields_2(write, finalize, assert_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"active_meeting_ids": []},
         },
     )
@@ -513,7 +516,7 @@ def test_delete_fields_2(write, finalize, assert_model):
     )
 
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "active_meeting_ids": [],
             "archived_meeting_ids": [1],

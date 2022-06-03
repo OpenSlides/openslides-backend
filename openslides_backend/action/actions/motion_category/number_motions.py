@@ -6,7 +6,7 @@ from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import ActionData
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -80,14 +80,14 @@ class MotionCategoryNumberMotions(UpdateAction):
         """Preload all categories with needed fields, all motions with needed fields
         and meeting with needed fields."""
         category = self.datastore.get(
-            FullQualifiedId(Collection("motion_category"), main_category_id),
+            fqid_from_collection_and_id("motion_category", main_category_id),
             ["meeting_id"],
         )
         self.main_category_id = main_category_id
 
         if category.get("meeting_id"):
             meeting = self.datastore.get(
-                FullQualifiedId(Collection("meeting"), category["meeting_id"]),
+                fqid_from_collection_and_id("meeting", category["meeting_id"]),
                 [
                     "motion_ids",
                     "motion_category_ids",
@@ -101,12 +101,12 @@ class MotionCategoryNumberMotions(UpdateAction):
             raise ActionException("Main category doesnt include meeting_id.")
 
         gmr_categories = GetManyRequest(
-            Collection("motion_category"),
+            "motion_category",
             meeting.get("motion_category_ids", []),
             ["prefix", "parent_id", "child_ids", "weight", "motion_ids"],
         )
         gmr_motions = GetManyRequest(
-            Collection("motion"),
+            "motion",
             meeting.get("motion_ids", []),
             [
                 "lead_motion_id",
@@ -116,8 +116,8 @@ class MotionCategoryNumberMotions(UpdateAction):
             ],
         )
         result = self.datastore.get_many([gmr_categories, gmr_motions])
-        self.mem_categories = result.get(Collection("motion_category"), {})
-        self.mem_motions = result.get(Collection("motion"), {})
+        self.mem_categories = result.get("motion_category", {})
+        self.mem_motions = result.get("motion", {})
         self.mem_meetings = {category.get("meeting_id"): meeting}
 
     def get_prefix(self, category_id: int) -> str:

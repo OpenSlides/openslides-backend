@@ -1,5 +1,6 @@
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -14,7 +15,7 @@ class CreatePoll(BaseActionTestCase):
                     "meeting_id": 1,
                 },
                 "meeting/1": {"is_active_in_organization_id": 1},
-                "organization/1": {"enable_electronic_voting": True},
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "user/3": {"username": "User3"},
             },
         )
@@ -404,7 +405,7 @@ class CreatePoll(BaseActionTestCase):
         self.assert_model_not_exists("poll/1")
 
     def test_not_allowed_type(self) -> None:
-        self.update_model("organization/1", {"enable_electronic_voting": False})
+        self.update_model(ONE_ORGANIZATION_FQID, {"enable_electronic_voting": False})
         response = self.request(
             "poll.create",
             {

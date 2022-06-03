@@ -1,4 +1,5 @@
 from openslides_backend.models.models import Poll
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -16,7 +17,7 @@ class VotePollBaseTestClass(BaseActionTestCase):
         self.create_poll()
         self.set_models(
             {
-                "organization/1": {"enable_electronic_voting": True},
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "meeting/1": {
                     "name": "my meeting",
                     "poll_couple_countdown": True,

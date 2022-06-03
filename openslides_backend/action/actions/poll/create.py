@@ -1,8 +1,9 @@
 from typing import Any, Dict
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection, FullQualifiedId
 from ....shared.schema import decimal_schema, optional_fqid_schema
 from ...generics.create import CreateAction
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
@@ -72,7 +73,7 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
         # check enabled_electronic_voting
         if instance["type"] in (Poll.TYPE_NAMED, Poll.TYPE_PSEUDOANONYMOUS):
             organization = self.datastore.get(
-                FullQualifiedId(Collection("organization"), 1),
+                ONE_ORGANIZATION_FQID,
                 ["enable_electronic_voting"],
             )
             if not organization.get("enable_electronic_voting"):

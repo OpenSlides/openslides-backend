@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Projection
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +21,7 @@ class ProjectionDelete(DeleteAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projection = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["current_projector_id", "preview_projector_id", "meeting_id"],
         )
         if not (

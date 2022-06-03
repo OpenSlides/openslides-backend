@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,7 +9,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "organization/1": {"enable_chat": True},
+            ONE_ORGANIZATION_FQID: {"enable_chat": True},
             "meeting/1": {"is_active_in_organization_id": 1},
             "chat_group/31": {
                 "meeting_id": 1,
@@ -23,7 +24,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_correct(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_chat": True},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
@@ -51,7 +52,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_not_enabled(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_chat": False},
+                ONE_ORGANIZATION_FQID: {"enable_chat": False},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
@@ -72,7 +73,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_missing_model(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_chat": True},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
@@ -93,7 +94,7 @@ class ChatGroupSortActionTest(BaseActionTestCase):
     def test_sort_additional_chat_groups_in_meeting(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_chat": True},
+                ONE_ORGANIZATION_FQID: {"enable_chat": True},
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,

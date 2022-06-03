@@ -1,7 +1,7 @@
 from typing import Any, Dict
 
 from ....models.models import Meeting
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,7 +21,8 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["user_ids"]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["user_ids"],
         )
         action_data = [
             {
@@ -44,6 +45,7 @@ class MeetingDelete(DeleteAction, MeetingPermissionMixin):
 
     def get_committee_id(self, instance: Dict[str, Any]) -> int:
         meeting = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]), ["committee_id"]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["committee_id"],
         )
         return meeting["committee_id"]

@@ -1,4 +1,5 @@
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from .base import PRESENTER_URL, BasePresenterTestCase
 
@@ -176,10 +177,10 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_simple_organization(self) -> None:
         self.set_models(
             {
-                "organization/1": {"mediafile_ids": [1]},
+                ONE_ORGANIZATION_FQID: {"mediafile_ids": [1]},
                 "mediafile/1": {
                     "is_directory": False,
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                     "token": "web_logo",
                     "mimetype": "text/plain",
                 },
@@ -192,11 +193,11 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_organization_without_token(self) -> None:
         self.set_models(
             {
-                "organization/1": {"mediafile_ids": [1]},
+                ONE_ORGANIZATION_FQID: {"mediafile_ids": [1]},
                 "mediafile/1": {
                     "is_directory": False,
                     "filename": "the filename",
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                     "mimetype": "text/plain",
                 },
             }
@@ -208,10 +209,10 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_anonymous_organization(self) -> None:
         self.set_models(
             {
-                "organization/1": {"mediafile_ids": [1]},
+                ONE_ORGANIZATION_FQID: {"mediafile_ids": [1]},
                 "mediafile/1": {
                     "is_directory": False,
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                     "mimetype": "text/plain",
                 },
             }
@@ -227,10 +228,10 @@ class TestCheckMediafileId(BasePresenterTestCase):
     def test_anonymous_organization_with_token(self) -> None:
         self.set_models(
             {
-                "organization/1": {"mediafile_ids": [1]},
+                ONE_ORGANIZATION_FQID: {"mediafile_ids": [1]},
                 "mediafile/1": {
                     "is_directory": False,
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                     "token": "web_logo",
                     "mimetype": "text/plain",
                 },

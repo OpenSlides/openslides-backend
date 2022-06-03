@@ -1,7 +1,6 @@
 from ....models.models import Meeting, Speaker
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.patterns import Collection
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,19 +26,17 @@ class DeleteAllSpeakersOfAllListsAction(DeleteAction, GetMeetingIdFromIdMixin):
         new_action_data = []
         meeting_ids = [instance["id"] for instance in action_data]
         get_many_request = GetManyRequest(
-            Collection("meeting"), meeting_ids, ["list_of_speakers_ids"]
+            "meeting", meeting_ids, ["list_of_speakers_ids"]
         )
         gm_result = self.datastore.get_many([get_many_request])
-        meetings = gm_result.get(Collection("meeting"), {})
+        meetings = gm_result.get("meeting", {})
 
         los_ids = []
         for meeting in meetings.values():
             los_ids.extend(meeting.get("list_of_speakers_ids", []))
-        get_many_request = GetManyRequest(
-            Collection("list_of_speakers"), los_ids, ["speaker_ids"]
-        )
+        get_many_request = GetManyRequest("list_of_speakers", los_ids, ["speaker_ids"])
         gm_result = self.datastore.get_many([get_many_request])
-        lists_of_speakers = gm_result.get(Collection("list_of_speakers"), {})
+        lists_of_speakers = gm_result.get("list_of_speakers", {})
         for los in lists_of_speakers.values():
             for speaker in los.get("speaker_ids", []):
                 new_action_data.append({"id": speaker})

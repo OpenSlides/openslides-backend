@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import User
 from ....shared.exceptions import ActionException
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -29,7 +29,8 @@ class UserUpdateSelf(UpdateAction, UserMixin):
 
         if "about_me_$" in instance:
             user = self.datastore.get(
-                FullQualifiedId(self.model.collection, self.user_id), ["meeting_ids"]
+                fqid_from_collection_and_id(self.model.collection, self.user_id),
+                ["meeting_ids"],
             )
 
             not_supported_meetings = [

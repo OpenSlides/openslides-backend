@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Speaker
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
-from ....shared.patterns import FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -18,7 +18,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         speaker = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["speech_state", "meeting_id"],
         )
         self.check_speech_state(speaker, instance, meeting_id=speaker["meeting_id"])
@@ -26,7 +26,7 @@ class SpeakerUpdate(UpdateAction, CheckSpeechState):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         speaker = self.datastore.get(
-            FullQualifiedId(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["user_id", "meeting_id"],
         )
         if speaker.get("user_id") == self.user_id and has_perm(

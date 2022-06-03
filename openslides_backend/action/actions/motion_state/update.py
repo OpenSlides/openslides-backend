@@ -4,7 +4,6 @@ from ....models.models import MotionState
 from ....permissions.permissions import Permissions
 from ....services.datastore.interface import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import Collection
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -49,9 +48,9 @@ class MotionStateUpdateAction(UpdateAction):
         state_ids.extend(instance.get("next_state_ids", []))
         state_ids.extend(instance.get("previous_state_ids", []))
 
-        gmr = GetManyRequest(Collection("motion_state"), state_ids, ["workflow_id"])
+        gmr = GetManyRequest("motion_state", state_ids, ["workflow_id"])
         db_states = self.datastore.get_many([gmr])
-        states = db_states.get(Collection("motion_state"), {}).values()
+        states = db_states.get("motion_state", {}).values()
         workflow_id = None
         for state in states:
             if workflow_id is None:

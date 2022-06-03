@@ -5,7 +5,7 @@ from ....permissions.base_classes import Permission
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
-from ....shared.patterns import POSITIVE_NUMBER_REGEX, Collection, FullQualifiedId
+from ....shared.patterns import POSITIVE_NUMBER_REGEX, fqid_from_collection_and_id
 from ....shared.schema import id_list_schema, optional_id_schema
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -78,7 +78,9 @@ class MotionCreate(MotionCreateBase):
             instance["meeting_id"],
         ):
             lead_motion = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["lead_motion_id"]),
+                fqid_from_collection_and_id(
+                    self.model.collection, instance["lead_motion_id"]
+                ),
                 ["block_id", "category_id"],
             )
             instance["block_id"] = lead_motion.get("block_id")
@@ -86,7 +88,7 @@ class MotionCreate(MotionCreateBase):
 
         # fetch all needed settings and check reason
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             [
                 "motions_default_workflow_id",
                 "motions_default_amendment_workflow_id",

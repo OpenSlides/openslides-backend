@@ -1,4 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -18,7 +19,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
 
     def test_update_some_more_fields(self) -> None:
         self.create_model(
-            "organization/1",
+            ONE_ORGANIZATION_FQID,
             {
                 "name": "aBuwxoYU",
                 "description": "XrHbAWiF",
@@ -55,7 +56,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("organization/1")
+        model = self.get_model(ONE_ORGANIZATION_FQID)
         assert model.get("name") == "testtest"
         assert model.get("description") == "blablabla"
         assert model.get("legal_notice") == "GYjDABmD"
@@ -141,7 +142,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "user/1": {
                     "organization_management_level": OrganizationManagementLevel.SUPERADMIN
                 },
-                "organization/3": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "aBuwxoYU",
                     "description": "XrHbAWiF",
                     "active_meeting_ids": [1, 2],
@@ -151,7 +152,7 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         response = self.request(
             "organization.update",
             {
-                "id": 3,
+                "id": 1,
                 "reset_password_verbose_errors": True,
                 "enable_electronic_voting": True,
                 "limit_of_meetings": 2,
@@ -161,13 +162,13 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
-            "organization/3",
+            ONE_ORGANIZATION_FQID,
             {"limit_of_meetings": 2, "limit_of_users": 1, "url": "test"},
         )
 
     def test_update_too_many_active_meetings(self) -> None:
         self.create_model(
-            "organization/3",
+            ONE_ORGANIZATION_FQID,
             {
                 "name": "aBuwxoYU",
                 "description": "XrHbAWiF",
@@ -177,20 +178,20 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         response = self.request(
             "organization.update",
             {
-                "id": 3,
+                "id": 1,
                 "limit_of_meetings": 2,
             },
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Organization 3 has 3 active meetings. You cannot set the limit lower.",
+            "Organization 1 has 3 active meetings. You cannot set the limit lower.",
             response.json["message"],
         )
 
     def test_update_too_many_active_users(self) -> None:
         self.set_models(
             {
-                "organization/1": {"name": "Test", "description": "bla"},
+                ONE_ORGANIZATION_FQID: {"name": "Test", "description": "bla"},
                 "user/2": {"is_active": True},
                 "user/3": {"is_active": True},
             }

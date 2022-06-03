@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId, string_to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
@@ -42,12 +42,12 @@ class ProjectorToggle(WeightMixin, UpdateAction):
         for instance in action_data:
             # check meeting ids from projector ids and content_object
             meeting_id = instance["meeting_id"]
-            fqid_content_object = string_to_fqid(instance["content_object_id"])
+            fqid_content_object = instance["content_object_id"]
             assert_belongs_to_meeting(
                 self.datastore,
                 [fqid_content_object]
                 + [
-                    FullQualifiedId(Collection("projector"), id)
+                    fqid_from_collection_and_id("projector", id)
                     for id in instance["ids"]
                 ],
                 meeting_id,
@@ -67,9 +67,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
                     filter_ = And(
                         filter_, FilterOperator("type", "=", instance["type"])
                     )
-                result = self.datastore.filter(
-                    Collection("projection"), filter_, ["id"]
-                )
+                result = self.datastore.filter("projection", filter_, ["id"])
                 if result:
                     projection_ids = [id_ for id_ in result]
                     if stable:
@@ -103,7 +101,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("history_projector_id", "=", projector_id),
         )
-        weight = self.get_weight(filter_, Collection("projection"))
+        weight = self.get_weight(filter_, "projection")
         self.execute_other_action(
             ProjectionUpdate,
             [
@@ -125,7 +123,7 @@ class ProjectorToggle(WeightMixin, UpdateAction):
             FilterOperator("current_projector_id", "=", projector_id),
             FilterOperator("stable", "=", False),
         )
-        result = self.datastore.filter(Collection("projection"), filter_, ["id"])
+        result = self.datastore.filter("projection", filter_, ["id"])
         if result:
             self.move_projections_to_history(
                 meeting_id, projector_id, [int(id_) for id_ in result]

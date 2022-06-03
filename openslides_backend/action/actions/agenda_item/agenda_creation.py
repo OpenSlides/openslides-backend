@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Type
 
 from ....models.models import AgendaItem
-from ....shared.patterns import KEYSEPARATOR, Collection, FullQualifiedId
+from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
 from ...action import Action
 
@@ -51,7 +51,7 @@ class CreateActionWithAgendaItemMixin(Action):
         self, instance: Dict[str, Any], CreateActionClass: Type[Action]
     ) -> bool:
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["agenda_item_creation"],
         )
         agenda_item_creation = meeting.get("agenda_item_creation")

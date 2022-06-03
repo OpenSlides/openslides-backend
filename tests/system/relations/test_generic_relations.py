@@ -1,5 +1,3 @@
-from tests.util import get_fqfield, get_fqid
-
 from ..action.base import BaseActionTestCase
 from .setup import FakeModelA, SingleRelationHandlerWithContext
 
@@ -15,10 +13,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_generic_oo"): {
+            "fake_model_b/2/fake_model_a_generic_oo": {
                 "type": "add",
-                "value": get_fqid("fake_model_a/1"),
-                "modified_element": get_fqid("fake_model_a/1"),
+                "value": "fake_model_a/1",
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected
@@ -39,10 +37,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_generic_oo"): {
+            "fake_model_b/3/fake_model_a_generic_oo": {
                 "type": "add",
-                "value": get_fqid("fake_model_a/1"),
-                "modified_element": get_fqid("fake_model_a/1"),
+                "value": "fake_model_a/1",
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected
@@ -62,10 +60,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_generic_oo"): {
+            "fake_model_b/2/fake_model_a_generic_oo": {
                 "type": "remove",
                 "value": None,
-                "modified_element": get_fqid("fake_model_a/1"),
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected
@@ -80,10 +78,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_generic_mo"): {
+            "fake_model_b/2/fake_model_a_generic_mo": {
                 "type": "add",
-                "value": [get_fqid("fake_model_a/1")],
-                "modified_element": get_fqid("fake_model_a/1"),
+                "value": ["fake_model_a/1"],
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected
@@ -104,10 +102,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_generic_mo"): {
+            "fake_model_b/3/fake_model_a_generic_mo": {
                 "type": "add",
-                "value": [get_fqid("fake_model_a/1"), get_fqid("fake_model_a/2")],
-                "modified_element": get_fqid("fake_model_a/2"),
+                "value": ["fake_model_a/1", "fake_model_a/2"],
+                "modified_element": "fake_model_a/2",
             }
         }
         assert result == expected
@@ -127,10 +125,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_generic_mo"): {
+            "fake_model_b/2/fake_model_a_generic_mo": {
                 "type": "remove",
                 "value": [],
-                "modified_element": get_fqid("fake_model_a/1"),
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected
@@ -145,10 +143,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_generic_mm"): {
+            "fake_model_b/2/fake_model_a_generic_mm": {
                 "type": "add",
-                "value": [get_fqid("fake_model_a/1")],
-                "modified_element": get_fqid("fake_model_a/1"),
+                "value": ["fake_model_a/1"],
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected
@@ -169,10 +167,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/3/fake_model_a_generic_mm"): {
+            "fake_model_b/3/fake_model_a_generic_mm": {
                 "type": "add",
-                "value": [get_fqid("fake_model_a/1"), get_fqid("fake_model_a/2")],
-                "modified_element": get_fqid("fake_model_a/2"),
+                "value": ["fake_model_a/1", "fake_model_a/2"],
+                "modified_element": "fake_model_a/2",
             }
         }
         assert result == expected
@@ -192,10 +190,10 @@ class GenericRelationsTest(BaseActionTestCase):
         )
         result = handler.perform()
         expected = {
-            get_fqfield("fake_model_b/2/fake_model_a_generic_mm"): {
+            "fake_model_b/2/fake_model_a_generic_mm": {
                 "type": "remove",
                 "value": [],
-                "modified_element": get_fqid("fake_model_a/1"),
+                "modified_element": "fake_model_a/1",
             }
         }
         assert result == expected

@@ -4,7 +4,6 @@ from ...models import fields
 from ...models.base import model_registry
 from ...services.datastore.commands import GetManyRequest
 from ...shared.exceptions import ActionException
-from ...shared.patterns import Collection
 from ..action import Action
 
 
@@ -28,30 +27,29 @@ class CheckForArchivedMeetingMixin(Action):
                 raise NotImplementedError()
             if (
                 isinstance(model_field, fields.BaseTemplateField)
-                and model_field.replacement_collection
-                and model_field.replacement_collection.collection == "meeting"  # type: ignore
+                and model_field.replacement_collection == "meeting"
             ):
                 meeting_ids.update(map(int, instance[fname].keys()))
             elif (
                 type(model_field) == fields.RelationField
-                and tuple(model_field.to.keys())[0].collection == "meeting"  # type: ignore
+                and tuple(model_field.to.keys())[0] == "meeting"  # type: ignore
             ):
                 meeting_ids.add(instance[fname])
             elif (
                 type(model_field) == fields.RelationListField
-                and tuple(model_field.to.keys())[0].collection == "meeting"  # type: ignore
+                and tuple(model_field.to.keys())[0] == "meeting"  # type: ignore
             ):
                 meeting_ids.update(instance[fname])
         if meeting_ids:
             meetings = self.datastore.get_many(
                 [
                     GetManyRequest(
-                        Collection("meeting"),
+                        "meeting",
                         cast(List[int], meeting_ids),
                         ["is_active_in_organization_id"],
                     )
                 ]
-            )[Collection("meeting")]
+            )["meeting"]
             archived_meetings = [
                 str(meeting_id)
                 for meeting_id, value in meetings.items()

@@ -1,12 +1,14 @@
 import pytest
 from datastore.shared.util.exceptions import ModelDoesNotExist
 
+ONE_ORGANIZATION_FQID = "organization/1"
+
 
 def test_migration(write, finalize, assert_model, read_model):
     write(
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"id": 1, "resource_ids": [8]},
         },
         {
@@ -36,14 +38,14 @@ def test_migration(write, finalize, assert_model, read_model):
         },
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"resource_ids": None},
         },
     )
 
     finalize("0021_remove_resource")
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"id": 1, "meta_deleted": False, "meta_position": 1},
         position=1,
     )
@@ -57,7 +59,7 @@ def test_migration(write, finalize, assert_model, read_model):
     with pytest.raises(ModelDoesNotExist):
         read_model("resource/8", position=2)
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"id": 1, "meta_deleted": False, "meta_position": 3},
         position=3,
     )

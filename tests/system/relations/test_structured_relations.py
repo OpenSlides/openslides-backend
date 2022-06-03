@@ -1,7 +1,6 @@
 from typing import cast
 
 from openslides_backend.models import fields
-from tests.util import get_fqfield
 
 from ..action.base import BaseActionTestCase
 from .setup import FakeModelB, FakeModelC, SingleRelationHandlerWithContext
@@ -29,12 +28,12 @@ class StructuredRelationTester(BaseActionTestCase):
         self.assertEqual(
             result,
             {
-                get_fqfield("fake_model_a/333/fake_model_b_$_ids"): {
+                "fake_model_a/333/fake_model_b_$_ids": {
                     "type": "add",
                     "value": [str(meeting_id)],
                     "modified_element": str(meeting_id),
                 },
-                get_fqfield(f"fake_model_a/333/fake_model_b_${meeting_id}_ids"): {
+                f"fake_model_a/333/fake_model_b_${meeting_id}_ids": {
                     "type": "add",
                     "value": [111],
                     "modified_element": 111,
@@ -68,12 +67,12 @@ class StructuredRelationTester(BaseActionTestCase):
         self.assertEqual(
             result,
             {
-                get_fqfield("fake_model_a/333/fake_model_c_$_ids"): {
+                "fake_model_a/333/fake_model_c_$_ids": {
                     "type": "add",
                     "value": [str(meeting_id)],
                     "modified_element": str(meeting_id),
                 },
-                get_fqfield(f"fake_model_a/333/fake_model_c_${meeting_id}_ids"): {
+                f"fake_model_a/333/fake_model_c_${meeting_id}_ids": {
                     "type": "add",
                     "value": [444],
                     "modified_element": 444,

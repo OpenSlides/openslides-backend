@@ -13,7 +13,7 @@ from ....permissions.permission_helper import (
 )
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import PermissionDenied
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -45,7 +45,7 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
             meeting_id = instance.pop("meeting_id")
             present = instance.pop("present")
             user = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["is_present_in_meeting_ids"],
             )
             if present:
@@ -74,7 +74,7 @@ class UserSetPresentAction(UpdateAction, CheckForArchivedMeetingMixin):
         ):
             return
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id", "users_allow_self_set_present"],
         )
         if has_committee_management_level(

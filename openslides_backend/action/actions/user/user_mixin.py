@@ -1,15 +1,19 @@
 from collections import defaultdict
 from typing import Any, Dict, List
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ....action.action import Action
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import (
+    FullQualifiedId,
+    fqid_from_collection_and_id,
+    id_from_fqid,
+)
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
-
-ONE_ORGANIZATION = 1
 
 
 class UsernameMixin(Action):
@@ -28,7 +32,7 @@ class UsernameMixin(Action):
                     username = template_username + str(count)
                     continue
                 result = self.datastore.filter(
-                    Collection("user"),
+                    "user",
                     FilterOperator("username", "=", username),
                     ["id"],
                 )
@@ -44,13 +48,13 @@ class UsernameMixin(Action):
 class LimitOfUserMixin(Action):
     def check_limit_of_user(self, number: int) -> None:
         organization = self.datastore.get(
-            FullQualifiedId(Collection("organization"), ONE_ORGANIZATION),
+            ONE_ORGANIZATION_FQID,
             ["limit_of_users"],
             lock_result=False,
         )
         if limit_of_users := organization.get("limit_of_users"):
             filter_ = FilterOperator("is_active", "=", True)
-            count_of_active_users = self.datastore.count(Collection("user"), filter_)
+            count_of_active_users = self.datastore.count("user", filter_)
             if number + count_of_active_users > limit_of_users:
                 raise ActionException(
                     "The number of active users cannot exceed the limit of users."
@@ -62,10 +66,10 @@ class UserMixin(CheckForArchivedMeetingMixin):
         instance = super().update_instance(instance)
         for field in ("username", "first_name", "last_name"):
             self.strip_field(field, instance)
-        user_fqid = FullQualifiedId(Collection("user"), instance["id"])
+        user_fqid = fqid_from_collection_and_id("user", instance["id"])
         if "username" in instance:
             result = self.datastore.filter(
-                Collection("user"),
+                "user",
                 FilterOperator("username", "=", instance["username"]),
                 ["id"],
             )
@@ -107,22 +111,22 @@ class UserMixin(CheckForArchivedMeetingMixin):
             }
             user_self.update(update_dict)
         for meeting_id, delegated_to_id in instance["vote_delegated_$_to_id"].items():
-            if user_fqid.id == delegated_to_id:
+            if id_from_fqid(user_fqid) == delegated_to_id:
                 raise ActionException(
                     f"User {delegated_to_id} can't delegate the vote to himself."
                 )
             if user_self.get(f"vote_delegations_${meeting_id}_from_ids"):
                 raise ActionException(
-                    f"User {user_fqid.id} cannot delegate his vote, because there are votes delegated to him."
+                    f"User {id_from_fqid(user_fqid)} cannot delegate his vote, because there are votes delegated to him."
                 )
             mapped_field = f"vote_delegated_${meeting_id}_to_id"
             user_delegated_to = self.datastore.get(
-                FullQualifiedId(Collection("user"), delegated_to_id),
+                fqid_from_collection_and_id("user", delegated_to_id),
                 [mapped_field],
             )
             if user_delegated_to.get(mapped_field):
                 raise ActionException(
-                    f"User {user_fqid.id} cannot delegate his vote to user {delegated_to_id}, because that user has delegated his vote himself."
+                    f"User {id_from_fqid(user_fqid)} cannot delegate his vote to user {delegated_to_id}, because that user has delegated his vote himself."
                 )
 
     def check_vote_delegations__from_ids(
@@ -149,19 +153,19 @@ class UserMixin(CheckForArchivedMeetingMixin):
         for meeting_id, delegated_from_ids in instance[
             "vote_delegations_$_from_ids"
         ].items():
-            if user_fqid.id in delegated_from_ids:
+            if id_from_fqid(user_fqid) in delegated_from_ids:
                 raise ActionException(
-                    f"User {user_fqid.id} can't delegate the vote to himself."
+                    f"User {id_from_fqid(user_fqid)} can't delegate the vote to himself."
                 )
             if user_self.get(f"vote_delegated_${meeting_id}_to_id"):
                 raise ActionException(
-                    f"User {user_fqid.id} cannot receive vote delegations, because he delegated his own vote."
+                    f"User {id_from_fqid(user_fqid)} cannot receive vote delegations, because he delegated his own vote."
                 )
             mapped_field = f"vote_delegations_${meeting_id}_from_ids"
             error_user_ids: List[int] = []
             for user_id in delegated_from_ids:
                 user = self.datastore.get(
-                    FullQualifiedId(Collection("user"), user_id),
+                    fqid_from_collection_and_id("user", user_id),
                     [mapped_field],
                 )
                 if user.get(mapped_field):
@@ -199,7 +203,6 @@ class UserMixin(CheckForArchivedMeetingMixin):
     def check_meeting_and_users(
         self, instance: Dict[str, Any], user_fqid: FullQualifiedId
     ) -> None:
-        user_collection = Collection("user")
         meeting_users = defaultdict(list)
         if instance.get("group_$_ids") is not None:
             self.datastore.apply_changed_model(
@@ -221,14 +224,17 @@ class UserMixin(CheckForArchivedMeetingMixin):
         for meeting_id, user_id in instance.get("vote_delegated_$_to_id", {}).items():
             if user_id:
                 meeting_users[meeting_id].append(
-                    FullQualifiedId(user_collection, user_id)
+                    fqid_from_collection_and_id("user", user_id)
                 )
         for meeting_id, user_ids in instance.get(
             "vote_delegations_$_from_ids", {}
         ).items():
             if user_ids:
                 meeting_users[meeting_id].extend(
-                    [FullQualifiedId(user_collection, user_id) for user_id in user_ids]
+                    [
+                        fqid_from_collection_and_id("user", user_id)
+                        for user_id in user_ids
+                    ]
                 )
         for meeting_id, users in meeting_users.items():
             users.append(user_fqid)

@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -163,21 +164,21 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                     "title": "title_srtgb123",
                     "is_directory": True,
                     "child_ids": [110, 113],
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                 },
                 "mediafile/110": {
                     "title": "title_ghjeu212",
                     "is_directory": False,
                     "child_ids": [],
                     "parent_id": 112,
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                 },
                 "mediafile/113": {
                     "title": "title_del2",
                     "is_directory": False,
                     "child_ids": [],
                     "parent_id": 112,
-                    "owner_id": "organization/1",
+                    "owner_id": ONE_ORGANIZATION_FQID,
                 },
             }
         )
@@ -203,7 +204,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
 
     def test_delete_orga_no_permissions(self) -> None:
-        self.permission_test_models["mediafile/222"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/222"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(
             self.permission_test_models,
             "mediafile.delete",
@@ -211,7 +212,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
         )
 
     def test_delete_orga_permission(self) -> None:
-        self.permission_test_models["mediafile/222"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/222"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(
             self.permission_test_models,
             "mediafile.delete",

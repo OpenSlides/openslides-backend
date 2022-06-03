@@ -5,7 +5,7 @@ import fastjsonschema
 from ..permissions.permission_helper import has_perm
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import PermissionDenied, PresenterException
-from ..shared.patterns import Collection, FullQualifiedId
+from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -44,7 +44,7 @@ class GetForwardingMeetings(BasePresenter):
             raise PermissionDenied(msg)
 
         meeting = self.datastore.get(
-            FullQualifiedId(Collection("meeting"), self.data["meeting_id"]),
+            fqid_from_collection_and_id("meeting", self.data["meeting_id"]),
             ["committee_id", "is_active_in_organization_id", "name"],
         )
         if not meeting.get("committee_id"):
@@ -57,21 +57,21 @@ class GetForwardingMeetings(BasePresenter):
             )
 
         committee = self.datastore.get(
-            FullQualifiedId(Collection("committee"), meeting["committee_id"]),
+            fqid_from_collection_and_id("committee", meeting["committee_id"]),
             ["forward_to_committee_ids"],
         )
 
         result = []
         for forward_to_committee_id in committee.get("forward_to_committee_ids", []):
             forward_to_committee = self.datastore.get(
-                FullQualifiedId(Collection("committee"), forward_to_committee_id),
+                fqid_from_collection_and_id("committee", forward_to_committee_id),
                 ["meeting_ids", "name", "default_meeting_id"],
             )
 
             meeting_result = []
             for meeting_id2 in forward_to_committee.get("meeting_ids", []):
                 meeting2 = self.datastore.get(
-                    FullQualifiedId(Collection("meeting"), meeting_id2),
+                    fqid_from_collection_and_id("meeting", meeting_id2),
                     ["name", "is_active_in_organization_id"],
                 )
                 if meeting2.get("is_active_in_organization_id"):

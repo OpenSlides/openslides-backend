@@ -4,7 +4,7 @@ from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -25,7 +25,7 @@ class ProjectorPrevious(UpdateAction):
     def get_updated_instances(self, payload: ActionData) -> ActionData:
         for instance in payload:
             projector = self.datastore.get(
-                FullQualifiedId(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 [
                     "current_projection_ids",
                     "preview_projection_ids",
@@ -42,14 +42,12 @@ class ProjectorPrevious(UpdateAction):
             current_projections = []
             if projector.get("current_projection_ids"):
                 gmr = GetManyRequest(
-                    Collection("projection"),
+                    "projection",
                     projector["current_projection_ids"],
                     ["id", "stable"],
                 )
                 result = self.datastore.get_many([gmr])
-                current_projections = list(
-                    result.get(Collection("projection"), {}).values()
-                )
+                current_projections = list(result.get("projection", {}).values())
             new_current_projection_ids = [
                 projection["id"]
                 for projection in current_projections
@@ -95,7 +93,7 @@ class ProjectorPrevious(UpdateAction):
             FilterOperator("meeting_id", "=", meeting_id),
             FilterOperator("preview_projector_id", "=", projector_id),
         )
-        minimum = self.datastore.min(Collection("projection"), filter_, "weight")
+        minimum = self.datastore.min("projection", filter_, "weight")
         if minimum is None:
             minimum = 10000
         return minimum
@@ -115,12 +113,12 @@ class ProjectorPrevious(UpdateAction):
 
     def get_max_history_projection(self, projector: Dict[str, Any]) -> int:
         gmr2 = GetManyRequest(
-            Collection("projection"),
+            "projection",
             projector["history_projection_ids"],
             ["id", "weight"],
         )
         result = self.datastore.get_many([gmr2])
-        history_projections = list(result.get(Collection("projection"), {}).values())
+        history_projections = list(result.get("projection", {}).values())
         pivot = history_projections[0]
         for projection in history_projections:
             if pivot.get("weight", 10000) < projection.get("weight", 10000):

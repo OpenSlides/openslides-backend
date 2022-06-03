@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -180,7 +181,7 @@ class MediafileMoveActionTest(BaseActionTestCase):
         response = self.request_multi(
             "mediafile.move",
             [
-                {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+                {"owner_id": ONE_ORGANIZATION_FQID, "ids": [8], "parent_id": 7},
             ],
         )
         self.assert_status_code(response, 400)
@@ -227,20 +228,20 @@ class MediafileMoveActionTest(BaseActionTestCase):
         )
 
     def test_move_no_permissions_orga(self) -> None:
-        self.permission_test_models["mediafile/7"]["owner_id"] = "organization/1"
-        self.permission_test_models["mediafile/8"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/7"]["owner_id"] = ONE_ORGANIZATION_FQID
+        self.permission_test_models["mediafile/8"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(
             self.permission_test_models,
             "mediafile.move",
-            {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+            {"owner_id": ONE_ORGANIZATION_FQID, "ids": [8], "parent_id": 7},
         )
 
     def test_move_permissions_orga(self) -> None:
-        self.permission_test_models["mediafile/7"]["owner_id"] = "organization/1"
-        self.permission_test_models["mediafile/8"]["owner_id"] = "organization/1"
+        self.permission_test_models["mediafile/7"]["owner_id"] = ONE_ORGANIZATION_FQID
+        self.permission_test_models["mediafile/8"]["owner_id"] = ONE_ORGANIZATION_FQID
         self.base_permission_test(
             self.permission_test_models,
             "mediafile.move",
-            {"owner_id": "organization/1", "ids": [8], "parent_id": 7},
+            {"owner_id": ONE_ORGANIZATION_FQID, "ids": [8], "parent_id": 7},
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
         )

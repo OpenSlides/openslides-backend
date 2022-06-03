@@ -1,12 +1,13 @@
 from typing import Any, Dict
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import FilterOperator
-from ....shared.patterns import Collection, FullQualifiedId
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -82,7 +83,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
         organization_id = instance.get("id", 0)
         if limit_of_meetings := instance.get("limit_of_meetings"):
             organization = self.datastore.get(
-                FullQualifiedId(Collection("organization"), organization_id),
+                ONE_ORGANIZATION_FQID,
                 ["active_meeting_ids"],
             )
 
@@ -95,7 +96,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
 
         if limit_of_users := instance.get("limit_of_users"):
             filter_ = FilterOperator("is_active", "=", True)
-            count_active_users = self.datastore.count(Collection("user"), filter_)
+            count_active_users = self.datastore.count("user", filter_)
             if count_active_users > limit_of_users:
                 raise ActionException(
                     f"Active users: {count_active_users}. You cannot set the limit lower."

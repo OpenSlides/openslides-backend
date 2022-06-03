@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -49,13 +50,13 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
     def test_create_directory_organization_correct(self) -> None:
         self.set_models(
             {
-                "organization/1": {},
+                ONE_ORGANIZATION_FQID: {},
             }
         )
         response = self.request(
             "mediafile.create_directory",
             {
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "title": "title_Xcdfgee",
             },
         )
@@ -404,7 +405,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
         response = self.request(
             "mediafile.create_directory",
             {
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "title": "title_1",
                 "parent_id": 7,
             },
@@ -493,7 +494,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             self.permission_test_models,
             "mediafile.create_directory",
             {
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "title": "title_Xcdfgee",
             },
         )
@@ -503,7 +504,7 @@ class MediafileCreateDirectoryActionTest(BaseActionTestCase):
             self.permission_test_models,
             "mediafile.create_directory",
             {
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "title": "title_Xcdfgee",
             },
             OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,

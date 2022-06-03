@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Tuple, cast
 from openslides_backend.models.models import Meeting
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 from tests.util import Response
 
@@ -462,7 +463,7 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_set_as_template_true(self) -> None:
         self.set_models(self.test_models)
-        self.set_models({"organization/1": {}})
+        self.set_models({ONE_ORGANIZATION_FQID: {}})
         response = self.request(
             "meeting.update",
             {
@@ -474,14 +475,14 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/1")
         assert "set_as_template" not in meeting
         assert meeting.get("template_for_organization_id") == 1
-        self.assert_model_exists("organization/1", {"template_meeting_ids": [1]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": [1]})
 
     def test_update_set_as_template_false(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
             {
                 "meeting/1": {"template_for_organization_id": 1},
-                "organization/1": {"template_meeting_ids": [1]},
+                ONE_ORGANIZATION_FQID: {"template_meeting_ids": [1]},
             }
         )
         response = self.request(
@@ -495,4 +496,4 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         meeting = self.get_model("meeting/1")
         assert "set_as_template" not in meeting
         assert "template_for_organization_id" not in meeting
-        self.assert_model_exists("organization/1", {"template_meeting_ids": []})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
