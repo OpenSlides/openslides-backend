@@ -1,5 +1,6 @@
 from openslides_backend.models.fields import BaseRelationField, BaseTemplateField
 from openslides_backend.models.models import User
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,7 +9,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "committee_ids": [1],
                     "active_meeting_ids": [1],
                 },
@@ -256,7 +257,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
         self.assertCountEqual(meeting1.get("user_ids", []), [])
 
         self.assert_model_exists(
-            "organization/1", {"active_meeting_ids": [], "committee_ids": [1]}
+            ONE_ORGANIZATION_FQID, {"active_meeting_ids": [], "committee_ids": [1]}
         )
         self.assert_model_exists(
             "committee/1",
@@ -281,7 +282,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
     def test_delete_archived_meeting(self) -> None:
         self.set_models(
             {
-                "organization/1": {"active_meeting_ids": []},
+                ONE_ORGANIZATION_FQID: {"active_meeting_ids": []},
                 "committee/1": {
                     "user_ids": [1, 2],
                     "user_$can_manage_management_level": [1],

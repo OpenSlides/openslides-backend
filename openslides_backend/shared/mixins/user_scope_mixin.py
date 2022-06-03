@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple, cast
 
 from ...models.models import Committee
 from ...services.datastore.interface import DatastoreService, GetManyRequest
-from ..patterns import to_fqid
+from ..patterns import fqid_from_collection_and_id
 from ..util_dict_sets import get_set_from_dict_by_fieldlist, get_set_from_dict_from_dict
 
 
@@ -38,7 +38,7 @@ class UserScopeMixin:
             )
         if id_:
             user = self.datastore.get(
-                to_fqid("user", id_),
+                fqid_from_collection_and_id("user", id_),
                 ["meeting_ids", *cml_fields],
             )
             meetings.update(user.get("meeting_ids", []))

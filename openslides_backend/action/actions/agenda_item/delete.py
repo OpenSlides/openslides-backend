@@ -2,7 +2,11 @@ from typing import Any, Dict
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
-from ....shared.patterns import collection_from_fqid, fqid_id, to_fqid
+from ....shared.patterns import (
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
+)
 from ....shared.typing import DeletedModel
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -21,7 +25,7 @@ class AgendaItemDelete(DeleteAction):
     permission = Permissions.AgendaItem.CAN_MANAGE
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        fqid = to_fqid(self.model.collection, instance["id"])
+        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         agenda_item = self.datastore.get(
             fqid,
             ["content_object_id"],
@@ -34,7 +38,7 @@ class AgendaItemDelete(DeleteAction):
                 self.apply_instance(DeletedModel(), fqid)
                 self.execute_other_action(
                     TopicDelete,
-                    [{"id": fqid_id(content_object_fqid)}],
+                    [{"id": id_from_fqid(content_object_fqid)}],
                 )
                 self.apply_instance(DeletedModel(), content_object_fqid)
         return instance

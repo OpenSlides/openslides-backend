@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ....models.helper import calculate_inherited_groups_helper
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import BaseAction
 from ...util.typing import ActionData
 
@@ -20,7 +20,7 @@ class MediafileCalculatedFieldsMixin(BaseAction):
         parent_inherited_access_group_ids: Optional[List[int]],
     ) -> ActionData:
         mediafile = self.datastore.get(
-            to_fqid("mediafile", instance["id"]), ["child_ids"]
+            fqid_from_collection_and_id("mediafile", instance["id"]), ["child_ids"]
         )
         if mediafile.get("child_ids"):
             get_many_request = GetManyRequest(
@@ -67,7 +67,7 @@ def calculate_inherited_groups_helper_with_parent_id(
 ) -> Tuple[bool, Optional[List[int]]]:
     if parent_id:
         parent = datastore.get(
-            to_fqid("mediafile", parent_id),
+            fqid_from_collection_and_id("mediafile", parent_id),
             ["is_public", "inherited_access_group_ids"],
         )
     else:

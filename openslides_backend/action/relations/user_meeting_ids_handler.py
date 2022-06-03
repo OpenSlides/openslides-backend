@@ -1,7 +1,10 @@
 from typing import Any, Dict
 
 from ...models.fields import Field
-from ...shared.patterns import to_fqfield, to_fqid
+from ...shared.patterns import (
+    fqfield_from_collection_and_id_and_field,
+    fqid_from_collection_and_id,
+)
 from .calculated_field_handler import CalculatedFieldHandler
 from .typing import ListUpdateElement, RelationUpdates
 
@@ -17,7 +20,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         if field_name != "group_$_ids":
             return {}
 
-        fqid = to_fqid(field.own_collection, instance["id"])
+        fqid = fqid_from_collection_and_id(field.own_collection, instance["id"])
         db_instance = self.datastore.get(
             fqid,
             [field_name],
@@ -37,5 +40,7 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
             "add": [int(x) for x in added_ids],
             "remove": [int(x) for x in removed_ids],
         }
-        fqfield = to_fqfield("user", instance["id"], "meeting_ids")
+        fqfield = fqfield_from_collection_and_id_and_field(
+            "user", instance["id"], "meeting_ids"
+        )
         return {fqfield: relation_el}

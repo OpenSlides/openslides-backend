@@ -1,6 +1,7 @@
 import openslides_backend.action.actions  # noqa
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -14,7 +15,7 @@ class UpdatePollTestCase(BaseActionTestCase):
                     "open_posts": 1,
                 },
                 "meeting/1": {"name": "my meeting", "is_active_in_organization_id": 1},
-                "organization/1": {"enable_electronic_voting": True},
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1], "poll_ids": [1]},
                 "poll/1": {
                     "content_object_id": "assignment/1",

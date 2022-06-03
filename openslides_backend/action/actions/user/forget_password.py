@@ -3,6 +3,8 @@ from time import time
 from typing import Any, Dict
 from urllib.parse import quote
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
@@ -57,7 +59,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                 self.model.collection, filter_, ["id", "username"]
             )
 
-            organization = self.datastore.get("organization/1", ["url"])
+            organization = self.datastore.get(ONE_ORGANIZATION_FQID, ["url"])
             url = organization.get("url", "")
 
             # try to send the mails.

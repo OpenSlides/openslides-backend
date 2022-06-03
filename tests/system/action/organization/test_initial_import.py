@@ -2,13 +2,17 @@ from typing import Any, Dict
 
 from migrations import assert_migration_index, get_backend_migration_index
 from migrations.migrate import MigrationWrapper
-from openslides_backend.shared.util import INITIAL_DATA_FILE, get_initial_data_file
+from openslides_backend.shared.util import (
+    INITIAL_DATA_FILE,
+    ONE_ORGANIZATION_FQID,
+    get_initial_data_file,
+)
 from tests.system.action.base import BaseActionTestCase
 
 
 class OrganizationInitialImport(BaseActionTestCase):
     def test_initial_import_filled_datastore(self) -> None:
-        self.set_models({"organization/1": {}})
+        self.set_models({ONE_ORGANIZATION_FQID: {}})
         request_data = {"data": get_initial_data_file(INITIAL_DATA_FILE)}
         response = self.request("organization.initial_import", request_data)
         self.assert_status_code(response, 400)

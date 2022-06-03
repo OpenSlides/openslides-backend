@@ -1,5 +1,5 @@
 import re
-from typing import List, NewType, Optional, Sequence, Union, cast
+from typing import List, NewType, Optional, Sequence, Tuple, Union, cast
 
 KEYSEPARATOR = "/"
 DECIMAL_PATTERN = r"^-?(\d|[1-9]\d+)\.\d{6}$"
@@ -35,20 +35,6 @@ FullQualifiedField = Union[str, _FullQualifiedField]  # meeting/5/name
 CollectionField = Union[str, _CollectionField]  # meeting/name
 
 
-# methods for FullQualifiedId
-def to_fqid(collection: Union[str, Collection], id: Union[int, str]) -> FullQualifiedId:
-    return cast(FullQualifiedId, f"{collection}{KEYSEPARATOR}{id}")
-
-
-def fqid_id(fqid: FullQualifiedId) -> int:
-    return int(fqid.split(KEYSEPARATOR)[1])
-
-
-# alt: fqid_collection
-def collection_from_fqid(fqid: FullQualifiedId) -> str:
-    return fqid.split(KEYSEPARATOR)[0]
-
-
 def transform_to_fqids(
     value: Optional[
         Union[
@@ -78,42 +64,73 @@ def transform_to_fqids(
     fqid_list = []
     for id in id_list:
         if isinstance(id, int):
-            fqid_list.append(to_fqid(collection, id))
+            fqid_list.append(fqid_from_collection_and_id(collection, id))
         else:
             fqid_list.append(cast(FullQualifiedId, id))
     return fqid_list
 
 
-# methods for FullQualifiedField
-def to_fqfield(
-    collection: Union[str, Collection], id: Union[int, str], field: str
-) -> FullQualifiedField:
-    return cast(
-        FullQualifiedField, f"{collection}{KEYSEPARATOR}{id}{KEYSEPARATOR}{field}"
-    )
-
-
-def fqfield_fqid(fqfield: FullQualifiedField) -> FullQualifiedId:
-    collection, id_, _ = str(fqfield).split(KEYSEPARATOR)
-    return cast(FullQualifiedId, f"{collection}{KEYSEPARATOR}{id_}")
-
-
-def fqfield_collection(fqfield: FullQualifiedField) -> Collection:
-    return cast(Collection, str(fqfield).split(KEYSEPARATOR)[0])
-
-
-def fqfield_id(fqfield: FullQualifiedField) -> int:
-    return int(str(fqfield).split(KEYSEPARATOR)[1])
-
-
-def fqfield_field(fqfield: FullQualifiedField) -> str:
-    return str(fqfield).split(KEYSEPARATOR)[2]
-
-
-# methods for CollectionField
 def collectionfield_from_collection_and_field(collection: str, field: str) -> str:
     return f"{collection}{KEYSEPARATOR}{field}"
 
 
 def collectionfield_from_fqid_and_field(fqid: str, field: str) -> str:
     return f"{collection_from_fqid(fqid)}{KEYSEPARATOR}{field}"
+
+
+def fqfield_from_collection_and_id_and_field(
+    collection: Collection, id: int, field: str
+) -> FullQualifiedField:
+    return cast(
+        FullQualifiedField, f"{collection}{KEYSEPARATOR}{id}{KEYSEPARATOR}{field}"
+    )
+
+
+def fqfield_from_fqid_and_field(fqid: str, field: str) -> str:
+    return f"{fqid}{KEYSEPARATOR}{field}"
+
+
+def collection_from_fqfield(fqfield: str) -> str:
+    return str(fqfield).split(KEYSEPARATOR)[0]
+
+
+def fqid_from_fqfield(fqfield: str) -> str:
+    return collectionfield_and_fqid_from_fqfield(fqfield)[1]
+
+
+def field_from_fqfield(fqfield: str) -> str:
+    return fqfield.split(KEYSEPARATOR)[2]
+
+
+def field_from_collectionfield(collectionfield: str) -> str:
+    return collectionfield.split(KEYSEPARATOR)[1]
+
+
+def id_from_fqid(fqid: str) -> int:
+    return int(fqid.split(KEYSEPARATOR)[1])
+
+
+def id_from_fqfield(fqfield: FullQualifiedField) -> int:
+    return int(str(fqfield).split(KEYSEPARATOR)[1])
+
+
+def collectionfield_and_fqid_from_fqfield(fqfield: str) -> Tuple[str, str]:
+    parts = fqfield.split(KEYSEPARATOR)
+    return f"{parts[0]}{KEYSEPARATOR}{parts[2]}", f"{parts[0]}{KEYSEPARATOR}{parts[1]}"
+
+
+def collection_from_fqid(fqid: str) -> str:
+    return fqid.split(KEYSEPARATOR)[0]
+
+
+def collection_and_id_from_fqid(fqid: str) -> Tuple[str, int]:
+    s = fqid.split(KEYSEPARATOR)
+    return s[0], int(s[1])
+
+
+def collection_from_collectionfield(collectionfield: str) -> str:
+    return collectionfield.split(KEYSEPARATOR)[0]
+
+
+def fqid_from_collection_and_id(collection: str, id: Union[str, int]) -> str:
+    return f"{collection}{KEYSEPARATOR}{id}"

@@ -2,6 +2,7 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -914,7 +915,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_exceed_limit_of_users(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 3},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
                 "user/2": {"is_active": True},
                 "user/3": {"is_active": True},
             }
@@ -935,7 +936,7 @@ class UserCreateActionTest(BaseActionTestCase):
     def test_create_inactive_user(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 1},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 1},
             }
         )
         response = self.request(

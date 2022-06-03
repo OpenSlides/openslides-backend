@@ -1,7 +1,7 @@
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
 from ....shared.filters import FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
 from ...util.default_schema import DefaultSchema
@@ -34,7 +34,7 @@ class AgendaItemNumbering(SingularActionMixin, UpdateAction):
 
         # Build agenda tree and get new numbers
         meeting = self.datastore.get(
-            to_fqid("meeting", meeting_id),
+            fqid_from_collection_and_id("meeting", meeting_id),
             ["agenda_numeral_system", "agenda_number_prefix"],
         )
         numeral_system = meeting.get("agenda_numeral_system", "arabic")

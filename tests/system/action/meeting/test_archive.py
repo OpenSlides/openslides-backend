@@ -2,6 +2,7 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -10,7 +11,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1],
                 },
                 "committee/1": {
@@ -29,13 +30,14 @@ class MeetingArchiveTest(BaseActionTestCase):
             {"is_active_in_organization_id": None, "is_archived_in_organization_id": 1},
         )
         self.assert_model_exists(
-            "organization/1", {"active_meeting_ids": [], "archived_meeting_ids": [1]}
+            ONE_ORGANIZATION_FQID,
+            {"active_meeting_ids": [], "archived_meeting_ids": [1]},
         )
 
     def test_archive_2_meetings(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [1, 2],
                 },
             }
@@ -43,7 +45,7 @@ class MeetingArchiveTest(BaseActionTestCase):
         response = self.request("meeting.archive", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"is_active_in_organization_id": None})
-        self.assert_model_exists("organization/1", {"active_meeting_ids": [2]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [2]})
 
     def test_archive_no_permissions(self) -> None:
         self.set_models(

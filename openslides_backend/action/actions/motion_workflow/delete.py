@@ -3,7 +3,7 @@ from typing import Any, Dict, List, cast
 from ....models.models import MotionWorkflow
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -24,12 +24,12 @@ class MotionWorkflowDeleteAction(DeleteAction):
         check if is default or last workflow of meeting.
         """
         workflow = self.datastore.get(
-            to_fqid("motion_workflow", instance["id"]),
+            fqid_from_collection_and_id("motion_workflow", instance["id"]),
             ["meeting_id"],
         )
         if not self.is_meeting_deleted(workflow["meeting_id"]):
             meeting = self.datastore.get(
-                to_fqid("meeting", workflow["meeting_id"]),
+                fqid_from_collection_and_id("meeting", workflow["meeting_id"]),
                 [
                     "motions_default_workflow_id",
                     "motions_default_amendment_workflow_id",

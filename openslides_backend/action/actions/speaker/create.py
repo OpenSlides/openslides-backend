@@ -5,7 +5,7 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -150,10 +150,12 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
             raise ActionException(
                 f"The requesting user {self.user_id} is not the user {instance.get('user_id')} the point-of-order is filed for."
             )
-        los_fqid = to_fqid("list_of_speakers", instance["list_of_speakers_id"])
+        los_fqid = fqid_from_collection_and_id(
+            "list_of_speakers", instance["list_of_speakers_id"]
+        )
         los = self.datastore.get(los_fqid, ["meeting_id", "closed"])
         meeting_id = los["meeting_id"]
-        meeting_fqid = to_fqid("meeting", meeting_id)
+        meeting_fqid = fqid_from_collection_and_id("meeting", meeting_id)
         meeting = self.datastore.get(
             meeting_fqid,
             [
@@ -181,7 +183,7 @@ class SpeakerCreateAction(CheckSpeechState, CreateActionWithInferredMeeting):
         ):
             raise ActionException("The list of speakers is closed.")
         if meeting.get("list_of_speakers_present_users_only"):
-            user_fqid = to_fqid("user", instance["user_id"])
+            user_fqid = fqid_from_collection_and_id("user", instance["user_id"])
             user = self.datastore.get(user_fqid, ["is_present_in_meeting_ids"])
             if meeting_id not in user.get("is_present_in_meeting_ids", ()):
                 raise ActionException(

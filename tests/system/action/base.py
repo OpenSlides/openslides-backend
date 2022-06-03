@@ -19,6 +19,7 @@ from openslides_backend.services.datastore.with_database_context import (
 )
 from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.base import BaseSystemTestCase
 from tests.system.util import create_action_test_application, get_route_path
 from tests.util import Response
@@ -123,7 +124,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                     "name": f"Commitee{committee_id}",
                     "meeting_ids": [base],
                 },
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "limit_of_meetings": 0,
                     "active_meeting_ids": [base],
                     "enable_electronic_voting": True,

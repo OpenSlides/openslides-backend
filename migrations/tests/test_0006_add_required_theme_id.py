@@ -1,26 +1,29 @@
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
+
 def test_migration(write, finalize, assert_model):
     write(
         {
             "type": "create",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"id": 42},
         }
     )
     write(
         {
             "type": "update",
-            "fqid": "organization/1",
+            "fqid": ONE_ORGANIZATION_FQID,
             "fields": {"f": 2},
         }
     )
-    write({"type": "delete", "fqid": "organization/1"})
-    write({"type": "restore", "fqid": "organization/1"})
+    write({"type": "delete", "fqid": ONE_ORGANIZATION_FQID})
+    write({"type": "restore", "fqid": ONE_ORGANIZATION_FQID})
     write({"type": "create", "fqid": "dummy/42", "fields": {"id": 42}})
 
     finalize("0006_add_required_theme_id")
 
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "id": 42,
             "theme_id": 1,
@@ -46,7 +49,7 @@ def test_migration(write, finalize, assert_model):
         position=1,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "id": 42,
             "f": 2,
@@ -58,7 +61,7 @@ def test_migration(write, finalize, assert_model):
         position=2,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "id": 42,
             "f": 2,
@@ -70,7 +73,7 @@ def test_migration(write, finalize, assert_model):
         position=3,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {
             "id": 42,
             "f": 2,

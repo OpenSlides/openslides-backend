@@ -4,7 +4,7 @@ from typing import Any, Dict, List, cast
 
 from migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
-from openslides_backend.shared.util import get_initial_data_file
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -16,7 +16,10 @@ class MeetingImport(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {"active_meeting_ids": [1], "committee_ids": [1]},
+                ONE_ORGANIZATION_FQID: {
+                    "active_meeting_ids": [1],
+                    "committee_ids": [1],
+                },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
                 "meeting/1": {"committee_id": 1, "group_ids": [1]},
                 "group/1": {"meeting_id": 1},
@@ -606,7 +609,7 @@ class MeetingImport(BaseActionTestCase):
         committee_1 = self.get_model("committee/1")
         self.assertCountEqual(committee_1.get("meeting_ids"), [1, 2])
         self.assertCountEqual(committee_1.get("user_ids"), [1, 2])
-        self.assert_model_exists("organization/1", {"active_meeting_ids": [1, 2]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1, 2]})
 
     def test_check_calc_fields(self) -> None:
         request_data = self.create_request_data({})
@@ -641,7 +644,7 @@ class MeetingImport(BaseActionTestCase):
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
 
-        organization = self.assert_model_exists("organization/1")
+        organization = self.assert_model_exists(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
 
         committee1 = self.assert_model_exists(
@@ -1234,7 +1237,7 @@ class MeetingImport(BaseActionTestCase):
         assert "tag/1: Id must be the same as model['id']" in response.json["message"]
 
     def test_limit_of_meetings_error(self) -> None:
-        self.update_model("organization/1", {"limit_of_meetings": 1})
+        self.update_model(ONE_ORGANIZATION_FQID, {"limit_of_meetings": 1})
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 400)
         self.assertIn(
@@ -1243,14 +1246,14 @@ class MeetingImport(BaseActionTestCase):
         )
 
     def test_limit_of_meetings_ok(self) -> None:
-        self.update_model("organization/1", {"limit_of_meetings": 2})
+        self.update_model(ONE_ORGANIZATION_FQID, {"limit_of_meetings": 2})
         response = self.request("meeting.import", self.create_request_data({}))
         self.assert_status_code(response, 200)
 
     def test_check_limit_of_users_okay(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 2},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 2},
             }
         )
         request_data = self.create_request_data({})
@@ -1259,7 +1262,7 @@ class MeetingImport(BaseActionTestCase):
         self.assert_model_exists("user/2")
 
     def test_check_limit_of_users_okay_merged_user(self) -> None:
-        self.set_models({"organization/1": {"limit_of_users": 1}})
+        self.set_models({ONE_ORGANIZATION_FQID: {"limit_of_users": 1}})
         self.assert_model_exists(
             "user/1",
             {"username": "admin", "first_name": None, "last_name": None, "email": None},
@@ -1277,7 +1280,7 @@ class MeetingImport(BaseActionTestCase):
     def test_check_hit_limit_of_users(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 2},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 2},
                 "user/2": {"username": "test2", "is_active": True},
             }
         )

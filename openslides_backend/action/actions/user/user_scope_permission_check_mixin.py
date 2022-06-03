@@ -12,7 +12,7 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import MissingPermission
 from ....shared.mixins.user_scope_mixin import UserScope, UserScopeMixin
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 
 
@@ -41,7 +41,9 @@ class UserScopePermissionCheckMixin(UserScopeMixin, Action):
                     }
                 )
         elif scope == UserScope.Meeting:
-            meeting = self.datastore.get(to_fqid("meeting", scope_id), ["committee_id"])
+            meeting = self.datastore.get(
+                fqid_from_collection_and_id("meeting", scope_id), ["committee_id"]
+            )
             if not has_committee_management_level(
                 self.datastore,
                 self.user_id,

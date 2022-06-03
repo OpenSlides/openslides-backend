@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Speaker
 from ....permissions.permissions import Permissions
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -16,7 +16,8 @@ class SpeakerDeleteAction(DeleteAction):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         speaker = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]), ["user_id"]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["user_id"],
         )
         if speaker.get("user_id") == self.user_id:
             return

@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import AssignmentCandidate
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -21,11 +21,13 @@ class AssignmentCandidateDelete(PermissionMixin, DeleteAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
         assignment_candidate = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             mapped_fields=["assignment_id"],
         )
         assignment = self.datastore.get(
-            to_fqid("assignment", assignment_candidate["assignment_id"]),
+            fqid_from_collection_and_id(
+                "assignment", assignment_candidate["assignment_id"]
+            ),
             mapped_fields=["phase", "meeting_id"],
         )
         if assignment.get("phase") == "finished" and not self.is_meeting_deleted(

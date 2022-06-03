@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Organization
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -81,7 +83,7 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
         organization_id = instance.get("id", 0)
         if limit_of_meetings := instance.get("limit_of_meetings"):
             organization = self.datastore.get(
-                "organization/1",
+                ONE_ORGANIZATION_FQID,
                 ["active_meeting_ids"],
             )
 

@@ -1,4 +1,5 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -7,7 +8,7 @@ class MeetingRevertArchivingTest(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [],
                 },
                 "committee/1": {
@@ -26,13 +27,14 @@ class MeetingRevertArchivingTest(BaseActionTestCase):
             {"is_active_in_organization_id": 1, "is_archived_in_organization_id": None},
         )
         self.assert_model_exists(
-            "organization/1", {"active_meeting_ids": [1], "archived_meeting_ids": None}
+            ONE_ORGANIZATION_FQID,
+            {"active_meeting_ids": [1], "archived_meeting_ids": None},
         )
 
     def test_unarchive_2_meetings(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "active_meeting_ids": [2],
                 },
             }
@@ -40,7 +42,7 @@ class MeetingRevertArchivingTest(BaseActionTestCase):
         response = self.request("meeting.unarchive", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/1", {"is_active_in_organization_id": 1})
-        organization = self.get_model("organization/1")
+        organization = self.get_model(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
 
     def test_unarchive_no_permission(self) -> None:

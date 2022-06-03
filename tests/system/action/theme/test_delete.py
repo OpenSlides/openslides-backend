@@ -1,3 +1,4 @@
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -5,7 +6,7 @@ class ThemeDeleteActionTest(BaseActionTestCase):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "theme_id": 2,
                     "theme_ids": [1, 2],
                 },
@@ -29,7 +30,7 @@ class ThemeDeleteActionTest(BaseActionTestCase):
     def test_delete_fail_to_delete_theme_from_orga(self) -> None:
         self.set_models(
             {
-                "organization/1": {"theme_ids": [1], "theme_id": 1},
+                ONE_ORGANIZATION_FQID: {"theme_ids": [1], "theme_id": 1},
                 "theme/1": {
                     "name": "test",
                     "organization_id": 1,

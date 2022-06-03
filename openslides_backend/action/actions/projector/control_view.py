@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,12 +36,14 @@ class ProjectorControlView(UpdateAction):
             new_value = 0
         elif direction == "up":
             projector = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]), [field]
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                [field],
             )
             new_value = projector.get(field, 0) + step
         elif direction == "down":
             projector = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]), [field]
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                [field],
             )
             new_value = projector.get(field, 0) - step
         else:

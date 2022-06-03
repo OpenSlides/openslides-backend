@@ -2,6 +2,8 @@ from typing import List, Optional
 
 from datastore.migrations import BaseEvent, BaseMigration, CreateEvent, UpdateEvent
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 
 class Migration(BaseMigration):
 
@@ -15,7 +17,7 @@ class Migration(BaseMigration):
         event: BaseEvent,
     ) -> Optional[List[BaseEvent]]:
 
-        if event.fqid != "organization/1":
+        if event.fqid != ONE_ORGANIZATION_FQID:
             return None
 
         if isinstance(event, CreateEvent):
@@ -39,5 +41,7 @@ class Migration(BaseMigration):
 
     def get_additional_events(self) -> Optional[List[BaseEvent]]:
         if self.update_theme_id:
-            return [UpdateEvent("organization/1", {"theme_id": 1, "theme_ids": [1]})]
+            return [
+                UpdateEvent(ONE_ORGANIZATION_FQID, {"theme_id": 1, "theme_ids": [1]})
+            ]
         return None

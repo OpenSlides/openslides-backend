@@ -6,7 +6,12 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.interfaces.event import EventType, ListFields
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import FullQualifiedId, collection_from_fqid, fqid_id, to_fqid
+from ....shared.patterns import (
+    FullQualifiedId,
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
+)
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -27,7 +32,9 @@ class GroupDeleteAction(DeleteAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        group = self.datastore.get(to_fqid("group", instance["id"]), [])
+        group = self.datastore.get(
+            fqid_from_collection_and_id("group", instance["id"]), []
+        )
         self.mediafile_ids: List[int] = list(
             (set(group.get("mediafile_access_group_ids", set())) or set())
             | (set(group.get("mediafile_inherited_access_group_ids", set()) or set()))
@@ -73,7 +80,7 @@ class GroupDeleteAction(DeleteAction):
             root_id = id_
             while (
                 parent_id := self.datastore.get(
-                    to_fqid("mediafile", root_id), ["parent_id"]
+                    fqid_from_collection_and_id("mediafile", root_id), ["parent_id"]
                 ).get("parent_id", 0)
             ) in self.mediafile_ids:
                 root_id = parent_id
@@ -86,7 +93,7 @@ class GroupDeleteAction(DeleteAction):
         for group_id, mediafile_ids in self.group_writes.items():
             yield self.build_write_request(
                 EventType.Update,
-                to_fqid("group", group_id),
+                fqid_from_collection_and_id("group", group_id),
                 f"delete group {self.group_id}: add mediafile_ids {mediafile_ids} to group {group_id} 'mediafile_inherited_access_group_ids'",
                 list_fields={
                     "add": {
@@ -101,10 +108,10 @@ class GroupDeleteAction(DeleteAction):
     def check_recursive(
         self, id_: int, db_mediafiles: Dict[int, Any]
     ) -> Iterable[WriteRequest]:
-        fqid = to_fqid("mediafile", id_)
+        fqid = fqid_from_collection_and_id("mediafile", id_)
 
         mediafile = self.datastore.get(
-            to_fqid("mediafile", id_),
+            fqid_from_collection_and_id("mediafile", id_),
             [
                 "parent_id",
                 "is_public",
@@ -135,7 +142,7 @@ class GroupDeleteAction(DeleteAction):
         yield self.build_write_request(
             EventType.Update,
             fqid,
-            f"delete group {self.group_id}: calculate fields for mediafile {fqid_id(fqid)}",
+            f"delete group {self.group_id}: calculate fields for mediafile {id_from_fqid(fqid)}",
             event_fields,
         )
 

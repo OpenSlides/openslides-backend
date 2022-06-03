@@ -2,6 +2,7 @@ from typing import Any, Dict
 
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
 from .poll_test_mixin import PollTestMixin
@@ -18,7 +19,7 @@ class PollStopActionTest(PollTestMixin):
     def test_stop_correct(self) -> None:
         self.set_models(
             {
-                "organization/1": {"enable_electronic_voting": True},
+                ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "poll/1": {
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YN",

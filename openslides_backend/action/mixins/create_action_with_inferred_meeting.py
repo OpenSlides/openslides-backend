@@ -2,7 +2,7 @@ from typing import Any, Dict, Type, cast
 
 from ...models.fields import BaseGenericRelationField, BaseRelationField
 from ...shared.exceptions import ActionException
-from ...shared.patterns import FullQualifiedId, to_fqid
+from ...shared.patterns import FullQualifiedId, fqid_from_collection_and_id
 from ..generics.create import CreateAction
 
 
@@ -28,7 +28,7 @@ class CreateActionWithInferredMeetingMixin(CreateAction):
             fqid = cast(FullQualifiedId, id)
         else:
             assert len(field.to) == 1
-            fqid = to_fqid(field.get_target_collection(), id)
+            fqid = fqid_from_collection_and_id(field.get_target_collection(), id)
         # Fetch meeting_id
         related_model = self.datastore.get(
             fqid,

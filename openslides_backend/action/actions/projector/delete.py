@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -22,7 +22,7 @@ class ProjectorDelete(DeleteAction):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projector = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["used_as_reference_projector_meeting_id", "meeting_id"],
         )
         if (

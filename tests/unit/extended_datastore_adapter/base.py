@@ -9,7 +9,6 @@ from openslides_backend.services.datastore.extended_adapter import (
 )
 from openslides_backend.shared.patterns import Collection
 from openslides_backend.shared.typing import DeletedModel
-from tests.util import get_fqid
 
 
 class BaseTestExtendedDatastoreAdapter(TestCase):
@@ -65,7 +64,7 @@ class BaseTestExtendedDatastoreAdapter(TestCase):
     def set_additional_models(self, models: Dict[str, Dict[str, Any]]) -> None:
         for fqid, model in models.items():
             self.adapter.apply_changed_model(
-                get_fqid(fqid), model, isinstance(model, DeletedModel)
+                fqid, model, isinstance(model, DeletedModel)
             )
 
     def add_mock_to_method(self, method_name: str) -> Any:

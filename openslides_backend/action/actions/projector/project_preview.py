@@ -5,7 +5,7 @@ from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
@@ -27,7 +27,7 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projection_id = instance.pop("id")
         projection = self.datastore.get(
-            to_fqid("projection", projection_id),
+            fqid_from_collection_and_id("projection", projection_id),
             ["preview_projector_id"],
         )
         # check if projection is from a preview projector
@@ -35,7 +35,7 @@ class ProjectorProjectPreview(WeightMixin, UpdateAction):
             raise ActionException("Projection has not a preview_projector_id.")
         projector_id = projection["preview_projector_id"]
         projector = self.datastore.get(
-            to_fqid(self.model.collection, projector_id),
+            fqid_from_collection_and_id(self.model.collection, projector_id),
             [
                 "current_projection_ids",
                 "preview_projection_ids",

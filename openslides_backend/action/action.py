@@ -39,11 +39,11 @@ from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from ..shared.patterns import (
     FullQualifiedId,
+    collection_from_fqfield,
     collection_from_fqid,
-    fqfield_collection,
-    fqfield_field,
-    fqfield_id,
-    to_fqid,
+    field_from_fqfield,
+    fqid_from_collection_and_id,
+    fqid_from_fqfield,
     transform_to_fqids,
 )
 from ..shared.typing import DeletedModel
@@ -232,7 +232,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 f"get meeting failed Action: {self.name}. Perhaps you want to use skip_archived_meeting_checks = True attribute"
             )
 
-        fqid = to_fqid("meeting", meeting_id)
+        fqid = fqid_from_collection_and_id("meeting", meeting_id)
         meeting = self.datastore.get(
             fqid,
             ["is_active_in_organization_id", "name"],
@@ -265,7 +265,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             if self.permission_id:
                 identifier = self.permission_id
             db_instance = self.datastore.get(
-                to_fqid(model.collection, instance[identifier]),
+                fqid_from_collection_and_id(model.collection, instance[identifier]),
                 ["meeting_id"],
                 lock_result=False,
             )
@@ -334,12 +334,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
-                fields = {fqfield_field(fqfield): data["value"]}
+                fields = {field_from_fqfield(fqfield): data["value"]}
                 if data["type"] == "add":
-                    info_text = f"Object attached to {fqfield_collection(fqfield)}"
+                    info_text = f"Object attached to {collection_from_fqfield(fqfield)}"
                 else:
                     info_text = (
-                        f"Object attachment to {fqfield_collection(fqfield)} reset"
+                        f"Object attachment to {collection_from_fqfield(fqfield)} reset"
                     )
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
@@ -347,13 +347,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 fields = None
                 list_fields_tmp = {}
                 if data["add"]:
-                    list_fields_tmp["add"] = {fqfield_field(fqfield): data["add"]}
+                    list_fields_tmp["add"] = {field_from_fqfield(fqfield): data["add"]}
                 if data["remove"]:
-                    list_fields_tmp["remove"] = {fqfield_field(fqfield): data["remove"]}
+                    list_fields_tmp["remove"] = {
+                        field_from_fqfield(fqfield): data["remove"]
+                    }
                 list_fields = cast(ListFields, list_fields_tmp)
             yield self.build_write_request(
                 EventType.Update,
-                to_fqid(fqfield_collection(fqfield), fqfield_id(fqfield)),
+                fqid_from_fqfield(fqfield),
                 info_text,
                 fields,
                 list_fields,
@@ -542,7 +544,9 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
             for equal_field in field.equal_fields:
                 if not (own_equal_field_value := instance.get(equal_field)):
-                    fqid = to_fqid(self.model.collection, instance["id"])
+                    fqid = fqid_from_collection_and_id(
+                        self.model.collection, instance["id"]
+                    )
                     db_instance = self.datastore.get(
                         fqid,
                         [equal_field],
@@ -595,7 +599,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self, instance: Dict[str, Any], fqid: Optional[FullQualifiedId] = None
     ) -> None:
         if not fqid:
-            fqid = to_fqid(self.model.collection, instance["id"])
+            fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         self.datastore.apply_changed_model(fqid, instance)
 
     def execute_other_action(

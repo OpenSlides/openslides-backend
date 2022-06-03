@@ -15,8 +15,8 @@ from ...shared.patterns import (
     Collection,
     FullQualifiedId,
     collection_from_fqid,
-    fqid_id,
-    to_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
 )
 from ...shared.typing import DeletedModel, ModelMap
 from .cache_adapter import CacheDatastoreAdapter
@@ -83,7 +83,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         else:
             self.changed_models[fqid].update(instance)
         if "id" not in self.changed_models[fqid]:
-            self.changed_models[fqid]["id"] = fqid_id(fqid)
+            self.changed_models[fqid]["id"] = id_from_fqid(fqid)
 
     def get(
         self,
@@ -113,7 +113,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 mapped_fields_per_fqid
             )
             changed_model = results.get(collection_from_fqid(fqid), {}).get(
-                fqid_id(fqid), {}
+                id_from_fqid(fqid), {}
             )
             if not missing_fields_per_fqid:
                 # nothing to do, we've got the full mode
@@ -168,7 +168,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 if not request.mapped_fields:
                     raise DatastoreException("No mapped fields given")
                 for id in request.ids:
-                    fqid = to_fqid(request.collection, id)
+                    fqid = fqid_from_collection_and_id(request.collection, id)
                     mapped_fields_per_fqid[fqid].extend(list(request.mapped_fields))
             # fetch results from changed models
             results, missing_fields_per_fqid = self._get_many_from_changed_models(
@@ -403,7 +403,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         )
         scope = locals()
         scope["collection_from_fqid"] = collection_from_fqid
-        scope["fqid_id"] = fqid_id
+        scope["id_from_fqid"] = id_from_fqid
         results = eval(filter_code, scope)
         return deepcopy(results)
 
@@ -436,14 +436,14 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
                 if mapped_fields:
                     for field in mapped_fields:
                         if field in self.changed_models[fqid]:
-                            results[collection_from_fqid(fqid)][fqid_id(fqid)][
+                            results[collection_from_fqid(fqid)][id_from_fqid(fqid)][
                                 field
                             ] = self.changed_models[fqid][field]
                         else:
                             missing_fields_per_fqid[fqid].append(field)
                 else:
                     results[collection_from_fqid(fqid)][
-                        fqid_id(fqid)
+                        id_from_fqid(fqid)
                     ] = self.changed_models[fqid]
                     missing_fields_per_fqid[fqid] = []
             else:
@@ -459,7 +459,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
     ) -> None:
         # create temp list of ids to be able to change the models dict in place
         for id in list(results.keys()):
-            fqid = to_fqid(collection, id)
+            fqid = fqid_from_collection_and_id(collection, id)
             if fqid in self.changed_models:
                 is_deleted = self.is_deleted(fqid)
                 if (
@@ -490,7 +490,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
             else:
                 # id only exists in new values: maybe some fields are missing and we have to fetch them
                 results[id] = model
-                fqid = to_fqid(collection, id)
+                fqid = fqid_from_collection_and_id(collection, id)
                 missing_fields = [
                     field for field in mapped_fields if field not in model
                 ]
@@ -502,7 +502,7 @@ class ExtendedDatastoreAdapter(CacheDatastoreAdapter):
         self, missing_fields_per_fqid: MappedFieldsPerFqid, lock_result: bool
     ) -> Dict[Collection, Dict[int, PartialModel]]:
         get_many_requests = [
-            GetManyRequest(collection_from_fqid(fqid), [fqid_id(fqid)], fields)
+            GetManyRequest(collection_from_fqid(fqid), [id_from_fqid(fqid)], fields)
             for fqid, fields in missing_fields_per_fqid.items()
         ]
         results = super().get_many(get_many_requests, lock_result=lock_result)

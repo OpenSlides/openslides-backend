@@ -16,7 +16,7 @@ from ..permissions.permissions import Permissions
 from ..services.datastore.commands import GetManyRequest
 from ..shared.exceptions import MissingPermission
 from ..shared.filters import And, FilterOperator
-from ..shared.patterns import to_fqid
+from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -103,7 +103,7 @@ class GetUserRelatedModels(BasePresenter):
             )
         ]
         user = self.datastore.get(
-            to_fqid("user", user_id),
+            fqid_from_collection_and_id("user", user_id),
             ["committee_ids", "committee_$_management_level", *cml_fields],
         )
         if not user.get("committee_ids"):
@@ -130,7 +130,9 @@ class GetUserRelatedModels(BasePresenter):
 
     def get_meetings_data(self, user_id: int) -> List[Dict[str, Any]]:
         meetings_data = []
-        user = self.datastore.get(to_fqid("user", user_id), ["meeting_ids"])
+        user = self.datastore.get(
+            fqid_from_collection_and_id("user", user_id), ["meeting_ids"]
+        )
         if not user.get("meeting_ids"):
             return []
         gmr = GetManyRequest(

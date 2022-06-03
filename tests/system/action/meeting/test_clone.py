@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 from openslides_backend.models.models import AgendaItem, Meeting, Projector
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -11,7 +12,10 @@ class MeetingClone(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "organization/1": {"active_meeting_ids": [1], "organization_tag_ids": [1]},
+            ONE_ORGANIZATION_FQID: {
+                "active_meeting_ids": [1],
+                "organization_tag_ids": [1],
+            },
             "organization_tag/1": {
                 "name": "TEST",
                 "color": "#eeeeee",
@@ -535,7 +539,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/2", settings)
 
     def test_limit_of_meetings_error(self) -> None:
-        self.test_models["organization/1"]["limit_of_meetings"] = 1
+        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 1
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 400)
@@ -545,8 +549,8 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_limit_of_meetings_error_archived_meeting(self) -> None:
-        self.test_models["organization/1"]["limit_of_meetings"] = 1
-        self.test_models["organization/1"]["active_meeting_ids"] = [3]
+        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 1
+        self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
         self.test_models["meeting/1"]["is_active_in_organization_id"] = None
         self.set_models(self.test_models)
 
@@ -558,28 +562,28 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_activate_archived_meeting(self) -> None:
-        self.test_models["organization/1"]["limit_of_meetings"] = 2
-        self.test_models["organization/1"]["active_meeting_ids"] = [3]
+        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
+        self.test_models[ONE_ORGANIZATION_FQID]["active_meeting_ids"] = [3]
         self.test_models["meeting/1"]["is_active_in_organization_id"] = None
         self.set_models(self.test_models)
 
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"is_active_in_organization_id": 1})
-        self.assert_model_exists("organization/1", {"active_meeting_ids": [3, 2]})
+        self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [3, 2]})
 
     def test_limit_of_meetings_ok(self) -> None:
-        self.test_models["organization/1"]["limit_of_meetings"] = 2
+        self.test_models[ONE_ORGANIZATION_FQID]["limit_of_meetings"] = 2
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        organization = self.get_model("organization/1")
+        organization = self.get_model(ONE_ORGANIZATION_FQID)
         self.assertCountEqual(organization["active_meeting_ids"], [1, 2])
 
     def test_create_clone(self) -> None:
         self.set_models(
             {
-                "organization/1": {},
+                ONE_ORGANIZATION_FQID: {},
                 "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
                 "user/2": {"committee_ids": [1]},
                 "user/3": {"committee_ids": [1]},
@@ -821,7 +825,7 @@ class MeetingClone(BaseActionTestCase):
     def prepare_datastore_performance_test(self) -> None:
         self.set_models(
             {
-                "organization/1": {},
+                ONE_ORGANIZATION_FQID: {},
                 "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
                 "user/2": {"committee_ids": [1]},
                 "user/3": {"committee_ids": [1]},

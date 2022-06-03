@@ -4,7 +4,7 @@ from ....models.models import ProjectorCountdown
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -32,7 +32,7 @@ class ProjectorCountdownCreate(CreateAction):
         # set default_time if needed and countdown_time
         if not instance.get("default_time"):
             meeting = self.datastore.get(
-                to_fqid("meeting", instance["meeting_id"]),
+                fqid_from_collection_and_id("meeting", instance["meeting_id"]),
                 ["projector_countdown_default_time"],
             )
             instance["default_time"] = meeting.get("projector_countdown_default_time")

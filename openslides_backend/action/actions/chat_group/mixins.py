@@ -1,15 +1,16 @@
-from typing import Any, Dict, cast
+from typing import Any, Dict
+
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import FullQualifiedId
 from ...action import Action
 
 
 class ChatEnabledMixin(Action):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         organization = self.datastore.get(
-            cast(FullQualifiedId, "organization/1"),
+            ONE_ORGANIZATION_FQID,
             ["enable_chat"],
         )
 

@@ -6,11 +6,11 @@ from ...services.datastore.interface import DatastoreService
 from ...shared.exceptions import ActionException, DatastoreException
 from ...shared.patterns import (
     FullQualifiedField,
-    fqfield_collection,
-    fqfield_field,
-    fqfield_fqid,
-    fqfield_id,
-    to_fqid,
+    collection_from_fqfield,
+    field_from_fqfield,
+    fqid_from_collection_and_id,
+    fqid_from_fqfield,
+    id_from_fqfield,
     transform_to_fqids,
 )
 from ..util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -83,11 +83,11 @@ class RelationManager:
                 if not process_calculated_fields_only:
                     self.process_relation_element(fqfield, relations_element, relations)
 
-                related_field_name = fqfield_field(fqfield)
-                related_model = model_registry[fqfield_collection(fqfield)]()
+                related_field_name = field_from_fqfield(fqfield)
+                related_model = model_registry[collection_from_fqfield(fqfield)]()
                 related_field = related_model.get_field(related_field_name)
                 related_instance = {
-                    "id": fqfield_id(fqfield),
+                    "id": id_from_fqfield(fqfield),
                     related_field_name: relations_element["value"],
                 }
                 calculated_field_handler_calls.append(
@@ -128,7 +128,7 @@ class RelationManager:
         def get_template_field_db_value(template_field_name: str) -> List[str]:
             try:
                 return self.datastore.get(
-                    fqid=to_fqid(model.collection, instance["id"]),
+                    fqid=fqid_from_collection_and_id(model.collection, instance["id"]),
                     mapped_fields=[template_field_name],
                     use_changed_models=False,
                 ).get(template_field_name, [])
@@ -155,7 +155,7 @@ class RelationManager:
                     if field.replacement_collection:
                         # check if the model the replacement is referring to exists
                         self.datastore.get(
-                            fqid=to_fqid(
+                            fqid=fqid_from_collection_and_id(
                                 field.replacement_collection, int(replacement)
                             ),
                             mapped_fields=["id"],
@@ -258,8 +258,8 @@ class RelationManager:
             if relations_element["type"] in ("add", "remove"):
                 field_update_element = cast(FieldUpdateElement, relations_element)
                 self.datastore.apply_changed_model(
-                    fqfield_fqid(fqfield),
-                    {fqfield_field(fqfield): field_update_element["value"]},
+                    fqid_from_fqfield(fqfield),
+                    {field_from_fqfield(fqfield): field_update_element["value"]},
                 )
             elif relations_element["type"] == "list_update":
                 # list updates are only issued by calculated field handlers and therefore must not be handled here

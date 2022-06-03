@@ -7,8 +7,8 @@ from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
-    fqid_id,
-    to_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
     transform_to_fqids,
 )
 from ...shared.typing import DeletedModel
@@ -30,7 +30,7 @@ class DeleteAction(Action):
         instance = self.update_instance(instance)
 
         # Fetch db instance with all relevant fields
-        this_fqid = to_fqid(self.model.collection, instance["id"])
+        this_fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         relevant_fields = [
             field.get_own_field_name() for field in self.model.get_relation_fields()
         ] + ["meta_deleted"]
@@ -93,7 +93,7 @@ class DeleteAction(Action):
                                 "since no delete action was found."
                             )
                         # Assume that the delete action uses the standard action data
-                        action_data = [{"id": fqid_id(fqid)}]
+                        action_data = [{"id": id_from_fqid(fqid)}]
                         delete_actions.append((delete_action_class, action_data))
                         self.datastore.apply_changed_model(fqid, DeletedModel())
             else:
@@ -127,7 +127,7 @@ class DeleteAction(Action):
             yield field.get_structured_field_name(replacement)
 
     def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
-        fqid = to_fqid(self.model.collection, instance["id"])
+        fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
         information = "Object deleted"
         yield self.build_write_request(EventType.Delete, fqid, information)
 
@@ -135,7 +135,9 @@ class DeleteAction(Action):
         """
         Returns whether the given meeting was deleted during this request or not.
         """
-        return self.datastore.is_deleted(to_fqid("meeting", meeting_id))
+        return self.datastore.is_deleted(
+            fqid_from_collection_and_id("meeting", meeting_id)
+        )
 
     def is_deleted(self, fqid: FullQualifiedId) -> bool:
         return self.datastore.is_deleted(fqid)

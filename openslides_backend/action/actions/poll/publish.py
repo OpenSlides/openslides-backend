@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -20,7 +20,8 @@ class PollPublishAction(StopControl, UpdateAction, PollPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]), ["state"]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
+            ["state"],
         )
         if poll.get("state") not in [Poll.STATE_FINISHED, Poll.STATE_STARTED]:
             raise ActionException(

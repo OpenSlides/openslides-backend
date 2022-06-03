@@ -14,7 +14,7 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.filters import And, Filter, FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -46,7 +46,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         instance["id"] = self.find_user_to_number(meeting_id, number)
 
         user = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["is_present_in_meeting_ids"],
         )
         is_present = user.get("is_present_in_meeting_ids", [])
@@ -96,7 +96,7 @@ class UserTogglePresenceByNumber(UpdateAction, CheckForArchivedMeetingMixin):
         ):
             return
         meeting = self.datastore.get(
-            to_fqid("meeting", instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id"],
         )
         if has_committee_management_level(

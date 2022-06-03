@@ -4,7 +4,7 @@ from ....models.models import Projector
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
 from ...util.default_schema import DefaultSchema
@@ -26,7 +26,7 @@ class ProjectorNext(WeightMixin, UpdateAction):
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:
             projector = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 [
                     "current_projection_ids",
                     "preview_projection_ids",

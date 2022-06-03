@@ -4,7 +4,7 @@ from ....models.models import ProjectorCountdown
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Not
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,7 +36,7 @@ class ProjectorCountdownUpdate(UpdateAction):
 
     def check_title_unique(self, instance: Dict[str, Any]) -> None:
         projector_countdown = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_id"],
         )
         title_filter = And(

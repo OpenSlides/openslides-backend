@@ -30,7 +30,7 @@ from openslides_backend.models.fields import (
 )
 from openslides_backend.models.helper import calculate_inherited_groups_helper
 from openslides_backend.models.models import Meeting, Model
-from openslides_backend.shared.patterns import KEYSEPARATOR, Collection
+from openslides_backend.shared.patterns import KEYSEPARATOR
 
 SCHEMA = fastjsonschema.compile(
     {
@@ -265,7 +265,7 @@ class Checker:
             )
 
     def get_model(self, collection: str) -> Model:
-        ModelClass = model_registry[cast(Collection, collection)]
+        ModelClass = model_registry[collection]
         return ModelClass()
 
     def get_fields(self, collection: str) -> Iterable[Field]:
@@ -830,12 +830,12 @@ class Checker:
         """Returns all reverse relations as collectionfields"""
         to = cast(BaseRelationField, self.get_model(collection).get_field(field)).to
         if isinstance(to, dict):
-            if cast(Collection, foreign_collection) not in to.keys():
+            if foreign_collection not in to.keys():
                 raise CheckException(
                     f"The collection {foreign_collection} is not supported "
                     "as a reverse relation in {collection}/{field}"
                 )
-            return to[cast(Collection, foreign_collection)]
+            return to[foreign_collection]
 
         for cf in to:
             c, f = self.split_collectionfield(cf.collection)

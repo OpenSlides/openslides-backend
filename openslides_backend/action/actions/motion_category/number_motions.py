@@ -6,7 +6,7 @@ from ....models.models import Motion, MotionCategory
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import ActionData
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -80,14 +80,14 @@ class MotionCategoryNumberMotions(UpdateAction):
         """Preload all categories with needed fields, all motions with needed fields
         and meeting with needed fields."""
         category = self.datastore.get(
-            to_fqid("motion_category", main_category_id),
+            fqid_from_collection_and_id("motion_category", main_category_id),
             ["meeting_id"],
         )
         self.main_category_id = main_category_id
 
         if category.get("meeting_id"):
             meeting = self.datastore.get(
-                to_fqid("meeting", category["meeting_id"]),
+                fqid_from_collection_and_id("meeting", category["meeting_id"]),
                 [
                     "motion_ids",
                     "motion_category_ids",

@@ -4,7 +4,7 @@ from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
 from ...generics.update import UpdateAction
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -58,13 +58,14 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
             # Calculate the ancesters of parent
             ancesters.append(parent_id)
             grandparent = self.datastore.get(
-                to_fqid(self.model.collection, parent_id), ["parent_id"]
+                fqid_from_collection_and_id(self.model.collection, parent_id),
+                ["parent_id"],
             )
             while grandparent.get("parent_id") is not None:
                 gp_parent_id = grandparent["parent_id"]
                 ancesters.append(gp_parent_id)
                 grandparent = self.datastore.get(
-                    to_fqid(self.model.collection, gp_parent_id),
+                    fqid_from_collection_and_id(self.model.collection, gp_parent_id),
                     ["parent_id"],
                 )
         for num, id_ in enumerate(ids):
@@ -76,7 +77,7 @@ class AgendaItemAssign(UpdateAction, SingularActionMixin):
                 raise ActionException(f"Id {id_} not in db_instances.")
             if parent_id:
                 parent = self.datastore.get(
-                    to_fqid(self.model.collection, parent_id),
+                    fqid_from_collection_and_id(self.model.collection, parent_id),
                     ["weight", "level"],
                 )
                 new_weight = parent.get("weight", 0) + 1 + num

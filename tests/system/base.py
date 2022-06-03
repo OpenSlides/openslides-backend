@@ -10,7 +10,7 @@ from fastjsonschema.exceptions import JsonSchemaException
 from openslides_backend.models.base import Model, model_registry
 from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
-from openslides_backend.services.datastore.interface import Collection, DatastoreService
+from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
@@ -19,14 +19,9 @@ from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.interfaces.wsgi import WSGIApplication
+from openslides_backend.shared.patterns import collection_from_fqid, id_from_fqid
 from openslides_backend.shared.util import EXAMPLE_DATA_FILE, get_initial_data_file
-from tests.util import (
-    AuthData,
-    Client,
-    Response,
-    get_collection_from_fqid,
-    get_id_from_fqid,
-)
+from tests.util import AuthData, Client, Response
 
 from .util import TestVoteService
 
@@ -154,7 +149,7 @@ class BaseSystemTestCase(TestCase):
         self, fqid: str, data: Dict[str, Any] = {}, deleted: bool = False
     ) -> List[Event]:
         self.created_fqids.add(fqid)
-        data["id"] = get_id_from_fqid(fqid)
+        data["id"] = id_from_fqid(fqid)
         self.validate_fields(fqid, data)
         events = [Event(type=EventType.Create, fqid=fqid, fields=data)]
         if deleted:
@@ -190,7 +185,7 @@ class BaseSystemTestCase(TestCase):
         self.datastore.write(write_request)
 
     def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
-        model = model_registry[get_collection_from_fqid(fqid)]()
+        model = model_registry[collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
             field = model.get_field(field_name)
             if isinstance(field, BaseTemplateField) and field.is_template_field(
@@ -219,7 +214,7 @@ class BaseSystemTestCase(TestCase):
             use_changed_models=False,
         )
         self.assertTrue(model)
-        self.assertEqual(model.get("id"), get_id_from_fqid(fqid))
+        self.assertEqual(model.get("id"), id_from_fqid(fqid))
         return model
 
     def assert_model_exists(
@@ -262,7 +257,7 @@ class BaseSystemTestCase(TestCase):
     @with_database_context
     def assert_model_count(self, collection: str, meeting_id: int, count: int) -> None:
         db_count = self.datastore.count(
-            cast(Collection, collection),
+            collection,
             FilterOperator("meeting_id", "=", meeting_id),
             lock_result=False,
         )

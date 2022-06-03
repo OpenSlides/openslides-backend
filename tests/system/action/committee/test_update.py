@@ -2,6 +2,7 @@ from openslides_backend.permissions.management_levels import (
     CommitteeManagementLevel,
     OrganizationManagementLevel,
 )
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -15,7 +16,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def create_data(self) -> None:
         self.set_models(
             {
-                "organization/1": {"name": "test_organization1"},
+                ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
                 self.COMMITTEE_FQID: {
                     "name": self.COMMITTEE_NAME,
                     "description": "<p>Test description</p>",
@@ -120,7 +121,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_both_forwarded_and_received(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1, 2, 3],
                 },
@@ -153,7 +154,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_update_both_forwarded_and_received_async(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1],
                 },
@@ -191,7 +192,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->C and B->C exist, test that the request for C with {B, D}->C works and sets the reverse relations on A and D correctly."""
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1, 2, 3, 4],
                 },
@@ -237,7 +238,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """C->A and C->B exists, test that the request for C with C->{B,D} works and sets the reverse relations on A and D correctly"""
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1, 2, 3, 4],
                 },
@@ -285,7 +286,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """C->A and C->B exists, test that the request for C with C->{} works and sets the reverse relations on A and B correctly"""
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1, 2, 3],
                 },
@@ -329,7 +330,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->A, Try A->{}"""
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1],
                 },
@@ -362,7 +363,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
         """A->B, B->{C,D}: Try request B, C->B and B->D"""
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [1, 2, 3, 4],
                 },
@@ -694,7 +695,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
     def test_add_user_management_level_to_user_ids(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                     "committee_ids": [self.COMMITTEE_ID],
                 },
@@ -781,7 +782,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
     def test_update_after_deleting_default_committee(self) -> None:
         # details see Backend Issue1071
-        self.create_model("organization/1", {"name": "organization1"})
+        self.create_model(ONE_ORGANIZATION_FQID, {"name": "organization1"})
         response = self.request(
             "committee.create",
             {

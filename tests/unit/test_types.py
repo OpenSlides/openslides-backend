@@ -8,8 +8,8 @@ from openslides_backend.shared.patterns import (
     FullQualifiedField,
     FullQualifiedId,
     collection_from_fqid,
-    fqfield_fqid,
-    fqid_id,
+    fqid_from_fqfield,
+    id_from_fqid,
 )
 
 
@@ -70,7 +70,7 @@ class TypesTester(TestCase):
             FullQualifiedField, "collection_quephaho/3148072663/field_Ein2Aos0Ku"
         )
         self.assertEqual(
-            fqfield_fqid(fqfield),
+            fqid_from_fqfield(fqfield),
             cast(FullQualifiedId, "collection_quephaho/3148072663"),
         )
 
@@ -90,4 +90,4 @@ class TypesTester(TestCase):
     def test_string_to_fqid_ok(self) -> None:
         fqid = cast(FullQualifiedId, "model/1")
         assert collection_from_fqid(fqid) == "model"
-        assert fqid_id(fqid) == 1
+        assert id_from_fqid(fqid) == 1

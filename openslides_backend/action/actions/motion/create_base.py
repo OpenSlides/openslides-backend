@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 from ....models.models import Motion
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_dependencies import CreateActionWithDependencies
 from ...mixins.sequential_numbers_mixin import SequentialNumbersMixin
 from ..agenda_item.agenda_creation import CreateActionWithAgendaItemMixin
@@ -42,7 +42,7 @@ class MotionCreateBase(
                 workflow_id = meeting.get("motions_default_workflow_id")
         if workflow_id:
             workflow = self.datastore.get(
-                to_fqid("motion_workflow", workflow_id),
+                fqid_from_collection_and_id("motion_workflow", workflow_id),
                 ["first_state_id"],
             )
             instance["state_id"] = workflow.get("first_state_id")
@@ -70,7 +70,7 @@ class MotionCreateBase(
     def set_created_last_modified_and_number(self, instance: Dict[str, Any]) -> None:
         timestamp = round(time.time())
         state = self.datastore.get(
-            to_fqid("motion_state", instance["state_id"]),
+            fqid_from_collection_and_id("motion_state", instance["state_id"]),
             ["set_created_timestamp"],
         )
         if state.get("set_created_timestamp"):

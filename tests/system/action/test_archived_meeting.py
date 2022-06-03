@@ -1,3 +1,4 @@
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -61,7 +62,7 @@ class MeetingActions(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {},
+                ONE_ORGANIZATION_FQID: {},
                 "committee/1": {
                     "name": "committee1",
                     "meeting_ids": [1],
@@ -182,7 +183,7 @@ class OutMeetingActions(BaseActionTestCase):
         super().setUp()
         self.set_models(
             {
-                "organization/1": {},
+                ONE_ORGANIZATION_FQID: {},
                 "committee/1": {
                     "name": "committee1",
                     "meeting_ids": [1],

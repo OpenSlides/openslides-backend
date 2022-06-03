@@ -7,7 +7,7 @@ from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
-from ....shared.patterns import KEYSEPARATOR, to_fqid
+from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
 from ..projector_countdown.mixins import CountdownControl
@@ -22,7 +22,7 @@ class PollPermissionMixin(Action):
             meeting_id = instance["meeting_id"]
         else:
             poll = self.datastore.get(
-                to_fqid("poll", instance["id"]),
+                fqid_from_collection_and_id("poll", instance["id"]),
                 ["content_object_id", "meeting_id"],
             )
             content_object_id = poll.get("content_object_id", "")
@@ -51,7 +51,7 @@ def check_poll_or_option_perms(
 class StopControl(CountdownControl, Action):
     def on_stop(self, instance: Dict[str, Any]) -> None:
         poll = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             [
                 "state",
                 "meeting_id",
@@ -62,7 +62,7 @@ class StopControl(CountdownControl, Action):
         )
         # reset countdown given by meeting
         meeting = self.datastore.get(
-            to_fqid("meeting", poll["meeting_id"]),
+            fqid_from_collection_and_id("meeting", poll["meeting_id"]),
             [
                 "poll_couple_countdown",
                 "poll_countdown_id",

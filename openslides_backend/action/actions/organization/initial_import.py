@@ -10,7 +10,7 @@ from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
 from ....shared.interfaces.event import EventType
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from ...action import Action
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -88,7 +88,7 @@ class OrganizationInitialImport(SingularActionMixin, Action):
             if collection.startswith("_"):
                 continue
             for entry in json_data[collection].values():
-                fqid = to_fqid(collection, entry["id"])
+                fqid = fqid_from_collection_and_id(collection, entry["id"])
                 write_requests.append(
                     self.build_write_request(
                         EventType.Create,

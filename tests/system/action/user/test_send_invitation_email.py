@@ -1,6 +1,7 @@
 from time import time
 
 from openslides_backend.action.mixins.send_email_mixin import EmailSettings
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.action.mail_base import (
     AIOHandler,
@@ -15,7 +16,7 @@ class SendInvitationMail(BaseActionTestCase):
         self.create_meeting()
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "url": "https://example.com",
                 },
                 "meeting/1": {
@@ -543,7 +544,7 @@ class SendInvitationMail(BaseActionTestCase):
     def test_correct_organization_send(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
                     "users_email_subject": "Invitation for Openslides '{event_name}'",
                     "users_email_body": "event name: {event_name}",
@@ -575,7 +576,7 @@ class SendInvitationMail(BaseActionTestCase):
             {
                 "user/1": {"organization_management_level": None},
                 "user/2": {"group_$1_ids": []},
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test orga name",
                     "users_email_subject": "Invitation for Openslides '{event_name}'",
                     "users_email_body": "event name: {event_name}",

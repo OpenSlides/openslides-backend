@@ -6,7 +6,7 @@ from ...shared.patterns import (
     KEYSEPARATOR,
     FullQualifiedId,
     collection_from_fqid,
-    fqid_id,
+    id_from_fqid,
 )
 
 
@@ -21,7 +21,7 @@ def assert_belongs_to_meeting(
     errors: Set[str] = set()
     for fqid in fqids:
         if collection_from_fqid(fqid) == "meeting":
-            if fqid_id(fqid) != meeting_id:
+            if id_from_fqid(fqid) != meeting_id:
                 errors.add(str(fqid))
         elif collection_from_fqid(fqid) == "user":
             instance = datastore.get(

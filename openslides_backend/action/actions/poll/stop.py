@@ -3,7 +3,7 @@ from typing import Any, Callable, Dict
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, VoteServiceException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -70,7 +70,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "meeting_id", "voted_ids"],
         )
         if poll.get("state") != Poll.STATE_STARTED:

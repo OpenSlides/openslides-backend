@@ -10,6 +10,8 @@ from datastore.migrations import (
 )
 from datastore.shared.util import collection_and_id_from_fqid
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 
 class Migration(BaseMigration):
     """
@@ -24,13 +26,13 @@ class Migration(BaseMigration):
     ```
     if isinstance(event, CreateEvent):
         event.data["is_active_in_organization_id"] = 1
-        update_event = ListUpdateEvent("organization/1", {"add": {"active_meeting_ids": [id]})
+        update_event = ListUpdateEvent(ONE_ORGANIZATION_FQID, {"add": {"active_meeting_ids": [id]})
         new_event = [event, update_event]
     elif isinstance(event, DeleteEvent):
-        update_event = ListUpdateEvent("organization/1", {"remove": {"active_meeting_ids": [id]})
+        update_event = ListUpdateEvent(ONE_ORGANIZATION_FQID, {"remove": {"active_meeting_ids": [id]})
         new_event = [event, update_event]
     elif isinstance(event, RestoreEvent):
-        update_event = ListUpdateEvent("organization/1", {"add": {"active_meeting_ids": [id]})
+        update_event = ListUpdateEvent(ONE_ORGANIZATION_FQID, {"add": {"active_meeting_ids": [id]})
         new_event = [event, update_event]
     ```
 
@@ -90,7 +92,7 @@ class Migration(BaseMigration):
 
         return [
             ListUpdateEvent(
-                "organization/1",
+                ONE_ORGANIZATION_FQID,
                 payload,
             )
         ]

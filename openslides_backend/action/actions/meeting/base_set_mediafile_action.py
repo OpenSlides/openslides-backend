@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
-from ....shared.patterns import KEYSEPARATOR, to_fqid
+from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -38,7 +38,7 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
         Checks is_directory and mimetype and sets logo.
         """
         mediafile = self.datastore.get(
-            to_fqid("mediafile", instance["mediafile_id"]),
+            fqid_from_collection_and_id("mediafile", instance["mediafile_id"]),
             ["is_directory", "mimetype", "owner_id"],
         )
         self.check_owner(mediafile, instance)

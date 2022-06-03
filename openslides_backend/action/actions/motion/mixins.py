@@ -1,7 +1,7 @@
 from typing import List
 
 from ....services.datastore.commands import GetManyRequest
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 
 
@@ -10,7 +10,7 @@ class PermissionHelperMixin(Action):
         if not submitter_ids:
             return False
         state = self.datastore.get(
-            to_fqid("motion_state", state_id),
+            fqid_from_collection_and_id("motion_state", state_id),
             ["allow_submitter_edit"],
         )
         if not state.get("allow_submitter_edit"):

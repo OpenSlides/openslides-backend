@@ -2,7 +2,7 @@ from typing import Any, Callable, Dict, List
 
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -68,7 +68,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
         instance["state"] = Poll.STATE_CREATED
         self.delete_all_votes(instance["id"])
         poll = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]), ["type"]
+            fqid_from_collection_and_id(self.model.collection, instance["id"]), ["type"]
         )
         instance["is_pseudoanonymized"] = poll.get("type") == Poll.TYPE_PSEUDOANONYMOUS
         instance["voted_ids"] = []
@@ -89,7 +89,7 @@ class PollResetAction(UpdateAction, PollPermissionMixin):
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
-            to_fqid(self.model.collection, poll_id),
+            fqid_from_collection_and_id(self.model.collection, poll_id),
             ["option_ids", "global_option_id"],
         )
         option_ids = poll.get("option_ids", [])

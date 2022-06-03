@@ -1,6 +1,6 @@
 from ....models.models import Mediafile
 from ....permissions.permissions import Permissions
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -34,7 +34,7 @@ class MediafileUpdate(MediafileMixin, UpdateAction, MediafileCalculatedFieldsMix
                 yield instance
                 continue
             mediafile = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["parent_id"],
             )
             (

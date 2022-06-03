@@ -1,9 +1,10 @@
-from typing import Any, cast
+from typing import Any
 
 import fastjsonschema
 
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from ..shared.filters import FilterOperator
-from ..shared.patterns import FullQualifiedId
 from ..shared.schema import schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -31,7 +32,7 @@ class NumberOfUsers(BasePresenter):
 
     def get_result(self) -> Any:
         organization = self.datastore.get(
-            cast(FullQualifiedId, "organization/1"),
+            ONE_ORGANIZATION_FQID,
             ["limit_of_users"],
         )
         limit_of_users = organization.get("limit_of_users")

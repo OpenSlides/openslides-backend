@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -36,7 +36,9 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
             yield instance
 
     def check_allowed(self, poll_id: int) -> None:
-        poll = self.datastore.get(to_fqid("poll", poll_id), ["type", "state"])
+        poll = self.datastore.get(
+            fqid_from_collection_and_id("poll", poll_id), ["type", "state"]
+        )
 
         if not poll.get("state") in (Poll.STATE_FINISHED, Poll.STATE_PUBLISHED):
             raise ActionException(
@@ -47,7 +49,7 @@ class PollAnonymize(UpdateAction, PollPermissionMixin):
 
     def _get_option_ids(self, poll_id: int) -> List[int]:
         poll = self.datastore.get(
-            to_fqid(self.model.collection, poll_id),
+            fqid_from_collection_and_id(self.model.collection, poll_id),
             ["option_ids", "global_option_id"],
         )
         option_ids = poll.get("option_ids", [])

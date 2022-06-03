@@ -16,7 +16,7 @@ from ..shared.exceptions import (
     DatastoreException,
     PermissionDenied,
 )
-from ..shared.patterns import KEYSEPARATOR, to_fqid
+from ..shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ..shared.schema import required_id_schema, schema_version
 from .base import BasePresenter
 from .presenter import register_presenter
@@ -45,7 +45,9 @@ class CheckMediafileId(BasePresenter):
     def get_result(self) -> Any:
         try:
             mediafile = self.datastore.get(
-                to_fqid(Mediafile.collection, self.data["mediafile_id"]),
+                fqid_from_collection_and_id(
+                    Mediafile.collection, self.data["mediafile_id"]
+                ),
                 mapped_fields=[
                     "filename",
                     "is_directory",
@@ -91,7 +93,7 @@ class CheckMediafileId(BasePresenter):
             raise PermissionDenied("You are not allowed to see this mediafile.")
 
         meeting = self.datastore.get(
-            to_fqid("meeting", owner_id),
+            fqid_from_collection_and_id("meeting", owner_id),
             ["enable_anonymous", "user_ids", "committee_id"],
         )
         # The user is admin of the meeting.
@@ -114,7 +116,7 @@ class CheckMediafileId(BasePresenter):
         ):
             for projection_id in mediafile.get("projection_ids", []):
                 projection = self.datastore.get(
-                    to_fqid("projection", projection_id),
+                    fqid_from_collection_and_id("projection", projection_id),
                     ["current_projector_id"],
                 )
                 if projection.get("current_projector_id"):
@@ -131,7 +133,7 @@ class CheckMediafileId(BasePresenter):
                 mediafile.get("inherited_access_group_ids", [])
             )
             user = self.datastore.get(
-                to_fqid("user", self.user_id),
+                fqid_from_collection_and_id("user", self.user_id),
                 [f"group_${owner_id}_ids"],
             )
             user_groups = set(user.get(f"group_${owner_id}_ids", []))

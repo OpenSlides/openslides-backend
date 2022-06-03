@@ -5,7 +5,7 @@ from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ..user.create import UserCreate
@@ -29,7 +29,7 @@ class MotionCreateForwarded(MotionCreateBase):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting = self.datastore.get(
-            to_fqid("meeting", instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             [
                 "motions_default_workflow_id",
             ],
@@ -40,13 +40,13 @@ class MotionCreateForwarded(MotionCreateBase):
 
         # handle forwarding user
         target_meeting = self.datastore.get(
-            to_fqid("meeting", instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["id", "default_group_id"],
         )
         if committee.get("forwarding_user_id"):
             forwarding_user_id = committee["forwarding_user_id"]
             forwarding_user = self.datastore.get(
-                to_fqid("user", forwarding_user_id),
+                fqid_from_collection_and_id("user", forwarding_user_id),
                 [f"group_${instance['meeting_id']}_ids"],
             )
             if target_meeting["default_group_id"] not in forwarding_user.get(
@@ -90,21 +90,23 @@ class MotionCreateForwarded(MotionCreateBase):
 
     def check_for_origin_id(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting = self.datastore.get(
-            to_fqid("meeting", instance["meeting_id"]),
+            fqid_from_collection_and_id("meeting", instance["meeting_id"]),
             ["committee_id"],
         )
         forwarded_from = self.datastore.get(
-            to_fqid("motion", instance["origin_id"]),
+            fqid_from_collection_and_id("motion", instance["origin_id"]),
             ["meeting_id"],
         )
         forwarded_from_meeting = self.datastore.get(
-            to_fqid("meeting", forwarded_from["meeting_id"]),
+            fqid_from_collection_and_id("meeting", forwarded_from["meeting_id"]),
             ["committee_id"],
         )
         # use the forwarding user id and id later in the handle forwarding user
         # code.
         committee = self.datastore.get(
-            to_fqid("committee", forwarded_from_meeting["committee_id"]),
+            fqid_from_collection_and_id(
+                "committee", forwarded_from_meeting["committee_id"]
+            ),
             ["id", "name", "forward_to_committee_ids", "forwarding_user_id"],
         )
         if meeting["committee_id"] not in committee.get("forward_to_committee_ids", []):
@@ -115,7 +117,7 @@ class MotionCreateForwarded(MotionCreateBase):
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         origin = self.datastore.get(
-            to_fqid(self.model.collection, instance["origin_id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["meeting_id"],
         )
         perm_origin = Permissions.Motion.CAN_FORWARD
@@ -128,7 +130,7 @@ class MotionCreateForwarded(MotionCreateBase):
 
         # check if origin motion is amendment or statute_amendment
         origin = self.datastore.get(
-            to_fqid(self.model.collection, instance["origin_id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["lead_motion_id", "statute_paragraph_id"],
         )
         if origin.get("lead_motion_id") or origin.get("statute_paragraph_id"):
@@ -141,7 +143,7 @@ class MotionCreateForwarded(MotionCreateBase):
         instance["all_derived_motion_ids"] = []
         if instance.get("origin_id"):
             origin = self.datastore.get(
-                to_fqid("motion", instance["origin_id"]),
+                fqid_from_collection_and_id("motion", instance["origin_id"]),
                 ["all_origin_ids"],
             )
             instance["all_origin_ids"] = origin.get("all_origin_ids", [])
@@ -153,7 +155,7 @@ class MotionCreateForwarded(MotionCreateBase):
         action_data = []
         for origin_id in instance["all_origin_ids"]:
             origin = self.datastore.get(
-                to_fqid("motion", origin_id),
+                fqid_from_collection_and_id("motion", origin_id),
                 ["all_derived_motion_ids"],
             )
             action_data.append(
@@ -168,11 +170,11 @@ class MotionCreateForwarded(MotionCreateBase):
 
     def check_state_allow_forwarding(self, instance: Dict[str, Any]) -> None:
         origin = self.datastore.get(
-            to_fqid(self.model.collection, instance["origin_id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["origin_id"]),
             ["state_id"],
         )
         state = self.datastore.get(
-            to_fqid("motion_state", origin["state_id"]),
+            fqid_from_collection_and_id("motion_state", origin["state_id"]),
             ["allow_motion_forwarding"],
         )
         if not state.get("allow_motion_forwarding"):

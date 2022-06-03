@@ -9,9 +9,11 @@ from smtplib import (
 )
 from ssl import SSLCertVerificationError
 from time import time
-from typing import Any, Dict, Optional, Tuple, Union, cast
+from typing import Any, Dict, Optional, Tuple, Union
 
 from fastjsonschema import JsonSchemaException
+
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -22,9 +24,9 @@ from ....permissions.permission_helper import (
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import DatastoreException, MissingPermission
 from ....shared.interfaces.write_request import WriteRequest
-from ....shared.patterns import FullQualifiedId, to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import optional_id_schema
-from ....shared.util import ONE_ORGANIZATION
+from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.update import UpdateAction
 from ...mixins.send_email_mixin import EmailMixin, EmailSettings
 from ...util.default_schema import DefaultSchema
@@ -124,7 +126,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         instance["result"] = result
 
         user = self.datastore.get(
-            to_fqid("user", user_id),
+            fqid_from_collection_and_id("user", user_id),
             [
                 "meeting_ids",
                 "email",
@@ -219,20 +221,20 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
         ]
         if not meeting_id:
             collection = "organization"
-            id_ = ONE_ORGANIZATION
+            id_ = ONE_ORGANIZATION_ID
             fields.append("url")
         else:
             collection = "meeting"
             id_ = meeting_id
 
         res = self.datastore.get(
-            to_fqid(collection, id_),
+            fqid_from_collection_and_id(collection, id_),
             fields,
             lock_result=False,
         )
         if meeting_id:
             organization = self.datastore.get(
-                cast(FullQualifiedId, "organization/1"),
+                ONE_ORGANIZATION_FQID,
                 ["url"],
                 lock_result=False,
             )

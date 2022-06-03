@@ -5,7 +5,7 @@ from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, DatastoreException, MissingPermission
 from ....shared.filters import And, Filter, FilterOperator, Not
-from ....shared.patterns import KEYSEPARATOR, to_fqid
+from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ...action import Action
 
 
@@ -24,7 +24,7 @@ class MediafileMixin(Action):
         if not parent_id:
             try:
                 mediafile = self.datastore.get(
-                    to_fqid(self.model.collection, instance["id"]),
+                    fqid_from_collection_and_id(self.model.collection, instance["id"]),
                     ["parent_id"],
                 )
                 parent_id = mediafile.get("parent_id")
@@ -82,7 +82,7 @@ class MediafileMixin(Action):
         owner_id = instance.get("owner_id")
         if not owner_id:
             mediafile = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["owner_id"],
             )
             owner_id = mediafile["owner_id"]
@@ -94,7 +94,7 @@ class MediafileMixin(Action):
     ) -> None:
         if parent_id:
             parent = self.datastore.get(
-                to_fqid(self.model.collection, parent_id),
+                fqid_from_collection_and_id(self.model.collection, parent_id),
                 ["is_directory", "owner_id"],
             )
             if not parent.get("is_directory"):
@@ -116,7 +116,7 @@ class MediafileMixin(Action):
             if results:
                 if parent_id:
                     parent = self.datastore.get(
-                        to_fqid(self.model.collection, parent_id),
+                        fqid_from_collection_and_id(self.model.collection, parent_id),
                         ["title"],
                     )
                     parent_title = parent.get("title", "")

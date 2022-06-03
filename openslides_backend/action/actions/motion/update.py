@@ -7,7 +7,11 @@ from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import KEYSEPARATOR, POSITIVE_NUMBER_REGEX, to_fqid
+from ....shared.patterns import (
+    KEYSEPARATOR,
+    POSITIVE_NUMBER_REGEX,
+    fqid_from_collection_and_id,
+)
 from ....shared.schema import optional_id_schema
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -55,7 +59,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             or instance.get("reason") == ""
         ):
             motion = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["text", "amendment_paragraph_$", "meeting_id"],
             )
 
@@ -71,7 +75,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
                 )
         if instance.get("reason") == "":
             meeting = self.datastore.get(
-                to_fqid("meeting", motion["meeting_id"]),
+                fqid_from_collection_and_id("meeting", motion["meeting_id"]),
                 ["motions_reason_required"],
             )
             if meeting.get("motions_reason_required"):
@@ -80,23 +84,25 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         if instance.get("workflow_id"):
             workflow_id = instance.pop("workflow_id")
             motion = self.datastore.get(
-                to_fqid(self.model.collection, instance["id"]),
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
                 ["state_id", "created"],
             )
             state = self.datastore.get(
-                to_fqid("motion_state", motion["state_id"]),
+                fqid_from_collection_and_id("motion_state", motion["state_id"]),
                 ["workflow_id"],
             )
             if workflow_id != state.get("workflow_id"):
                 workflow = self.datastore.get(
-                    to_fqid("motion_workflow", workflow_id),
+                    fqid_from_collection_and_id("motion_workflow", workflow_id),
                     ["first_state_id"],
                 )
                 instance["state_id"] = workflow["first_state_id"]
                 instance["recommendation_id"] = None
                 if not motion.get("created"):
                     first_state = self.datastore.get(
-                        to_fqid("motion_state", instance["state_id"]),
+                        fqid_from_collection_and_id(
+                            "motion_state", instance["state_id"]
+                        ),
                         ["set_created_timestamp"],
                     )
                     if first_state.get("set_created_timestamp"):
@@ -123,14 +129,16 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         gm_request = GetManyRequest("motion", motion_ids, ["id"])
         gm_result = self.datastore.get_many([gm_request]).get("motion", {})
         for motion_id in gm_result:
-            recommendation_extension_reference_ids.append(to_fqid("motion", motion_id))
+            recommendation_extension_reference_ids.append(
+                fqid_from_collection_and_id("motion", motion_id)
+            )
         instance[
             "recommendation_extension_reference_ids"
         ] = recommendation_extension_reference_ids
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         motion = self.datastore.get(
-            to_fqid(self.model.collection, instance["id"]),
+            fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["meeting_id", "state_id", "submitter_ids"],
         )
 

@@ -309,8 +309,6 @@ class GenericRelationField(BaseGenericRelationField):
 
     def validate(self, value: Any, payload: Dict[str, Any] = {}) -> Any:
         assert not isinstance(value, list)
-        if value:
-            return cast(FullQualifiedId, value)
         return value
 
 

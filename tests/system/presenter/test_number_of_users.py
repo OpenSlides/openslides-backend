@@ -1,3 +1,5 @@
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
 from .base import BasePresenterTestCase
 
 
@@ -5,7 +7,7 @@ class TestNumberOfUsers(BasePresenterTestCase):
     def test_number_of_users_no_limit(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 0},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 0},
                 "user/2": {"is_active": True},
                 "user/3": {"is_active": True},
             }
@@ -19,7 +21,7 @@ class TestNumberOfUsers(BasePresenterTestCase):
     def test_number_of_users_limit_plus_1(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 3},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 3},
                 "user/2": {"is_active": True},
                 "user/3": {"is_active": True},
             }
@@ -33,7 +35,7 @@ class TestNumberOfUsers(BasePresenterTestCase):
     def test_number_of_users_limit_okay(self) -> None:
         self.set_models(
             {
-                "organization/1": {"limit_of_users": 4},
+                ONE_ORGANIZATION_FQID: {"limit_of_users": 4},
                 "user/2": {"is_active": True},
                 "user/3": {"is_active": False},
             }
@@ -46,6 +48,6 @@ class TestNumberOfUsers(BasePresenterTestCase):
         self.assertEqual(data, {"possible": True})
 
     def test_number_of_users_empty_payload(self) -> None:
-        self.set_models({"organization/1": {"limit_of_users": 4}})
+        self.set_models({ONE_ORGANIZATION_FQID: {"limit_of_users": 4}})
         status_code, data = self.request("number_of_users", {})
         self.assertEqual(status_code, 400)

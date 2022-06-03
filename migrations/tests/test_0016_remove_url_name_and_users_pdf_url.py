@@ -1,3 +1,6 @@
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+
+
 def test_migration_users_pdf_url(write, finalize, assert_model):
     write(
         {
@@ -57,7 +60,7 @@ def test_migration_url_name(write, finalize, assert_model):
     )
     write({"type": "delete", "fqid": "meeting/1"})
     write({"type": "restore", "fqid": "meeting/1"})
-    write({"type": "create", "fqid": "organization/1", "fields": {"a": 1}})
+    write({"type": "create", "fqid": ONE_ORGANIZATION_FQID, "fields": {"a": 1}})
     write({"type": "update", "fqid": "meeting/1", "fields": {"url_name": None}})
 
     finalize("0016_remove_url_name_and_users_pdf_url")
@@ -83,7 +86,7 @@ def test_migration_url_name(write, finalize, assert_model):
         position=4,
     )
     assert_model(
-        "organization/1",
+        ONE_ORGANIZATION_FQID,
         {"a": 1, "meta_deleted": False, "meta_position": 5},
         position=5,
     )

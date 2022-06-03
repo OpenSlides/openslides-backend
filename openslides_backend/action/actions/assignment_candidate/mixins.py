@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import MissingPermission
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 
 
@@ -14,13 +14,13 @@ class PermissionMixin(Action):
             assignment_id = instance["assignment_id"]
         else:
             assignment_candidate = self.datastore.get(
-                to_fqid("assignment_candidate", instance["id"]),
+                fqid_from_collection_and_id("assignment_candidate", instance["id"]),
                 ["user_id", "assignment_id"],
             )
             user_id = assignment_candidate["user_id"]
             assignment_id = assignment_candidate["assignment_id"]
         assignment = self.datastore.get(
-            to_fqid("assignment", assignment_id),
+            fqid_from_collection_and_id("assignment", assignment_id),
             ["meeting_id", "phase"],
         )
         meeting_id = assignment["meeting_id"]

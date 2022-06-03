@@ -1,10 +1,11 @@
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
 class ThemeCreateActionTest(BaseActionTestCase):
     def test_create(self) -> None:
-        self.create_model("organization/1")
+        self.create_model(ONE_ORGANIZATION_FQID)
         response = self.request(
             "theme.create",
             {

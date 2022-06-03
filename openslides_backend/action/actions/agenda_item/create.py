@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 from ....models.models import AgendaItem
 from ....permissions.permissions import Permissions
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...mixins.create_action_with_inferred_meeting import (
     CreateActionWithInferredMeeting,
 )
@@ -41,13 +41,13 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
         if instance.get("parent_id") is None:
             return instance
         parent = self.datastore.get(
-            to_fqid("agenda_item", instance["parent_id"]),
+            fqid_from_collection_and_id("agenda_item", instance["parent_id"]),
             ["child_ids"],
         )
         max_weight = 0
         for child_id in parent.get("child_ids", []):
             child = self.datastore.get(
-                to_fqid("agenda_item", child_id),
+                fqid_from_collection_and_id("agenda_item", child_id),
                 ["weight"],
             )
             if child.get("weight", 0) > max_weight:
@@ -62,7 +62,9 @@ class AgendaItemCreate(CreateActionWithInferredMeeting):
                 instance["level"] = 0
             else:
                 parent = self.datastore.get(
-                    to_fqid(self.model.collection, instance["parent_id"]),
+                    fqid_from_collection_and_id(
+                        self.model.collection, instance["parent_id"]
+                    ),
                     ["is_hidden", "is_internal", "level"],
                 )
                 instance["level"] = parent.get("level", 0) + 1

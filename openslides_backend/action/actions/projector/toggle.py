@@ -3,7 +3,7 @@ from typing import Any, Dict, List
 from ....models.models import Projection, Projector
 from ....permissions.permissions import Permissions
 from ....shared.filters import And, FilterOperator
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import required_id_schema
 from ...generics.update import UpdateAction
 from ...mixins.weight_mixin import WeightMixin
@@ -46,7 +46,10 @@ class ProjectorToggle(WeightMixin, UpdateAction):
             assert_belongs_to_meeting(
                 self.datastore,
                 [fqid_content_object]
-                + [to_fqid("projector", id) for id in instance["ids"]],
+                + [
+                    fqid_from_collection_and_id("projector", id)
+                    for id in instance["ids"]
+                ],
                 meeting_id,
             )
 

@@ -3,6 +3,7 @@ from time import time
 
 from openslides_backend.permissions.management_levels import OrganizationManagementLevel
 from openslides_backend.permissions.permissions import Permissions
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -41,7 +42,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
     def test_create_orga(self) -> None:
-        self.create_model("organization/1", {})
+        self.create_model(ONE_ORGANIZATION_FQID, {})
         filename = "fn_jumbo.txt"
         file_content = base64.b64encode(b"testtesttest").decode()
         start_time = round(time())
@@ -49,7 +50,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "filename": filename,
                 "file": file_content,
                 "token": "web_logo",
@@ -60,7 +61,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile/1",
             {
                 "title": "title_xXRGTLAJ",
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "file": None,
                 "mimetype": "text/plain",
                 "filesize": 12,
@@ -331,7 +332,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "filename": "fn_jumbo.txt",
                 "token": "weblogo",
                 "file": base64.b64encode(b"testtesttest").decode(),
@@ -344,7 +345,7 @@ class MediafileUploadActionTest(BaseActionTestCase):
             "mediafile.upload",
             {
                 "title": "title_xXRGTLAJ",
-                "owner_id": "organization/1",
+                "owner_id": ONE_ORGANIZATION_FQID,
                 "token": "weblogo",
                 "filename": "fn_jumbo.txt",
                 "file": base64.b64encode(b"testtesttest").decode(),

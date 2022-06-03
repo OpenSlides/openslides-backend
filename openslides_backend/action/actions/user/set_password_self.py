@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import User
 from ....shared.exceptions import ActionException, PermissionDenied
-from ....shared.patterns import to_fqid
+from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -28,7 +28,8 @@ class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin):
         new_pw = instance.pop("new_password")
 
         db_instance = self.datastore.get(
-            to_fqid(self.model.collection, self.user_id), ["password"]
+            fqid_from_collection_and_id(self.model.collection, self.user_id),
+            ["password"],
         )
 
         if not self.auth.is_equals(old_pw, db_instance["password"]):
@@ -41,7 +42,7 @@ class UserSetPasswordSelf(UpdateAction, CheckForArchivedMeetingMixin):
         self.assert_not_anonymous()
         instance["id"] = self.user_id
         user = self.datastore.get(
-            to_fqid(self.model.collection, self.user_id),
+            fqid_from_collection_and_id(self.model.collection, self.user_id),
             ["can_change_own_password"],
         )
         if not user.get("can_change_own_password"):

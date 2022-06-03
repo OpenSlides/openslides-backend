@@ -1,6 +1,7 @@
 from typing import Any, Dict
 
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 from tests.system.action.base import BaseActionTestCase
 
 
@@ -8,7 +9,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "organization/1": {"name": "test_organization1"},
+            ONE_ORGANIZATION_FQID: {"name": "test_organization1"},
             "user/20": {"username": "test_user20"},
             "user/21": {"username": "test_user21"},
             "user/22": {"username": "test_user22"},
@@ -49,7 +50,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_only_required(self) -> None:
-        self.create_model("organization/1", {"name": "test_organization1"})
+        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
         committee_name = "test_committee1"
 
         response = self.request(
@@ -60,7 +61,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         assert model.get("name") == committee_name
 
     def test_create_user_management_level(self) -> None:
-        self.create_model("organization/1", {"name": "test_organization1"})
+        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
         self.create_model("user/13", {"username": "test"})
         committee_name = "test_committee1"
 
@@ -92,7 +93,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_user_management_level_ids_with_existing_committee(self) -> None:
-        self.create_model("organization/1", {"name": "test_organization1"})
+        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
         self.create_model(
             "user/13",
             {
@@ -128,7 +129,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         )
 
     def test_create_wrong_field(self) -> None:
-        self.create_model("organization/1", {"name": "test_organization1"})
+        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
 
         response = self.request(
             "committee.create",
@@ -172,7 +173,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
         self.assert_model_not_exists("committee/1")
 
     def test_not_existing_user(self) -> None:
-        self.create_model("organization/1", {"name": "test_organization1"})
+        self.create_model(ONE_ORGANIZATION_FQID, {"name": "test_organization1"})
 
         response = self.request(
             "committee.create",
@@ -191,7 +192,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_self_forwarded_and_received_ok_self_self(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                 },
             }
@@ -217,7 +218,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_self_forwarded_and_received_ok_self_None(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                 },
             }
@@ -242,7 +243,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_self_forwarded_and_received_asyn1(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                 },
             }
@@ -265,7 +266,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
     def test_create_self_forwarded_and_received_asyn2(self) -> None:
         self.set_models(
             {
-                "organization/1": {
+                ONE_ORGANIZATION_FQID: {
                     "name": "test_organization1",
                 },
             }
@@ -347,7 +348,7 @@ class CommitteeCreateActionTest(BaseActionTestCase):
                     "committee_$can_manage_management_level": [1],
                     "committee_ids": [1],
                 },
-                "organization/1": {"committee_ids": [1]},
+                ONE_ORGANIZATION_FQID: {"committee_ids": [1]},
             }
         )
         response = self.request("committee.delete", {"id": 1})

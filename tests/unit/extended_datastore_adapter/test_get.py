@@ -6,8 +6,8 @@ from openslides_backend.shared.exceptions import DatastoreException
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
-    fqid_id,
-    to_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
 )
 
 from .base import BaseTestExtendedDatastoreAdapter
@@ -23,11 +23,11 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
     def _get_mock(
         self, fqid: FullQualifiedId, mapped_fields: List[str], *args: Any, **kwargs: Any
     ) -> Dict[str, Any]:
-        if fqid_id(fqid) in self.mock_datastore_content.get(
+        if id_from_fqid(fqid) in self.mock_datastore_content.get(
             collection_from_fqid(fqid), {}
         ):
             model = self.mock_datastore_content[collection_from_fqid(fqid)][
-                fqid_id(fqid)
+                id_from_fqid(fqid)
             ]
             if mapped_fields:
                 return {field: model[field] for field in mapped_fields}
@@ -43,7 +43,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.get(
-            to_fqid(self.collection, 1),
+            fqid_from_collection_and_id(self.collection, 1),
             ["f"],
         )
         assert result == {"f": 2}
@@ -52,7 +52,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
 
     def test_get_use_changed_models_empty(self) -> None:
         result = self.adapter.get(
-            to_fqid(self.collection, 1),
+            fqid_from_collection_and_id(self.collection, 1),
             ["f"],
         )
         assert result == {"f": 1}
@@ -66,7 +66,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.get(
-            to_fqid(self.collection, 1),
+            fqid_from_collection_and_id(self.collection, 1),
             ["f", "weight"],
         )
         assert result == {"f": 1, "weight": 42}
@@ -77,7 +77,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         self.mock_datastore_content = {}
         with pytest.raises(DatastoreException):
             self.adapter.get(
-                to_fqid(self.collection, 1),
+                fqid_from_collection_and_id(self.collection, 1),
                 ["f"],
             )
         self.db_method_mock.assert_called()
@@ -90,7 +90,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
             }
         )
         result = self.adapter.get(
-            to_fqid(self.collection, 1),
+            fqid_from_collection_and_id(self.collection, 1),
             ["f"],
             use_changed_models=False,
         )
@@ -107,7 +107,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
         self.mock_datastore_content = {}
         with pytest.raises(DatastoreException):
             self.adapter.get(
-                to_fqid(self.collection, 1),
+                fqid_from_collection_and_id(self.collection, 1),
                 ["f"],
                 use_changed_models=False,
             )
@@ -120,7 +120,7 @@ class TestGetExtendedDatastoreAdapter(BaseTestExtendedDatastoreAdapter):
                 "test/1": {"id": 1, "changed": 3},
             }
         )
-        result = self.adapter.get(to_fqid(self.collection, 1), [])
+        result = self.adapter.get(fqid_from_collection_and_id(self.collection, 1), [])
         assert result == {"id": 1, "f": 1, "unused": 2, "changed": 3}
         self.db_method_mock.assert_called()
         self.add_get_many_mock.assert_called()

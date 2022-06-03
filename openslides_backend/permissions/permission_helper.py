@@ -5,7 +5,7 @@ from openslides_backend.models.models import User
 from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..shared.exceptions import PermissionDenied
-from ..shared.patterns import to_fqid
+from ..shared.patterns import fqid_from_collection_and_id
 from .management_levels import CommitteeManagementLevel, OrganizationManagementLevel
 from .permissions import Permission, permission_parents
 
@@ -16,7 +16,7 @@ def has_perm(
     # anonymous cannot be fetched from db
     if user_id > 0:
         user = datastore.get(
-            to_fqid("user", user_id),
+            fqid_from_collection_and_id("user", user_id),
             [
                 f"group_${meeting_id}_ids",
                 "organization_management_level",
@@ -40,7 +40,7 @@ def has_perm(
         # anonymous users are in the default group
         if user_id == 0:
             meeting = datastore.get(
-                to_fqid("meeting", meeting_id),
+                fqid_from_collection_and_id("meeting", meeting_id),
                 ["default_group_id", "enable_anonymous"],
             )
             # check if anonymous is allowed
@@ -92,7 +92,7 @@ def has_organization_management_level(
     """Checks wether a user has the minimum necessary OrganizationManagementLevel"""
     if user_id > 0:
         user = datastore.get(
-            to_fqid("user", user_id),
+            fqid_from_collection_and_id("user", user_id),
             ["organization_management_level"],
         )
         return expected_level <= OrganizationManagementLevel(
@@ -116,7 +116,7 @@ def has_committee_management_level(
             )
         ]
         user = datastore.get(
-            to_fqid("user", user_id),
+            fqid_from_collection_and_id("user", user_id),
             ["organization_management_level", *cml_fields],
             lock_result=False,
             use_changed_models=False,
@@ -161,11 +161,11 @@ def is_admin(datastore: DatastoreService, user_id: int, meeting_id: int) -> bool
         return True
 
     meeting = datastore.get(
-        to_fqid("meeting", meeting_id),
+        fqid_from_collection_and_id("meeting", meeting_id),
         ["admin_group_id"],
     )
     groups_field = f"group_${meeting_id}_ids"
-    user = datastore.get(to_fqid("user", user_id), [groups_field])
+    user = datastore.get(fqid_from_collection_and_id("user", user_id), [groups_field])
     if meeting.get("admin_group_id") in user.get(groups_field, []):
         return True
     return False

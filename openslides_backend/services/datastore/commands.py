@@ -136,8 +136,6 @@ class Write(Command):
 
         class WriteRequestJSONEncoder(json.JSONEncoder):
             def default(self, o):  # type: ignore
-                if isinstance(o, str):
-                    return str(o)
                 if isinstance(o, FilterInterface):
                     return o.to_dict()
                 return super().default(o)

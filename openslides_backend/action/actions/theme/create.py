@@ -3,7 +3,7 @@ from typing import Any, Dict
 from ....action.mixins.archived_meeting_check_mixin import CheckForArchivedMeetingMixin
 from ....models.models import Theme
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....shared.util import ONE_ORGANIZATION
+from ....shared.util import ONE_ORGANIZATION_ID
 from ...generics.create import CreateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
@@ -66,5 +66,5 @@ class ThemeCreate(CreateAction, CheckForArchivedMeetingMixin):
     permission = OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-        instance["organization_id"] = ONE_ORGANIZATION
+        instance["organization_id"] = ONE_ORGANIZATION_ID
         return instance

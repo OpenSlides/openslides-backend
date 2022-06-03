@@ -33,11 +33,9 @@ from ...shared.patterns import (
     CollectionField,
     FullQualifiedField,
     FullQualifiedId,
-    collection_from_fqid,
     collectionfield_from_collection_and_field,
-    fqid_id,
-    to_fqfield,
-    to_fqid,
+    fqfield_from_fqid_and_field,
+    fqid_from_collection_and_id,
 )
 from . import commands
 from .handle_datastore_errors import handle_datastore_errors, raise_datastore_error
@@ -168,7 +166,7 @@ class DatastoreAdapter(BaseDatastoreService):
                         raise DatastoreException(
                             "Response from datastore contains invalid 'meta_position'."
                         )
-                    fqid = to_fqid(collection, instance_id)
+                    fqid = fqid_from_collection_and_id(collection, instance_id)
                     self.update_locked_fields_from_mapped_fields(
                         fqid, instance_position, get_many_request.mapped_fields
                     )
@@ -387,7 +385,7 @@ class DatastoreAdapter(BaseDatastoreService):
             for field in mapped_fields:
                 if not field.startswith("meta_"):
                     self.update_locked_fields(
-                        to_fqfield(collection_from_fqid(fqid), fqid_id(fqid), field),
+                        fqfield_from_fqid_and_field(fqid, field),
                         position,
                     )
         else:
