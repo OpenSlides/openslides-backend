@@ -109,8 +109,6 @@ class ActionHandler(BaseHandler):
             except fastjsonschema.JsonSchemaException as exception:
                 raise ActionException(exception.message)
 
-            # span.set_attribute("test", str(payload))
-            # span.set_attributes({"testpayload": 42})
             results: ActionsResponseResults = []
             if atomic:
                 results = self.execute_write_requests(self.parse_actions, payload)
