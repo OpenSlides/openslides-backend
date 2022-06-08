@@ -187,11 +187,13 @@ class ActionHandler(BaseHandler):
                     else:
                         action_name_list.append(action_name)
                 try:
-                    write_request, results = self.perform_action(element, relation_manager)
+                    write_request, results = self.perform_action(
+                        element, relation_manager
+                    )
                 except ActionException as exception:
                     exception.action_error_index = i
                     raise exception
-    
+
                 if write_request:
                     write_requests.append(write_request)
                 action_response_results.append(results)
