@@ -219,7 +219,7 @@ class ActionHandler(BaseHandler):
 
         self.logger.debug(f"Perform action {action_name}.")
         action = ActionClass(
-            self.services, self.datastore, relation_manager, self.logging
+            self.services, self.datastore, relation_manager, self.logging, self.env
         )
         action_data = deepcopy(action_payload_element["data"])
 
