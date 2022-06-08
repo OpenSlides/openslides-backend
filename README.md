@@ -84,6 +84,10 @@ The action component listens to port 9002. The presenter component listens to po
 
   Set this variable e. g. to 1 to set loglevel to `debug` and activate Gunicorn's reload mechanism.
 
+* OPENTELEMETRY_ENABLED
+
+  Set this variable e. g. to 1 to enable span reporting to an OpenTelemetry collector (defined in the main OpenSlides repository).
+
 * OPENSLIDES_LOGLEVEL
 
   In production mode you can set the loglevel to `debug`, `info`, `warning`, `error` or `critical`. Default is `info`.

@@ -33,10 +33,12 @@ from ..shared.exceptions import (
     PermissionDenied,
     RequiredFieldsException,
 )
+from ..shared.interfaces.env import Env
 from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
+from ..shared.otel import make_span
 from ..shared.patterns import (
     FullQualifiedId,
     collection_from_fqfield,
@@ -111,6 +113,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         datastore: DatastoreService,
         relation_manager: RelationManager,
         logging: LoggingModule,
+        env: Env,
         skip_archived_meeting_check: Optional[bool] = None,
     ) -> None:
         self.services = services
@@ -121,6 +124,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.relation_manager = relation_manager
         self.logging = logging
         self.logger = logging.getLogger(__name__)
+        self.env = env
         if skip_archived_meeting_check is not None:
             self.skip_archived_meeting_check = skip_archived_meeting_check
         self.write_requests = []
@@ -618,22 +622,24 @@ class Action(BaseAction, metaclass=SchemaProvider):
         to the called class if set. Usually this is needed for cascading deletes from
         outside of meeting.
         """
-        if self.skip_archived_meeting_check:
-            skip_archived_meeting_check = self.skip_archived_meeting_check
+        with make_span(self.env, f"other action {ActionClass}"):
+            if self.skip_archived_meeting_check:
+                skip_archived_meeting_check = self.skip_archived_meeting_check
 
-        action = ActionClass(
-            self.services,
-            self.datastore,
-            self.relation_manager,
-            self.logging,
-            skip_archived_meeting_check,
-        )
-        write_request, action_results = action.perform(
-            action_data, self.user_id, internal=True
-        )
-        if write_request:
-            self.write_requests.append(write_request)
-        return action_results
+            action = ActionClass(
+                self.services,
+                self.datastore,
+                self.relation_manager,
+                self.logging,
+                self.env,
+                skip_archived_meeting_check,
+            )
+            write_request, action_results = action.perform(
+                action_data, self.user_id, internal=True
+            )
+            if write_request:
+                self.write_requests.append(write_request)
+            return action_results
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
         """

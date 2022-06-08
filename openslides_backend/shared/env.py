@@ -44,6 +44,7 @@ class Environment:
         "OPENSLIDES_BACKEND_WORKER_TIMEOUT": "30",
         "OPENSLIDES_DEVELOPMENT": "false",
         "OPENSLIDES_LOGLEVEL": Loglevel.NOTSET.name,
+        "OPENTELEMETRY_ENABLED": "false",
         "PRESENTER_PORT": "9003",
         "VOTE_HOST": "vote",
         "VOTE_PATH": "/internal/vote",
@@ -65,6 +66,9 @@ class Environment:
 
     def is_dev_mode(self) -> bool:
         return is_truthy(self.OPENSLIDES_DEVELOPMENT)
+
+    def is_otel_enabled(self) -> bool:
+        return is_truthy(self.OPENTELEMETRY_ENABLED)
 
     def get_loglevel(self) -> str:
         lvl = self.OPENSLIDES_LOGLEVEL.upper()

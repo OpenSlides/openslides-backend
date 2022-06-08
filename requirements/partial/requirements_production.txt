@@ -9,3 +9,8 @@ bleach==4.1.0
 PyPDF2==1.26.0
 lxml==4.8.0
 git+https://github.com/OpenSlides/openslides-auth-service.git@9e252f33ccde41137a0a7174e8958d8fa3beb2f1#egg=authlib&subdirectory=auth/libraries/pip-auth # authlib
+opentelemetry-exporter-otlp
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-flask

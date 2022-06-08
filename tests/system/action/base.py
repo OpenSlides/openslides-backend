@@ -68,7 +68,11 @@ class BaseActionTestCase(BaseSystemTestCase):
         """
         ActionClass = actions_map[action_name]
         action = ActionClass(
-            self.services, self.datastore, RelationManager(self.datastore), MagicMock()
+            self.services,
+            self.datastore,
+            RelationManager(self.datastore),
+            MagicMock(),
+            MagicMock(),
         )
         action_data = deepcopy(data)
         with self.datastore.get_database_context():

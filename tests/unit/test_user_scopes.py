@@ -13,7 +13,7 @@ class UserScopeTest(TestCase):
     def setUp(self) -> None:
         self.mock_datastore = MagicMock()
         self.mixin = UserScopePermissionCheckMixin(
-            MagicMock(), self.mock_datastore, MagicMock(), MagicMock()
+            MagicMock(), self.mock_datastore, MagicMock(), MagicMock(), MagicMock()
         )
         self.mixin.model = MagicMock()
 

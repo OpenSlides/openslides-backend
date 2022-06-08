@@ -12,11 +12,18 @@ from gunicorn.app.base import BaseApplication
 from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
+from .shared.otel import init as otel_init
+from .shared.otel import instrument_requests as otel_instrument_requests
 
 register_services()
 
 # ATTENTION: We use the Python builtin logging module. To change this use
 # something like "import custom_logging as logging".
+
+DEFAULT_ADDRESSES = {
+    "ActionView": "0.0.0.0:9002",
+    "PresenterView": "0.0.0.0:9003",
+}
 
 
 class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
@@ -64,6 +71,8 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
         # TODO: Fix this typing problem.
         logging_module: LoggingModule = logging  # type: ignore
 
+        otel_instrument_requests()
+        otel_init(self.env, "backend")
         return create_wsgi_application(logging_module, self.view_name, self.env)
 
 
