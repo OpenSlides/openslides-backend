@@ -38,6 +38,7 @@ from ..shared.interfaces.event import Event, EventType, ListFields
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
+from ..shared.otel import make_span
 from ..shared.patterns import (
     FullQualifiedId,
     collection_from_fqfield,
@@ -47,7 +48,6 @@ from ..shared.patterns import (
     fqid_from_fqfield,
     transform_to_fqids,
 )
-from ..shared.otel import make_span
 from ..shared.typing import DeletedModel
 from .relations.relation_manager import RelationManager, RelationUpdates
 from .relations.typing import FieldUpdateElement, ListUpdateElement
