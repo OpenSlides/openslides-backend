@@ -429,6 +429,47 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
+    def test_perm_superadmin_withdraw_own_right(self) -> None:
+        """
+        SUPERADMIN may not withdraw his own OML right "superadmin",
+        see Issue1150
+        """
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": self.user_id,
+                #"organization_management_level": OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION,
+                "organization_management_level": None,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("A user is not allowed to withdraw his own 'superadmin'-Organization-Management-Level.", response.json["message"])
+
+    def test_perm_superadmin_self_setting_inactive(self) -> None:
+        """
+        SUPERADMIN may not set himself inactive,
+        see Issue1150
+        """
+        self.permission_setup()
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, self.user_id
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": self.user_id,
+                "is_active": False,
+            },
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn("A superadmin is not allowed to set himself inactive.", response.json["message"])
+
     def test_perm_group_A_oml_manage_user(self) -> None:
         """May update group A fields on organsisation scope, because belongs to 2 meetings in 2 committees, requiring OML level permission"""
         self.permission_setup()
