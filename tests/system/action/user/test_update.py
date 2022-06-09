@@ -432,7 +432,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_perm_superadmin_withdraw_own_right(self) -> None:
         """
         SUPERADMIN may not withdraw his own OML right "superadmin",
-        see Issue1150
+        see Issue1350
         """
         self.permission_setup()
         self.set_organization_management_level(
@@ -456,7 +456,7 @@ class UserUpdateActionTest(BaseActionTestCase):
     def test_perm_superadmin_self_setting_inactive(self) -> None:
         """
         SUPERADMIN may not set himself inactive,
-        see Issue1150
+        see Issue1350
         """
         self.permission_setup()
         self.set_organization_management_level(
