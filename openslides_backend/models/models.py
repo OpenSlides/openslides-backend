@@ -2,8 +2,9 @@
 
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
+from openslides_backend.shared.patterns import Collection
 
-MODELS_YML_CHECKSUM = "3fd01ad6a70c3946ff894b9d319c02a8"
+MODELS_YML_CHECKSUM = "b0a9a1d55585e3ff1bb60287075214e9"
 
 
 class Organization(Model):
@@ -108,107 +109,52 @@ class User(Model):
     forwarding_committee_ids = fields.RelationListField(
         to={"committee": "forwarding_user_id"}
     )
-    comment_ = fields.TemplateHTMLStrictField(
-        index=8,
-        replacement_collection="meeting",
-    )
-    number_ = fields.TemplateCharField(
-        index=7,
-        replacement_collection="meeting",
-    )
-    structure_level_ = fields.TemplateCharField(
-        index=16,
-        replacement_collection="meeting",
-    )
-    about_me_ = fields.TemplateHTMLStrictField(
-        index=9,
-        replacement_collection="meeting",
-    )
-    vote_weight_ = fields.TemplateDecimalField(
-        index=12,
-        replacement_collection="meeting",
-        constraints={"minimum": 0},
-    )
-    group__ids = fields.TemplateRelationListField(
-        index=6,
-        replacement_collection="meeting",
-        to={"group": "user_ids"},
-    )
-    speaker__ids = fields.TemplateRelationListField(
-        index=8,
-        replacement_collection="meeting",
-        to={"speaker": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
-    personal_note__ids = fields.TemplateRelationListField(
-        index=14,
-        replacement_collection="meeting",
-        to={"personal_note": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
-    supported_motion__ids = fields.TemplateRelationListField(
-        index=17,
-        replacement_collection="meeting",
-        to={"motion": "supporter_ids"},
-    )
-    submitted_motion__ids = fields.TemplateRelationListField(
-        index=17,
-        replacement_collection="meeting",
-        to={"motion_submitter": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
-    poll_voted__ids = fields.TemplateRelationListField(
-        index=11,
-        replacement_collection="meeting",
-        to={"poll": "voted_ids"},
-    )
-    option__ids = fields.TemplateRelationListField(
-        index=7,
-        replacement_collection="meeting",
-        to={"option": "content_object_id"},
-    )
-    vote__ids = fields.TemplateRelationListField(
-        index=5,
-        replacement_collection="meeting",
-        to={"vote": "user_id"},
-    )
-    vote_delegated_vote__ids = fields.TemplateRelationListField(
-        index=20,
-        replacement_collection="meeting",
-        to={"vote": "delegated_user_id"},
-    )
-    assignment_candidate__ids = fields.TemplateRelationListField(
-        index=21,
-        replacement_collection="meeting",
-        to={"assignment_candidate": "user_id"},
-        on_delete=fields.OnDelete.CASCADE,
-    )
-    projection__ids = fields.TemplateRelationListField(
-        index=11,
-        replacement_collection="meeting",
-        to={"projection": "content_object_id"},
-    )
-    vote_delegated__to_id = fields.TemplateRelationField(
-        index=15,
-        replacement_collection="meeting",
-        to={"user": "vote_delegations_$_from_ids"},
-    )
-    vote_delegations__from_ids = fields.TemplateRelationListField(
-        index=17,
-        replacement_collection="meeting",
-        to={"user": "vote_delegated_$_to_id"},
-    )
-    chat_message__ids = fields.TemplateRelationListField(
-        index=13,
-        replacement_collection="meeting",
-        to={"chat_message": "user_id"},
-    )
     meeting_ids = fields.NumberArrayField(
         read_only=True,
         constraints={
             "description": "Calculated. All ids from group_$_ids as integers."
         },
     )
+    user_meeting_ids = fields.RelationListField(to={"user_meeting": "user_id"})
+
+
+class UserMeeting(Model):
+    collection = "user_meeting"
+    verbose_name = "user meeting"
+
+    user_id = fields.RelationField(to={"user": "user_meeting_ids"}, required=True)
+    meeting_id = fields.RelationField(to={"meeting": "user_meeting_ids"}, required=True)
+    comment = fields.HTMLStrictField()
+    number = fields.CharField()
+    structure_level = fields.CharField()
+    about_me = fields.HTMLStrictField(constraints={"fields": None})
+    vote_weight = fields.DecimalField(constraints={"minimum": 0})
+    group_ids = fields.RelationListField(to={"group": "user_ids"})
+    speaker_ids = fields.RelationListField(
+        to={"speaker": "user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    personal_note_ids = fields.RelationListField(
+        to={"personal_note": "user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    supported_motion_ids = fields.RelationListField(to={"motion": "supporter_ids"})
+    submitted_motion_ids = fields.RelationListField(
+        to={"motion_submitter": "user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    poll_voted_ids = fields.RelationListField(to={"poll": "voted_ids"})
+    option_ids = fields.RelationListField(to={"option": "content_object_id"})
+    vote_ids = fields.RelationListField(to={"vote": "user_id"})
+    vote_delegated_vote_ids = fields.RelationListField(to={"vote": "delegated_user_id"})
+    assignment_candidate_ids = fields.RelationListField(
+        to={"assignment_candidate": "user_id"}, on_delete=fields.OnDelete.CASCADE
+    )
+    projection_ids = fields.RelationListField(to={"projection": "content_object_id"})
+    vote_delegated_to_id = fields.RelationField(
+        to={"user_meeting": "vote_delegations_from_ids"}
+    )
+    vote_delegations_from_ids = fields.RelationListField(
+        to={"user_meeting": "vote_delegated_to_id"}
+    )
+    chat_message_ids = fields.RelationListField(to={"chat_message": "user_id"})
 
 
 class OrganizationTag(Model):
@@ -503,6 +449,7 @@ class Meeting(Model):
     motion_poll_default_backend = fields.CharField(
         default="fast", constraints={"enum": ["long", "fast"]}
     )
+    user_meeting_ids = fields.RelationListField(to={"user_meeting": "meeting_id"})
     users_sort_by = fields.CharField(
         default="first_name",
         constraints={"enum": ["first_name", "last_name", "number"]},

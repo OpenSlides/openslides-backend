@@ -46,9 +46,7 @@
 #     - There are template fields (see autoupdate service interface) with a `$` as
 #       the placeholder.
 #     - The type `template` describes a structured field for the given model. If the
-#       property `replacement_collection` is given, it describes which model the
-#       replacement ids are belonging to (=> structured relation), 
-#       `replacement_enum` describes the possibel replacement as list of strings.
+#       property `replacement_enum` is given, the possibel replacement as list of strings.
 #       If it is not given, the field is a structured tag. 
 #       The property `fields` contains the definition
 #       for all the fields that come from the template field.
@@ -288,150 +286,110 @@ user:
     to: committee/forwarding_user_id
     restriction_mode: E
 
-  # Meeting specific personal data
-  comment_$:
-    type: template
-    replacement_collection: meeting
-    fields: HTMLStrict
-    restriction_mode: D
-  number_$:
-    type: template
-    replacement_collection: meeting
-    fields: string
-    restriction_mode: A
-  structure_level_$:
-    type: template
-    replacement_collection: meeting
-    fields: string
-    restriction_mode: A
-  about_me_$:
-    type: template
-    replacement_collection: meeting
-    fields: HTMLStrict
-    restriction_mode: A
-  vote_weight_$:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: decimal(6)
-      minimum: 0
-    restriction_mode: A
-
-  # All foreign keys are meeting-specific:
-  # - Keys are smaller (Space is in O(n^2) for n keys
-  #   in the relation), so this saves storagespace
-  # - This makes quering things like this possible:
-  #   "Give me all groups for User X in Meeting Y" without
-  #   the need to get all groups and filter them for the meeting
-  group_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: group/user_ids
-    restriction_mode: A
-  speaker_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: speaker/user_id
-      on_delete: CASCADE
-    restriction_mode: A
-  personal_note_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: personal_note/user_id
-      on_delete: CASCADE
-    restriction_mode: B
-  supported_motion_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: motion/supporter_ids
-    restriction_mode: A
-  submitted_motion_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: motion_submitter/user_id
-      on_delete: CASCADE
-    restriction_mode: A
-  poll_voted_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: poll/voted_ids
-    restriction_mode: A
-  option_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: option/content_object_id
-    restriction_mode: A
-  vote_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: vote/user_id
-    restriction_mode: A
-  vote_delegated_vote_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: vote/delegated_user_id
-    restriction_mode: A
-  assignment_candidate_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: assignment_candidate/user_id
-      on_delete: CASCADE
-    restriction_mode: A
-  projection_$_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: projection/content_object_id
-    restriction_mode: A
-  vote_delegated_$_to_id:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation
-      to: user/vote_delegations_$_from_ids
-      required: false
-    restriction_mode: A
-  vote_delegations_$_from_ids:
-    type: template
-    replacement_collection: meeting
-    fields:
-      type: relation-list
-      to: user/vote_delegated_$_to_id
-    restriction_mode: A
-  chat_message_$_ids:
-    type: template
-    replacement_collection: meeting
-    restriction_mode: A
-    fields:
-      type: relation-list
-      to: chat_message/user_id
-
   meeting_ids:
     type: number[]
     description: Calculated. All ids from group_$_ids as integers.
     read_only: true
     restriction_mode: E
+
+  user_meeting_ids:
+    type: relation-list
+    to: user_meeting/user_id
+    restriction_mode: TODO
+
+
+user_meeting:
+  user_id:
+    type: relation
+    to: user/user_meeting_ids
+    required: true
+    restriction_mode: TODO
+
+  meeting_id:
+    type: relation
+    to: meeting/user_meeting_ids
+    required: true
+    restriction_mode: TODO
+
+  comment:
+    type: HTMLStrict
+    restriction_mode: D
+  number:
+    type: string
+    restriction_mode: A
+  structure_level:
+    type: string
+    restriction_mode: A
+  about_me:
+    type: HTMLStrict
+    fields: 
+    restriction_mode: A
+  vote_weight:
+    type: decimal(6)
+    minimum: 0
+    restriction_mode: A
+
+  group_ids:
+    type: relation-list
+    to: group/user_ids
+    restriction_mode: A
+  speaker_ids:
+    type: relation-list
+    to: speaker/user_id
+    on_delete: CASCADE
+    restriction_mode: A
+  personal_note_ids:
+    type: relation-list
+    to: personal_note/user_id
+    on_delete: CASCADE
+    restriction_mode: B
+  supported_motion_ids:
+    type: relation-list
+    to: motion/supporter_ids
+    restriction_mode: A
+  submitted_motion_ids:
+    type: relation-list
+    to: motion_submitter/user_id
+    on_delete: CASCADE
+    restriction_mode: A
+  poll_voted_ids:
+    type: relation-list
+    to: poll/voted_ids
+    restriction_mode: A
+  option_ids:
+    type: relation-list
+    to: option/content_object_id
+    restriction_mode: A
+  vote_ids:
+    type: relation-list
+    to: vote/user_id
+    restriction_mode: A
+  vote_delegated_vote_ids:
+    type: relation-list
+    to: vote/delegated_user_id
+    restriction_mode: A
+  assignment_candidate_ids:
+    type: relation-list
+    to: assignment_candidate/user_id
+    on_delete: CASCADE
+    restriction_mode: A
+  projection_ids:
+    type: relation-list
+    to: projection/content_object_id
+    restriction_mode: A
+  vote_delegated_to_id:
+    type: relation
+    to: user_meeting/vote_delegations_from_ids
+    required: false
+    restriction_mode: A
+  vote_delegations_from_ids:
+    type: relation-list
+    to: user_meeting/vote_delegated_to_id
+    restriction_mode: A
+  chat_message_ids:
+    type: relation-list
+    to: chat_message/user_id
+    restriction_mode: A
 
 organization_tag:
   id:
@@ -1162,6 +1120,10 @@ meeting:
     restriction_mode: B
 
   # Users
+  user_meeting_ids:
+    type: relation-list
+    to: user_meeting/meeting_id
+    restriction_mode: TODO
   users_sort_by:
     type: string
     enum:
