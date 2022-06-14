@@ -90,6 +90,7 @@ class OptionUpdateAction(UpdateAction):
                 PollSetState, [{"id": poll["id"], "state": state}]
             )
 
+        instance.pop("publish_immediately", None)
         return instance
 
     def _get_option_and_poll(
