@@ -331,6 +331,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == Poll.STATE_PUBLISHED
+        assert "publish_immediately" not in poll
 
     def test_default_vote_values(self) -> None:
         self.update_model("poll/1", {"type": Poll.TYPE_ANALOG})

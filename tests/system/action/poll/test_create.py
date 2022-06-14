@@ -90,6 +90,7 @@ class CreatePoll(BaseActionTestCase):
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == "published"
+        assert "publish_immediately" not in poll
 
     def test_create_correct_default_values(self) -> None:
         response = self.request(

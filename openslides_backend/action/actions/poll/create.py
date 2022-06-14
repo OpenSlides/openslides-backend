@@ -169,7 +169,9 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
 
         # calculate is_pseudoanonymized
         instance["is_pseudoanonymized"] = instance["type"] == Poll.TYPE_PSEUDOANONYMOUS
+
         instance.pop("options", None)
+        instance.pop("publish_immediately", None)
         return instance
 
     def parse_vote_value(self, data: Dict[str, Any], field: str) -> Any:
