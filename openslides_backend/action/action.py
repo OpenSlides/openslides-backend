@@ -517,7 +517,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             # check for extra fields in the write request
             for field_name in instance:
                 if not fqid_model.has_field(field_name):
-                    raise ActionException(f"Did not find {field_name} in model.")
+                    raise ActionException(f"{field_name} is not a valid field for model {fqid_model.collection}.")
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """
