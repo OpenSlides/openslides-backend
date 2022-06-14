@@ -7,6 +7,6 @@ class Migration(RemoveFieldsMigration):
     There was a bug, which introduced it in poll.create and poll.update.
     """
 
-    target_migration_index = 16
+    target_migration_index = 28
 
     collection_fields_map = {"poll": ["publish_immediately"]}
