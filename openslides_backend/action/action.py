@@ -473,13 +473,16 @@ class Action(BaseAction, metaclass=SchemaProvider):
         elif event["type"] == EventType.Delete:
             self.datastore.apply_changed_model(event["fqid"], DeletedModel())
 
-    def validate_required_fields(self, write_request: WriteRequest) -> None:
+    def validate_required_fields_and_check_for_extra_fields(
+        self, write_request: WriteRequest
+    ) -> None:
         """
         Validate required fields with the events of one WriteRequest.
         Precondition: Events are sorted create/update/delete-events
         Not implemented: required RelationListFields of all types raise a NotImplementedError, if there exist
         one, during getting required_fields from model, except TemplateRelationField and
         TemplateRelationListField with replacement_enum-attribute.
+        Also check for fields in the write request, which are not model fields.
         """
         fdict: Dict[FullQualifiedId, Dict[str, Any]] = {}
         for event in write_request.events:
@@ -510,6 +513,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
                         f"Creation of {fqid}" if is_create else f"Update of {fqid}"
                     )
                     raise RequiredFieldsException(fqid_str, required_fields)
+
+            # check for extra fields in the write request
+            for field_name in instance:
+                if not fqid_model.has_field(field_name):
+                    raise ActionException(f"Did not find {field_name} in model.")
 
     def validate_fields(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

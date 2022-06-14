@@ -232,7 +232,9 @@ class ActionHandler(BaseHandler):
                         action_data, self.user_id, internal=self.internal
                     )
             if write_request:
-                action.validate_required_fields(write_request)
+                action.validate_required_fields_and_check_for_extra_fields(
+                    write_request
+                )
 
                 # add locked_fields to request
                 write_request.locked_fields = self.datastore.locked_fields
