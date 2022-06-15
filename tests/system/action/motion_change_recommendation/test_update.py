@@ -58,6 +58,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("internal") is True
         assert model.get("type") == "insertion"
         assert model.get("other_description") == "other_description_IClpabuM"
+        self.assert_history_information(
+            "motion/25", ["Motion change recommendation updated"]
+        )
 
     def test_update_wrong_id(self) -> None:
         self.set_models(

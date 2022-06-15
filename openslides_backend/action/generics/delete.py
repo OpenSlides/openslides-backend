@@ -2,8 +2,7 @@ from typing import Any, Dict, Iterable, List, Tuple, Type
 
 from ...models.fields import BaseTemplateRelationField, OnDelete
 from ...shared.exceptions import ActionException, ProtectedModelsException
-from ...shared.interfaces.event import EventType
-from ...shared.interfaces.write_request import WriteRequest
+from ...shared.interfaces.event import Event, EventType
 from ...shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
@@ -126,10 +125,9 @@ class DeleteAction(Action):
         for replacement in instance.get(field.get_template_field_name(), []):
             yield field.get_structured_field_name(replacement)
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        information = "Object deleted"
-        yield self.build_write_request(EventType.Delete, fqid, information)
+        yield self.build_event(EventType.Delete, fqid)
 
     def is_meeting_deleted(self, meeting_id: int) -> bool:
         """

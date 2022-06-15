@@ -94,8 +94,8 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
 
                     if result["sent"]:
                         instance.pop("meeting_id", None)
-                        write_request = self.create_write_requests(instance)
-                        self.write_requests.extend(write_request)
+                        events = self.create_events(instance)
+                        self.events.extend(events)
                     else:
                         result["message"] = (
                             str(result["message"])
@@ -125,8 +125,8 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
             }
             self.results.append(result)
 
-        final_write_request = self.process_write_requests()
-        return (final_write_request, self.results)
+        write_request = self.build_write_request()
+        return (write_request, self.results)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         user_id = instance["id"]

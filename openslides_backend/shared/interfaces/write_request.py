@@ -1,11 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
-from ..patterns import FullQualifiedId
 from .collection_field_lock import CollectionFieldLock
 from .event import Event
-
-Information = Dict[FullQualifiedId, List[str]]
 
 
 @dataclass
@@ -15,7 +12,15 @@ class WriteRequest:
     """
 
     events: List[Event]
-    information: Information
-    user_id: int
-    locked_fields: Dict[str, CollectionFieldLock]
+    information: Optional[List[str]] = None
+    user_id: Optional[int] = None
+    locked_fields: Dict[str, CollectionFieldLock] = field(default_factory=dict)
+
+
+@dataclass
+class WriteRequestWithMigrationIndex(WriteRequest):
+    """
+    Write request element with a migration index.
+    """
+
     migration_index: Optional[int] = None

@@ -8,8 +8,11 @@ from ....models.checker import Checker, CheckException
 from ....models.models import Organization
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
-from ....shared.interfaces.event import EventType
-from ....shared.interfaces.write_request import WriteRequest
+from ....shared.interfaces.event import Event, EventType
+from ....shared.interfaces.write_request import (
+    WriteRequest,
+    WriteRequestWithMigrationIndex,
+)
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.util import INITIAL_DATA_FILE, get_initial_data_file
 from ...action import Action
@@ -45,11 +48,11 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         instance = next(iter(action_data))
         self.validate_instance(instance)
         instance = self.update_instance(instance)
-        self.write_requests.extend(self.create_write_requests(instance))
+        self.events.extend(self.create_events(instance))
         result = self.create_action_result_element(instance)
         self.results.append(result)
-        final_write_request = self.process_write_requests()
-        return (final_write_request, self.results)
+        write_request = self.build_write_request()
+        return (write_request, self.results)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         data = instance["data"]
@@ -81,31 +84,30 @@ class OrganizationInitialImport(SingularActionMixin, Action):
         ):
             raise ActionException("Datastore is not empty.")
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         json_data = instance["data"]
-        write_requests = []
+        events = []
         for collection in json_data:
             if collection.startswith("_"):
                 continue
             for entry in json_data[collection].values():
                 fqid = fqid_from_collection_and_id(collection, entry["id"])
-                write_requests.append(
-                    self.build_write_request(
+                events.append(
+                    self.build_event(
                         EventType.Create,
                         fqid,
-                        "initial import",
                         entry,
                     )
                 )
-        return write_requests
+        return events
 
-    def process_write_requests(
+    def build_write_request(
         self,
     ) -> Optional[WriteRequest]:
         """
         Add Migration Index to the one and only write request
         """
-        write_request = super().process_write_requests()
+        write_request = self._build_write_request(WriteRequestWithMigrationIndex([]))
         if write_request:
             write_request.migration_index = self.data_migration_index
         return write_request

@@ -19,7 +19,7 @@ class CountdownControl(UpdateAction):
             now = round(time.time())
             countdown_time = countdown["default_time"] + now
         else:
-            raise NotImplementedError
+            raise NotImplementedError()
 
         self.execute_other_action(
             ProjectorCountdownUpdate,

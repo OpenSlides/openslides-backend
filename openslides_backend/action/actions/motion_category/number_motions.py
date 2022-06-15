@@ -27,6 +27,7 @@ class MotionCategoryNumberMotions(UpdateAction):
     )
     permission = Permissions.Motion.CAN_MANAGE
     permission_model = MotionCategory()
+    history_information = "Number set"
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

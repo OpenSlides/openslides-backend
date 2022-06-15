@@ -20,9 +20,11 @@ class MotionUpdateWithOtherActionsTest(BaseActionTestCase):
                     "meeting_id": 222,
                     "workflow_id": 34,
                     "recommendation_label": "label",
+                    "name": "test",
                 },
                 "motion_category/3": {
                     "meeting_id": 222,
+                    "name": "category",
                 },
                 "motion/22": {"meeting_id": 222, "state_id": 66},
             }

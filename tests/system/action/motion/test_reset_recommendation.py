@@ -46,6 +46,7 @@ class MotionResetRecommendationActionTest(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("recommendation_id") is None
         assert model.get("last_modified", 0) >= check_time
+        self.assert_history_information("motion/22", ["Recommendation reset"])
 
     def test_reset_recommendation_correct_empty_recommendation(self) -> None:
         self.set_models(

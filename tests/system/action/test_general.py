@@ -9,6 +9,9 @@ from datastore.shared.postgresql_backend.sql_read_database_backend_service impor
 from datastore.shared.services import ReadDatabase
 
 from openslides_backend.http.views.action_view import ActionView
+from openslides_backend.shared.interfaces.write_request import (
+    WriteRequestWithMigrationIndex,
+)
 from tests.system.util import get_route_path
 
 from .base import ACTION_URL, BaseActionTestCase
@@ -113,10 +116,11 @@ class TestWSGIWithMigrations(BaseActionTestCase):
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_missing_migrations(self, gbmi: Any) -> None:
-        write_request = self.get_write_request(
-            self.get_create_events("topic/1", {"title": "dummy"})
+        write_request = WriteRequestWithMigrationIndex(
+            events=self.get_create_events("topic/1", {"title": "dummy"}),
+            user_id=0,
+            migration_index=5,
         )
-        write_request.migration_index = 5
         with self.datastore.get_database_context():
             self.datastore.write(write_request)
         gbmi.return_value = 6
@@ -132,8 +136,10 @@ class TestWSGIWithMigrations(BaseActionTestCase):
 
     @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_misconfigured_migrations(self, gbmi: Any) -> None:
-        write_request = self.get_write_request(
-            self.get_create_events("topic/1", {"title": "dummy"})
+        write_request = WriteRequestWithMigrationIndex(
+            events=self.get_create_events("topic/1", {"title": "dummy"}),
+            user_id=0,
+            migration_index=6,
         )
         write_request.migration_index = 6
         with self.datastore.get_database_context():

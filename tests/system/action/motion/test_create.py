@@ -61,6 +61,7 @@ class MotionCreateActionTest(BaseActionTestCase):
         agenda_item = self.get_model("agenda_item/1")
         self.assertEqual(agenda_item.get("meeting_id"), 222)
         self.assertEqual(agenda_item.get("content_object_id"), "motion/1")
+        self.assert_history_information("motion/1", ["Motion created"])
 
     def test_create_simple_fields(self) -> None:
         self.create_meeting()

@@ -30,6 +30,7 @@ class MotionSubmitterCreateAction(
         required_properties=["motion_id", "user_id"],
         optional_properties=["weight"],
     )
+    history_information = "Submitters changed"
     permission = Permissions.Motion.CAN_MANAGE_METADATA
 
     relation_field_for_meeting = "motion_id"

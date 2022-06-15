@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -10,11 +10,17 @@ from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from .mixins import PermissionHelperMixin
+from .motion_state_history_information_mixin import MotionStateHistoryInformationMixin
 from .set_number_mixin import SetNumberMixin
 
 
 @register_action("motion.set_state")
-class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
+class MotionSetStateAction(
+    UpdateAction,
+    SetNumberMixin,
+    PermissionHelperMixin,
+    MotionStateHistoryInformationMixin,
+):
     """
     Set the state in a motion.
     """
@@ -106,3 +112,6 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
             return
 
         raise MissingPermission(Permissions.Motion.CAN_MANAGE_METADATA)
+
+    def get_history_information(self) -> Optional[List[str]]:
+        return self._get_state_history_information("state_id", "name", "State")

@@ -74,5 +74,9 @@ class MotionChangeRecommendationActionSet(ActionSet):
     )
     delete_schema = DefaultSchema(MotionChangeRecommendation()).get_delete_schema()
 
+    create_history_information = "Motion change recommendation created"
+    update_history_information = "Motion change recommendation updated"
+    delete_history_information = "Motion change recommendation deleted"
+
     permission = Permissions.Motion.CAN_MANAGE
     CreateActionClass = MotionChangeRecommendationCreateAction

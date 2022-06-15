@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -10,6 +10,7 @@ from ....shared.exceptions import ActionException, PermissionDenied
 from ....shared.patterns import (
     KEYSEPARATOR,
     POSITIVE_NUMBER_REGEX,
+    Collection,
     fqid_from_collection_and_id,
 )
 from ....shared.schema import optional_id_schema
@@ -176,3 +177,78 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             msg = f"You are not allowed to perform action {self.name}."
             msg += f" Forbidden fields: {', '.join(forbidden_fields)}"
             raise PermissionDenied(msg)
+
+    def get_history_information(self) -> Optional[List[str]]:
+        full_informations: List[Tuple[Optional[str], Optional[str]]] = []
+        all_instance_fields = set(
+            field for instance in self.instances for field in instance if field != "id"
+        )
+
+        # supporters changed
+        if "supporter_ids" in all_instance_fields:
+            all_instance_fields.remove("supporter_ids")
+            full_informations.append(("Supporters changed", None))
+
+        # category changed
+        full_informations.append(
+            self.create_history_information_for_field(
+                all_instance_fields,
+                "category_id",
+                "motion_category",
+                "Category",
+                "name",
+            )
+        )
+
+        # block changed
+        full_informations.append(
+            self.create_history_information_for_field(
+                all_instance_fields, "block_id", "motion_block", "Motion block", "title"
+            )
+        )
+
+        # still other fields given, so we also add the generic "updated" message
+        if all_instance_fields:
+            full_informations.append(("Motion updated", None))
+
+        informations, args = zip(*full_informations)
+        informations_str = "\n".join(
+            information for information in informations if information
+        )
+
+        i = 0
+
+        def replace_args(_: Any) -> str:
+            nonlocal i
+            i += 1
+            return f"{{arg{i}}}"
+
+        informations_str = re.sub("{argx}", replace_args, informations_str)
+        return [informations_str] + [arg for arg in args if arg is not None]
+
+    def create_history_information_for_field(
+        self,
+        all_instance_fields: Set[str],
+        field: str,
+        collection: Collection,
+        verbose_collection: str,
+        name_field: str,
+    ) -> Tuple[Optional[str], Optional[str]]:
+        if field in all_instance_fields:
+            all_instance_fields.remove(field)
+            all_values = set(
+                instance[field] for instance in self.instances if field in instance
+            )
+            if len(all_values) == 1:
+                single_value = all_values.pop()
+                if single_value is None:
+                    return (verbose_collection + " removed", None)
+                else:
+                    instance = self.datastore.get(
+                        fqid_from_collection_and_id(collection, single_value),
+                        [name_field],
+                    )
+                    return (verbose_collection + " set to {argx}", instance[name_field])
+            else:
+                return (verbose_collection + " changed", None)
+        return (None, None)

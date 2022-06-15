@@ -159,12 +159,7 @@ class BaseSystemTestCase(TestCase):
         return [Event(type=EventType.Update, fqid=fqid, fields=data)]
 
     def get_write_request(self, events: List[Event]) -> WriteRequest:
-        return WriteRequest(
-            events=events,
-            information={},
-            user_id=0,
-            locked_fields={},
-        )
+        return WriteRequest(events, user_id=0)
 
     def set_models(self, models: Dict[str, Dict[str, Any]]) -> None:
         """

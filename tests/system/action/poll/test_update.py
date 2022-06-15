@@ -349,6 +349,20 @@ class UpdatePollTestCase(BaseActionTestCase):
             },
         )
 
+    def test_motion_history_information(self) -> None:
+        self.set_models(
+            {
+                "poll/1": {"content_object_id": "motion/1"},
+                "motion/1": {"meeting_id": 1, "poll_ids": [1]},
+            }
+        )
+        response = self.request(
+            "poll.update",
+            {"id": 1, "title": "test"},
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/1", ["Poll updated"])
+
     def test_update_no_permissions(self) -> None:
         self.base_permission_test(
             {},

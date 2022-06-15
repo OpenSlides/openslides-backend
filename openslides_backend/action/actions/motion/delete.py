@@ -19,6 +19,7 @@ class MotionDelete(DeleteAction, PermissionHelperMixin):
 
     model = Motion()
     schema = DefaultSchema(Motion()).get_delete_schema()
+    history_information = "Motion deleted"
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         motion = self.datastore.get(

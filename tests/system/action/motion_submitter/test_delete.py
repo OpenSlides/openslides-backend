@@ -46,6 +46,7 @@ class MotionSubmitterDeleteActionTest(BaseActionTestCase):
         response = self.request("motion_submitter.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_submitter/111")
+        self.assert_history_information("motion/12", ["Submitters changed"])
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_submitter/112", {"weight": 10})

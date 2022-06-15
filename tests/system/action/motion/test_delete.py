@@ -37,6 +37,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         response = self.request("motion.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion/111")
+        self.assert_history_information("motion/111", ["Motion deleted"])
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion/112", {"title": "title_srtgb123"})

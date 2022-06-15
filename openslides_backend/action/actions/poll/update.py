@@ -39,6 +39,7 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
             "publish_immediately": {"type": "boolean"},
         },
     )
+    history_information = "Poll updated"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(

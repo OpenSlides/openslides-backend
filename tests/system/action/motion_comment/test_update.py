@@ -13,7 +13,11 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
                 "meeting_id": 1,
                 "section_id": 78,
             },
-            "motion_comment_section/78": {"meeting_id": 1, "write_group_ids": [3]},
+            "motion_comment_section/78": {
+                "meeting_id": 1,
+                "write_group_ids": [3],
+                "name": "test",
+            },
         }
 
     def test_update_correct(self) -> None:
@@ -22,12 +26,18 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
                 "user/1": {"group_$1_ids": [2]},
                 "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
                 "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
+                "motion/111": {"meeting_id": 1, "comment_ids": [111]},
                 "motion_comment/111": {
                     "comment": "comment_srtgb123",
                     "meeting_id": 1,
                     "section_id": 78,
+                    "motion_id": 111,
                 },
-                "motion_comment_section/78": {"meeting_id": 1, "write_group_ids": [3]},
+                "motion_comment_section/78": {
+                    "meeting_id": 1,
+                    "write_group_ids": [3],
+                    "name": "test",
+                },
             }
         )
         response = self.request(
@@ -36,6 +46,9 @@ class MotionCommentUpdateActionTest(BaseActionTestCase):
         self.assert_status_code(response, 200)
         model = self.get_model("motion_comment/111")
         assert model.get("comment") == "comment_Xcdfgee"
+        self.assert_history_information(
+            "motion/111", ["Comment {arg1} updated", "test"]
+        )
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
