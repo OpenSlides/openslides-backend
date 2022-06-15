@@ -14,4 +14,5 @@ class Migration(RemoveFieldsMigration):
     collection_fields_map = {
         "poll": ["publish_immediately"],
         "option": ["publish_immediately"],
+        "user": ["meeting_id"],
     }
