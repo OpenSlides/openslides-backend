@@ -29,7 +29,7 @@ class MotionSortActionTest(BaseActionTestCase):
         model_22 = self.get_model("motion/22")
         assert model_22.get("sort_weight") == 1
         assert model_22.get("sort_parent_id") is None
-        assert model_22.get("sort_children_ids") == []
+        assert model_22.get("sort_child_ids") == []
 
     def test_sort_not_all_sorted(self) -> None:
         self.set_models(
@@ -162,15 +162,15 @@ class MotionSortActionTest(BaseActionTestCase):
         model_1 = self.get_model("motion/1")
         assert model_1.get("sort_weight") == 1
         assert model_1.get("sort_parent_id") is None
-        assert model_1.get("sort_children_ids") == [11, 12]
+        assert model_1.get("sort_child_ids") == [11, 12]
         model_11 = self.get_model("motion/11")
         assert model_11.get("sort_weight") == 1
         assert model_11.get("sort_parent_id") == 1
-        assert model_11.get("sort_children_ids") == []
+        assert model_11.get("sort_child_ids") == []
         model_12 = self.get_model("motion/12")
         assert model_12.get("sort_weight") == 2
         assert model_12.get("sort_parent_id") == 1
-        assert model_12.get("sort_children_ids") == []
+        assert model_12.get("sort_child_ids") == []
 
     def test_extra_id(self) -> None:
         self.set_models(

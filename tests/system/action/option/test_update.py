@@ -82,6 +82,7 @@ class OptionUpdateActionTest(BaseActionTestCase):
         assert option.get("yes") == "1.000000"
         assert option.get("no") == "2.000000"
         assert option.get("abstain") == "3.000000"
+        assert "publish_immediately" not in option
         poll = self.get_model("poll/65")
         assert poll.get("state") == "published"
 

@@ -89,6 +89,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                         result["message"] = f"SMTPDataError: {str(e)}"
 
                     if result["sent"]:
+                        instance.pop("meeting_id", None)
                         write_request = self.create_write_requests(instance)
                         self.write_requests.extend(write_request)
 

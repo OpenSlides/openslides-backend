@@ -111,6 +111,7 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
                 if field not in instance:
                     instance[field] = "-2.000000"
 
+        instance.pop("publish_immediately", None)
         return instance
 
     def check_100_percent_base(self, instance: Dict[str, Any]) -> None:
