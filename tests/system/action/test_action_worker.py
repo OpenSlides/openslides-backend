@@ -97,7 +97,12 @@ class ActionWorkerTest(BaseActionTestCase):
         )
 
         self.assert_status_code(response, 200)
+        self.assertIn("Action lasts to long. Get the result from database, when the job is done.", response.json["message"])
+        self.assertFalse(response.json["success"], "Action worker still not finished, success must be False.")
+        self.assertEqual(response.json["results"][0][0], {'fqid': 'action_worker/1', 'name': 'motion.create', 'written': True})
+        self.assert_model_exists("action_worker/1")
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
         self.assert_model_exists("motion/1", {"title": "test_title"})
-        self.assert_model_exists("action_worker/1")
+        if watcher_thread := self.get_thread_by_name("watcher_thread"):
+            watcher_thread.join()
