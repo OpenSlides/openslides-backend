@@ -39,8 +39,15 @@ class BaseActionTestCase(BaseSystemTestCase):
         data: Dict[str, Any],
         anonymous: bool = False,
         lang: Optional[str] = None,
+        thread_watch_timeout: int = 0,
     ) -> Response:
-        return self.request_multi(action, [data], anonymous=anonymous, lang=lang)
+        return self.request_multi(
+            action,
+            [data],
+            anonymous=anonymous,
+            lang=lang,
+            thread_watch_timeout=thread_watch_timeout,
+        )
 
     def request_multi(
         self,
@@ -48,6 +55,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         data: List[Dict[str, Any]],
         anonymous: bool = False,
         lang: Optional[str] = None,
+        thread_watch_timeout: int = 0,
     ) -> Response:
         response = self.request_json(
             [
@@ -58,6 +66,7 @@ class BaseActionTestCase(BaseSystemTestCase):
             ],
             anonymous=anonymous,
             lang=lang,
+            thread_watch_timeout=thread_watch_timeout,
         )
         if response.status_code == 200:
             results = response.json.get("results", [])
@@ -66,12 +75,16 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def request_json(
+        
         self, payload: Payload, anonymous: bool = False, lang: Optional[str] = None
+    , thread_watch_timeout: int = 0
     ) -> Response:
         client = self.client if not anonymous else self.anon_client
         headers = {}
         if lang:
             headers["Accept-Language"] = lang
+        if thread_watch_timeout:
+            payload.insert(0, {"thread_watch_timeout": thread_watch_timeout})
         return client.post(ACTION_URL, json=payload, headers=headers)
 
     def execute_action_internally(

@@ -77,6 +77,9 @@ class DatastoreAdapter(BaseDatastoreService):
                 raise DatastoreException(error_message)
         else:
             payload = None
+        print(
+            f"Retrieve {command.name}: Get response with status code {status_code}: {payload}"
+        )
         self.logger.debug(f"Get response with status code {status_code}: {payload}")
         if status_code >= 400:
             raise_datastore_error(

@@ -52,7 +52,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain ['action', 'data'] properties",
+            "data[0] must be valid by one of anyOf definition",
             response.json["message"],
         )
 
@@ -70,7 +70,7 @@ class GeneralActionWSGITester(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "data[0] must contain ['action', 'data'] properties",
+            "data[0] must be valid by one of anyOf definition",
             response.json["message"],
         )
 

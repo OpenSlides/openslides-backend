@@ -44,17 +44,32 @@ payload_schema = fastjsonschema.compile(
         "description": "An array of actions",
         "type": "array",
         "items": {
-            "type": "object",
-            "properties": {
-                "action": {
-                    "description": "Name of the action to be performed on the server",
-                    "type": "string",
-                    "minLength": 1,
+            "anyOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "description": "Name of the action to be performed on the server",
+                            "type": "string",
+                            "minLength": 1,
+                        },
+                        "data": action_data_schema,
+                    },
+                    "required": ["action", "data"],
+                    "additionalProperties": [False],
                 },
-                "data": action_data_schema,
-            },
-            "required": ["action", "data"],
-            "additionalProperties": False,
+                {
+                    "type": "object",
+                    "properties": {
+                        "thread_watch_timeout": {
+                            "description": "Wait time in seconds, otherwise run as daemon and return handle",
+                            "type": "number",
+                        },
+                    },
+                    "required": ["thread_watch_timeout"],
+                    "additionalProperties": [False],
+                },
+            ]
         },
     }
 )
@@ -256,3 +271,19 @@ class ActionHandler(BaseHandler):
             if on_failure:
                 on_failure()
             raise exception
+
+    def get_thread_watch_timeout(self, payload: Payload) -> Optional[int]:
+        thread_watch_timeout: int = 0
+        for i, pelem in enumerate(payload):
+            if "thread_watch_timeout" in pelem:
+                thread_watch_timeout = pelem["thread_watch_timeout"]
+                backend_worker_timeout = (
+                    float(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT) - 1.0
+                )
+                if thread_watch_timeout > backend_worker_timeout:
+                    raise ActionException(
+                        f"thread_watch_timeout ({thread_watch_timeout}sec.) may not be longer than configured backend_worker_timeout-1 ({int(backend_worker_timeout)}sec.)."
+                    )
+                del payload[i]
+                break
+        return thread_watch_timeout
