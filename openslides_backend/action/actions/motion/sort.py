@@ -27,5 +27,5 @@ class MotionSort(TreeSortMixin, SingularActionMixin, UpdateAction):
             meeting_id=instance["meeting_id"],
             weight_key="sort_weight",
             parent_id_key="sort_parent_id",
-            children_ids_key="sort_children_ids",
+            children_ids_key="sort_child_ids",
         )
