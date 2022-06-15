@@ -12,6 +12,7 @@ class FakeModelP(Model):
     collection = "fake_model_p"
     verbose_name = "fake model for permissions"
     id = fields.IntegerField()
+    meeting_id = fields.IntegerField()
 
 
 @register_action("fake_model_p.create")
