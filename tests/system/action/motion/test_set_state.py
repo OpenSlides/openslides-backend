@@ -226,7 +226,7 @@ class MotionSetStateActionTest(BaseActionTestCase):
         self.sync_event.set()
         for thread in threads:
             thread.join()
-            if exc := getattr(thread, "exception"):
+            if exc := getattr(thread, "exception", None):
                 exceptions.append(exc)
         duration = round(time.time() - check_time, 2)
         print(duration)
