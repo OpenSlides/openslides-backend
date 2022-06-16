@@ -49,7 +49,7 @@ class AgendaItemActionTest(BaseActionTestCase):
         response = self.request("agenda_item.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("agenda_item/111")
-        self.get_model("motion/34")
+        self.assert_model_exists("motion/34")
 
     def test_delete_with_projection(self) -> None:
         self.set_models(
@@ -78,8 +78,9 @@ class AgendaItemActionTest(BaseActionTestCase):
         response = self.request("agenda_item.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("agenda_item/111")
-        self.get_model("motion/34")
+        self.assert_model_exists("motion/34")
         self.assert_model_deleted("projection/1")
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

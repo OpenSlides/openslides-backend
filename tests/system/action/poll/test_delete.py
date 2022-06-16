@@ -56,6 +56,7 @@ class PollDeleteTest(PollTestMixin):
         self.assert_model_deleted("poll/111")
         self.assert_model_deleted("option/42")
         self.assert_model_deleted("projection/1")
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

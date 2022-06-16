@@ -86,6 +86,7 @@ class MotionDeleteActionTest(BaseActionTestCase):
         self.assert_model_deleted("agenda_item/333")
         self.assert_model_deleted("list_of_speakers/222")
         self.assert_model_deleted("projection/1")
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_no_permission(self) -> None:
         self.base_permission_test(
