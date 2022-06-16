@@ -221,15 +221,23 @@ class MotionSetStateActionTest(BaseActionTestCase):
             thread.start()
             threads.append(thread)
 
+        exceptions = []
         check_time = time.time()
         self.sync_event.set()
         for thread in threads:
             thread.join()
+            if exc := getattr(thread, "exception", None):
+                exceptions.append(exc)
         duration = round(time.time() - check_time, 2)
         print(duration)
+        for exception in exceptions:
+            raise exception
 
     def thread_method(self, i: int) -> None:
         self.sync_event.wait()
-        response = self.request("motion.set_state", {"id": 22 + i, "state_id": 76})
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(f"motion/{22+i}", {"state_id": 76})
+        try:
+            response = self.request("motion.set_state", {"id": 22 + i, "state_id": 76})
+            self.assert_status_code(response, 200)
+            self.assert_model_exists(f"motion/{22+i}", {"state_id": 76})
+        except Exception as e:
+            self.exception = e

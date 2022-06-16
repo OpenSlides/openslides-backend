@@ -28,10 +28,14 @@ class MotionBlockActionTest(BaseActionTestCase):
     def test_delete_correct_cascading(self) -> None:
         self.set_models(
             {
-                "meeting/12": {"is_active_in_organization_id": 1},
+                "meeting/12": {
+                    "is_active_in_organization_id": 1,
+                    "all_projection_ids": [1],
+                },
                 "motion_block/111": {
                     "list_of_speakers_id": 222,
                     "agenda_item_id": 333,
+                    "projection_ids": [1],
                     "meeting_id": 12,
                 },
                 "list_of_speakers/222": {
@@ -44,6 +48,15 @@ class MotionBlockActionTest(BaseActionTestCase):
                     "content_object_id": "motion_block/111",
                     "meeting_id": 12,
                 },
+                "projection/1": {
+                    "content_object_id": "motion_block/111",
+                    "current_projector_id": 1,
+                    "meeting_id": 12,
+                },
+                "projector/1": {
+                    "current_projection_ids": [1],
+                    "meeting_id": 12,
+                },
             }
         )
         response = self.request("motion_block.delete", {"id": 111})
@@ -51,6 +64,8 @@ class MotionBlockActionTest(BaseActionTestCase):
         self.assert_model_deleted("motion_block/111")
         self.assert_model_deleted("agenda_item/333")
         self.assert_model_deleted("list_of_speakers/222")
+        self.assert_model_deleted("projection/1")
+        self.assert_model_exists("projector/1", {"current_projection_ids": []})
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

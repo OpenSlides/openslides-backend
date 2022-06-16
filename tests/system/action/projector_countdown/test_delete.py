@@ -32,6 +32,35 @@ class ProjectorCountdownDelete(BaseActionTestCase):
         meeting = self.get_model("meeting/1")
         assert meeting.get("projector_countdown_ids") == [2, 3]
 
+    def test_delete_with_projection(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "all_projection_ids": [1],
+                },
+                "projector_countdown/1": {
+                    "projection_ids": [1],
+                },
+                "projection/1": {
+                    "content_object_id": "projector_countdown/1",
+                    "current_projector_id": 1,
+                    "meeting_id": 1,
+                },
+                "projector/1": {
+                    "current_projection_ids": [1],
+                    "meeting_id": 1,
+                },
+            }
+        )
+
+        response = self.request("projector_countdown.delete", {"id": 1})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("projector_countdown/1", {"projection_ids": [1]})
+        self.assert_model_deleted(
+            "projection/1", {"content_object_id": "projector_countdown/1"}
+        )
+        self.assert_model_exists("meeting/1", {"all_projection_ids": []})
+
     def test_delete_not_allowed_1(self) -> None:
         response = self.request("projector_countdown.delete", {"id": 2})
         self.assert_status_code(response, 400)

@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "3fd01ad6a70c3946ff894b9d319c02a8"
+MODELS_YML_CHECKSUM = "1de17f3cf19d915f2aff2335c50f2027"
 
 
 class Organization(Model):
@@ -187,6 +187,7 @@ class User(Model):
         index=11,
         replacement_collection="meeting",
         to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
     )
     vote_delegated__to_id = fields.TemplateRelationField(
         index=15,
@@ -716,7 +717,9 @@ class Meeting(Model):
             "poll",
         ],
     )
-    projection_ids = fields.RelationListField(to={"projection": "content_object_id"})
+    projection_ids = fields.RelationListField(
+        to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     default_group_id = fields.RelationField(
         to={"group": "default_group_for_meeting_id"}, required=True
     )
@@ -891,7 +894,9 @@ class AgendaItem(Model):
         to={"tag": "tagged_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "agenda_item_ids"}, required=True)
 
@@ -930,7 +935,9 @@ class ListOfSpeakers(Model):
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_ids"}, required=True
@@ -997,7 +1004,9 @@ class Topic(Model):
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "topic_ids"}, required=True)
 
@@ -1119,7 +1128,9 @@ class Motion(Model):
         to={"mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     personal_note_ids = fields.RelationListField(
         to={"personal_note": "content_object_id"},
@@ -1254,7 +1265,9 @@ class MotionBlock(Model):
         equal_fields="meeting_id",
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "motion_block_ids"}, required=True)
 
@@ -1473,7 +1486,9 @@ class Poll(Model):
         to={"group": "poll_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "poll_ids"}, required=True)
 
@@ -1576,7 +1591,9 @@ class Assignment(Model):
         to={"mediafile": "attachment_ids"}, equal_fields="meeting_id"
     )
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(to={"meeting": "assignment_ids"}, required=True)
 
@@ -1644,7 +1661,9 @@ class Mediafile(Model):
     list_of_speakers_id = fields.RelationField(
         to={"list_of_speakers": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
     )
-    projection_ids = fields.RelationListField(to={"projection": "content_object_id"})
+    projection_ids = fields.RelationListField(
+        to={"projection": "content_object_id"}, on_delete=fields.OnDelete.CASCADE
+    )
     attachment_ids = fields.GenericRelationListField(
         to={
             "motion": "attachment_ids",
@@ -1767,6 +1786,7 @@ class Projection(Model):
             "motion": "projection_ids",
             "meeting": "projection_ids",
         },
+        required=True,
         equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
@@ -1781,7 +1801,9 @@ class ProjectorMessage(Model):
     id = fields.IntegerField()
     message = fields.HTMLStrictField()
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     meeting_id = fields.RelationField(
         to={"meeting": "projector_message_ids"}, required=True
@@ -1799,7 +1821,9 @@ class ProjectorCountdown(Model):
     countdown_time = fields.FloatField(default=60)
     running = fields.BooleanField(default=False)
     projection_ids = fields.RelationListField(
-        to={"projection": "content_object_id"}, equal_fields="meeting_id"
+        to={"projection": "content_object_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     used_as_list_of_speakers_countdown_meeting_id = fields.RelationField(
         to={"meeting": "list_of_speakers_countdown_id"}
