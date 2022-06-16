@@ -33,15 +33,29 @@ class PollDeleteTest(PollTestMixin):
                 "poll/111": {
                     "option_ids": [42],
                     "meeting_id": 1,
+                    "projection_ids": [1],
                 },
                 "option/42": {"poll_id": 111, "meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
+                "meeting/1": {
+                    "is_active_in_organization_id": 1,
+                    "all_projection_ids": [1],
+                },
+                "projection/1": {
+                    "content_object_id": "poll/111",
+                    "current_projector_id": 1,
+                    "meeting_id": 1,
+                },
+                "projector/1": {
+                    "current_projection_ids": [1],
+                    "meeting_id": 1,
+                },
             }
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/111")
         self.assert_model_deleted("option/42")
+        self.assert_model_deleted("projection/1")
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test(

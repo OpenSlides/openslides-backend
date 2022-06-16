@@ -403,6 +403,7 @@ user:
     fields:
       type: relation-list
       to: projection/content_object_id
+      on_delete: CASCADE
     restriction_mode: A
   vote_delegated_$_to_id:
     type: template
@@ -1566,6 +1567,7 @@ meeting:
   projection_ids:
     type: relation-list
     to: projection/content_object_id
+    on_delete: CASCADE
     restriction_mode: B
 
   default_group_id:
@@ -1840,6 +1842,7 @@ agenda_item:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: A
   meeting_id:
     type: relation
@@ -1885,6 +1888,7 @@ list_of_speakers:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: A
   meeting_id:
     type: relation
@@ -1993,6 +1997,7 @@ topic:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: A
   meeting_id:
     type: relation
@@ -2209,6 +2214,7 @@ motion:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: C
   personal_note_ids:
     type: relation-list
@@ -2403,6 +2409,7 @@ motion_block:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: B
   meeting_id:
     type: relation
@@ -2811,6 +2818,7 @@ poll:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: A
   meeting_id:
     type: relation
@@ -2985,6 +2993,7 @@ assignment:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: B
   meeting_id:
     type: relation
@@ -3088,6 +3097,7 @@ mediafile:
   projection_ids:
     type: relation-list
     to: projection/content_object_id
+    on_delete: CASCADE
     restriction_mode: A
   attachment_ids:
     type: generic-relation-list
@@ -3316,7 +3326,7 @@ projection:
       - user/projection_$_ids
     equal_fields: meeting_id
     restriction_mode: A
-    required: false
+    required: true
   meeting_id:
     type: relation
     to: meeting/all_projection_ids
@@ -3335,6 +3345,7 @@ projector_message:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: A
   meeting_id:
     type: relation
@@ -3370,6 +3381,7 @@ projector_countdown:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
+    on_delete: CASCADE
     restriction_mode: A
   used_as_list_of_speakers_countdown_meeting_id:
     type: relation

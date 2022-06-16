@@ -140,12 +140,23 @@ class MediafileDeleteActionTest(BaseActionTestCase):
                 "meeting/111": {
                     "logo_$place_id": 222,
                     "logo_$_id": ["place"],
+                    "all_projection_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
                 "mediafile/222": {
                     "used_as_logo_$place_in_meeting_id": 111,
                     "used_as_logo_$_in_meeting_id": ["place"],
+                    "projection_ids": [1],
                     "owner_id": "meeting/111",
+                },
+                "projection/1": {
+                    "content_object_id": "mediafile/222",
+                    "current_projector_id": 1,
+                    "meeting_id": 111,
+                },
+                "projector/1": {
+                    "current_projection_ids": [1],
+                    "meeting_id": 111,
                 },
             }
         )
@@ -153,6 +164,7 @@ class MediafileDeleteActionTest(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("mediafile/222")
+        self.assert_model_deleted("projection/1")
         meeting = self.get_model("meeting/111")
         assert meeting.get("logo_$place_id") is None
         assert meeting.get("logo_$_id") == []

@@ -12,8 +12,22 @@ class ProjectorMessageDelete(BaseActionTestCase):
                 "meeting/2": {
                     "projector_message_ids": [2],
                     "is_active_in_organization_id": 1,
+                    "all_projection_ids": [1],
                 },
-                "projector_message/2": {"meeting_id": 2, "message": "test1"},
+                "projector_message/2": {
+                    "meeting_id": 2,
+                    "message": "test1",
+                    "projection_ids": [1],
+                },
+                "projection/1": {
+                    "content_object_id": "projector_message/2",
+                    "current_projector_id": 1,
+                    "meeting_id": 2,
+                },
+                "projector/1": {
+                    "current_projection_ids": [1],
+                    "meeting_id": 2,
+                },
             }
         )
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
@@ -25,6 +39,7 @@ class ProjectorMessageDelete(BaseActionTestCase):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("projector_message/2")
+        self.assert_model_deleted("projection/1")
 
     def test_delete_wrong_id(self) -> None:
         response = self.request("projector_message.delete", {"id": 3})

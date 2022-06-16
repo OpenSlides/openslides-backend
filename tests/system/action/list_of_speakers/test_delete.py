@@ -8,15 +8,30 @@ class ListOfSpeakersDeleteActionTest(BaseActionTestCase):
                 "meeting/78": {
                     "name": "name_RWtyEUGy",
                     "list_of_speakers_ids": [111],
+                    "all_projection_ids": [1],
                     "is_active_in_organization_id": 1,
                 },
-                "list_of_speakers/111": {"closed": True, "meeting_id": 78},
+                "list_of_speakers/111": {
+                    "closed": True,
+                    "projection_ids": [1],
+                    "meeting_id": 78,
+                },
+                "projection/1": {
+                    "content_object_id": "list_of_speakers/111",
+                    "current_projector_id": 1,
+                    "meeting_id": 78,
+                },
+                "projector/1": {
+                    "current_projection_ids": [1],
+                    "meeting_id": 78,
+                },
             }
         )
         response = self.request("list_of_speakers.delete", {"id": 111})
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("list_of_speakers/111")
+        self.assert_model_deleted("projection/1")
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(

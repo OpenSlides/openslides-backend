@@ -75,7 +75,7 @@ class MeetingDeleteActionTest(BaseActionTestCase):
                     "current_projector_id": None,
                     "preview_projector_id": None,
                     "history_projector_id": 1,
-                    "content_object_id": "assignment/1",
+                    "content_object_id": "meeting/1",
                     "stable": False,
                     "type": None,
                     "weight": 1,
