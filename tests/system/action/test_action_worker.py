@@ -100,10 +100,36 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assertIn("Action lasts to long. Get the result from database, when the job is done.", response.json["message"])
         self.assertFalse(response.json["success"], "Action worker still not finished, success must be False.")
         self.assertEqual(response.json["results"][0][0], {'fqid': 'action_worker/1', 'name': 'motion.create', 'written': True})
-        self.assert_model_exists("action_worker/1")
+        self.assert_model_exists("action_worker/1", {"state": "running"})
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
         self.assert_model_exists("motion/1", {"title": "test_title"})
         if watcher_thread := self.get_thread_by_name("watcher_thread"):
             watcher_thread.join()
         self.assert_model_exists("action_worker/1", {"state": "end"})
+
+    def test_action_worker_not_ready_before_timeout_exception(self) -> None:
+        """action thread used, ended after timeout"""
+        response = self.request(
+            "motion.create",
+            {
+                "title": "test_title",
+                "meeting_id": 222,
+                "workflow_id": 12,
+            },
+            thread_watch_timeout=0.001,
+        )
+
+        self.assert_status_code(response, 200)
+        self.assertIn("Action lasts to long. Get the result from database, when the job is done.", response.json["message"])
+        self.assertFalse(response.json["success"], "Action worker still not finished, success must be False.")
+        self.assertEqual(response.json["results"][0][0], {'fqid': 'action_worker/1', 'name': 'motion.create', 'written': True})
+        self.assert_model_exists("action_worker/1")
+        if action_worker := self.get_thread_by_name("action_worker"):
+            action_worker.join()
+        if watcher_thread := self.get_thread_by_name("watcher_thread"):
+            watcher_thread.join()
+        self.assert_model_not_exists("motion/1")
+        action_worker = self.assert_model_exists("action_worker/1", {"state": "end"})
+        self.assertFalse(action_worker["result"]["success"])
+        self.assertIn("Text is required", action_worker["result"]["message"])
