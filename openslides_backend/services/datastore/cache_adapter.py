@@ -53,7 +53,7 @@ class CacheDatastoreAdapter(DatastoreAdapter):
         cached_model = results[collection_from_fqid(fqid)][id_from_fqid(fqid)]
         if not missing_fields_per_fqid:
             # nothing to do, we've got the full model
-            return cached_model
+            return deepcopy(cached_model)
 
         result = super().get(
             fqid, missing_fields_per_fqid[fqid], lock_result=lock_result
