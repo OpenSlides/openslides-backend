@@ -106,3 +106,4 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_exists("motion/1", {"title": "test_title"})
         if watcher_thread := self.get_thread_by_name("watcher_thread"):
             watcher_thread.join()
+        self.assert_model_exists("action_worker/1", {"state": "end"})
