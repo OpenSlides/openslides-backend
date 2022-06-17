@@ -2070,7 +2070,7 @@ motion:
   forwarded:
     type: timestamp
     read_only: true
-    restriction_mode: B
+    restriction_mode: A
 
   lead_motion_id:
     type: relation
@@ -2097,18 +2097,18 @@ motion:
   origin_id:
     type: relation
     to: motion/derived_motion_ids # Note: The related motions may not be in the same meeting
-    restriction_mode: B
+    restriction_mode: A
     required: false
   derived_motion_ids:
     type: relation-list
     to: motion/origin_id # Note: The related motions may not be in the same meeting
-    restriction_mode: B
+    restriction_mode: A
   all_origin_ids:
     type: number[] # Calculated: All parents (origin_id), grandparents, etc. of this motion.
-    restriction_mode: B
+    restriction_mode: A
   all_derived_motion_ids:
     type: number[] # Calculated: All children (derived_motion_ids), grandchildren, etc. of this motion.
-    restriction_mode: B
+    restriction_mode: A
   state_id:
     type: relation
     to: motion_state/motion_ids
@@ -2226,7 +2226,7 @@ motion:
     type: relation
     to: meeting/motion_ids
     required: true
-    restriction_mode: B
+    restriction_mode: A
 
 motion_submitter:
   id:
@@ -2378,7 +2378,7 @@ motion_block:
     restriction_mode: A
   internal:
     type: boolean
-    restriction_mode: B
+    restriction_mode: A
   sequential_number:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
@@ -2390,13 +2390,13 @@ motion_block:
     type: relation-list
     to: motion/block_id
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   agenda_item_id:
     type: relation
     to: agenda_item/content_object_id
     on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
     required: false
   list_of_speakers_id:
     type: relation
@@ -2404,18 +2404,18 @@ motion_block:
     required: true
     on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   projection_ids:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
     on_delete: CASCADE
-    restriction_mode: B
+    restriction_mode: A
   meeting_id:
     type: relation
     to: meeting/motion_block_ids
     required: true
-    restriction_mode: B
+    restriction_mode: A
 
 motion_change_recommendation:
   id:
@@ -2926,12 +2926,12 @@ assignment:
     restriction_mode: A
   description:
     type: HTMLStrict
-    restriction_mode: B
+    restriction_mode: A
   open_posts:
     type: number
     minimum: 0
     default: 0
-    restriction_mode: B
+    restriction_mode: A
   phase:
     type: string
     enum:
@@ -2939,13 +2939,13 @@ assignment:
       - voting
       - finished
     default: search
-    restriction_mode: B
+    restriction_mode: A
   default_poll_description:
     type: text
-    restriction_mode: B
+    restriction_mode: A
   number_poll_candidates:
     type: boolean
-    restriction_mode: B
+    restriction_mode: A
   sequential_number:
     type: number
     description: The (positive) serial number of this motion. This number is auto-generated and read-only.
@@ -2958,19 +2958,19 @@ assignment:
     to: assignment_candidate/assignment_id
     on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   poll_ids:
     type: relation-list
     to: poll/content_object_id
     on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   agenda_item_id:
     type: relation
     to: agenda_item/content_object_id
     on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
     required: false
   list_of_speakers_id:
     type: relation
@@ -2978,28 +2978,28 @@ assignment:
     required: true
     on_delete: CASCADE
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   tag_ids:
     type: relation-list
     to: tag/tagged_ids
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   attachment_ids:
     type: relation-list
     to: mediafile/attachment_ids
     equal_fields: meeting_id
-    restriction_mode: B
+    restriction_mode: A
   projection_ids:
     type: relation-list
     to: projection/content_object_id
     equal_fields: meeting_id
     on_delete: CASCADE
-    restriction_mode: B
+    restriction_mode: A
   meeting_id:
     type: relation
     to: meeting/assignment_ids
     required: true
-    restriction_mode: B
+    restriction_mode: A
 
 assignment_candidate:
   id:
