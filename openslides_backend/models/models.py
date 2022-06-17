@@ -2,6 +2,7 @@
 
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
+from openslides_backend.shared.patterns import Collection
 
 MODELS_YML_CHECKSUM = "8caab7cf05e1000b21f4b24d34685714"
 
