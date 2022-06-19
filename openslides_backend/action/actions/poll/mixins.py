@@ -1,12 +1,13 @@
 from collections import defaultdict
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ....permissions.permission_helper import has_perm
 from ....permissions.permissions import Permission, Permissions
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.exceptions import MissingPermission, VoteServiceException
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from ...action import Action
 from ..option.set_auto_fields import OptionSetAutoFields
@@ -191,3 +192,12 @@ class StopControl(CountdownControl, Action):
             )
 
         return entitled_users
+
+    def process_write_requests(self) -> Optional[WriteRequest]:
+        write_request = super().process_write_requests()
+        self.datastore.locked_fields = dict(
+            (k, v)
+            for k, v in self.datastore.locked_fields.items()
+            if not k.startswith("user")
+        )
+        return write_request
