@@ -1,8 +1,9 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, VoteServiceException
+from ....shared.interfaces.write_request import WriteRequest
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
@@ -90,3 +91,15 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                     self.logger.error(f"Error clearing vote {instance['id']}: {str(e)}")
 
         return on_success
+
+    def process_write_requests(self) -> Optional[WriteRequest]:
+        print("================== HOTFIX ==============================")
+        write_request = super().process_write_requests()
+        print(self.datastore.locked_fields)
+        self.datastore.locked_fields = dict(
+            (k, v)
+            for k, v in self.datastore.locked_fields.items()
+            if not k.startswith("user")
+        )
+        print(self.datastore.locked_fields)
+        return write_request
