@@ -1,3 +1,5 @@
+from typing import Set
+
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.datastore.commands import GetManyRequest
 
@@ -45,7 +47,7 @@ class VoteCreate(CreateActionWithInferredMeeting):
             "poll_voted_$_ids",
             "vote_delegated_vote_$_ids",
         ]
-        fields_set = set()
+        fields_set: Set[str] = set()
         for option in result["option"].values():
             fields_set.update(
                 (

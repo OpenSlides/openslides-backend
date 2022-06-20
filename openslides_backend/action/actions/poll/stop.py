@@ -68,27 +68,27 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
         """
         locked fields zu Beginn:
         'poll/1/state', 'poll/1/content_object_id', 'poll/1/voted_ids',
-        'poll/1/entitled_group_ids', 'poll/1/global_option_id', 
-        'poll/1/pollmethod', 'poll/1/meeting_id', 
-        'meeting/1/is_active_in_organization_id', 
-        'meeting/1/vote_ids', 'meeting/1/users_enable_vote_weight', 
-        'meeting/1/name', 'meeting/1/poll_couple_countdown', 
-        'meeting/1/poll_countdown_id', 
-        'group/3/user_ids', 
-        'option/1/meeting_id', 'option/1/vote_ids', 
+        'poll/1/entitled_group_ids', 'poll/1/global_option_id',
+        'poll/1/pollmethod', 'poll/1/meeting_id',
+        'meeting/1/is_active_in_organization_id',
+        'meeting/1/vote_ids', 'meeting/1/users_enable_vote_weight',
+        'meeting/1/name', 'meeting/1/poll_couple_countdown',
+        'meeting/1/poll_countdown_id',
+        'group/3/user_ids',
+        'option/1/meeting_id', 'option/1/vote_ids',
         'user/2/vote_delegated_$_to_id', 'user/2/is_present_in_meeting_ids',
         'user/2/vote_$_ids', 'user/2/vote_delegated_$1_to_id',
         'user/2/vote_delegated_vote_$1_ids',
-        'user/2/vote_delegated_vote_$_ids', 
-        'user/2/group_$1_ids', 
-        'user/2/organization_management_level', 
-        'user/2/group_$_ids', 
-        'user/2/vote_$1_ids', 
-        'user/2/poll_voted_$1_ids', 
-        'user/2/poll_voted_$_ids', 
-        'user/3/vote_delegated_$_to_id', 'user/3/is_present_in_meeting_ids', 'user/3/vote_$_ids', 'user/3/vote_delegated_$1_to_id', 'user/3/vote_delegated_vote_$1_ids', 'user/3/vote_delegated_vote_$_ids', 'user/3/group_$1_ids', 'user/3/organization_management_level', 'user/3/group_$_ids', 'user/3/vote_$1_ids', 'user/3/poll_voted_$1_ids', 'user/3/poll_voted_$_ids', 
+        'user/2/vote_delegated_vote_$_ids',
+        'user/2/group_$1_ids',
+        'user/2/organization_management_level',
+        'user/2/group_$_ids',
+        'user/2/vote_$1_ids',
+        'user/2/poll_voted_$1_ids',
+        'user/2/poll_voted_$_ids',
+        'user/3/vote_delegated_$_to_id', 'user/3/is_present_in_meeting_ids', 'user/3/vote_$_ids', 'user/3/vote_delegated_$1_to_id', 'user/3/vote_delegated_vote_$1_ids', 'user/3/vote_delegated_vote_$_ids', 'user/3/group_$1_ids', 'user/3/organization_management_level', 'user/3/group_$_ids', 'user/3/vote_$1_ids', 'user/3/poll_voted_$1_ids', 'user/3/poll_voted_$_ids',
         'user/4/vote_delegated_$_to_id', 'user/4/is_present_in_meeting_ids', 'user/4/vote_$_ids', 'user/4/vote_delegated_$1_to_id', 'user/4/vote_delegated_vote_$1_ids', 'user/4/vote_delegated_vote_$_ids', 'user/4/group_$1_ids', 'user/4/organization_management_level', 'user/4/group_$_ids', 'user/4/vote_$1_ids', 'user/4/poll_voted_$1_ids', 'user/4/poll_voted_$_ids'
-        
+
         get:
         'user/1', ['group_$1_ids', 'organization_management_level'])", 1, 28))
 
@@ -98,7 +98,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
         1:{'collection': 'group', 'ids': [3], 'mapped_fields': ['user_ids', 'meta_position']}
         2:{'collection': 'option', 'ids': [1], 'mapped_fields': ['meeting_id', 'vote_ids', 'meta_position']}
 
-        3:{'collection': 'user', 'ids': [2], 'mapped_fields': 
+        3:{'collection': 'user', 'ids': [2], 'mapped_fields':
             ['vote_delegated_$_to_id', 'is_present_in_meeting_ids',
              'vote_$_ids', 'vote_delegated_$1_to_id',
              'meta_position', 'vote_delegated_vote_$1_ids',
@@ -108,6 +108,7 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
         3:{'collection': 'user', 'ids': [3], 'mapped_fields': ['vote_delegated_$_to_id', 'is_present_in_meeting_ids', 'vote_$_ids', 'vote_delegated_$1_to_id', 'meta_position', 'vote_delegated_vote_$1_ids', 'vote_delegated_vote_$_ids', 'group_$1_ids', 'organization_management_level', ...]}
         3:{'collection': 'user', 'ids': [4], 'mapped_fields': ['vote_delegated_$_to_id', 'is_present_in_meeting_ids', 'vote_$_ids', 'vote_delegated_$1_to_id', 'meta_position', 'vote_delegated_vote_$1_ids', 'vote_delegated_vote_$_ids', 'group_$1_ids', 'organization_management_level', ...]}
         """
+
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
