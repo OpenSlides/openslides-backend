@@ -15,7 +15,7 @@ class PollTestMixin(BaseActionTestCase):
             {
                 "poll/1": {
                     "type": Poll.TYPE_NAMED,
-                    "pollmethod": "YN",
+                    "pollmethod": "YNA",
                     "state": Poll.STATE_STARTED,
                     "option_ids": [1],
                     "meeting_id": 1,
