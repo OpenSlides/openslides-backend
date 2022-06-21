@@ -46,8 +46,6 @@ class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
                 "meeting",
                 meeting_ids,
                 [
-                    "is_active_in_organization_id",
-                    "name",
                     "poll_couple_countdown",
                     "poll_countdown_id",
                     "users_enable_vote_weight",

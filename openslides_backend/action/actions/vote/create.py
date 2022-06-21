@@ -1,3 +1,5 @@
+from typing import Set
+
 from openslides_backend.action.util.typing import ActionData
 from openslides_backend.services.datastore.commands import GetManyRequest
 
@@ -41,24 +43,20 @@ class VoteCreate(CreateActionWithInferredMeeting):
             use_changed_models=False,
         )
         fields = [
-            "is_present_in_meeting_ids",
-            "organization_management_level",
-            "group_$_ids",
             "vote_$_ids",
             "poll_voted_$_ids",
-            "vote_delegated_$_to_id",
             "vote_delegated_vote_$_ids",
         ]
+        fields_set: Set[str] = set()
         for option in result["option"].values():
-            fields.extend(
+            fields_set.update(
                 (
-                    f"group_${option['meeting_id']}_ids",
                     f"vote_${option['meeting_id']}_ids",
                     f"poll_voted_${option['meeting_id']}_ids",
-                    f"vote_delegated_${option['meeting_id']}_to_id",
                     f"vote_delegated_vote_${option['meeting_id']}_ids",
                 )
             )
+        fields.extend(fields_set)
         self.datastore.get_many(
             [
                 GetManyRequest(

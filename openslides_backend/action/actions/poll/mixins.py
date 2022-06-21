@@ -176,7 +176,7 @@ class StopControl(CountdownControl, Action):
                 f"vote_delegated_${meeting_id}_to_id",
             ],
         )
-        gm_result = self.datastore.get_many([gmr])
+        gm_result = self.datastore.get_many([gmr], lock_result=False)
         users = gm_result.get("user", {}).values()
 
         for user in users:
