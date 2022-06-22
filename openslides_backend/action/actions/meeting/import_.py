@@ -644,6 +644,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                         process_calculated_fields_only=True,
                     )
                 )
+        for field, entry in relations.items():
+            if field.startswith("user") and field.endswith("meeting_ids"):
+                entry["remove"] = []
         return self.handle_relation_updates_helper(relations)
 
     def create_action_result_element(
