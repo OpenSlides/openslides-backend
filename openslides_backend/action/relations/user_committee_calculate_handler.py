@@ -82,7 +82,7 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         removed_ids = (
             db_committee_ids - new_committees_ids
             if action not in ("meeting.import", "meeting.clone")
-            else []
+            else set()
         )
 
         if not added_ids and not removed_ids:
