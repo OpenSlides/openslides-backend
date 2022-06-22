@@ -1341,6 +1341,56 @@ class MeetingImport(BaseActionTestCase):
         meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 1})
         assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
 
+    def test_merge_users_check_user_meeting_ids(self) -> None:
+        self.set_models(
+            {
+                "user/14": {
+                    "username": "username_test",
+                    "first_name": None,
+                    "last_name": None,
+                    "email": "test@example.de",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "group/1": {
+                    "user_ids": [14],
+                },
+                "meeting/1": {
+                    "user_ids": [14],
+                },
+            }
+        )
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "12": {
+                        "id": 12,
+                        "username": "username_test",
+                        "email": "test@example.de",
+                        "group_$_ids": ["1"],
+                        "group_$1_ids": [1],
+                        "meeting_ids": [1],
+                    },
+                },
+            }
+        )
+        request_data["meeting"]["group"]["1"]["user_ids"] = [1, 12]
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+        assert response.json["results"][0][0]["number_of_imported_users"] == 2
+        assert response.json["results"][0][0]["number_of_merged_users"] == 1
+        committee1 = self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
+        assert sorted(committee1.get("user_ids", [])) == [1, 14, 15]
+        meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 1})
+        assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15]
+        meeting1 = self.assert_model_exists("meeting/1")
+        assert sorted(meeting1.get("user_ids", [])) == [14]
+        self.assert_model_exists("user/1", {"username": "admin", "meeting_ids": [2]})
+        self.assert_model_exists(
+            "user/14", {"username": "username_test", "meeting_ids": [1, 2]}
+        )
+
     def test_merge_users_relation_field(self) -> None:
         self.set_models(
             {
