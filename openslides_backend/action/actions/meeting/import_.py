@@ -632,7 +632,9 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def handle_calculated_fields(
         self, instance: Dict[str, Any]
     ) -> Iterable[WriteRequest]:
-        regex = re.compile(r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$")
+        regex = re.compile(
+            r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$"
+        )
         json_data = instance["meeting"]
         relations: RelationUpdates = {}
         for collection in json_data:

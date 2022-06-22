@@ -29,7 +29,8 @@ class MeetingImport(BaseActionTestCase):
                     "committee_id": 1,
                     "group_ids": [1],
                     "is_active_in_organization_id": ONE_ORGANIZATION_ID,
-                },                "group/1": {"meeting_id": 1},
+                },
+                "group/1": {"meeting_id": 1},
                 "projector/1": {"meeting_id": 1},
                 "motion/1": {
                     "meeting_id": 1,
