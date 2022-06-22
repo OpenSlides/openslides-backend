@@ -1,3 +1,4 @@
+import re
 import time
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
@@ -631,6 +632,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
     def handle_calculated_fields(
         self, instance: Dict[str, Any]
     ) -> Iterable[WriteRequest]:
+        regex = re.compile(r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$")
         json_data = instance["meeting"]
         relations: RelationUpdates = {}
         for collection in json_data:
@@ -644,9 +646,15 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                         process_calculated_fields_only=True,
                     )
                 )
+        entries_to_remove: List[str] = []
         for field, entry in relations.items():
-            if field.startswith("user") and field.endswith("meeting_ids"):
-                entry["remove"] = []
+            if regex.search(field):
+                if entry["add"]:
+                    entry["remove"] = []
+                else:
+                    entries_to_remove.append(field)
+        for field in entries_to_remove:
+            del relations[field]
         return self.handle_relation_updates_helper(relations)
 
     def create_action_result_element(
