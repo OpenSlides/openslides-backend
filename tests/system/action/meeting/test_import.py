@@ -4,7 +4,11 @@ from typing import Any, Dict, List, cast
 
 from migrations import get_backend_migration_index
 from openslides_backend.models.models import Meeting
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, get_initial_data_file
+from openslides_backend.shared.util import (
+    ONE_ORGANIZATION_FQID,
+    ONE_ORGANIZATION_ID,
+    get_initial_data_file,
+)
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -21,7 +25,11 @@ class MeetingImport(BaseActionTestCase):
                     "committee_ids": [1],
                 },
                 "committee/1": {"organization_id": 1, "meeting_ids": [1]},
-                "meeting/1": {"committee_id": 1, "group_ids": [1]},
+                "meeting/1": {
+                    "committee_id": 1,
+                    "group_ids": [1],
+                    "is_active_in_organization_id": ONE_ORGANIZATION_ID,
+                },
                 "group/1": {"meeting_id": 1},
                 "projector/1": {"meeting_id": 1},
                 "motion/1": {
@@ -1295,14 +1303,37 @@ class MeetingImport(BaseActionTestCase):
     def test_merge_users_check_committee_and_meeting(self) -> None:
         self.set_models(
             {
+                "committee/1": {
+                    "user_ids": [1, 14],
+                },
+                "committee/2": {
+                    "name": "Committee for imported meeting",
+                },
+                "meeting/1": {
+                    "user_ids": [1, 14],
+                },
+                "group/1": {
+                    "user_ids": [1, 14],
+                },
+                "user/1": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                    "committee_ids": [1],
+                },
                 "user/14": {
                     "username": "username_test",
                     "first_name": None,
                     "last_name": None,
                     "email": "test@example.de",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                    "committee_ids": [1],
                 },
             }
         )
+
         request_data = self.create_request_data(
             {
                 "user": {
@@ -1324,21 +1355,60 @@ class MeetingImport(BaseActionTestCase):
             }
         )
         request_data["meeting"]["group"]["1"]["user_ids"] = [1, 12, 13]
+        request_data["committee_id"] = 2
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
         assert response.json["results"][0][0]["number_of_imported_users"] == 3
         assert response.json["results"][0][0]["number_of_merged_users"] == 1
-        self.assert_model_exists("user/1", {"username": "admin", "meeting_ids": [2]})
         self.assert_model_exists(
-            "user/14", {"username": "username_test", "meeting_ids": [2]}
+            "user/1",
+            {
+                "username": "admin",
+                "meeting_ids": [1, 2],
+                "committee_ids": [1, 2],
+                "group_$_ids": ["1", "2"],
+                "group_$1_ids": [1],
+                "group_$2_ids": [2],
+            },
         )
-        self.assert_model_exists("user/15", {"username": "test", "meeting_ids": [2]})
         self.assert_model_exists(
-            "user/16", {"username": "test_new_user", "meeting_ids": [2]}
+            "user/14",
+            {
+                "username": "username_test",
+                "meeting_ids": [1, 2],
+                "committee_ids": [1, 2],
+                "group_$_ids": ["1", "2"],
+                "group_$1_ids": [1],
+                "group_$2_ids": [2],
+            },
         )
-        committee1 = self.assert_model_exists("committee/1", {"meeting_ids": [1, 2]})
-        assert sorted(committee1.get("user_ids", [])) == [1, 14, 15, 16]
-        meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 1})
+        self.assert_model_exists(
+            "user/15",
+            {
+                "username": "test",
+                "meeting_ids": [2],
+                "committee_ids": [2],
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "user/16",
+            {
+                "username": "test_new_user",
+                "meeting_ids": [2],
+                "committee_ids": [2],
+                "group_$_ids": ["2"],
+                "group_$2_ids": [2],
+            },
+        )
+        committee1 = self.assert_model_exists("committee/1", {"meeting_ids": [1]})
+        assert sorted(committee1.get("user_ids", [])) == [1, 14]
+        meeting1 = self.assert_model_exists("meeting/1", {"committee_id": 1})
+        assert sorted(meeting1.get("user_ids", [])) == [1, 14]
+        committee2 = self.assert_model_exists("committee/2", {"meeting_ids": [2]})
+        assert sorted(committee2.get("user_ids", [])) == [1, 14, 15, 16]
+        meeting2 = self.assert_model_exists("meeting/2", {"committee_id": 2})
         assert sorted(meeting2.get("user_ids", [])) == [1, 14, 15, 16]
 
     def test_merge_users_relation_field(self) -> None:

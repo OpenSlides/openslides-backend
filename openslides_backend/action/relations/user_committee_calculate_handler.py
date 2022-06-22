@@ -79,7 +79,11 @@ class UserCommitteeCalculateHandler(CalculatedFieldHandler):
         )
         new_committees_ids.update(committee_ids)
         added_ids = new_committees_ids - db_committee_ids
-        removed_ids = db_committee_ids - new_committees_ids
+        removed_ids = (
+            db_committee_ids - new_committees_ids
+            if action not in ("meeting.import", "meeting.clone")
+            else []
+        )
 
         if not added_ids and not removed_ids:
             return {}

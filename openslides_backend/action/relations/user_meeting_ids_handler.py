@@ -30,7 +30,11 @@ class UserMeetingIdsHandler(CalculatedFieldHandler):
         db_ids_set = set(db_instance.get(field_name, []) or [])
         ids_set = set(instance.get(field_name, []) or [])
         added_ids = ids_set.difference(db_ids_set)
-        removed_ids = db_ids_set.difference(ids_set)
+        removed_ids = (
+            db_ids_set.difference(ids_set)
+            if action not in ["meeting.import", "meeting.clone"]
+            else []
+        )
 
         if not added_ids and not removed_ids:
             return {}
