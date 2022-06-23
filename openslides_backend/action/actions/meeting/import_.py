@@ -648,6 +648,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                         process_calculated_fields_only=True,
                     )
                 )
+        # Fix bug in calculated fields, see #1367
         entries_to_remove: List[str] = []
         for field, entry in relations.items():
             if regex.search(field):
