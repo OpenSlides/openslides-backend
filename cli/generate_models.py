@@ -53,7 +53,6 @@ FILE_TEMPLATE = dedent(
 
     from openslides_backend.models import fields
     from openslides_backend.models.base import Model
-    from openslides_backend.shared.patterns import Collection
     """
 )
 
