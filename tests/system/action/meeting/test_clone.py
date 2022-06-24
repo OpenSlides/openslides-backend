@@ -148,6 +148,8 @@ class MeetingClone(BaseActionTestCase):
         self.set_models(self.test_models)
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        self.assert_model_exists("meeting/2", {"user_ids": [1]})
         self.assert_model_exists(
             "user/1",
             {
@@ -273,7 +275,7 @@ class MeetingClone(BaseActionTestCase):
                 "username": "new_default_group_old_admin_user",
                 "group_$_ids": ["1", "2"],
                 "group_$1_ids": [2],
-                "group_$2_ids": [3, 4],
+                "group_$2_ids": [4, 3],
                 "meeting_ids": [1, 2],
             },
         )
@@ -295,7 +297,7 @@ class MeetingClone(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "Datastore service sends HTTP 400. Model 'user/13' does not exist.",
+            "\tgroup/1/user_ids: Relation Error:  points to user/13/group_$1_ids, but the reverse relation for it is corrupt",
             response.json["message"],
         )
 
@@ -599,8 +601,8 @@ class MeetingClone(BaseActionTestCase):
             {
                 ONE_ORGANIZATION_FQID: {},
                 "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
-                "user/2": {"committee_ids": [1]},
-                "user/3": {"committee_ids": [1]},
+                "user/2": {"committee_ids": [1], "username": "user2"},
+                "user/3": {"committee_ids": [1], "username": "user3"},
             }
         )
         self.execute_action_internally(
@@ -743,6 +745,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_status_code(response, 200)
 
     def test_clone_with_created_motion_and_agenda_type(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
         self.set_models(self.test_models)
         response = self.request(
             "motion.create",
@@ -766,7 +769,10 @@ class MeetingClone(BaseActionTestCase):
                 "agenda_duration": None,
             },
         )
-
+        self.assert_model_exists("motion_submitter/1", {"user_id": 1})
+        self.assert_model_exists(
+            "user/1", {"submitted_motion_$1_ids": [1], "submitted_motion_$_ids": ["1"]}
+        )
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
 
@@ -841,8 +847,8 @@ class MeetingClone(BaseActionTestCase):
             {
                 ONE_ORGANIZATION_FQID: {},
                 "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
-                "user/2": {"committee_ids": [1]},
-                "user/3": {"committee_ids": [1]},
+                "user/2": {"committee_ids": [1], "username": "user2"},
+                "user/3": {"committee_ids": [1], "username": "user3"},
             }
         )
         self.execute_action_internally(
@@ -865,7 +871,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 10
+        assert counter.calls == 14
 
     @performance
     def test_clone_performance(self) -> None:
