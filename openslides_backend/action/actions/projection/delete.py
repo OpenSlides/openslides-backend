@@ -22,12 +22,18 @@ class ProjectionDelete(DeleteAction):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         projection = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
-            ["current_projector_id", "preview_projector_id", "meeting_id"],
+            [
+                "current_projector_id",
+                "preview_projector_id",
+                "content_object_id",
+                "meeting_id",
+            ],
         )
         if not (
             projection.get("current_projector_id")
             or projection.get("preview_projector_id")
-            or self.is_meeting_deleted(projection.get("meeting_id", 0))
+            or self.is_meeting_deleted(projection["meeting_id"])
+            or self.is_deleted(projection["content_object_id"])
         ):
             raise ActionException(
                 f"Projection {instance['id']} must have a current_projector_id or a preview_projector_id."
