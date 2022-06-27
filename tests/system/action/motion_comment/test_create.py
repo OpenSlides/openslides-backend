@@ -62,7 +62,8 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         self.assertIn(
-            "(section_id, motion_id) must be unique.", response.json["message"]
+            "There already exists a comment for this section, please update it instead.",
+            response.json["message"],
         )
 
     def test_create_empty_data(self) -> None:

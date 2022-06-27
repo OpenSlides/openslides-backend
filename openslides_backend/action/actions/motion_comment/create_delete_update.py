@@ -58,7 +58,7 @@ class MotionCommentCreate(PermissionMixin, CreateActionWithInferredMeeting):
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        # check, if (user_id, motion_id) already in the datastore.
+        # check, if (section_id, motion_id) already in the datastore.
         filter_ = And(
             FilterOperator("section_id", "=", instance["section_id"]),
             FilterOperator("motion_id", "=", instance["motion_id"]),
@@ -66,7 +66,9 @@ class MotionCommentCreate(PermissionMixin, CreateActionWithInferredMeeting):
         )
         exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
         if exists:
-            raise ActionException("(section_id, motion_id) must be unique.")
+            raise ActionException(
+                "There already exists a comment for this section, please update it instead."
+            )
         return instance
 
 
