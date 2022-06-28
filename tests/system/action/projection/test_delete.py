@@ -35,6 +35,17 @@ class ProjectionDelete(BaseActionTestCase):
         self.assert_model_deleted("projection/13")
 
     def test_delete_history_not_allowed(self) -> None:
+        self.set_models(
+            {
+                "projection/14": {
+                    "content_object_id": "motion/42",
+                },
+                "motion/42": {
+                    "meeting_id": 1,
+                    "projection_ids": [14],
+                },
+            }
+        )
         response = self.request("projection.delete", {"id": 14})
         self.assert_status_code(response, 400)
         assert (
@@ -42,6 +53,21 @@ class ProjectionDelete(BaseActionTestCase):
             in response.json["message"]
         )
         self.assert_model_exists("projection/14")
+
+    def test_delete_motion_in_history(self) -> None:
+        self.set_models(
+            {
+                "projection/14": {
+                    "content_object_id": "motion/42",
+                },
+                "motion/42": {
+                    "meeting_id": 1,
+                    "projection_ids": [14],
+                },
+            }
+        )
+        response = self.request("motion.delete", {"id": 42})
+        self.assert_status_code(response, 200)
 
     def test_delete_no_permissions(self) -> None:
         self.base_permission_test({}, "projection.delete", {"id": 12})
