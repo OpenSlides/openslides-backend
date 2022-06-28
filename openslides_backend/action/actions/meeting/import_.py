@@ -1,7 +1,7 @@
 import re
 import time
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Optional, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 
 from datastore.migrations import BaseEvent, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid, collection_from_fqid
@@ -580,15 +580,21 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             )
         )
 
-        # add meeting to organization/active_meeting_ids if not archived
+        # add meetings to organization if set in meeting
+        adder: Dict[str, List[Union[int, str]]] = {}
         if meeting.get("is_active_in_organization_id"):
+            adder["active_meeting_ids"] = [meeting_id]
+        if meeting.get("template_for_organization_id"):
+            adder["template_meeting_ids"] = [meeting_id]
+
+        if adder:
             write_requests.append(
                 self.build_write_request(
                     EventType.Update,
                     ONE_ORGANIZATION_FQID,
                     f"import meeting {meeting_id}",
                     None,
-                    {"add": {"active_meeting_ids": [meeting_id]}, "remove": {}},
+                    {"add": adder, "remove": {}},
                 )
             )
 

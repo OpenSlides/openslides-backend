@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 from openslides_backend.models.models import AgendaItem, Meeting, Projector
 from openslides_backend.permissions.management_levels import CommitteeManagementLevel
-from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
+from openslides_backend.shared.util import ONE_ORGANIZATION_FQID, ONE_ORGANIZATION_ID
 from tests.system.action.base import BaseActionTestCase
 from tests.system.util import CountDatastoreCalls, Profiler, performance
 
@@ -98,7 +98,9 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_without_users(self) -> None:
         self.set_models(self.test_models)
 
-        response = self.request("meeting.clone", {"meeting_id": 1})
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "set_as_template": True}
+        )
         self.assert_status_code(response, 200)
         self.assert_model_exists(
             "meeting/2",
@@ -120,8 +122,10 @@ class MeetingClone(BaseActionTestCase):
                 "logo_$_id": None,
                 "font_$_id": [],
                 "default_projector_$_id": Meeting.default_projector__id.replacement_enum,
+                "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
         )
+        self.assert_model_exists("organization/1", {"template_meeting_ids": [2]})
 
     def test_clone_group_with_weight(self) -> None:
         self.set_models(self.test_models)
@@ -157,6 +161,9 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/2", {"user_ids": [1]})
 
     def test_clone_with_set_fields(self) -> None:
+        self.test_models["meeting/1"][
+            "template_for_organization_id"
+        ] = ONE_ORGANIZATION_ID
         self.set_models(self.test_models)
 
         response = self.request(
@@ -173,6 +180,7 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
+        self.assert_model_exists("organization/1", {"template_meeting_ids": None})
         self.assert_model_exists(
             "meeting/2",
             {
@@ -183,10 +191,12 @@ class MeetingClone(BaseActionTestCase):
                 "start_time": 1641370959,
                 "end_time": 1641370959,
                 "name": "name_ORnVFSQJ",
+                "template_for_organization_id": None,
             },
         )
 
     def test_clone_user_ids_and_admin_ids(self) -> None:
+        self.test_models["meeting/1"]["template_for_organization_id"] = None
         self.set_models(self.test_models)
         self.set_models(
             {
@@ -216,10 +226,14 @@ class MeetingClone(BaseActionTestCase):
                 "meeting_id": 1,
                 "user_ids": [14, 15, 16],
                 "admin_ids": [13],
+                "set_as_template": False,
             },
         )
         self.assert_status_code(response, 200)
-        meeting2 = self.assert_model_exists("meeting/2")
+        self.assert_model_exists("organization/1", {"template_meeting_ids": None})
+        meeting2 = self.assert_model_exists(
+            "meeting/2", {"template_for_organization_id": None}
+        )
         self.assertCountEqual(meeting2["user_ids"], [13, 14, 15, 16])
         group3 = self.assert_model_exists("group/3")
         self.assertCountEqual(group3["user_ids"], [14, 15, 16])
