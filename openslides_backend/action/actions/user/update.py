@@ -63,7 +63,7 @@ class UserUpdate(
         )
         if (
             instance["id"] == self.user_id
-            and user["organization_management_level"]
+            and user.get("organization_management_level")
             == OrganizationManagementLevel.SUPERADMIN
         ):
             if (

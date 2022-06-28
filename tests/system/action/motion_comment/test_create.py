@@ -36,6 +36,36 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         assert model.get("motion_id") == 357
         assert model.get("section_id") == 78
 
+    def test_create_not_unique_error(self) -> None:
+        self.set_models(
+            {
+                "user/1": {"group_$111_ids": [3]},
+                "meeting/111": {
+                    "name": "name_m123etrd",
+                    "admin_group_id": 3,
+                    "is_active_in_organization_id": 1,
+                },
+                "group/3": {},
+                "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
+                "motion_comment_section/78": {"meeting_id": 111},
+                "motion_comment/4356": {
+                    "comment": "test_Xcdfgee",
+                    "motion_id": 357,
+                    "section_id": 78,
+                    "meeting_id": 111,
+                },
+            }
+        )
+        response = self.request(
+            "motion_comment.create",
+            {"comment": "test_Xcdfgee", "motion_id": 357, "section_id": 78},
+        )
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "There already exists a comment for this section, please update it instead.",
+            response.json["message"],
+        )
+
     def test_create_empty_data(self) -> None:
         response = self.request("motion_comment.create", {})
         self.assert_status_code(response, 400)

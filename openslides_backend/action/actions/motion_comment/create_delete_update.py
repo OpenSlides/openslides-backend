@@ -2,7 +2,8 @@ from typing import Any, Dict
 
 from ....models.models import MotionComment
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import PermissionDenied
+from ....shared.exceptions import ActionException, PermissionDenied
+from ....shared.filters import And, FilterOperator
 from ....shared.patterns import fqid_from_collection_and_id
 from ...action import Action
 from ...action_set import ActionSet
@@ -54,6 +55,21 @@ class PermissionMixin(Action):
 
 class MotionCommentCreate(PermissionMixin, CreateActionWithInferredMeeting):
     relation_field_for_meeting = "motion_id"
+
+    def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
+        instance = super().update_instance(instance)
+        # check, if (section_id, motion_id) already in the datastore.
+        filter_ = And(
+            FilterOperator("section_id", "=", instance["section_id"]),
+            FilterOperator("motion_id", "=", instance["motion_id"]),
+            FilterOperator("meeting_id", "=", instance["meeting_id"]),
+        )
+        exists = self.datastore.exists(collection=self.model.collection, filter=filter_)
+        if exists:
+            raise ActionException(
+                "There already exists a comment for this section, please update it instead."
+            )
+        return instance
 
 
 class MotionCommentUpdate(PermissionMixin, UpdateAction):

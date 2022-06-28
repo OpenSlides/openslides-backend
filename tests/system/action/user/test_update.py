@@ -1417,3 +1417,16 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "last_name": "last name test",
             },
         )
+
+    def test_update_oml_key_error(self) -> None:
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+
+        response = self.request(
+            "user.update",
+            {
+                "id": self.user_id,
+                "group_$_ids": {"1": [1]},
+            },
+        )
+        self.assert_status_code(response, 200)
