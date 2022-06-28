@@ -44,6 +44,7 @@ class MeetingClone(MeetingImport):
         additional_optional_fields={
             "user_ids": id_list_schema,
             "admin_ids": id_list_schema,
+            "set_as_template": {"type": "boolean"},
         },
     )
 
@@ -58,7 +59,11 @@ class MeetingClone(MeetingImport):
                 GetManyRequest(
                     "organization",
                     [ONE_ORGANIZATION_ID],
-                    ["active_meeting_ids", "archived_meeting_ids", "limit_of_meetings"],
+                    [
+                        "active_meeting_ids",
+                        "archived_meeting_ids",
+                        "limit_of_meetings",
+                    ],
                 ),
             ],
             use_changed_models=False,
@@ -77,6 +82,7 @@ class MeetingClone(MeetingImport):
         instance["meeting"] = meeting_json
         additional_user_ids = instance.pop("user_ids", None)
         additional_admin_ids = instance.pop("admin_ids", None)
+        set_as_template = instance.pop("set_as_template", False)
 
         # needs an empty map for superclass code
         self.merge_user_map = {}
@@ -130,14 +136,16 @@ class MeetingClone(MeetingImport):
         self.allowed_collections = checker.allowed_collections
 
         # set active
-        meeting["is_active_in_organization_id"] = 1
+        meeting["is_active_in_organization_id"] = ONE_ORGANIZATION_ID
+        meeting["template_for_organization_id"] = (
+            ONE_ORGANIZATION_ID if set_as_template else None
+        )
 
         # check limit of meetings
         self.check_limit_of_meetings(
             text="clone",
             text2="",
         )
-
         # set imported_at
         meeting["imported_at"] = round(time.time())
 
