@@ -280,15 +280,52 @@ class MeetingClone(BaseActionTestCase):
             },
         )
 
+    def test_clone_new_committee_and_user_with_group(self) -> None:
+        self.set_models(self.test_models)
+        self.set_models(
+            {
+                "user/13": {
+                    "username": "user_from_new_committee",
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "group/1": {"user_ids": [13]},
+                "committee/2": {"organization_id": 1},
+                "organization/1": {"committee_ids": [1, 2]},
+                "meeting/1": {"user_ids": [13]},
+            }
+        )
+        response = self.request(
+            "meeting.clone",
+            {
+                "meeting_id": 1,
+                "user_ids": [13],
+                "committee_id": 2,
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"committee_id": 2, "user_ids": [13]})
+        self.assert_model_exists(
+            "committee/2", {"user_ids": [13], "organization_id": 1, "meeting_ids": [2]}
+        )
+        self.assert_model_exists(
+            "user/13",
+            {
+                "username": "user_from_new_committee",
+                "committee_ids": [2],
+                "meeting_ids": [1, 2],
+            },
+        )
+
     def test_clone_new_committee_and_add_user(self) -> None:
         self.set_models(self.test_models)
         self.set_models(
             {
                 "user/13": {
                     "username": "user_from_new_committee",
-                    "committee_ids": [2],
                 },
-                "committee/2": {"organization_id": 1, "user_ids": [13]},
+                "committee/2": {"organization_id": 1},
                 "organization/1": {"committee_ids": [1, 2]},
             }
         )
