@@ -315,8 +315,12 @@ class MeetingClone(BaseActionTestCase):
                 "username": "user_from_new_committee",
                 "committee_ids": [2],
                 "meeting_ids": [1, 2],
+                "group_$_ids": ["1", "2"],
+                "group_$1_ids": [1],
+                "group_$2_ids": [3],
             },
         )
+        self.assert_model_exists("group/3", {"user_ids": [13]})
 
     def test_clone_new_committee_and_add_user(self) -> None:
         self.set_models(self.test_models)
@@ -338,7 +342,9 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 200)
-        self.assert_model_exists("meeting/2", {"committee_id": 2, "user_ids": [13]})
+        self.assert_model_exists(
+            "meeting/2", {"committee_id": 2, "user_ids": [13], "default_group_id": 3}
+        )
         self.assert_model_exists(
             "committee/2", {"user_ids": [13], "organization_id": 1, "meeting_ids": [2]}
         )
@@ -348,7 +354,12 @@ class MeetingClone(BaseActionTestCase):
                 "username": "user_from_new_committee",
                 "committee_ids": [2],
                 "meeting_ids": [2],
+                "group_$_ids": ["2"],
+                "group_$2_ids": [3],
             },
+        )
+        self.assert_model_exists(
+            "group/3", {"user_ids": [13], "default_group_for_meeting_id": 2}
         )
 
     def test_clone_missing_user_id_in_meeting(self) -> None:
