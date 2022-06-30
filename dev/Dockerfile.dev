@@ -22,8 +22,6 @@ COPY setup.cfg .
 COPY dev/entrypoint.sh ./
 
 RUN chmod 777 -R .
-RUN chmod 777 /root
-RUN chmod 777 -R /usr/local/lib/
 
 EXPOSE 9002
 EXPOSE 9003
