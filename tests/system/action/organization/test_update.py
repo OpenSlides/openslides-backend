@@ -53,6 +53,10 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
                 "reset_password_verbose_errors": False,
                 "enable_chat": True,
                 "url": "https://openslides.example.com",
+                "users_email_sender": "email_sender",
+                "users_email_replyto": "email replyto",
+                "users_email_subject": "email subject",
+                "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             },
         )
         self.assert_status_code(response, 200)
@@ -67,6 +71,13 @@ class OrganizationUpdateActionTest(BaseActionTestCase):
         assert model.get("reset_password_verbose_errors") is False
         assert model.get("enable_chat") is True
         assert model.get("url") == "https://openslides.example.com"
+        assert model.get("users_email_sender") == "email_sender"
+        assert model.get("users_email_replyto") == "email replyto"
+        assert model.get("users_email_subject") == "email subject"
+        assert (
+            model.get("users_email_body")
+            == "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically."
+        )
         self.assert_model_exists(
             "theme/1", {"organization_id": 1, "theme_for_organization_id": None}
         )

@@ -34,6 +34,10 @@ class OrganizationUpdate(UpdateAction, CheckForArchivedMeetingMixin):
             "limit_of_meetings",
             "limit_of_users",
             "url",
+            "users_email_sender",
+            "users_email_replyto",
+            "users_email_subject",
+            "users_email_body",
         ]
     )
 
