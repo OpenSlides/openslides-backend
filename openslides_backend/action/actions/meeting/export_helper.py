@@ -47,6 +47,13 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         else:
             export[str(collection)] = {}
 
+    if meeting.get("user_ids"):
+        get_many_request = GetManyRequest("user", meeting["user_ids"])
+        users = datastore.get_many(
+            [get_many_request], lock_result=False, use_changed_models=False
+        )
+        export["user"] = remove_meta_fields(transfer_keys(users["user"]))
+
     return export
 
 

@@ -11,7 +11,7 @@ from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
+from openslides_backend.shared.patterns import fqid_from_collection_and_id
 from openslides_backend.shared.schema import id_list_schema
 
 from ...util.default_schema import DefaultSchema
@@ -80,12 +80,16 @@ class MeetingClone(MeetingImport):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
-        additional_user_ids = instance.pop("user_ids", None)
-        additional_admin_ids = instance.pop("admin_ids", None)
+        self.additional_user_ids = instance.pop("user_ids", None) or []
+        self.additional_admin_ids = instance.pop("admin_ids", None) or []
         set_as_template = instance.pop("set_as_template", False)
 
         # needs an empty map for superclass code
         self.merge_user_map = {}
+        for id_ in self.get_meeting_from_json(meeting_json).get("user_ids", []):
+            self.merge_user_map[id_] = id_
+        self.number_of_imported_users = len(meeting_json.get("user", {}))
+        self.number_of_merged_users = len(self.merge_user_map)
 
         # checks if the meeting is correct
         self.check_one_meeting(instance)
@@ -154,20 +158,20 @@ class MeetingClone(MeetingImport):
         self.duplicate_mediafiles(meeting_json)
         self.replace_fields(instance)
 
-        if additional_user_ids:
+        if self.additional_user_ids:
             default_group_id = self.get_meeting_from_json(instance["meeting"]).get(
                 "default_group_id"
             )
             self._update_default_and_admin_group(
-                default_group_id, instance, additional_user_ids
+                default_group_id, instance, self.additional_user_ids
             )
 
-        if additional_admin_ids:
+        if self.additional_admin_ids:
             admin_group_id = self.get_meeting_from_json(instance["meeting"]).get(
                 "admin_group_id"
             )
             self._update_default_and_admin_group(
-                admin_group_id, instance, additional_admin_ids
+                admin_group_id, instance, self.additional_admin_ids
             )
         return instance
 
@@ -192,132 +196,19 @@ class MeetingClone(MeetingImport):
     def append_extra_write_requests(
         self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
     ) -> None:
-
-        updated_field_n_n = (
-            (
-                "group",
-                "user_ids",
-                "group_$_ids",
-            ),
-            (
-                "motion",
-                "supporter_ids",
-                "supported_motion_$_ids",
-            ),
-            (
-                "poll",
-                "voted_ids",
-                "poll_voted_$_ids",
-            ),
-        )
-        for tuple_ in updated_field_n_n:
-            self.append_helper_list_list(write_requests, json_data, *tuple_)
-
-        updated_field_n_1 = (
-            (
-                "speaker",
-                "user_id",
-                "speaker_$_ids",
-            ),
-            (
-                "personal_note",
-                "user_id",
-                "personal_note_$_ids",
-            ),
-            (
-                "motion_submitter",
-                "user_id",
-                "submitted_motion_$_ids",
-            ),
-            (
-                "vote",
-                "user_id",
-                "vote_$_ids",
-            ),
-            (
-                "vote",
-                "delegated_user_id",
-                "vote_delegated_vote_$_ids",
-            ),
-            (
-                "assignment_candidate",
-                "user_id",
-                "assignment_candidate_$_ids",
-            ),
-        )
-        for tuple_ in updated_field_n_1:
-            self.append_helper_list_int(write_requests, json_data, *tuple_)
-
-        updated_field_n_co = (
-            (
-                "option",
-                "content_object_id",
-                "option_$_ids",
-            ),
-            (
-                "projection",
-                "content_object_id",
-                "projection_$_ids",
-            ),
-        )
-        for tuple_ in updated_field_n_co:
-            self.append_helper_list_cobj(write_requests, json_data, *tuple_)
+        for key, model in json_data["group"].items():
+            if model.get("user_ids"):
+                for user_id in model.get("user_ids"):
+                    if user_id in self.additional_user_ids or self.additional_admin_ids:
+                        write_requests.append(
+                            self.build_write_request_helper(
+                                user_id, json_data, "group_$_ids", model["id"]
+                            )
+                        )
 
     def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
         front, back = field.split("$")
         return f"{front}${self.get_meeting_from_json(json_data)['id']}{back}"
-
-    def append_helper_list_int(
-        self,
-        write_requests: List[WriteRequest],
-        json_data: Dict[str, Any],
-        collection: str,
-        field: str,
-        field_template: str,
-    ) -> None:
-        for model in json_data[collection].values():
-            if model.get(field):
-                write_requests.append(
-                    self.build_write_request_helper(
-                        model[field], json_data, field_template, model["id"]
-                    )
-                )
-
-    def append_helper_list_list(
-        self,
-        write_requests: List[WriteRequest],
-        json_data: Dict[str, Any],
-        collection: str,
-        field: str,
-        field_template: str,
-    ) -> None:
-        for model in json_data[collection].values():
-            if model.get(field):
-                for user_id in model.get(field):
-                    write_requests.append(
-                        self.build_write_request_helper(
-                            user_id, json_data, field_template, model["id"]
-                        )
-                    )
-
-    def append_helper_list_cobj(
-        self,
-        write_requests: List[WriteRequest],
-        json_data: Dict[str, Any],
-        collection: str,
-        field: str,
-        field_template: str,
-    ) -> None:
-        for model in json_data[collection].values():
-            if model.get(field):
-                fqid = model[field]
-                cobj_collection, cobj_id = fqid.split(KEYSEPARATOR)
-                if cobj_collection == "user":
-                    write_requests.append(
-                        self.build_write_request_helper(
-                            cobj_id, json_data, field_template, model["id"]
-                        )
-                    )
 
     def build_write_request_helper(
         self,
