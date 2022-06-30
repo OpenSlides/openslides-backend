@@ -80,8 +80,8 @@ class MeetingClone(MeetingImport):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = export_meeting(self.datastore, instance["meeting_id"])
         instance["meeting"] = meeting_json
-        additional_user_ids = instance.pop("user_ids", None) or []
-        additional_admin_ids = instance.pop("admin_ids", None) or []
+        self.additional_user_ids = instance.pop("user_ids", None) or []
+        self.additional_admin_ids = instance.pop("admin_ids", None) or []
         set_as_template = instance.pop("set_as_template", False)
 
         # needs an empty map for superclass code
