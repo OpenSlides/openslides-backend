@@ -208,7 +208,7 @@ class SendInvitationMail(BaseActionTestCase):
             )
         self.assert_status_code(response, 200)
         self.assertIn(
-            f"Exception: (530, b'5.7.0 Authentication required', '{EmailSettings.default_from_email}') Count 1, Index 0",
+            f"SMTPSenderRefused: (530, b'5.7.0 Authentication required', '{EmailSettings.default_from_email}')",
             response.json["results"][0][0]["message"],
         )
 
@@ -595,5 +595,5 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(response.json["results"][0][0]["sent"], False)
         self.assertEqual(
             response.json["results"][0][0]["message"],
-            "Missing OrganizationManagementLevel: can_manage_users Count 1, Index 0",
+            "Missing OrganizationManagementLevel: can_manage_users Mail 1 from 1",
         )

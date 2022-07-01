@@ -87,6 +87,8 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                         result["message"] = e.message
                     except SMTPDataError as e:
                         result["message"] = f"SMTPDataError: {str(e)}"
+                    except SMTPSenderRefused as e:
+                        raise e
                     except Exception as e:
                         result["message"] = f"Exception: {str(e)}"
 
@@ -97,7 +99,7 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                     else:
                         result["message"] = (
                             str(result["message"])
-                            + f" Count {len(list(action_data))}, Index {self.index}"
+                            + f" Mail {self.index+1} from {len(list(action_data))}"
                         )
 
                     self.results.append(result)
