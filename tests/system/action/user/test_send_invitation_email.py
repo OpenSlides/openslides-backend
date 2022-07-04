@@ -595,5 +595,5 @@ class SendInvitationMail(BaseActionTestCase):
         self.assertEqual(response.json["results"][0][0]["sent"], False)
         self.assertEqual(
             response.json["results"][0][0]["message"],
-            "Missing OrganizationManagementLevel: can_manage_users",
+            "Missing OrganizationManagementLevel: can_manage_users Mail 1 from 1",
         )

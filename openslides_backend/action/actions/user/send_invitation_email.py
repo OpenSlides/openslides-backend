@@ -87,11 +87,20 @@ class UserSendInvitationMail(EmailMixin, UpdateAction):
                         result["message"] = e.message
                     except SMTPDataError as e:
                         result["message"] = f"SMTPDataError: {str(e)}"
+                    except SMTPSenderRefused as e:
+                        raise e
+                    except Exception as e:
+                        result["message"] = f"Exception: {str(e)}"
 
                     if result["sent"]:
                         instance.pop("meeting_id", None)
                         write_request = self.create_write_requests(instance)
                         self.write_requests.extend(write_request)
+                    else:
+                        result["message"] = (
+                            str(result["message"])
+                            + f" Mail {self.index+1} from {len(list(action_data))}"
+                        )
 
                     self.results.append(result)
         except SMTPAuthenticationError as e:
