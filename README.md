@@ -146,6 +146,7 @@ The action component listens to port 9002. The presenter component listens to po
 You may run curl against this service like this:
 
     $ curl localhost:9002/system/action/health
+    $ curl localhost:9002/system/action/info
     $ curl localhost:9002/system/action/handle_request -X POST -H "Content-Type: application/json" -d '[{"action": "topic.create", "data": [{"meeting_id": 1, "title": "foo"}]}]'
     $ curl localhost:9002/system/action/handle_request -X POST -H "Content-Type: application/json" -d '[{"action": "topic.update", "data": [{"id": 1, "title": "bar"}]}]'
 
@@ -167,6 +168,7 @@ General schema for internal routes: `/internal/<route>`
 * `/internal/handle_request`: Same as the first route, but only for internal usage: All permission checks are skipped
   and created write requests will have id -1.
 * `/system/action/health`: Return `{"status": "running"}` if successful. Useful for status checks against the backend.
+* `/system/action/info`: Returns a list of all possible actions with their respective JSON schema.
 * `/internal/migrations`: Provides remote access to the migration tool. For more information, take a look at the [migration route docs](/docs/migration_route.md)
 
 ### Presenter Service

@@ -72,6 +72,10 @@ class ActionView(BaseView):
     def health_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
         return {"status": "running"}, None
 
+    @route("info", method="GET", json=False)
+    def info_route(self, request: Request) -> Tuple[ResponseBody, Optional[str]]:
+        return {"healthinfo": {"actions": dict(ActionHandler.get_health_info())}}, None
+
     def check_internal_auth_password(self, request: Request) -> None:
         request_password = request.headers.get(INTERNAL_AUTHORIZATION_HEADER)
         if self.env.is_dev_mode():
