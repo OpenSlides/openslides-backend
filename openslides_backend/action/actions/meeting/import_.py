@@ -6,8 +6,8 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple, Union, cast
 from datastore.migrations import BaseEvent, CreateEvent
 from datastore.shared.util import collection_and_id_from_fqid, collection_from_fqid
 
-from migrations import get_backend_migration_index
-from migrations.migrate import MigrationWrapper
+from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.migrations.migrate import MigrationWrapper
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.checker import Checker, CheckException
 from openslides_backend.models.fields import (

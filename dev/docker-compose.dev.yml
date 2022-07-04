@@ -13,7 +13,6 @@ services:
         command: sleep infinity
         volumes:
             - ../openslides_backend:/app/openslides_backend
-            - ../migrations:/app/migrations
             - ../tests:/app/tests
             - ../cli:/app/cli
             - ../global:/app/global
@@ -24,12 +23,14 @@ services:
             - DATASTORE_WRITER_HOST=writer
             - DATASTORE_WRITER_PORT=9011
             - AUTH_HOST=auth
+            - MESSAGE_BUS_HOST=redis
         depends_on:
             - writer
         networks:
             - datastore
             - postgresql
             - auth
+            - redis
     reader:
         build:
             context: "https://github.com/OpenSlides/openslides-datastore-service.git#main"

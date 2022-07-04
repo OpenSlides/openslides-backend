@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Ty
 
 import fastjsonschema
 
-from migrations import get_backend_migration_index
+from openslides_backend.migrations import get_backend_migration_index
 from openslides_backend.models.base import model_registry
 from openslides_backend.models.fields import (
     BaseRelationField,

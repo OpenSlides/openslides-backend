@@ -28,7 +28,6 @@ services:
             - DATASTORE_DATABASE_USER=openslides
             - DATASTORE_DATABASE_HOST=postgresql
             - MESSAGE_BUS_HOST=redis
-        env_file: ../../docker/services.env
         volumes:
             - ../../openslides-datastore-service/datastore:/app/datastore
             - ../../openslides-datastore-service/cli:/app/cli

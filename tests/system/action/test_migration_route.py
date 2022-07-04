@@ -7,9 +7,12 @@ from unittest.mock import MagicMock, Mock, patch
 
 from datastore.migrations import MigrationException
 
-from migrations import get_backend_migration_index, get_datastore_migration_index
 from openslides_backend.http.views.action_view import ActionView
-from openslides_backend.migration_handler.migration_handler import (
+from openslides_backend.migrations import (
+    get_backend_migration_index,
+    get_datastore_migration_index,
+)
+from openslides_backend.migrations.migration_handler import (
     MigrationHandler,
     MigrationState,
 )
@@ -109,7 +112,7 @@ class TestMigrationRoute(BaseMigrationRouteTest):
             sleep(0.02)
 
     @patch(
-        "openslides_backend.migration_handler.migration_handler.MigrationWrapper.execute_command"
+        "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
     )
     def test_longer_migration(self, execute_command: Mock) -> None:
         wait_lock = Lock()
@@ -142,7 +145,7 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         assert response.json["output"] == "start\nfinish\n"
 
     @patch(
-        "openslides_backend.migration_handler.migration_handler.MigrationWrapper.execute_command"
+        "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
     )
     def test_double_migration(self, execute_command: Mock) -> None:
         lock = Lock()
@@ -162,7 +165,7 @@ class TestMigrationRoute(BaseMigrationRouteTest):
         lock.release()
 
     @patch(
-        "openslides_backend.migration_handler.migration_handler.MigrationWrapper.execute_command"
+        "openslides_backend.migrations.migration_handler.MigrationWrapper.execute_command"
     )
     def test_migration_with_error(self, execute_command: Mock) -> None:
         lock = Lock()

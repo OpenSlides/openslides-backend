@@ -6,13 +6,12 @@ from typing import Any, Dict, Optional
 from datastore.migrations import MigrationException
 from datastore.migrations import MigrationState as DatastoreMigrationState
 
-from migrations import MigrationWrapper
-
 from ..shared.exceptions import View400Exception
 from ..shared.handlers.base_handler import BaseHandler
 from ..shared.interfaces.env import Env
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
+from . import MigrationWrapper
 
 # Amount of time that should be waited for a result from the migrate thread before returning an empty result
 THREAD_WAIT_TIME = 0.1

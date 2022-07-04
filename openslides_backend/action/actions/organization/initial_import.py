@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable, Optional, Tuple
 
 from datastore.shared.util import DeletedModelsBehaviour
 
-from migrations import get_backend_migration_index
+from openslides_backend.migrations import get_backend_migration_index
 
 from ....models.checker import Checker, CheckException
 from ....models.models import Organization

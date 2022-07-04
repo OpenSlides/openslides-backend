@@ -2,8 +2,8 @@ from base64 import b64decode
 from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
-from ...migration_handler import assert_migration_index
-from ...migration_handler.migration_handler import MigrationHandler
+from ...migrations import assert_migration_index
+from ...migrations.migration_handler import MigrationHandler
 from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME
 from ...shared.env import DEV_PASSWORD
 from ...shared.exceptions import ServerError

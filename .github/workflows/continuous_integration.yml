@@ -49,44 +49,6 @@ jobs:
     - name: Run tests
       run: dev/run-tests.sh
 
-  run-migration-tests:
-    name: Run the migration tests & cleanup tools
-    runs-on: ubuntu-18.04
-    defaults:
-      run:
-        working-directory: .github/docker-compose
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Start docker setup
-      run: docker-compose -f docker-compose.migrations.yml up -d
-
-    - name: Install datastore package
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend bash -c ". /util/requirements/export_datastore_commit.sh && pip install --no-cache-dir --requirement /util/requirements/partial/requirements_datastore_as_package.txt"
-
-    - name: Create schema
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh python create_schema.py
-
-    - name: Run black check
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh black --check --diff .
-
-    - name: Run isort check
-      if: always()
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh isort --check-only --diff .
-
-    - name: Run flake8 check
-      if: always()
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh flake8 .
-
-    - name: Run mypy check
-      if: always()
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh mypy .
-
-    - name: Run pytest
-      if: always()
-      run: docker-compose -f docker-compose.migrations.yml exec -T backend ./entrypoint.sh pytest --cov .
-
   check-coding-style:
     name: Check coding style
     runs-on: ubuntu-latest
