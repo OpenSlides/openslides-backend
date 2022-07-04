@@ -1,7 +1,7 @@
-FROM python:3.8.1
+FROM python:3.10.3-slim-buster
 
 RUN apt-get -y update && apt-get install --no-install-recommends -y \
-    postgresql-client
+    postgresql-client libpq-dev gcc libc-dev
 
 WORKDIR /app
 
