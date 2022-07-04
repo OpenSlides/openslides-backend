@@ -83,6 +83,18 @@ class GeneralActionWSGITester(BaseActionTestCase):
         response = self.client.get(get_route_path(ActionView.health_route))
         self.assert_status_code(response, 200)
 
+    def test_info_route(self) -> None:
+        response = self.client.get(get_route_path(ActionView.info_route))
+        self.assert_status_code(response, 200)
+        self.assertIn("healthinfo", response.json)
+        actions = response.json["healthinfo"]["actions"]
+        some_example_actions = (
+            "topic.create",
+            "motion.delete",
+        )
+        for action in some_example_actions:
+            self.assertIn(action, actions.keys())
+
 
 class TestWSGIWithMigrations(BaseActionTestCase):
     def reset_read_db(self) -> None:
