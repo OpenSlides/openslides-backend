@@ -167,10 +167,6 @@ class ProjectorUpdate(BaseActionTestCase):
         )
 
     def test_update_change_used_as_default__in_meeting_id(self) -> None:
-        """
-        To really change the value, it must be first set to None and in next
-        action/request can be set to a new value
-        """
         self.set_models(
             {
                 "meeting/222": {
@@ -189,26 +185,6 @@ class ProjectorUpdate(BaseActionTestCase):
                 "projector/2": {"name": "Projector2", "meeting_id": 222},
             }
         )
-        response = self.request(
-            "projector.update",
-            {
-                "id": 1,
-                "used_as_default_$_in_meeting_id": {"topics": None},
-            },
-        )
-        self.assert_status_code(response, 200)
-        self.assert_model_exists(
-            "projector/1",
-            {
-                "used_as_default_$_in_meeting_id": [],
-                "used_as_default_$topics_in_meeting_id": None,
-            },
-        )
-        self.assert_model_exists(
-            "meeting/222",
-            {"default_projector_$_id": [], "default_projector_$topics_id": None},
-        )
-
         response = self.request(
             "projector.update",
             {

@@ -3,6 +3,10 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union, cast
 
+import fastjsonschema
+
+from openslides_backend.shared.exceptions import ActionException
+
 from ..shared.patterns import COLOR_PATTERN, ID_REGEX, Collection, FullQualifiedId
 from ..shared.schema import (
     decimal_schema,
@@ -20,6 +24,13 @@ from ..shared.util import (
     ALLOWED_HTML_TAGS_PERMISSIVE,
     ALLOWED_HTML_TAGS_STRICT,
     validate_html,
+)
+
+TEMPLATE_FIELD_SCHEMA = fastjsonschema.compile(
+    {
+        "type": ["array", "null"],
+        "items": {"type": "string"},
+    }
 )
 
 
@@ -51,6 +62,7 @@ class Field:
         if not self.required and constraints and "enum" in constraints:
             constraints["enum"].append(None)
         self.constraints = constraints or {}
+        self.schema_validator = fastjsonschema.compile(self.get_schema())
 
     def get_schema(self) -> Schema:
         """
@@ -74,6 +86,14 @@ class Field:
         Overwrite in subclass to validate/sanitize the input.
         """
         return value
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: Any
+    ) -> None:
+        try:
+            self.schema_validator(value)
+        except fastjsonschema.JsonSchemaException as e:
+            raise ActionException(f"Invalid data for {fqid}/{field_name}: " + e.message)
 
     def check_required_not_fulfilled(
         self, instance: Dict[str, Any], is_create: bool
@@ -217,8 +237,8 @@ class ArrayField(Field):
     """
 
     def __init__(self, in_array_constraints: Dict = None, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
         self.in_array_constraints = in_array_constraints
+        super().__init__(**kwargs)
 
     def get_schema(self) -> Schema:
         if self.required:
@@ -425,6 +445,19 @@ class BaseTemplateField(Field):
         if replacement.startswith("_"):
             raise ValueError(f"Replacements must not start with '_': {field_name}")
         return replacement
+
+    def validate_with_schema(
+        self, fqid: FullQualifiedId, field_name: str, value: Any
+    ) -> None:
+        if self.is_template_field(field_name):
+            try:
+                TEMPLATE_FIELD_SCHEMA(value)
+            except fastjsonschema.JsonSchemaException as e:
+                raise ActionException(
+                    f"Invalid data for {fqid}/{field_name}: " + e.message
+                )
+        else:
+            super().validate_with_schema(fqid, field_name, value)
 
 
 class BaseTemplateRelationField(BaseTemplateField, BaseRelationField):

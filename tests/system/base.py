@@ -4,17 +4,15 @@ from unittest import TestCase
 
 import simplejson as json
 from datastore.shared.util import DeletedModelsBehaviour
-from fastjsonschema import validate
 from fastjsonschema.exceptions import JsonSchemaException
 
 from openslides_backend.models.base import Model, model_registry
-from openslides_backend.models.fields import BaseTemplateField
 from openslides_backend.services.auth.interface import AuthenticationService
 from openslides_backend.services.datastore.interface import DatastoreService
 from openslides_backend.services.datastore.with_database_context import (
     with_database_context,
 )
-from openslides_backend.shared.exceptions import DatastoreException
+from openslides_backend.shared.exceptions import ActionException, DatastoreException
 from openslides_backend.shared.filters import FilterOperator
 from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
@@ -187,22 +185,12 @@ class BaseSystemTestCase(TestCase):
     def validate_fields(self, fqid: str, fields: Dict[str, Any]) -> None:
         model = model_registry[collection_from_fqid(fqid)]()
         for field_name, value in fields.items():
-            field = model.get_field(field_name)
-            if isinstance(field, BaseTemplateField) and field.is_template_field(
-                field_name
-            ):
-                schema = {
-                    "type": ["array", "null"],
-                    "items": {"type": "string"},
-                }
-            else:
-                schema = field.get_schema()
             try:
-                validate(schema, value)
-            except JsonSchemaException as e:
-                raise JsonSchemaException(
-                    f"Invalid data for {fqid}/{field_name}: " + e.message
+                model.get_field(field_name).validate_with_schema(
+                    fqid, field_name, value
                 )
+            except ActionException as e:
+                raise JsonSchemaException(e.message)
 
     @with_database_context
     def get_model(self, fqid: str) -> Dict[str, Any]:
