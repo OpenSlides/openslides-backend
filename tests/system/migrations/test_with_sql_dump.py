@@ -3,7 +3,7 @@ from datastore.migrations.core.migration_handler import MigrationHandler
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 
-from ..migrate import MigrationWrapper
+from openslides_backend.migrations.migrate import MigrationWrapper
 
 
 @pytest.mark.skip()

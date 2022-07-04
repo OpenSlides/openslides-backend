@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from ...migration_handler import assert_migration_index
+from ...migrations import assert_migration_index
 from ...presenter.presenter import PresenterHandler
 from ...shared.interfaces.wsgi import ResponseBody
 from ..request import Request

@@ -49,21 +49,27 @@ def write(clear_datastore) -> None:
     yield _write
 
 
+def setup_dummy_migration_handler(migration_module_name):
+    migration_module = import_module(
+        f"openslides_backend.migrations.migrations.{migration_module_name}"
+    )
+
+    class Migration(migration_module.Migration):
+        target_migration_index = 2
+
+    connection = injector.get(ConnectionHandler)
+    with connection.get_connection_context():
+        connection.execute("update positions set migration_index=%s", [1])
+
+    migration_handler = injector.get(MigrationHandler)
+    migration_handler.register_migrations(Migration)
+    return migration_handler
+
+
 @pytest.fixture()
 def migrate(clear_datastore):
     def _migrate(migration_module_name):
-        migration_module = import_module(f"migrations.{migration_module_name}")
-
-        class Migration(migration_module.Migration):
-            target_migration_index = 2
-
-        connection = injector.get(ConnectionHandler)
-        with connection.get_connection_context():
-            connection.execute("update positions set migration_index=%s", [1])
-
-        migration_handler = injector.get(MigrationHandler)
-        migration_handler.register_migrations(Migration)
-        migration_handler.migrate()
+        setup_dummy_migration_handler(migration_module_name).migrate()
 
     yield _migrate
 
@@ -71,18 +77,7 @@ def migrate(clear_datastore):
 @pytest.fixture()
 def finalize(clear_datastore):
     def _finalize(migration_module_name):
-        migration_module = import_module(f"migrations.{migration_module_name}")
-
-        class Migration(migration_module.Migration):
-            target_migration_index = 2
-
-        connection = injector.get(ConnectionHandler)
-        with connection.get_connection_context():
-            connection.execute("update positions set migration_index=%s", [1])
-
-        migration_handler = injector.get(MigrationHandler)
-        migration_handler.register_migrations(Migration)
-        migration_handler.finalize()
+        setup_dummy_migration_handler(migration_module_name).finalize()
 
     yield _finalize
 

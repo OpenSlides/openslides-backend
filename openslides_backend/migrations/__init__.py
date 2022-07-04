@@ -2,19 +2,8 @@ from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
 
+from ..shared.exceptions import ActionException
 from .migrate import MigrationWrapper
-
-
-class InvalidMigrationsException(Exception):
-    pass
-
-
-class MissingMigrations(InvalidMigrationsException):
-    pass
-
-
-class MisconfiguredMigrations(InvalidMigrationsException):
-    pass
 
 
 def get_backend_migration_index() -> int:
@@ -49,11 +38,11 @@ def assert_migration_index() -> None:
     backend_migration_index = get_backend_migration_index()
 
     if backend_migration_index > datastore_migration_index:
-        raise MissingMigrations(
+        raise ActionException(
             f"Missing {backend_migration_index-datastore_migration_index} migrations to apply."
         )
 
     if backend_migration_index < datastore_migration_index:
-        raise MisconfiguredMigrations(
+        raise ActionException(
             f"Migration indices do not match: Datastore has {datastore_migration_index} and the backend has {backend_migration_index}"
         )

@@ -111,7 +111,7 @@ class TestWSGIWithMigrations(BaseActionTestCase):
         super().tearDown()
         self.reset_read_db()
 
-    @patch("migrations.get_backend_migration_index")
+    @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_missing_migrations(self, gbmi: Any) -> None:
         write_request = self.get_write_request(
             self.get_create_events("topic/1", {"title": "dummy"})
@@ -130,7 +130,7 @@ class TestWSGIWithMigrations(BaseActionTestCase):
         assert isinstance(read_db, SqlReadDatabaseBackendService)
         read_db.current_migration_index = MIGRATION_INDEX_NOT_INITIALIZED
 
-    @patch("migrations.get_backend_migration_index")
+    @patch("openslides_backend.migrations.get_backend_migration_index")
     def test_request_misconfigured_migrations(self, gbmi: Any) -> None:
         write_request = self.get_write_request(
             self.get_create_events("topic/1", {"title": "dummy"})

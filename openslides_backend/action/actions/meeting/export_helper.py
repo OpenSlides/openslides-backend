@@ -2,7 +2,7 @@ from typing import Any, Dict, Iterable
 
 from datastore.shared.util import is_reserved_field
 
-from migrations import get_backend_migration_index
+from openslides_backend.migrations import get_backend_migration_index
 
 from ....models.fields import OnDelete, RelationListField
 from ....models.models import Meeting

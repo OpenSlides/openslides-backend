@@ -1,7 +1,10 @@
 from typing import Any, Dict
 
-from migrations import assert_migration_index, get_backend_migration_index
-from migrations.migrate import MigrationWrapper
+from openslides_backend.migrations import (
+    assert_migration_index,
+    get_backend_migration_index,
+)
+from openslides_backend.migrations.migrate import MigrationWrapper
 from openslides_backend.shared.util import (
     INITIAL_DATA_FILE,
     ONE_ORGANIZATION_FQID,
