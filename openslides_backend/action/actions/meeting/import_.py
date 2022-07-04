@@ -491,7 +491,8 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 "Imported meeting has no AdminGroup to assign to request user"
             )
         if group.get("user_ids"):
-            group["user_ids"].insert(0, self.user_id)
+            if self.user_id not in group["user_ids"]:
+                group["user_ids"].insert(0, self.user_id)
         else:
             group["user_ids"] = [self.user_id]
         self.new_group_for_request_user = admin_group_id

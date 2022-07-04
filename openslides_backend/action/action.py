@@ -473,9 +473,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         elif event["type"] == EventType.Delete:
             self.datastore.apply_changed_model(event["fqid"], DeletedModel())
 
-    def validate_required_fields_and_check_for_extra_fields(
-        self, write_request: WriteRequest
-    ) -> None:
+    def validate_write_request(self, write_request: WriteRequest) -> None:
         """
         Validate required fields with the events of one WriteRequest.
         Precondition: Events are sorted create/update/delete-events
@@ -514,9 +512,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
                     )
                     raise RequiredFieldsException(fqid_str, required_fields)
 
-            # check for extra fields in the write request
-            for field_name in instance:
-                if not fqid_model.has_field(field_name):
+            # check all fields in the write request
+            for field_name, value in instance.items():
+                if fqid_model.has_field(field_name):
+                    fqid_model.get_field(field_name).validate_with_schema(
+                        fqid, field_name, value
+                    )
+                else:
                     raise ActionException(
                         f"{field_name} is not a valid field for model {fqid_model.collection}."
                     )
