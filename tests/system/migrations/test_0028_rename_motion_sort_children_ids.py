@@ -4,7 +4,7 @@ def test_migration(write, finalize, assert_model):
         {
             "type": "create",
             "fqid": "motion/1",
-            "fields": {"id": 1, "sort_children_ids": [1]},
+            "fields": {"id": 1, "sort_children_ids": [1], "sort_parent_id": 1},
         }
     )
 
@@ -15,6 +15,7 @@ def test_migration(write, finalize, assert_model):
         {
             "id": 1,
             "sort_child_ids": [1],
+            "sort_parent_id": 1,
             "meta_deleted": False,
             "meta_position": 2,
         },

@@ -1,10 +1,11 @@
+import json
 from importlib import import_module
 from typing import Any, Dict
 
 import pytest
 from datastore.migrations import MigrationHandler
 from datastore.migrations.core.setup import register_services
-from datastore.reader.core import GetRequest, Reader
+from datastore.reader.core import GetEverythingRequest, GetRequest, Reader
 from datastore.shared.di import injector
 from datastore.shared.postgresql_backend import ConnectionHandler
 from datastore.shared.services import ReadDatabase
@@ -12,9 +13,39 @@ from datastore.shared.services.environment_service import (
     DATASTORE_DEV_MODE_ENVIRONMENT_VAR,
     EnvironmentService,
 )
-from datastore.shared.util import DeletedModelsBehaviour
+from datastore.shared.util import DeletedModelsBehaviour, strip_reserved_fields
 from datastore.writer.core import Writer
 from datastore.writer.flask_frontend.json_handlers import WriteHandler
+
+from openslides_backend.migrations import get_backend_migration_index
+from openslides_backend.models.base import model_registry
+from openslides_backend.models.checker import Checker
+
+
+class MigrationChecker(Checker):
+    """ Adjusted Checker for migrations which is capable of handling dummy fields & collections. """
+    def check_collections(self) -> None:
+        pass
+
+    def check_normal_fields(self, model: Dict[str, Any], collection: str) -> bool:
+        return False
+
+    def check_template_fields(self, model: Dict[str, Any], collection: str) -> bool:
+        if collection not in model_registry:
+            return False
+        return super().check_template_fields(model, collection)
+
+    def check_types(self, *args, **kwargs) -> None:
+        pass
+
+    def check_relation(
+        self, model: Dict[str, Any], collection: str, field: str
+    ) -> None:
+        if collection not in model_registry or not self.get_model(
+            collection
+        ).try_get_field(field):
+            return
+        return super().check_relation(model, collection, field)
 
 
 @pytest.fixture(autouse=True)
@@ -78,6 +109,18 @@ def migrate(clear_datastore):
 def finalize(clear_datastore):
     def _finalize(migration_module_name):
         setup_dummy_migration_handler(migration_module_name).finalize()
+
+        # check relations
+        reader: Reader = injector.get(Reader)
+        with reader.get_database_context():
+            response = reader.get_everything(GetEverythingRequest())
+
+        for models in response.values():
+            for model in models.values():
+                strip_reserved_fields(model)
+        response["_migration_index"] = get_backend_migration_index()
+
+        MigrationChecker(json.loads(json.dumps(response))).run_check()
 
     yield _finalize
 
