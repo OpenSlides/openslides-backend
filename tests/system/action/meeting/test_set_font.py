@@ -31,11 +31,11 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "web_header"}
+            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "bold"}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("meeting/222")
-        assert model.get("font_$web_header_id") == 17
+        assert model.get("font_$bold_id") == 17
 
     def test_set_font_wrong_directory(self) -> None:
         self.set_models(
@@ -52,7 +52,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "web_header"}
+            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "bold"}
         )
         self.assert_status_code(response, 400)
         assert "Cannot set a directory." in response.json["message"]
@@ -72,7 +72,7 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             }
         )
         response = self.request(
-            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "web_header"}
+            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "bold"}
         )
         self.assert_status_code(response, 400)
         assert "Invalid mimetype" in response.json["message"]
@@ -81,13 +81,13 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         self.base_permission_test(
             self.permission_test_models,
             "meeting.set_font",
-            {"id": 1, "mediafile_id": 17, "place": "web_header"},
+            {"id": 1, "mediafile_id": 17, "place": "bold"},
         )
 
     def test_set_font_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
             "meeting.set_font",
-            {"id": 1, "mediafile_id": 17, "place": "web_header"},
+            {"id": 1, "mediafile_id": 17, "place": "bold"},
             Permissions.Meeting.CAN_MANAGE_LOGOS_AND_FONTS,
         )
