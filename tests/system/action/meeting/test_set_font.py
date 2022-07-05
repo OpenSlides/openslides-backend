@@ -37,6 +37,26 @@ class MeetingSetFontActionTest(BaseActionTestCase):
         model = self.get_model("meeting/222")
         assert model.get("font_$bold_id") == 17
 
+    def test_set_font_wrong_place(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_meeting222",
+                    "is_active_in_organization_id": 1,
+                },
+                "mediafile/17": {
+                    "is_directory": False,
+                    "mimetype": "font/woff",
+                    "owner_id": "meeting/222",
+                },
+            }
+        )
+        response = self.request(
+            "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "broken"}
+        )
+        self.assert_status_code(response, 400)
+        assert "Invalid place: broken" in response.json["message"]
+
     def test_set_font_wrong_directory(self) -> None:
         self.set_models(
             {

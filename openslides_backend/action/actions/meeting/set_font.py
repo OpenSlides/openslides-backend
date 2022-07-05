@@ -16,3 +16,9 @@ class MeetingSetFontAction(BaseMeetingSetMediafileAction):
         "application/font-woff",
         "application/font-sfnt",
     ]
+    allowed_places = [
+        "bold",
+        "h1",
+        "h2",
+        # TODO: add all possible places here.
+    ]

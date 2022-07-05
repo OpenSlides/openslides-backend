@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
@@ -18,6 +18,7 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
 
     field: str
     allowed_mimetypes: List[str]
+    allowed_places: Optional[List[str]]
 
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
@@ -49,7 +50,12 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
                 f"Invalid mimetype: {mediafile.get('mimetype')}, allowed are {self.allowed_mimetypes}"
             )
 
-        instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
+        place = instance.pop("place")
+        if self.allowed_places and place not in self.allowed_places:
+            raise ActionException(
+                f"Invalid place: {place}, allowed are {self.allowed_places}"
+            )
+        instance[self.field] = {place: instance.pop("mediafile_id")}
         return instance
 
     def check_owner(self, mediafile: Dict[str, Any], instance: Dict[str, Any]) -> None:
