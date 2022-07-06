@@ -34,7 +34,7 @@ class MediafileMixin(Action):
             instance.get("title"),
             parent_id,
             instance.get("id"),
-            collection + KEYSEPARATOR + str(id_),
+            fqid_from_collection_and_id(collection, id_),
         )
 
         if collection == "organization":
