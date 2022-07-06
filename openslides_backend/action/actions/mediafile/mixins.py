@@ -34,7 +34,6 @@ class MediafileMixin(Action):
             instance.get("title"),
             parent_id,
             instance.get("id"),
-            collection,
             collection + KEYSEPARATOR + str(id_),
         )
 
@@ -111,21 +110,16 @@ class MediafileMixin(Action):
         title: Optional[str],
         parent_id: Optional[int],
         id_: Optional[int],
-        collection: str,
-        owner_id: Optional[str],
+        owner_id: str,
     ) -> None:
         if title:
             filter_ = And(
                 FilterOperator("title", "=", title),
                 FilterOperator("parent_id", "=", parent_id),
+                FilterOperator("owner_id", "=", owner_id),
             )
             if id_:
                 filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
-            if collection == "meeting":
-                filter_ = And(
-                    filter_,
-                    FilterOperator("owner_id", "=", owner_id),
-                )
             results = self.datastore.filter(self.model.collection, filter_, ["id"])
             if results:
                 if parent_id:
