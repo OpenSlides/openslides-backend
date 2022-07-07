@@ -109,3 +109,52 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["user"]["1"]["comment_$1"] == "blablabla"
         assert data["user"]["1"]["number_$"] == ["1"]
         assert data["user"]["1"]["number_$1"] == "spamspamspam"
+
+    def test_add_users_in_2_meetings(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "exported_meeting",
+                    "user_ids": [1],
+                    "group_ids": [11],
+                    "present_user_ids": [1],
+                },
+                "meeting/2": {
+                    "name": "not exported_meeting",
+                    "user_ids": [1],
+                    "group_ids": [12],
+                    "present_user_ids": [1],
+                },
+                "user/1": {
+                    "group_$_ids": ["1", "2"],
+                    "group_$1_ids": [11],
+                    "group_$2_ids": [12],
+                    "comment_$": ["1", "2"],
+                    "comment_$1": "blablabla",
+                    "comment_$2": "blablabla2",
+                    "is_present_in_meeting_ids": [1, 2],
+                    "meeting_ids": [1, 2]
+                },
+                "group/11": {
+                    "name": "group_in_meeting_1",
+                    "meeting_id": 1,
+                    "user_ids": [1],
+                },
+                "group/12": {
+                    "name": "group_in_meeting_2",
+                    "meeting_id": 2,
+                    "user_ids": [1],
+                },
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 200
+        assert data["user"]["1"]["organization_management_level"] == "superadmin"
+        assert data["user"]["1"]["username"] == "admin"
+        assert data["user"]["1"]["is_active"] is True
+        assert data["user"]["1"]["group_$_ids"] == ["1"]
+        assert data["user"]["1"]["group_$1_ids"] == [11]
+        assert data["user"]["1"]["meeting_ids"] == [1]
+        assert data["user"]["1"]["is_present_in_meeting_ids"] == [1]
+        assert data["user"]["1"]["comment_$"] == ["1"]
+        assert data["user"]["1"]["comment_$1"] == "blablabla"
