@@ -31,7 +31,10 @@ class MediafileMixin(Action):
             except DatastoreException:
                 pass
         self.check_title_parent_unique(
-            instance.get("title"), parent_id, instance.get("id")
+            instance.get("title"),
+            parent_id,
+            instance.get("id"),
+            fqid_from_collection_and_id(collection, id_),
         )
 
         if collection == "organization":
@@ -103,12 +106,17 @@ class MediafileMixin(Action):
                 raise ActionException("Owner and parent don't match.")
 
     def check_title_parent_unique(
-        self, title: Optional[str], parent_id: Optional[int], id_: Optional[int]
+        self,
+        title: Optional[str],
+        parent_id: Optional[int],
+        id_: Optional[int],
+        owner_id: str,
     ) -> None:
         if title:
             filter_ = And(
                 FilterOperator("title", "=", title),
                 FilterOperator("parent_id", "=", parent_id),
+                FilterOperator("owner_id", "=", owner_id),
             )
             if id_:
                 filter_ = And(filter_, Not(FilterOperator("id", "=", id_)))
