@@ -201,6 +201,7 @@ class MeetingClone(BaseActionTestCase):
                 "template_for_organization_id": None,
             },
         )
+        self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/2"]})
 
     def test_clone_user_ids_and_admin_ids(self) -> None:
         self.test_models["meeting/1"]["template_for_organization_id"] = None

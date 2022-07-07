@@ -240,8 +240,7 @@ class Checker:
         else:
             self.allowed_collections = meeting_collections
             # TODO: mediafile blob handling.
-            if self.mode in ("external", "internal"):
-                self.allowed_collections.append("user")
+            self.allowed_collections.append("user")
 
         self.errors: List[str] = []
 
