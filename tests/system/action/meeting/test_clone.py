@@ -527,7 +527,9 @@ class MeetingClone(BaseActionTestCase):
         response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
         self.assert_model_exists("meeting/2", {"organization_tag_ids": [1]})
-        self.assert_model_exists("organization_tag/1", {"tagged_ids": ["meeting/1", "meeting/2"]})
+        self.assert_model_exists(
+            "organization_tag/1", {"tagged_ids": ["meeting/1", "meeting/2"]}
+        )
 
     def test_clone_with_settings(self) -> None:
         self.set_models(self.test_models)

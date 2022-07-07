@@ -11,7 +11,10 @@ from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
 from openslides_backend.shared.interfaces.event import EventType
 from openslides_backend.shared.interfaces.write_request import WriteRequest
-from openslides_backend.shared.patterns import fqid_from_collection_and_id
+from openslides_backend.shared.patterns import (
+    FullQualifiedId,
+    fqid_from_collection_and_id,
+)
 from openslides_backend.shared.schema import id_list_schema
 
 from ...util.default_schema import DefaultSchema
@@ -196,35 +199,59 @@ class MeetingClone(MeetingImport):
     def append_extra_write_requests(
         self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
     ) -> None:
-        for key, model in json_data["group"].items():
+        meeting_id = self.get_meeting_from_json(json_data)["id"]
+        for model in json_data["group"].values():
             if model.get("user_ids"):
                 for user_id in model.get("user_ids"):
                     if user_id in self.additional_user_ids or self.additional_admin_ids:
                         write_requests.append(
                             self.build_write_request_helper(
-                                user_id, json_data, "group_$_ids", model["id"]
+                                fqid_from_collection_and_id("user", user_id),
+                                meeting_id,
+                                "group_$_ids",
+                                model["id"],
                             )
                         )
+        if organization_tag_ids := self.get_meeting_from_json(json_data).get(
+            "organization_tag_ids"
+        ):
+            meeting_fqid = fqid_from_collection_and_id("meeting", meeting_id)
+            for organization_tag_id in organization_tag_ids:
+                write_requests.append(
+                    self.build_write_request(
+                        EventType.Update,
+                        fqid_from_collection_and_id(
+                            "organization_tag", organization_tag_id
+                        ),
+                        f"clone meeting {meeting_id}",
+                        list_fields={
+                            "add": {
+                                "tagged_ids": [meeting_fqid],
+                            },
+                            "remove": {},
+                        },
+                    ),
+                )
 
-    def field_with_meeting(self, field: str, json_data: Dict[str, Any]) -> str:
+    def field_with_meeting(self, field: str, meeting_id: int) -> str:
         front, back = field.split("$")
-        return f"{front}${self.get_meeting_from_json(json_data)['id']}{back}"
+        return f"{front}${meeting_id}{back}"
 
     def build_write_request_helper(
         self,
-        user_id: int,
-        json_data: Dict[str, Any],
+        fqid: FullQualifiedId,
+        meeting_id: int,
         field_template: str,
         model_id: int,
     ) -> WriteRequest:
         return self.build_write_request(
             EventType.Update,
-            fqid_from_collection_and_id("user", user_id),
-            f"clone meeting {self.get_meeting_from_json(json_data)['id']}",
+            fqid,
+            f"clone meeting {meeting_id}",
             list_fields={
                 "add": {
-                    field_template: [str(self.get_meeting_from_json(json_data)["id"])],
-                    self.field_with_meeting(field_template, json_data): [model_id],
+                    field_template: [str(meeting_id)],
+                    self.field_with_meeting(field_template, meeting_id): [model_id],
                 },
                 "remove": {},
             },

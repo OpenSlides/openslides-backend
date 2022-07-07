@@ -133,7 +133,7 @@ class TestExportMeeting(BasePresenterTestCase):
                     "comment_$1": "blablabla",
                     "comment_$2": "blablabla2",
                     "is_present_in_meeting_ids": [1, 2],
-                    "meeting_ids": [1, 2]
+                    "meeting_ids": [1, 2],
                 },
                 "group/11": {
                     "name": "group_in_meeting_1",
