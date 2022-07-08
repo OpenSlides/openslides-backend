@@ -10,6 +10,7 @@ from ....models.fields import (
     TemplateCharField,
     TemplateDecimalField,
     TemplateHTMLStrictField,
+    TemplateRelationField,
     TemplateRelationListField,
 )
 from ....models.models import Meeting, User
@@ -75,6 +76,7 @@ def add_users(
                 TemplateCharField,
                 TemplateHTMLStrictField,
                 TemplateDecimalField,
+                TemplateRelationField,
                 TemplateRelationListField,
             ),
         ):
