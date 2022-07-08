@@ -483,8 +483,7 @@ class Checker:
                         )
                         if (
                             template_field.get_own_field_name() == _template_field
-                            and _replacement
-                            not in model.get(_template_field, [])
+                            and _replacement not in model.get(_template_field, [])
                         ):
                             self.errors.append(
                                 f"{collection}/{model['id']}/{field}: Invalid structured field. Missing replacement {_replacement} in {template_field.get_own_field_name()}"
