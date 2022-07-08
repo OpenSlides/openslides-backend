@@ -47,8 +47,10 @@ class Export(BasePresenter):
     def exclude_organization_tags_and_default_meeting_for_committee(
         self, export_data: Dict[str, Any]
     ) -> None:
-        del self.get_meeting_from_json(export_data)["organization_tag_ids"]
-        del self.get_meeting_from_json(export_data)["default_meeting_for_committee_id"]
+        self.get_meeting_from_json(export_data).pop("organization_tag_ids", None)
+        self.get_meeting_from_json(export_data).pop(
+            "default_meeting_for_committee_id", None
+        )
 
     def get_meeting_from_json(self, export_data: Any) -> Any:
         key = next(iter(export_data["meeting"]))

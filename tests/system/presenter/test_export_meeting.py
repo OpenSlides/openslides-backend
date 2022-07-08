@@ -69,7 +69,7 @@ class TestExportMeeting(BasePresenterTestCase):
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
         assert "organization_tag" not in data
-        assert data["meeting"]["1"]["organization_tag_ids"] is None
+        assert data["meeting"]["1"].get("organization_tag_ids") is None
 
     def test_add_users(self) -> None:
         self.set_models(
