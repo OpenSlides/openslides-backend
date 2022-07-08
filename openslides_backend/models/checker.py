@@ -240,8 +240,7 @@ class Checker:
         else:
             self.allowed_collections = meeting_collections
             # TODO: mediafile blob handling.
-            if self.mode in ("external", "internal"):
-                self.allowed_collections.append("user")
+            self.allowed_collections.append("user")
 
         self.errors: List[str] = []
 
@@ -477,15 +476,14 @@ class Checker:
                         )
 
             for field in model.keys():
-                if self.is_structured_field(field):
+                if self.is_structured_field(field) and model[field]:
                     try:
                         _template_field, _replacement = self.to_template_field(
                             collection, field
                         )
                         if (
                             template_field.get_own_field_name() == _template_field
-                            and _replacement
-                            not in model[template_field.get_own_field_name()]
+                            and _replacement not in model.get(_template_field, [])
                         ):
                             self.errors.append(
                                 f"{collection}/{model['id']}/{field}: Invalid structured field. Missing replacement {_replacement} in {template_field.get_own_field_name()}"

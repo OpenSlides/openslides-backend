@@ -1,11 +1,19 @@
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, List
 
 from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
 
-from ....models.fields import OnDelete, RelationListField
-from ....models.models import Meeting
+from ....models.fields import (
+    OnDelete,
+    RelationListField,
+    TemplateCharField,
+    TemplateDecimalField,
+    TemplateHTMLStrictField,
+    TemplateRelationField,
+    TemplateRelationListField,
+)
+from ....models.models import Meeting, User
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
 from ....shared.patterns import fqid_from_collection_and_id
@@ -47,14 +55,65 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         else:
             export[str(collection)] = {}
 
-    if meeting.get("user_ids"):
-        get_many_request = GetManyRequest("user", meeting["user_ids"])
-        users = datastore.get_many(
-            [get_many_request], lock_result=False, use_changed_models=False
-        )
-        export["user"] = remove_meta_fields(transfer_keys(users["user"]))
-
+    add_users(meeting.get("user_ids", []), export, meeting_id, datastore)
     return export
+
+
+def add_users(
+    user_ids: List[int],
+    export_data: Dict[str, Any],
+    meeting_id: int,
+    datastore: DatastoreService,
+) -> None:
+    if not user_ids:
+        return
+    fields = []
+    template_fields = []
+    for field in User().get_fields():
+        if isinstance(
+            field,
+            (
+                TemplateCharField,
+                TemplateHTMLStrictField,
+                TemplateDecimalField,
+                TemplateRelationField,
+                TemplateRelationListField,
+            ),
+        ):
+            template_fields.append(
+                (
+                    struct_field := field.get_structured_field_name(meeting_id),
+                    field.get_template_field_name(),
+                )
+            )
+            fields.append(struct_field)
+        else:
+            fields.append(field.own_field_name)
+
+    gmr = GetManyRequest(
+        "user",
+        user_ids,
+        fields,
+    )
+    users = remove_meta_fields(
+        transfer_keys(
+            datastore.get_many([gmr], lock_result=False, use_changed_models=False)[
+                "user"
+            ]
+        )
+    )
+
+    for user in users.values():
+        for field_name, field_template_name in template_fields:
+            if user.get(field_name):
+                user[field_template_name] = [str(meeting_id)]
+        user["meeting_ids"] = [meeting_id]
+        if meeting_id in (user.get("is_present_in_meeting_ids") or []):
+            user["is_present_in_meeting_ids"] = [meeting_id]
+        else:
+            user["is_present_in_meeting_ids"] = None
+
+    export_data["user"] = users
 
 
 def remove_meta_fields(res: Dict[str, Any]) -> Dict[str, Any]:
