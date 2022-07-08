@@ -36,7 +36,7 @@ class GetForwardingMeetings(BasePresenter):
         if not has_perm(
             self.datastore,
             self.user_id,
-            Permissions.Motion.CAN_MANAGE,
+            Permissions.Motion.CAN_FORWARD,
             self.data["meeting_id"],
         ):
             msg = "You are not allowed to perform presenter get_forwarding_meetings"
