@@ -23,7 +23,8 @@ from openslides_backend.models.checker import Checker
 
 
 class MigrationChecker(Checker):
-    """ Adjusted Checker for migrations which is capable of handling dummy fields & collections. """
+    """Adjusted Checker for migrations which is capable of handling dummy fields & collections."""
+
     def check_collections(self) -> None:
         pass
 
