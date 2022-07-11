@@ -1608,39 +1608,32 @@ class MeetingImport(BaseActionTestCase):
             },
         )
 
-    def test_check_forbidden_organization_management_right(self) -> None:
+    def test_check_forbidden_fields(self) -> None:
         request_data = self.create_request_data(
             {
                 "user": {
-                    "1": {
+                    "14": {
+                        "id": 14,
+                        "username": "user14",
                         "organization_management_level": "superadmin",
-                    }
-                },
-            }
-        )
-        response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Imported user may not have OrganizationManagementLevel rights!",
-            response.json["message"],
-        )
-
-    def test_check_forbidden_committee_management_right(self) -> None:
-        request_data = self.create_request_data(
-            {
-                "user": {
-                    "1": {
                         "committee_$_management_level": ["can_manage"],
                         "committee_$can_manage_management_level": [1],
                     }
                 },
             }
         )
+        request_data["meeting"]["meeting"]["1"]["organization_tag_ids"] = [1, 2, 3]
         response = self.request("meeting.import", request_data)
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Imported user may not have CommitteeManagementLevel rights!",
-            response.json["message"],
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/2", {"organization_tag_ids": None})
+        self.assert_model_exists(
+            "user/3",
+            {
+                "id": 3,
+                "username": "user14",
+                "organization_management_level": None,
+                "committee_$_management_level": None,
+            },
         )
 
     def test_check_missing_admin_group_in_meeting(self) -> None:
