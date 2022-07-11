@@ -17,8 +17,12 @@ class MeetingSetFontAction(BaseMeetingSetMediafileAction):
         "application/font-sfnt",
     ]
     allowed_places = [
+        "regular",
+        "italic",
         "bold",
-        "h1",
-        "h2",
-        # TODO: add all possible places here.
+        "bold_italic",
+        "monospace",
+        "chyron_speaker_name",
+        "projector_h1",
+        "projector_h2",
     ]
