@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 
-from ....models.fields import BaseTemplateField
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -49,19 +48,7 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
             raise ActionException(
                 f"Invalid mimetype: {mediafile.get('mimetype')}, allowed are {self.allowed_mimetypes}"
             )
-
-        place = instance.pop("place")
-        place_field = Meeting().get_field(self.field)
-        allowed_places = (
-            place_field.replacement_enum
-            if isinstance(place_field, BaseTemplateField)
-            else None
-        )
-        if allowed_places and place not in allowed_places:
-            raise ActionException(
-                f"Invalid place: {place}, allowed are {allowed_places}"
-            )
-        instance[self.field] = {place: instance.pop("mediafile_id")}
+        instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
         return instance
 
     def check_owner(self, mediafile: Dict[str, Any], instance: Dict[str, Any]) -> None:

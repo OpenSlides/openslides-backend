@@ -55,7 +55,10 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "broken"}
         )
         self.assert_status_code(response, 400)
-        assert "Invalid place: broken" in response.json["message"]
+        assert (
+            "Replacement broken does not exist in field font__id´s replacement_enum."
+            == response.json["message"]
+        )
 
     def test_set_font_wrong_directory(self) -> None:
         self.set_models(

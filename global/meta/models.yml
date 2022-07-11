@@ -1491,7 +1491,7 @@ meeting:
       required: false
     restriction_mode: B
     replacement_enum:
-      -  projector_main
+      - projector_main
       - projector_header
       - web_header
       - pdf_header_l
