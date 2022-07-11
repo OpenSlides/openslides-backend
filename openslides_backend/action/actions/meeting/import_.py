@@ -24,10 +24,7 @@ from openslides_backend.models.fields import (
     TemplateRelationField,
 )
 from openslides_backend.models.models import Meeting, User
-from openslides_backend.permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
+from openslides_backend.permissions.management_levels import CommitteeManagementLevel
 from openslides_backend.permissions.permission_helper import (
     has_committee_management_level,
 )
@@ -131,7 +128,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
 
     def preprocess_data(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         self.check_one_meeting(instance)
-        self.check_not_allowed_fields(instance)
+        self.remove_not_allowed_fields(instance)
         self.set_committee_and_orga_relation(instance)
         instance = self.migrate_data(instance)
         self.unset_committee_and_orga_relation(instance)
@@ -142,22 +139,25 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
         if not len(meeting_json.get("meeting", {}).values()) == 1:
             raise ActionException("Need exactly one meeting in meeting collection.")
 
-    def check_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
+    def remove_not_allowed_fields(self, instance: Dict[str, Any]) -> None:
         json_data = instance["meeting"]
+        regex_cml = re.compile(r"^committee_\$(\D)*_management_level$")
+
+        def remove_from_collection(
+            model: Dict[str, Any], regex: re.Pattern[str]
+        ) -> None:
+            keys: List[str] = []
+            for key in model.keys():
+                if regex.search(key):
+                    keys.append(key)
+            for key in keys:
+                model.pop(key)
+
         for user in json_data.get("user", {}).values():
-            if (
-                OrganizationManagementLevel(
-                    user.get("organization_management_level", "no_right")
-                )
-                > OrganizationManagementLevel.NO_RIGHT
-            ):
-                raise ActionException(
-                    "Imported user may not have OrganizationManagementLevel rights!"
-                )
-            if user.get("committee_$_management_level"):
-                raise ActionException(
-                    "Imported user may not have CommitteeManagementLevel rights!"
-                )
+            user.pop("organization_management_level", None)
+            user.pop("committee_ids", None)
+            remove_from_collection(user, regex_cml)
+        self.get_meeting_from_json(json_data).pop("organization_tag_ids", None)
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting_json = instance["meeting"]

@@ -1050,6 +1050,7 @@ class MeetingClone(BaseActionTestCase):
                     "group_$1_ids": [1],
                     "group_$2_ids": [3],
                     "meeting_ids": [1, 2],
+                    "committee_ids": [1],
                 },
                 "meeting/2": {
                     "committee_id": 1,
@@ -1090,6 +1091,7 @@ class MeetingClone(BaseActionTestCase):
         self.assert_model_exists("meeting/1", {"user_ids": [1]})
         self.assert_model_exists("meeting/2", {"user_ids": [1]})
         self.assert_model_exists("meeting/3", {"user_ids": [1]})
+        self.assert_model_exists("committee/1", {"meeting_ids": [1, 2, 3]})
 
     def prepare_datastore_performance_test(self) -> None:
         self.set_models(
