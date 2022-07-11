@@ -1,5 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
+from ....models.fields import BaseTemplateField
 from ....models.models import Meeting
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException
@@ -18,7 +19,6 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
 
     field: str
     allowed_mimetypes: List[str]
-    allowed_places: Optional[List[str]]
 
     model = Meeting()
     schema = DefaultSchema(Meeting()).get_update_schema(
@@ -51,9 +51,15 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
             )
 
         place = instance.pop("place")
-        if self.allowed_places and place not in self.allowed_places:
+        place_field = Meeting().get_field(self.field)
+        allowed_places = (
+            place_field.replacement_enum
+            if isinstance(place_field, BaseTemplateField)
+            else None
+        )
+        if allowed_places and place not in allowed_places:
             raise ActionException(
-                f"Invalid place: {place}, allowed are {self.allowed_places}"
+                f"Invalid place: {place}, allowed are {allowed_places}"
             )
         instance[self.field] = {place: instance.pop("mediafile_id")}
         return instance

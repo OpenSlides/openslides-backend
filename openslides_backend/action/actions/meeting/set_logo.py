@@ -10,13 +10,3 @@ class MeetingSetLogoAction(BaseMeetingSetMediafileAction):
 
     field = "logo_$_id"
     allowed_mimetypes = ["image/png", "image/jpeg", "image/gif"]
-    allowed_places = [
-        "projector_main",
-        "projector_header",
-        "web_header",
-        "pdf_header_l",
-        "pdf_header_r",
-        "pdf_footer_l",
-        "pdf_footer_r",
-        "pdf_ballot_paper",
-    ]

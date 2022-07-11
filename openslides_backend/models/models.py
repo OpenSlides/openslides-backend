@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "296526a578fd79ee049e45ed52ae7bbe"
+MODELS_YML_CHECKSUM = "b4fad8be68926e91be2184322fa79e0d"
 
 
 class Organization(Model):
@@ -665,10 +665,30 @@ class Meeting(Model):
     logo__id = fields.TemplateRelationField(
         index=5,
         to={"mediafile": "used_as_logo_$_in_meeting_id"},
+        replacement_enum=[
+            "projector_main",
+            "projector_header",
+            "web_header",
+            "pdf_header_l",
+            "pdf_header_r",
+            "pdf_footer_l",
+            "pdf_footer_r",
+            "pdf_ballot_paper",
+        ],
     )
     font__id = fields.TemplateRelationField(
         index=5,
         to={"mediafile": "used_as_font_$_in_meeting_id"},
+        replacement_enum=[
+            "regular",
+            "italic",
+            "bold",
+            "bold_italic",
+            "monospace",
+            "chyron_speaker_name",
+            "projector_h1",
+            "projector_h2",
+        ],
     )
     committee_id = fields.RelationField(to={"committee": "meeting_ids"}, required=True)
     default_meeting_for_committee_id = fields.RelationField(

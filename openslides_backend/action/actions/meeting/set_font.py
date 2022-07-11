@@ -16,13 +16,3 @@ class MeetingSetFontAction(BaseMeetingSetMediafileAction):
         "application/font-woff",
         "application/font-sfnt",
     ]
-    allowed_places = [
-        "regular",
-        "italic",
-        "bold",
-        "bold_italic",
-        "monospace",
-        "chyron_speaker_name",
-        "projector_h1",
-        "projector_h2",
-    ]
