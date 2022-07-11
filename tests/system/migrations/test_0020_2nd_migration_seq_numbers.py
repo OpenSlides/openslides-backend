@@ -19,8 +19,11 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
 
     for collection in COLLECTIONS:
         write(
-            {"type": "create", "fqid": "meeting/1", "fields": {"id": 1}},
-            {"type": "create", "fqid": "meeting/2", "fields": {"id": 2}},
+            {
+                "type": "create",
+                "fqid": "meeting/1",
+                "fields": {"id": 1, collection + "_ids": [1, 2]},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "1",
@@ -63,6 +66,16 @@ def test_migration_motion_block_more_objects(
 ):
     for collection in COLLECTIONS:
         write(
+            {
+                "type": "create",
+                "fqid": "meeting/1",
+                "fields": {"id": 1, collection + "_ids": [1, 2]},
+            },
+            {
+                "type": "create",
+                "fqid": "meeting/2",
+                "fields": {"id": 2, collection + "_ids": [3, 4]},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "1",
@@ -135,6 +148,11 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
     write(
         {
             "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"id": 1, "assignment_ids": [1, 2]},
+        },
+        {
+            "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "1",
             "fields": {"id": 1, "meeting_id": 1, "sequential_number": 11},
         },
@@ -146,6 +164,11 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
     )
     migrate("0020_2nd_migration_seq_numbers")
     write(
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"assignment_ids": [1, 2, 3, 4]},
+        },
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "3",

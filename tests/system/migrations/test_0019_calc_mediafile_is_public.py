@@ -178,6 +178,14 @@ def test_migration_varying(write, finalize, assert_model):
     write(
         {
             "type": "update",
+            "fqid": "group/1",
+            "fields": {
+                "mediafile_access_group_ids": [],
+                "mediafile_inherited_access_group_ids": [],
+            },
+        },
+        {
+            "type": "update",
             "fqid": "mediafile/11",
             "list_fields": {
                 "add": {"access_group_ids": []},

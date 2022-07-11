@@ -30,7 +30,12 @@ def test_user_group_create_delete_restore_update_one_position(
             "type": "create",
             "fqid": "user/1000",
             "fields": {"group_$10_ids": [100], "group_$_ids": ["10"]},
-        }
+        },
+        {
+            "type": "update",
+            "fqid": "group/100",
+            "fields": {"user_ids": [1000]},
+        },
     )
     write({"type": "delete", "fqid": "user/1000"})
     write({"type": "restore", "fqid": "user/1000"})
@@ -43,7 +48,17 @@ def test_user_group_create_delete_restore_update_one_position(
                 "group_$20_ids": [200],
                 "group_$_ids": ["20"],
             },
-        }
+        },
+        {
+            "type": "update",
+            "fqid": "group/100",
+            "fields": {"user_ids": []},
+        },
+        {
+            "type": "update",
+            "fqid": "group/200",
+            "fields": {"user_ids": [1000]},
+        },
     )
 
     finalize("0012_committee_user_relation")
@@ -324,7 +339,7 @@ def test_user_committee_management_level_create_delete_restore_update_one_positi
     )
 
 
-def test_user_mixed_cml_and_group(read_model, write, finalize, assert_model):
+def test_user_mixed_cml_and_group(write, finalize, assert_model):
     write(
         {
             "type": "create",
@@ -375,6 +390,20 @@ def test_user_mixed_cml_and_group(read_model, write, finalize, assert_model):
                 "committee_$2_management_level": "can_manage",
             },
         },
+        {
+            "type": "update",
+            "fqid": "group/100",
+            "fields": {
+                "user_ids": [1000, 1001],
+            },
+        },
+        {
+            "type": "update",
+            "fqid": "group/200",
+            "fields": {
+                "user_ids": [1000],
+            },
+        },
     )
 
     # user/1000 remove group 100
@@ -386,6 +415,13 @@ def test_user_mixed_cml_and_group(read_model, write, finalize, assert_model):
             "fields": {
                 "group_$10_ids": None,
                 "group_$_ids": ["20"],
+            },
+        },
+        {
+            "type": "update",
+            "fqid": "group/100",
+            "fields": {
+                "user_ids": [1001],
             },
         },
         {
@@ -538,6 +574,11 @@ def test_user_add_remove_add(write, finalize, assert_model):
             "fqid": "user/1000",
             "fields": {"group_$10_ids": [100], "group_$_ids": ["10"]},
         },
+        {
+            "type": "update",
+            "fqid": "group/100",
+            "fields": {"user_ids": [1000]},
+        },
     )
 
     finalize("0012_committee_user_relation")
@@ -589,7 +630,11 @@ def test_user_remove_add(write, finalize, assert_model):
             "fqid": "meeting/10",
             "fields": {"committee_id": 1, "group_ids": [100]},
         },
-        {"type": "create", "fqid": "group/100", "fields": {"meeting_id": 10}},
+        {
+            "type": "create",
+            "fqid": "group/100",
+            "fields": {"meeting_id": 10, "user_ids": [1000]},
+        },
         {
             "type": "create",
             "fqid": "user/1000",
@@ -669,7 +714,11 @@ def test_user_remove_add_2_stages(migrate, write, finalize, assert_model):
             "fqid": "meeting/10",
             "fields": {"committee_id": 1, "group_ids": [100]},
         },
-        {"type": "create", "fqid": "group/100", "fields": {"meeting_id": 10}},
+        {
+            "type": "create",
+            "fqid": "group/100",
+            "fields": {"meeting_id": 10, "user_ids": [1000]},
+        },
         {
             "type": "create",
             "fqid": "user/1000",
@@ -746,7 +795,11 @@ def test_events_in_wrong_sequence(write, finalize, assert_model):
             "fqid": "user/1000",
             "fields": {"group_$10_ids": [100], "group_$_ids": ["10"]},
         },
-        {"type": "create", "fqid": "group/100", "fields": {"meeting_id": 10}},
+        {
+            "type": "create",
+            "fqid": "group/100",
+            "fields": {"meeting_id": 10, "user_ids": [1000]},
+        },
         {
             "type": "create",
             "fqid": "meeting/10",
@@ -834,7 +887,6 @@ def test_with_shortened_example_data(write, finalize, assert_model):
                 "user_ids": [1, 2, 3],
                 "default_group_id": 1,
                 "admin_group_id": 2,
-                "is_active_in_organization_id": 1,
             },
         },
         {
@@ -843,6 +895,7 @@ def test_with_shortened_example_data(write, finalize, assert_model):
             "fields": {
                 "meeting_id": 1,
                 "user_ids": [],
+                "default_group_for_meeting_id": 1,
             },
         },
         {
@@ -851,6 +904,7 @@ def test_with_shortened_example_data(write, finalize, assert_model):
             "fields": {
                 "meeting_id": 1,
                 "user_ids": [1],
+                "admin_group_for_meeting_id": 1,
             },
         },
         {

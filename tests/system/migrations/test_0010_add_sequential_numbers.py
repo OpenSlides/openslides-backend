@@ -20,16 +20,26 @@ def test_migration_all(clear_datastore, write, finalize, assert_model):
         write(
             {
                 "type": "create",
+                "fqid": "meeting/1",
+                "fields": {"id": 1, collection + "_ids": [1]},
+            },
+            {
+                "type": "create",
                 "fqid": collection + KEYSEPARATOR + "1",
                 "fields": {"id": 1, "meeting_id": 1},
-            }
+            },
         )
         write(
+            {
+                "type": "update",
+                "fqid": "meeting/1",
+                "fields": {collection + "_ids": [1, 2]},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "2",
                 "fields": {"id": 2, "meeting_id": 1},
-            }
+            },
         )
 
         finalize("0010_add_sequential_numbers")
@@ -64,30 +74,50 @@ def test_migration_motion_block_more_objects(
         write(
             {
                 "type": "create",
+                "fqid": "meeting/1",
+                "fields": {"id": 1, collection + "_ids": [1]},
+            },
+            {
+                "type": "create",
                 "fqid": collection + KEYSEPARATOR + "1",
                 "fields": {"id": 1, "meeting_id": 1},
-            }
+            },
         )
         write(
+            {
+                "type": "update",
+                "fqid": "meeting/1",
+                "fields": {collection + "_ids": [1, 2]},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "2",
                 "fields": {"id": 2, "meeting_id": 1},
-            }
+            },
         )
         write(
+            {
+                "type": "create",
+                "fqid": "meeting/2",
+                "fields": {"id": 2, collection + "_ids": [3]},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "3",
                 "fields": {"id": 3, "meeting_id": 2},
-            }
+            },
         )
         write(
+            {
+                "type": "update",
+                "fqid": "meeting/2",
+                "fields": {collection + "_ids": [3, 4]},
+            },
             {
                 "type": "create",
                 "fqid": collection + KEYSEPARATOR + "4",
                 "fields": {"id": 4, "meeting_id": 2},
-            }
+            },
         )
 
         finalize("0010_add_sequential_numbers")
@@ -141,32 +171,52 @@ def test_assignment_two_stages(migrate, write, finalize, assert_model):
     write({"type": "create", "fqid": "meeting/2", "fields": {"id": 2}})
     write(
         {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"id": 1, "assignment_ids": [1]},
+        },
+        {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "1",
             "fields": {"id": 1, "meeting_id": 1},
-        }
+        },
     )
     write(
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"assignment_ids": [1, 2]},
+        },
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "2",
             "fields": {"id": 2, "meeting_id": 1},
-        }
+        },
     )
     migrate("0010_add_sequential_numbers")
     write(
         {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"assignment_ids": [1, 2, 3]},
+        },
+        {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "3",
             "fields": {"id": 3, "meeting_id": 1},
-        }
+        },
     )
     write(
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"assignment_ids": [1, 2, 3, 4]},
+        },
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "4",
             "fields": {"id": 4, "meeting_id": 1},
-        }
+        },
     )
 
     finalize("0010_add_sequential_numbers")
@@ -218,6 +268,16 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
     write(
         {
             "type": "create",
+            "fqid": "meeting/1",
+            "fields": {"id": 1, "assignment_ids": [1]},
+        },
+        {
+            "type": "create",
+            "fqid": "meeting/2",
+            "fields": {"id": 2, "assignment_ids": [2, 3]},
+        },
+        {
+            "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "1",
             "fields": {"id": 1, "meeting_id": 1},
         },
@@ -233,6 +293,11 @@ def test_assignment_only_2_position(migrate, write, finalize, assert_model):
         },
     )
     write(
+        {
+            "type": "update",
+            "fqid": "meeting/1",
+            "fields": {"assignment_ids": [1, 4, 5]},
+        },
         {
             "type": "create",
             "fqid": "assignment" + KEYSEPARATOR + "4",
