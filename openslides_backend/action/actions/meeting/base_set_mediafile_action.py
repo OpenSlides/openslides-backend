@@ -48,7 +48,6 @@ class BaseMeetingSetMediafileAction(UpdateAction, GetMeetingIdFromIdMixin):
             raise ActionException(
                 f"Invalid mimetype: {mediafile.get('mimetype')}, allowed are {self.allowed_mimetypes}"
             )
-
         instance[self.field] = {instance.pop("place"): instance.pop("mediafile_id")}
         return instance
 
