@@ -34,8 +34,9 @@ class MeetingSetLogoActionTest(BaseActionTestCase):
             "meeting.set_logo", {"id": 222, "mediafile_id": 17, "place": "web_header"}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("meeting/222")
-        assert model.get("logo_$web_header_id") == 17
+        self.assert_model_exists(
+            "meeting/222", {"logo_$_id": ["web_header"], "logo_$web_header_id": 17}
+        )
 
     def test_set_logo_wrong_place(self) -> None:
         self.set_models(

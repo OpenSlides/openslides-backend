@@ -34,8 +34,9 @@ class MeetingSetFontActionTest(BaseActionTestCase):
             "meeting.set_font", {"id": 222, "mediafile_id": 17, "place": "bold"}
         )
         self.assert_status_code(response, 200)
-        model = self.get_model("meeting/222")
-        assert model.get("font_$bold_id") == 17
+        self.assert_model_exists(
+            "meeting/222", {"font_$_id": ["bold"], "font_$bold_id": 17}
+        )
 
     def test_set_font_wrong_place(self) -> None:
         self.set_models(
