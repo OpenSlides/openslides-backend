@@ -85,9 +85,9 @@ class SearchUsersByNameEmail(BasePresenter):
         userd: Dict[str, Set[int]] = defaultdict(set)
         emaild: Dict[str, Set[int]] = defaultdict(set)
         for instance in instances.values():
-            if username:=instance["username"]:
+            if username := instance["username"]:
                 userd[username.lower()].add(instance["id"])
-            if email:=instance["email"]:
+            if email := instance["email"]:
                 emaild[email.lower()].add(instance["id"])
         for search in self.data["search"]:
             username = search.get("username", "")
@@ -96,7 +96,9 @@ class SearchUsersByNameEmail(BasePresenter):
                 emaild.get(email.lower(), set())
             )
             if user_ids:
-                result[f"{username}/{email}"] = [instances[user_id] for user_id in user_ids]
+                result[f"{username}/{email}"] = [
+                    instances[user_id] for user_id in user_ids
+                ]
         return result
 
     def check_permissions(self, permission_type: int, permission_id: int) -> None:
