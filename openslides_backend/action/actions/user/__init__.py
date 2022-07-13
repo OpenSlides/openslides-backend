@@ -1,4 +1,5 @@
 from . import (  # noqa
+    assign_meetings,
     create,
     delete,
     forget_password,
