@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Union
+from collections import defaultdict
+from typing import Any, Dict, List, Set, Tuple, Union
 
 import fastjsonschema
 
@@ -14,7 +15,7 @@ from ..permissions.permission_helper import (
 )
 from ..permissions.permissions import Permissions
 from ..shared.exceptions import MissingPermission, PresenterException
-from ..shared.filters import Filter, FilterOperator, Or
+from ..shared.filters import FilterOperator, Or
 from ..shared.patterns import fqid_from_collection_and_id
 from ..shared.schema import schema_version
 from .base import BasePresenter
@@ -63,31 +64,36 @@ class SearchUsersByNameEmail(BasePresenter):
 
     def get_result(self) -> Any:
         self.check_permissions(self.data["permission_type"], self.data["permission_id"])
-        result: Dict[str, List[Dict[str, Union[str, int]]]] = {}
+        result: Dict[str, List[Dict[str, Union[str, int]]]] = defaultdict(list)
+        filter_bulk_tuples: Set[Tuple[str, str]] = set()
+        for search in self.data["search"]:
+            if username := search.get("username"):
+                filter_bulk_tuples.add(("username", username))
+            if email := search.get("email"):
+                filter_bulk_tuples.add(("email", email))
+        if len(filter_bulk_tuples) == 0:
+            return result
+        filter_bulk = Or(
+            *[FilterOperator(t[0], "~=", t[1]) for t in filter_bulk_tuples]
+        )
+        instances = self.datastore.filter(
+            "user",
+            filter_bulk,
+            ["id", "username", "first_name", "last_name", "email"],
+            lock_result=False,
+        )
+        userd: Dict[str, Set[int]] = defaultdict(set)
+        emaild: Dict[str, Set[int]] = defaultdict(set)
+        for instance in instances.values():
+            userd[instance["username"].lower()].add(instance["id"])
+            emaild[instance["email"].lower()].add(instance["id"])
         for search in self.data["search"]:
             username = search.get("username", "")
             email = search.get("email", "")
-            filter_: Filter
-            if username and email:
-                filter_ = Or(
-                    FilterOperator("username", "~=", username),
-                    FilterOperator("email", "~=", email),
-                )
-            elif username:
-                filter_ = FilterOperator("username", "~=", username)
-            elif email:
-                filter_ = FilterOperator("email", "~=", email)
-            else:
-                continue
-            instances = self.datastore.filter(
-                "user",
-                filter_,
-                ["id", "first_name", "last_name", "email"],
+            user_ids: Set[int] = userd.get(username.lower(), set()).union(
+                emaild.get(email.lower(), set())
             )
-
-            result[f"{username}/{email}"] = [
-                instance for instance in instances.values()
-            ]
+            result[f"{username}/{email}"] = [instances[user_id] for user_id in user_ids]
         return result
 
     def check_permissions(self, permission_type: int, permission_id: int) -> None:
@@ -120,6 +126,7 @@ class SearchUsersByNameEmail(BasePresenter):
             meeting = self.datastore.get(
                 fqid_from_collection_and_id("meeting", permission_id),
                 ["committee_id"],
+                lock_result=False,
             )
             if (committee_id := meeting.get("committee_id", 0)) < 1:
                 raise PresenterException(
