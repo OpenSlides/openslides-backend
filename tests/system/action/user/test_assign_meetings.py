@@ -181,3 +181,39 @@ class UserAssignMeetings(BaseActionTestCase):
             "Missing OrganizationManagementLevel: can_manage_users"
             in response.json["message"]
         )
+
+    def test_assign_meetings_archived_meetings(self) -> None:
+        self.set_models(
+            {
+                "group/1": {"name": "Test", "meeting_id": 1},
+                "group/2": {"name": "Default Group", "meeting_id": 2},
+                "group/3": {"name": "In Meeting", "meeting_id": 3},
+                "meeting/1": {
+                    "name": "Archived",
+                    "group_ids": [1],
+                },
+                "meeting/2": {
+                    "name": "No Test and Not in Meeting",
+                    "group_ids": [2],
+                    "is_active_in_organization_id": 1,
+                },
+                "meeting/3": {
+                    "name": "No Test and in Meeting",
+                    "group_ids": [3],
+                    "is_active_in_organization_id": 1,
+                },
+            }
+        )
+        response = self.request(
+            "user.assign_meetings",
+            {
+                "id": 1,
+                "meeting_ids": [1, 2, 3],
+                "group_name": "Test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "Meeting Archived/1 cannot be changed, because it is archived."
+            in response.json["message"]
+        )

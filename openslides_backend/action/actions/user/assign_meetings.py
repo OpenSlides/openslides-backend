@@ -29,8 +29,8 @@ class UserAssignMeetings(UpdateAction):
             "group_name": {"type": "string"},
         }
     )
-    skip_archived_meeting_check = True
     permission = OrganizationManagementLevel.CAN_MANAGE_USERS
+    use_meeting_ids_for_archived_meeting_check = True
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         user_id = instance["id"]
