@@ -64,7 +64,7 @@ class LimitOfUserMixin(Action):
 class UserMixin(CheckForArchivedMeetingMixin):
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)
-        for field in ("username", "first_name", "last_name"):
+        for field in ("username", "first_name", "last_name", "email"):
             self.strip_field(field, instance)
         user_fqid = fqid_from_collection_and_id("user", instance["id"])
         if "username" in instance:
