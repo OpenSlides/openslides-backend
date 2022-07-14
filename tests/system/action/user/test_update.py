@@ -497,7 +497,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_physical_person": True,
                 "default_password": "new default_password",
                 "gender": "female",
-                "email": "info@openslides.com ",
+                "email": "info@openslides.com ",  # space intentionally, will be stripped
                 "default_number": "new default_number",
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
@@ -516,7 +516,7 @@ class UserUpdateActionTest(BaseActionTestCase):
                 "is_physical_person": True,
                 "default_password": "new default_password",
                 "gender": "female",
-                "email": "info@openslides.com ",
+                "email": "info@openslides.com",
                 "default_number": "new default_number",
                 "default_structure_level": "new default_structure_level",
                 "default_vote_weight": "1.234000",
