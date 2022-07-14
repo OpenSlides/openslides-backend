@@ -138,7 +138,7 @@ class UserAssignMeetings(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Don't find a group with groupname in any meeting."
+            "Don't find a group with groupname Broken to assign to in any meeting."
             in response.json["message"]
         )
 

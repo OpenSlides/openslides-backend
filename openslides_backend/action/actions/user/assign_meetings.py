@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
 from ....permissions.permission_helper import has_organization_management_level
+from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
@@ -73,8 +74,10 @@ class UserAssignMeetings(UpdateAction):
             == meeting_ids
         )
 
-        if not self.success:
-            raise ActionException("Don't find a group with groupname in any meeting.")
+        if not success_update:
+            raise ActionException(
+                f"Don't find a group with groupname {group_name} to assign to in any meeting."
+            )
 
         # fill the instance for the update
         if success_update.union(self.standard_meeting_ids):
@@ -85,10 +88,15 @@ class UserAssignMeetings(UpdateAction):
                     set(self.find_group_id(meeting_id, groups))
                 )
             )
-        for meeting_id in self.standard_meeting_ids:
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", meeting_id), ["default_group_id"]
+        meetings = {}
+        if self.standard_meeting_ids:
+            get_many_request = GetManyRequest(
+                "meeting", list(self.standard_meeting_ids), ["default_group_id"]
             )
+            get_many_result = self.datastore.get_many([get_many_request])
+            meetings = get_many_result.get("meeting", {})
+        for meeting_id in self.standard_meeting_ids:
+            meeting = meetings[meeting_id]
             instance["group_$_ids"][meeting_id] = [meeting["default_group_id"]]
 
         return instance
