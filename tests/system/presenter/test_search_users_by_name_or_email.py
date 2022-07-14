@@ -6,6 +6,7 @@ from openslides_backend.permissions.management_levels import (
     OrganizationManagementLevel,
 )
 from openslides_backend.permissions.permissions import Permissions
+from tests.system.util import Profiler, performance
 
 from .base import BasePresenterTestCase
 
@@ -18,32 +19,49 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             "email": "user2@test.de",
             "first_name": "first2",
             "last_name": "last2",
+            "username": "user2",
         }
         self.user3 = {
             "id": 3,
             "email": "userX@test.de",
             "first_name": "first3",
             "last_name": "last3",
+            "username": "user3",
         }
         self.user4 = {
             "id": 4,
             "email": "userX@test.de",
             "first_name": "first4",
             "last_name": "last4",
+            "username": "user4",
         }
         self.set_models(
             {
                 "user/2": {
                     **self.user2,
-                    "username": "user2",
                 },
                 "user/3": {
                     **self.user3,
-                    "username": "user3",
                 },
                 "user/4": {
                     **self.user4,
-                    "username": "user4",
+                },
+            }
+        )
+
+    def create_more_test_users(self, quantity: int = 1000) -> None:
+        user_ids = list(range(5, quantity + 5))
+        self.set_models(
+            {
+                **{
+                    f"user/{i}": {
+                        "id": i,
+                        "email": f"userX{i}@test.de",
+                        "first_name": f"first{i}",
+                        "last_name": f"last{i}",
+                        "username": f"user{i}",
+                    }
+                    for i in user_ids
                 },
             }
         )
@@ -82,7 +100,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             [self.user2, self.user3, self.user4],
         )
 
-    def test_search_ignore_case(self) -> None:
+    def test_search_ignore_case_strip(self) -> None:
         status_code, data = self.request(
             "search_users_by_name_or_email",
             {
@@ -90,10 +108,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
                 "permission_id": 1,
                 "search": [
                     {
-                        "email": "User2@test.de",
+                        "email": " User2@test.de ",
                     },
                     {
-                        "username": "USER2",
+                        "username": " USER2",
                     },
                 ],
             },
@@ -321,3 +339,42 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
         self.assertIn(
             "Error in database: Meeting 1 has no valid committee_id!", data["message"]
         )
+
+    @performance
+    def test_search_performance(self) -> None:
+        quantity = 7000
+        self.create_more_test_users(quantity=quantity)
+        with Profiler("test_presenter_performance_search_users_by_name_or_email.prof"):
+            status_code, data = self.request(
+                "search_users_by_name_or_email",
+                {
+                    "permission_type": UserScope.Meeting.value,
+                    "permission_id": 1,
+                    "search": [
+                        {
+                            "username": "user2",
+                        },
+                        {
+                            "email": "userX@test.de",
+                        },
+                        {
+                            "username": "user2",
+                            "email": "userX@test.de",
+                        },
+                        *[
+                            {
+                                "username": f"uSer{i}",
+                                "email": "userX6@Test.de",
+                            }
+                            for i in range(5, 5 + quantity)
+                        ],
+                    ],
+                },
+            )
+        self.assertEqual(status_code, 200)
+        self.assertCountEqual(
+            data["user2/"],
+            [self.user2],
+        )
+        self.assertCountEqual(data.get(f"uSer{4+quantity}/", []), [])
+        assert len(data[f"uSer{4+quantity}/userX6@Test.de"]) == 2
