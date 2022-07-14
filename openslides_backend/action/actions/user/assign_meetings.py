@@ -2,9 +2,8 @@ from typing import Any, Dict, List, Optional
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
-from ....permissions.permission_helper import has_organization_management_level
 from ....services.datastore.commands import GetManyRequest
-from ....shared.exceptions import ActionException, MissingPermission
+from ....shared.exceptions import ActionException
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
@@ -31,6 +30,7 @@ class UserAssignMeetings(UpdateAction):
         }
     )
     skip_archived_meeting_check = True
+    permission = OrganizationManagementLevel.CAN_MANAGE_USERS
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         user_id = instance["id"]
@@ -115,10 +115,3 @@ class UserAssignMeetings(UpdateAction):
         result["standard_group"] = list(self.standard_meeting_ids)
         result["nothing"] = list(self.nothing_meeting_ids)
         return result
-
-    def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if not has_organization_management_level(
-            self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
-        ):
-            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
-        # Remove CML and perms checks here because of performance issues.
