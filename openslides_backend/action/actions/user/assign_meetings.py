@@ -80,7 +80,7 @@ class UserAssignMeetings(UpdateAction):
 
         if not success_update:
             raise ActionException(
-                f"Don't find a group with groupname {group_name} to assign to in any meeting."
+                f"Didn't find a group with groupname {group_name} to assign to in any meeting."
             )
 
         # fill the instance for the update
