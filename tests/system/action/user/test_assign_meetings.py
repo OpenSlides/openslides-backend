@@ -177,60 +177,7 @@ class UserAssignMeetings(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 403)
-        assert "Missing Permissions for meetings: 1, 2, 3" == response.json["message"]
-
-    def test_assign_meetings_missing_some_permissions(self) -> None:
-        self.set_models(
-            {
-                "group/1": {"name": "Test", "meeting_id": 1},
-                "group/2": {"name": "Default Group", "meeting_id": 2},
-                "group/3": {
-                    "name": "In Meeting",
-                    "meeting_id": 3,
-                    "permissions": ["user.can_manage"],
-                    "user_ids": [1],
-                },
-                "meeting/1": {
-                    "name": "Find Test",
-                    "group_ids": [1],
-                    "is_active_in_organization_id": 1,
-                },
-                "meeting/2": {
-                    "name": "No Test and Not in Meeting",
-                    "group_ids": [2],
-                    "is_active_in_organization_id": 1,
-                    "committee_id": 2,
-                },
-                "meeting/3": {
-                    "name": "No Test and in Meeting",
-                    "group_ids": [3],
-                    "is_active_in_organization_id": 1,
-                },
-                "committee/2": {
-                    "name": "CML Committee",
-                    "meeting_ids": [2],
-                    "user_ids": [1],
-                    "user_$_management_level": ["can_manage"],
-                    "user_$can_manage_management_level": [1],
-                },
-                "user/1": {
-                    "organization_management_level": None,
-                    "committee_ids": [2],
-                    "committee_$_management_level": ["can_manage"],
-                    "committee_$can_manage_management_level": [2],
-                    "group_$_ids": ["3"],
-                    "group_$3_ids": [3],
-                    "meeting_ids": [3],
-                },
-            }
+        assert (
+            "Missing OrganizationManagementLevel: can_manage_users"
+            in response.json["message"]
         )
-        response = self.request(
-            "user.assign_meetings",
-            {
-                "id": 1,
-                "meeting_ids": [1, 2, 3],
-                "group_name": "Test",
-            },
-        )
-        self.assert_status_code(response, 403)
-        assert "Missing Permissions for meetings: 1" == response.json["message"]

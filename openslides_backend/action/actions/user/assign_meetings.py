@@ -1,17 +1,9 @@
 from typing import Any, Dict, List, Optional
 
 from ....models.models import User
-from ....permissions.management_levels import (
-    CommitteeManagementLevel,
-    OrganizationManagementLevel,
-)
-from ....permissions.permission_helper import (
-    has_committee_management_level,
-    has_organization_management_level,
-    has_perm,
-)
-from ....permissions.permissions import Permissions
-from ....shared.exceptions import ActionException, PermissionDenied
+from ....permissions.management_levels import OrganizationManagementLevel
+from ....permissions.permission_helper import has_organization_management_level
+from ....shared.exceptions import ActionException, MissingPermission
 from ....shared.filters import And, FilterOperator, Or
 from ....shared.patterns import fqid_from_collection_and_id
 from ....shared.schema import id_list_schema
@@ -117,31 +109,8 @@ class UserAssignMeetings(UpdateAction):
         return result
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        if has_organization_management_level(
+        if not has_organization_management_level(
             self.datastore, self.user_id, OrganizationManagementLevel.CAN_MANAGE_USERS
         ):
-            return
-
-        error_ids = []
-        for meeting_id in instance["meeting_ids"]:
-            if has_perm(
-                self.datastore, self.user_id, Permissions.User.CAN_MANAGE, meeting_id
-            ):
-                continue
-            meeting = self.datastore.get(
-                fqid_from_collection_and_id("meeting", meeting_id), ["committee_id"]
-            )
-            if meeting.get("committee_id") and has_committee_management_level(
-                self.datastore,
-                self.user_id,
-                CommitteeManagementLevel.CAN_MANAGE,
-                meeting["committee_id"],
-            ):
-                continue
-
-            # no permission for this meeting_id
-            error_ids.append(str(meeting_id))
-        if error_ids:
-            raise PermissionDenied(
-                f"Missing Permissions for meetings: {', '.join(error_ids)}"
-            )
+            raise MissingPermission(OrganizationManagementLevel.CAN_MANAGE_USERS)
+        # Remove CML and perms checks here because of performance issues.
