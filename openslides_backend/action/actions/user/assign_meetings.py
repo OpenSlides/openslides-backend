@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from ....models.models import User
 from ....permissions.management_levels import OrganizationManagementLevel
@@ -57,6 +57,10 @@ class UserAssignMeetings(UpdateAction):
         )
         groups = self.datastore.filter("group", filter_, ["meeting_id", "user_ids"])
         groups_meeting_ids = set(group["meeting_id"] for group in groups.values())
+        meeting_to_group = {}
+        for key, group in groups.items():
+            meeting_to_group[group["meeting_id"]] = key
+
         # Now split the meetings in the 3 categories
         self.success = groups_meeting_ids
         success_update = self.success.difference(user_meeting_ids)
@@ -85,7 +89,7 @@ class UserAssignMeetings(UpdateAction):
         for meeting_id in success_update:
             instance["group_$_ids"][meeting_id] = list(
                 set(user.get(f"group_${meeting_id}_ids") or []).union(
-                    set(self.find_group_id(meeting_id, groups))
+                    set([meeting_to_group[meeting_id]])
                 )
             )
         meetings = {}
@@ -100,12 +104,6 @@ class UserAssignMeetings(UpdateAction):
             instance["group_$_ids"][meeting_id] = [meeting["default_group_id"]]
 
         return instance
-
-    def find_group_id(self, meeting_id: int, groups: Dict[int, Any]) -> List[int]:
-        for group_id, group in groups.items():
-            if group.get("meeting_id") == meeting_id:
-                return [group_id]
-        raise ActionException("Error, could not find group-id")
 
     def create_action_result_element(
         self, instance: Dict[str, Any]
