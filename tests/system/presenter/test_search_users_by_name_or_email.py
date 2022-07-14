@@ -100,7 +100,7 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
             [self.user2, self.user3, self.user4],
         )
 
-    def test_search_ignore_case(self) -> None:
+    def test_search_ignore_case_strip(self) -> None:
         status_code, data = self.request(
             "search_users_by_name_or_email",
             {
@@ -108,10 +108,10 @@ class TestSearchUsersByNameEmail(BasePresenterTestCase):
                 "permission_id": 1,
                 "search": [
                     {
-                        "email": "User2@test.de",
+                        "email": " User2@test.de ",
                     },
                     {
-                        "username": "USER2",
+                        "username": " USER2",
                     },
                 ],
             },

@@ -67,9 +67,9 @@ class SearchUsersByNameEmail(BasePresenter):
         result: Dict[str, List[Dict[str, Union[str, int]]]] = defaultdict(list)
         filter_bulk_tuples: Set[Tuple[str, str]] = set()
         for search in self.data["search"]:
-            if username := search.get("username"):
+            if username := search.get("username", "").strip():
                 filter_bulk_tuples.add(("username", username))
-            if email := search.get("email"):
+            if email := search.get("email", "").strip():
                 filter_bulk_tuples.add(("email", email))
         if len(filter_bulk_tuples) == 0:
             return result
@@ -90,11 +90,9 @@ class SearchUsersByNameEmail(BasePresenter):
             if email := instance["email"]:
                 emaild[email.lower()].add(instance["id"])
         for search in self.data["search"]:
-            username = search.get("username", "")
-            email = search.get("email", "")
-            user_ids: Set[int] = userd.get(username.lower(), set()).union(
-                emaild.get(email.lower(), set())
-            )
+            username = search.get("username", "").strip()
+            email = search.get("email", "").strip()
+            user_ids: Set[int] = userd[username.lower()] | emaild[email.lower()]
             if user_ids:
                 result[f"{username}/{email}"] = [
                     instances[user_id] for user_id in user_ids
