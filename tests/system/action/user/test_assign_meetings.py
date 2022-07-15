@@ -37,7 +37,7 @@ class UserAssignMeetings(BaseActionTestCase):
                     "committee_id": 2,
                 },
                 "meeting/5": {
-                    "name": "standard",
+                    "name": "success(added)",
                     "group_ids": [51, 52],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
