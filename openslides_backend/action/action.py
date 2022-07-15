@@ -23,6 +23,7 @@ from ..permissions.management_levels import (
 from ..permissions.permission_helper import has_organization_management_level, has_perm
 from ..permissions.permissions import Permission
 from ..services.auth.interface import AuthenticationService
+from ..services.datastore.commands import GetManyRequest
 from ..services.datastore.interface import DatastoreService
 from ..services.media.interface import MediaService
 from ..services.vote.interface import VoteService
@@ -102,6 +103,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     permission_model: Optional[Model] = None
     permission_id: Optional[str] = None
     skip_archived_meeting_check: bool = False
+    use_meeting_ids_for_archived_meeting_check: bool = False
     relation_manager: RelationManager
 
     write_requests: List[WriteRequest]
@@ -115,6 +117,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
         logging: LoggingModule,
         env: Env,
         skip_archived_meeting_check: Optional[bool] = None,
+        use_meeting_ids_for_archived_meeting_check: bool = None,
     ) -> None:
         self.services = services
         self.auth = services.authentication()
@@ -127,6 +130,10 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.env = env
         if skip_archived_meeting_check is not None:
             self.skip_archived_meeting_check = skip_archived_meeting_check
+        if use_meeting_ids_for_archived_meeting_check is not None:
+            self.use_meeting_ids_for_archived_meeting_check = (
+                use_meeting_ids_for_archived_meeting_check
+            )
         self.write_requests = []
         self.results = []
 
@@ -230,22 +237,23 @@ class Action(BaseAction, metaclass=SchemaProvider):
         if self.skip_archived_meeting_check:
             return
         try:
-            meeting_id = self.get_meeting_id(instance)
+            if self.use_meeting_ids_for_archived_meeting_check:
+                meeting_ids = instance["meeting_ids"]
+            else:
+                meeting_ids = [self.get_meeting_id(instance)]
         except AttributeError:
             raise ActionException(
                 f"get meeting failed Action: {self.name}. Perhaps you want to use skip_archived_meeting_checks = True attribute"
             )
-
-        fqid = fqid_from_collection_and_id("meeting", meeting_id)
-        meeting = self.datastore.get(
-            fqid,
-            ["is_active_in_organization_id", "name"],
-            lock_result=False,
+        gmr = GetManyRequest(
+            "meeting", meeting_ids, ["id", "is_active_in_organization_id", "name"]
         )
-        if not meeting.get("is_active_in_organization_id"):
-            raise ActionException(
-                f'Meeting {meeting.get("name", "")}/{meeting_id} cannot be changed, because it is archived.'
-            )
+        gm_result = self.datastore.get_many([gmr], lock_result=False)
+        for meeting in gm_result.get("meeting", {}).values():
+            if not meeting.get("is_active_in_organization_id"):
+                raise ActionException(
+                    f'Meeting {meeting.get("name", "")}/{meeting["id"]} cannot be changed, because it is archived.'
+                )
 
     def assert_not_anonymous(self) -> None:
         """
