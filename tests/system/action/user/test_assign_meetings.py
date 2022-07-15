@@ -5,60 +5,83 @@ class UserAssignMeetings(BaseActionTestCase):
     def test_assign_meetings_correct(self) -> None:
         self.set_models(
             {
-                "group/1": {"name": "Test", "meeting_id": 1},
-                "group/2": {"name": "Default Group", "meeting_id": 2},
-                "group/3": {"name": "In Meeting", "meeting_id": 3, "user_ids": [1]},
+                "group/11": {"name": "to_find", "meeting_id": 1, "user_ids": [1]},
+                "group/22": {"name": "nothing", "meeting_id": 2, "user_ids": [1]},
+                "group/31": {"name": "to_find", "meeting_id": 3},
+                "group/43": {"name": "standard", "meeting_id": 4},
+                "group/51": {"name": "to_find", "meeting_id": 5},
+                "group/52": {"name": "nothing", "meeting_id": 5, "user_ids": [1]},
                 "meeting/1": {
-                    "name": "Find Test",
-                    "group_ids": [1],
+                    "name": "success(existing)",
+                    "group_ids": [11],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
                 },
                 "meeting/2": {
-                    "name": "No Test and Not in Meeting",
-                    "group_ids": [2],
+                    "name": "nothing",
+                    "group_ids": [22],
                     "is_active_in_organization_id": 1,
-                    "default_group_id": 2,
                     "committee_id": 2,
                 },
                 "meeting/3": {
-                    "name": "No Test and in Meeting",
-                    "group_ids": [3],
+                    "name": "success(added)",
+                    "group_ids": [31],
+                    "is_active_in_organization_id": 1,
+                    "committee_id": 2,
+                },
+                "meeting/4": {
+                    "name": "standard",
+                    "group_ids": [43],
+                    "is_active_in_organization_id": 1,
+                    "default_group_id": 43,
+                    "committee_id": 2,
+                },
+                "meeting/5": {
+                    "name": "standard",
+                    "group_ids": [51, 52],
                     "is_active_in_organization_id": 1,
                     "committee_id": 2,
                 },
                 "user/1": {
-                    "group_$_ids": ["3"],
-                    "group_$3_ids": [3],
-                    "meeting_ids": [3],
+                    "group_$_ids": ["1", "2", "5"],
+                    "group_$1_ids": [11],
+                    "group_$2_ids": [22],
+                    "group_$5_ids": [51, 52],
+                    "meeting_ids": [1, 2, 5],
                 },
-                "committee/2": {"meeting_ids": [1, 2, 3]},
+                "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
             }
         )
         response = self.request(
             "user.assign_meetings",
             {
                 "id": 1,
-                "meeting_ids": [1, 2, 3],
-                "group_name": "Test",
+                "meeting_ids": [1, 2, 3, 4, 5],
+                "group_name": "to_find",
             },
         )
         self.assert_status_code(response, 200)
-        assert response.json["results"][0][0]["succeeded"] == [1]
-        assert response.json["results"][0][0]["standard_group"] == [2]
-        assert response.json["results"][0][0]["nothing"] == [3]
+        assert response.json["results"][0][0]["succeeded"] == [1, 3, 5]
+        assert response.json["results"][0][0]["standard_group"] == [4]
+        assert response.json["results"][0][0]["nothing"] == [2]
         user1 = self.assert_model_exists(
             "user/1",
             {
-                "group_$1_ids": [1],
-                "group_$2_ids": [2],
-                "group_$3_ids": [3],
+                "group_$1_ids": [11],
+                "group_$2_ids": [22],
+                "group_$3_ids": [31],
+                "group_$4_ids": [43],
             },
         )
-        assert sorted(user1.get("meeting_ids", [])) == [1, 2, 3]
-        assert sorted(user1.get("group_$_ids", [])) == ["1", "2", "3"]
-        self.assert_model_exists("group/1", {"user_ids": [1]})
-        self.assert_model_exists("group/2", {"user_ids": [1]})
+        assert sorted(user1.get("group_$_ids", [])) == ["1", "2", "3", "4", "5"]
+        assert sorted(user1.get("group_$5_ids", [])) == [51, 52]
+        assert sorted(user1.get("meeting_ids", [])) == [1, 2, 3, 4, 5]
+        self.assert_model_exists("group/11", {"user_ids": [1]})
+        self.assert_model_exists("group/22", {"user_ids": [1]})
+        self.assert_model_exists("group/31", {"user_ids": [1]})
+        self.assert_model_exists("group/43", {"user_ids": [1]})
+        self.assert_model_exists("group/51", {"user_ids": [1]})
+        self.assert_model_exists("group/52", {"user_ids": [1]})
 
     def test_assign_meetings_with_existing_user_in_group(self) -> None:
         self.set_models(
@@ -138,7 +161,7 @@ class UserAssignMeetings(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert (
-            "Didn't find a group with groupname Broken to assign to in any meeting."
+            "Didn't find a group with groupname Broken in any meeting."
             in response.json["message"]
         )
 

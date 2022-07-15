@@ -57,13 +57,18 @@ class UserAssignMeetings(UpdateAction):
         )
         groups = self.datastore.filter("group", filter_, ["meeting_id", "user_ids"])
         groups_meeting_ids = set(group["meeting_id"] for group in groups.values())
+        meeting_ids_of_user_in_group = set(
+            group["meeting_id"]
+            for group in groups.values()
+            if user_id in (group["user_ids"] or [])
+        )
         meeting_to_group = {}
         for key, group in groups.items():
             meeting_to_group[group["meeting_id"]] = key
 
         # Now split the meetings in the 3 categories
         self.success = groups_meeting_ids
-        success_update = self.success.difference(user_meeting_ids)
+        success_update = self.success.difference(meeting_ids_of_user_in_group)
         self.standard_meeting_ids = meeting_ids.difference(
             groups_meeting_ids
         ).difference(user_meeting_ids)
@@ -78,9 +83,9 @@ class UserAssignMeetings(UpdateAction):
             == meeting_ids
         )
 
-        if not success_update:
+        if not self.success:
             raise ActionException(
-                f"Didn't find a group with groupname {group_name} to assign to in any meeting."
+                f"Didn't find a group with groupname {group_name} in any meeting."
             )
 
         # fill the instance for the update
