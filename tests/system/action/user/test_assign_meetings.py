@@ -46,7 +46,7 @@ class UserAssignMeetings(BaseActionTestCase):
                     "group_$_ids": ["1", "2", "5"],
                     "group_$1_ids": [11],
                     "group_$2_ids": [22],
-                    "group_$5_ids": [51, 52],
+                    "group_$5_ids": [52],
                     "meeting_ids": [1, 2, 5],
                 },
                 "committee/2": {"meeting_ids": [1, 2, 3, 4, 5]},
