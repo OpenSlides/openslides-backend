@@ -343,11 +343,14 @@ class BaseActionTestCase(BaseSystemTestCase):
 
     @with_database_context
     def assert_history_information(
-        self, fqid: FullQualifiedId, information: List[str]
+        self, fqid: FullQualifiedId, information: Optional[List[str]]
     ) -> None:
         """
         Asserts that the last history information for the given model is the given information.
         """
         informations = self.datastore.history_information([fqid])[fqid]
-        assert informations
-        self.assertEqual(informations[-1]["information"], information)
+        if information is None:
+            assert information is None
+        else:
+            assert informations
+            self.assertEqual(informations[-1]["information"], information)

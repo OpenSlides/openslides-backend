@@ -181,7 +181,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
     def get_history_information(self) -> Optional[List[str]]:
         full_informations: List[Tuple[Optional[str], Optional[str]]] = []
         all_instance_fields = set(
-            field for instance in self.instances for field in instance if field != "id"
+            field for instance in self.instances for field in instance
         )
 
         # supporters changed
@@ -207,8 +207,20 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             )
         )
 
-        # still other fields given, so we also add the generic "updated" message
-        if all_instance_fields:
+        generic_update_fields = set(
+            [
+                "title",
+                "text",
+                "reason",
+                "attachment_ids",
+                "amendment_paragraph_$",
+                "workflow_id",
+                "start_line_number",
+                "state_extension",
+            ]
+        )
+        if all_instance_fields & generic_update_fields:
+            # still other fields given, so we also add the generic "updated" message
             full_informations.append(("Motion updated", None))
 
         informations, args = zip(*full_informations)
@@ -216,6 +228,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             information for information in informations if information
         )
 
+        # number args correctly
         i = 0
 
         def replace_args(_: Any) -> str:

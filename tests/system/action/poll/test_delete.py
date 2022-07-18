@@ -81,7 +81,7 @@ class PollDeleteTest(PollTestMixin):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/1")
-        assert counter.calls == 5
+        assert counter.calls == 6
 
     @performance
     def test_delete_performance(self) -> None:

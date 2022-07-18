@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional
 
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import MotionComment
 from ....permissions.permissions import Permissions
 from ....shared.exceptions import ActionException, PermissionDenied
@@ -84,8 +86,8 @@ class MotionCommentCreate(MotionCommentMixin, CreateActionWithInferredMeeting):
         return instance
 
 
-class MotionCommentUpdate(MotionCommentMixin, UpdateAction):
-    pass
+class MotionCommentUpdate(ExtendHistoryMixin, MotionCommentMixin, UpdateAction):
+    extend_history_to = "motion_id"
 
 
 class MotionCommentDelete(MotionCommentMixin, DeleteAction):

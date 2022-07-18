@@ -102,6 +102,8 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
+        # test history
+        self.assert_history_information("motion/12", ["Forwarding created"])
 
     def test_correct_existing_registered_forward_user(self) -> None:
         self.set_models(self.test_model)
@@ -357,6 +359,9 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "all_derived_motion_ids": [11, 12, 13, 14],
             },
         )
+        # grandparent should not have a history entry
+        self.assert_history_information("motion/11", ["Forwarding created"])
+        self.assert_history_information("motion/6", None)
 
     def test_not_allowed_to_forward_amendments(self) -> None:
         self.set_models(

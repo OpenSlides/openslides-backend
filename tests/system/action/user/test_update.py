@@ -136,13 +136,13 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
         group1 = self.get_model("group/11")
-        self.assertCountEqual(group1.get("user_ids"), [223])
+        self.assertCountEqual(group1.get("user_ids", []), [223])
         group2 = self.get_model("group/22")
-        self.assertCountEqual(group2.get("user_ids"), [223])
+        self.assertCountEqual(group2.get("user_ids", []), [223])
         meeting = self.get_model("meeting/1")
-        self.assertCountEqual(meeting.get("user_ids"), [223])
+        self.assertCountEqual(meeting.get("user_ids", []), [223])
         meeting = self.get_model("meeting/2")
-        self.assertCountEqual(meeting.get("user_ids"), [223])
+        self.assertCountEqual(meeting.get("user_ids", []), [223])
 
     def test_committee_manager_without_committee_ids(self) -> None:
         """Giving committee management level requires committee_ids"""
@@ -1368,23 +1368,23 @@ class UserUpdateActionTest(BaseActionTestCase):
         self.assertCountEqual(user.get("meeting_ids", []), [2, 3])
 
         group = self.get_model("group/11")
-        self.assertCountEqual(group.get("user_ids"), [222])
+        self.assertCountEqual(group.get("user_ids", []), [222])
         group = self.get_model("group/22")
-        self.assertCountEqual(group.get("user_ids"), [222, 223])
+        self.assertCountEqual(group.get("user_ids", []), [222, 223])
         group = self.get_model("group/33")
-        self.assertCountEqual(group.get("user_ids"), [222, 223])
+        self.assertCountEqual(group.get("user_ids", []), [222, 223])
         meeting = self.get_model("meeting/1")
-        self.assertCountEqual(meeting.get("user_ids"), [222])
+        self.assertCountEqual(meeting.get("user_ids", []), [222])
         meeting = self.get_model("meeting/2")
-        self.assertCountEqual(meeting.get("user_ids"), [222, 223])
+        self.assertCountEqual(meeting.get("user_ids", []), [222, 223])
         meeting = self.get_model("meeting/3")
-        self.assertCountEqual(meeting.get("user_ids"), [222, 223])
+        self.assertCountEqual(meeting.get("user_ids", []), [222, 223])
         committee = self.get_model("committee/1")
-        self.assertCountEqual(committee.get("user_ids"), [222])
+        self.assertCountEqual(committee.get("user_ids", []), [222])
         committee = self.get_model("committee/2")
-        self.assertCountEqual(committee.get("user_ids"), [222, 223])
+        self.assertCountEqual(committee.get("user_ids", []), [222, 223])
         committee = self.get_model("committee/3")
-        self.assertCountEqual(committee.get("user_ids"), [222, 223])
+        self.assertCountEqual(committee.get("user_ids", []), [222, 223])
 
     def test_update_empty_default_vote_weight(self) -> None:
         response = self.request(

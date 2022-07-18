@@ -120,7 +120,7 @@ class ListOfSpeakersReAddLastActionTest(BaseActionTestCase):
         response = self.request("list_of_speakers.re_add_last", {"id": 111})
         self.assert_status_code(response, 200)
         model = self.get_model("list_of_speakers/111")
-        self.assertCountEqual(model.get("speaker_ids"), [222, 223])
+        self.assertCountEqual(model.get("speaker_ids", []), [222, 223])
         self.assert_model_exists(
             "speaker/223",
             {"begin_time": None, "end_time": None, "user_id": 43, "weight": -1},

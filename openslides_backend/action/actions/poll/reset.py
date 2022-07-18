@@ -1,5 +1,7 @@
 from typing import Any, Callable, Dict, List
 
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import Poll
 from ....services.datastore.interface import GetManyRequest
 from ....shared.patterns import fqid_from_collection_and_id
@@ -13,13 +15,15 @@ from .mixins import PollPermissionMixin
 
 
 @register_action("poll.reset")
-class PollResetAction(UpdateAction, PollPermissionMixin):
+class PollResetAction(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
     """
     Action to reset a poll.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
+    history_information = "Voting reset"
+    extend_history_to = "content_object_id"
 
     def prefetch(self, action_data: ActionData) -> None:
         result = self.datastore.get_many(

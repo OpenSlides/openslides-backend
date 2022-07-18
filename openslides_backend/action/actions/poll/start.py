@@ -1,5 +1,7 @@
 from typing import Any, Callable, Dict
 
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import Poll
 from ....shared.exceptions import ActionException, VoteServiceException
 from ....shared.patterns import fqid_from_collection_and_id
@@ -12,16 +14,22 @@ from .mixins import PollPermissionMixin
 
 
 @register_action("poll.start")
-class PollStartAction(CountdownControl, UpdateAction, PollPermissionMixin):
+class PollStartAction(
+    ExtendHistoryMixin,
+    CountdownControl,
+    UpdateAction,
+    PollPermissionMixin,
+):
     """
     Action to start a poll.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
+    history_information = "Voting started"
+    extend_history_to = "content_object_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
-
         poll = self.datastore.get(
             fqid_from_collection_and_id(self.model.collection, instance["id"]),
             ["state", "meeting_id", "type"],

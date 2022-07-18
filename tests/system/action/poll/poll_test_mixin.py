@@ -13,7 +13,11 @@ class PollTestMixin(BaseActionTestCase):
         user_ids = list(range(2, user_count + 2))
         self.set_models(
             {
+                "motion/1": {
+                    "meeting_id": 1,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YNA",
                     "state": Poll.STATE_STARTED,
