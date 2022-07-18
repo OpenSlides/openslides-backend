@@ -89,9 +89,10 @@ class MeetingClone(MeetingImport):
 
         # needs an empty map for superclass code
         self.merge_user_map = {}
-        for id_ in self.get_meeting_from_json(meeting_json).get("user_ids", []):
+        imported_users_ids = [int(key) for key in meeting_json.get("user", {})]
+        for id_ in imported_users_ids:
             self.merge_user_map[id_] = id_
-        self.number_of_imported_users = len(meeting_json.get("user", {}))
+        self.number_of_imported_users = len(imported_users_ids)
         self.number_of_merged_users = len(self.merge_user_map)
 
         # checks if the meeting is correct
