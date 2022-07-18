@@ -12,7 +12,7 @@ from ....permissions.permission_helper import (
     is_admin,
 )
 from ....permissions.permissions import Permissions
-from ....shared.exceptions import MissingPermission, PermissionDenied
+from ....shared.exceptions import ActionException, MissingPermission, PermissionDenied
 from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.assert_belongs_to_meeting import assert_belongs_to_meeting
@@ -189,6 +189,14 @@ class MeetingUpdate(UpdateAction, GetMeetingIdFromIdMixin):
 
         if meeting_check:
             assert_belongs_to_meeting(self.datastore, meeting_check, instance["id"])
+        if instance.get("jitsi_domain"):
+            if instance["jitsi_domain"].strip().startswith("https://"):
+                raise ActionException(
+                    "It is not allowed to start jitsi_domain with 'https://'."
+                )
+            if instance["jitsi_domain"].strip().endswith("/"):
+                raise ActionException("It is not allowed to end jitsi_domain with '/'.")
+
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
