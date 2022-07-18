@@ -497,3 +497,21 @@ class MeetingUpdateActionTest(BaseActionTestCase):
         assert "set_as_template" not in meeting
         assert "template_for_organization_id" not in meeting
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"template_meeting_ids": []})
+
+    def test_update_check_jitsi_domain_1(self) -> None:
+        _, response = self.basic_test(
+            {"jitsi_domain": "https://test.com"}, check_200=False
+        )
+        self.assert_status_code(response, 400)
+        assert (
+            "It is not allowed to start jitsi_domain with 'https://'."
+            in response.json["message"]
+        )
+
+    def test_update_check_jitsi_domain_2(self) -> None:
+        _, response = self.basic_test({"jitsi_domain": "test.com/"}, check_200=False)
+        self.assert_status_code(response, 400)
+        assert (
+            "It is not allowed to end jitsi_domain with '/'."
+            in response.json["message"]
+        )
