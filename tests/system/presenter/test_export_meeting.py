@@ -158,3 +158,47 @@ class TestExportMeeting(BasePresenterTestCase):
         assert data["user"]["1"]["is_present_in_meeting_ids"] == [1]
         assert data["user"]["1"]["comment_$"] == ["1"]
         assert data["user"]["1"]["comment_$1"] == "blablabla"
+
+    def test_export_meeting_with_ex_user(self) -> None:
+        self.set_models(
+            {
+                "meeting/1": {
+                    "name": "exported_meeting",
+                    "motion_submitter_ids": [1],
+                    "motion_ids": [1],
+                    "list_of_speakers_ids": [1],
+                },
+                "user/11": {
+                    "username": "exuser11",
+                    "submitted_motion_$_ids": ["1"],
+                    "submitted_motion_$1_ids": [1],
+                },
+                "motion/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                    "state_id": 1,
+                    "submitter_ids": [1],
+                    "title": "dummy",
+                },
+                "motion_submitter/1": {
+                    "user_id": 11,
+                    "motion_id": 1,
+                    "meeting_id": 1,
+                },
+                "list_of_speakers/1": {
+                    "content_object_id": "motion/1",
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                },
+                "motion_state/1": {
+                    "motion_ids": [1],
+                },
+            }
+        )
+        status_code, data = self.request("export_meeting", {"meeting_id": 1})
+        assert status_code == 200
+        user11 = data["user"]["11"]
+        assert user11.get("username") == "exuser11"
+        assert user11.get("submitted_motion_$_ids") == ["1"]
+        assert user11.get("submitted_motion_$1_ids") == [1]
