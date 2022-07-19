@@ -167,11 +167,17 @@ class TestExportMeeting(BasePresenterTestCase):
                     "motion_submitter_ids": [1],
                     "motion_ids": [1],
                     "list_of_speakers_ids": [1],
+                    "personal_note_ids": [34],
                 },
                 "user/11": {
                     "username": "exuser11",
                     "submitted_motion_$_ids": ["1"],
                     "submitted_motion_$1_ids": [1],
+                },
+                "user/12": {
+                    "username": "exuser12",
+                    "personal_note_$_ids": ["1"],
+                    "personal_note_$1_ids": [34],
                 },
                 "motion/1": {
                     "list_of_speakers_id": 1,
@@ -194,11 +200,21 @@ class TestExportMeeting(BasePresenterTestCase):
                 "motion_state/1": {
                     "motion_ids": [1],
                 },
+                "personal_note/34": {
+                    "user_id": 12,
+                    "meeting_id": 1,
+                    "note": "note_in_meeting1",
+                },
             }
         )
         status_code, data = self.request("export_meeting", {"meeting_id": 1})
         assert status_code == 200
+        assert data["meeting"]["1"].get("user_ids") is None
         user11 = data["user"]["11"]
         assert user11.get("username") == "exuser11"
         assert user11.get("submitted_motion_$_ids") == ["1"]
         assert user11.get("submitted_motion_$1_ids") == [1]
+        user12 = data["user"]["12"]
+        assert user12.get("username") == "exuser12"
+        assert user12.get("personal_note_$_ids") == ["1"]
+        assert user12.get("personal_note_$1_ids") == [34]
