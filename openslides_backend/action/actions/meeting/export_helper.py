@@ -4,11 +4,8 @@ from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
 
-from ....models.base import model_registry
 from ....models.fields import (
-    BaseRelationField,
     OnDelete,
-    RelationField,
     RelationListField,
     TemplateCharField,
     TemplateDecimalField,
@@ -64,28 +61,16 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
     for collection in export:
         if collection == "_migration_index":
             continue
-        model = model_registry[collection]()
-        user_fields: Iterable[BaseRelationField] = model.get_relation_fields()
-        for user_field in user_fields:
-            if (
-                isinstance(user_field, RelationField)
-                and user_field.get_target_collection() == "user"
-            ):
-                user_ids |= set(
-                    entry.get(user_field.get_own_field_name())
-                    for entry in export[collection].values()
-                    if entry.get(user_field.get_own_field_name())
-                )
-            if (
-                isinstance(user_field, RelationListField)
-                and user_field.get_target_collection() == "user"
-            ):
-                for entry in export[collection].values():
-                    if entry.get(user_field.get_own_field_name()):
-                        user_ids |= set(
-                            id_
-                            for id_ in entry.get(user_field.get_own_field_name()) or []
-                        )
+        user_ids.update(
+            (
+                result.get("user_id")
+                for result in results[collection].values()
+                if result.get("user_id")
+            )
+        )
+        for result in results[collection].values():
+            user_ids.update(result.get("user_ids", ()))
+
     add_users(list(user_ids), export, meeting_id, datastore)
     return export
 
