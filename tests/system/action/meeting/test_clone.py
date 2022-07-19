@@ -177,7 +177,7 @@ class MeetingClone(BaseActionTestCase):
                     "group_$1_ids": [1],
                     "meeting_ids": [1],
                 },
-                "user/2": {
+                "user/11": {
                     "username": "exuser1",
                     "submitted_motion_$_ids": ["1"],
                     "submitted_motion_$1_ids": [1],
@@ -191,7 +191,7 @@ class MeetingClone(BaseActionTestCase):
                     "title": "dummy",
                 },
                 "motion_submitter/1": {
-                    "user_id": 2,
+                    "user_id": 11,
                     "motion_id": 1,
                     "meeting_id": 1,
                 },
@@ -223,10 +223,10 @@ class MeetingClone(BaseActionTestCase):
             },
         )
         self.assert_model_exists(
-            "motion_submitter/2", {"user_id": 2, "meeting_id": 2, "motion_id": 2}
+            "motion_submitter/2", {"user_id": 11, "meeting_id": 2, "motion_id": 2}
         )
         self.assert_model_exists(
-            "user/2",
+            "user/11",
             {
                 "submitted_motion_$_ids": ["1", "2"],
                 "submitted_motion_$1_ids": [1],
