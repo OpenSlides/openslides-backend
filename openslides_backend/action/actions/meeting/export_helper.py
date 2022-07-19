@@ -32,6 +32,9 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
     export["meeting"] = remove_meta_fields(transfer_keys({meeting_id: meeting}))
     export["_migration_index"] = get_backend_migration_index()
 
+    # initialize user_ids
+    user_ids = set(meeting.get("user_ids", []))
+
     # fetch related models
     relation_fields = list(get_relation_fields())
     get_many_requests = [
@@ -55,7 +58,20 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         else:
             export[str(collection)] = {}
 
-    add_users(meeting.get("user_ids", []), export, meeting_id, datastore)
+    for collection in export:
+        if collection == "_migration_index":
+            continue
+        user_ids.update(
+            (
+                result.get("user_id")
+                for result in export[collection].values()
+                if result.get("user_id")
+            )
+        )
+        for result in export[collection].values():
+            user_ids.update(result.get("user_ids", ()))
+
+    add_users(list(user_ids), export, meeting_id, datastore)
     return export
 
 

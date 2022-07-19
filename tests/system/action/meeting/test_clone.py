@@ -167,6 +167,104 @@ class MeetingClone(BaseActionTestCase):
             },
         )
 
+    def test_clone_with_ex_users(self) -> None:
+        self.test_models["meeting/1"]["user_ids"] = [1]
+        self.test_models["group/1"]["user_ids"] = [1]
+        self.set_models(
+            {
+                "user/1": {
+                    "group_$_ids": ["1"],
+                    "group_$1_ids": [1],
+                    "meeting_ids": [1],
+                },
+                "user/11": {
+                    "username": "exuser1",
+                    "submitted_motion_$_ids": ["1"],
+                    "submitted_motion_$1_ids": [1],
+                },
+                "user/12": {
+                    "username": "admin_ids_user",
+                },
+                "user/13": {
+                    "username": "user_ids_user",
+                },
+                "motion/1": {
+                    "list_of_speakers_id": 1,
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                    "state_id": 1,
+                    "submitter_ids": [1],
+                    "title": "dummy",
+                },
+                "motion_submitter/1": {
+                    "user_id": 11,
+                    "motion_id": 1,
+                    "meeting_id": 1,
+                },
+                "meeting/1": {
+                    "motion_submitter_ids": [1],
+                    "motion_ids": [1],
+                    "list_of_speakers_ids": [1],
+                },
+                "list_of_speakers/1": {
+                    "content_object_id": "motion/1",
+                    "meeting_id": 1,
+                    "sequential_number": 1,
+                },
+                "motion_state/1": {
+                    "motion_ids": [1],
+                },
+            }
+        )
+        self.set_models(self.test_models)
+        response = self.request(
+            "meeting.clone", {"meeting_id": 1, "admin_ids": [12], "user_ids": [13]}
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("meeting/1", {"user_ids": [1]})
+        meeting2 = self.assert_model_exists(
+            "meeting/2",
+            {
+                "motion_submitter_ids": [2],
+                "motion_ids": [2],
+            },
+        )
+        assert sorted(meeting2.get("user_ids", [])) == [1, 12, 13]
+        self.assert_model_exists(
+            "motion_submitter/2", {"user_id": 11, "meeting_id": 2, "motion_id": 2}
+        )
+        self.assert_model_exists(
+            "user/11",
+            {
+                "submitted_motion_$_ids": ["1", "2"],
+                "submitted_motion_$1_ids": [1],
+                "submitted_motion_$2_ids": [2],
+            },
+        )
+        self.assert_model_exists(
+            "user/12",
+            {
+                "username": "admin_ids_user",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [4],
+            },
+        )
+        self.assert_model_exists(
+            "user/13",
+            {
+                "username": "user_ids_user",
+                "group_$_ids": ["2"],
+                "group_$2_ids": [3],
+            },
+        )
+        self.assert_model_exists(
+            "motion/2",
+            {
+                "meeting_id": 2,
+                "submitter_ids": [2],
+            },
+        )
+
     def test_clone_with_set_fields(self) -> None:
         self.test_models["meeting/1"][
             "template_for_organization_id"
