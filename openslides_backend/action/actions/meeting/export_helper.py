@@ -64,11 +64,11 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         user_ids.update(
             (
                 result.get("user_id")
-                for result in results[collection].values()
+                for result in export[collection].values()
                 if result.get("user_id")
             )
         )
-        for result in results[collection].values():
+        for result in export[collection].values():
             user_ids.update(result.get("user_ids", ()))
 
     add_users(list(user_ids), export, meeting_id, datastore)
