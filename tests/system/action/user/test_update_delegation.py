@@ -241,7 +241,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
 
     def test_update_vote_delegations_from_on_empty_array_standard_user(self) -> None:
         """user/3/4->user/2: user/2 wants to reset all delegations"""
-        request_data = {"id": 2, "vote_delegations_$_from_ids": {222: None}}
+        request_data = {"id": 2, "vote_delegations_$_from_ids": {"222": []}}
         self.setup_vote_delegation()
         response = self.request("user.update", request_data)
 
@@ -701,7 +701,7 @@ class UserUpdateDelegationActionTest(BaseActionTestCase):
         )
 
     def test_update_vote_delegations_from_with_forbidden_None(self) -> None:
-        request_data = {"id": 2, "vote_delegations_$_from_ids": {222: None}}
+        request_data = {"id": 2, "vote_delegations_$_from_ids": {"222": None}}
         self.setup_vote_delegation()
         response = self.request("user.update", request_data)
 

@@ -1,4 +1,5 @@
 import threading
+from http import HTTPStatus
 from time import sleep, time
 
 from openslides_backend.shared.patterns import (
@@ -6,9 +7,10 @@ from openslides_backend.shared.patterns import (
     fqid_from_collection_and_id,
     id_from_fqid,
 )
-from openslides_backend.services.datastore.interface import DatastoreService
+
 from ..shared.exceptions import DatastoreException
 from ..shared.interfaces.event import Event, EventType
+from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
 from ..shared.interfaces.write_request import WriteRequest
 from .action_handler import ActionHandler
@@ -20,9 +22,10 @@ def handle_action_in_worker_thread(
     user_id: int,
     is_atomic: bool,
     handler: ActionHandler,
-    thread_watch_timeout: int,
+    thread_watch_timeout: float,
 ) -> ActionsResponse:
     starttime = round(time())
+    logger = handler.logging.getLogger(__name__)
     lock = threading.Lock()
     worker_thread = ActionWorker(
         payload, user_id, is_atomic, handler, thread_watch_timeout, lock
@@ -30,6 +33,7 @@ def handle_action_in_worker_thread(
     worker_thread.start()
     sleep(0.001)  # The worker_thread should gain the lock
     if lock.acquire(timeout=thread_watch_timeout):
+        logger.debug("action_worker:WorkerThread ready in thread_watch_timeout")
         if hasattr(worker_thread, "exception"):
             raise worker_thread.exception
         return worker_thread.response
@@ -67,6 +71,9 @@ def handle_action_in_worker_thread(
             except DatastoreException:
                 message = f"Action lasts to long, action_worker still blocks writing {fqid}. Get the result later from database."
                 written = False
+            logger.debug(
+                f"action_worker: WorkerThread ready in thread_watch_timeout:{message}, writte:{written}"
+            )
 
         watcher_thread = WatcherThread(
             fqid,
@@ -77,9 +84,11 @@ def handle_action_in_worker_thread(
             user_id,
             handler.services,
             lock,
+            handler.logging,
         )
         watcher_thread.start()
         return ActionsResponse(
+            status_code=HTTPStatus.ACCEPTED.value,
             success=False,
             message=message,
             results=[[{"fqid": fqid, "name": action_names, "written": written}]],
@@ -93,7 +102,7 @@ class ActionWorker(threading.Thread):
         user_id: int,
         is_atomic: bool,
         handler: ActionHandler,
-        thread_watch_time: int,
+        thread_watch_time: float,
         lock: threading.Lock,
     ) -> None:
         super().__init__(name="action_worker")
@@ -123,8 +132,9 @@ class WatcherThread(threading.Thread):
         starttime: int,
         worker_thread: ActionWorker,
         user_id: int,
-        services: Services ,
+        services: Services,
         lock: threading.Lock,
+        logging: LoggingModule,
     ) -> None:
         super().__init__(name="watcher_thread")
         self.fqid = fqid
@@ -135,6 +145,7 @@ class WatcherThread(threading.Thread):
         self.user_id = user_id
         self.services = services
         self.lock = lock
+        self.logger = logging.getLogger(__name__)
 
     def run(self):  # type: ignore
         datastore = self.services.datastore()
@@ -142,7 +153,9 @@ class WatcherThread(threading.Thread):
             current_time = round(time())
             with datastore.get_database_context():
                 if self.written:
-                    if not self.worker_thread.is_alive() or self.lock.acquire(timeout=10):
+                    if not self.worker_thread.is_alive() or self.lock.acquire(
+                        timeout=10
+                    ):
                         state = "end"
                         if hasattr(self.worker_thread, "exception"):
                             response = {
@@ -179,7 +192,10 @@ class WatcherThread(threading.Thread):
                                 locked_fields={},
                             )
                         )
-                        break;
+                        self.logger.debug(
+                            f"*** timestamps end action_worker: f{current_time}"
+                        )
+                        break
                     else:
                         datastore.write(
                             WriteRequest(
@@ -191,11 +207,16 @@ class WatcherThread(threading.Thread):
                                     )
                                 ],
                                 information={
-                                    self.fqid: ["timestamp during running action_worker"]
+                                    self.fqid: [
+                                        "timestamp during running action_worker"
+                                    ]
                                 },
                                 user_id=self.user_id,
                                 locked_fields={},
                             )
+                        )
+                        self.logger.debug(
+                            f"=== timestamp during running action_worker: f{current_time}"
                         )
                 else:
                     datastore.write(
@@ -217,5 +238,8 @@ class WatcherThread(threading.Thread):
                             user_id=self.user_id,
                             locked_fields={},
                         )
+                    )
+                    self.logger.debug(
+                        f"====================timestamps first running action_worker: f{current_time}"
                     )
                     self.written = True

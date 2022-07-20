@@ -31,9 +31,10 @@ class ActionWorkerTest(BaseActionTestCase):
         for thread in threading.enumerate():
             if thread.name == name:
                 return thread
+        return None
 
     def test_without_thread_watcher_demanded(self) -> None:
-        """thread_watch_timeout doesn't use action_thread"""
+        """thread_watch_timeout==0 doesn't want to use action_thread"""
         response = self.request(
             "motion.create",
             {
@@ -84,26 +85,43 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_not_exists("action_worker/1")
 
     def test_action_worker_not_ready_before_timeout_okay(self) -> None:
-        """action thread used, ended after timeout"""
-        response = self.request(
+        """action thread used, main process ends before action_worker is ready,
+        but the final result will be okay"""
+        count_motions: int = 5
+        response = self.request_multi(
             "motion.create",
-            {
-                "title": "test_title",
-                "meeting_id": 222,
-                "workflow_id": 12,
-                "text": "test_text",
-            },
+            [
+                {
+                    "title": f"test_title {i+1}",
+                    "meeting_id": 222,
+                    "workflow_id": 12,
+                    "text": "test_text",
+                }
+                for i in range(count_motions)
+            ],
             thread_watch_timeout=0.001,
         )
 
-        self.assert_status_code(response, 200)
-        self.assertIn("Action lasts to long. Get the result from database, when the job is done.", response.json["message"])
-        self.assertFalse(response.json["success"], "Action worker still not finished, success must be False.")
-        self.assertEqual(response.json["results"][0][0], {'fqid': 'action_worker/1', 'name': 'motion.create', 'written': True})
+        self.assert_status_code(response, 202)
+        self.assertIn(
+            "Action lasts to long. Get the result from database, when the job is done.",
+            response.json["message"],
+        )
+        self.assertFalse(
+            response.json["success"],
+            "Action worker still not finished, success must be False.",
+        )
+        self.assertEqual(
+            response.json["results"][0][0],
+            {"fqid": "action_worker/1", "name": "motion.create", "written": True},
+        )
         self.assert_model_exists("action_worker/1", {"state": "running"})
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
-        self.assert_model_exists("motion/1", {"title": "test_title"})
+        self.assert_model_exists("motion/1", {"title": "test_title 1"})
+        self.assert_model_exists(
+            f"motion/{count_motions}", {"title": f"test_title {count_motions}"}
+        )
         if watcher_thread := self.get_thread_by_name("watcher_thread"):
             watcher_thread.join()
         self.assert_model_exists("action_worker/1", {"state": "end"})
@@ -120,16 +138,25 @@ class ActionWorkerTest(BaseActionTestCase):
             thread_watch_timeout=0.001,
         )
 
-        self.assert_status_code(response, 200)
-        self.assertIn("Action lasts to long. Get the result from database, when the job is done.", response.json["message"])
-        self.assertFalse(response.json["success"], "Action worker still not finished, success must be False.")
-        self.assertEqual(response.json["results"][0][0], {'fqid': 'action_worker/1', 'name': 'motion.create', 'written': True})
+        self.assert_status_code(response, 202)
+        self.assertIn(
+            "Action lasts to long. Get the result from database, when the job is done.",
+            response.json["message"],
+        )
+        self.assertFalse(
+            response.json["success"],
+            "Action worker still not finished, success must be False.",
+        )
+        self.assertEqual(
+            response.json["results"][0][0],
+            {"fqid": "action_worker/1", "name": "motion.create", "written": True},
+        )
         self.assert_model_exists("action_worker/1")
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
         if watcher_thread := self.get_thread_by_name("watcher_thread"):
             watcher_thread.join()
         self.assert_model_not_exists("motion/1")
-        action_worker = self.assert_model_exists("action_worker/1", {"state": "end"})
-        self.assertFalse(action_worker["result"]["success"])
-        self.assertIn("Text is required", action_worker["result"]["message"])
+        action_worker1 = self.assert_model_exists("action_worker/1", {"state": "end"})
+        self.assertFalse(action_worker1["result"]["success"])
+        self.assertIn("Text is required", action_worker1["result"]["message"])

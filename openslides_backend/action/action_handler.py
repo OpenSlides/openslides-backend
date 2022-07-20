@@ -1,4 +1,5 @@
 from copy import deepcopy
+from http import HTTPStatus
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, TypeVar, cast
 
 import fastjsonschema
@@ -152,7 +153,10 @@ class ActionHandler(BaseHandler):
             # Return action result
             self.logger.info("Request was successful. Send response now.")
             return ActionsResponse(
-                success=True, message="Actions handled successfully", results=results
+                status_code=HTTPStatus.OK.value,
+                success=True,
+                message="Actions handled successfully",
+                results=results,
             )
 
     def execute_write_requests(
@@ -272,11 +276,13 @@ class ActionHandler(BaseHandler):
                 on_failure()
             raise exception
 
-    def get_thread_watch_timeout(self, payload: Payload) -> Optional[int]:
-        thread_watch_timeout: int = 0
+    def get_thread_watch_timeout(self, payload: Payload) -> Optional[float]:
+        thread_watch_timeout: float = 0.0
         for i, pelem in enumerate(payload):
             if "thread_watch_timeout" in pelem:
-                thread_watch_timeout = pelem["thread_watch_timeout"]
+                thread_watch_timeout = cast(
+                    dict[str, float], pelem["thread_watch_timeout"]
+                )
                 backend_worker_timeout = (
                     float(self.env.OPENSLIDES_BACKEND_WORKER_TIMEOUT) - 1.0
                 )

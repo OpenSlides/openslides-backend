@@ -63,10 +63,21 @@ class OpenSlidesBackendWSGIApplication:
                 raise
         except HTTPException as exception:
             return exception
+        if type(response_body) == dict:
+            status_code = response_body.get("status_code", 200)
+        elif request.path == r"/system/presenter/handle_request":
+            status_code = Response.default_status
+        else:
+            raise ViewException(f"Unknown type of response_body:{response_body}.")
+
         self.logger.debug(
-            f"All done. Application sends HTTP 200 with body {response_body}."
+            f"All done. Application sends HTTP {status_code} with body {response_body}."
         )
-        response = Response(json.dumps(response_body), content_type="application/json")
+        response = Response(
+            json.dumps(response_body),
+            status=status_code,
+            content_type="application/json",
+        )
         if access_token is not None:
             response.headers[AUTHENTICATION_HEADER] = access_token
         return response
