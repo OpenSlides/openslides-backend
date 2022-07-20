@@ -125,6 +125,56 @@ class MotionSetStateActionTest(BaseActionTestCase):
                 "meeting/222": {
                     "name": "name_SNLGsvIV",
                     "is_active_in_organization_id": 1,
+                    "motion_submitter_ids": [12],
+                },
+                "motion_state/76": {
+                    "meeting_id": 222,
+                    "name": "test0",
+                    "motion_ids": [],
+                    "next_state_ids": [],
+                    "previous_state_ids": [],
+                    "allow_submitter_edit": True,
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "name": "test1",
+                    "motion_ids": [22],
+                    "first_state_of_workflow_id": 76,
+                    "next_state_ids": [],
+                    "previous_state_ids": [],
+                    "allow_submitter_edit": True,
+                },
+                "motion/22": {
+                    "meeting_id": 222,
+                    "title": "test1",
+                    "state_id": 77,
+                    "submitter_ids": [12],
+                },
+                "motion_submitter/12": {
+                    "meeting_id": 222,
+                    "motion_id": 22,
+                    "user_id": 1,
+                },
+                "user/1": {
+                    "organization_management_level": None,
+                    "submitted_motion_$_ids": ["222"],
+                    "submitted_motion_$222_ids": [12],
+                },
+            }
+        )
+        response = self.request("motion.set_state", {"id": 22, "state_id": 76})
+        self.assert_status_code(response, 400)
+        self.assertIn(
+            "State '76' is not in next or previous states of the state '77'.",
+            response.json["message"],
+        )
+
+    def test_set_state_perm_bypass_of_workflow(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {
+                    "name": "name_SNLGsvIV",
+                    "is_active_in_organization_id": 1,
                 },
                 "motion_state/76": {
                     "meeting_id": 222,
@@ -145,11 +195,8 @@ class MotionSetStateActionTest(BaseActionTestCase):
             }
         )
         response = self.request("motion.set_state", {"id": 22, "state_id": 76})
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "State '76' is not in next or previous states of the state '77'.",
-            response.json["message"],
-        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists("motion/22", {"state_id": 76})
 
     def test_set_state_no_permission(self) -> None:
         self.base_permission_test(
