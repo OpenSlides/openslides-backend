@@ -2591,7 +2591,7 @@
     "projector_countdown": {
         "1": {
             "id": 1,
-            "title": "List of speaker countdown",
+            "title": "Speaking time",
             "description": "",
             "default_time": 60,
             "countdown_time": 60,
@@ -2601,7 +2601,7 @@
         },
         "2": {
             "id": 2,
-            "title": "Voting countdown",
+            "title": "Voting",
             "description": "",
             "default_time": 60,
             "countdown_time": 60,
