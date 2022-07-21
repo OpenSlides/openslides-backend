@@ -176,7 +176,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "projector_countdown/1",
             {
-                "title": "List of speakers countdown",
+                "title": "Speaking time",
                 "meeting_id": 1,
                 "used_as_list_of_speakers_countdown_meeting_id": 1,
                 "default_time": 60,
@@ -186,7 +186,7 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "projector_countdown/2",
             {
-                "title": "Voting countdown",
+                "title": "Voting",
                 "meeting_id": 1,
                 "used_as_poll_countdown_meeting_id": 1,
                 "default_time": 60,

@@ -190,11 +190,11 @@ class MeetingCreate(CreateActionWithDependencies, MeetingPermissionMixin):
 
         action_data_countdowns = [
             {
-                "title": "List of speakers countdown",
+                "title": "Speaking time",
                 "meeting_id": instance["id"],
             },
             {
-                "title": "Voting countdown",
+                "title": "Voting",
                 "meeting_id": instance["id"],
             },
         ]
