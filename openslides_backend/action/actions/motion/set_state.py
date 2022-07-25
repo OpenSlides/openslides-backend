@@ -52,7 +52,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         is_in_previous_state_ids = instance["state_id"] in motion_state.get(
             "previous_state_ids", []
         )
-        if not self.can_manage_metadata and not (
+        if not self.check_state_in_graph and not (
             is_in_next_state_ids or is_in_previous_state_ids
         ):
             raise ActionException(
@@ -81,7 +81,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
         return instance
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
-        self.can_manage_metadata = False
+        self.check_state_in_graph = False
         motion = self.datastore.get(
             fqid_from_collection_and_id("motion", instance["id"]),
             [
@@ -97,7 +97,7 @@ class MotionSetStateAction(UpdateAction, SetNumberMixin, PermissionHelperMixin):
             Permissions.Motion.CAN_MANAGE_METADATA,
             motion["meeting_id"],
         ):
-            self.can_manage_metadata = True
+            self.check_state_in_graph = True
             return
 
         if self.is_allowed_and_submitter(
