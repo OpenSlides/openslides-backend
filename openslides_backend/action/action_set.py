@@ -20,10 +20,6 @@ class ActionSet:
     update_schema: Dict
     delete_schema: Dict
 
-    create_history_information: Optional[str]
-    update_history_information: Optional[str]
-    delete_history_information: Optional[str]
-
     CreateActionClass: Type[Action] = CreateAction
     UpdateActionClass: Type[Action] = UpdateAction
     DeleteActionClass: Type[Action] = DeleteAction
@@ -36,18 +32,13 @@ class ActionSet:
             actions = {}
             for route in ("create", "update", "delete"):
                 schema = getattr(cls, route + "_schema")
-                history_information = getattr(cls, route + "_history_information", None)
                 base_class = getattr(cls, route.capitalize() + "ActionClass")
                 clazz = cast(
                     Type[Action],
                     type(
                         type(cls.model).__name__ + route.capitalize(),
                         (base_class,),
-                        dict(
-                            model=cls.model,
-                            schema=schema,
-                            history_information=history_information,
-                        ),
+                        dict(model=cls.model, schema=schema),
                     ),
                 )
                 actions[route] = clazz

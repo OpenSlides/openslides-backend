@@ -54,7 +54,7 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         assert model.get("recommendation_id") == 77
         assert model.get("last_modified", 0) >= check_time
         self.assert_history_information(
-            "motion/22", ["Recommendation set to {arg1}", "blablabal"]
+            "motion/22", ["Recommendation set to {}", "blablabal"]
         )
 
     def test_set_recommendation_missing_recommendation_label(self) -> None:
@@ -136,10 +136,10 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         )
         self.assert_status_code(response, 200)
         self.assert_history_information(
-            "motion/22", ["Recommendation set to {arg1}", "blablabal"]
+            "motion/22", ["Recommendation set to {}", "blablabal"]
         )
         self.assert_history_information(
-            "motion/22", ["Recommendation set to {arg1}", "blablabal"]
+            "motion/22", ["Recommendation set to {}", "blablabal"]
         )
 
     def test_history_multiple_actions_different_states(self) -> None:

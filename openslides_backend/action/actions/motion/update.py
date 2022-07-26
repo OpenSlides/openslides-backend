@@ -1,6 +1,6 @@
 import re
 import time
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set
 
 from ....models.models import Motion
 from ....permissions.permission_helper import has_perm
@@ -179,7 +179,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             raise PermissionDenied(msg)
 
     def get_history_information(self) -> Optional[List[str]]:
-        full_informations: List[Tuple[Optional[str], Optional[str]]] = []
+        informations: List[str] = []
         all_instance_fields = set(
             field for instance in self.instances for field in instance
         )
@@ -187,10 +187,10 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         # supporters changed
         if "supporter_ids" in all_instance_fields:
             all_instance_fields.remove("supporter_ids")
-            full_informations.append(("Supporters changed", None))
+            informations.append("Supporters changed")
 
         # category changed
-        full_informations.append(
+        informations.extend(
             self.create_history_information_for_field(
                 all_instance_fields,
                 "category_id",
@@ -201,7 +201,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         )
 
         # block changed
-        full_informations.append(
+        informations.extend(
             self.create_history_information_for_field(
                 all_instance_fields, "block_id", "motion_block", "Motion block", "title"
             )
@@ -221,23 +221,9 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         )
         if all_instance_fields & generic_update_fields:
             # still other fields given, so we also add the generic "updated" message
-            full_informations.append(("Motion updated", None))
+            informations.append("Motion updated")
 
-        informations, args = zip(*full_informations)
-        informations_str = "\n".join(
-            information for information in informations if information
-        )
-
-        # number args correctly
-        i = 0
-
-        def replace_args(_: Any) -> str:
-            nonlocal i
-            i += 1
-            return f"{{arg{i}}}"
-
-        informations_str = re.sub("{argx}", replace_args, informations_str)
-        return [informations_str] + [arg for arg in args if arg is not None]
+        return informations
 
     def create_history_information_for_field(
         self,
@@ -246,7 +232,7 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
         collection: Collection,
         verbose_collection: str,
         name_field: str,
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> List[str]:
         if field in all_instance_fields:
             all_instance_fields.remove(field)
             all_values = set(
@@ -255,13 +241,13 @@ class MotionUpdate(UpdateAction, PermissionHelperMixin):
             if len(all_values) == 1:
                 single_value = all_values.pop()
                 if single_value is None:
-                    return (verbose_collection + " removed", None)
+                    return [verbose_collection + " removed"]
                 else:
                     instance = self.datastore.get(
                         fqid_from_collection_and_id(collection, single_value),
                         [name_field],
                     )
-                    return (verbose_collection + " set to {argx}", instance[name_field])
+                    return [verbose_collection + " set to {}", instance[name_field]]
             else:
-                return (verbose_collection + " changed", None)
-        return (None, None)
+                return [verbose_collection + " changed"]
+        return []

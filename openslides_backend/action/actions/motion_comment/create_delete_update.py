@@ -63,7 +63,7 @@ class MotionCommentMixin(Action):
         _, action = self.name.split(".")
         if len(self.instances) == 1:
             section = self.get_section(self.instances[0], ["name"])
-            return ["Comment {arg1} " + action + "d", section["name"]]
+            return ["Comment {} " + action + "d", section["name"]]
         return ["Comment " + action + "d"]
 
 

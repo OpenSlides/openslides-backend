@@ -16,6 +16,6 @@ class MotionStateHistoryInformationMixin(Action):
                 fqid_from_collection_and_id("motion_state", single_id),
                 [name_field],
             )
-            return [verbose_model + " set to {arg1}", instance[name_field]]
+            return [verbose_model + " set to {}", instance[name_field]]
         else:
             return [verbose_model + " changed"]
