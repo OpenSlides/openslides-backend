@@ -110,6 +110,12 @@ class Write(Command):
         return json.dumps(self.write_requests, cls=WriteRequestJSONEncoder)
 
 
+class WriteActionWorker(Write):
+    """
+    WriteActionWorker command, same as Write, but on separate route
+    """
+
+
 class TruncateDb(Command):
     """
     TruncateDb command. Does not need data.

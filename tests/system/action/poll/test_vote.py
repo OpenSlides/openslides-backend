@@ -17,7 +17,6 @@ class BaseVoteTestCase(BaseActionTestCase):
         data: Dict[str, Any],
         anonymous: bool = False,
         lang: Optional[str] = None,
-        thread_watch_timeout: float = 0.0,
         start_poll_before_vote: bool = True,
         stop_poll_after_vote: bool = True,
     ) -> Response:

@@ -43,14 +43,9 @@ class ActionView(BaseView):
         handler = ActionHandler(self.env, self.services, self.logging)
         Translator.set_translation_language(request.headers.get("Accept-Language"))
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
-        thread_watch_timeout = handler.get_thread_watch_timeout(request.json)
-        if thread_watch_timeout:
-            response = handle_action_in_worker_thread(
-                request.json, user_id, is_atomic, handler, thread_watch_timeout
-            )
-        else:
-            response = handler.handle_request(request.json, user_id, is_atomic)
-            self.logger.debug("Action request finished successfully.")
+        response = handle_action_in_worker_thread(
+            request.json, user_id, is_atomic, handler
+        )
         return response, access_token
 
     @route("handle_request", internal=True)

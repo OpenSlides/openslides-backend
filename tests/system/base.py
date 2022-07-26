@@ -1,3 +1,4 @@
+import threading
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Set, Type, cast
 from unittest import TestCase
@@ -85,6 +86,19 @@ class BaseSystemTestCase(TestCase):
             BaseSystemTestCase.auth_data = deepcopy(self.client.auth_data)
         self.vote_service.clear_all()
         self.anon_client = self.create_client()
+
+    def tearDown(self) -> None:
+        if thread := self.__class__.get_thread_by_name("action_worker"):
+            thread.join()
+        if thread := self.__class__.get_thread_by_name("watcher_thread"):
+            thread.join()
+
+    @staticmethod
+    def get_thread_by_name(name: str) -> Optional[threading.Thread]:
+        for thread in threading.enumerate():
+            if thread.name == name:
+                return thread
+        return None
 
     def load_example_data(self) -> None:
         """

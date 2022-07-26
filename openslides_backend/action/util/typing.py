@@ -7,7 +7,7 @@ ActionData = Iterable[Dict[str, Any]]
 PayloadElement = TypedDict("PayloadElement", {"action": str, "data": ActionData})
 
 # the whole payload that is received from the client
-Payload = List[Union[PayloadElement, dict[str, float]]]
+Payload = List[PayloadElement]
 
 ActionResultElement = Dict[str, Any]
 

@@ -130,6 +130,9 @@ class BaseDatastoreService(Protocol):
     def write(self, write_requests: Union[List[WriteRequest], WriteRequest]) -> None:
         ...
 
+    def write_action_worker(self, write_request: WriteRequest) -> None:
+        ...
+
     def truncate_db(self) -> None:
         ...
 
