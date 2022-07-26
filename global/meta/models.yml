@@ -3474,3 +3474,31 @@ chat_message:
     to: meeting/chat_message_ids
     required: true
     restriction_mode: A
+
+action_worker:
+  id:
+    type: number
+    restriction_mode: A
+  name:
+    type: string
+    required: true
+    restriction_mode: A
+  state:
+    type: string
+    required: true
+    enum:
+      - running
+      - end
+      - aborted
+    restriction_mode: A
+  created:
+    type: timestamp
+    required: true
+    restriction_mode: A
+  timestamp:
+    type: timestamp
+    required: true
+    restriction_mode: A
+  result:
+    type: JSON
+    restriction_mode: A

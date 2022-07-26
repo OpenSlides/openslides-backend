@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "518732b8fa1bc836a104c7ac91d8b671"
+MODELS_YML_CHECKSUM = "49b9bff3b7ed2123dbe12b69ab977539"
 
 
 class Organization(Model):
@@ -1889,3 +1889,17 @@ class ChatMessage(Model):
         to={"chat_group": "chat_message_ids"}, required=True
     )
     meeting_id = fields.RelationField(to={"meeting": "chat_message_ids"}, required=True)
+
+
+class ActionWorker(Model):
+    collection = "action_worker"
+    verbose_name = "action worker"
+
+    id = fields.IntegerField()
+    name = fields.CharField(required=True)
+    state = fields.CharField(
+        required=True, constraints={"enum": ["running", "end", "aborted"]}
+    )
+    created = fields.TimestampField(required=True)
+    timestamp = fields.TimestampField(required=True)
+    result = fields.JSONField()
