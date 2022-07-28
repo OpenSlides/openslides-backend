@@ -696,10 +696,12 @@ class TestCheckDatabase(BasePresenterTestCase):
         )
         status_code, data = self.request("check_database", {})
         assert status_code == 200
-        if not data["ok"]:
-            print(data)
-        assert data["ok"] is True
-        assert not data["errors"]
+        assert data["ok"] is False
+        assert data["errors"] == (
+            "Meeting 1\n\tmotion/1/derived_motion_ids: Relation Error:  points to motion/2/origin_id, "
+            "but the reverse relation for it is corrupt\nMeeting 2\n\tmotion/2/origin_id: Relation Error:  "
+            "points to motion/1/derived_motion_ids, but the reverse relation for it is corrupt"
+        )
 
     def test_no_permissions(self) -> None:
         self.set_models(
