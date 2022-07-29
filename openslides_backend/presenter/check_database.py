@@ -46,6 +46,15 @@ class CheckDatabase(BasePresenter):
             checker = Checker(
                 data=export,
                 mode="internal",
+                repair=True,
+                fields_to_remove={
+                    "motion": [
+                        "origin_id",
+                        "derived_motion_ids",
+                        "all_origin_id",
+                        "all_derived_motion_ids",
+                    ]
+                },
             )
             try:
                 checker.run_check()
