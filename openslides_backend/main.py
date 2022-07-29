@@ -60,6 +60,7 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "loglevel": self.env.get_loglevel().lower(),
             "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
+            "threads": 2,  # using GThread as worker_class, because of gunicorn's timeout kill
         }
         for key, value in options.items():
             self.cfg.set(key, value)

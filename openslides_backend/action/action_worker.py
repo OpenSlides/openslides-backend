@@ -2,6 +2,8 @@ import threading
 from http import HTTPStatus
 from time import sleep, time
 
+import psutil
+
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     fqid_from_collection_and_id,
@@ -195,13 +197,23 @@ class WatcherThread(threading.Thread):
                         )
                         break
                     else:
+                        ram = psutil.virtual_memory()
+                        response = {
+                            "success": False,
+                            "message": f"ram total:{ram.total} available:{ram.available} percent:{ram.percent} used:{ram.used} free.{ram.free}",
+                            "action_error_index": 0,
+                            "action_data_error_index": 0,
+                        }
                         datastore.write_action_worker(
                             WriteRequest(
                                 events=[
                                     Event(
                                         type=EventType.Update,
                                         fqid=self.fqid,
-                                        fields={"timestamp": current_time},
+                                        fields={
+                                            "timestamp": current_time,
+                                            "result": response,
+                                        },
                                     )
                                 ],
                                 information={
