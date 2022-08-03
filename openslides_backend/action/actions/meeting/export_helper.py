@@ -16,7 +16,11 @@ from ....models.fields import (
 from ....models.models import Meeting, User
 from ....services.datastore.commands import GetManyRequest
 from ....services.datastore.interface import DatastoreService
-from ....shared.patterns import fqid_from_collection_and_id
+from ....shared.patterns import (
+    collection_from_fqid,
+    fqid_from_collection_and_id,
+    id_from_fqid,
+)
 
 
 def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, Any]:
@@ -70,6 +74,17 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         )
         for result in export[collection].values():
             user_ids.update(result.get("user_ids", ()))
+            if collection == "meeting":
+                user_ids.update(result.get("present_user_ids", ()))
+            if collection == "motion":
+                user_ids.update(result.get("supporter_ids", ()))
+            if collection == "poll":
+                user_ids.update(result.get("voted_ids", ()))
+            if collection == "vote" and result.get("delegated_user_id"):
+                user_ids.add(result["delegated_user_id"])
+            if collection == "projection" and result.get("content_object_id"):
+                if collection_from_fqid(result["content_object_id"]) == "user":
+                    user_ids.add(id_from_fqid(result["content_object_id"]))
 
     add_users(list(user_ids), export, meeting_id, datastore)
     return export
