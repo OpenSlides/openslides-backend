@@ -16,9 +16,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         status_code, data = self.request("check_database", {})
         assert status_code == 200
         assert data["ok"] is False
-        assert "Meeting 1" in data["errors"]
         assert "meeting/1: Missing fields" in data["errors"]
-        assert "Meeting 2" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
     def get_meeting_defaults(self) -> Dict[str, Any]:
@@ -127,13 +125,39 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "organization/1": {
                     "active_meeting_ids": [1],
                     "organization_tag_ids": [1],
+                    "limit_of_meetings": 0,
+                    "users_email_sender": "test@example.com",
+                    "limit_of_users": 0,
+                    "users_email_body": "ballspamhamfoo",
+                    "users_email_subject": "hamfoo",
+                    "theme_id": 1,
+                    "url": "foo",
+                    "theme_ids": [1],
+                    "committee_ids": [1],
+                },
+                "theme/1": {
+                    "name": "Test Theme",
+                    "accent_500": "#000000",
+                    "primary_500": "#000000",
+                    "warn_500": "#000000",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
                 },
                 "organization_tag/1": {
                     "name": "TEST",
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {
+                    "organization_id": 1,
+                    "meeting_ids": [1],
+                    "name": "test-committee",
+                },
+                "user/1": {
+                    "can_change_own_password": False,
+                    "is_physical_person": True,
+                    "default_vote_weight": "1.000000",
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "name": "Test",
@@ -246,6 +270,23 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "organization_tag_ids": [1],
                     "template_meeting_ids": [1],
                     "user_ids": [1, 2, 3, 4, 5, 6],
+                    "limit_of_meetings": 0,
+                    "users_email_sender": "test@example.com",
+                    "limit_of_users": 0,
+                    "users_email_body": "ballspamhamfoo",
+                    "users_email_subject": "hamfoo",
+                    "theme_id": 1,
+                    "url": "foo",
+                    "theme_ids": [1],
+                    "committee_ids": [1],
+                },
+                "theme/1": {
+                    "name": "Test Theme",
+                    "accent_500": "#000000",
+                    "primary_500": "#000000",
+                    "warn_500": "#000000",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
                 },
                 "organization_tag/1": {
                     "name": "TEST",
@@ -253,7 +294,12 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "organization_id": 1,
                     "tagged_ids": ["meeting/1"],
                 },
-                "committee/1": {"organization_id": 1, "default_meeting_id": 1},
+                "committee/1": {
+                    "organization_id": 1,
+                    "default_meeting_id": 1,
+                    "meeting_ids": [1],
+                    "name": "test committee",
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "name": "Test",
@@ -480,13 +526,39 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "organization/1": {
                     "active_meeting_ids": [1, 2],
                     "organization_tag_ids": [1],
+                    "limit_of_meetings": 0,
+                    "users_email_sender": "test@example.com",
+                    "limit_of_users": 0,
+                    "users_email_body": "ballspamhamfoo",
+                    "users_email_subject": "hamfoo",
+                    "theme_id": 1,
+                    "url": "foo",
+                    "theme_ids": [1],
+                    "committee_ids": [1],
+                },
+                "theme/1": {
+                    "name": "Test Theme",
+                    "accent_500": "#000000",
+                    "primary_500": "#000000",
+                    "warn_500": "#000000",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
                 },
                 "organization_tag/1": {
                     "name": "TEST",
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {
+                    "organization_id": 1,
+                    "meeting_ids": [1, 2],
+                    "name": "test committee",
+                },
+                "user/1": {
+                    "can_change_own_password": False,
+                    "is_physical_person": True,
+                    "default_vote_weight": "1.000000",
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "name": "Test",
@@ -698,6 +770,8 @@ class TestCheckDatabase(BasePresenterTestCase):
         )
         status_code, data = self.request("check_database", {})
         assert status_code == 200
+        if not data["ok"]:
+            print(data)
         assert data["ok"] is True
         assert not data["errors"]
 
