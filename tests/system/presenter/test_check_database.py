@@ -247,7 +247,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         status_code, data = self.request("check_database", {})
         assert status_code == 200
         assert data["ok"] is True
-        assert not data["errors"]
+        assert "errors" not in data
 
     def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -518,7 +518,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         if not data["ok"]:
             print(data)
         assert data["ok"] is True
-        assert not data["errors"]
+        assert "errors" not in data
 
     def test_relation_2(self) -> None:
         self.set_models(
@@ -773,7 +773,7 @@ class TestCheckDatabase(BasePresenterTestCase):
         if not data["ok"]:
             print(data)
         assert data["ok"] is True
-        assert not data["errors"]
+        assert "errors" not in data
 
     def test_no_permissions(self) -> None:
         self.set_models(

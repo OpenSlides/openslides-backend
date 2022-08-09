@@ -83,14 +83,11 @@ class CheckDatabase(BasePresenter):
             data=export,
             mode="all",
         )
-        errors: str = ""
         try:
             checker.run_check()
+            return {"ok": True}
         except CheckException as ce:
-            errors = str(ce)
-        if not errors:
-            return {"ok": True, "errors": ""}
-        return {"ok": False, "errors": errors}
+            return {"ok": False, "errors": str(ce)}
 
     def get_all_database(self) -> Dict[str, Any]:
         export: Dict[str, Any] = {"_migration_index": get_backend_migration_index()}
