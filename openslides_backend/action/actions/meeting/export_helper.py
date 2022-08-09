@@ -4,8 +4,12 @@ from datastore.shared.util import is_reserved_field
 
 from openslides_backend.migrations import get_backend_migration_index
 
+from ....models.base import model_registry
 from ....models.fields import (
+    BaseRelationField,
+    GenericRelationField,
     OnDelete,
+    RelationField,
     RelationListField,
     TemplateCharField,
     TemplateDecimalField,
@@ -62,30 +66,47 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         else:
             export[str(collection)] = {}
 
+    user_ids = set()
+    for id_ in meeting.get("user_ids", []):
+        user_ids.add(id_)
     for collection in export:
         if collection == "_migration_index":
             continue
-        user_ids.update(
-            (
-                result.get("user_id")
-                for result in export[collection].values()
-                if result.get("user_id")
-            )
-        )
-        for result in export[collection].values():
-            user_ids.update(result.get("user_ids", ()))
-            if collection == "meeting":
-                user_ids.update(result.get("present_user_ids", ()))
-            if collection == "motion":
-                user_ids.update(result.get("supporter_ids", ()))
-            if collection == "poll":
-                user_ids.update(result.get("voted_ids", ()))
-            if collection == "vote" and result.get("delegated_user_id"):
-                user_ids.add(result["delegated_user_id"])
-            if collection == "projection" and result.get("content_object_id"):
-                if collection_from_fqid(result["content_object_id"]) == "user":
-                    user_ids.add(id_from_fqid(result["content_object_id"]))
-
+        model = model_registry[collection]()
+        user_fields: Iterable[BaseRelationField] = model.get_relation_fields()
+        for user_field in user_fields:
+            if (
+                isinstance(user_field, RelationField)
+                and user_field.get_target_collection() == "user"
+            ):
+                user_ids.update(
+                    set(
+                        entry.get(user_field.get_own_field_name())
+                        for entry in export[collection].values()
+                        if entry.get(user_field.get_own_field_name())
+                    )
+                )
+            if (
+                isinstance(user_field, RelationListField)
+                and user_field.get_target_collection() == "user"
+            ):
+                for entry in export[collection].values():
+                    if entry.get(user_field.get_own_field_name()):
+                        user_ids.update(
+                            set(
+                                id_
+                                for id_ in entry.get(user_field.get_own_field_name())
+                                or []
+                            )
+                        )
+            if isinstance(user_field, GenericRelationField):
+                for entry in export[collection].values():
+                    field_name = user_field.get_own_field_name()
+                    if (
+                        entry.get(field_name)
+                        and collection_from_fqid(entry[field_name]) == "user"
+                    ):
+                        user_ids.add(id_from_fqid(entry[field_name]))
     add_users(list(user_ids), export, meeting_id, datastore)
     return export
 
