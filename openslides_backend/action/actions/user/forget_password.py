@@ -1,3 +1,4 @@
+import gettext
 from collections import defaultdict
 from time import time
 from typing import Any, Dict
@@ -14,14 +15,19 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
 
-PW_FORGET_EMAIL_TEMPLATE = """You are receiving this email because you have requested a new password for your OpenSlides-account.
+print(gettext.find("messages", "/app/openslides_backend/locale", languages=["en"]))
+t = gettext.translation("messages", "/app/openslides_backend/locale", ["de"])
+_ = t.gettext
+
+PW_FORGET_EMAIL_TEMPLATE = _(
+    """You are receiving this email because you have requested a new password for your OpenSlides-account.
 
 Please open the following link and choose a new password:
 {url}/login/forget-password-confirm?user_id={user_id}&token={token}
 
 For completeness your username: {username}"""
-PW_FORGET_EMAIL_SUBJECT = "Reset your OpenSlides password"
-
+)
+PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
 
 class format_dict(defaultdict):
     def __missing__(self, key: str) -> str:
