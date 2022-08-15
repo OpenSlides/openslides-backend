@@ -37,13 +37,7 @@ class UserForgetPassword(BaseActionTestCase):
         handler = AIOHandler()
         with AiosmtpdServerManager(handler):
             response = self.request_lang(
-                [
-                    {
-                        "action": "user.forget_password",
-                        "data": [{"email": "test@ntvtn.de"}],
-                    }
-                ],
-                lang="de_DE",
+                "user.forget_password", {"email": "test@ntvtn.de"}, lang="de_DE"
             )
         self.assert_status_code(response, 200)
         user = self.get_model("user/1")
