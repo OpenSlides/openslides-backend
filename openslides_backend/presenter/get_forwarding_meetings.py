@@ -72,11 +72,16 @@ class GetForwardingMeetings(BasePresenter):
             for meeting_id2 in forward_to_committee.get("meeting_ids", []):
                 meeting2 = self.datastore.get(
                     fqid_from_collection_and_id("meeting", meeting_id2),
-                    ["name", "is_active_in_organization_id"],
+                    ["name", "is_active_in_organization_id", "start_time", "end_time"],
                 )
                 if meeting2.get("is_active_in_organization_id"):
                     meeting_result.append(
-                        {"id": meeting_id2, "name": meeting2.get("name", "")}
+                        {
+                            "id": meeting_id2,
+                            "name": meeting2.get("name", ""),
+                            "start_time": meeting2.get("start_time"),
+                            "end_time": meeting2.get("end_time"),
+                        }
                     )
             if meeting_result:
                 result.append(

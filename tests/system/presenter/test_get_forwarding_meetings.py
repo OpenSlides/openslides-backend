@@ -18,6 +18,8 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "name": "meeting2",
                     "committee_id": 3,
                     "is_active_in_organization_id": 1,
+                    "start_time": 111111,
+                    "end_time": 222222,
                 },
                 "committee/2": {
                     "name": "com2",
@@ -38,7 +40,14 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 {
                     "id": 3,
                     "name": "com3",
-                    "meetings": [{"id": 2, "name": "meeting2"}],
+                    "meetings": [
+                        {
+                            "id": 2,
+                            "name": "meeting2",
+                            "start_time": 111111,
+                            "end_time": 222222,
+                        }
+                    ],
                     "default_meeting_id": None,
                 }
             ],
@@ -142,15 +151,32 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                     "id": 3,
                     "name": "com3",
                     "meetings": [
-                        {"id": 2, "name": "meeting2"},
-                        {"id": 3, "name": "meeting3"},
+                        {
+                            "id": 2,
+                            "name": "meeting2",
+                            "start_time": None,
+                            "end_time": None,
+                        },
+                        {
+                            "id": 3,
+                            "name": "meeting3",
+                            "start_time": None,
+                            "end_time": None,
+                        },
                     ],
                     "default_meeting_id": 3,
                 },
                 {
                     "id": 4,
                     "name": "com4",
-                    "meetings": [{"id": 4, "name": "meeting4"}],
+                    "meetings": [
+                        {
+                            "id": 4,
+                            "name": "meeting4",
+                            "start_time": None,
+                            "end_time": None,
+                        }
+                    ],
                     "default_meeting_id": None,
                 },
             ],
@@ -193,7 +219,14 @@ class TestGetForwardingMeetings(BasePresenterTestCase):
                 {
                     "id": 3,
                     "name": "com3",
-                    "meetings": [{"id": 2, "name": "meeting2"}],
+                    "meetings": [
+                        {
+                            "id": 2,
+                            "name": "meeting2",
+                            "start_time": None,
+                            "end_time": None,
+                        }
+                    ],
                     "default_meeting_id": None,
                 }
             ],
