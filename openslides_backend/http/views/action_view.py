@@ -39,6 +39,7 @@ class ActionView(BaseView):
 
         # Handle request.
         handler = ActionHandler(self.env, self.services, self.logging)
+        handler.set_translation_language(request.headers.get("Accept-Language"))
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handler.handle_request(request.json, user_id, is_atomic)
 

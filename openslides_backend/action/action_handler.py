@@ -223,6 +223,7 @@ class ActionHandler(BaseHandler):
         action = ActionClass(
             self.services, self.datastore, relation_manager, self.logging, self.env
         )
+        action.language = self.language
         action_data = deepcopy(action_payload_element["data"])
 
         try:
@@ -256,3 +257,6 @@ class ActionHandler(BaseHandler):
             if on_failure:
                 on_failure()
             raise exception
+
+    def set_translation_language(self, language: Optional[str]) -> None:
+        self.language = language

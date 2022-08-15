@@ -31,5 +31,5 @@ msgstr ""
 
 #: action/actions/user/forget_password.py:28
 msgid "Reset your OpenSlides password"
-msgstr ""
+msgstr "Zurücksetzen Ihres Openslides-Passworts"
 

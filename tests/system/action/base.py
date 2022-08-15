@@ -59,6 +59,11 @@ class BaseActionTestCase(BaseSystemTestCase):
         client = self.client if not anonymous else self.anon_client
         return client.post(ACTION_URL, json=payload)
 
+    def request_lang(self, payload: Payload, lang: str = "en_US") -> Response:
+        return self.client.post(
+            ACTION_URL, json=payload, headers={"Accept_Language": lang}
+        )
+
     def execute_action_internally(
         self, action_name: str, data: Dict[str, Any], user_id: int = 0
     ) -> Optional[ActionResults]:
