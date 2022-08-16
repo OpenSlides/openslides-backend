@@ -223,10 +223,6 @@ class ActionHandler(BaseHandler):
         action = ActionClass(
             self.services, self.datastore, relation_manager, self.logging, self.env
         )
-        if hasattr(self, "language"):
-            action.language = self.language
-        else:
-            action.language = "en_US"
         action_data = deepcopy(action_payload_element["data"])
 
         try:

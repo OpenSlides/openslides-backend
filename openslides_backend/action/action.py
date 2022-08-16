@@ -1,4 +1,3 @@
-import gettext
 from collections import defaultdict
 from typing import (
     Any,
@@ -106,7 +105,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
     relation_manager: RelationManager
-    language: Optional[str]
 
     write_requests: List[WriteRequest]
     results: ActionResults
@@ -674,19 +672,6 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Can be overridden by actions to return a cleanup method to execute
         after an error appeared in an action.
         """
-
-    def get_translate_function(self) -> Callable[[str], str]:
-        def null_translate(msg: str) -> str:
-            return msg
-
-        if not hasattr(self, "language") or not self.language:
-            return null_translate
-        t = gettext.translation(
-            "messages", "/app/openslides_backend/locale", [self.language]
-        )
-        if not t:
-            return null_translate
-        return t.gettext
 
 
 def merge_write_requests(
