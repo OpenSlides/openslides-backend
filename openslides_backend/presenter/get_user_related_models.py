@@ -117,7 +117,8 @@ class GetUserRelatedModels(BasePresenter):
         }
         for level in user.get("committee_$_management_level", []):
             for committee_nr in user.get(f"committee_${level}_management_level", []):
-                committees[committee_nr]["cml"].append(level)
+                if committee_nr in committees:
+                    committees[committee_nr]["cml"].append(level)
         for committee_id, committee in committees.items():
             committees_data.append(
                 {
