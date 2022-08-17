@@ -35,7 +35,8 @@ class UserForgetPassword(EmailMixin, UpdateAction):
     skip_archived_meeting_check = True
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        self.PW_FORGET_EMAIL_TEMPLATE = Translator(
+        _ = Translator
+        self.PW_FORGET_EMAIL_TEMPLATE = _(
             """You are receiving this email because you have requested a new password for your OpenSlides-account.
 
 Please open the following link and choose a new password:
@@ -43,7 +44,7 @@ Please open the following link and choose a new password:
 
 For completeness your username: {username}"""
         )
-        self.PW_FORGET_EMAIL_SUBJECT = Translator("Reset your OpenSlides password")
+        self.PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
         for instance in action_data:
             email = instance.pop("email")
 
