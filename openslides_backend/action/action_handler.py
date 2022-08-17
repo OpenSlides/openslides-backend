@@ -256,6 +256,3 @@ class ActionHandler(BaseHandler):
             if on_failure:
                 on_failure()
             raise exception
-
-    def set_translation_language(self, language: Optional[str]) -> None:
-        self.language = language

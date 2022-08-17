@@ -70,7 +70,7 @@ class BaseActionTestCase(BaseSystemTestCase):
         client = self.client if not anonymous else self.anon_client
         headers = {}
         if lang:
-            headers["Accept_Language"] = lang
+            headers["Accept-Language"] = lang
         return client.post(ACTION_URL, json=payload, headers=headers)
 
     def execute_action_internally(
