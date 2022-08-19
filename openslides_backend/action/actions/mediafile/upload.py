@@ -56,7 +56,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
             results = self.datastore.filter(
                 self.model.collection,
                 And(
-                    FilterOperator("token", "=", instance["token"]),
+                    FilterOperator("token", "=", instance.get("token")),
                     FilterOperator(
                         "owner_id", "=", "organization" + KEYSEPARATOR + "1"
                     ),
@@ -69,7 +69,7 @@ class MediafileUploadAction(MediafileMixin, CreateAction):
                 id = next(iter(results))
                 self.execute_other_action(MediafileDelete, [{"id": id}])
             else:
-                text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance["token"]}".'
+                text = f'Database corrupt: The resource token has to be unique, but there are {len(results)} tokens "{instance.get("token")}".'
                 self.logger.error(text)
                 raise ActionException(text)
         if len(tokens) != len(set(tokens)):

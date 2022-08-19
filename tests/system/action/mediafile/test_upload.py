@@ -71,6 +71,37 @@ class MediafileUploadActionTest(BaseActionTestCase):
         assert mediafile.get("create_timestamp", 0) >= start_time
         self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
 
+    def test_create_orga_missing_token(self) -> None:
+        self.create_model(ONE_ORGANIZATION_FQID, {})
+        filename = "fn_jumbo.txt"
+        file_content = base64.b64encode(b"testtesttest").decode()
+        start_time = round(time())
+        response = self.request(
+            "mediafile.upload",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "filename": filename,
+                "file": file_content,
+                "parent_id": None,
+            },
+        )
+        self.assert_status_code(response, 200)
+        mediafile = self.assert_model_exists(
+            "mediafile/1",
+            {
+                "title": "title_xXRGTLAJ",
+                "owner_id": ONE_ORGANIZATION_FQID,
+                "file": None,
+                "mimetype": "text/plain",
+                "filesize": 12,
+                "is_public": True,
+                "is_directory": None,
+            },
+        )
+        assert mediafile.get("create_timestamp", 0) >= start_time
+        self.media.upload_mediafile.assert_called_with(file_content, 1, "text/plain")
+
     def test_create_cannot_guess_mimetype(self) -> None:
         self.create_model(
             "meeting/110", {"name": "name_DsJFXoot", "is_active_in_organization_id": 1}
