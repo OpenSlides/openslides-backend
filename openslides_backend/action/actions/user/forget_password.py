@@ -5,7 +5,7 @@ from urllib.parse import quote
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....locale.translator import Translator
+from ....locale.translator import translate as _
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
@@ -35,7 +35,6 @@ class UserForgetPassword(EmailMixin, UpdateAction):
     skip_archived_meeting_check = True
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
-        _ = Translator
         self.PW_FORGET_EMAIL_TEMPLATE = _(
             """You are receiving this email because you have requested a new password for your OpenSlides-account.
 
@@ -69,7 +68,7 @@ For completeness your username: {username}"""
             try:
                 with EmailMixin.get_mail_connection() as mail_client:
                     for user in results.values():
-                        ok, _ = self.send_email_safe(
+                        ok, errors = self.send_email_safe(
                             mail_client,
                             self.logger,
                             EmailSettings.default_from_email,

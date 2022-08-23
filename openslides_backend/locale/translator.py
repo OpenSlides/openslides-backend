@@ -6,14 +6,11 @@ PATH_TO_LOCALE = "/app/openslides_backend/locale"
 DOMAIN = "messages"
 
 
-class TranslatorSingleton:
+class _Translator:
     def __init__(self) -> None:
-        self.language = DEFAULT_LANGUAGE
+        self.set_translation_language(DEFAULT_LANGUAGE)
 
-    def __call__(self, msg: str) -> str:
-        if not self.translation:
-            return msg
-
+    def translate(self, msg: str) -> str:
         return self.translation.gettext(msg)
 
     def set_translation_language(self, lang: Optional[str]) -> None:
@@ -24,4 +21,5 @@ class TranslatorSingleton:
         self.translation = gettext.translation(DOMAIN, PATH_TO_LOCALE, [self.language])
 
 
-Translator = TranslatorSingleton()
+Translator = _Translator()
+translate = Translator.translate
