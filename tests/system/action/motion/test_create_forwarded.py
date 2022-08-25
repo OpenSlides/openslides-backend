@@ -391,7 +391,10 @@ class MotionCreateForwarded(BaseActionTestCase):
             },
         )
         self.assert_status_code(response, 400)
-        assert "On trying to create the inactive system user for the committee we got the error: A user with the username committee_forwarder already exists." in response.json["message"]
+        assert (
+            "On trying to create the inactive system user for the committee we got the error: A user with the username committee_forwarder already exists."
+            in response.json["message"]
+        )
 
     def test_no_permissions(self) -> None:
         self.create_meeting()
