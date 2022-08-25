@@ -41,9 +41,9 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "meeting_id": 1,
                 "state_id": 30,
             },
-            "committee/52": {"name": "name_EeKbwxpa"},
+            "committee/52": {"name": "committee_receiver"},
             "committee/53": {
-                "name": "name_auSwgfJC",
+                "name": "committee_forwarder",
                 "forward_to_committee_ids": [52],
             },
             "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
@@ -86,7 +86,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "name_auSwgfJC",
+                "username": "committee_forwarder",
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": ["2"],
@@ -107,7 +107,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.set_models(
             {
                 "user/2": {
-                    "username": "name_EeKbwxpa",
+                    "username": "committee_forwarder",
                     "is_physical_person": False,
                     "is_active": False,
                     "group_$_ids": ["2"],
@@ -146,7 +146,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "name_EeKbwxpa",
+                "username": "committee_forwarder",
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": ["2"],
@@ -259,9 +259,9 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "all_origin_ids": [6, 11],
                     "all_derived_motion_ids": [],
                 },
-                "committee/52": {"name": "name_EeKbwxpa"},
+                "committee/52": {"name": "committee_receiver"},
                 "committee/53": {
-                    "name": "name_auSwgfJC",
+                    "name": "committee_forwarder",
                     "forward_to_committee_ids": [52],
                 },
                 "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
@@ -365,6 +365,33 @@ class MotionCreateForwarded(BaseActionTestCase):
         )
         self.assert_status_code(response, 400)
         assert "State doesn't allow to forward motion." in response.json["message"]
+
+    def test_create_forwarded_with_not_registered_user(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "committee_forwarder",
+                    "is_physical_person": False,
+                    "is_active": False,
+                    "group_$_ids": ["2"],
+                    "group_$2_ids": [113],
+                },
+                "group/113": {"name": "HPMHcWhk", "meeting_id": 2, "user_ids": [2]},
+                "meeting/2": {"group_ids": [112, 113]},
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 400)
+        assert "On trying to create the inactive system user for the committee we got the error: A user with the username committee_forwarder already exists." in response.json["message"]
 
     def test_no_permissions(self) -> None:
         self.create_meeting()

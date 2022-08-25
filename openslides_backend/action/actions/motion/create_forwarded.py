@@ -65,8 +65,9 @@ class MotionCreateForwarded(MotionCreateBase):
                 ]
                 self.execute_other_action(UserUpdate, user_update_payload)
         else:
+            username = committee.get("name", "Committee User")
             committee_user_create_payload = {
-                "username": committee.get("name", "Committee User"),
+                "username": username,
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": {
@@ -74,9 +75,14 @@ class MotionCreateForwarded(MotionCreateBase):
                 },
                 "forwarding_committee_ids": [committee["id"]],
             }
-            action_result = self.execute_other_action(
-                UserCreate, [committee_user_create_payload]
-            )
+            try:
+                action_result = self.execute_other_action(
+                    UserCreate, [committee_user_create_payload]
+                )
+            except ActionException as e:
+                if e.message == f"A user with the username {username} already exists.":
+                    e.message = f"On trying to create the inactive system user for the committee we got the error: {e.message}"
+                raise e
             assert action_result and action_result[0]
             forwarding_user_id = action_result[0]["id"]
         instance["submitter_ids"] = [forwarding_user_id]
