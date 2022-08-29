@@ -10,7 +10,7 @@ from openslides_backend.shared.patterns import (
     id_from_fqid,
 )
 
-from ..shared.exceptions import DatastoreException
+from ..shared.exceptions import ActionException, DatastoreException
 from ..shared.interfaces.event import Event, EventType
 from ..shared.interfaces.logging import LoggingModule
 from ..shared.interfaces.services import Services
@@ -37,8 +37,10 @@ def handle_action_in_worker_thread(
         if hasattr(worker_thread, "exception"):
             logger.debug("Action request finished with exception within timeout.")
             raise worker_thread.exception
-        logger.debug("Action request finished successfully within timeout.")
-        return worker_thread.response
+        if hasattr(worker_thread, "response"):
+            logger.debug("Action request finished successfully within timeout.")
+            return worker_thread.response
+        raise ActionException("Action request ended with unknown reason, probably an unexpected timeout!")
     else:
         datastore = handler.services.datastore()
         with datastore.get_database_context():
