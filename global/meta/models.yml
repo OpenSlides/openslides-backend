@@ -3235,11 +3235,13 @@ projector:
   preview_projection_ids:
     type: relation-list
     to: projection/preview_projector_id
+    on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   history_projection_ids:
     type: relation-list
     to: projection/history_projector_id
+    on_delete: CASCADE
     equal_fields: meeting_id
     restriction_mode: A
   used_as_reference_projector_meeting_id:

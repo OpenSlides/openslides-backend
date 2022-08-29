@@ -25,6 +25,7 @@ class ProjectionDelete(DeleteAction):
             [
                 "current_projector_id",
                 "preview_projector_id",
+                "history_projector_id",
                 "content_object_id",
                 "meeting_id",
             ],
@@ -34,6 +35,14 @@ class ProjectionDelete(DeleteAction):
             or projection.get("preview_projector_id")
             or self.is_meeting_deleted(projection["meeting_id"])
             or self.is_deleted(projection["content_object_id"])
+            or (
+                "history_projector_id" in projection
+                and self.is_deleted(
+                    fqid_from_collection_and_id(
+                        "projector", projection["history_projector_id"]
+                    )
+                )
+            )
         ):
             raise ActionException(
                 f"Projection {instance['id']} must have a current_projector_id or a preview_projector_id."

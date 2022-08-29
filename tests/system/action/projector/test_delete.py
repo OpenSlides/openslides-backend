@@ -44,6 +44,38 @@ class ProjectorDelete(BaseActionTestCase):
             },
         )
 
+    def test_delete_with_projections(self) -> None:
+        self.set_models(
+            {
+                "projector/111": {
+                    "preview_projection_ids": [1],
+                    "current_projection_ids": [2],
+                    "history_projection_ids": [3],
+                },
+                "projection/1": {
+                    "preview_projector_id": 111,
+                    "content_object_id": "meeting/1",
+                    "meeting_id": 1,
+                },
+                "projection/2": {
+                    "current_projector_id": 111,
+                    "content_object_id": "meeting/1",
+                    "meeting_id": 1,
+                },
+                "projection/3": {
+                    "history_projector_id": 111,
+                    "content_object_id": "meeting/1",
+                    "meeting_id": 1,
+                },
+            }
+        )
+        response = self.request("projector.delete", {"id": 111})
+        self.assert_status_code(response, 200)
+        self.assert_model_deleted("projector/111")
+        self.assert_model_deleted("projection/1")
+        self.assert_model_deleted("projection/2")
+        self.assert_model_deleted("projection/3")
+
     def test_delete_prevent_if_used_as_reference(self) -> None:
         response = self.request("projector.delete", {"id": 113})
         self.assert_status_code(response, 400)
