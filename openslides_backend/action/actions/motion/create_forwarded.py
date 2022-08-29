@@ -65,8 +65,9 @@ class MotionCreateForwarded(MotionCreateBase):
                 ]
                 self.execute_other_action(UserUpdate, user_update_payload)
         else:
+            username = committee.get("name", "Committee User")
             committee_user_create_payload = {
-                "username": committee.get("name", "Committee User"),
+                "last_name": username,
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": {

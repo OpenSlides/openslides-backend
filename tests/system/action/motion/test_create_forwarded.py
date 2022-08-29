@@ -41,9 +41,9 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "meeting_id": 1,
                 "state_id": 30,
             },
-            "committee/52": {"name": "name_EeKbwxpa"},
+            "committee/52": {"name": "committee_receiver"},
             "committee/53": {
-                "name": "name_auSwgfJC",
+                "name": "committee_forwarder",
                 "forward_to_committee_ids": [52],
             },
             "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
@@ -86,7 +86,8 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "name_auSwgfJC",
+                "username": "committee_forwarder",
+                "last_name": "committee_forwarder",
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": ["2"],
@@ -102,12 +103,12 @@ class MotionCreateForwarded(BaseActionTestCase):
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
 
-    def test_correct_existing_forward_user(self) -> None:
+    def test_correct_existing_registered_forward_user(self) -> None:
         self.set_models(self.test_model)
         self.set_models(
             {
                 "user/2": {
-                    "username": "name_EeKbwxpa",
+                    "username": "committee_forwarder",
                     "is_physical_person": False,
                     "is_active": False,
                     "group_$_ids": ["2"],
@@ -146,7 +147,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists(
             "user/2",
             {
-                "username": "name_EeKbwxpa",
+                "username": "committee_forwarder",
                 "is_physical_person": False,
                 "is_active": False,
                 "group_$_ids": ["2"],
@@ -159,6 +160,61 @@ class MotionCreateForwarded(BaseActionTestCase):
         self.assert_model_exists("committee/53", {"forwarding_user_id": 2})
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
+        )
+
+    def test_correct_existing_unregistered_forward_user(self) -> None:
+        self.set_models(self.test_model)
+        self.set_models(
+            {
+                "user/2": {
+                    "username": "committee_forwarder",
+                    "is_physical_person": True,
+                    "is_active": True,
+                },
+            }
+        )
+        response = self.request(
+            "motion.create_forwarded",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "text": "test",
+            },
+        )
+        self.assert_status_code(response, 200)
+        model = self.assert_model_exists(
+            "motion/13",
+            {
+                "title": "test_Xcdfgee",
+                "meeting_id": 2,
+                "origin_id": 12,
+                "all_derived_motion_ids": [],
+                "all_origin_ids": [12],
+                "submitter_ids": [1],
+            },
+        )
+        assert model.get("forwarded")
+        self.assert_model_exists(
+            "user/3",
+            {
+                "username": "committee_forwarder1",
+                "last_name": "committee_forwarder",
+                "is_physical_person": False,
+                "is_active": False,
+                "group_$_ids": ["2"],
+                "group_$2_ids": [112],
+                "forwarding_committee_ids": [53],
+                "meeting_ids": [2],
+            },
+        )
+        self.assert_model_exists("group/112", {"user_ids": [3]})
+        self.assert_model_exists("committee/53", {"forwarding_user_id": 3})
+        self.assert_model_exists(
+            "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
+        )
+        self.assert_model_exists(
+            "motion_submitter/1", {"user_id": 3, "motion_id": 13, "meeting_id": 2}
         )
 
     def test_correct_origin_id_wrong_1(self) -> None:
@@ -259,9 +315,9 @@ class MotionCreateForwarded(BaseActionTestCase):
                     "all_origin_ids": [6, 11],
                     "all_derived_motion_ids": [],
                 },
-                "committee/52": {"name": "name_EeKbwxpa"},
+                "committee/52": {"name": "committee_receiver"},
                 "committee/53": {
-                    "name": "name_auSwgfJC",
+                    "name": "committee_forwarder",
                     "forward_to_committee_ids": [52],
                 },
                 "group/112": {"name": "YZJAwUPK", "meeting_id": 2},
