@@ -196,7 +196,7 @@ class MotionCreateForwarded(BaseActionTestCase):
         )
         assert model.get("forwarded")
         self.assert_model_exists(
-            "user/4",
+            "user/3",
             {
                 "username": "committee_forwarder1",
                 "last_name": "committee_forwarder",
@@ -205,15 +205,16 @@ class MotionCreateForwarded(BaseActionTestCase):
                 "group_$_ids": ["2"],
                 "group_$2_ids": [112],
                 "forwarding_committee_ids": [53],
+                "meeting_ids": [2],
             },
         )
-        self.assert_model_exists("group/112", {"user_ids": [4]})
-        self.assert_model_exists("committee/53", {"forwarding_user_id": 4})
+        self.assert_model_exists("group/112", {"user_ids": [3]})
+        self.assert_model_exists("committee/53", {"forwarding_user_id": 3})
         self.assert_model_exists(
             "motion/12", {"derived_motion_ids": [13], "all_derived_motion_ids": [13]}
         )
         self.assert_model_exists(
-            "motion_submitter/1", {"user_id": 4, "motion_id": 13, "meeting_id": 2}
+            "motion_submitter/1", {"user_id": 3, "motion_id": 13, "meeting_id": 2}
         )
 
     def test_correct_origin_id_wrong_1(self) -> None:

@@ -1,5 +1,4 @@
 import time
-from copy import deepcopy
 from typing import Any, Dict
 
 from ....models.models import Motion
@@ -68,7 +67,6 @@ class MotionCreateForwarded(MotionCreateBase):
         else:
             username = committee.get("name", "Committee User")
             committee_user_create_payload = {
-                "username": username,
                 "last_name": username,
                 "is_physical_person": False,
                 "is_active": False,
@@ -77,24 +75,9 @@ class MotionCreateForwarded(MotionCreateBase):
                 },
                 "forwarding_committee_ids": [committee["id"]],
             }
-            counter = 0
-            while True:
-                try:
-                    action_result = self.execute_other_action(
-                        UserCreate, [deepcopy(committee_user_create_payload)]
-                    )
-                except ActionException as e:
-                    if (
-                        e.message
-                        == f"A user with the username {username} already exists."
-                    ):
-                        counter += 1
-                        committee_user_create_payload["username"] = username + str(
-                            counter
-                        )
-                        continue
-                    raise e
-                break
+            action_result = self.execute_other_action(
+                UserCreate, [committee_user_create_payload]
+            )
             assert action_result and action_result[0]
             forwarding_user_id = action_result[0]["id"]
         instance["submitter_ids"] = [forwarding_user_id]
