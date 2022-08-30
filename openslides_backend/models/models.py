@@ -3,7 +3,7 @@
 from openslides_backend.models import fields
 from openslides_backend.models.base import Model
 
-MODELS_YML_CHECKSUM = "49b9bff3b7ed2123dbe12b69ab977539"
+MODELS_YML_CHECKSUM = "4b883bd35baa390c2883925512f6a039"
 
 
 class Organization(Model):
@@ -1741,10 +1741,14 @@ class Projector(Model):
         equal_fields="meeting_id",
     )
     preview_projection_ids = fields.RelationListField(
-        to={"projection": "preview_projector_id"}, equal_fields="meeting_id"
+        to={"projection": "preview_projector_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     history_projection_ids = fields.RelationListField(
-        to={"projection": "history_projector_id"}, equal_fields="meeting_id"
+        to={"projection": "history_projector_id"},
+        on_delete=fields.OnDelete.CASCADE,
+        equal_fields="meeting_id",
     )
     used_as_reference_projector_meeting_id = fields.RelationField(
         to={"meeting": "reference_projector_id"}
