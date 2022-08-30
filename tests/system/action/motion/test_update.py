@@ -224,8 +224,11 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.assert_history_information(
             "motion/111",
             [
-                "Supporters changed" "Category set to {}" "name_GdPzDztT",
-                "Motion block set to {}" "title_ddyvpXch",
+                "Supporters changed",
+                "Category set to {}",
+                "name_GdPzDztT",
+                "Motion block set to {}",
+                "title_ddyvpXch",
                 "Motion updated",
             ],
         )
