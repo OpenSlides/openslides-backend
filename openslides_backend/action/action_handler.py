@@ -135,7 +135,7 @@ class ActionHandler(BaseHandler):
                 on_success()
 
             # Return action result
-            self.logger.debug("Request was successful. Send response now.")
+            self.logger.info("Request was successful. Send response now.")
             return ActionsResponse(
                 success=True, message="Actions handled successfully", results=results
             )
@@ -219,7 +219,7 @@ class ActionHandler(BaseHandler):
         if not relation_manager:
             relation_manager = RelationManager(self.datastore)
 
-        self.logger.debug(f"Perform action {action_name}.")
+        self.logger.info(f"Performing action {action_name}.")
         action = ActionClass(
             self.services, self.datastore, relation_manager, self.logging, self.env
         )
@@ -246,7 +246,7 @@ class ActionHandler(BaseHandler):
 
             return (write_request, results)
         except ActionException as exception:
-            self.logger.debug(
+            self.logger.error(
                 f"Error occured on index {action.index}: {exception.message}"
             )
             # -1: error which cannot be directly associated with a single action data
