@@ -90,8 +90,6 @@ class BaseSystemTestCase(TestCase):
     def tearDown(self) -> None:
         if thread := self.__class__.get_thread_by_name("action_worker"):
             thread.join()
-        if thread := self.__class__.get_thread_by_name("watcher_thread"):
-            thread.join()
 
     @staticmethod
     def get_thread_by_name(name: str) -> Optional[threading.Thread]:

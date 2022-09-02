@@ -56,11 +56,40 @@ class TopicCreateSystemTest(BaseActionTestCase):
                 },
             ],
         )
-        self.assert_status_code(response, 400)
-        self.assertIn(
-            "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/meeting_id', 'list_of_speakers/sequential_number', 'topic/meeting_id', 'topic/sequential_number'",
-            response.json["message"],
-        )
+        if response.status_code == 202:
+            self.assertIn(
+                "Action lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
+                response.json["message"],
+            )
+            self.assertFalse(
+                response.json["success"],
+                "Action worker still not finished, success must be False.",
+            )
+            self.assertEqual(
+                response.json["results"][0][0],
+                {
+                    "fqid": "action_worker/1",
+                    "name": "topic.create,topic.create",
+                    "written": True,
+                },
+            )
+            self.assert_model_exists("action_worker/1")
+            if action_worker := self.get_thread_by_name("action_worker"):
+                action_worker.join()
+            action_worker1 = self.assert_model_exists(
+                "action_worker/1", {"state": "end"}
+            )
+            self.assertFalse(action_worker1["result"]["success"])
+            self.assertIn(
+                "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/meeting_id', 'list_of_speakers/sequential_number', 'topic/meeting_id', 'topic/sequential_number'",
+                action_worker1["result"]["message"],
+            )
+        else:
+            self.assert_status_code(response, 400)
+            self.assertIn(
+                "Datastore service sends HTTP 400. The following locks were broken: 'list_of_speakers/meeting_id', 'list_of_speakers/sequential_number', 'topic/meeting_id', 'topic/sequential_number'",
+                response.json["message"],
+            )
         self.assert_model_not_exists("topic/1")
         self.assert_model_not_exists("topic/2")
         self.assert_model_not_exists("topic/3")

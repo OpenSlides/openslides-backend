@@ -9,6 +9,7 @@ from typing import Any
 from datastore.reader.app import register_services
 from gunicorn.app.base import BaseApplication
 
+from .action.action_worker import gunicorn_post_request
 from .shared.env import Environment
 from .shared.interfaces.logging import LoggingModule
 from .shared.interfaces.wsgi import WSGIApplication
@@ -60,7 +61,9 @@ class OpenSlidesBackendGunicornApplication(BaseApplication):  # pragma: no cover
             "loglevel": self.env.get_loglevel().lower(),
             "reload": self.env.is_dev_mode(),
             "reload_engine": "auto",  # This is the default however.
-            "threads": 2,  # using GThread as worker_class, because of gunicorn's timeout kill
+            "worker_class": "gthread",  # async gthread with unlimite prolongation possibility
+            "threads": 5,  # Threads per Worker(process)
+            "post_request": gunicorn_post_request,
         }
         for key, value in options.items():
             self.cfg.set(key, value)

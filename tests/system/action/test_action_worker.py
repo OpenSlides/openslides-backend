@@ -79,7 +79,7 @@ class ActionWorkerTest(BaseActionTestCase):
 
         self.assert_status_code(response, 202)
         self.assertIn(
-            "Action lasts to long. Get the result from database, when the job is done.",
+            "Action lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
             response.json["message"],
         )
         self.assertFalse(
@@ -96,8 +96,6 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_exists(
             f"motion/{count_motions}", {"title": f"test_title {count_motions}"}
         )
-        if watcher_thread := self.get_thread_by_name("watcher_thread"):
-            watcher_thread.join()
         self.assert_model_exists("action_worker/1", {"state": "end"})
 
     def test_action_worker_not_ready_before_timeout_exception(self) -> None:
@@ -128,7 +126,7 @@ class ActionWorkerTest(BaseActionTestCase):
 
         self.assert_status_code(response, 202)
         self.assertIn(
-            "Action lasts to long. Get the result from database, when the job is done.",
+            "Action lasts too long. action_worker/1 written to database. Get the result from database, when the job is done.",
             response.json["message"],
         )
         self.assertFalse(
@@ -142,8 +140,6 @@ class ActionWorkerTest(BaseActionTestCase):
         self.assert_model_exists("action_worker/1")
         if action_worker := self.get_thread_by_name("action_worker"):
             action_worker.join()
-        if watcher_thread := self.get_thread_by_name("watcher_thread"):
-            watcher_thread.join()
         self.assert_model_not_exists("motion/1")
         action_worker1 = self.assert_model_exists("action_worker/1", {"state": "end"})
         self.assertFalse(action_worker1["result"]["success"])
