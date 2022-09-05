@@ -76,7 +76,10 @@ class BaseActionTestCase(BaseSystemTestCase):
         return response
 
     def request_json(
-        self, payload: Payload, anonymous: bool = False, lang: Optional[str] = None,
+        self,
+        payload: Payload,
+        anonymous: bool = False,
+        lang: Optional[str] = None,
     ) -> Response:
         client = self.client if not anonymous else self.anon_client
         headers = {}
