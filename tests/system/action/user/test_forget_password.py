@@ -45,6 +45,30 @@ class UserForgetPassword(BaseActionTestCase):
         assert handler.emails[0]["from"] == EmailSettings.default_from_email
         assert "Ihres Openslides-Passworts" in handler.emails[0]["data"]
 
+    def test_forget_password_send_mail_correct_translated_not_normalized(self) -> None:
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.forget_password", {"email": "test@ntvtn.de"}, lang="de"
+            )
+        self.assert_status_code(response, 200)
+        assert "Ihres Openslides-Passworts" in handler.emails[0]["data"]
+
+    def test_forget_password_send_mail_unknown_language(self) -> None:
+        self.set_models(
+            {ONE_ORGANIZATION_FQID: {"url": None}, "user/1": {"email": "test@ntvtn.de"}}
+        )
+        handler = AIOHandler()
+        with AiosmtpdServerManager(handler):
+            response = self.request(
+                "user.forget_password", {"email": "test@ntvtn.de"}, lang="xy"
+            )
+        self.assert_status_code(response, 200)
+        assert "Reset your OpenSlides password" in handler.emails[0]["data"]
+
     def test_forget_password_two_users_with_email(self) -> None:
         self.set_models(
             {
