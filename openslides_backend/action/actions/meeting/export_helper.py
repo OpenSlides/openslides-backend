@@ -66,9 +66,7 @@ def export_meeting(datastore: DatastoreService, meeting_id: int) -> Dict[str, An
         else:
             export[str(collection)] = {}
 
-    user_ids = set()
-    for id_ in meeting.get("user_ids", []):
-        user_ids.add(id_)
+    # update user_ids
     for collection in export:
         if collection == "_migration_index":
             continue
