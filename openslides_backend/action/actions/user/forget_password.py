@@ -5,6 +5,7 @@ from urllib.parse import quote
 
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
+from ....locale.translator import translate as _
 from ....models.models import User
 from ....shared.exceptions import ActionException
 from ....shared.filters import FilterOperator
@@ -13,14 +14,6 @@ from ...mixins.send_email_mixin import EmailMixin, EmailSettings
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
 from ...util.typing import ActionData
-
-PW_FORGET_EMAIL_TEMPLATE = """You are receiving this email because you have requested a new password for your OpenSlides-account.
-
-Please open the following link and choose a new password:
-{url}/login/forget-password-confirm?user_id={user_id}&token={token}
-
-For completeness your username: {username}"""
-PW_FORGET_EMAIL_SUBJECT = "Reset your OpenSlides password"
 
 
 class format_dict(defaultdict):
@@ -42,6 +35,15 @@ class UserForgetPassword(EmailMixin, UpdateAction):
     skip_archived_meeting_check = True
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
+        self.PW_FORGET_EMAIL_TEMPLATE = _(
+            """You are receiving this email because you have requested a new password for your OpenSlides-account.
+
+Please open the following link and choose a new password:
+{url}/login/forget-password-confirm?user_id={user_id}&token={token}
+
+For completeness your username: {username}"""
+        )
+        self.PW_FORGET_EMAIL_SUBJECT = _("Reset your OpenSlides password")
         for instance in action_data:
             email = instance.pop("email")
 
@@ -66,12 +68,12 @@ class UserForgetPassword(EmailMixin, UpdateAction):
             try:
                 with EmailMixin.get_mail_connection() as mail_client:
                     for user in results.values():
-                        ok, _ = self.send_email_safe(
+                        ok, errors = self.send_email_safe(
                             mail_client,
                             self.logger,
                             EmailSettings.default_from_email,
                             email,
-                            PW_FORGET_EMAIL_SUBJECT,
+                            self.PW_FORGET_EMAIL_SUBJECT,
                             self.get_email_body(
                                 user["id"],
                                 self.get_token(user["id"], email),
@@ -101,7 +103,7 @@ class UserForgetPassword(EmailMixin, UpdateAction):
                 "url": url,
             },
         )
-        return PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
+        return self.PW_FORGET_EMAIL_TEMPLATE.format_map(body_format)
 
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         pass

@@ -2,6 +2,7 @@ from base64 import b64decode
 from typing import Optional, Tuple
 
 from ...action.action_handler import ActionHandler
+from ...locale.translator import Translator
 from ...migrations import assert_migration_index
 from ...migrations.migration_handler import MigrationHandler
 from ...services.auth.adapter import AUTHENTICATION_HEADER, COOKIE_NAME
@@ -39,6 +40,7 @@ class ActionView(BaseView):
 
         # Handle request.
         handler = ActionHandler(self.env, self.services, self.logging)
+        Translator.set_translation_language(request.headers.get("Accept-Language"))
         is_atomic = not request.environ["RAW_URI"].endswith("handle_separately")
         response = handler.handle_request(request.json, user_id, is_atomic)
 

@@ -115,3 +115,16 @@ build-dev:
 
 rebuild-dev:
 	docker build --file=dev/Dockerfile.dev . --tag=openslides-backend-dev --no-cache
+
+# Translation targets
+
+babel-compile:
+	pybabel compile -d openslides_backend/locale
+
+babel-extract:
+	pybabel extract openslides_backend/ \
+		-o openslides_backend/locale/backend.pot
+
+babel-update:
+	pybabel update -i openslides_backend/locale/backend.pot \
+		-d openslides_backend/locale
