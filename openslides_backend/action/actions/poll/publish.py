@@ -1,6 +1,7 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+from openslides_backend.services.datastore.commands import GetManyRequest
 
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
@@ -24,7 +25,6 @@ class PollPublishAction(
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
-    history_information = "Voting published"
     extend_history_to = "content_object_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -41,3 +41,15 @@ class PollPublishAction(
 
         instance["state"] = Poll.STATE_PUBLISHED
         return instance
+
+    def get_history_information(self) -> Optional[List[str]]:
+        ids = [instance["id"] for instance in self.instances]
+        polls = self.datastore.get_many(
+            [GetManyRequest(self.model.collection, ids, ["state"])],
+            use_changed_models=False,
+        )
+        states = set(poll["state"] for poll in polls[self.model.collection].values())
+        if len(states) == 1 and states.pop() == Poll.STATE_FINISHED:
+            return ["Voting published"]
+        else:
+            return ["Voting stopped/published"]

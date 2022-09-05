@@ -56,6 +56,7 @@ class PollPublishActionTest(BaseActionTestCase):
                 "entitled_users_at_stop": [],
             },
         )
+        self.assert_history_information("topic/1", ["Voting stopped/published"])
 
     def test_publish_no_permissions(self) -> None:
         self.base_permission_test(self.test_models, "poll.publish", {"id": 1})
