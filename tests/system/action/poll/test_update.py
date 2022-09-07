@@ -1,4 +1,3 @@
-import openslides_backend.action.actions  # noqa
 from openslides_backend.models.models import Poll
 from openslides_backend.permissions.permissions import Permissions
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
@@ -83,6 +82,7 @@ class UpdatePollTestCase(BaseActionTestCase):
         assert poll.get("global_yes") is False
         assert poll.get("global_no") is True
         assert poll.get("global_abstain") is True
+        self.assert_history_information("assignment/1", ["Poll updated"])
 
     def test_not_allowed_for_analog(self) -> None:
         self.update_model("poll/1", {"type": "analog"})
