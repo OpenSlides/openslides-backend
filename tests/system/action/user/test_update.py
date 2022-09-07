@@ -1211,6 +1211,29 @@ class UserUpdateActionTest(BaseActionTestCase):
             in response.json["message"]
         )
 
+    def test_update_change_superadmin_meeting_specific(self) -> None:
+        self.permission_setup()
+        self.set_user_groups(self.user_id, [2])
+        self.set_organization_management_level(
+            OrganizationManagementLevel.CAN_MANAGE_ORGANIZATION, self.user_id
+        )
+        self.set_organization_management_level(
+            OrganizationManagementLevel.SUPERADMIN, 111
+        )
+
+        response = self.request(
+            "user.update",
+            {
+                "id": 111,
+                "comment_$": {1: "test"},
+                "group_$_ids": {1: [1]},
+            },
+        )
+        self.assert_status_code(response, 200)
+        self.assert_model_exists(
+            "user/111", {"comment_$1": "test", "group_$1_ids": [1]}
+        )
+
     def test_update_hit_user_limit(self) -> None:
         self.set_models(
             {
@@ -1418,7 +1441,7 @@ class UserUpdateActionTest(BaseActionTestCase):
             },
         )
 
-    def test_update_oml_key_error(self) -> None:
+    def test_update_no_OML_set(self) -> None:
         self.permission_setup()
         self.set_user_groups(self.user_id, [2])
 

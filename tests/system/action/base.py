@@ -34,12 +34,20 @@ class BaseActionTestCase(BaseSystemTestCase):
         return create_action_test_application()
 
     def request(
-        self, action: str, data: Dict[str, Any], anonymous: bool = False
+        self,
+        action: str,
+        data: Dict[str, Any],
+        anonymous: bool = False,
+        lang: Optional[str] = None,
     ) -> Response:
-        return self.request_multi(action, [data], anonymous=anonymous)
+        return self.request_multi(action, [data], anonymous=anonymous, lang=lang)
 
     def request_multi(
-        self, action: str, data: List[Dict[str, Any]], anonymous: bool = False
+        self,
+        action: str,
+        data: List[Dict[str, Any]],
+        anonymous: bool = False,
+        lang: Optional[str] = None,
     ) -> Response:
         response = self.request_json(
             [
@@ -49,6 +57,7 @@ class BaseActionTestCase(BaseSystemTestCase):
                 }
             ],
             anonymous=anonymous,
+            lang=lang,
         )
         if response.status_code == 200:
             results = response.json.get("results", [])
@@ -56,9 +65,14 @@ class BaseActionTestCase(BaseSystemTestCase):
             assert results[0] is None or len(results[0]) == len(data)
         return response
 
-    def request_json(self, payload: Payload, anonymous: bool = False) -> Response:
+    def request_json(
+        self, payload: Payload, anonymous: bool = False, lang: Optional[str] = None
+    ) -> Response:
         client = self.client if not anonymous else self.anon_client
-        return client.post(ACTION_URL, json=payload)
+        headers = {}
+        if lang:
+            headers["Accept-Language"] = lang
+        return client.post(ACTION_URL, json=payload, headers=headers)
 
     def execute_action_internally(
         self, action_name: str, data: Dict[str, Any], user_id: int = 0

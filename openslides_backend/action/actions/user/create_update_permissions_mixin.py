@@ -194,9 +194,9 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
         if permstore.user_oml == OrganizationManagementLevel.SUPERADMIN:
             return
 
-        self._check_for_higher_OML(permstore, instance)
-        self._check_OML_in_instance(permstore, instance)
         actual_group_fields = self._get_actual_grouping_from_instance(instance)
+        self._check_for_higher_OML(permstore, actual_group_fields, instance)
+        self._check_OML_in_instance(permstore, instance)
 
         # Ordered by supposed velocity advantages. Changing order only can effect the sequence of detected errors for tests
         self.check_group_E(permstore, actual_group_fields["E"])
@@ -298,9 +298,15 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
             raise MissingPermission(OrganizationManagementLevel.SUPERADMIN)
 
     def _check_for_higher_OML(
-        self, permstore: PermissionVarStore, instance: Dict[str, Any]
+        self,
+        permstore: PermissionVarStore,
+        fields: Dict[str, List[str]],
+        instance: Dict[str, Any],
     ) -> None:
-        if "id" in instance:
+        # groups B and C are meeting-specific and therefore allowed to be changed, even by lower-OML users
+        if "id" in instance and any(
+            fields[group] for group in fields.keys() if group not in ["B", "C"]
+        ):
             user = self.datastore.get(
                 fqid_from_collection_and_id("user", instance["id"]),
                 ["organization_management_level"],
@@ -327,14 +333,14 @@ class CreateUpdatePermissionsMixin(UserScopePermissionCheckMixin):
 
     def _get_actual_grouping_from_instance(
         self, instance: Dict[str, Any]
-    ) -> Dict[str, list]:
+    ) -> Dict[str, List[str]]:
         """
         Returns a dictionary with an entry for each field group A-E with
         a list of fields from payload instance.
         The field groups A-F refer to https://github.com/OpenSlides/OpenSlides/wiki/user.create
         or user.update
         """
-        act_grouping: Dict[str, list] = defaultdict(list)
+        act_grouping: Dict[str, List[str]] = defaultdict(list)
         for key, _ in instance.items():
             for group in "ABCDEF":
                 if key in self.field_rights[group]:
