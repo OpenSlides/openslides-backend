@@ -638,13 +638,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 new_user_ids.append(user_entry["id"])
 
         if new_user_ids:
-            write_requests.append(
-                self.build_write_request(
+            events.append(
+                self.build_event(
                     EventType.Update,
                     ONE_ORGANIZATION_FQID,
-                    f"import meeting {meeting_id}",
-                    None,
-                    {
+                    list_fields={
                         "add": {
                             "user_ids": new_user_ids,
                         },
@@ -653,9 +651,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 )
             )
 
-    def handle_calculated_fields(
-        self, instance: Dict[str, Any]
-    ) -> Iterable[WriteRequest]:
+    def handle_calculated_fields(self, instance: Dict[str, Any]) -> Iterable[Event]:
         regex = re.compile(
             r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$"
         )
