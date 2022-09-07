@@ -4,13 +4,11 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Union, cast
 from ....models.models import Group
 from ....permissions.permissions import Permissions
 from ....services.datastore.commands import GetManyRequest
-from ....shared.interfaces.event import EventType, ListFields
-from ....shared.interfaces.write_request import WriteRequest
+from ....shared.interfaces.event import Event, EventType, ListFields
 from ....shared.patterns import (
     FullQualifiedId,
     collection_from_fqid,
     fqid_from_collection_and_id,
-    id_from_fqid,
 )
 from ...generics.delete import DeleteAction
 from ...util.default_schema import DefaultSchema
@@ -44,7 +42,7 @@ class GroupDeleteAction(DeleteAction):
     def handle_relation_updates(
         self,
         instance: Dict[str, Any],
-    ) -> Iterable[WriteRequest]:
+    ) -> Iterable[Event]:
         """
         Method use the WriteRequests for mediafiles, that were generated
         from the relation handlers, to remove the deleted group from mediafile
@@ -68,11 +66,10 @@ class GroupDeleteAction(DeleteAction):
         gm_result = self.datastore.get_many([get_many_request])
         db_mediafiles = gm_result.get(mediafile_collection, {})
 
-        write_requests = super().handle_relation_updates(instance)
-        for write_request in write_requests:
-            for event in write_request.events:
-                if collection_from_fqid(event["fqid"]) != "mediafile":
-                    yield write_request
+        events = super().handle_relation_updates(instance)
+        for event in events:
+            if collection_from_fqid(event["fqid"]) != "mediafile":
+                yield event
 
         # search root changed mediafiles
         roots: Set[int] = set()
@@ -91,10 +88,9 @@ class GroupDeleteAction(DeleteAction):
             yield from self.check_recursive(mediafile_id, db_mediafiles)
 
         for group_id, mediafile_ids in self.group_writes.items():
-            yield self.build_write_request(
+            yield self.build_event(
                 EventType.Update,
                 fqid_from_collection_and_id("group", group_id),
-                f"delete group {self.group_id}: add mediafile_ids {mediafile_ids} to group {group_id} 'mediafile_inherited_access_group_ids'",
                 list_fields={
                     "add": {
                         "mediafile_inherited_access_group_ids": cast(
@@ -107,7 +103,7 @@ class GroupDeleteAction(DeleteAction):
 
     def check_recursive(
         self, id_: int, db_mediafiles: Dict[int, Any]
-    ) -> Iterable[WriteRequest]:
+    ) -> Iterable[Event]:
         fqid = fqid_from_collection_and_id("mediafile", id_)
 
         mediafile = self.datastore.get(
@@ -139,10 +135,9 @@ class GroupDeleteAction(DeleteAction):
         event_fields = self.datastore.get(
             fqid, ["is_public", "access_group_ids", "inherited_access_group_ids"]
         )
-        yield self.build_write_request(
+        yield self.build_event(
             EventType.Update,
             fqid,
-            f"delete group {self.group_id}: calculate fields for mediafile {id_from_fqid(fqid)}",
             event_fields,
         )
 
@@ -155,16 +150,15 @@ class GroupDeleteAction(DeleteAction):
             if child_id in self.mediafile_ids:
                 yield from self.check_recursive(child_id, db_mediafiles)
 
-    def build_write_request(
+    def build_event(
         self,
         type: EventType,
         fqid: FullQualifiedId,
-        information: str,
         fields: Optional[Dict[str, Any]] = None,
         list_fields: Optional[ListFields] = None,
-    ) -> WriteRequest:
+    ) -> Event:
         """
-        Building write requests by hand, but with eliminating the meta-* fields
+        Building event by hand, but with eliminating the meta-* fields
         """
         if type == EventType.Update and fields:
             fields = {
@@ -172,4 +166,4 @@ class GroupDeleteAction(DeleteAction):
                 for k, v in fields.items()
                 if k != "id" and not k.startswith("meta_")
             }
-        return super().build_write_request(type, fqid, information, fields, list_fields)
+        return super().build_event(type, fqid, fields, list_fields)

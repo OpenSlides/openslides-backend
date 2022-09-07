@@ -270,9 +270,9 @@ class MeetingCreateActionTest(BaseActionTestCase):
         self.assert_model_exists(
             "user/1", {"group_$1_ids": [admin_group_id], "committee_ids": [1]}
         )
-        self.assertCountEqual(meeting.get("user_ids"), [1, 2, 3])
+        self.assertCountEqual(meeting.get("user_ids", []), [1, 2, 3])
         committee = self.get_model("committee/1")
-        self.assertCountEqual(committee.get("user_ids"), [1, 2, 3])
+        self.assertCountEqual(committee.get("user_ids", []), [1, 2, 3])
 
     def test_create_with_admins_empty_array(self) -> None:
         meeting = self.basic_test({"admin_ids": []})

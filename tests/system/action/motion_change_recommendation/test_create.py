@@ -32,6 +32,9 @@ class MotionChangeRecommendationActionTest(BaseActionTestCase):
         assert model.get("type") == "replacement"
         assert model.get("meeting_id") == 1
         assert int(str(model.get("creation_time"))) > 1600246886
+        self.assert_history_information(
+            "motion/233", ["Motion change recommendation created"]
+        )
 
     def test_create_good_all_fields(self) -> None:
         response = self.request(

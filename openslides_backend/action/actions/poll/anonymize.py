@@ -1,5 +1,7 @@
 from typing import Any, Dict, List
 
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException
@@ -13,13 +15,15 @@ from .mixins import PollPermissionMixin
 
 
 @register_action("poll.anonymize")
-class PollAnonymize(UpdateAction, PollPermissionMixin):
+class PollAnonymize(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
     """
     Action to anonymize a poll.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
+    history_information = "Voting anonymized"
+    extend_history_to = "content_object_id"
 
     def get_updated_instances(self, action_data: ActionData) -> ActionData:
         for instance in action_data:

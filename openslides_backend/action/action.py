@@ -8,6 +8,7 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -42,7 +43,6 @@ from ..shared.interfaces.write_request import WriteRequest
 from ..shared.otel import make_span
 from ..shared.patterns import (
     FullQualifiedId,
-    collection_from_fqfield,
     collection_from_fqid,
     field_from_fqfield,
     fqid_from_collection_and_id,
@@ -90,6 +90,9 @@ class BaseAction:  # pragma: no cover
     user_id: int
 
 
+T = TypeVar("T", bound=WriteRequest)
+
+
 class Action(BaseAction, metaclass=SchemaProvider):
     """
     Base class for an action.
@@ -97,6 +100,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
 
     schema: Dict
     schema_validator: Callable[[Dict[str, Any]], None]
+
     is_singular: bool = False
     action_type: ActionType = ActionType.PUBLIC
     permission: Optional[Union[Permission, OrganizationManagementLevel]] = None
@@ -104,9 +108,12 @@ class Action(BaseAction, metaclass=SchemaProvider):
     permission_id: Optional[str] = None
     skip_archived_meeting_check: bool = False
     use_meeting_ids_for_archived_meeting_check: bool = False
+    history_information: Optional[str] = None
+
     relation_manager: RelationManager
 
-    write_requests: List[WriteRequest]
+    instances: List[Dict[str, Any]]
+    events: List[Event]
     results: ActionResults
 
     def __init__(
@@ -134,7 +141,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.use_meeting_ids_for_archived_meeting_check = (
                 use_meeting_ids_for_archived_meeting_check
             )
-        self.write_requests = []
+        self.events = []
         self.results = []
 
     def perform(
@@ -164,11 +171,11 @@ class Action(BaseAction, metaclass=SchemaProvider):
         self.index = -1
 
         action_data = self.prepare_action_data(action_data)
-        instances = self.get_updated_instances(action_data)
+        self.instances = list(self.get_updated_instances(action_data))
         is_original_instances = hasattr(
             self.get_updated_instances, "_original_instances"
         )
-        for instance in instances:
+        for instance in self.instances:
             # only increment index if the instances which are iterated here are the
             # same as the ones from the action data list (meaning get_updated_instances was
             # not overridden)
@@ -178,21 +185,21 @@ class Action(BaseAction, metaclass=SchemaProvider):
             instance = self.base_update_instance(instance)
 
             relation_updates = self.handle_relation_updates(instance)
-            self.write_requests.extend(relation_updates)
+            self.events.extend(relation_updates)
 
-            write_request = self.create_write_requests(instance)
-            self.write_requests.extend(write_request)
+            events = self.create_events(instance)
+            self.events.extend(events)
 
             if is_original_instances:
                 result = self.create_action_result_element(instance)
                 self.results.append(result)
 
-        final_write_request = self.process_write_requests()
+        write_request = self.build_write_request()
         # by default, for actions which changed the updated instances, just return None
         if not is_original_instances and not self.results:
-            return (final_write_request, None)
+            return (write_request, None)
 
-        return (final_write_request, self.results)
+        return (write_request, self.results)
 
     def prefetch(self, action_data: ActionData) -> None:
         """
@@ -217,7 +224,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 set permission in class to: permission = CommitteeManagementLevel.CAN_MANAGE
                 A specialized realisation see in create_update_permissions_mixin.py
                 """
-                raise NotImplementedError
+                raise NotImplementedError()
             else:
                 meeting_id = self.get_meeting_id(instance)
                 if has_perm(
@@ -327,7 +334,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def handle_relation_updates(
         self,
         instance: Dict[str, Any],
-    ) -> Iterable[WriteRequest]:
+    ) -> Iterable[Event]:
         """
         Creates write request elements (with update events) for all relations.
         """
@@ -340,22 +347,15 @@ class Action(BaseAction, metaclass=SchemaProvider):
     def handle_relation_updates_helper(
         self,
         relation_updates: RelationUpdates,
-    ) -> Iterable[WriteRequest]:
+    ) -> Iterable[Event]:
         fields: Optional[Dict[str, Any]]
         for fqfield, data in relation_updates.items():
             list_fields: Optional[ListFields] = None
             if data["type"] in ("add", "remove"):
                 data = cast(FieldUpdateElement, data)
                 fields = {field_from_fqfield(fqfield): data["value"]}
-                if data["type"] == "add":
-                    info_text = f"Object attached to {collection_from_fqfield(fqfield)}"
-                else:
-                    info_text = (
-                        f"Object attachment to {collection_from_fqfield(fqfield)} reset"
-                    )
             elif data["type"] == "list_update":
                 data = cast(ListUpdateElement, data)
-                info_text = "Object updated"
                 fields = None
                 list_fields_tmp = {}
                 if data["add"]:
@@ -365,22 +365,20 @@ class Action(BaseAction, metaclass=SchemaProvider):
                         field_from_fqfield(fqfield): data["remove"]
                     }
                 list_fields = cast(ListFields, list_fields_tmp)
-            yield self.build_write_request(
+            yield self.build_event(
                 EventType.Update,
                 fqid_from_fqfield(fqfield),
-                info_text,
                 fields,
                 list_fields,
             )
 
-    def build_write_request(
+    def build_event(
         self,
         type: EventType,
         fqid: FullQualifiedId,
-        information: str,
         fields: Optional[Dict[str, Any]] = None,
         list_fields: Optional[ListFields] = None,
-    ) -> WriteRequest:
+    ) -> Event:
         """
         Helper function to create a WriteRequest.
         """
@@ -393,18 +391,13 @@ class Action(BaseAction, metaclass=SchemaProvider):
             self.datastore.apply_changed_model(fqid, fields)
         if list_fields:
             event["list_fields"] = list_fields
-        return WriteRequest(
-            events=[event],
-            information={fqid: [information]},
-            user_id=self.user_id,
-            locked_fields={},
-        )
+        return event
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         """
-        Creates write requests for one instance of the current model.
+        Creates events for one instance of the current model. To be overriden in subclasses.
         """
-        raise NotImplementedError
+        raise NotImplementedError()
 
     def create_action_result_element(
         self, instance: Dict[str, Any]
@@ -415,28 +408,41 @@ class Action(BaseAction, metaclass=SchemaProvider):
         """
         return None
 
-    def process_write_requests(
+    def build_write_request(
         self,
     ) -> Optional[WriteRequest]:
         """
-        Merge all temporarily created write requests to one single write request which
-        is returned by this action.
+        Merge all created events to one single write request which is returned by this action.
         """
-        # merge all actual write requests
-        write_request = merge_write_requests(self.write_requests)
-        if write_request:
+        return self._build_write_request(WriteRequest([]))
+
+    def _build_write_request(
+        self,
+        write_request: T,
+    ) -> Optional[T]:
+        # merge all events, if any, into a write request
+        if self.events:
             # sort events: create - update - delete
             events_by_type: Dict[EventType, List[Event]] = defaultdict(list)
-            for event in write_request.events:
+            for event in self.events:
                 self.apply_event(event)
                 events_by_type[event["type"]].append(event)
-            write_request.events = []
+            write_request.information = self.get_history_information()
+            write_request.user_id = self.user_id
             write_request.events.extend(events_by_type[EventType.Create])
             write_request.events.extend(
                 self.merge_update_events(events_by_type[EventType.Update])
             )
             write_request.events.extend(events_by_type[EventType.Delete])
-        return write_request
+            return write_request
+        return None
+
+    def get_history_information(self) -> Optional[List[str]]:
+        """
+        Get the history information for this action. Can be overridden to get
+        context-dependent information.
+        """
+        return [self.history_information] if self.history_information else None
 
     def merge_update_events(self, update_events: List[Event]) -> List[Event]:
         """
@@ -658,7 +664,7 @@ class Action(BaseAction, metaclass=SchemaProvider):
                 action_data, self.user_id, internal=True
             )
             if write_request:
-                self.write_requests.append(write_request)
+                self.events.extend(write_request.events)
             return action_results
 
     def get_on_success(self, action_data: ActionData) -> Callable[[], None]:
@@ -672,40 +678,3 @@ class Action(BaseAction, metaclass=SchemaProvider):
         Can be overridden by actions to return a cleanup method to execute
         after an error appeared in an action.
         """
-
-
-def merge_write_requests(
-    write_requests: Iterable[WriteRequest],
-) -> Optional[WriteRequest]:
-    """
-    Merges the given write request elements to one big write request element.
-    """
-    events: List[Event] = []
-    information: Dict[FullQualifiedId, List[str]] = {}
-    user_id: Optional[int] = None
-    for element in write_requests:
-        events.extend(element.events)
-        for fqid, info_text in element.information.items():
-            if information.get(fqid) is None:
-                information[fqid] = info_text
-            else:
-                information[fqid].extend(info_text)
-        if user_id is None:
-            user_id = element.user_id
-        else:
-            if user_id != element.user_id:
-                raise ValueError(
-                    "You can not merge two write request elements of different users."
-                )
-
-    if events:
-        if user_id is None:
-            raise ValueError("At least one of the given user ids must not be None.")
-        return WriteRequest(
-            events=events,
-            information=information,
-            user_id=user_id,
-            locked_fields={},
-        )
-    else:
-        return None

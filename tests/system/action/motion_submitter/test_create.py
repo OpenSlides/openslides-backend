@@ -31,6 +31,7 @@ class MotionSubmitterCreateActionTest(BaseActionTestCase):
         assert model.get("motion_id") == 357
         assert model.get("user_id") == 78
         assert model.get("weight") == 100
+        self.assert_history_information("motion/357", ["Submitters changed"])
 
     def test_create_default_weight(self) -> None:
         self.set_models(

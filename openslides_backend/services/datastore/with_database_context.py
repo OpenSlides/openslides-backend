@@ -1,16 +1,20 @@
 from functools import wraps
-from typing import Callable
+from typing import Callable, ParamSpec, TypeVar
 
 from .adapter import DatastoreAdapter
 
+T = TypeVar("T")
+P = ParamSpec("P")
 
-def with_database_context(method: Callable) -> Callable:
+
+def with_database_context(method: Callable[P, T]) -> Callable[P, T]:
     @wraps(method)
-    def wrapper(self, *args, **kwargs):  # type: ignore
-        assert hasattr(self, "datastore") and isinstance(
-            self.datastore, DatastoreAdapter
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        datastore = getattr(args[0], "datastore")
+        assert isinstance(
+            datastore, DatastoreAdapter
         ), "with_database_context can only decorate instance methods for classes with a datastore attribute"
-        with self.datastore.get_database_context():
-            return method(self, *args, **kwargs)
+        with datastore.get_database_context():
+            return method(*args, **kwargs)
 
     return wrapper

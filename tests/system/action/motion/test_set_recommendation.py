@@ -53,6 +53,9 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
         model = self.get_model("motion/22")
         assert model.get("recommendation_id") == 77
         assert model.get("last_modified", 0) >= check_time
+        self.assert_history_information(
+            "motion/22", ["Recommendation set to {}", "blablabal"]
+        )
 
     def test_set_recommendation_missing_recommendation_label(self) -> None:
         self.set_models(
@@ -106,14 +109,78 @@ class MotionSetRecommendationActionTest(BaseActionTestCase):
             "message", ""
         )
 
-    def test_set_recommendat_no_permission(self) -> None:
+    def test_history_multiple_actions(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "motion_workflow/34": {
+                    "meeting_id": 222,
+                },
+                "motion_state/66": {
+                    "meeting_id": 222,
+                    "motion_ids": [22],
+                    "workflow_id": 34,
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "workflow_id": 34,
+                    "recommendation_label": "blablabal",
+                },
+                "motion/22": {"meeting_id": 222, "state_id": 66},
+                "motion/23": {"meeting_id": 222, "state_id": 66},
+            }
+        )
+        response = self.request_multi(
+            "motion.set_recommendation",
+            [{"id": 22, "recommendation_id": 77}, {"id": 23, "recommendation_id": 77}],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information(
+            "motion/22", ["Recommendation set to {}", "blablabal"]
+        )
+        self.assert_history_information(
+            "motion/22", ["Recommendation set to {}", "blablabal"]
+        )
+
+    def test_history_multiple_actions_different_states(self) -> None:
+        self.set_models(
+            {
+                "meeting/222": {"is_active_in_organization_id": 1},
+                "motion_workflow/34": {
+                    "meeting_id": 222,
+                },
+                "motion_state/66": {
+                    "meeting_id": 222,
+                    "motion_ids": [22],
+                    "workflow_id": 34,
+                    "recommendation_label": "blablabal",
+                },
+                "motion_state/77": {
+                    "meeting_id": 222,
+                    "motion_ids": [23],
+                    "workflow_id": 34,
+                    "recommendation_label": "blablabal",
+                },
+                "motion/22": {"meeting_id": 222, "state_id": 66},
+                "motion/23": {"meeting_id": 222, "state_id": 77},
+            }
+        )
+        response = self.request_multi(
+            "motion.set_recommendation",
+            [{"id": 22, "recommendation_id": 77}, {"id": 23, "recommendation_id": 66}],
+        )
+        self.assert_status_code(response, 200)
+        self.assert_history_information("motion/22", ["Recommendation changed"])
+        self.assert_history_information("motion/22", ["Recommendation changed"])
+
+    def test_set_recommendation_no_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
             "motion.set_recommendation",
             {"id": 22, "recommendation_id": 77},
         )
 
-    def test_set_recommendat_permission(self) -> None:
+    def test_set_recommendation_permission(self) -> None:
         self.base_permission_test(
             self.permission_test_models,
             "motion.set_recommendation",

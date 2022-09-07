@@ -24,5 +24,5 @@ class OptionSetAutoFields(UpdateAction):
         )
         if not set_without_calc:
             # TODO in this case we should autogenerate the fields.
-            raise NotImplementedError
+            raise NotImplementedError()
         return instance

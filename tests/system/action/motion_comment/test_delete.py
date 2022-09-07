@@ -12,6 +12,7 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
             "motion_comment_section/78": {
                 "meeting_id": 1,
                 "write_group_ids": [3],
+                "name": "test",
             },
         }
 
@@ -22,16 +23,23 @@ class MotionCommentDeleteActionTest(BaseActionTestCase):
                 "meeting/1": {"admin_group_id": 2, "is_active_in_organization_id": 1},
                 "group/2": {"meeting_id": 1, "admin_group_for_meeting_id": 1},
                 "group/3": {"meeting_id": 1},
-                "motion_comment/111": {"meeting_id": 1, "section_id": 78},
+                "motion/1": {"meeting_id": 1, "comment_ids": [111]},
+                "motion_comment/111": {
+                    "meeting_id": 1,
+                    "section_id": 78,
+                    "motion_id": 1,
+                },
                 "motion_comment_section/78": {
                     "meeting_id": 1,
                     "write_group_ids": [3],
+                    "name": "test",
                 },
             }
         )
         response = self.request("motion_comment.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("motion_comment/111")
+        self.assert_history_information("motion/1", ["Comment {} deleted", "test"])
 
     def test_delete_wrong_id(self) -> None:
         self.create_model("motion_comment/112")

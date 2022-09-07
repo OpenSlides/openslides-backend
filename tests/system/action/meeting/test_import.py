@@ -615,8 +615,8 @@ class MeetingImport(BaseActionTestCase):
             "tag/1", {"tagged_ids": ["motion/2"], "name": "testag"}
         )
         committee_1 = self.get_model("committee/1")
-        self.assertCountEqual(committee_1.get("meeting_ids"), [1, 2])
-        self.assertCountEqual(committee_1.get("user_ids"), [1, 2])
+        self.assertCountEqual(committee_1.get("meeting_ids", []), [1, 2])
+        self.assertCountEqual(committee_1.get("user_ids", []), [1, 2])
         self.assert_model_exists(ONE_ORGANIZATION_FQID, {"active_meeting_ids": [1, 2]})
 
     def test_check_calc_fields(self) -> None:
@@ -847,8 +847,8 @@ class MeetingImport(BaseActionTestCase):
             "tag/2", {"tagged_ids": ["motion/3"], "name": "testag", "meeting_id": 3}
         )
         committee_1 = self.get_model("committee/1")
-        self.assertCountEqual(committee_1.get("user_ids"), [1, 2])
-        self.assertCountEqual(committee_1.get("meeting_ids"), [1, 2, 3])
+        self.assertCountEqual(committee_1.get("user_ids", []), [1, 2])
+        self.assertCountEqual(committee_1.get("meeting_ids", []), [1, 2, 3])
 
     def test_no_permission(self) -> None:
         self.set_models(

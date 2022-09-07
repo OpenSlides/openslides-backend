@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -54,3 +54,6 @@ class MotionFollowRecommendationAction(MotionSetStateAction):
             instance["state_extension"] = recommendation_extension
         instance["last_modified"] = round(time.time())
         return instance
+
+    def get_history_information(self) -> Optional[List[str]]:
+        return self._get_state_history_information("state_id", "name", "State")

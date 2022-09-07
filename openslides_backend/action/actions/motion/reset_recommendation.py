@@ -17,6 +17,7 @@ class MotionResetRecommendationAction(UpdateAction):
     model = Motion()
     schema = DefaultSchema(Motion()).get_update_schema()
     permission = Permissions.Motion.CAN_MANAGE
+    history_information = "Recommendation reset"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """

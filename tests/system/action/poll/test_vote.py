@@ -71,7 +71,11 @@ class PollVoteTest(BaseVoteTestCase):
                     "group_$113_ids": [1],
                     "group_$_ids": ["113"],
                 },
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11],
                     "pollmethod": "Y",
@@ -126,7 +130,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "YN",
@@ -163,7 +171,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "YN",
@@ -226,7 +238,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "Y",
@@ -265,7 +281,11 @@ class PollVoteTest(BaseVoteTestCase):
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "Y",
                     "meeting_id": 113,
@@ -298,7 +318,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "YNA",
@@ -335,7 +359,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "YN",
@@ -372,7 +400,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "option/11": {"meeting_id": 113, "poll_id": 1},
                 "option/12": {"meeting_id": 113, "poll_id": 1},
                 "option/13": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11, 12, 13],
                     "pollmethod": "Y",
@@ -422,7 +454,11 @@ class PollVoteTest(BaseVoteTestCase):
                     "group_$113_ids": [1],
                     "group_$_ids": ["113"],
                 },
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "global_option_id": 11,
                     "global_no": True,
@@ -470,7 +506,11 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "entitled_group_ids": [1],
                     "meeting_id": 113,
@@ -494,7 +534,11 @@ class PollVoteTest(BaseVoteTestCase):
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
                 "option/11": {"meeting_id": 113, "poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "option_ids": [11],
                     "pollmethod": "YNA",
                     "meeting_id": 113,
@@ -528,7 +572,11 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "type": "named",
                     "meeting_id": 113,
                     "pollmethod": "YNA",
@@ -557,7 +605,11 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "type": "named",
                     "pollmethod": "YNA",
@@ -600,7 +652,11 @@ class PollVoteTest(BaseVoteTestCase):
                     "group_$113_ids": [1],
                     "group_$_ids": ["113"],
                 },
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "global_option_id": 11,
                     "global_no": True,
@@ -644,7 +700,11 @@ class PollVoteTest(BaseVoteTestCase):
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
                 "user/1": {"is_present_in_meeting_ids": [113]},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "pollmethod": "YNA",
                     "global_option_id": 11,
                     "global_no": True,
@@ -667,7 +727,11 @@ class PollVoteTest(BaseVoteTestCase):
                 "group/1": {"user_ids": [1]},
                 "user/1": {"group_$_ids": ["113"], "group_$113_ids": [1]},
                 "option/11": {"meeting_id": 113, "used_as_global_option_in_poll_id": 1},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "global_option_id": 11,
                     "global_no": True,
@@ -688,7 +752,11 @@ class PollVoteTest(BaseVoteTestCase):
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
                 "group/1": {"user_ids": [1]},
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "type": "named",
                     "meeting_id": 113,
@@ -719,7 +787,11 @@ class PollVoteTest(BaseVoteTestCase):
                     "group_$_ids": ["113"],
                     "default_vote_weight": "3.000000",
                 },
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11],
                     "pollmethod": "Y",
@@ -764,7 +836,11 @@ class PollVoteTest(BaseVoteTestCase):
                     "vote_weight_$113": "4.200000",
                     "vote_weight_$": ["113"],
                 },
+                "motion/1": {
+                    "meeting_id": 113,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "title": "my test poll",
                     "option_ids": [11],
                     "pollmethod": "Y",

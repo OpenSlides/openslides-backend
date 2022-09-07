@@ -9,8 +9,7 @@ from openslides_backend.permissions.permission_helper import (
 )
 from openslides_backend.services.datastore.interface import GetManyRequest
 from openslides_backend.shared.exceptions import ActionException, PermissionDenied
-from openslides_backend.shared.interfaces.event import EventType
-from openslides_backend.shared.interfaces.write_request import WriteRequest
+from openslides_backend.shared.interfaces.event import Event, EventType
 from openslides_backend.shared.patterns import (
     FullQualifiedId,
     fqid_from_collection_and_id,
@@ -196,16 +195,16 @@ class MeetingClone(MeetingImport):
                     mediafile["id"], self.replace_map["mediafile"][mediafile["id"]]
                 )
 
-    def append_extra_write_requests(
-        self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
+    def append_extra_events(
+        self, events: List[Event], json_data: Dict[str, Any]
     ) -> None:
         meeting_id = self.get_meeting_from_json(json_data)["id"]
         for model in json_data["group"].values():
             if model.get("user_ids"):
                 for user_id in model.get("user_ids"):
                     if user_id in self.additional_user_ids or self.additional_admin_ids:
-                        write_requests.append(
-                            self.build_write_request_helper(
+                        events.append(
+                            self.build_event_helper(
                                 fqid_from_collection_and_id("user", user_id),
                                 meeting_id,
                                 "group_$_ids",
@@ -217,13 +216,12 @@ class MeetingClone(MeetingImport):
         ):
             meeting_fqid = fqid_from_collection_and_id("meeting", meeting_id)
             for organization_tag_id in organization_tag_ids:
-                write_requests.append(
-                    self.build_write_request(
+                events.append(
+                    self.build_event(
                         EventType.Update,
                         fqid_from_collection_and_id(
                             "organization_tag", organization_tag_id
                         ),
-                        f"clone meeting {meeting_id}",
                         list_fields={
                             "add": {
                                 "tagged_ids": [meeting_fqid],
@@ -237,17 +235,16 @@ class MeetingClone(MeetingImport):
         front, back = field.split("$")
         return f"{front}${meeting_id}{back}"
 
-    def build_write_request_helper(
+    def build_event_helper(
         self,
         fqid: FullQualifiedId,
         meeting_id: int,
         field_template: str,
         model_id: int,
-    ) -> WriteRequest:
-        return self.build_write_request(
+    ) -> Event:
+        return self.build_event(
             EventType.Update,
             fqid,
-            f"clone meeting {meeting_id}",
             list_fields={
                 "add": {
                     field_template: [str(meeting_id)],

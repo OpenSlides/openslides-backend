@@ -42,6 +42,7 @@ class MotionCreate(MotionCreateBase):
             **agenda_creation_properties,
         },
     )
+    history_information = "Motion created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         # special check logic

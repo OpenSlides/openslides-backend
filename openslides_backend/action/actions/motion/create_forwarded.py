@@ -26,6 +26,7 @@ class MotionCreateForwarded(MotionCreateBase):
         ],
         required_properties=["meeting_id", "title", "text", "origin_id"],
     )
+    history_information = "Forwarding created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         meeting = self.datastore.get(

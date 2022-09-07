@@ -23,7 +23,11 @@ class OptionUpdateActionTest(BaseActionTestCase):
                 "meeting/1": {
                     "is_active_in_organization_id": 1,
                 },
+                "topic/1": {
+                    "meeting_id": 1,
+                },
                 "poll/65": {
+                    "content_object_id": "topic/1",
                     "type": "analog",
                     "state": "created",
                     "pollmethod": "YNA",

@@ -1,5 +1,7 @@
 from typing import Any, Callable, Dict
 
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import Poll
 from ....services.datastore.commands import GetManyRequest
 from ....shared.exceptions import ActionException, VoteServiceException
@@ -12,13 +14,20 @@ from .mixins import PollPermissionMixin, StopControl
 
 
 @register_action("poll.stop")
-class PollStopAction(StopControl, UpdateAction, PollPermissionMixin):
+class PollStopAction(
+    ExtendHistoryMixin,
+    StopControl,
+    UpdateAction,
+    PollPermissionMixin,
+):
     """
     Action to stop a poll.
     """
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_update_schema()
+    history_information = "Voting stopped"
+    extend_history_to = "content_object_id"
 
     def prefetch(self, action_data: ActionData) -> None:
         result = self.datastore.get_many(

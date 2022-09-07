@@ -63,6 +63,7 @@ class PollCreateAction(SequentialNumbersMixin, CreateAction, PollPermissionMixin
             "publish_immediately": {"type": "boolean"},
         },
     )
+    history_information = "Poll created"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         instance = super().update_instance(instance)

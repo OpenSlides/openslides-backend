@@ -36,7 +36,7 @@ from openslides_backend.shared.interfaces.write_request import WriteRequest
 from openslides_backend.shared.patterns import KEYSEPARATOR, fqid_from_collection_and_id
 from openslides_backend.shared.util import ONE_ORGANIZATION_FQID
 
-from ....shared.interfaces.event import ListFields
+from ....shared.interfaces.event import Event, ListFields
 from ....shared.util import ONE_ORGANIZATION_ID
 from ...action import RelationUpdates
 from ...mixins.singular_action_mixin import SingularActionMixin
@@ -87,10 +87,10 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             e.message = msg + " " + e.message
             raise e
         instance = self.base_update_instance(instance)
-        self.write_requests.extend(self.create_write_requests(instance))
-        final_write_request = self.process_write_requests()
+        self.events.extend(self.create_events(instance))
+        write_request = self.build_write_request()
         result = [self.create_action_result_element(instance)]
-        return (final_write_request, result)
+        return (write_request, result)
 
     def prefetch(self, action_data: ActionData) -> None:
         requests = [
@@ -502,25 +502,24 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             replaced_id = self.replace_map["mediafile"][id_]
             self.media.upload_mediafile(blob, replaced_id, mimetype)
 
-    def create_write_requests(
-        self, instance: Dict[str, Any], pure_create_requests: bool = False
-    ) -> Iterable[WriteRequest]:
+    def create_events(
+        self, instance: Dict[str, Any], pure_create_events: bool = False
+    ) -> Iterable[Event]:
         """be carefull, this method is also used by meeting.clone action"""
         json_data = instance["meeting"]
         meeting = self.get_meeting_from_json(json_data)
         meeting_id = meeting["id"]
-        write_requests = []
-        update_write_requests = []
+        events = []
+        update_events = []
         for collection in json_data:
             for entry in json_data[collection].values():
                 meta_new = entry.pop("meta_new", None)
                 if meta_new:
                     fqid = fqid_from_collection_and_id(collection, entry["id"])
-                    write_requests.append(
-                        self.build_write_request(
+                    events.append(
+                        self.build_event(
                             EventType.Create,
                             fqid,
-                            f"import meeting {meeting_id}",
                             entry,
                         )
                     )
@@ -556,28 +555,25 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                             list_fields["add"][field] = value
                     fqid = fqid_from_collection_and_id(collection, entry["id"])
                     if fields or list_fields["add"]:
-                        update_write_requests.append(
-                            self.build_write_request(
+                        update_events.append(
+                            self.build_event(
                                 EventType.Update,
                                 fqid,
-                                f"import meeting {meeting_id}",
                                 fields=fields if fields else None,
                                 list_fields=list_fields if list_fields["add"] else None,
                             )
                         )
 
-        if pure_create_requests:
-            return write_requests
-        write_requests.extend(update_write_requests)
+        if pure_create_events:
+            return events
+        events.extend(update_events)
 
         # add meeting to committee/meeting_ids
-        write_requests.append(
-            self.build_write_request(
+        events.append(
+            self.build_event(
                 EventType.Update,
                 fqid_from_collection_and_id("committee", meeting["committee_id"]),
-                f"import meeting {meeting_id}",
-                None,
-                {"add": {"meeting_ids": [meeting_id]}, "remove": {}},
+                list_fields={"add": {"meeting_ids": [meeting_id]}, "remove": {}},
             )
         )
 
@@ -589,24 +585,25 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             adder["template_meeting_ids"] = [meeting_id]
 
         if adder:
-            write_requests.append(
-                self.build_write_request(
+            events.append(
+                self.build_event(
                     EventType.Update,
                     ONE_ORGANIZATION_FQID,
-                    f"import meeting {meeting_id}",
-                    None,
-                    {"add": adder, "remove": {}},
+                    list_fields={
+                        "add": adder,
+                        "remove": {},
+                    },
                 )
             )
 
-        self.append_extra_write_requests(write_requests, instance["meeting"])
+        self.append_extra_events(events, instance["meeting"])
 
         # handle the calc fields.
-        write_requests.extend(list(self.handle_calculated_fields(instance)))
-        return write_requests
+        events.extend(self.handle_calculated_fields(instance))
+        return events
 
-    def append_extra_write_requests(
-        self, write_requests: List[WriteRequest], json_data: Dict[str, Any]
+    def append_extra_events(
+        self, events: List[Event], json_data: Dict[str, Any]
     ) -> None:
         meeting = self.get_meeting_from_json(json_data)
         meeting_id = meeting["id"]
@@ -618,13 +615,11 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
             and hasattr(self, "new_group_for_request_user")
             and self.new_group_for_request_user
         ):
-            write_requests.append(
-                self.build_write_request(
+            events.append(
+                self.build_event(
                     EventType.Update,
                     fqid_from_collection_and_id("user", self.user_id),
-                    f"import meeting {meeting_id}",
-                    None,
-                    {
+                    list_fields={
                         "add": {
                             "group_$_ids": [str(meeting_id)],
                             f"group_${meeting_id}_ids": [
@@ -636,9 +631,7 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 )
             )
 
-    def handle_calculated_fields(
-        self, instance: Dict[str, Any]
-    ) -> Iterable[WriteRequest]:
+    def handle_calculated_fields(self, instance: Dict[str, Any]) -> Iterable[Event]:
         regex = re.compile(
             r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$"
         )

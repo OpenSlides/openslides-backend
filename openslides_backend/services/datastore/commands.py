@@ -1,10 +1,8 @@
-from typing import Dict, List, Optional, Set, TypedDict, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 import simplejson as json
 
 from ...shared.filters import FilterBase as FilterInterface
-from ...shared.interfaces.collection_field_lock import CollectionFieldLock
-from ...shared.interfaces.event import Event
 from ...shared.interfaces.write_request import WriteRequest
 from ...shared.patterns import Collection
 
@@ -49,22 +47,6 @@ class GetManyRequest:
 
 
 CommandData = Dict[str, Union[str, int, List[str]]]
-
-
-StringifiedWriteRequest = TypedDict(
-    "StringifiedWriteRequest",
-    {
-        "events": List[Event],
-        "information": Dict[str, List[str]],
-        "user_id": int,
-        "locked_fields": Dict[str, CollectionFieldLock],
-        "migration_index": Optional[int],
-    },
-    total=False,
-)
-
-
-StringifiedWriteRequests = List[StringifiedWriteRequest]
 
 
 class Command:
@@ -117,30 +99,15 @@ class Write(Command):
 
     @property
     def data(self) -> str:
-        stringified_write_requests: StringifiedWriteRequests = []
-        for write_request in self.write_requests:
-            information = {}
-            for fqid, value in write_request.information.items():
-                information[str(fqid)] = value
-            stringified_write_request: StringifiedWriteRequest = {
-                "events": write_request.events,
-                "information": information,
-                "user_id": write_request.user_id,
-                "locked_fields": write_request.locked_fields,
-            }
-            if write_request.migration_index:
-                stringified_write_request[
-                    "migration_index"
-                ] = write_request.migration_index
-            stringified_write_requests.append(stringified_write_request)
-
         class WriteRequestJSONEncoder(json.JSONEncoder):
-            def default(self, o):  # type: ignore
+            def default(self, o: Any) -> Any:
+                if isinstance(o, WriteRequest):
+                    return o.__dict__
                 if isinstance(o, FilterInterface):
                     return o.to_dict()
                 return super().default(o)
 
-        return json.dumps(stringified_write_requests, cls=WriteRequestJSONEncoder)
+        return json.dumps(self.write_requests, cls=WriteRequestJSONEncoder)
 
 
 class TruncateDb(Command):

@@ -1,7 +1,6 @@
 from typing import Any, Dict, Iterable
 
-from ...shared.interfaces.event import EventType
-from ...shared.interfaces.write_request import WriteRequest
+from ...shared.interfaces.event import Event, EventType
 from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
 
@@ -21,17 +20,14 @@ class UpdateAction(Action):
 
         return instance
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         """
-        Creates a write request element for one instance of the current model.
-        Just prepares a write request element with update event for the given
-        instance.
+        Creates events for one instance of the current model.
         """
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        information = "Object updated"
         fields = {
             k: v for k, v in instance.items() if k != "id" and not k.startswith("meta_")
         }
         if not fields:
             return []
-        yield self.build_write_request(EventType.Update, fqid, information, fields)
+        yield self.build_event(EventType.Update, fqid, fields)

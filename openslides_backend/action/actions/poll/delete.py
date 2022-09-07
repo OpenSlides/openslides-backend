@@ -15,6 +15,7 @@ class PollDelete(DeleteAction, PollPermissionMixin):
 
     model = Poll()
     schema = DefaultSchema(Poll()).get_delete_schema()
+    history_information = "Poll deleted"
 
     def prefetch(self, action_data: ActionData) -> None:
         result = self.datastore.get_many(

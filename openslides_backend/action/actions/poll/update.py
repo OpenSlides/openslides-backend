@@ -1,5 +1,7 @@
 from typing import Any, Dict
 
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
+
 from ....models.models import Poll
 from ....shared.exceptions import ActionException
 from ....shared.patterns import fqid_from_collection_and_id
@@ -11,7 +13,7 @@ from .mixins import PollPermissionMixin
 
 
 @register_action("poll.update")
-class PollUpdateAction(UpdateAction, PollPermissionMixin):
+class PollUpdateAction(ExtendHistoryMixin, UpdateAction, PollPermissionMixin):
     """
     Action to update a poll.
     """
@@ -39,6 +41,8 @@ class PollUpdateAction(UpdateAction, PollPermissionMixin):
             "publish_immediately": {"type": "boolean"},
         },
     )
+    history_information = "Poll updated"
+    extend_history_to = "content_object_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         poll = self.datastore.get(

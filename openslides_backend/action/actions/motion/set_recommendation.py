@@ -1,5 +1,5 @@
 import time
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 from ....models.models import Motion
 from ....permissions.permissions import Permissions
@@ -8,10 +8,11 @@ from ....shared.patterns import fqid_from_collection_and_id
 from ...generics.update import UpdateAction
 from ...util.default_schema import DefaultSchema
 from ...util.register import register_action
+from .motion_state_history_information_mixin import MotionStateHistoryInformationMixin
 
 
 @register_action("motion.set_recommendation")
-class MotionSetRecommendationAction(UpdateAction):
+class MotionSetRecommendationAction(UpdateAction, MotionStateHistoryInformationMixin):
     """
     Set a recommendation in a motion.
     """
@@ -45,3 +46,8 @@ class MotionSetRecommendationAction(UpdateAction):
             )
         instance["last_modified"] = round(time.time())
         return instance
+
+    def get_history_information(self) -> Optional[List[str]]:
+        return self._get_state_history_information(
+            "recommendation_id", "recommendation_label", "Recommendation"
+        )

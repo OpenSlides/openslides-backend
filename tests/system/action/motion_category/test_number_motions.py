@@ -41,6 +41,7 @@ class MotionCategoryNumberMotionsTest(BaseActionTestCase):
         motion_69 = self.get_model("motion/69")
         assert motion_69.get("number") == "prefix_A1"
         assert motion_69.get("last_modified", 0) >= check_time
+        self.assert_history_information("motion/69", ["Number set"])
 
     def test_two_motions(self) -> None:
         self.set_models(

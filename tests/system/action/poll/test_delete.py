@@ -8,13 +8,15 @@ class PollDeleteTest(PollTestMixin):
     def test_delete_correct(self) -> None:
         self.set_models(
             {
-                "poll/111": {"meeting_id": 1},
+                "poll/111": {"meeting_id": 1, "content_object_id": "motion/1"},
+                "motion/1": {"meeting_id": 1, "poll_ids": [111]},
                 "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
         response = self.request("poll.delete", {"id": 111})
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/111")
+        self.assert_history_information("motion/1", ["Poll deleted"])
 
     def test_delete_wrong_id(self) -> None:
         self.set_models(
@@ -79,7 +81,7 @@ class PollDeleteTest(PollTestMixin):
 
         self.assert_status_code(response, 200)
         self.assert_model_deleted("poll/1")
-        assert counter.calls == 5
+        assert counter.calls == 6
 
     @performance
     def test_delete_performance(self) -> None:

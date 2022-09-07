@@ -12,7 +12,14 @@ class PollStopActionTest(PollTestMixin):
     def setUp(self) -> None:
         super().setUp()
         self.test_models: Dict[str, Dict[str, Any]] = {
-            "poll/1": {"state": Poll.STATE_STARTED, "meeting_id": 1},
+            "topic/1": {
+                "meeting_id": 1,
+            },
+            "poll/1": {
+                "content_object_id": "topic/1",
+                "state": Poll.STATE_STARTED,
+                "meeting_id": 1,
+            },
             "meeting/1": {"is_active_in_organization_id": 1},
         }
 
@@ -20,7 +27,11 @@ class PollStopActionTest(PollTestMixin):
         self.set_models(
             {
                 ONE_ORGANIZATION_FQID: {"enable_electronic_voting": True},
+                "motion/1": {
+                    "meeting_id": 1,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "type": Poll.TYPE_NAMED,
                     "pollmethod": "YN",
                     "state": Poll.STATE_STARTED,
@@ -83,11 +94,17 @@ class PollStopActionTest(PollTestMixin):
             {"voted": True, "user_id": user2, "vote_delegated_to_id": None},
             {"voted": False, "user_id": user3, "vote_delegated_to_id": user2},
         ]
+        # test history
+        self.assert_history_information("motion/1", ["Voting stopped"])
 
     def test_stop_entitled_users_at_stop_user_only_once(self) -> None:
         self.set_models(
             {
+                "motion/1": {
+                    "meeting_id": 1,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3, 4],
@@ -114,7 +131,11 @@ class PollStopActionTest(PollTestMixin):
     def test_stop_entitled_users_not_present(self) -> None:
         self.set_models(
             {
+                "motion/1": {
+                    "meeting_id": 1,
+                },
                 "poll/1": {
+                    "content_object_id": "motion/1",
                     "state": Poll.STATE_STARTED,
                     "meeting_id": 1,
                     "entitled_group_ids": [3],
@@ -149,7 +170,14 @@ class PollStopActionTest(PollTestMixin):
     def test_stop_published(self) -> None:
         self.set_models(
             {
-                "poll/1": {"state": Poll.STATE_PUBLISHED, "meeting_id": 1},
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "state": Poll.STATE_PUBLISHED,
+                    "meeting_id": 1,
+                },
                 "meeting/1": {"is_active_in_organization_id": 1},
             }
         )
@@ -165,7 +193,14 @@ class PollStopActionTest(PollTestMixin):
     def test_stop_created(self) -> None:
         self.set_models(
             {
-                "poll/1": {"state": Poll.STATE_CREATED, "meeting_id": 1},
+                "motion/1": {
+                    "meeting_id": 1,
+                },
+                "poll/1": {
+                    "content_object_id": "motion/1",
+                    "state": Poll.STATE_CREATED,
+                    "meeting_id": 1,
+                },
                 "meeting/1": {"is_active_in_organization_id": 1},
             }
         )

@@ -67,6 +67,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("amendment_paragraph_$3") == "&lt;html&gt;test&lt;/html&gt;"
         assert model.get("amendment_paragraph_$") == ["3"]
         assert model.get("start_line_number") == 13
+        self.assert_history_information("motion/111", ["Motion updated"])
 
     def test_update_wrong_id(self) -> None:
         self.set_models(
@@ -220,6 +221,17 @@ class MotionUpdateActionTest(BaseActionTestCase):
         assert model.get("tag_ids") == []
         assert model.get("attachment_ids") == []
         assert model.get("recommendation_extension_reference_ids") == ["motion/112"]
+        self.assert_history_information(
+            "motion/111",
+            [
+                "Supporters changed",
+                "Category set to {}",
+                "name_GdPzDztT",
+                "Motion block set to {}",
+                "title_ddyvpXch",
+                "Motion updated",
+            ],
+        )
 
     def test_update_workflow_id(self) -> None:
         self.set_models(
@@ -437,7 +449,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.set_user_groups(self.user_id, [3])
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.set_models(self.permission_test_models)
-        self.set_models({"motion_category/2": {"meeting_id": 1}})
+        self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
         response = self.request(
             "motion.update",
             {
@@ -473,7 +485,7 @@ class MotionUpdateActionTest(BaseActionTestCase):
         self.set_group_permissions(3, [Permissions.Motion.CAN_MANAGE_METADATA])
         self.permission_test_models["motion_submitter/1"]["user_id"] = self.user_id
         self.set_models(self.permission_test_models)
-        self.set_models({"motion_category/2": {"meeting_id": 1}})
+        self.set_models({"motion_category/2": {"meeting_id": 1, "name": "test"}})
         response = self.request(
             "motion.update",
             {

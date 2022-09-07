@@ -7,21 +7,23 @@ from tests.system.action.base import BaseActionTestCase
 class PollPublishActionTest(BaseActionTestCase):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
-            "poll/1": {"state": "finished", "meeting_id": 1},
+        self.test_models: Dict[str, Dict[str, Any]] = {
+            "poll/1": {
+                "state": "finished",
+                "meeting_id": 1,
+                "content_object_id": "topic/1",
+            },
+            "topic/1": {"meeting_id": 1},
+            "meeting/1": {"is_active_in_organization_id": 1},
         }
 
     def test_publish_correct(self) -> None:
-        self.set_models(
-            {
-                "poll/1": {"state": "finished", "meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.set_models(self.test_models)
         response = self.request("poll.publish", {"id": 1})
         self.assert_status_code(response, 200)
         poll = self.get_model("poll/1")
         assert poll.get("state") == "published"
+        self.assert_history_information("topic/1", ["Voting published"])
 
     def test_publish_wrong_state(self) -> None:
         self.set_models(
@@ -40,12 +42,8 @@ class PollPublishActionTest(BaseActionTestCase):
         )
 
     def test_publish_started(self) -> None:
-        self.set_models(
-            {
-                "poll/1": {"state": "started", "meeting_id": 1},
-                "meeting/1": {"is_active_in_organization_id": 1},
-            }
-        )
+        self.test_models["poll/1"]["state"] = "started"
+        self.set_models(self.test_models)
         self.vote_service.start(1)
         response = self.request("poll.publish", {"id": 1})
         self.assert_status_code(response, 200)
@@ -58,15 +56,14 @@ class PollPublishActionTest(BaseActionTestCase):
                 "entitled_users_at_stop": [],
             },
         )
+        self.assert_history_information("topic/1", ["Voting stopped/published"])
 
     def test_publish_no_permissions(self) -> None:
-        self.base_permission_test(
-            self.permission_test_models, "poll.publish", {"id": 1}
-        )
+        self.base_permission_test(self.test_models, "poll.publish", {"id": 1})
 
     def test_publish_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "poll.publish",
             {"id": 1},
             Permissions.Poll.CAN_MANAGE,

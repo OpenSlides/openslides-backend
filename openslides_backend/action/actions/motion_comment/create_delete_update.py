@@ -1,4 +1,6 @@
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
+
+from openslides_backend.action.mixins.extend_history_mixin import ExtendHistoryMixin
 
 from ....models.models import MotionComment
 from ....permissions.permissions import Permissions
@@ -16,23 +18,11 @@ from ...util.default_schema import DefaultSchema
 from ...util.register import register_action_set
 
 
-class PermissionMixin(Action):
+class MotionCommentMixin(Action):
     def check_permissions(self, instance: Dict[str, Any]) -> None:
         super().check_permissions(instance)
 
-        # get section_id and meeting_id, create vs delete/update case.
-        if "section_id" in instance:
-            section_id = instance["section_id"]
-        else:
-            comment = self.datastore.get(
-                fqid_from_collection_and_id(self.model.collection, instance["id"]),
-                ["section_id"],
-            )
-            section_id = comment["section_id"]
-        section = self.datastore.get(
-            fqid_from_collection_and_id("motion_comment_section", section_id),
-            ["write_group_ids", "meeting_id"],
-        )
+        section = self.get_section(instance, ["write_group_ids", "meeting_id"])
         meeting_id = section["meeting_id"]
         user = self.datastore.get(
             fqid_from_collection_and_id("user", self.user_id),
@@ -52,8 +42,32 @@ class PermissionMixin(Action):
         msg += " You are not in the write group of the section or in admin group."
         raise PermissionDenied(msg)
 
+    def get_section(
+        self, instance: Dict[str, Any], fields: List[str]
+    ) -> Dict[str, Any]:
+        # get section_id and meeting_id, create vs delete/update case.
+        if instance.get("section_id"):
+            section_id = instance["section_id"]
+        else:
+            comment = self.datastore.get(
+                fqid_from_collection_and_id(self.model.collection, instance["id"]),
+                ["section_id"],
+            )
+            section_id = comment["section_id"]
+        return self.datastore.get(
+            fqid_from_collection_and_id("motion_comment_section", section_id),
+            fields,
+        )
 
-class MotionCommentCreate(PermissionMixin, CreateActionWithInferredMeeting):
+    def get_history_information(self) -> Optional[List[str]]:
+        _, action = self.name.split(".")
+        if len(self.instances) == 1:
+            section = self.get_section(self.instances[0], ["name"])
+            return ["Comment {} " + action + "d", section["name"]]
+        return ["Comment " + action + "d"]
+
+
+class MotionCommentCreate(MotionCommentMixin, CreateActionWithInferredMeeting):
     relation_field_for_meeting = "motion_id"
 
     def update_instance(self, instance: Dict[str, Any]) -> Dict[str, Any]:
@@ -72,11 +86,11 @@ class MotionCommentCreate(PermissionMixin, CreateActionWithInferredMeeting):
         return instance
 
 
-class MotionCommentUpdate(PermissionMixin, UpdateAction):
-    pass
+class MotionCommentUpdate(ExtendHistoryMixin, MotionCommentMixin, UpdateAction):
+    extend_history_to = "motion_id"
 
 
-class MotionCommentDelete(PermissionMixin, DeleteAction):
+class MotionCommentDelete(MotionCommentMixin, DeleteAction):
     pass
 
 

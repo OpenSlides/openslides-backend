@@ -15,7 +15,9 @@ class PollAnonymize(BaseActionTestCase):
                     "global_option_id": 2,
                     "meeting_id": 1,
                     "state": Poll.STATE_FINISHED,
+                    "content_object_id": "topic/1",
                 },
+                "topic/1": {"meeting_id": 1},
                 "option/1": {"vote_ids": [1], "meeting_id": 1},
                 "option/2": {"vote_ids": [2], "meeting_id": 1},
                 "vote/1": {"user_id": 1, "meeting_id": 1, "delegated_user_id": 1},
@@ -47,6 +49,7 @@ class PollAnonymize(BaseActionTestCase):
         response = self.request("poll.anonymize", {"id": 1})
         self.assert_status_code(response, 200)
         self.assert_anonymize()
+        self.assert_history_information("topic/1", ["Voting anonymized"])
 
     def test_anonymize_publish_state(self) -> None:
         self.update_model("poll/1", {"state": Poll.STATE_PUBLISHED})

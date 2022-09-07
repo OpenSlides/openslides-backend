@@ -1,7 +1,6 @@
 from typing import Any, Dict, Iterable, Optional
 
-from ...shared.interfaces.event import EventType
-from ...shared.interfaces.write_request import WriteRequest
+from ...shared.interfaces.event import Event, EventType
 from ...shared.patterns import fqid_from_collection_and_id
 from ..action import Action
 from ..util.typing import ActionData, ActionResultElement
@@ -43,17 +42,14 @@ class CreateAction(Action):
                 instance[field.own_field_name] = field.default
         return instance
 
-    def create_write_requests(self, instance: Dict[str, Any]) -> Iterable[WriteRequest]:
+    def create_events(self, instance: Dict[str, Any]) -> Iterable[Event]:
         """
-        Creates a write request element for one instance of the current model.
-        Just prepares a write request element with create event for the given
-        instance.
+        Creates events for one instance of the current model.
         """
         fqid = fqid_from_collection_and_id(self.model.collection, instance["id"])
-        information = "Object created"
         if "meta_new" in instance:
             del instance["meta_new"]
-        yield self.build_write_request(EventType.Create, fqid, information, instance)
+        yield self.build_event(EventType.Create, fqid, instance)
 
     def create_action_result_element(
         self, instance: Dict[str, Any]

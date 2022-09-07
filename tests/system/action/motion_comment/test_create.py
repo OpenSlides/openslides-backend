@@ -9,7 +9,11 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         super().setUp()
         self.permission_test_models: Dict[str, Dict[str, Any]] = {
             "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 1},
-            "motion_comment_section/78": {"meeting_id": 1, "write_group_ids": [3]},
+            "motion_comment_section/78": {
+                "meeting_id": 1,
+                "write_group_ids": [3],
+                "name": "test",
+            },
         }
 
     def test_create(self) -> None:
@@ -23,7 +27,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
                 },
                 "group/3": {},
                 "motion/357": {"title": "title_YIDYXmKj", "meeting_id": 111},
-                "motion_comment_section/78": {"meeting_id": 111},
+                "motion_comment_section/78": {"meeting_id": 111, "name": "test"},
             }
         )
         response = self.request(
@@ -35,6 +39,7 @@ class MotionCommentCreateActionTest(BaseActionTestCase):
         assert model.get("comment") == "test_Xcdfgee"
         assert model.get("motion_id") == 357
         assert model.get("section_id") == 78
+        self.assert_history_information("motion/357", ["Comment {} created", "test"])
 
     def test_create_not_unique_error(self) -> None:
         self.set_models(

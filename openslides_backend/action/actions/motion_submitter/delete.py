@@ -13,4 +13,5 @@ class MotionSubmitterDeleteAction(DeleteAction):
 
     model = MotionSubmitter()
     schema = DefaultSchema(MotionSubmitter()).get_delete_schema()
+    history_information = "Submitters changed"
     permission = Permissions.Motion.CAN_MANAGE_METADATA

@@ -10,12 +10,16 @@ from .poll_test_mixin import PollTestMixin
 class PollResetActionTest(PollTestMixin):
     def setUp(self) -> None:
         super().setUp()
-        self.permission_test_models: Dict[str, Dict[str, Any]] = {
+        self.test_models: Dict[str, Dict[str, Any]] = {
+            "topic/1": {
+                "meeting_id": 1,
+            },
             "poll/1": {
                 "state": Poll.STATE_STARTED,
                 "option_ids": [1],
                 "global_option_id": 2,
                 "meeting_id": 1,
+                "content_object_id": "topic/1",
             },
             "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
             "option/2": {
@@ -26,33 +30,18 @@ class PollResetActionTest(PollTestMixin):
             "vote/1": {"option_id": 1, "meeting_id": 1},
             "vote/2": {"option_id": 1, "meeting_id": 1},
             "vote/3": {"option_id": 2, "meeting_id": 1},
+            "meeting/1": {"is_active_in_organization_id": 1},
         }
 
     def test_reset_correct(self) -> None:
-        self.set_models(
-            {
-                "meeting/1": {"is_active_in_organization_id": 1},
-                "poll/1": {
-                    "state": "started",
-                    "option_ids": [1],
-                    "global_option_id": 2,
-                    "meeting_id": 1,
-                    "votesvalid": "3.000000",
-                    "votesinvalid": "1.000000",
-                    "votescast": "5.000000",
-                    "entitled_users_at_stop": [{"user_id": 1, "voted": True}],
-                },
-                "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
-                "option/2": {
-                    "vote_ids": [3],
-                    "used_as_global_option_in_poll_id": 1,
-                    "meeting_id": 1,
-                },
-                "vote/1": {"option_id": 1, "meeting_id": 1},
-                "vote/2": {"option_id": 1, "meeting_id": 1},
-                "vote/3": {"option_id": 2, "meeting_id": 1},
-            }
-        )
+        self.test_models["poll/1"] = {
+            **self.test_models["poll/1"],
+            "votesvalid": "3.000000",
+            "votesinvalid": "1.000000",
+            "votescast": "5.000000",
+            "entitled_users_at_stop": [{"user_id": 1, "voted": True}],
+        }
+        self.set_models(self.test_models)
 
         response = self.request("poll.reset", {"id": 1})
         self.assert_status_code(response, 200)
@@ -90,21 +79,24 @@ class PollResetActionTest(PollTestMixin):
         assert option_2.get("no") == "0.000000"
         assert option_2.get("abstain") == "0.000000"
 
+        # test history
+        self.assert_history_information("topic/1", ["Voting reset"])
+
     def test_reset_no_permissions(self) -> None:
-        self.base_permission_test(self.permission_test_models, "poll.reset", {"id": 1})
+        self.base_permission_test(self.test_models, "poll.reset", {"id": 1})
 
     def test_reset_permissions(self) -> None:
         self.base_permission_test(
-            self.permission_test_models,
+            self.test_models,
             "poll.reset",
             {"id": 1},
             Permissions.Poll.CAN_MANAGE,
         )
 
     def test_reset_not_allowed_to_vote_again(self) -> None:
+        self.set_models(self.test_models)
         self.set_models(
             {
-                "meeting/1": {"is_active_in_organization_id": 1},
                 "group/1": {"user_ids": [1]},
                 "user/1": {"group_$1_ids": [1], "is_present_in_meeting_ids": [1]},
                 "poll/1": {
@@ -116,15 +108,6 @@ class PollResetActionTest(PollTestMixin):
                     "pollmethod": "Y",
                     "max_votes_per_option": 1,
                 },
-                "option/1": {"vote_ids": [1, 2], "poll_id": 1, "meeting_id": 1},
-                "option/2": {
-                    "vote_ids": [3],
-                    "used_as_global_option_in_poll_id": 1,
-                    "meeting_id": 1,
-                },
-                "vote/1": {"option_id": 1, "meeting_id": 1},
-                "vote/2": {"option_id": 1, "meeting_id": 1},
-                "vote/3": {"option_id": 2, "meeting_id": 1},
             }
         )
         self.vote_service.start(1)
