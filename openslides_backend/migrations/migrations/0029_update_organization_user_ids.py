@@ -9,6 +9,9 @@ from datastore.migrations import (
 )
 from datastore.shared.util import collection_from_fqid, id_from_fqid
 
+ONE_ORGANIZATION_ID = 1
+ONE_ORGANIZATION_FQID = "organization/1"
+
 
 class Migration(BaseMigration):
 
@@ -21,18 +24,18 @@ class Migration(BaseMigration):
         if collection_from_fqid(event.fqid) != "user":
             return None
         if isinstance(event, CreateEvent):
-            event.data["organization_id"] = 1
+            event.data["organization_id"] = ONE_ORGANIZATION_ID
             return [
                 event,
                 ListUpdateEvent(
-                    "organization/1", {"add": {"user_ids": [event.data["id"]]}}
+                    ONE_ORGANIZATION_FQID, {"add": {"user_ids": [event.data["id"]]}}
                 ),
             ]
         elif isinstance(event, DeleteEvent):
             return [
                 event,
                 ListUpdateEvent(
-                    "organization/1",
+                    ONE_ORGANIZATION_FQID,
                     {"remove": {"user_ids": [id_from_fqid(event.fqid)]}},
                 ),
             ]
