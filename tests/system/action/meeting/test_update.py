@@ -463,7 +463,6 @@ class MeetingUpdateActionTest(BaseActionTestCase):
 
     def test_update_set_as_template_true(self) -> None:
         self.set_models(self.test_models)
-        self.set_models({ONE_ORGANIZATION_FQID: {}})
         response = self.request(
             "meeting.update",
             {

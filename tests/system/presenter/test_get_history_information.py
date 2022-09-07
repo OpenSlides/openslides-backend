@@ -46,7 +46,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
             [
                 {
                     "information": ["Created"],
-                    "position": 3,
+                    "position": 4,
                     "user": "admin",
                 }
             ],
@@ -70,7 +70,7 @@ class TestCheckMediafileId(BasePresenterTestCase):
             [
                 {
                     "information": ["Created"],
-                    "position": 3,
+                    "position": 4,
                     "user": "unknown user",
                 }
             ],

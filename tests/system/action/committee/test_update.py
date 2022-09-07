@@ -782,7 +782,7 @@ class CommitteeUpdateActionTest(BaseActionTestCase):
 
     def test_update_after_deleting_default_committee(self) -> None:
         # details see Backend Issue1071
-        self.create_model(ONE_ORGANIZATION_FQID, {"name": "organization1"})
+        self.update_model(ONE_ORGANIZATION_FQID, {"name": "organization1"})
         response = self.request(
             "committee.create",
             {

@@ -10,6 +10,8 @@ from .create_update_permissions_mixin import CreateUpdatePermissionsMixin
 from .password_mixin import PasswordCreateMixin
 from .user_mixin import LimitOfUserMixin, UserMixin, UsernameMixin
 
+ONE_ORGANIZATION = 1
+
 
 @register_action("user.create")
 class UserCreate(
@@ -74,6 +76,7 @@ class UserCreate(
             instance = self.generate_and_set_password(instance)
         else:
             instance = self.set_password(instance)
+        instance["organization_id"] = ONE_ORGANIZATION
         return instance
 
     def generate_username(self, instance: Dict[str, Any]) -> str:

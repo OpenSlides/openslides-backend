@@ -15,6 +15,7 @@ class MeetingClone(BaseActionTestCase):
             ONE_ORGANIZATION_FQID: {
                 "active_meeting_ids": [1],
                 "organization_tag_ids": [1],
+                "user_ids": [1],
             },
             "organization_tag/1": {
                 "name": "TEST",
@@ -125,7 +126,9 @@ class MeetingClone(BaseActionTestCase):
                 "template_for_organization_id": ONE_ORGANIZATION_ID,
             },
         )
-        self.assert_model_exists("organization/1", {"template_meeting_ids": [2]})
+        self.assert_model_exists(
+            "organization/1", {"template_meeting_ids": [2], "user_ids": [1]}
+        )
 
     def test_clone_group_with_weight(self) -> None:
         self.set_models(self.test_models)
@@ -164,12 +167,14 @@ class MeetingClone(BaseActionTestCase):
                 "group_$1_ids": [1],
                 "group_$2_ids": [3],
                 "meeting_ids": [1, 2],
+                "organization_id": 1,
             },
         )
 
     def test_clone_with_ex_users(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["group/1"]["user_ids"] = [1]
+        self.test_models["organization/1"]["user_ids"] = [1, 11, 12, 13]
         self.set_models(
             {
                 "user/1": {
@@ -181,12 +186,15 @@ class MeetingClone(BaseActionTestCase):
                     "username": "exuser1",
                     "submitted_motion_$_ids": ["1"],
                     "submitted_motion_$1_ids": [1],
+                    "organization_id": 1,
                 },
                 "user/12": {
                     "username": "admin_ids_user",
+                    "organization_id": 1,
                 },
                 "user/13": {
                     "username": "user_ids_user",
+                    "organization_id": 1,
                 },
                 "motion/1": {
                     "list_of_speakers_id": 1,
@@ -239,6 +247,7 @@ class MeetingClone(BaseActionTestCase):
                 "submitted_motion_$_ids": ["1", "2"],
                 "submitted_motion_$1_ids": [1],
                 "submitted_motion_$2_ids": [2],
+                "organization_id": 1,
             },
         )
         self.assert_model_exists(
@@ -247,6 +256,7 @@ class MeetingClone(BaseActionTestCase):
                 "username": "admin_ids_user",
                 "group_$_ids": ["2"],
                 "group_$2_ids": [4],
+                "organization_id": 1,
             },
         )
         self.assert_model_exists(
@@ -255,6 +265,7 @@ class MeetingClone(BaseActionTestCase):
                 "username": "user_ids_user",
                 "group_$_ids": ["2"],
                 "group_$2_ids": [3],
+                "organization_id": 1,
             },
         )
         self.assert_model_exists(
@@ -303,22 +314,25 @@ class MeetingClone(BaseActionTestCase):
 
     def test_clone_user_ids_and_admin_ids(self) -> None:
         self.test_models["meeting/1"]["template_for_organization_id"] = None
+        self.test_models["organization/1"]["user_ids"] = [1, 13, 14, 15, 16]
         self.set_models(self.test_models)
         self.set_models(
             {
-                "user/13": {"username": "new_admin_user"},
-                "user/14": {"username": "new_default_group_user"},
+                "user/13": {"username": "new_admin_user", "organization_id": 1},
+                "user/14": {"username": "new_default_group_user", "organization_id": 1},
                 "user/15": {
                     "username": "new_and_old_default_group_user",
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                     "meeting_ids": [1],
+                    "organization_id": 1,
                 },
                 "user/16": {
                     "username": "new_default_group_old_admin_user",
                     "group_$_ids": ["1"],
                     "group_$1_ids": [2],
                     "meeting_ids": [1],
+                    "organization_id": 1,
                 },
                 "group/1": {"user_ids": [15]},
                 "group/2": {"user_ids": [16]},
@@ -385,6 +399,7 @@ class MeetingClone(BaseActionTestCase):
         )
 
     def test_clone_new_committee_and_user_with_group(self) -> None:
+        self.test_models["organization/1"]["user_ids"] = [1, 13]
         self.set_models(self.test_models)
         self.set_models(
             {
@@ -393,6 +408,7 @@ class MeetingClone(BaseActionTestCase):
                     "group_$_ids": ["1"],
                     "group_$1_ids": [1],
                     "meeting_ids": [1],
+                    "organization_id": 1,
                 },
                 "group/1": {"user_ids": [13]},
                 "committee/2": {"organization_id": 1},
@@ -432,9 +448,10 @@ class MeetingClone(BaseActionTestCase):
             {
                 "user/13": {
                     "username": "user_from_new_committee",
+                    "organization_id": 1,
                 },
                 "committee/2": {"organization_id": 1},
-                "organization/1": {"committee_ids": [1, 2]},
+                "organization/1": {"committee_ids": [1, 2], "user_ids": [1, 13]},
             }
         )
         response = self.request(
@@ -507,6 +524,7 @@ class MeetingClone(BaseActionTestCase):
         self.test_models["meeting/1"]["user_ids"] = [1]
         self.test_models["meeting/1"]["personal_note_ids"] = [1]
         self.test_models["group/1"]["user_ids"] = [1]
+        self.test_models["organization/1"]["user_ids"] = [1]
         self.set_models(
             {
                 "user/1": {
@@ -514,6 +532,7 @@ class MeetingClone(BaseActionTestCase):
                     "group_$1_ids": [1],
                     "personal_note_$_ids": ["1"],
                     "personal_note_$1_ids": [1],
+                    "organization_id": 1,
                 },
                 "personal_note/1": {
                     "note": "test note",
@@ -788,10 +807,18 @@ class MeetingClone(BaseActionTestCase):
     def test_create_clone(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {},
                 "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
-                "user/2": {"committee_ids": [1], "username": "user2"},
-                "user/3": {"committee_ids": [1], "username": "user3"},
+                "user/2": {
+                    "committee_ids": [1],
+                    "username": "user2",
+                    "organization_id": 1,
+                },
+                "user/3": {
+                    "committee_ids": [1],
+                    "username": "user3",
+                    "organization_id": 1,
+                },
+                "organization/1": {"user_ids": [1, 2, 3]},
             }
         )
         self.execute_action_internally(
@@ -1034,6 +1061,7 @@ class MeetingClone(BaseActionTestCase):
     def test_clone_vote_delegation(self) -> None:
         self.test_models["meeting/1"]["user_ids"] = [1, 2]
         self.test_models["group/1"]["user_ids"] = [1, 2]
+        self.test_models["organization/1"]["user_ids"] = [1, 2]
         self.set_models(
             {
                 "user/1": {
@@ -1042,6 +1070,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_ids": [1],
                     "vote_delegated_$_to_id": ["1"],
                     "vote_delegated_$1_to_id": 2,
+                    "organization_id": 1,
                 },
                 "user/2": {
                     "username": "vote_receiver",
@@ -1050,6 +1079,7 @@ class MeetingClone(BaseActionTestCase):
                     "meeting_ids": [1],
                     "vote_delegations_$_from_ids": ["1"],
                     "vote_delegations_$1_from_ids": [1],
+                    "organization_id": 1,
                 },
             }
         )
@@ -1194,10 +1224,18 @@ class MeetingClone(BaseActionTestCase):
     def prepare_datastore_performance_test(self) -> None:
         self.set_models(
             {
-                ONE_ORGANIZATION_FQID: {},
                 "committee/1": {"organization_id": 1, "user_ids": [2, 3]},
-                "user/2": {"committee_ids": [1], "username": "user2"},
-                "user/3": {"committee_ids": [1], "username": "user3"},
+                "user/2": {
+                    "committee_ids": [1],
+                    "username": "user2",
+                    "organization_id": 1,
+                },
+                "user/3": {
+                    "committee_ids": [1],
+                    "username": "user3",
+                    "organization_id": 1,
+                },
+                "organization/1": {"user_ids": [1, 2]},
             }
         )
         self.execute_action_internally(
@@ -1220,7 +1258,7 @@ class MeetingClone(BaseActionTestCase):
         with CountDatastoreCalls() as counter:
             response = self.request("meeting.clone", {"meeting_id": 1})
         self.assert_status_code(response, 200)
-        assert counter.calls == 16
+        assert counter.calls == 18
 
     @performance
     def test_clone_performance(self) -> None:

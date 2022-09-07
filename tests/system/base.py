@@ -60,6 +60,14 @@ class BaseSystemTestCase(TestCase):
                 "default_password": ADMIN_PASSWORD,
                 "is_active": True,
                 "organization_management_level": "superadmin",
+                "organization_id": 1,
+            },
+        )
+        self.create_model(
+            "organization/1",
+            {
+                "name": "OpenSlides Organization",
+                "user_ids": [1],
             },
         )
         self.client = self.create_client(self.update_vote_service_auth_data)

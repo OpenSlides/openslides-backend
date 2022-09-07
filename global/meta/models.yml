@@ -147,6 +147,10 @@ organization:
     to: mediafile/owner_id
     on_delete: CASCADE
     restriction_mode: A
+  user_ids:
+    type: relation-list
+    restriction_mode: A
+    to: user/organization_id
   users_email_sender:
     type: string
     default: OpenSlides
@@ -433,6 +437,11 @@ user:
     description: Calculated. All ids from group_$_ids as integers.
     read_only: true
     restriction_mode: E
+  organization_id:
+    type: relation
+    to: organization/user_ids
+    required: True
+    restriction_mode: F
 
 organization_tag:
   id:

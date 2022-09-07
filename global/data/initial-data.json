@@ -16,7 +16,8 @@
             "users_email_body": "Dear {name},\n\nthis is your personal OpenSlides login:\n\n{url}\nUsername: {username}\nPassword: {password}\n\n\nThis email was generated automatically.",
             "url": "https://example.com",
             "template_meeting_ids": [],
-            "mediafile_ids": []
+            "mediafile_ids": [],
+            "user_ids": [1]
         }
     },
     "user": {
@@ -28,7 +29,8 @@
             "is_physical_person": true,
             "can_change_own_password": true,
             "default_vote_weight": "1.000000",
-            "organization_management_level": "superadmin"
+            "organization_management_level": "superadmin",
+            "organization_id": 1
         }
     },
     "theme": {
