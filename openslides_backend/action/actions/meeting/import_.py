@@ -631,7 +631,31 @@ class MeetingImport(SingularActionMixin, LimitOfUserMixin, UsernameMixin):
                 )
             )
 
-    def handle_calculated_fields(self, instance: Dict[str, Any]) -> Iterable[Event]:
+        # add new users to the organization.user_ids
+        new_user_ids = []
+        for user_entry in json_data.get("user", {}).values():
+            if user_entry["id"] not in self.merge_user_map:
+                new_user_ids.append(user_entry["id"])
+
+        if new_user_ids:
+            write_requests.append(
+                self.build_write_request(
+                    EventType.Update,
+                    ONE_ORGANIZATION_FQID,
+                    f"import meeting {meeting_id}",
+                    None,
+                    {
+                        "add": {
+                            "user_ids": new_user_ids,
+                        },
+                        "remove": {},
+                    },
+                )
+            )
+
+    def handle_calculated_fields(
+        self, instance: Dict[str, Any]
+    ) -> Iterable[WriteRequest]:
         regex = re.compile(
             r"^(user|committee)/(\d)*/(meeting_ids|committee_ids|user_ids)$"
         )

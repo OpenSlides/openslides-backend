@@ -1002,6 +1002,8 @@ class MeetingImport(BaseActionTestCase):
         meeting2 = self.assert_model_exists("meeting/2")
         self.assertCountEqual(meeting2["user_ids"], [1, 2])
         self.assert_model_exists("user/2", {"username": "test", "meeting_ids": [2]})
+        organization = self.assert_model_exists("organization/1")
+        self.assertCountEqual(organization.get("user_ids", []), [1, 2])
 
     def test_motion_recommendation_extension(self) -> None:
         # Special field
