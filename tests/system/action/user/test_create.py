@@ -12,20 +12,20 @@ class UserCreateActionTest(BaseActionTestCase):
         self.user_id = self.create_user("test", group_ids=[1])
         self.login(self.user_id)
 
-    def test_create(self) -> None:
+    def test_create_username(self) -> None:
         """
         Also checks if a default_password is generated and the correct hashed password stored
         """
         response = self.request(
             "user.create",
             {
-                "username": "test_Xcdfgee",
+                "username": " test Xcdfgee ",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/2")
-        assert model.get("username") == "test_Xcdfgee"
+        assert model.get("username") == "test Xcdfgee"
         assert model.get("default_password") is not None
         assert self.auth.is_equals(
             model.get("default_password", ""), model.get("password", "")
@@ -35,8 +35,8 @@ class UserCreateActionTest(BaseActionTestCase):
         response = self.request(
             "user.create",
             {
-                "first_name": "John Aloas",
-                "last_name": "Smith Brick",
+                "first_name": " John Aloas ",
+                "last_name": " Smith Brick ",
                 "organization_management_level": OrganizationManagementLevel.CAN_MANAGE_USERS,
             },
         )

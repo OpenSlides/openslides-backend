@@ -647,7 +647,6 @@ class MeetingImport(BaseActionTestCase):
                 },
             }
         )
-        self.assert_model_exists("user/1", {"username": "admin"})
 
         response = self.request("meeting.import", request_data)
         self.assert_status_code(response, 200)
@@ -680,6 +679,7 @@ class MeetingImport(BaseActionTestCase):
             "user/1",
             {
                 "username": "admin",
+                "last_name": None,
                 "group_$_ids": ["2"],
                 "group_$2_ids": [2],
                 "meeting_ids": [2],
@@ -689,6 +689,7 @@ class MeetingImport(BaseActionTestCase):
             "user/2",
             {
                 "username": "admin1",
+                "last_name": "Administrator",
                 "group_$_ids": ["2"],
                 "group_$2_ids": [2],
                 "meeting_ids": [2],
@@ -716,6 +717,7 @@ class MeetingImport(BaseActionTestCase):
             1,
             {
                 "username": "admin",
+                "last_name": "admin0",
                 "group_$_ids": ["1"],
                 "group_$1_ids": [1],
             },
@@ -724,6 +726,7 @@ class MeetingImport(BaseActionTestCase):
             2,
             {
                 "username": "admin1",
+                "last_name": "admin1",
             },
         )
 
@@ -733,14 +736,43 @@ class MeetingImport(BaseActionTestCase):
             "user/1",
             {
                 "username": "admin",
+                "last_name": None,
                 "group_$_ids": ["2"],
                 "group_$2_ids": [2],
                 "meeting_ids": [2],
             },
         )
-        self.assert_model_exists("user/2", {"username": "admin1"})
-        self.assert_model_exists("user/3", {"username": "admin11"})
+        self.assert_model_exists("user/2", {"username": "admin1", "last_name": "admin0"})
+        self.assert_model_exists("user/3", {"username": "admin11", "last_name": "admin1"})
         self.assert_model_exists("group/2", {"user_ids": [1, 2], "meeting_id": 2})
+
+    def test_check_usernames_new(self) -> None:
+        request_data = self.create_request_data(
+            {
+                "user": {
+                    "1": self.get_user_data(
+                        1,
+                        {
+                            "username": " user new ",
+                            "last_name": "new user",
+                            "group_$_ids": ["1"],
+                            "group_$1_ids": [1],
+                        },
+                    ),
+                },
+            }
+        )
+
+        response = self.request("meeting.import", request_data)
+        self.assert_status_code(response, 200)
+
+        self.assert_model_exists(
+            "user/2",
+            {
+                "username": "usernew",
+                "last_name": "new user",
+            },
+        )
 
     def test_check_negative_default_vote_weight(self) -> None:
         request_data = self.create_request_data({})

@@ -24,11 +24,11 @@ class UserUpdateActionTest(BaseActionTestCase):
             {"username": "username_srtgb123"},
         )
         response = self.request(
-            "user.update", {"id": 111, "username": "username_Xcdfgee"}
+            "user.update", {"id": 111, "username": " username Xcdfgee "}
         )
         self.assert_status_code(response, 200)
         model = self.get_model("user/111")
-        assert model.get("username") == "username_Xcdfgee"
+        assert model.get("username") == "username Xcdfgee"
 
     def test_update_some_more_fields(self) -> None:
         self.set_models(
