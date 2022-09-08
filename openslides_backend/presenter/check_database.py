@@ -1,10 +1,9 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import fastjsonschema
-from datastore.shared.util import is_reserved_field
+from datastore.shared.util import DeletedModelsBehaviour
 
-from openslides_backend.migrations import get_backend_migration_index
-
+from ..action.actions.meeting.export_helper import export_meeting
 from ..models.checker import Checker, CheckException
 from ..permissions.management_levels import OrganizationManagementLevel
 from ..permissions.permission_helper import has_organization_management_level
@@ -23,44 +22,6 @@ check_database_schema = fastjsonschema.compile(
     }
 )
 
-ALL_COLLECTIONS = [
-    "meeting",
-    "group",
-    "personal_note",
-    "tag",
-    "agenda_item",
-    "list_of_speakers",
-    "speaker",
-    "topic",
-    "motion",
-    "motion_submitter",
-    "motion_comment",
-    "motion_comment_section",
-    "motion_category",
-    "motion_block",
-    "motion_change_recommendation",
-    "motion_state",
-    "motion_workflow",
-    "motion_statute_paragraph",
-    "poll",
-    "option",
-    "vote",
-    "assignment",
-    "assignment_candidate",
-    "mediafile",
-    "projector",
-    "projection",
-    "projector_message",
-    "projector_countdown",
-    "chat_group",
-    "chat_message",
-    "organization",
-    "user",
-    "organization_tag",
-    "theme",
-    "committee",
-]
-
 
 @register_presenter("check_database")
 class CheckDatabase(BasePresenter):
@@ -78,32 +39,40 @@ class CheckDatabase(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
 
-        export = self.get_all_database()
-        checker = Checker(
-            data=export,
-            mode="all",
-        )
-        try:
-            checker.run_check()
-            return {"ok": True}
-        except CheckException as ce:
-            return {"ok": False, "errors": str(ce)}
-
-    def get_all_database(self) -> Dict[str, Any]:
-        export: Dict[str, Any] = {"_migration_index": get_backend_migration_index()}
-        for collection in ALL_COLLECTIONS:
-            export[collection] = remove_meta_fields(
-                self.datastore.get_all(collection, [], lock_result=False)
+        meeting_ids = self.get_all_meeting_ids()
+        errors: Dict[int, str] = {}
+        for meeting_id in meeting_ids:
+            export = export_meeting(self.datastore, meeting_id)
+            checker = Checker(
+                data=export,
+                mode="internal",
+                repair=True,
+                fields_to_remove={
+                    "motion": [
+                        "origin_id",
+                        "derived_motion_ids",
+                        "all_origin_id",
+                        "all_derived_motion_ids",
+                    ]
+                },
             )
-        return export
+            try:
+                checker.run_check()
+            except CheckException as ce:
+                errors[meeting_id] = str(ce)
+        if not errors:
+            return {"ok": True, "errors": ""}
+        return {"ok": False, "errors": self.gen_error_message(errors)}
 
+    def get_all_meeting_ids(self) -> List[int]:
+        meetings = self.datastore.get_all(
+            "meeting", ["id"], DeletedModelsBehaviour.NO_DELETED
+        ).values()
+        return [meeting["id"] for meeting in meetings]
 
-def remove_meta_fields(res: Dict[int, Any]) -> Dict[str, Any]:
-    dict_without_meta_fields = {}
-    for key in res:
-        new_entry = {}
-        for fieldname in res[key]:
-            if not is_reserved_field(fieldname):
-                new_entry[fieldname] = res[key][fieldname]
-        dict_without_meta_fields[str(key)] = new_entry
-    return dict_without_meta_fields
+    def gen_error_message(self, errors: Dict[int, str]) -> str:
+        buf = []
+        for meeting_id in errors:
+            buf.append(f"Meeting {meeting_id}")
+            buf.append(errors[meeting_id])
+        return "\n".join(buf)

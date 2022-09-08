@@ -5,7 +5,7 @@ from openslides_backend.permissions.management_levels import OrganizationManagem
 from .base import BasePresenterTestCase
 
 
-class TestCheckDatabase(BasePresenterTestCase):
+class TestCheckDatabaseAll(BasePresenterTestCase):
     def test_found_errors(self) -> None:
         self.set_models(
             {
@@ -13,12 +13,10 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "meeting/2": {"name": "test_bar"},
             }
         )
-        status_code, data = self.request("check_database", {})
+        status_code, data = self.request("check_database_all", {})
         assert status_code == 200
         assert data["ok"] is False
-        assert "Meeting 1" in data["errors"]
         assert "meeting/1: Missing fields" in data["errors"]
-        assert "Meeting 2" in data["errors"]
         assert "meeting/2: Missing fields" in data["errors"]
 
     def get_meeting_defaults(self) -> Dict[str, Any]:
@@ -97,6 +95,7 @@ class TestCheckDatabase(BasePresenterTestCase):
             "motion_poll_default_type": "pseudoanonymous",
             "motion_poll_default_100_percent_base": "YNA",
             "motion_poll_default_backend": "fast",
+            "users_sort_by": "first_name",
             "users_enable_presence_view": False,
             "users_enable_vote_weight": False,
             "users_allow_self_set_present": True,
@@ -127,13 +126,39 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "organization/1": {
                     "active_meeting_ids": [1],
                     "organization_tag_ids": [1],
+                    "limit_of_meetings": 0,
+                    "users_email_sender": "test@example.com",
+                    "limit_of_users": 0,
+                    "users_email_body": "ballspamhamfoo",
+                    "users_email_subject": "hamfoo",
+                    "theme_id": 1,
+                    "url": "foo",
+                    "theme_ids": [1],
+                    "committee_ids": [1],
+                },
+                "theme/1": {
+                    "name": "Test Theme",
+                    "accent_500": "#000000",
+                    "primary_500": "#000000",
+                    "warn_500": "#000000",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
                 },
                 "organization_tag/1": {
                     "name": "TEST",
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {
+                    "organization_id": 1,
+                    "meeting_ids": [1],
+                    "name": "test-committee",
+                },
+                "user/1": {
+                    "can_change_own_password": False,
+                    "is_physical_person": True,
+                    "default_vote_weight": "1.000000",
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "name": "Test",
@@ -220,10 +245,10 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request("check_database", {})
+        status_code, data = self.request("check_database_all", {})
         assert status_code == 200
         assert data["ok"] is True
-        assert not data["errors"]
+        assert "errors" not in data
 
     def get_new_user(self, username: str, datapart: Dict[str, Any]) -> Dict[str, Any]:
         return {
@@ -233,7 +258,6 @@ class TestCheckDatabase(BasePresenterTestCase):
             "can_change_own_password": False,
             "is_physical_person": True,
             "default_vote_weight": "1.000000",
-            "organization_id": 1,
             **datapart,
         }
 
@@ -245,7 +269,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "archived_meeting_ids": [1],
                     "organization_tag_ids": [1],
                     "template_meeting_ids": [1],
-                    "user_ids": [1, 2, 3, 4, 5, 6],
                     "limit_of_meetings": 0,
                     "users_email_sender": "test@example.com",
                     "limit_of_users": 0,
@@ -270,7 +293,12 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "organization_id": 1,
                     "tagged_ids": ["meeting/1"],
                 },
-                "committee/1": {"organization_id": 1, "default_meeting_id": 1},
+                "committee/1": {
+                    "organization_id": 1,
+                    "default_meeting_id": 1,
+                    "meeting_ids": [1],
+                    "name": "test committee",
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "name": "Test",
@@ -328,7 +356,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                     "can_change_own_password": False,
                     "is_physical_person": True,
                     "default_vote_weight": "1.000000",
-                    "organization_id": 1,
                 },
                 "user/2": self.get_new_user(
                     "present_user",
@@ -484,12 +511,12 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request("check_database", {})
+        status_code, data = self.request("check_database_all", {})
         assert status_code == 200
         if not data["ok"]:
             print(data)
         assert data["ok"] is True
-        assert not data["errors"]
+        assert "errors" not in data
 
     def test_relation_2(self) -> None:
         self.set_models(
@@ -497,13 +524,39 @@ class TestCheckDatabase(BasePresenterTestCase):
                 "organization/1": {
                     "active_meeting_ids": [1, 2],
                     "organization_tag_ids": [1],
+                    "limit_of_meetings": 0,
+                    "users_email_sender": "test@example.com",
+                    "limit_of_users": 0,
+                    "users_email_body": "ballspamhamfoo",
+                    "users_email_subject": "hamfoo",
+                    "theme_id": 1,
+                    "url": "foo",
+                    "theme_ids": [1],
+                    "committee_ids": [1],
+                },
+                "theme/1": {
+                    "name": "Test Theme",
+                    "accent_500": "#000000",
+                    "primary_500": "#000000",
+                    "warn_500": "#000000",
+                    "organization_id": 1,
+                    "theme_for_organization_id": 1,
                 },
                 "organization_tag/1": {
                     "name": "TEST",
                     "color": "#eeeeee",
                     "organization_id": 1,
                 },
-                "committee/1": {"organization_id": 1},
+                "committee/1": {
+                    "organization_id": 1,
+                    "meeting_ids": [1, 2],
+                    "name": "test committee",
+                },
+                "user/1": {
+                    "can_change_own_password": False,
+                    "is_physical_person": True,
+                    "default_vote_weight": "1.000000",
+                },
                 "meeting/1": {
                     "committee_id": 1,
                     "name": "Test",
@@ -713,10 +766,12 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request("check_database", {})
+        status_code, data = self.request("check_database_all", {})
         assert status_code == 200
+        if not data["ok"]:
+            print(data)
         assert data["ok"] is True
-        assert not data["errors"]
+        assert "errors" not in data
 
     def test_no_permissions(self) -> None:
         self.set_models(
@@ -727,6 +782,6 @@ class TestCheckDatabase(BasePresenterTestCase):
                 },
             }
         )
-        status_code, data = self.request("check_database", {})
+        status_code, data = self.request("check_database_all", {})
         assert status_code == 403
         assert "Missing permission: superadmin" in data["message"]
