@@ -118,3 +118,12 @@ class TruncateDb(Command):
     @property
     def data(self) -> None:
         pass
+
+
+class GetEverything(Command):
+    """
+    GetEverything command. Does not need data.
+    """
+
+    def get_raw_data(self) -> CommandData:
+        return {}

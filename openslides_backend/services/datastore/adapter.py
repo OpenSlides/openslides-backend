@@ -450,5 +450,10 @@ class DatastoreAdapter(BaseDatastoreService):
         self.logger.debug("Start TRUNCATE_DB request to datastore")
         self.retrieve(command)
 
+    def get_everything(self) -> Dict[Collection, Dict[int, PartialModel]]:
+        command = commands.GetEverything()
+        self.logger.debug("Get Everything from datastore.")
+        return self.retrieve(command)
+
     def reset(self, hard: bool = True) -> None:
         self.locked_fields = {}

@@ -23,44 +23,6 @@ check_database_schema = fastjsonschema.compile(
     }
 )
 
-ALL_COLLECTIONS = [
-    "meeting",
-    "group",
-    "personal_note",
-    "tag",
-    "agenda_item",
-    "list_of_speakers",
-    "speaker",
-    "topic",
-    "motion",
-    "motion_submitter",
-    "motion_comment",
-    "motion_comment_section",
-    "motion_category",
-    "motion_block",
-    "motion_change_recommendation",
-    "motion_state",
-    "motion_workflow",
-    "motion_statute_paragraph",
-    "poll",
-    "option",
-    "vote",
-    "assignment",
-    "assignment_candidate",
-    "mediafile",
-    "projector",
-    "projection",
-    "projector_message",
-    "projector_countdown",
-    "chat_group",
-    "chat_message",
-    "organization",
-    "user",
-    "organization_tag",
-    "theme",
-    "committee",
-]
-
 
 @register_presenter("check_database_all")
 class CheckDatabaseAll(BasePresenter):
@@ -78,7 +40,7 @@ class CheckDatabaseAll(BasePresenter):
             msg += f" Missing permission: {OrganizationManagementLevel.SUPERADMIN}"
             raise PermissionDenied(msg)
 
-        export = self.get_all_database()
+        export = self.get_everything()
         checker = Checker(
             data=export,
             mode="all",
@@ -89,12 +51,13 @@ class CheckDatabaseAll(BasePresenter):
         except CheckException as ce:
             return {"ok": False, "errors": str(ce)}
 
-    def get_all_database(self) -> Dict[str, Any]:
-        export: Dict[str, Any] = {"_migration_index": get_backend_migration_index()}
-        for collection in ALL_COLLECTIONS:
-            export[collection] = remove_meta_fields(
-                self.datastore.get_all(collection, [], lock_result=False)
-            )
+    def get_everything(self) -> Dict[str, Any]:
+        everything = self.datastore.get_everything()
+        export: Dict[str, Any] = {
+            collection: remove_meta_fields(everything[collection])
+            for collection in everything
+        }
+        export["_migration_index"] = get_backend_migration_index()
         return export
 
 

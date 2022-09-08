@@ -139,6 +139,9 @@ class BaseDatastoreService(Protocol):
     def reset(self, hard: bool = True) -> None:
         ...
 
+    def get_everything(self) -> Dict[Collection, Dict[int, PartialModel]]:
+        ...
+
 
 class DatastoreService(BaseDatastoreService):
     changed_models: ModelMap
